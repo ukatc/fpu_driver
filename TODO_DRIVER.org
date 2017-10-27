@@ -1,0 +1,48 @@
+* TODO DEsign questions
+
+** TODO subobjects for CAN gateways
+** TODO command protocol
+
+** TODO naming of classes
+- class for CAN Bus level object GatewayDriver
+- class for whole grid of FPUs GridDriver (to avoid clash with Python library)
+
+* TODO code CAN driver
+
+** DONE file preamble
+** DONE write class skeleton
+- [X] add members
+  - [X] state array
+  - [X] struct: ready, pending and error counters
+  - [X] socket
+  - [X] read and write buffers
+  - [X] condition variable
+  - [X] state mutex
+  - [X] sending and receiving threads
+
+
+- [X] initialisation / constructor / destructor code
+  - [X] state array
+  - [X] struct: ready, pending and error counters
+  - [X] socket
+  - [X] read and write buffers
+  - [X] condition variable
+  - [X] state mutex
+  - [X] sending and receiving threads
+
+- [X] state enumeration
+** DONE handle byte stuffing better
+** TODO socket handling using poll()
+** TODO implement FIFO (for each writing thread?)
+** TODO Error handling in PositionerGrid class
+** TODO command interface
+** TODO implement memory pool
+- [ ] check that memory pool is needed
+
+** TODO command serialisation
+- [ ] does that need a class and interface?
+
+
+
+
+
