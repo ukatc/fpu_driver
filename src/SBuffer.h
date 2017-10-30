@@ -49,6 +49,9 @@ class SBuffer
         clen = 0;
         sync = false;
         dle = false;
+        // set unsent length of write buffer to zero
+        unsent_len = 0;
+        out_offset = 0;
     }
 
     // encodes a buffer with a CAN message and sends it to
@@ -58,31 +61,41 @@ class SBuffer
                         int const input_len, uint8_t const * const src)
     {
         int out_len = 0;
-        int unsent_lern = 0;
         ssize_t retval = 0;
 
         encode_buffer(input_len, src, out_len, wbuf);
+        out_offset = 0;
         unsent_len = out_len;
-        while ((unsent_len > 0) && (retval >= 0))
+
+        return send_pending();
+    }
+
+    // we send pending data and return the
+    // result of the send command.
+    // note: positive number - all OK
+    // result is zero - means socket was closed
+    // result is negative - error in errno
+    int send_pending()
         {
-            retval = send(sockfd, wbuf, out_len, 0);
+            // note, we use the DONTWAIT flag here even if
+            // we checked writability before using poll()
+            // - in some cases, operation can still block,
+            // so we double-check.
+            retval = send(sockfd, wbuf + out_offset, out_len,
+                         MSG_DONTWAIT);
             if (retval > 0)
             {
+                // decrement number of unsent bytes
                 unsent_len -= retval;
+                // increment offset into buffer
+                out_offset += retval;
             }
-            // we might need to repeat if not all data
-            // could be sent (this can happen due to
-            // interrupts, full buffers, etc)
-        }
-        if (retval < 0)
-        {
-            return errno;
-        }
-        else
-        {
-            // returns 0 if socket was closed
             return retval;
         }
+    
+    int numUnsentBytes()
+    {
+        return unsent_len;
     }
 
     // reads data from a socket (which presumable has been
@@ -226,6 +239,8 @@ private:
     uint8_t rbuf[BUFSIZE];
     bool sync;
     bool dle;
+    int unsent_len;
+    int out_offset;
     // internal buffer for command
     uint8_t command_buf[MAX_CAN_MESSAGE_LENGTH_BYTES];
     // length of command

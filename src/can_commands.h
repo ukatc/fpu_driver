@@ -35,30 +35,13 @@ enum E_CAN_COMMANDS
     recoverCoordinates = 13,
 
     // internal commands
-    moveUntilDatumGoesOn  = 100,
-    moveUntilDatumGoesOff = 101,
+    NoCommand             = 100,
+    moveUntilDatumGoesOn  = 101,
+    moveUntilDatumGoesOff = 102,
 
 
 };
 
-enum E_FPU_STATE
-{
-    UNINITIALISED       = 1,
-    LOCKED              = 2,
-    COORDINATE_RECOVERY = 3,
-    DATUM_SEARCH        = 4,
-    INITIALISED         = 5,
-    LOADING             = 6,
-    READY_FORWARD       = 7,
-    READY_BACKWARD      = 8,
-    FINISHED            = 9,
-    MOVING              = 10,
-    ABORTED             = 11,
-    COLLISION_DETECTED  = 12,
-    LIMIT_STOP          = 13,
-    COLLISION_RECOVERY  = 14,
-
-} ;
 
 
 

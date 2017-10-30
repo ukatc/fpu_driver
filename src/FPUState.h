@@ -1,4 +1,3 @@
-// -*- mode: c++ -*-
 ////////////////////////////////////////////////////////////////////////////////
 // ESO - VLT Project
 //
@@ -11,41 +10,33 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME GridDriver.h
+// NAME FPU_CAN_driver.h
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "GatewayDriver.hpp"
 
-namespace mpifps
+enum E_FPU_STATE
 {
+    UNINITIALISED       = 1,
+    LOCKED              = 2,
+    COORDINATE_RECOVERY = 3,
+    DATUM_SEARCH        = 4,
+    INITIALISED         = 5,
+    LOADING             = 6,
+    READY_FORWARD       = 7,
+    READY_BACKWARD      = 8,
+    FINISHED            = 9,
+    MOVING              = 10,
+    ABORTED             = 11,
+    COLLISION_DETECTED  = 12,
+    LIMIT_STOP          = 13,
+    COLLISION_RECOVERY  = 14,
+
+} ;
 
 
-class GridDriver
-{
 
-    GridDriver()
-        {
-        }
 
-    ~GridDriver()
-        {
-            // destroy command creation mutex
-            pthread_mutex_destroy(&command_creation_mutex);
-        }
-    
-
-private:
-
-    // this mutex watches that no new
-    // command is initiated while a running
-    // command waits for completion.
-    pthread_mutex_t command_creation_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-    GatewayDriver gateway;
-}
-
-} // end of namespace

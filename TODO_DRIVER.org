@@ -1,3 +1,4 @@
+
 * TODO DEsign questions
 
 ** TODO subobjects for CAN gateways
@@ -32,17 +33,36 @@
 
 - [X] state enumeration
 ** DONE handle byte stuffing better
-** TODO socket handling using poll()
-** TODO implement FIFO (for each writing thread?)
-** TODO Error handling in PositionerGrid class
-** TODO command interface
-** TODO implement memory pool
-- [ ] check that memory pool is needed
+** DONE socket handling using poll()
 
+** DONE define E_GridState enumeration
+
+** DONE define some Error codes for CAN driver
+** DONE look up timing functions
+
+** TODO split off code thread-safe FPUStates Array
+*** DONE getGridState method
+*** DONE waitForState method
+*** DONE getNextTimeOut method
+*** DONE CommandID submember
+*** DONE state counters
+*** DONE addTimeOut method
+*** DONE clearTimeOut method
+*** TODO bind result into receive loop
+** TODO code thread-safe CommandQueue
+*** TODO waitForCommand method
+*** TODO getCommandMask
+*** TODO pushCommand method
+*** TODO popCommand method
+** TODO termination / synchronization
+*** TODO check errno as soon as possible, anywhere
+*** TODO mask SIGPIPE signal
+*** TODO use atomic usage count for socketfd for clean termination
+*** TODO issue shutdown() before close()
+** TODO command interface (draft)
+** TODO code thread-safe CommandPool class template
+** TODO Error handling of syscalls
+** TODO split SBuffer in independent read buffer and write buffer
 ** TODO command serialisation
 - [ ] does that need a class and interface?
-
-
-
-
-
+** TODO define time quantization

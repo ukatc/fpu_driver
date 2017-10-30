@@ -1,3 +1,4 @@
+/bin/bash: astyle: command not found
 ////////////////////////////////////////////////////////////////////////////////
 // ESO - VLT Project
 //
@@ -6,7 +7,9 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // Pablo Gutierrez 2017-07-22  created CAN client sample
-// jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client sample
+// jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client samplepn
+
+
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -17,47 +20,30 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <poll.h>
+#include <signal.h>
 namespace mpifps
 {
 
 GatewayDriver::GatewayDriver(int num_fpus)
 {
 
-    // initialize condition variable
-    pthread_cond_init(&cond_state_change, NULL);
 
-    // initialize mutex which protects FPU grid state
-    grid_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-    // initialize mutex which ensures that only one
-    // command is sent at the same time
-    command_creation_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-    FPUGridState.count_collision = 0;
-    FPUGridState.count_initialised = 0;
-    FPUGridState.count_ready = 0;
-    FPUGridState.count_moving = 0;
-    FPUGridState.count_error = 0;
-
+    // assing default mapping and reverse mapping to
+    // logical FPU ids.
     for (int i=0; i < MAX_NUM_POSITIONERS; i++)
     {
 
-        t_fpu_state fpu= FPUGridState[i];
+        t_bus_address bus_adr;
+        bus_adr.gateway_id = (uint8) (i / (FPUS_PER_BUS * BUSES_PER_GATEWAY));
+        bus_adr.bus_id =  (uint8) (i % BUSES_PER_GATEWAY);
+        bus_adr.can_id = (uint8)(i % (BUSES_PER_GATEWAY * FPUS_PER_BUS));
 
-        fpu.gateway_id = i / (FPUS_PER_BUS * BUSES_PER_GATEWAY);
-        fpu.bus_id =  i % BUSES_PER_GATEWAY;
-        fpu.can_id = i % (BUSES_PER_GATEWAY * FPUS_PER_BUS);
-
-        fpu.is_initialized = false;
-        // the values below are invalid, they need
-        // initialization from fpu response.
-        fpu.alpha_steps = 0;
-        fpu.beta_steps = 0;
-        fpu.on_alpha_data = false;
-        fpu.on_beta_datum = false;
-        fpu.alpha_collision = false;
-        fpu.at_alpha_limit = false;
-        fpu.beta_collision = false;
+        address_map[i] = bus_adr;
+        
+        fpu_id_by_adr[bus_adr.gateway_id][bus_adr.bus_id][bus_adr.can_id] = (uint16) i;
 
     }
 
@@ -70,14 +56,6 @@ GatewayDriver::GatewayDriver(int num_fpus)
 GatewayDriver::~GatewayDriver()
 {
 
-    // destroy condition variable
-    pthread_cond_destroy(&cond_state_change);
-
-    // destroy grid state mutex
-    pthread_mutex_destroy(&cohort_state_mutex);
-
-    // destroy command creation mutex
-    pthread_mutex_destroy(&command_creation_mutex);
 
 };
 
@@ -198,42 +176,103 @@ void* threadTxFun(void *arg)
 
     bool exitFlag = false;
 
+    struct pollfd pfd[NUM_GATEWAYS];
+
+    // TODO: do we want the same time-out value for sending
+    // and receiving?
+    int poll_timeout_ms = int(poll_timeout_sec * 1000);
+    ASSERT(poll_timeout_ms > 0);
+
+    nfds_t num_fds = num_gateways;
+
+    for (int i=0; i < num_gateways; i++)
+    {
+        pfd[i].fd = SocketID[i];
+        pfd[i].events = POLLOUT;        
+    }
+
+
     while (true)
     {
-        int i = 3; // sample payload
 
-        if (flag_Connect)
+        // update poll mask so that only sockets
+        // for which commands are queued will be
+        // polled.
+        for (int i=0; i < num_gateways; i++)
         {
-
-            // safely pop the next command coming from the
-            // control thread
-            // this function waits a while if there is no command
-            can_command = command_FIFO.pop(command_timeout);
-
-            if (can_command != null)
+            if ((! command_FIFO[i].is_empty()) || sbuffer[i].numUnsentBytes() > 0)
             {
-                gateway_number = can_command.getGatewayID();
-
-                int message_len = 0;
-                uint8_t   message_buf[MAX_CAN_MESSAGE_LENGTH_BYTES];
-
-                can_command.SerializeToBuffer(message_len, message_buf);
-
-
-                ssize_t result;
-
-                result = encode_and_send(SockedID[gateway_number], message_len, can_message);
-
-                // FIXME: CHECK ERROR CODE in errno if result equals -1!!
-
+                pfd[i].events = POLLOUT;
             }
-            exitFlag = exit_threads.load(std::memory_order_acquire);
-            if (exitFlag)
+            else
             {
-                break; // terminate thread
+                pfd[i].events = 0;
             }
         }
 
+        retval =  poll(pfd, num_fds, poll_timeout_ms);
+        // TODO: error checking
+        ASSERT(retval >= 0);
+
+        // check all file descriptors for readiness
+        for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
+        {
+            
+            if (pfd[gateway_id]].revent & POLLOUT)
+            {
+
+                // because we use nonblocking writes, it is not
+                // likely, but possible that some buffered data was
+                // not yet send. We try to catch up now.
+                if (sbuffer.numUnsentBytes() > 0)
+                {
+                    // send remaining bytes of previous message
+                    sbuffer[gateway_id].send_pending();
+                }
+                else
+                {
+                    // we can send a new message. Safely pop the
+                    // pending command coming from the control thread
+                    can_command = command_FIFO[i].dequeueCommand();
+
+                    if (can_command != null) // this check is redundant...
+                    {
+                        gateway_number = can_command.getGatewayID();
+
+                        int message_len = 0;
+                        uint8_t   message_buf[MAX_CAN_MESSAGE_LENGTH_BYTES];
+                        
+                        can_command.SerializeToBuffer(message_len, message_buf);
+                        
+                        
+                        ssize_t result;
+
+                        result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_number], message_len, can_message);
+                        
+                        if (result == 0)
+                        {
+                            // this means the socket was closed
+                            exitFlag = true;
+                        }
+
+                        // FIXME: checking errno here is brittle as it could become
+                        // overwritten; rather return it in a reference paramater
+                        if ((result < 0) && (errno  != EWOULDBLOCK ) && (errno  != EAGAIN))
+                        {
+                            // an error occured, we need to check errno
+                            exitFlag = true;
+                            perror("socket error in receive:");
+                        }
+
+                        
+                    }
+                    exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
+                if (exitFlag)
+                {
+                    break; // terminate thread
+                }
+            }
+        }
     }
 }
 
@@ -250,49 +289,63 @@ void* threadRxFun(void *arg)
 {
     int		i;
     int		nread;
-    char	buffer[0x40];
-    fd_set	rfds;
 
-    // that should be rewritten using poll()
-    struct timeval timeout = { .tv_sec = 0,.tv_usec = 50000 };
+    struct pollfd pfd[NUM_GATEWAYS];
+
+    int poll_timeout_ms = int(poll_timeout_sec * 1000);
+    ASSERT(poll_timeout_ms > 0);
+    
+    nfds_t num_fds = num_gateways;
+    
+    for (int i=0; i < num_gateways; i++)
+    {
+        pfd[i].fd = SocketID[i];
+        pfd[i].events = POLLIN;        
+    }
+    
 
     while (true)
     {
+        int retval;
 
-        FD_ZERO(&rfds);
 
-        FD_SET(sock, &rfds);
+        
+        retval =  poll(pfd, num_fds, poll_timeout_ms);
+        // TODO: error checking
+        ASSERT(retval >= 0);
+        
 
-        if (select(sock + 1, &rfds, NULL, NULL, &timeout) < 0)
+
+        for (int bus_id=0; bus_id  < num_gateways; bus_id++)
         {
-            perror("select");
-            return -1;
+            // for receiving, we listen to all descriptors at once
+            if (pfd[i].revent | POLLIN)
+            {
+
+                nread = decode_and_process(SocketID[socked_id], bus_id, self);
+
+                if (nread < 0)
+                {
+                    // an error happened when reading the socket
+                    perror("recv_ck");
+                    return -1;
+                }
+                else if (nread == 0)
+                {
+                    // connection was closed
+                    fprintf(stderr, "client closed connection\n");
+                    return -1;
+                }
+            }
+        }
+        // check whether terminating the thread was requested
+        exitFlag = exit_threads.load(std::memory_order_acquire);
+        if (exitFlag)
+        {
+            break; // exit outer loop, and terminate thread
         }
 
-
-
-        if (FD_ISSET(sock, &rfds))
-        {
-            // identify socket_id / bus_id
-            int bus__id = ?;
-
-            nread = decode_and_process(SocketID[socked_id], bus_id, self);
-
-            if (nread < 0)
-            {
-                // an error happened when reading the socket
-                perror("recv_ck");
-                return -1;
-            }
-            else if (nread == 0)
-            {
-                // connection was closed
-                fprintf(stderr, "client closed connection\n");
-                return -1;
-            }
-        }
     }
-
 };
 
 // this method dispatches handles any response from the CAN bus

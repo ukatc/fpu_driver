@@ -32,49 +32,18 @@
 #include "SBuffer.h"          // coding and decoding message frames
 #include "ResponseHandler.h"  // interface for processing CAN responses
 
+#include "FPUArrya.h" // defines thread-safe structure of FPU state info
+    
 namespace mpifps
 {
 
-// maximum length of CAN message (extended frame format)
-// number of FPUs
-const int BUSES_PER_GATEWAY =  5;
-const int FPUS_PER_BUS = 67;
-
-const int MAX_NUM_GATEWAYS = 3;
-
-const int MAX_NUM_POSITIONERS = (MAX_NUM_GATEWAYS
-                                 * BUSES_PER_GATEWAY
-                                 * FPUS_PER_BUS);
 
 typedef struct
 {
-    int gateway_id;
-    int bus_id;
-    int can_id;
-    int alpha_steps;
-    int beta_steps;
-    bool is_initialized;
-    bool on_alpha_datum;
-    bool on_beta_datum;
-    bool alpha_collision;
-    bool at_alpha_limit;
-    bool beta_collision;
-
-    E_COMMAND pending_command;
-
-
-} t_fpu_state;
-
-typedef struct
-{
-    t_FPU_state FPU_states[MAX_NUM_POSITIONERS];
-    int count_collision;
-    int count_initialised;
-    int count_ready;
-    int count_moving;
-    int count_error;
-} t_grid_state;
-
+    uint8 gateway_id;
+    uint8 bus_id;
+    uint8 can_id;
+} t_bus_address;
 
 typedef struct
 {
@@ -94,6 +63,8 @@ public:
     struct timeval const command_timeout = { .tv_sec = 0,.tv_usec = 50000 };
 
 
+    const double poll_timeout_sec = 5e-3;
+    
     GatewayDriver(int num_fpus);
     ~GatewayDriver();
 
@@ -156,20 +127,20 @@ private:
 
 
 
-    // this mutex protects the FPU state array structure
-    pthread_mutex_t grid_state_mutex;
 
     // this mutex ensures that only one command is sent at the same time
     pthread_mutex_t command_creation_mutex;
 
-    // condition variables which is signaled on state changes
-    pthread_cond_t cond_state_change;
-
     // buffer class for encoded reads and writes to sockets
-    SBuffer sbuffer[MAX_NUM_GATEWAYS];
+        SBuffer sbuffer[MAX_NUM_GATEWAYS];
 
-    t_grid_state FPUGridState;
-
+        // mapping of FPU IDs to physical addresses.
+        // (can be made configurable if required)
+        t_bus_address  address_map[MAX_NUM_POSITIONERS];
+        // reverse map of addresses to FPU id.
+        uint16 fpu_id_by_adr[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
+        
+        FPUArray fpuArry;
 
     // method which handles decoded CAN response messages
     virtual void handleFrame(uint8_t const * const  command_buffer, int const clen);

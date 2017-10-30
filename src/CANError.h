@@ -1,4 +1,3 @@
-// -*- mode: c++ -*-
 ////////////////////////////////////////////////////////////////////////////////
 // ESO - VLT Project
 //
@@ -11,41 +10,24 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME GridDriver.h
+// NAME CANError.h
 //
-// This class implements the low-level CAN driver for the MOONS fiber
-// positioner grid
+// Defines low-level error states for CAN and
+// socket operations.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "GatewayDriver.hpp"
 
-namespace mpifps
+enum E_CANError
 {
-
-
-class GridDriver
-{
-
-    GridDriver()
-        {
-        }
-
-    ~GridDriver()
-        {
-            // destroy command creation mutex
-            pthread_mutex_destroy(&command_creation_mutex);
-        }
+    UNINITIALIZED             = 1,
+    MINOR_TIMEOUT             = 2,
+    MAJOR_TIMEOUT             = 3,
+    LOST_CONNECTION           = 4,
+    SOCKET_CLOSED             = 5,
     
+} ;
 
-private:
 
-    // this mutex watches that no new
-    // command is initiated while a running
-    // command waits for completion.
-    pthread_mutex_t command_creation_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-    GatewayDriver gateway;
-}
 
-} // end of namespace
