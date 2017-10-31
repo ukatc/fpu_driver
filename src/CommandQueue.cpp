@@ -58,7 +58,7 @@ t_command_mask CommandQueue::waitForCommand(timespec timeout)
 
     t_command_mask rmask = 0;
     pthread_mutex_lock(&queue_mutex);
-    time_spec cur_time;
+    timespec cur_time;
     get_monotonic_time(cur_time);
 
     timespec max_abs_time = time_add(cur_time, timeout);

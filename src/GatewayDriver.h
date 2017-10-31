@@ -60,12 +60,12 @@ class GatewayDriver: private ResponseHandler
 public:
 
     // timeout for reading from command FIFO
-    const time_spec MAX_TX_TIMEOUT = { .tv_sec = 0,
+    const timespec MAX_TX_TIMEOUT = { .tv_sec = 0,
 
 
                                        .tv_nsec = 50000000 };
 
-    const time_spec MAX_RX_TIMEOUT = FPUArray::MAX_TIMEOUT;
+    const timespec MAX_RX_TIMEOUT = FPUArray::MAX_TIMEOUT;
     
 
     const double poll_timeout_sec = 5e-3;

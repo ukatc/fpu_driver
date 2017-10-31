@@ -42,6 +42,6 @@ namespace mpifps
         // is no longer needed into the memory pool so that it can
         // be used later without requiring a new
         // allocation.
-        recycleInstance(unique_ptr<I_COMMAND>);
+        recycleInstance(unique_ptr<I_COMMAND>& cmd);
     }
 }

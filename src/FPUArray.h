@@ -54,10 +54,13 @@ typedef struct
     // time when any running command is considered timed out
     // NOTE THIS TIME MUST USE THE MONOTONIC LINUX SYSTEM
     // CLOCK SO THAT LEAP SECONDS DON'T TRIGGER BUGS
-    time_spec cmd_timeout;
+    timespec cmd_timeout;
     // number of minor time-outs which have
     // been observed.
     int8 timeout_count;
+
+    // id of last command that was issued but not completed.
+    E_CAN_COMMAND last_command;
 
     // id of last command that was completed
     E_CAN_COMMAND completed_command;
@@ -182,14 +185,16 @@ class FPUArray {
     // The returned time value is Linux' monotonic
     // clock. The max_time parameter is the
     // value which is returned if no time_out is pending.
-    time_spec getNextTimeOut(time_spec max_time);
+    timespec getNextTimeOut(timespec max_time);
 
     // sets next time-out value for one FPU.
     setNextTimeOut(int fpu_id, E_CAN_COMMAND pending_command,
-                   time_spec tout_val);
+                   timespec tout_val);
 
     // clears time-out value for a specific FPU.
     clearTimeOut(int fpu_id);
+
+    processTimeouts(timespec cur_time);
 
 
   private:
@@ -213,7 +218,7 @@ class FPUArray {
     // condition variables which is signaled on state changes
     pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER;
 
-    time_spec cached_timeout;
+    timespec cached_timeout;
     int cached_timeout_multiplicity;
 }
 

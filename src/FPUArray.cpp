@@ -195,10 +195,10 @@ bool FPUArray::inTargetState(E_WaitTarget tstate)
 // (before each call to poll() on the receiving thread ),
 // and a full search traverses lots of memory,
 // we cache the minimum value.
-time_spec FPUArray::getNextTimeOut(time_spec max_time)
+timespec FPUArray::getNextTimeOut(timespec max_time)
 {
 
-    time_spec min_val = max_time;
+    timespec min_val = max_time;
     
     pthread_mutex_lock(&grid_state_mutex);
 
@@ -249,7 +249,7 @@ time_spec FPUArray::getNextTimeOut(time_spec max_time)
 
 FPUArray::setNextTimeOut(int fpu_id,
                          E_CAN_COMMAND pending_command,
-                         time_spec tout_val)
+                         timespec tout_val)
     {
 
         // we make use of the circumstance that
@@ -325,5 +325,48 @@ FPUArray::clearTimeOut(int fpu_id)
     setNextTimeOut(fpu_id, NoCommand, MAX_TIMEOUT);
 }
 
+
+
+// this function sifts trhough the array of FPU state
+// records and adjusts each record which
+// timeout value is equal or smaller than
+// the cur_time value.
+//
+// The count of timeouts is correspongly
+// increased. After finishing the search,
+// the cond_state_change condition variable
+// is signalled if any timeout was found.
+FPUArray::processTimeouts(timespec cur_time)
+{
+    int found_timeouts = 0;
+
+    pthread_mutex_lock(&grid_state_mutex);
+    for (int i = 0; i < num_fpus; i++)
+    {
+        t_fpu_state& fpu_state = FPUGridState.FPUState[i];
+        
+        timespec const cmd_timeout = fpu_state.cmd_timeout;
+        
+        if   (time_smaller_equal(cmd_timeout, cur_time)
+              && (fpu_state.pending_command != NoCommand))
+            
+        {
+            fpu_state.last_command = fpu_state.pending_command;
+            fpu_state.pending_command = NoCommand;
+            found_timeouts++;
+        }
+                           
+    }
+    FPUGridState.count_timeout += found_timeouts;
+    if (found_timeouts > 0)
+    {
+        // more than one thread may be in wait state,
+        // therefore we use pthread_cond_broadcast()
+        // for the notification;
+        pthread_cond_broadcast(cond_state_change);
+    }
+    pthread_mutex_unlock(&grid_state_mutex);
+    
+}
 
 }

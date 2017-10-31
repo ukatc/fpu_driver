@@ -29,17 +29,18 @@ namespace mpifps
     // for measuring time-outs.
     void timespec get_monotonic_time(timespec& now);
 
-    time_spec add_time(const time_spec& time_a,
-                       const time_spec& time_b);
+    timespec add_time(const timespec& time_a,
+                       const timespec& time_b);
 
-    bool time_smaller(time_spec& const tm_a, time_spec& const tm_b);
+    bool time_smaller(timespec& const tm_a, timespec& const tm_b);
 
-    bool time_equal(time_spec& const tm_a, time_spec& const tm_b);
+    bool time_equal(timespec& const tm_a, timespec& const tm_b);
 
+    bool time_smaller_equal(timespec& const tm_a, timespec& const tm_b)
     // computes the time to wait from cur_time to
     // next_timeout, clipping the result to zero
     // if the timeout has already passed.
-    time_spec time_to_wait(timespec& const cur_time,
+    timespec time_to_wait(timespec& const cur_time,
                            timespec& const next_timeout);
 
 }

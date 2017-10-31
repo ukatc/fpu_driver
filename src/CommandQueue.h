@@ -36,6 +36,7 @@ public:
     enum E_QueueState {
         OK = 1,
         OUT_OF_MEMORY = 2,
+        MISSING_INSTANCE = 3,
     }
 
         const int MAX_MESSAGE_CAPACITY = MAX_NUM_POSITIONERS * 10;

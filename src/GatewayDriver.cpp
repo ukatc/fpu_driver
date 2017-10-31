@@ -256,11 +256,11 @@ void* threadTxFun(void *arg)
                             // now, we set the time out
                             // for this command
                             // - get current monotonous time
-                            time_spec send_time;
+                            timespec send_time;
                             get_monotonic_time(send_time);
 
-                            time_spec wait_period = can_command.getTimeOut();
-                            time_spec deadline = add_time(send_time, wait_period);
+                            timespec wait_period = can_command.getTimeOut();
+                            timespec deadline = add_time(send_time, wait_period);
                             // TODO: This is a bit sloppy because in some circumstances
                             // the sending over the socket might take
                             // longer. Probably the attributes of the
@@ -339,14 +339,14 @@ void* threadRxFun(void *arg)
     while (true)
     {
         int retval;
-        time_spec cur_time;
+        timespec cur_time;
 
 
 
-        time_spec next_timeout = fpuArray.getNextTimeOut(MAX_RX_TIMEOUT);
+        timespec next_timeout = fpuArray.getNextTimeOut(MAX_RX_TIMEOUT);
         get_monotonic_time(cur_time);
 
-        time_spec max_wait = time_to_wait(cur_time, next_timeout);
+        timespec max_wait = time_to_wait(cur_time, next_timeout);
 
         retval =  ppoll(pfd, num_fds, max_wait, signal_set);
         // TODO: error checking
@@ -358,7 +358,7 @@ void* threadRxFun(void *arg)
             // and mark each operation which has timed out.
             get_monotonic_time(cur_time);
             
-            fpuArray.process_timeouts(cur_time);
+            fpuArray.processTimeouts(cur_time);
         }
         else
         {
