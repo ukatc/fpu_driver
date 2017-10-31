@@ -21,18 +21,11 @@
 
 #include <poll.h>
 #include <signal.h>
-#include <time.h> 
+#include "time_utils.h"
 
 namespace mpifps
 {
 
-time_spec add_time(const time_spec time_a, const time_spec time_b)
-{
-    time_spec sum = time_a;
-    sum.tv_sec += time_b.tv_sec;
-    sum.tv_nsec += time_b tv_nsec;
-    return sum;
-}
 
 GatewayDriver::GatewayDriver(int num_fpus)
 {
@@ -199,7 +192,6 @@ void* threadTxFun(void *arg)
     sigset_t signal_set;
     sigemptyset(&signal_set);
     sigaddset(&signal_set, SIGPIPE);
- 
 
 
     while (true)
@@ -265,7 +257,8 @@ void* threadTxFun(void *arg)
                             // for this command
                             // - get current monotonous time
                             time_spec send_time;
-                            clock_gettime(CLOCK_MONOTONIC, &send_time);
+                            get_monotonic_time(send_time);
+
                             time_spec wait_period = can_command.getTimeOut();
                             time_spec deadline = add_time(send_time, wait_period);
                             // TODO: This is a bit sloppy because in some circumstances
@@ -346,11 +339,16 @@ void* threadRxFun(void *arg)
     while (true)
     {
         int retval;
+        time_spec cur_time;
 
 
 
         time_spec next_timeout = fpuArray.getNextTimeOut(MAX_RX_TIMEOUT);
-        retval =  ppoll(pfd, num_fds, next_tinmeout, signal_set);
+        get_monotonic_time(cur_time);
+
+        time_spec max_wait = time_to_wait(cur_time, next_timeout);
+
+        retval =  ppoll(pfd, num_fds, max_wait, signal_set);
         // TODO: error checking
         ASSERT(retval >= 0);
 
@@ -358,6 +356,8 @@ void* threadRxFun(void *arg)
         {
             // a time-out was hit - go through the list of FPUs
             // and mark each operation which has timed out.
+            get_monotonic_time(cur_time);
+            
             fpuArray.process_timeouts(cur_time);
         }
         else

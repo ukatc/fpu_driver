@@ -1,3 +1,4 @@
+
 // -*- mode: c++ -*-
 ////////////////////////////////////////////////////////////////////////////////
 // ESO - VLT Project
@@ -22,7 +23,7 @@ namespace mpifps {
 
   const int MAX_CAN_MESSAGE_LENGTH_BYTES = 16;
 
-class I_Command {
+class I_CAN_Command {
 public:
 
 

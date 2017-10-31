@@ -36,7 +36,7 @@ namespace mpifps
       public:
         // method which provides a new CAN command
         // instance for the given command type
-        unique_ptr<I_Command> provideInstance(E_CAN_COMMAND);
+        unique_ptr<I_CAN_Command> provideInstance(E_CAN_COMMAND);
 
         // method which recycles an instance which
         // is no longer needed into the memory pool so that it can

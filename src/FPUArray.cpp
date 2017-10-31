@@ -25,7 +25,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <std>
-#include <time.h>
+#include "time_utils.h"
 
 
 #include "FPUArray.h" // defines thread-safe structure of FPU state info
@@ -185,22 +185,6 @@ bool FPUArray::inTargetState(E_WaitTarget tstate)
     
 
 
-// returns true if tv_a represents a smaller time than tv_b
-bool time_smaller(time_spec& tm_a, time_spec& tm_b)
-{
-    return ((tm_a.tv_sec < tm_b.tv_sec)
-            || ( (tm_a.tv_sec == tm_b.tv_sec)
-                 && (tm_a.tv_nsec < tm_b.tv_nsec)));
-                 
-}
-
-// returns true if tv_a represents a smaller time than tv_b
-bool time_equal(time_spec& tm_a, time_spec& tm_b)
-{
-    return ( (tm_a.tv_sec == tm_b.tv_sec)
-             && (tm_a.tv_nsec == tm_b.tv_nsec));
-                 
-}
 
 
 // this function retrieves the minimum time-out

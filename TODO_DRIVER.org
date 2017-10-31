@@ -50,12 +50,14 @@
 *** DONE clearTimeOut method
 *** DONE Fix wait states and error fields
 *** DONE bind result into receive loop
+*** TODO write FPUArray::process_timeouts()
 *** TODO fix time_spec functions and signatures
-** TODO code thread-safe CommandQueue
-*** TODO waitForCommand method
-*** TODO getCommandMask
-*** TODO pushCommand method
-*** TODO popCommand method
+*** TODO move locus of time-stamping sent command to after termination of sending
+** DONE code thread-safe CommandQueue
+*** DONE waitForCommand method
+*** DONE getCommandMask
+*** DONE pushCommand method
+*** DONE popCommand method
 ** TODO termination / synchronization
 *** TODO check errno as soon as possible, anywhere
 *** DONE mask SIGPIPE signal
@@ -63,9 +65,13 @@
 *** TODO issue shutdown() before close()
 *** TODO use counter of still running threads?
 ** TODO command interface (draft)
-** TODO code thread-safe CommandPool class template
+** TODO code thread-safe CommandPool (memory pool)
+** TODO response handler interface
+*** TODO separate locked operation and reporting/logging of results
 ** TODO Error handling of syscalls
 ** TODO split SBuffer in independent read buffer and write buffer
 ** TODO command serialisation
 - [ ] does that need a class and interface?
 ** DONE define time quantization
+** TODO Clean-up
+*** TODO collect time utility functions into own file
