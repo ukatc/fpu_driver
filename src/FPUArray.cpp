@@ -253,10 +253,11 @@ FPUArray::setNextTimeOut(int fpu_id,
     {
 
         // we make use of the circumstance that
+        // messages are mostly sent in bursts, therefore
         // timeout values are normally very similar, und
-        // use a quantization of 250 microseconds.
+        // use a quantization of 5 milliseconds.
 
-        const long quant_nsec = 250000;
+        const long quant_nsec = 5000000;
         long nano_secs = tout_val.nsec;
         tout_val.nsec = (((nano_secs + quant_nsec)
                           / quant_nsec)
@@ -319,15 +320,16 @@ FPUArray::setNextTimeOut(int fpu_id,
         pthread_mutex_unlock(&grid_state_mutex);
     };
 
-
+#if 0
 FPUArray::clearTimeOut(int fpu_id)
 {
     setNextTimeOut(fpu_id, NoCommand, MAX_TIMEOUT);
 }
+#endif
 
 
 
-// this function sifts trhough the array of FPU state
+// this function sifts through the array of FPU state
 // records and adjusts each record which
 // timeout value is equal or smaller than
 // the cur_time value.
@@ -336,27 +338,57 @@ FPUArray::clearTimeOut(int fpu_id)
 // increased. After finishing the search,
 // the cond_state_change condition variable
 // is signalled if any timeout was found.
+//
+// As a second effect, the function updates
+// the cached minimum which is not longer
+// valid (we process time-outs only after
+// a time-out has actually expired).
 FPUArray::processTimeouts(timespec cur_time)
 {
     int found_timeouts = 0;
 
     pthread_mutex_lock(&grid_state_mutex);
+    
+    // invalidate chached minimum value
+    cached_timeout_multiplicity = 0;
+    
     for (int i = 0; i < num_fpus; i++)
     {
         t_fpu_state& fpu_state = FPUGridState.FPUState[i];
         
         timespec const cmd_timeout = fpu_state.cmd_timeout;
-        
-        if   (time_smaller_equal(cmd_timeout, cur_time)
-              && (fpu_state.pending_command != NoCommand))
-            
+
+        if (fpu_state.pending_command != NoCommand)
         {
-            fpu_state.last_command = fpu_state.pending_command;
-            fpu_state.pending_command = NoCommand;
-            found_timeouts++;
+            if   (time_smaller_equal(cmd_timeout, cur_time))
+            {
+                fpu_state.last_command = fpu_state.pending_command;
+                fpu_state.pending_command = NoCommand;
+                found_timeouts++;
+            }
+            else
+            {
+                // we use the opportunity to update
+                // the cached minimum (running into an
+                // timeout consumes the last minimum).
+                if (time_smaller(cmd_timeout, cached_timeout)
+                    || (cached_timeout_multiplicity == 0))
+                    
+                {
+                    // finding a new minimum refreshes
+                    // the multiplicity and cache
+                    cached_timeout = next_timeout;
+                    cached_timeout_multiplicity = 1;
+                }
+                else if (time_equal(cmd_timeout, cached_timeout))
+                {
+                    // a recurring value, we increment the count
+                    cached_timeout_multiplicity += 1;
+                }
+                
+            }
+            
         }
-                           
-    }
     FPUGridState.count_timeout += found_timeouts;
     if (found_timeouts > 0)
     {

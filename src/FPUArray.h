@@ -191,8 +191,11 @@ class FPUArray {
     setNextTimeOut(int fpu_id, E_CAN_COMMAND pending_command,
                    timespec tout_val);
 
+#if 0    
     // clears time-out value for a specific FPU.
+    // (may not be needed)
     clearTimeOut(int fpu_id);
+#endif
 
     processTimeouts(timespec cur_time);
 
