@@ -1,7 +1,8 @@
+// -*- mode: c++ -*-
 ////////////////////////////////////////////////////////////////////////////////
 // ESO - VLT Project
 //
-// Copyright 2017 E.S.O,
+// Copyright 2017 E.S.O, 
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
@@ -11,38 +12,30 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME FPU_CAN_driver.h
-//
+// 
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-enum E_CAN_COMMAND
-{
-    // external accessible commands
-    resetFPU           = 1,
-    findDatum          = 2,
-    lockFPU            = 3,
-    unlockFPU          = 4,
-    assignPosition     = 5,
-    configMotion       = 6,
-    reverseMotion      = 7,
-    repeatMotion       = 8,
-    executeMotion      = 9,
-    abortMotion        = 10,
-    untangleFPU        = 11,
-    clearCollision     = 12,
-    recoverCoordinates = 13,
+namespace mpifps {
 
-    // internal commands
-    NoCommand             = 100,
-    moveUntilDatumGoesOn  = 101,
-    moveUntilDatumGoesOff = 102,
+  const int MAX_CAN_MESSAGE_LENGTH_BYTES = 16;
+
+class I_Command {
+public:
 
 
-};
+    void SerializeToBuffer(int& buf_len, uint8_t * buf);
 
+    int getGatewayID();
 
+    int getFPU_ID();
 
+    E_CAN_COMMAND getCommandCode();
+  
+ 
+    void CheckCompletion();
+}
 
-
+} // end of namespace

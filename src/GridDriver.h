@@ -40,6 +40,10 @@ class GridDriver
 
 private:
 
+    untangleFPU();
+
+    clearCollision();
+    
     // this mutex watches that no new
     // command is initiated while a running
     // command waits for completion.

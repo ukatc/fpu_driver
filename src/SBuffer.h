@@ -90,6 +90,10 @@ class SBuffer
                 // increment offset into buffer
                 out_offset += retval;
             }
+            // FIXME: Handle return codes of EAGAIN
+            // and EWOULDBLOCK properly. These values
+            // are sometimes possible even if ppoll() indicated
+            // a writable state.
             return retval;
         }
     
@@ -116,10 +120,14 @@ class SBuffer
         bool frame_complete = false;
         ssize_t rsize = 0;
 
-        rsize = recv(sockfd, rbuf, BUFSIZE, NULL);
+        rsize = recv(sockfd, rbuf, BUFSIZE, MSG_DONTWAIT);
 
         if (rsize < 0)
         {
+            // FIXME: handle values of EAGAIN and EWOULDBLOCK
+            // properly
+            // (This case should happen rarely because of the
+            // previous call to poll, but is possible).
             return errno;
         }
 

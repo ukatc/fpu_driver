@@ -1,4 +1,3 @@
-/bin/bash: astyle: command not found
 ////////////////////////////////////////////////////////////////////////////////
 // ESO - VLT Project
 //
@@ -22,8 +21,18 @@
 
 #include <poll.h>
 #include <signal.h>
+#include <time.h> 
+
 namespace mpifps
 {
+
+time_spec add_time(const time_spec time_a, const time_spec time_b)
+{
+    time_spec sum = time_a;
+    sum.tv_sec += time_b.tv_sec;
+    sum.tv_nsec += time_b tv_nsec;
+    return sum;
+}
 
 GatewayDriver::GatewayDriver(int num_fpus)
 {
@@ -125,8 +134,8 @@ void GatewayDriver::connect(const int ngateways,
 
 
     // we create only one thread for reading and writing.
-    // TODO: does it make sense to have separate threads
-    // for each socket?
+    // FIXME: set error and driver state on success of
+    // connection.
     err = pthread_create(&rx_thread, &attr, &threadRxFun,
                          (void *) self);
     if (err != 0)  printf("\ncan't create thread :[%s]",
@@ -178,11 +187,6 @@ void* threadTxFun(void *arg)
 
     struct pollfd pfd[NUM_GATEWAYS];
 
-    // TODO: do we want the same time-out value for sending
-    // and receiving?
-    int poll_timeout_ms = int(poll_timeout_sec * 1000);
-    ASSERT(poll_timeout_ms > 0);
-
     nfds_t num_fds = num_gateways;
 
     for (int i=0; i < num_gateways; i++)
@@ -190,6 +194,12 @@ void* threadTxFun(void *arg)
         pfd[i].fd = SocketID[i];
         pfd[i].events = POLLOUT;        
     }
+
+    /* Create mask to block SIGPIPE during calls to ppoll()*/
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, SIGPIPE);
+ 
 
 
     while (true)
@@ -210,7 +220,7 @@ void* threadTxFun(void *arg)
             }
         }
 
-        retval =  poll(pfd, num_fds, poll_timeout_ms);
+        retval =  ppoll(pfd, num_fds, MAX_TX_TIMEOUT, signal_set);
         // TODO: error checking
         ASSERT(retval >= 0);
 
@@ -224,7 +234,7 @@ void* threadTxFun(void *arg)
                 // because we use nonblocking writes, it is not
                 // likely, but possible that some buffered data was
                 // not yet send. We try to catch up now.
-                if (sbuffer.numUnsentBytes() > 0)
+                if (sbuffer[gateway_id].numUnsentBytes() > 0)
                 {
                     // send remaining bytes of previous message
                     sbuffer[gateway_id].send_pending();
@@ -248,6 +258,30 @@ void* threadTxFun(void *arg)
                         ssize_t result;
 
                         result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_number], message_len, can_message);
+
+                        if (result > 0)
+                        {
+                            // now, we set the time out
+                            // for this command
+                            // - get current monotonous time
+                            time_spec send_time;
+                            clock_gettime(CLOCK_MONOTONIC, &send_time);
+                            time_spec wait_period = can_command.getTimeOut();
+                            time_spec deadline = add_time(send_time, wait_period);
+                            // TODO: This is a bit sloppy because in some circumstances
+                            // the sending over the socket might take
+                            // longer. Probably the attributes of the
+                            // command should be set into the sbuffer instance,
+                            // and the time-out stored when the sending is complete.
+                            fpuArray.setNextTimeOut(can_command.getFPU_ID(),
+                                                    can_command.getCommandCode(),
+                                                    deadline);
+
+                            // return CAN command to memory pool
+                            command_pool.recycleInstance(can_command);
+                        
+                        }
+
                         
                         if (result == 0)
                         {
@@ -302,39 +336,52 @@ void* threadRxFun(void *arg)
         pfd[i].fd = SocketID[i];
         pfd[i].events = POLLIN;        
     }
-    
+
+    /* Create mask to block SIGPIPE during calls to ppoll()*/
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, SIGPIPE);
+
 
     while (true)
     {
         int retval;
 
 
-        
-        retval =  poll(pfd, num_fds, poll_timeout_ms);
+
+        time_spec next_timeout = fpuArray.getNextTimeOut(MAX_RX_TIMEOUT);
+        retval =  ppoll(pfd, num_fds, next_tinmeout, signal_set);
         // TODO: error checking
         ASSERT(retval >= 0);
-        
 
-
-        for (int bus_id=0; bus_id  < num_gateways; bus_id++)
+        if (retval == 0)
         {
-            // for receiving, we listen to all descriptors at once
-            if (pfd[i].revent | POLLIN)
+            // a time-out was hit - go through the list of FPUs
+            // and mark each operation which has timed out.
+            fpuArray.process_timeouts(cur_time);
+        }
+        else
+        {
+            for (int bus_id=0; bus_id  < num_gateways; bus_id++)
             {
-
-                nread = decode_and_process(SocketID[socked_id], bus_id, self);
-
-                if (nread < 0)
+                // for receiving, we listen to all descriptors at once
+                if (pfd[i].revent | POLLIN)
                 {
-                    // an error happened when reading the socket
-                    perror("recv_ck");
-                    return -1;
-                }
-                else if (nread == 0)
-                {
-                    // connection was closed
-                    fprintf(stderr, "client closed connection\n");
-                    return -1;
+
+                    nread = decode_and_process(SocketID[socked_id], bus_id, self);
+
+                    if (nread < 0)
+                    {
+                        // an error happened when reading the socket
+                        perror("recv_ck");
+                        return -1;
+                    }
+                    else if (nread == 0)
+                    {
+                        // connection was closed
+                        fprintf(stderr, "client closed connection\n");
+                        return -1;
+                    }
                 }
             }
         }

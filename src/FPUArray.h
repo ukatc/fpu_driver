@@ -87,11 +87,7 @@ typedef struct
     // number of FPUs which have finished moving
     int count_finished;
     // so far unreported error
-    bool at_error;
-    // movement aborted
-    bool at_aborted;
-    // any state change
-    bool state_changed;
+    E_DriverState driver_state;
 } t_grid_state;
 
 class FPUArray {
@@ -102,7 +98,7 @@ class FPUArray {
     // a response
     const timespec MAX_TIMEOUT = {.tv_sec = 10,  .tv_nsec = 0};
 
-    FPUArray()
+    FPUArray(int nfpus)
     {
 
         // TODO: check if any condition variables
@@ -152,7 +148,8 @@ class FPUArray {
 
         cached_timeout_multiplicity = 0;
         cached_timeout = MAX_TIMEOUT;
-        
+        num_fpus = nfpus;
+        num_trace_clients = 0;       
     }
 
     ~FPUArray()
@@ -205,6 +202,10 @@ class FPUArray {
     // be locked by the grid_state_mutex
     bool inTargetState(E_WaitTarget tstate);
 
+    int num_fpus;
+
+    std::atomic<int> num_trace_clients;
+    
     // flags which describe the state of the whole grid
     t_grid_state FPUGridState;
     // this mutex protects the FPU state array structure

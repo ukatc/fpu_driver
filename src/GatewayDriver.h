@@ -60,8 +60,13 @@ class GatewayDriver: private ResponseHandler
 public:
 
     // timeout for reading from command FIFO
-    struct timeval const command_timeout = { .tv_sec = 0,.tv_usec = 50000 };
+    const time_spec MAX_TX_TIMEOUT = { .tv_sec = 0,
 
+
+                                       .tv_nsec = 50000000 };
+
+    const time_spec MAX_RX_TIMEOUT = FPUArray::MAX_TIMEOUT;
+    
 
     const double poll_timeout_sec = 5e-3;
     
@@ -100,6 +105,8 @@ public:
     waitForState();
 
 
+    // method which handles decoded CAN response messages
+    virtual void handleFrame(uint8_t const * const  command_buffer, int const clen);
 
 
 
@@ -107,9 +114,6 @@ public:
 
 private:
 
-    untangleFPU();
-
-    clearCollision();
 
     int num_gateways = 0;
 
@@ -140,10 +144,10 @@ private:
         // reverse map of addresses to FPU id.
         uint16 fpu_id_by_adr[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
         
-        FPUArray fpuArry;
+        FPUArray fpuArray;
 
-    // method which handles decoded CAN response messages
-    virtual void handleFrame(uint8_t const * const  command_buffer, int const clen);
+    CommandPool command_pool; // memory pool for unused command objects
+
 
 }
 

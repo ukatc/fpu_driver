@@ -1,8 +1,9 @@
 // -*- mode: c++ -*-
+
 ////////////////////////////////////////////////////////////////////////////////
 // ESO - VLT Project
 //
-// Copyright 2017 E.S.O, 
+// Copyright 2017 E.S.O,
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
@@ -12,27 +13,35 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME FPU_CAN_driver.h
-// 
+//
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace mpifps {
 
-  const int MAX_CAN_MESSAGE_LENGTH_BYTES = 16;
+#include <stdio.h>
+#include <string.h>		/// strerror
+#include <pthread.h>
+//#include "stdlib.h"		/// system("/bin/stty raw");
+//#include "stdbool.h"	/// bool
+#include <unistd.h>
+//#include <stdint.h>
+#include <std>
 
-class I_Command {
-public:
+    
+namespace mpifps
+{
+    class CommandPool {
+      public:
+        // method which provides a new CAN command
+        // instance for the given command type
+        unique_ptr<I_Command> provideInstance(E_CAN_COMMAND);
 
-
-  void SerializeToBuffer(int& buf_len, uint8_t * buf);
-
-  int getGatewayID();
-
-  
-
-  void CheckCompletion();
+        // method which recycles an instance which
+        // is no longer needed into the memory pool so that it can
+        // be used later without requiring a new
+        // allocation.
+        recycleInstance(unique_ptr<I_COMMAND>);
+    }
 }
-
-} // end of namespace

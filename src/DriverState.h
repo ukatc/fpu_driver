@@ -22,28 +22,40 @@ namespace mpifps
 
 enum E_DriverState
 {
-    UNINITIALISED       = 1,
-    DATUM_SEARCH        = 2,
-    INITIALISED         = 3,
-    LOADING             = 4,
-    READY_FORWARD       = 5,
-    READY_BACKWARD      = 6,
-    MOVING              = 7,
-    FINISHED            = 8,
-    ABORTED             = 9,
+    // this does not describe states of
+    // individual FPUs (for example, some
+    // having a collision and the collective
+    // state "FINISHED" is a valid state).
+    UNINITIALISED  = 1,
+    DATUM_SEARCH   = 2,
+    INITIALISED    = 3,
+    LOADING        = 4,
+    READY_FORWARD  = 5,
+    READY_BACKWARD = 6,
+    MOVING         = 7,
+    FINISHED       = 8,
+    ABORTED        = 9,
+    NO_CONNECTION  = 10,
 
 } ;
 
 
+// keep in mind that these target states
+// describe desired collective states of the
+// FPU grid - the waitForState() command will
+// return early on errors but errors are not
+// a desired target state.
 enum E_WaitTarget
 {
-    INITIALISED       = 1,
-    AT_DATUM          = 2,
-    READY_TO_MOVE     = 3,
+    INITIALISED   = 1,
+    AT_DATUM      = 2,
+    READY_TO_MOVE = 3,
     MOVEMENT_FINISHED = 4,
-    MOVEMENT_ABORTED  = 5,
 
-    ANY_CHANGE        = 6,
+    // Note: Using this target requires much more
+    // frequent signalling, this possibly
+    // affects performance.
+    ANY_CHANGE = 10,
 } ;
 
 

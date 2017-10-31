@@ -56,6 +56,13 @@ void FPUarray::waitForState(E_WaitTarget target, t_grid_state& out_state)
 {
 
     bool got_value = false;
+    // if we want to get signaled on any minor changes,
+    // we increment a special counter to trigger
+    // additional event notifications.
+    if (target == ANY_CHANGE)
+    {
+        num_trace_clients++;
+    }
     pthread_mutex_lock(&grid_state_mutex);
 
     while (! got_value)
@@ -76,6 +83,10 @@ void FPUarray::waitForState(E_WaitTarget target, t_grid_state& out_state)
         }
     }
     pthread_mutex_unlock(&grid_state_mutex);
+    if (target == ANY_CHANGE)
+    {
+        num_trace_clients--;
+    }
 
     
 }
@@ -88,9 +99,20 @@ bool FPUArray::inTargetState(E_WaitTarget tstate)
     // if there is any unreported error
     // (such as a collision or a connection failure)
     // return true regardless of specific query.
-    if (grid_state.new_error)
+    // FIXME: That will need some refinement for
+    // error recovery (noving out of collisions etc).
+    E_DriverState state = grid_state.driver_state;
+    if ((state == ABORTED)
+        || (state == NO_CONNECTION)
+        || (state == UNINITIALISED))
     {
-        grid_state.new_error = false;
+        return true;
+    }
+
+    // report collisions early
+    if ( (tstate == FINISHED)
+         && (count_collision > 0))
+    {
         return true;
     }
     
@@ -120,24 +142,14 @@ bool FPUArray::inTargetState(E_WaitTarget tstate)
                 grid_state.count_locked +
                 grid_state.count_timeout) == num_fpus;
         break;
-    case MOVEMENT_ABORTED  
-        if (grid_state.new_aborted)
-        {
-            grid_state.new_aborted = false;
-            return true;
-        }
-    break;
 
     case ANY_CHANGE
-        // this checks if any aspect of the state has changed since
-        // the last call.  This would include e.g. any position report
-        // from any FPU.  Apart from debugging, this can however be
-        // useful for tasks such as plotting positions in real time.
-        if (grid_state.state_changed)
-        {
-            grid_state.state_changed = false;
-            return true;
-        }
+        // this returns on any signal on the condition variable, that
+        // is if any aspect of the state has changed since the last
+        // call.  This would include e.g. any position report from any
+        // FPU.  Apart from debugging, this can however be useful for
+        // tasks such as plotting positions in real time.
+        return true;
     break;
 
     default:
@@ -148,6 +160,30 @@ bool FPUArray::inTargetState(E_WaitTarget tstate)
     }
     
 }
+
+// A general note on time-out handling: When the driver
+// performs a poll on the receiving end, it needs
+// to wait until any FPU times out, that is the
+// FPU with the command which has the smallest time-out value.
+
+// The most frequent operations in terms of time-outs
+// are insertion of a new value, finding a minimum value,
+// and deletion of a
+// value where we received a timely response.
+// Therefore, we tentatively maximize these cases
+// using an O(1) algorithm on the cost of worst case search time
+// which is O(N) .
+
+// An alternative would be a priority queue implemented
+// as a binary heap, which has O(1) time for finding
+// the minimum value, and O(log(N)) time for
+// both insertions and deletions.
+
+// TODO: The above should be reconsidered when doing performance
+// testing. Any changes should be purely internal.
+    
+    
+
 
 // returns true if tv_a represents a smaller time than tv_b
 bool time_smaller(time_spec& tm_a, time_spec& tm_b)
@@ -252,6 +288,8 @@ FPUArray::setNextTimeOut(int fpu_id,
                                             fpu_state.cmd_timeout);
         // the FPU had an active command
         bool was_active fpu_state.pending_command != NoCommand;
+
+        bool is_active == pending_command != NoCommand;
                                         
 
         fpu_state.cmd_timeout = tout_val;
@@ -264,16 +302,18 @@ FPUArray::setNextTimeOut(int fpu_id,
 
         if (time_smaller(tout_val, cached_timeout))
         {
-            // cache is invalidated by setting a smaller value
-            // we update the cached value
+            // cache is invalidated by setting a smaller value,
+            // therefore we update the cached value.
             cached_timeout = tout_val;
             cached_timeout_multiplicity = 1;
         }
         else if (time_equal(tout_val, cached_timeout))
         {
             // the new value equals the existing
-            // minimum
-            if (! (was_active && was_equal_minimum))
+            // minimum and increases the number of
+            // FPUs waiting until that time
+            if ((! (was_active && was_equal_minimum))
+                && is_active)
             {
                 // we increment the count, if it was not
                 // already included
