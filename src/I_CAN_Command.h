@@ -19,29 +19,48 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace mpifps {
+#include <endian.h>
 
-  const int MAX_CAN_MESSAGE_LENGTH_BYTES = 16;
+namespace mpifps
+{
 
-class I_CAN_Command {
+const int MAX_CAN_MESSAGE_LENGTH_BYTES = 16;
+
+#pragma pack(push,1)
+typedef union
+{
+    struct
+    {
+        uint8_t node;
+        uint16_t id; // little-endian
+        uint8_t data[8];
+    } msg;    
+    uint8_t bytes[11];
+} t_CAN_buffer;
+#pragma pack(pop)
+
+class I_CAN_Command
+{
 public:
 
+    virtual I_Can_Command(){};
 
-    // method which serializes message for sending
-    void SerializeToBuffer(int& buf_len, uint8_t * buf);
+    // method which serializes parameters into
+    // CAN message
+    virtual void SerializeToBuffer(int& buf_len, t_CAN_buffer& buf);
 
 
     // FPU id to which message is sent
-    int getFPU_ID();
+    virtual int getFPU_ID();
 
     // boolean value indicating whether
     // the driver should wait for a response
-    bool expectsResponse();
+    virtual bool expectsResponse();
 
-    E_CAN_COMMAND getCommandCode();
+    virtual E_CAN_COMMAND getCommandCode();
 
     // time-out period for a response to the message
-    timespec getTimeOut();
+    virtual timespec getTimeOut();
  
 }
 

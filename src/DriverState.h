@@ -61,7 +61,7 @@ enum E_DriverState
 enum E_DriverErrCode
 {
     // everything worked
-    OK  = 0,
+    OK = 0,
 
     
     // A command was tried to send, or the
@@ -84,8 +84,23 @@ enum E_DriverErrCode
     // for several minutes.
     // Before this error happens, one will probably see
     // time-outs on every single FPU command
-    // as they all fail to respond.
+    // to the corresponding gateways as they
+    // all fail to respond.
     NO_CONNECTION = 2,
+
+
+    // The user tried to send a high-level
+    // command while another high-level
+    // command was still not finished.
+    STILL_BUSY = 3,
+    
+    // It was tried to send more CAN commands
+    // at the same time than possible,
+    // so that the internal command pool
+    // became exhausted.
+    // This should only happen with low-level
+    // engineering commands.
+    COMMAND_POOL_EXHAUSTED = 4,
     
 
 } ;

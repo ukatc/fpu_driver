@@ -241,14 +241,14 @@ void* threadTxFun(void *arg)
                     {
 
                         int message_len = 0;
-                        uint8_t   message_buf[MAX_CAN_MESSAGE_LENGTH_BYTES];
-                        
-                        can_command.SerializeToBuffer(message_len, message_buf);
-                        
-                        
+                        t_CAN_buffer can_buffer;
                         ssize_t result;
-
-                        result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_id], message_len, can_message);
+                        
+                        can_command.SerializeToBuffer(message_len,
+                                                      can_buffer);
+                        
+                        result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_id],
+                                                                     message_len, &(can_buffer.bytes));
 
                         if (result > 0)
                         {
