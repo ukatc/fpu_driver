@@ -36,11 +36,15 @@ namespace mpifps {
             payload = pl;
         };
 
-        void SerializeToBuffer(int& buf_len,
+        void SerializeToBuffer(const uint8_t node,
+                               const uint16_t busid,
+                               int& buf_len,
                                t_CAN_buffer& can_buffer)
         {
             
             can_buffer.msg.node = 1;
+            // The protocol uses little-endian encoding here
+            // (the byte order used in the CANOpen protocol).
             can_buffer.msg.id = htole64(fpu_id);
             
             can_buffer.msg.data[0] = payload & 0xff;

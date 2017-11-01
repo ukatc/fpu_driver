@@ -47,7 +47,9 @@ public:
 
     // method which serializes parameters into
     // CAN message
-    virtual void SerializeToBuffer(int& buf_len, t_CAN_buffer& buf);
+    virtual void SerializeToBuffer(const uint8_t node,
+                                   const uint16_t busid,
+                                   int& buf_len, t_CAN_buffer& buf);
 
 
     // FPU id to which message is sent

@@ -243,8 +243,14 @@ void* threadTxFun(void *arg)
                         int message_len = 0;
                         t_CAN_buffer can_buffer;
                         ssize_t result;
+                        int fpu_id = can_command.getFPU_ID();
+                        const uint8_t node = address_map[fpu_id].can_id;
+                        const uint16_t busid = address_map[fpu_id].bus_id;
+                               
                         
-                        can_command.SerializeToBuffer(message_len,
+                        can_command.SerializeToBuffer(node,
+                                                      busid,
+                                                      message_len,
                                                       can_buffer);
                         
                         result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_id],

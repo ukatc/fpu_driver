@@ -67,7 +67,7 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 ** DONE Define two enums for the CAN driver:
  one for the driver state, and one for 
  the last error
-** TODO command interface (draft)
+** DONE command interface (draft)
 ** TODO response handler interface
 *** TODO separate locked operation and reporting/logging of results
 *** TODO Sample response handler and ping message
