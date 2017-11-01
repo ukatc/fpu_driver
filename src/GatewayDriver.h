@@ -61,8 +61,6 @@ public:
 
     // timeout for reading from command FIFO
     const timespec MAX_TX_TIMEOUT = { .tv_sec = 0,
-
-
                                        .tv_nsec = 50000000 };
 
     const timespec MAX_RX_TIMEOUT = FPUArray::MAX_TIMEOUT;
@@ -73,31 +71,31 @@ public:
     GatewayDriver(int num_fpus);
     ~GatewayDriver();
 
-    void connect(const int ngateways, const t_gateway_address gateway_addresses[]);
+    E_DriverErrCode connect(const int ngateways, const t_gateway_address gateway_addresses[]);
 
-    void disconnect();
+    E_DriverErrCode disconnect();
 
-    initializeGrid();
+    E_DriverErrCode initializeGrid();
 
-    resetFPUs();
+    E_DriverErrCode resetFPUs();
 
-    findDatum();
+    E_DriverErrCode findDatum();
 
-    configMotion();
+    E_DriverErrCode configMotion();
 
-    executeMotion();
+    E_DriverErrCode executeMotion();
 
-    repeatMotion();
+    E_DriverErrCode repeatMotion();
 
-    reverseMotion();
+    E_DriverErrCode reverseMotion();
 
-    abortMotion();
+    E_DriverErrCode abortMotion();
 
-    assignPositions();
+    E_DriverErrCode assignPositions();
 
-    lockFPU();
+    E_DriverErrCode lockFPU();
 
-    unlockFPU();
+    E_DriverErrCode unlockFPU();
 
 
     getCurrentState();
@@ -145,6 +143,8 @@ private:
         uint16 fpu_id_by_adr[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
         
         FPUArray fpuArray;
+    
+    TimeOutList timeOutList;
 
     CommandPool command_pool; // memory pool for unused command objects
 

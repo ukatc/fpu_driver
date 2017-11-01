@@ -28,7 +28,7 @@
 #include <unistd.h>
 //#include <stdint.h>
 #include <std>
-
+#include "TimeOutList.h"
 
 namespace mpifps
 {
@@ -56,7 +56,7 @@ typedef struct
     // CLOCK SO THAT LEAP SECONDS DON'T TRIGGER BUGS
     timespec cmd_timeout;
     // number of minor time-outs which have
-    // been observed.
+    // been observed for the last command.
     int8 timeout_count;
 
     // id of last command that was issued but not completed.
@@ -166,10 +166,14 @@ class FPUArray {
 
     // this method retrieves the current grid state for all FPUs
     // (including collision states etc). It does not wait for
-    // completion of commands.  it can be called in parallel to other
-    // methods.
+    // completion of commands, and can be called concurrently..
     void  getGridState(t_grid_state& out_state);
 
+
+    // sets and messages state changes in driver,
+    // for example loss of a connection.
+    void  setGridState(E_DRIVER_STATE const dstate);
+    
     // this method waits for a certain state
     // and returns the grid state when either this
     // state is reached, or when any error occurs which
@@ -180,30 +184,24 @@ class FPUArray {
 
     void waitForState(E_WaitTarget target, t_grid_state& out_state);
 
-    // get time of next time-out event
-    // which limits the maximum waiting time for a response.
-    // The returned time value is Linux' monotonic
-    // clock. The max_time parameter is the
-    // value which is returned if no time_out is pending.
-    timespec getNextTimeOut(timespec max_time);
+    // sets pending command for one FPU.
+    
+    void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val);
 
-    // sets next time-out value for one FPU.
-    setNextTimeOut(int fpu_id, E_CAN_COMMAND pending_command,
-                   timespec tout_val);
+    // sets last command for a FPU
 
-#if 0    
-    // clears time-out value for a specific FPU.
-    // (may not be needed)
-    clearTimeOut(int fpu_id);
-#endif
+    void setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd);
 
-    processTimeouts(timespec cur_time);
+    // updates state for all FPUs which did
+    // not respond in time, popping their time-out entries
+    // from the list. tolist must not be locked.
+    void processTimeouts(timespec cur_time, TimeOutList& tolist);
 
 
   private:
 
 
-    // this function returns true if the
+    // this internal function returns true if the
     // grid is in the requested state.
     // when this function is called,
     // the internal grid state needs to
@@ -216,13 +214,12 @@ class FPUArray {
     
     // flags which describe the state of the whole grid
     t_grid_state FPUGridState;
+
     // this mutex protects the FPU state array structure
     pthread_mutex_t grid_state_mutex = PTHREAD_MUTEX_INITIALIZER;
     // condition variables which is signaled on state changes
     pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER;
 
-    timespec cached_timeout;
-    int cached_timeout_multiplicity;
 }
 
 }

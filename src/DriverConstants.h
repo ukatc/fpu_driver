@@ -34,4 +34,9 @@ namespace mpifps
                                      * BUSES_PER_GATEWAY
                                      * FPUS_PER_BUS);
 
+
+    // maximum number of elementary commands resulting from one
+    // high-level command
+    const int MAX_SUB_COMMANDS = 300;
+
 }

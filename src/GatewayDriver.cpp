@@ -239,7 +239,6 @@ void* threadTxFun(void *arg)
 
                     if (can_command != null) // this check is redundant...
                     {
-                        gateway_number = can_command.getGatewayID();
 
                         int message_len = 0;
                         uint8_t   message_buf[MAX_CAN_MESSAGE_LENGTH_BYTES];
@@ -249,28 +248,43 @@ void* threadTxFun(void *arg)
                         
                         ssize_t result;
 
-                        result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_number], message_len, can_message);
+                        result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_id], message_len, can_message);
 
                         if (result > 0)
                         {
-                            // now, we set the time out
-                            // for this command
-                            // - get current monotonous time
-                            timespec send_time;
-                            get_monotonic_time(send_time);
 
-                            timespec wait_period = can_command.getTimeOut();
-                            timespec deadline = add_time(send_time, wait_period);
-                            // TODO: This is a bit sloppy because in some circumstances
-                            // the sending over the socket might take
-                            // longer. Probably the attributes of the
-                            // command should be set into the sbuffer instance,
-                            // and the time-out stored when the sending is complete.
-                            fpuArray.setNextTimeOut(can_command.getFPU_ID(),
-                                                    can_command.getCommandCode(),
-                                                    deadline);
+                            if (can_command.expectsResponse())
+                            {
 
-                            // return CAN command to memory pool
+                                // we set the time out
+                                // for this command
+                                // - get current monotonous time
+                                timespec send_time;
+                                get_monotonic_time(send_time);
+
+                                timespec wait_period = can_command.getTimeOut();
+                                timespec deadline = add_time(send_time, wait_period);
+                                // TODO: In some circumstances
+                                // the sending over the socket might take
+                                // longer. It needs to be decided whether the
+                                // sending time should be part of the time-out
+                                // count or not. In the latter case, the
+                                // sending functions should receive a
+                                // reference to the setting functions
+                                // but that's somehow messy.
+                                int fpu_id = can_command.getFPU_ID();
+                                fpuArray.setPendingCommand(fpu_id,
+                                                           can_command.getCommandCode(),
+                                                           deadline);
+                                timeOutList.insertTimeOut(fpu_id, deadline);
+                            }
+                            else
+                            {
+                                fpuArray.setLastCommand(fpu_id,
+                                                        can_command.getCommandCode());
+                            }
+
+                            // return CAN command instance to memory pool
                             command_pool.recycleInstance(can_command);
                         
                         }
@@ -278,8 +292,12 @@ void* threadTxFun(void *arg)
                         
                         if (result == 0)
                         {
-                            // this means the socket was closed
+                            // this means the socket was closed,
+                            // either by shutting down or by a
+                            // serious connection error.
                             exitFlag = true;
+                            // signal event listeners
+                            fpuArray.setGridState(UNCONNECTED); 
                         }
 
                         // FIXME: checking errno here is brittle as it could become
@@ -342,8 +360,8 @@ void* threadRxFun(void *arg)
         timespec cur_time;
 
 
-
-        timespec next_timeout = fpuArray.getNextTimeOut(MAX_RX_TIMEOUT);
+            
+        timespec next_timeout = timeOutList.getNextTimeOut(MAX_RX_TIMEOUT);
         get_monotonic_time(cur_time);
 
         timespec max_wait = time_to_wait(cur_time, next_timeout);
@@ -358,7 +376,7 @@ void* threadRxFun(void *arg)
             // and mark each operation which has timed out.
             get_monotonic_time(cur_time);
             
-            fpuArray.processTimeouts(cur_time);
+            fpuArray.processTimeouts(cur_time, timeOutList);
         }
         else
         {
@@ -370,25 +388,22 @@ void* threadRxFun(void *arg)
 
                     nread = decode_and_process(SocketID[socked_id], bus_id, self);
 
-                    if (nread < 0)
+                    if (nread <= 0)
                     {
-                        // an error happened when reading the socket
-                        perror("recv_ck");
-                        return -1;
-                    }
-                    else if (nread == 0)
-                    {
-                        // connection was closed
-                        fprintf(stderr, "client closed connection\n");
-                        return -1;
+                        // a error happened when reading the socket,
+                        // or connection was closed
+                        exitFlag = true;
+                        break;
                     }
                 }
             }
         }
         // check whether terminating the thread was requested
-        exitFlag = exit_threads.load(std::memory_order_acquire);
+        exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
         if (exitFlag)
         {
+            // signal event listeners
+            fpuArray.setGridState(UNCONNECTED); 
             break; // exit outer loop, and terminate thread
         }
 
@@ -396,6 +411,7 @@ void* threadRxFun(void *arg)
 };
 
 // this method dispatches handles any response from the CAN bus
+// It also clears any time-outs for FPUs which did respond.
 void handleFrame(int bus_id, uint8_t const * const  command_buffer, int const clen)
 {
 };

@@ -161,177 +161,54 @@ bool FPUArray::inTargetState(E_WaitTarget tstate)
     
 }
 
-// A general note on time-out handling: When the driver
-// performs a poll on the receiving end, it needs
-// to wait until any FPU times out, that is the
-// FPU with the command which has the smallest time-out value.
 
-// The most frequent operations in terms of time-outs
-// are insertion of a new value, finding a minimum value,
-// and deletion of a
-// value where we received a timely response.
-// Therefore, we tentatively maximize these cases
-// using an O(1) algorithm on the cost of worst case search time
-// which is O(N) .
-
-// An alternative would be a priority queue implemented
-// as a binary heap, which has O(1) time for finding
-// the minimum value, and O(log(N)) time for
-// both insertions and deletions.
-
-// TODO: The above should be reconsidered when doing performance
-// testing. Any changes should be purely internal.
+// sets pending command for one FPU.
     
-    
-
-
-
-
-// this function retrieves the minimum time-out
-// time for each FPU in the FPU grid which
-// has any pending command. If no time-out
-// is found, it returns the passed default value.
-// Because this function is called often
-// (before each call to poll() on the receiving thread ),
-// and a full search traverses lots of memory,
-// we cache the minimum value.
-timespec FPUArray::getNextTimeOut(timespec max_time)
+void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val)
 {
-
-    timespec min_val = max_time;
-    
     pthread_mutex_lock(&grid_state_mutex);
 
-    // first we try to use the cache
+    FPUGridState.count_pending++;
 
-    if (cached_timeout_multiplicity > 0)
+    t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
+    fpu.pending_command = pending_cmd;
+
+    // if tracing is active, signal state change
+    if (num_trace_clients > 0)
     {
-        // cached value is still valid
-        if (time_smaller(cached_timeout, max_time))
-        {
-            min_val = cached_timeout;
-        }
-        // otherwise, max_time is used, which
-        // was assigned by initialization
+        pthread_cond_broadcast(&cond_state_change);
     }
-    else
+
+    
+    pthread_mutex_unlock(&grid_state_mutex);
+}
+
+// sets last command for a FPU
+
+void FPUArray::setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd)
+{
+    pthread_mutex_lock(&grid_state_mutex);
+
+    FPUGridState.count_pending++;
+
+    t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
+    fpu.last_command = last_cmd;
+    
+    // if tracing is active, signal state change
+    // to waitForState() callers.
+    if (num_trace_clients > 0)
     {
-        // we need to search for the minimum value and
-        // by the way also count how often it occurs.
-        const t_fpu_grid& fpu_state = FPUGridState.FPU_state;
-        for(int i = 0; i < num_fpus; i++)
-        {
-            if (fpu_state[i].pending_command != NoCommand)
-            {
-                next_timeout = fpu_state[i].cmd_timeout;
-                if (time_smaller(next_timeout, min_val))
-                {
-                    min_val = next_timeout;
-                    // finding a new minimum refreshes
-                    // the multiplicity and cache
-                    cached_timeout = next_timeout;
-                    cached_timeout_multiplicity = 1;
-                }
-                else if (time_equal(min_val, next_timeout))
-                {
-                    // a recurring value, we increment the count
-                    cached_timeout_multiplicity += 1;
-                }
-            }
-        }
+        pthread_cond_broadcast(&cond_state_change);
     }
     pthread_mutex_unlock(&grid_state_mutex);
-
-    return min_val;
-
-    
-};
-
-FPUArray::setNextTimeOut(int fpu_id,
-                         E_CAN_COMMAND pending_command,
-                         timespec tout_val)
-    {
-
-        // we make use of the circumstance that
-        // messages are mostly sent in bursts, therefore
-        // timeout values are normally very similar, und
-        // use a quantization of 5 milliseconds.
-
-        const long quant_nsec = 5000000;
-        long nano_secs = tout_val.nsec;
-        tout_val.nsec = (((nano_secs + quant_nsec)
-                          / quant_nsec)
-                         * quant_nsec);
-        
-        
-        pthread_mutex_lock(&grid_state_mutex);
-
-        t_fpu_state& fpu_state = FPUGridState.FPU_state[fpu_id];
-
-        // the old value equals the cached minimum
-        bool was_equal_minimum = time_equal(cached_timeout,
-                                            fpu_state.cmd_timeout);
-        // the FPU had an active command
-        bool was_active fpu_state.pending_command != NoCommand;
-
-        bool is_active == pending_command != NoCommand;
-                                        
-
-        fpu_state.cmd_timeout = tout_val;
-        fpu_state.pending_command = pending_command;
-
-        // the following adjustments keep the invariant
-        // that cached_timeout keeps the minimum value,
-        // and cached_timeout_multiplicity the
-        // number of times it occurs.
-
-        if (time_smaller(tout_val, cached_timeout))
-        {
-            // cache is invalidated by setting a smaller value,
-            // therefore we update the cached value.
-            cached_timeout = tout_val;
-            cached_timeout_multiplicity = 1;
-        }
-        else if (time_equal(tout_val, cached_timeout))
-        {
-            // the new value equals the existing
-            // minimum and increases the number of
-            // FPUs waiting until that time
-            if ((! (was_active && was_equal_minimum))
-                && is_active)
-            {
-                // we increment the count, if it was not
-                // already included
-                cached_timeout_multiplicity += 1;
-            }
-        }
-        else if ((was_active) && (was_equal_minimum))
-        {
-            // this is the most probable case.
-            // we overwrote an active timeout with
-            // a larger value, so we need to decrement
-            // the cache multiplicity (triggering
-            // a full minimum search once the count goes to zero).
-            cached_timeout_multiplicity -= 1;        
-        }
-    
-        
-    
-        pthread_mutex_unlock(&grid_state_mutex);
-    };
-
-#if 0
-FPUArray::clearTimeOut(int fpu_id)
-{
-    setNextTimeOut(fpu_id, NoCommand, MAX_TIMEOUT);
 }
-#endif
 
+// updates state for all FPUs which did
+// not respond in time
 
-
-// this function sifts through the array of FPU state
-// records and adjusts each record which
-// timeout value is equal or smaller than
+// this function adjusts each FPU
+// record which has a pending command with a
+// timeout value that is equal or smaller than
 // the cur_time value.
 //
 // The count of timeouts is correspongly
@@ -339,66 +216,63 @@ FPUArray::clearTimeOut(int fpu_id)
 // the cond_state_change condition variable
 // is signalled if any timeout was found.
 //
-// As a second effect, the function updates
-// the cached minimum which is not longer
-// valid (we process time-outs only after
-// a time-out has actually expired).
-FPUArray::processTimeouts(timespec cur_time)
+
+
+void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tolist)
 {
-    int found_timeouts = 0;
-
+    bool new_timeout = false;
+    timespec next_key;
     pthread_mutex_lock(&grid_state_mutex);
-    
-    // invalidate chached minimum value
-    cached_timeout_multiplicity = 0;
-    
-    for (int i = 0; i < num_fpus; i++)
-    {
-        t_fpu_state& fpu_state = FPUGridState.FPUState[i];
-        
-        timespec const cmd_timeout = fpu_state.cmd_timeout;
 
-        if (fpu_state.pending_command != NoCommand)
-        {
-            if   (time_smaller_equal(cmd_timeout, cur_time))
-            {
-                fpu_state.last_command = fpu_state.pending_command;
-                fpu_state.pending_command = NoCommand;
-                found_timeouts++;
-            }
-            else
-            {
-                // we use the opportunity to update
-                // the cached minimum (running into an
-                // timeout consumes the last minimum).
-                if (time_smaller(cmd_timeout, cached_timeout)
-                    || (cached_timeout_multiplicity == 0))
-                    
-                {
-                    // finding a new minimum refreshes
-                    // the multiplicity and cache
-                    cached_timeout = next_timeout;
-                    cached_timeout_multiplicity = 1;
-                }
-                else if (time_equal(cmd_timeout, cached_timeout))
-                {
-                    // a recurring value, we increment the count
-                    cached_timeout_multiplicity += 1;
-                }
-                
-            }
-            
-        }
-    FPUGridState.count_timeout += found_timeouts;
-    if (found_timeouts > 0)
+    while (true)
     {
-        // more than one thread may be in wait state,
-        // therefore we use pthread_cond_broadcast()
-        // for the notification;
-        pthread_cond_broadcast(cond_state_change);
+        t_toentry to_entry;
+        next_key = timeOutList.getNextTimeOut(MAX_TIMEOUT);
+        if (time_smaller(cur_time, next_key))
+        {
+            break;
+        }
+        to_entry = timeOutList.pop();
+
+        int fpu_id = to_entry.id;
+        new_timeout = true;
+        FPUGridState.count_timeout++;
+        FPUGridState.count_pending--;
+
+        t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
+        fpu.last_command = fpu_pending_command;
+        fpu.pending_command = NoCommand;
+        fpu.timeout_count++;
+        
+        
+        
+    }
+
+    // signal any waiting control threads that
+    // the grid state has changed
+    if (new_timeout)
+    {
+        pthread_cond_broadcast(&cond_state_change);
     }
     pthread_mutex_unlock(&grid_state_mutex);
     
+};
+
+
+// This function sets the global state of
+// the CAN driver. It allows to notify
+// callers of waitForState() when any relevant
+// change of the system happens, such as a lost
+// socket connection.
+FPUArray::setGridState(E_DRIVER_STATE const dstate)
+{
+    pthread_mutex_lock(&grid_state_mutex);
+    FPUGridState.driver_state = dstate;
+    pthread_cond_broadcast(&cond_state_change);
+    pthread_mutex_unlock(&grid_state_mutex);
+
 }
+
+
 
 }

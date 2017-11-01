@@ -22,28 +22,81 @@ namespace mpifps
 
 enum E_DriverState
 {
-    // this does not describe states of
-    // individual FPUs (for example, some
-    // having a collision and the collective
-    // state "FINISHED" is a valid state).
-    UNINITIALISED  = 1,
-    DATUM_SEARCH   = 2,
-    INITIALISED    = 3,
-    LOADING        = 4,
-    READY_FORWARD  = 5,
-    READY_BACKWARD = 6,
-    MOVING         = 7,
-    FINISHED       = 8,
-    ABORTED        = 9,
-    NO_CONNECTION  = 10,
+    // the driver can have the following
+    // non-operative states
+    UNINITIALISED = 1,  // not yet initialized, or
+                        // resource allocation failed,
+                        // for example because out-of-memory
+
+    
+    UNCONNECTED  = 2,   // the driver is not connected,
+                        // this is the state before connecting
+                        // to the gateway or after the
+                        // connection was lost. The latter
+                        // should happen only if there is
+                        // a serious extended failure,
+                        
+
+
+    // the following operative states
+    // are descriptos used by higher levels of the driver
+    // (the CAN driver does not look at
+    // collective behavior of FPUs).
+    OP_UNINITIALISED  = 10,
+    OP_DATUM_SEARCH   = 11,
+    OP_INITIALISED    = 12,
+    OP_LOADING        = 13,
+    OP_READY_FORWARD  = 14,
+    OP_READY_BACKWARD = 15,
+    OP_MOVING         = 16,
+    OP_FINISHED       = 17,
+    OP_ABORTED        = 18,
 
 } ;
 
 
+// This enum contains return codes
+// which should shed light on the cause
+// if something went seriously wrong.
+enum E_DriverErrCode
+{
+    // everything worked
+    OK  = 0,
+
+    
+    // A command was tried to send, or the
+    // driver was instructed to connect, but
+    // the driver was not initialized properly.
+    // That can happen if the system goes
+    // out of memory, or if a logical error
+    // affects the initialization.
+    DRIVER_NOT_INITIALISED = 1,
+
+
+    // A command was tried to send to the
+    // FPUs but this was not possible
+    // because the driver was or became
+    // disconnected from a gateway. During operation,
+    // this should only happen when the
+    // socket connection breaks down for
+    // an extended time, as the socket
+    // protocol will try hard to do re-sends
+    // for several minutes.
+    // Before this error happens, one will probably see
+    // time-outs on every single FPU command
+    // as they all fail to respond.
+    NO_CONNECTION = 2,
+    
+
+} ;
+
+
+// Target states for the waitForState() method.
+
 // keep in mind that these target states
 // describe desired collective states of the
 // FPU grid - the waitForState() command will
-// return early on errors but errors are not
+// return early on errors, even if errors are not
 // a desired target state.
 enum E_WaitTarget
 {

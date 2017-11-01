@@ -27,16 +27,22 @@ class I_CAN_Command {
 public:
 
 
+    // method which serializes message for sending
     void SerializeToBuffer(int& buf_len, uint8_t * buf);
 
-    int getGatewayID();
 
+    // FPU id to which message is sent
     int getFPU_ID();
 
+    // boolean value indicating whether
+    // the driver should wait for a response
+    bool expectsResponse();
+
     E_CAN_COMMAND getCommandCode();
-  
+
+    // time-out period for a response to the message
+    timespec getTimeOut();
  
-    void CheckCompletion();
 }
 
 } // end of namespace
