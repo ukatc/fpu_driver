@@ -26,10 +26,9 @@ namespace mpifps
 
 const int MAX_CAN_MESSAGE_LENGTH_BYTES = 16;
 
-#pragma pack(push,1)
-typedef union
+typedef union __attribute__((packed))
 {
-    struct
+    struct 
     {
         uint8_t node;
         uint16_t id; // little-endian
@@ -37,7 +36,6 @@ typedef union
     } msg;    
     uint8_t bytes[11];
 } t_CAN_buffer;
-#pragma pack(pop)
 
 class I_CAN_Command
 {
@@ -47,8 +45,8 @@ public:
 
     // method which serializes parameters into
     // CAN message
-    virtual void SerializeToBuffer(const uint8_t node,
-                                   const uint16_t busid,
+    virtual void SerializeToBuffer(const uint8_t busid,
+                                   const uint16_t canid,
                                    int& buf_len, t_CAN_buffer& buf);
 
 

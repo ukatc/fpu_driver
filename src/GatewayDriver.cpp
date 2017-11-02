@@ -244,12 +244,12 @@ void* threadTxFun(void *arg)
                         t_CAN_buffer can_buffer;
                         ssize_t result;
                         int fpu_id = can_command.getFPU_ID();
-                        const uint8_t node = address_map[fpu_id].can_id;
                         const uint16_t busid = address_map[fpu_id].bus_id;
+                        const uint8_t canid = address_map[fpu_id].can_id;
                                
                         
-                        can_command.SerializeToBuffer(node,
-                                                      busid,
+                        can_command.SerializeToBuffer(busid,
+                                                      canid,
                                                       message_len,
                                                       can_buffer);
                         

@@ -36,8 +36,8 @@ namespace mpifps {
             payload = pl;
         };
 
-        void SerializeToBuffer(const uint8_t node,
-                               const uint16_t busid,
+        void SerializeToBuffer(const uint8_t busid,
+                               const uint16_t canid,
                                int& buf_len,
                                t_CAN_buffer& can_buffer)
         {
