@@ -59,15 +59,20 @@ class GatewayDriver: private ResponseHandler
 {
 public:
 
-    // timeout for reading from command FIFO
+    // timeout for reading from command FIFO if nothing is
+    // pending - 50 ms
+    const timespec COMMAND_WAIT_TIME = { .tv_sec = 0,
+                                         .tv_nsec = 50000000 };
+    // timeout for polling write socket - 5 ms
     const timespec MAX_TX_TIMEOUT = { .tv_sec = 0,
-                                       .tv_nsec = 50000000 };
+                                      .tv_nsec = 5000000 };
 
+    // default timeout for polling read socket - 5 sec
+    // (this max times determines the time it takes to
+    // shut down the conenction if nothing happens).
     const timespec MAX_RX_TIMEOUT = FPUArray::MAX_TIMEOUT;
-    
 
-    const double poll_timeout_sec = 5e-3;
-    
+        
     GatewayDriver(int num_fpus);
     ~GatewayDriver();
 

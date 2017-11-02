@@ -171,9 +171,35 @@ void GatewayDriver::disconnect()
 
 
 
+void GatewayDriver::updatePendingCommand(I_CAN_Command& can_command)
+{
+    if (can_command.expectsResponse())
+    {
+
+        // we set the time out
+        // for this command
+        // - get current monotonous time
+        timespec send_time;
+        get_monotonic_time(send_time);
+
+        timespec wait_period = can_command.getTimeOut();
+        timespec deadline = add_time(send_time, wait_period);
+        int fpu_id = can_command.getFPU_ID();
+        
+        fpuArray.setPendingCommand(fpu_id,
+                                   can_command.getCommandCode(),
+                                   deadline);
+        timeOutList.insertTimeOut(fpu_id, deadline);
+    }
+    else
+    {
+        fpuArray.setLastCommand(fpu_id,
+                                can_command.getCommandCode());
+    }
+}
 
 
-void* threadTxFun(void *arg)
+void* GatewayDriver::threadTxFun(void *arg)
 {
 
     bool exitFlag = false;
@@ -193,6 +219,7 @@ void* threadTxFun(void *arg)
     sigemptyset(&signal_set);
     sigaddset(&signal_set, SIGPIPE);
 
+    unique_ptr<I_CAN_Command> active_can_command[NUM_GATEWAYS];
 
     while (true)
     {
@@ -200,9 +227,28 @@ void* threadTxFun(void *arg)
         // update poll mask so that only sockets
         // for which commands are queued will be
         // polled.
+        // get currently pending commands
+        t_command_mask cmd_mask = command_FIFO.checkForCommand();
+        
         for (int i=0; i < num_gateways; i++)
         {
-            if ((! command_FIFO[i].is_empty()) || sbuffer[i].numUnsentBytes() > 0)
+            if (sbuffer[i].numUnsentBytes() > 0)
+            {
+                // indicate unsent date
+                cmd_mask |= (1 << i);
+            }
+        }
+
+        if (cmd_mask == 0)
+        {
+            // no commands pending, wait a bit
+            cmd_mask = command_FIFO.waitForCommand(COMMAND_WAIT_TIME);
+        }
+
+        // set poll parameters accordingly
+        for (int i=0; i < num_gateways; i++)
+        {
+            if ((cmd_mask >> i) & 1)
             {
                 pfd[i].events = POLLOUT;
             }
@@ -212,6 +258,9 @@ void* threadTxFun(void *arg)
             }
         }
 
+        
+        // this waits for up to 50 ms for sending data
+        // (we could shorten the timeout if no command was pending)
         retval =  ppoll(pfd, num_fds, MAX_TX_TIMEOUT, signal_set);
         // TODO: error checking
         ASSERT(retval >= 0);
@@ -224,8 +273,8 @@ void* threadTxFun(void *arg)
             {
 
                 // because we use nonblocking writes, it is not
-                // likely, but possible that some buffered data was
-                // not yet send. We try to catch up now.
+                // likely, but entirely possible that some buffered data was
+                // not yet completely send. If so, we try to catch up now.
                 if (sbuffer[gateway_id].numUnsentBytes() > 0)
                 {
                     // send remaining bytes of previous message
@@ -235,66 +284,33 @@ void* threadTxFun(void *arg)
                 {
                     // we can send a new message. Safely pop the
                     // pending command coming from the control thread
-                    can_command = command_FIFO[i].dequeueCommand();
+                    active_can_command[gateway_id] = command_FIFO.dequeueCommand(gateway_id);
 
-                    if (can_command != null) // this check is redundant...
+                    if (active_can_command != null) 
                     {
 
                         int message_len = 0;
                         t_CAN_buffer can_buffer;
                         ssize_t result;
-                        int fpu_id = can_command.getFPU_ID();
+                        int fpu_id = active_can_command[gateway_id].getFPU_ID();
                         const uint16_t busid = address_map[fpu_id].bus_id;
                         const uint8_t canid = address_map[fpu_id].can_id;
                                
                         
-                        can_command.SerializeToBuffer(busid,
-                                                      canid,
-                                                      message_len,
-                                                      can_buffer);
+                        active_can_command[gateway_id].SerializeToBuffer(busid,
+                                                                         canid,
+                                                                         message_len,
+                                                                         can_buffer);
                         
                         result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_id],
                                                                      message_len, &(can_buffer.bytes));
 
-                        if (result > 0)
-                        {
 
-                            if (can_command.expectsResponse())
-                            {
-
-                                // we set the time out
-                                // for this command
-                                // - get current monotonous time
-                                timespec send_time;
-                                get_monotonic_time(send_time);
-
-                                timespec wait_period = can_command.getTimeOut();
-                                timespec deadline = add_time(send_time, wait_period);
-                                // TODO: In some circumstances
-                                // the sending over the socket might take
-                                // longer. It needs to be decided whether the
-                                // sending time should be part of the time-out
-                                // count or not. In the latter case, the
-                                // sending functions should receive a
-                                // reference to the setting functions
-                                // but that's somehow messy.
-                                int fpu_id = can_command.getFPU_ID();
-                                fpuArray.setPendingCommand(fpu_id,
-                                                           can_command.getCommandCode(),
-                                                           deadline);
-                                timeOutList.insertTimeOut(fpu_id, deadline);
-                            }
-                            else
-                            {
-                                fpuArray.setLastCommand(fpu_id,
-                                                        can_command.getCommandCode());
-                            }
-
-                            // return CAN command instance to memory pool
-                            command_pool.recycleInstance(can_command);
-                        
-                        }
-
+                        // FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        // FIXME!!! the error checking here needs to be
+                        // unified and combined with the check of the
+                        // send_pending result.
+                        // FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                         
                         if (result == 0)
                         {
@@ -318,12 +334,20 @@ void* threadTxFun(void *arg)
                         
                     }
                     exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
-                if (exitFlag)
+                    if (exitFlag)
+                    {
+                        break; // terminate thread
+                    }
+                }
+                if ( (sbuffer[gateway_id].numUnsentBytes() > 0)
+                     && ( active_can_command[gateway_id] != null))
                 {
-                    break; // terminate thread
+                    // set send time in fpuArray memory structure
+                    updatePendingCommand(active_can_command[gateway_id]);
+                    // return CAN command instance to memory pool
+                    command_pool.recycleInstance(active_can_command[gateway_id]);
                 }
             }
-        }
     }
 }
 
