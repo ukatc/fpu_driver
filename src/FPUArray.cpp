@@ -271,7 +271,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tolist)
 // callers of waitForState() when any relevant
 // change of the system happens, such as a lost
 // socket connection.
-FPUArray::setGridState(E_DRIVER_STATE const dstate)
+void FPUArray::setGridState(E_DRIVER_STATE const dstate)
 {
     pthread_mutex_lock(&grid_state_mutex);
     FPUGridState.driver_state = dstate;
@@ -280,9 +280,9 @@ FPUArray::setGridState(E_DRIVER_STATE const dstate)
 
 }
 
-FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
-                           uint8_t busid, uint16_t canid,
-                           uint8_t *bytes, int blen, TimeOutList& timeOutList)
+void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
+                                int gateway_id, uint8_t busid, uint16_t canid,
+                                uint8_t *bytes, int blen, TimeOutList& timeOutList)
 {
 
     // FIXME: the 16-bit canid probably not only encodes the FPU which sent
@@ -293,8 +293,10 @@ FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     pthread_mutex_lock(&grid_state_mutex);
     {
     
-        // get canid of FPU
-#pragma message "correct fpu_id computation here"
+        // get canid of FPU (additional ids might be used
+        // to report state of the gateway)
+        
+#pragma message "insert correct fpu_id computation here"
         int fpu_id = fpu_id_by_adr[gateway_id][bus_id][canid];
 
     
@@ -314,9 +316,10 @@ FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         fpu.pending_command = NoCommand;
     
     
-        // if tracing is active, signal state change
-        // to waitForState() callers.
-        if (num_trace_clients > 0)
+        // if no more commands are pending or tracing is active,
+        // signal a state change to waitForState() callers.
+        if ((FPUGridState.count_pending == 0)
+            || (num_trace_clients > 0) )
         {
             pthread_cond_broadcast(&cond_state_change);
         }

@@ -196,9 +196,6 @@ class FPUArray {
 
     void setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd);
 
-    // moves pending command to last command
-
-    void confirmCommand(int fpu_id);
 
     
     // updates state for all FPUs which did
@@ -206,13 +203,21 @@ class FPUArray {
     // from the list. tolist must not be locked.
     void processTimeouts(timespec cur_time, TimeOutList& tolist);
 
-
+    // parses and dispatches an incoming CAN response to update the
+    // state of the FPU grid. The first parameter is the mapping from
+    // CAN IDs to fpu_ids. Timeouts are cleared.  Any relevant status
+    // change of the grid will be signalled via the condition
+    // variable.
+    void dispatchResponse(const t_address_map& fpu_id_by_adr,
+                          int gateway_id, uint8_t busid, uint16_t canid,
+                          uint8_t *bytes, int blen, TimeOutList& timeOutList)
+    
   private:
 
 
-    // this internal function returns true if the
+    // This internal function returns true if the
     // grid is in the requested state.
-    // when this function is called,
+    // When this function is called,
     // the internal grid state needs to
     // be locked by the grid_state_mutex
     bool inTargetState(E_WaitTarget tstate);

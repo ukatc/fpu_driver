@@ -448,7 +448,7 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const * const  com
         uint8_t busid = message->busid;
         uint_t canid = message->canid;
 
-        fpuArray.dispatchResponse(fpu_id_by_adr, busid, canid, message->bytes,
+        fpuArray.dispatchResponse(fpu_id_by_adr, gateway_id, busid, canid, message->bytes,
                                   clen -3, timeOutList);                   
     }
     // otherwise we have an invalid message

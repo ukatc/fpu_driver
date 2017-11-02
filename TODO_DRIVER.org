@@ -39,7 +39,6 @@
 
 ** DONE define some Error codes for CAN driver
 ** DONE look up timing functions
-
 ** DONE split off code thread-safe FPUStates Array
 *** DONE getGridState method
 *** DONE waitForState method
@@ -59,7 +58,6 @@
 *** DONE popCommand method
 ** DONE define time quantization
 ** DONE Set grid state on disconnect, and signal to Wait()
-
 ** DONE Normalize timespecs (set_normalized_timespec, -> 
 time_spec_add_safe), also  use TIME_T_MAX from time.h)
 ** DONE Base CommandQueue length on NUMFPUS * 256, 
@@ -68,20 +66,23 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
  one for the driver state, and one for 
  the last error
 ** DONE command interface (draft)
+** DONE command serialisation
+- [ ] does that need a class and interface?
 ** TODO response handler interface
-*** TODO separate locked operation and reporting/logging of results
+*** DONE read Pablo's sample for hints
+*** TODO ask Pablo about sync0 and sync1
+*** TODO read about priorities / canids
 *** TODO Sample response handler and ping message
 ** TODO code thread-safe CommandPool (memory pool)
 ** TODO termination / synchronization
-*** TODO check errno as soon as possible, anywhere
 *** DONE mask SIGPIPE signal
+*** TODO use counter of still running threads?
 *** TODO use atomic usage count for socketfd for clean termination
 *** TODO issue shutdown() before close()
-*** TODO use counter of still running threads?
+** TODO Move workstation
 ** TODO Error handling of syscalls
-** TODO command serialisation
-- [ ] does that need a class and interface?
-
+*** TODO check errno as soon as possible, anywhere
+** TODO compile
 * TODO Improvements
 ** TODO split methods in initialize() / uninitialize():
   anywhere we allocate memory via the STL, to catch
@@ -93,4 +94,6 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 *** TODO collect time utility functions into own file
 *** TODO consider: move locus of time-stamping sent command to after termination of sending
 *** TODO split SBuffer in independent read buffer and write buffer
-** TODO Split declarations and implementations into source files as usual
+*** TODO Split declarations and implementations into source files as usual
+** TODO compile -Wall
+** TODO separate locked operation and reporting/logging of results
