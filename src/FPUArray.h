@@ -33,6 +33,10 @@
 namespace mpifps
 {
 
+// translation table to convert FPU ids in CAN addresses.
+typedef uint16 t_adress_map[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
+
+
 typedef struct
 {
     // these members are the individual values
@@ -192,6 +196,11 @@ class FPUArray {
 
     void setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd);
 
+    // moves pending command to last command
+
+    void confirmCommand(int fpu_id);
+
+    
     // updates state for all FPUs which did
     // not respond in time, popping their time-out entries
     // from the list. tolist must not be locked.

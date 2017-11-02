@@ -109,7 +109,7 @@ public:
 
 
     // method which handles decoded CAN response messages
-    virtual void handleFrame(uint8_t const * const  command_buffer, int const clen);
+    virtual void handleFrame(int const gateway_id, uint8_t const * const  command_buffer, int const clen);
 
 
 
@@ -141,13 +141,14 @@ private:
     // buffer class for encoded reads and writes to sockets
         SBuffer sbuffer[MAX_NUM_GATEWAYS];
 
-        // mapping of FPU IDs to physical addresses.
-        // (can be made configurable if required)
-        t_bus_address  address_map[MAX_NUM_POSITIONERS];
-        // reverse map of addresses to FPU id.
-        uint16 fpu_id_by_adr[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
+    // mapping of FPU IDs to physical addresses.
+    // (can be made configurable if required)
+    t_bus_address  address_map[MAX_NUM_POSITIONERS];
+
+    // reverse map of addresses to FPU id.    
+    t_address_map fpu_id_by_adr;
         
-        FPUArray fpuArray;
+    FPUArray fpuArray;
     
     TimeOutList timeOutList;
 

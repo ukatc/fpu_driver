@@ -30,8 +30,8 @@ typedef union __attribute__((packed))
 {
     struct 
     {
-        uint8_t node;
-        uint16_t id; // little-endian
+        uint8_t busid;
+        uint16_t canid; // little-endian
         uint8_t data[8];
     } msg;    
     uint8_t bytes[11];

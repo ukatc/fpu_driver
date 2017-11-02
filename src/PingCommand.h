@@ -42,10 +42,14 @@ namespace mpifps {
                                t_CAN_buffer& can_buffer)
         {
             
-            can_buffer.msg.node = 1;
+            can_buffer.msg.busid = 1;
             // The protocol uses little-endian encoding here
             // (the byte order used in the CANOpen protocol).
-            can_buffer.msg.id = htole64(fpu_id);
+
+            // note the FPU ID does not map directly to a
+            // CAN ID, as the canid is both address and
+            // command identifier.
+            can_buffer.msg.canid = htole64(fpu_id);
             
             can_buffer.msg.data[0] = payload & 0xff;
             can_buffer.msg.data[1] = (payload >> 8) & 0xff;

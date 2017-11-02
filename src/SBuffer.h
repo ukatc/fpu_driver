@@ -115,7 +115,7 @@ class SBuffer
     // recv() system call - it should be non-blocking
     // because poll() was inquired whether the used
     // socket has data available.
-    int decode_and_process(int sockfd, int bus_id, ResponseHandler rhandler)
+    int decode_and_process(int sockfd, int gateway_id, ResponseHandler rhandler)
     {
         bool frame_complete = false;
         ssize_t rsize = 0;
@@ -138,7 +138,7 @@ class SBuffer
             if (frame_complete)
             {
                 // send the received data to the response handler
-                rhandler.handleFrame(bus_id, command_buf, clen);
+                rhandler.handleFrame(gateway_id, command_buf, clen);
             }
 
         }

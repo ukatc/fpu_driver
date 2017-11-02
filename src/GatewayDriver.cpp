@@ -259,7 +259,7 @@ void* GatewayDriver::threadTxFun(void *arg)
         }
 
         
-        // this waits for up to 50 ms for sending data
+        // this waits for a short time for sending data
         // (we could shorten the timeout if no command was pending)
         retval =  ppoll(pfd, num_fds, MAX_TX_TIMEOUT, signal_set);
         // TODO: error checking
@@ -268,6 +268,7 @@ void* GatewayDriver::threadTxFun(void *arg)
         // check all file descriptors for readiness
         for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
         {
+            // FIXME: split overly long method into smaller ones
             
             if (pfd[gateway_id]].revent & POLLOUT)
             {
@@ -286,7 +287,7 @@ void* GatewayDriver::threadTxFun(void *arg)
                     // pending command coming from the control thread
                     active_can_command[gateway_id] = command_FIFO.dequeueCommand(gateway_id);
 
-                    if (active_can_command != null) 
+                    if (active_can_command[gateway_id] != null) 
                     {
 
                         int message_len = 0;
@@ -296,12 +297,12 @@ void* GatewayDriver::threadTxFun(void *arg)
                         const uint16_t busid = address_map[fpu_id].bus_id;
                         const uint8_t canid = address_map[fpu_id].can_id;
                                
-                        
+                        // serialize data
                         active_can_command[gateway_id].SerializeToBuffer(busid,
                                                                          canid,
                                                                          message_len,
                                                                          can_buffer);
-                        
+                        // byte-swizzle and send buffer
                         result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_id],
                                                                      message_len, &(can_buffer.bytes));
 
@@ -352,11 +353,6 @@ void* GatewayDriver::threadTxFun(void *arg)
 }
 
 
-void process_frame(uint8_t *data, uint8_t len)
-{
-    // parses CAN reply and stores result in
-    // fpu state array
-}
 
 
 
@@ -410,13 +406,13 @@ void* threadRxFun(void *arg)
         }
         else
         {
-            for (int bus_id=0; bus_id  < num_gateways; bus_id++)
+            for (int gateway_id=0; gateway_id  < num_gateways; bus_id++)
             {
                 // for receiving, we listen to all descriptors at once
                 if (pfd[i].revent | POLLIN)
                 {
 
-                    nread = decode_and_process(SocketID[socked_id], bus_id, self);
+                    nread = decode_and_process(SocketID[gateway_id], gateway_id, this);
 
                     if (nread <= 0)
                     {
@@ -440,11 +436,26 @@ void* threadRxFun(void *arg)
     }
 };
 
-// this method dispatches handles any response from the CAN bus
-// It also clears any time-outs for FPUs which did respond.
-void handleFrame(int bus_id, uint8_t const * const  command_buffer, int const clen)
+// This method parses any CAN response, dispatches it and stores
+// result in fpu state array. It also clears any time-out flags for
+// FPUs which did respond.
+void GatewayDriver::handleFrame(int const gateway_id, uint8_t const * const  command_buffer, int const clen)
 {
+    t_CAN_buffer* message = data;
+
+    if ((message != null) && (clen >= 3))
+    {
+        uint8_t busid = message->busid;
+        uint_t canid = message->canid;
+
+        fpuArray.dispatchResponse(fpu_id_by_adr, busid, canid, message->bytes,
+                                  clen -3, timeOutList);                   
+    }
+    // otherwise we have an invalid message
+    // FIXME: logging of invalid messages
 };
+
+
 
 
 } // end of namespace

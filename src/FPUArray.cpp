@@ -203,6 +203,13 @@ void FPUArray::setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd)
     pthread_mutex_unlock(&grid_state_mutex);
 }
 
+
+void FPUArray::confirmCommand(int fpu_id)
+{
+    
+}
+
+
 // updates state for all FPUs which did
 // not respond in time
 
@@ -272,6 +279,50 @@ FPUArray::setGridState(E_DRIVER_STATE const dstate)
     pthread_mutex_unlock(&grid_state_mutex);
 
 }
+
+FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
+                           uint8_t busid, uint16_t canid,
+                           uint8_t *bytes, int blen, TimeOutList& timeOutList)
+{
+
+    // FIXME: the 16-bit canid probably not only encodes the FPU which sent
+    // the response but also the response type.
+
+    // flag to indicate the message does not address something else.
+
+    pthread_mutex_lock(&grid_state_mutex);
+    {
+    
+        // get canid of FPU
+#pragma message "correct fpu_id computation here"
+        int fpu_id = fpu_id_by_adr[gateway_id][bus_id][canid];
+
+    
+        // clear time-out flag for this FPU
+        timeOutList.clearTimeOut(fpuid);
+        FPUGridState.count_pending--;
+    
+        // TODO: unwrap response, and adjust FPU state according to
+        // that
+
+
+        // TODO: signal cond_state_change if a command was
+        // completed (e.g. all FPUs have finished moving)
+    
+        t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
+        fpu.last_command = fpu.pending_command;
+        fpu.pending_command = NoCommand;
+    
+    
+        // if tracing is active, signal state change
+        // to waitForState() callers.
+        if (num_trace_clients > 0)
+        {
+            pthread_cond_broadcast(&cond_state_change);
+        }
+
+    } // end of locked block
+    pthread_mutex_unlock(&grid_state_mutex);
 
 
 
