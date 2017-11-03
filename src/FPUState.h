@@ -20,6 +20,7 @@
 
 enum E_FPU_STATE
 {
+    UNKNOWN             = 0,
     UNINITIALISED       = 1,
     LOCKED              = 2,
     COORDINATE_RECOVERY = 3,
@@ -28,12 +29,14 @@ enum E_FPU_STATE
     LOADING             = 6,
     READY_FORWARD       = 7,
     READY_BACKWARD      = 8,
-    FINISHED            = 9,
-    MOVING              = 10,
+    MOVING              = 9,
+    FINISHED            = 10,
     ABORTED             = 11,
     COLLISION_DETECTED  = 12,
     LIMIT_STOP          = 13,
     COLLISION_RECOVERY  = 14,
+
+    NUM_FPU_STATES      = 15,
 
 } ;
 

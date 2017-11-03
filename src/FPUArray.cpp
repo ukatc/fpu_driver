@@ -52,10 +52,11 @@ void FPUarray::getGridState(t_grid_state& out_state)
 }
 
 
-void FPUarray::waitForState(E_WaitTarget target, t_grid_state& out_state)
+E_GridState FPUarray::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state)
 {
 
     bool got_value = false;
+    R_GridState sum_state = GS_UNKNOWN;
     // if we want to get signaled on any minor changes,
     // we increment a special counter to trigger
     // additional event notifications.
@@ -65,12 +66,21 @@ void FPUarray::waitForState(E_WaitTarget target, t_grid_state& out_state)
     }
     pthread_mutex_lock(&grid_state_mutex);
 
+    unsigned long count_timeouts = FPUGridState.count_timeout;
+
     while (! got_value)
     {
 
-        // note this test function *must* me be called
-        // in 'locked' state!
-        if (! inTargetState(target))
+        // note this test functions *must* me be called
+        // in 'locked' (mutex-protected) state!
+        sum_state = getStateSummary_unprotected();
+        // if a time-out occurs, we return always.
+        // (the counter can wrap around - no problem!)
+        bool timeout_count_unchanged = (
+            count_timeouts == FPUGridState.count_timeout);
+        
+        if ((! inTargetState(sum_state, target)
+             && timeout_count_unchanged)
         {
             pthread_cond_wait(&cond_state_change,
                               &grid_state_mutex);
@@ -78,7 +88,7 @@ void FPUarray::waitForState(E_WaitTarget target, t_grid_state& out_state)
         else
         {
             // we copy the internal state
-            out_state = FPUGridState;
+            out_detailed_state = FPUGridState;
             got_value = true;
         }
     }
@@ -88,73 +98,40 @@ void FPUarray::waitForState(E_WaitTarget target, t_grid_state& out_state)
         num_trace_clients--;
     }
 
-    
+    return sum_state;
 }
 
 // this function needs to be called in locked (mutex-protected) state,
 // and returns whether any state changed occured that warrants a
 // return from waitForState()
-bool FPUArray::inTargetState(E_WaitTarget tstate)
+bool FPUArray::inTargetState(E_GridState sum_state,
+                             E_WaitTarget tstate)
 {
     // if there is any unreported error
     // (such as a collision or a connection failure)
     // return true regardless of specific query.
     // FIXME: That will need some refinement for
     // error recovery (noving out of collisions etc).
-    E_DriverState state = grid_state.driver_state;
-    if ((state == ABORTED)
-        || (state == NO_CONNECTION)
-        || (state == UNINITIALISED))
+
+    // check if the driver is working -
+    // otherwise, the state cannot change.
+    E_DriverState dstate = grid_state.driver_state;
+    if (dstate != CONNECTED)
     {
         return true;
     }
 
-    // report collisions early
-    if ( (tstate == FINISHED)
-         && (count_collision > 0))
+    if (tstate != TGT_ANY_CHANGE)
     {
         return true;
     }
+
+    // Now, we check whether the bit mask for
+    // the state we are looking at matches
+    // the return value.
+
+    return ((sum_state | tstate) != 0);
     
-    switch(tstate){
-
-    case INITIALISED:
-        return (grid_state.count_initialised +
-                grid_state.count_locked +
-                grid_state.count_timeout) == num_fpus;
-        break;
-        
-    case AT_DATUM:
-        return (grid_state.count_datum +
-                grid_state.count_locked +
-                grid_state.count_timeout) == num_fpus;
-        break;
-        
-    case READY_TO_MOVE:
-        return (grid_state.count_ready +
-                grid_state.count_locked +
-                grid_state.count_timeout) == num_fpus;
-        break;
-        
-        
-    case MOVEMENT_FINISHED 
-        return (grid_state.count_finished +
-                grid_state.count_locked +
-                grid_state.count_timeout) == num_fpus;
-        break;
-
-    case ANY_CHANGE
-        // this returns on any signal on the condition variable, that
-        // is if any aspect of the state has changed since the last
-        // call.  This would include e.g. any position report from any
-        // FPU.  Apart from debugging, this can however be useful for
-        // tasks such as plotting positions in real time.
-        return true;
-    break;
-
-    default:
-        // all targets should be covered
-        ASSERT(false);
 
             
     }
@@ -271,12 +248,124 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tolist)
 // callers of waitForState() when any relevant
 // change of the system happens, such as a lost
 // socket connection.
-void FPUArray::setGridState(E_DRIVER_STATE const dstate)
+void FPUArray::setDriverState(E_DRIVER_STATE const dstate)
 {
     pthread_mutex_lock(&grid_state_mutex);
     FPUGridState.driver_state = dstate;
     pthread_cond_broadcast(&cond_state_change);
     pthread_mutex_unlock(&grid_state_mutex);
+
+}
+
+
+E_DRIVER_STATE FPUArray::getDriverState()
+{
+    E_DRIVER_STATE retval;
+    
+    pthread_mutex_lock(&grid_state_mutex);
+    retsval = FPUGridState.driver_state;
+    pthread_mutex_unlock(&grid_state_mutex);
+}
+
+
+E_DRIVER_STATE FPUArray::getGridState()
+{
+    E_DRIVER_STATE dstate;
+    pthread_mutex_lock(&grid_state_mutex);
+    dstate = FPUGridState.driver_state;
+    pthread_mutex_unlock(&grid_state_mutex);
+
+    return dstate;
+}
+
+E_GridState FPUArray::getStateSummary_unprotected()
+{
+    // get the summary state of the grid.
+    // (This relies on that all FPU updates
+    // do mirror the global counters correctly).
+    E_GridState sum_state = getStateSummary_unprotected();
+
+    
+    // we simply ignored the locked units
+
+    // this computation returns the "minimum operational state"
+    // of all FPUs.
+    // Note that his requires some ordering which is
+    // in part arbitray; the testes are carried out in that order.
+
+    // the high-priority error conditions are checked first
+    if (counts[ABORTED] > 0)
+    {
+        return GS_ABORTED;
+    }
+
+    if (counts[COLLISION_DETECTED] > 0)
+    {
+        return GS_COLLISION;
+    }
+
+    if (counts[LIMIT_STOP] > 0)
+    {
+        return GS_LIMITSTOP;
+    }
+
+    // now we check in order of operational states
+    if ((counts[UNINITIALISED] - counts[LOCKED]) > 0)
+    {
+        return GS_UNINITIALISED:
+    }
+
+    if (counts[COORDINATE_RECOVERY] > 0)
+    {
+        // results in the same: we don't know all
+        // the coordinates in the grid
+        return GS_UNINITIALISED;
+    }
+
+    if (counts[DATUM_SEARCH] > 0)
+    {
+        return GS_DATUM_SEARCH;
+    }
+
+    if (counts[INITIALISED] > 0)
+    {
+        return GS_INITIALISED;
+    }
+
+    if (counts[LOADING] > 0)
+    {
+        return GS_LOADING;
+    }
+
+    if (counts[READY_FORWARD] > 0)
+    {
+        return GS_READY_FORWARD;
+    }
+
+    if (counts[READY_BACKWARD] > 0)
+    {
+        return GS_READY_BACKWARD;
+    }
+
+    if (counts[MOVING] > 0)
+    {
+        return GS_MOVING;
+    }
+
+    return FINISHED;
+    
+}
+
+E_GridState FPUArray::getStateSummary()
+{
+    E_GridState sum_state;
+    pthread_mutex_lock(&grid_state_mutex);
+
+    sum_state = getStateSummary_unprotected();
+    
+    pthread_mutex_unlock(&grid_state_mutex);
+
+    return sum_state;
 
 }
 
@@ -310,6 +399,8 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // clear time-out flag for this FPU
         timeOutList.clearTimeOut(fpuid);
         FPUGridState.count_pending--;
+
+        // FIXME: we need to adjust the time-out count
     
         // TODO: unwrap response, and adjust FPU state according to
         // that

@@ -72,28 +72,24 @@ typedef struct
 
 } t_fpu_state;
 
+typedef int t_counts[NUM_FPU_STATES];
+
 typedef struct
 {
     // individual states of each FPU. The index
     // is always the logical ID of each FPU.
     t_FPU_state FPU_state[MAX_NUM_POSITIONERS];
 
-    // number of collisions in current state
-    int count_collision;
-    // number of correctly initialised FPUs
-    int count_initialised;
-    // number of locked FPUs
-    int count_locked;
-    // number of FPUs at datum
-    int count_datum;
-    // number of FPUs ready to move
-    int count_ready;
-    // number of FPUs which are still moving
-    int count_moving;
+    // count of each FPU state
+    t_counts Counts;
+
+    
     // number of minor time-outs
-    int count_timeout;
-    // number of FPUs which have finished moving
-    int count_finished;
+    // Important: This unsigned counter wraps around
+    // which is fine. (Wrapping of unsigned integer
+    // types does not cause undefined  behavior in C.)
+    unsigned long count_timeout;
+    
     // so far unreported error
     E_DriverState driver_state;
 } t_grid_state;
@@ -112,23 +108,12 @@ class FPUArray {
         // TODO: check if any condition variables
         // really need dynamic initialization.
         
-        FPUGridState.count_collision = 0;
-        FPUGridState.count_initialised = 0;
-        FPUGridState.count_locked = 0;
-        FPUGridState.count_ready = 0;
-        FPUGridState.count_moving = 0;
-        FPUGridState.count_error = 0;
-        FPUGridState.count_datum = 0;
-        FPUGridState.count_moving = 0;
         FPUGridState.count_timeout = 0;
-        FPUGridState.count_finished = 0;
-
-        // the last fields are flags which
-        // an observer can wait for, using waitForState()
-        FPUGridState.new_error = false;
-        FPUGridState.new_aborted = false;
-        FPUGridState.state_changed = false;
-
+        
+        memset(FPUGridState.Counts,
+               sizeof(FPUGridState.StateCounts), 0);
+        FPUGridState.StateCounts[UNKNOWN] = nfpus;
+        
         for (int i=0; i < MAX_NUM_POSITIONERS; i++)
         {
             
@@ -155,8 +140,7 @@ class FPUArray {
             
         }
 
-        cached_timeout_multiplicity = 0;
-        cached_timeout = MAX_TIMEOUT;
+
         num_fpus = nfpus;
         num_trace_clients = 0;       
     }
@@ -175,20 +159,29 @@ class FPUArray {
     // completion of commands, and can be called concurrently..
     void  getGridState(t_grid_state& out_state);
 
+    // returns summary state of FPU grid
+    E_GridState getStateSummary();
+
 
     // sets and messages state changes in driver,
     // for example loss of a connection.
-    void  setGridState(E_DRIVER_STATE const dstate);
+    void  setDriverState(E_DRIVER_STATE const dstate);
+
+    // gets state of the driver
+    E_DRIVER_STATE getDriverState();
     
-    // this method waits for a certain state
+    // This method waits for a certain state (actually,
+    // a bitmask of states)
     // and returns the grid state when either this
     // state is reached, or when any error occurs which
     // probably requires intervention (such a collision
-    // or a connection failure). it returns its result
-    // by value. It must  never called by the I/O threads
+    // or a connection failure). It returns both
+    // the detailed state of any FPU, and a summary
+    // by value. Important, it must  never called by
+    // the I/O threads
     // because they must not be blocked.
 
-    void waitForState(E_WaitTarget target, t_grid_state& out_state);
+    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);
 
     // sets pending command for one FPU.
     
@@ -216,13 +209,18 @@ class FPUArray {
     
   private:
 
+   // returns summary state of FPU grid, without
+   // lock protection.
+    E_GridState getStateSummary_unprotected();
+
 
     // This internal function returns true if the
     // grid is in the requested state.
     // When this function is called,
     // the internal grid state needs to
     // be locked by the grid_state_mutex
-    bool inTargetState(E_WaitTarget tstate);
+    bool inTargetState(E_GridState sum_state,
+                       E_WaitTarget tstate);
 
     int num_fpus;
 

@@ -142,19 +142,46 @@ void GatewayDriver::connect(const int ngateways,
     pthread_attr_destroy(&attr);
 
 
+    fpuArray.setDriverState(CONNECTED);
+
+    
 };
 
 void GatewayDriver::disconnect()
 {
-    // write flag which signals both threads (reading and writing)
-    // to exit
-    exit_threads.store(true, std::memory_order_release);
-
-    // close socket - this will terminate pending read and
-    // write operations
-    for (int i = 0; i < num_gateways; i++)
+    
+    E_DRIVER_STATE dstate = fpuArray.getDriverState();
+    
+    if ( (dstate == UNCONNECTED) || (dstate == UNINITIALISED))
     {
-        close(SocketID);
+        // nothing to be done
+        return;
+    }
+
+    bool sockets_closed = false;
+
+    // check whether there was any error (so threads are
+    // already terminating)
+    if (! exit_threads.load(std::memory_order_acquire))
+    {
+        // write flag which signals both threads (reading and writing)
+        // to exit
+        exit_threads.store(true, std::memory_order_release);
+
+        // close socket - this will terminate pending read and
+        // write operations
+        for (int i = 0; i < num_gateways; i++)
+        {
+            shutdown(SocketID[i], SHUT_RDWR);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < num_gateways; i++)
+        {
+            close(SocketID[i]);
+        }
+        sockets_closed = true;
     }
 
 
@@ -162,10 +189,23 @@ void GatewayDriver::disconnect()
     // need to be read with
     //b = exit_threads.load(std::memory_order_acquire);
 
-    // wait for both threads to terminate
-    // TODO: make sure we can progress here
+    // we wait for both threads to check
+    // the wait flag and terminate in an orderly
+    // manner.
     pthread_join(tx_thread, NULL);
     pthread_join(rx_thread, NULL);
+
+    if (!sockets_closed)
+    {
+        for (int i = 0; i < num_gateways; i++)
+        {
+            close(SocketID[i]);
+        }
+    }
+    // we update the grid state - importantly,
+    // this also signals callers of waitForState()
+    // so they don't go into dead-lock.
+    fpuArray.setDriverState(UNCONNECTED);
 
 };
 
@@ -320,7 +360,7 @@ void* GatewayDriver::threadTxFun(void *arg)
                             // serious connection error.
                             exitFlag = true;
                             // signal event listeners
-                            fpuArray.setGridState(UNCONNECTED); 
+                            fpuArray.setDriverState(UNCONNECTED); 
                         }
 
                         // FIXME: checking errno here is brittle as it could become
@@ -429,7 +469,7 @@ void* threadRxFun(void *arg)
         if (exitFlag)
         {
             // signal event listeners
-            fpuArray.setGridState(UNCONNECTED); 
+            fpuArray.setDriverState(UNCONNECTED); 
             break; // exit outer loop, and terminate thread
         }
 

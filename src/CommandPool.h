@@ -28,20 +28,39 @@
 #include <unistd.h>
 //#include <stdint.h>
 #include <std>
-
+#include <memory.h>
     
 namespace mpifps
 {
     class CommandPool {
       public:
+
+        CommandPool(int nfpus){ num_fpus = nfpus;};
+        
+        ~CommandPool(){};
+        
+        // initializes the pool, allocating
+        // all the required memory for once
+        E_DriverErrCode initialize();
+        
         // method which provides a new CAN command
         // instance for the given command type
-        unique_ptr<I_CAN_Command> provideInstance(E_CAN_COMMAND);
+        // If the pool for that command type is empty,
+        // the method returns a NULL pointer.
+        // This should not happen in normal operation.
+        unique_ptr<I_CAN_Command> provideInstance(E_CAN_COMMAND cmd_type);
 
-        // method which recycles an instance which
+        // method which recycles an instance that
         // is no longer needed into the memory pool so that it can
         // be used later without requiring a new
         // allocation.
-        recycleInstance(unique_ptr<I_COMMAND>& cmd);
+        void recycleInstance(unique_ptr<I_COMMAND>& cmdptr);
+
+    private:
+        typedef std::vector<unique_ptr<I_CAN_Command>> t_cmdvec;
+
+        int num_fpus;
+        t_cmdvec pool[NUM_CAN_COMMANDS];
+        pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
     }
 }

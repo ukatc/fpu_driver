@@ -31,26 +31,15 @@ enum E_DriverState
     
     UNCONNECTED  = 2,   // the driver is not connected,
                         // this is the state before connecting
-                        // to the gateway or after the
-                        // connection was lost. The latter
-                        // should happen only if there is
-                        // a serious extended failure,
-                        
+                        // to the gateway or after the TCP
+                        // connection was lost. The latter would
+                        // happen if there is a serious extended
+                        // failure, like a broken cable or
+                        // a system error with the gateway service.
 
-
-    // the following operative states
-    // are descriptos used by higher levels of the driver
-    // (the CAN driver does not look at
-    // collective behavior of FPUs).
-    OP_UNINITIALISED  = 10,
-    OP_DATUM_SEARCH   = 11,
-    OP_INITIALISED    = 12,
-    OP_LOADING        = 13,
-    OP_READY_FORWARD  = 14,
-    OP_READY_BACKWARD = 15,
-    OP_MOVING         = 16,
-    OP_FINISHED       = 17,
-    OP_ABORTED        = 18,
+    CONNECTED  = 3,     // driver is connected to gateways
+                        // and working
+    
 
 } ;
 
@@ -103,27 +92,6 @@ enum E_DriverErrCode
     COMMAND_POOL_EXHAUSTED = 4,
     
 
-} ;
-
-
-// Target states for the waitForState() method.
-
-// keep in mind that these target states
-// describe desired collective states of the
-// FPU grid - the waitForState() command will
-// return early on errors, even if errors are not
-// a desired target state.
-enum E_WaitTarget
-{
-    INITIALISED   = 1,
-    AT_DATUM      = 2,
-    READY_TO_MOVE = 3,
-    MOVEMENT_FINISHED = 4,
-
-    // Note: Using this target requires much more
-    // frequent signalling, this possibly
-    // affects performance.
-    ANY_CHANGE = 10,
 } ;
 
 

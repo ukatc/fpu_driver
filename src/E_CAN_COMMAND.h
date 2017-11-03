@@ -40,7 +40,9 @@ namespace mpifps {
         CHECK_INTEGRITY   = 14,
         RESET_FPU         = 15,
         LOCK_UNIT         = 16,
-        UNLOCK_UNIT       = 17,        
+        UNLOCK_UNIT       = 17,
+
+        NUM_CAN_COMMANDS  = 18,
     }
 
         
