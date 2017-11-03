@@ -281,8 +281,10 @@ void FPUArray::setGridState(E_DRIVER_STATE const dstate)
 }
 
 void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
-                                int gateway_id, uint8_t busid, uint16_t canid,
-                                uint8_t *bytes, int blen, TimeOutList& timeOutList)
+                                int gateway_id, uint8_t busid,
+                                uint16_t can_identifier,
+                                uint8_t& data[8], int blen,
+                                TimeOutList& timeOutList)
 {
 
     // FIXME: the 16-bit canid probably not only encodes the FPU which sent
@@ -297,7 +299,12 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // to report state of the gateway)
         
 #pragma message "insert correct fpu_id computation here"
-        int fpu_id = fpu_id_by_adr[gateway_id][bus_id][canid];
+        // let's assume the CAN identifier has a response type
+        // code in bits 7 to 10, and the FPU id in bits
+        //
+
+        uint cmd_id = (can_identifier >> 7);
+        int fpu_id = fpu_id_by_adr[gateway_id][bus_id][can_identifier & 128];
 
     
         // clear time-out flag for this FPU
@@ -310,11 +317,8 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
         // TODO: signal cond_state_change if a command was
         // completed (e.g. all FPUs have finished moving)
-    
-        t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
-        fpu.last_command = fpu.pending_command;
-        fpu.pending_command = NoCommand;
-    
+
+        handleFPUResponse(FPUGridState.FPU_state[fpu_id], data);    
     
         // if no more commands are pending or tracing is active,
         // signal a state change to waitForState() callers.
@@ -328,5 +332,22 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     pthread_mutex_unlock(&grid_state_mutex);
 
 
+
+}
+
+
+void FPUArray::handleFPUResponse(t_fpu_state& fpu, uint8_t& data[8],
+                                 int blen)
+{
+    fpu.last_command = fpu.pending_command;
+    switch (cmd_id)
+    {
+    case PING_RESPONSE :
+        // that's just placeholder code
+        fpu.ping_ok = true;
+        break;
+        // TODO: INSERT CORRESPONDING STATE CHANGES HERE
+    }
+    fpu.pending_command = NoCommand;
 
 }

@@ -446,9 +446,10 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const * const  com
     if ((message != null) && (clen >= 3))
     {
         uint8_t busid = message->busid;
-        uint_t canid = message->canid;
+        uint_t can_identifier = message->identifier;
 
-        fpuArray.dispatchResponse(fpu_id_by_adr, gateway_id, busid, canid, message->bytes,
+        fpuArray.dispatchResponse(fpu_id_by_adr, gateway_id, busid,
+                                  can_identifier, &(message->data),
                                   clen -3, timeOutList);                   
     }
     // otherwise we have an invalid message

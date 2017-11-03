@@ -50,6 +50,7 @@ typedef struct
     bool alpha_collision;
     bool at_alpha_limit;
     bool beta_collision;
+    bool ping_ok;
 
     
 
@@ -148,6 +149,7 @@ class FPUArray {
             fpu_state.alpha_collision   = false;
             fpu_state.at_alpha_limit    = false;
             fpu_state.beta_collision    = false;
+            fpu_state.ping_ok           = false;
 
             FPUGridState.FPU_state[i] = fpu_state;
             
@@ -210,7 +212,7 @@ class FPUArray {
     // variable.
     void dispatchResponse(const t_address_map& fpu_id_by_adr,
                           int gateway_id, uint8_t busid, uint16_t canid,
-                          uint8_t *bytes, int blen, TimeOutList& timeOutList)
+                          uint8_t& data[8], int blen, TimeOutList& timeOutList)
     
   private:
 

@@ -30,10 +30,10 @@ namespace mpifps {
 
         PingCommand(){};
 
-        void parametrize(int f_id, long pl)
+        void parametrize(int f_id, long sequence_number)
         {
             fpu_id = f_id;
-            payload = pl;
+            payload = sequence_number;
         };
 
         void SerializeToBuffer(const uint8_t busid,
@@ -42,14 +42,18 @@ namespace mpifps {
                                t_CAN_buffer& can_buffer)
         {
             
-            can_buffer.msg.busid = 1;
+            can_buffer.msg.busid = busid;
+
+            // we use bit 7 to 10 for the command code,
+            // and bit 0 to 6 for the FPU bus id.
+            ASSERT(PING_FPU <= 15);
+            ASSERT(fpu_id < FPUS_PER_BUS);
+            uint16_t can_addr = ( ((PING_FPU & 15) << 7)
+                                  | (fpu_id & 128));
+            
             // The protocol uses little-endian encoding here
             // (the byte order used in the CANOpen protocol).
-
-            // note the FPU ID does not map directly to a
-            // CAN ID, as the canid is both address and
-            // command identifier.
-            can_buffer.msg.canid = htole64(fpu_id);
+            can_buffer.msg.identifier = htole64(can_addr);
             
             can_buffer.msg.data[0] = payload & 0xff;
             can_buffer.msg.data[1] = (payload >> 8) & 0xff;

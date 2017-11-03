@@ -68,11 +68,11 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 ** DONE command interface (draft)
 ** DONE command serialisation
 - [ ] does that need a class and interface?
-** TODO response handler interface
+** DONE response handler interface
 *** DONE read Pablo's sample for hints
-*** TODO ask Pablo about sync0 and sync1
-*** TODO read about priorities / canids
-*** TODO Sample response handler and ping message
+*** DONE ask Pablo about sync0 and sync1
+*** DONE read about priorities / canids
+*** DONE Sample response handler and ping message
 ** TODO code thread-safe CommandPool (memory pool)
 ** TODO termination / synchronization
 *** DONE mask SIGPIPE signal

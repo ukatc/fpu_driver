@@ -31,7 +31,7 @@ typedef union __attribute__((packed))
     struct 
     {
         uint8_t busid;
-        uint16_t canid; // little-endian
+        uint16_t identifier; // little-endian
         uint8_t data[8];
     } msg;    
     uint8_t bytes[11];
@@ -46,7 +46,7 @@ public:
     // method which serializes parameters into
     // CAN message
     virtual void SerializeToBuffer(const uint8_t busid,
-                                   const uint16_t canid,
+                                   const uint16_t fpuid,
                                    int& buf_len, t_CAN_buffer& buf);
 
 

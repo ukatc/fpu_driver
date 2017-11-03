@@ -23,6 +23,7 @@ namespace mpifps {
 
     enum E_CAN_COMMAND
     {
+        BROADCAST         = 0,
         PING_FPU          = 1,
         MOVE_DATUM_OFF    = 2,
         MOVE_DATUM_ON     = 3,
@@ -39,9 +40,15 @@ namespace mpifps {
         CHECK_INTEGRITY   = 14,
         RESET_FPU         = 15,
         LOCK_UNIT         = 16,
-        UNLOCK_UNIT       = 17,
+        UNLOCK_UNIT       = 17,        
     }
-    
+
+        
+    enum E_CAN_RESPONSE
+    {
+        BROADCAST         = 0,
+        PING_RESPONSE     = 1,
+    }
  
 
 } // end of namespace
