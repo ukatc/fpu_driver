@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME GatewayDriver.h
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -32,7 +32,7 @@
 #include "SBuffer.h"          // coding and decoding message frames
 #include "ResponseHandler.h"  // interface for processing CAN responses
 
-#include "FPUArrya.h" // defines thread-safe structure of FPU state info
+#include "FPUArray.h" // defines thread-safe structure of FPU state info
     
 namespace mpifps
 {

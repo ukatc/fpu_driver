@@ -20,23 +20,33 @@
 
 #include "AsyncDriver.h"
 
+#include "GatewayDriver.h"
+#include "commands/ConfigureMotionCommand.h"
+#include "commands/MoveDatumOnCommand.h"
+#include "commands/MoveDatumOffCommand.h"
+#include "commands/PingCommand.h"
+
+
 namespace mpifps
 {
 
 
     
-E_DriverErrCode AsyncDriver::initializeGridAsync(t_grid_state& grid_state)
+E_DriverErrCode AsyncDriver::initializeGridAsync(t_grid_state& grid_state,
+                                            E_GridState& state_summary)
 {
 }
 
-E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state)
+E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
+                                            E_GridState& state_summary)
 {
 }
 
-E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state)
+E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
+                                            E_GridState& state_summary)
 {
     // first, get current state of the grid
-    gateway.getGridState(grid_state);
+    state_summary = gateway.getGridState(grid_state);
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -83,16 +93,24 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state)
         }
     }
 
-    // fpus are now moving in parallel.
+    // fpus are now moving in parallel. Their status
+    // goes from FPST_UNINITIALISED OR FPST_FINISHED
+    // to FPST_LEAVING_DATUM, and changes to
+    // FPST_ABOVE_DATUM once the command sent finishes.
+    //
     // As long as any fpus need to move, wait for
-    // them to finish
+    // them to finish.
     while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        gateway.waitForState(TGT__ABOVE_DATUM,
+        state_summary = gateway.waitForState(TGT_ABOVE_DATUM,
                              grid_state);
 
         // refresh count of moving fpus
-        num_moving = grid_state.count_pending;            
+        // This relies on that each FPU sends a response
+        // when it reaches the datum, or otherwise
+        // the time-out handler sets the status back
+        // to FPST_UNINITIALISED.
+        num_moving = grid_state.Counts[FPST_LEAVING_DATUM];                        
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -147,10 +165,10 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state)
             
     while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        gateway.waitForState(TGT_AT_DATUM,
+        state_summary = gateway.waitForState(TGT_AT_DATUM,
                              grid_state);
 
-        num_moving = grid_state.count_pending;                        
+        num_moving = grid_state.Counts[DATUM_SEARCH];                        
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -163,11 +181,13 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state)
 }
 
 
-E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state, const t_wtable& waveforms)
+E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
+                                               E_GridState& state_summary,
+                                               const t_wtable& waveforms)
 {
 
     // first, get current state of the grid
-    gateway.getGridState(grid_state);
+    state_summary = gateway.getGridState(grid_state);
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -183,12 +203,12 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state, const t
             || (fpu_status == FPST_COLLISION_DETECTED)
             || (fpu_status == FPST_LIMIT_STOP))
         {
-            return E_DriverErrCode::UNRESOLVED_COLLISION;
+            return DE_UNRESOLVED_COLLISION;
         }
 
         if (!grid_state.FPUState[i].isinitialised)
         {
-            return E_DriverErrCode::NOT_INITIALISED;
+            return DE_NOT_INITIALISED;
         }
     }
 
@@ -221,60 +241,63 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state, const t
         }
     }
 
-    // fpus are now loading data. Wait for 
-    // them to finish.
-    while ( (num_loading > 0) && ((grid_state.driver_state == DS_CONNECTED)))
-    {
-        gateway.waitForState(TGT_READY_TO_MOVE,
-                             grid_state);
-
-        // refresh count of loading fpus
-        num_moving = grid_state.count_pending;            
-    }
+    // fpus are now loading data. 
+    // Wait for fpus loading to finish, or
+    // to time-out.
+    state_summary = gateway.waitForState(TGT_READY_TO_MOVE,
+                         grid_state);
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;
     }
     
-
     return DE_OK;
 }
 
-E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state)
+E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
+                                            E_GridState& state_summary)
 {
 }
 
-E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state)
+E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
+                                            E_GridState& state_summary)
 {
 }
 
-E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state)
+E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
+                                            E_GridState& state_summary)
 {
 }
 
-E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state)
+E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
+                                            E_GridState& state_summary)
 {
 }
 
-E_DriverErrCode AsyncDriver::assignPositionsAsync(t_grid_state& grid_state)
+E_DriverErrCode AsyncDriver::assignPositionsAsync(t_grid_state& grid_state,
+                                                  E_GridState& state_summary)
 {
 }
 
-E_DriverErrCode AsyncDriver::lockFPUAsync(t_grid_state& grid_state)
+E_DriverErrCode AsyncDriver::lockFPUAsync(t_grid_state& grid_state,
+                                          E_GridState& state_summary)
 {
 }
 
-E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state)
+E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state,
+                                            E_GridState& state_summary)
 {
 }
 
-void AsyncDriver::getGridState(t_grid_state& out_state)
+E_GridState AsyncDriver::getGridState(t_grid_state& out_state)
 {
-    gateway.getGridState(out_state);
+    return gateway.getGridState(out_state);
 }
 
-E_GridState AsyncDriver::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state)
+E_GridState AsyncDriver::waitForState(E_WaitTarget target,
+                                      E_GridState state_summary,
+                                      t_grid_state& out_detailed_state)
 {
     return gateway.waitForState(target, out_detailed_state);
 }

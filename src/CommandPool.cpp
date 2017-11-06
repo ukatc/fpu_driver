@@ -12,15 +12,23 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME CommandPool.cpp
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "commands/ConfigureMotionCommand.h"
+#include "commands/MoveDatumOnCommand.h"
+#include "commands/MoveDatumOffCommand.h"
+#include "commands/PingCommand.h"
+
+
 namespace mpifps
 {
+
+
 
 E_DriverErrCode CommandPool::initialize()
 {

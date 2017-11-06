@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME FPUState.h
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -27,20 +27,21 @@ namespace mpifps
         FPST_UNINITIALISED       = 1,
         FPST_LOCKED              = 2,
         FPST_COORDINATE_RECOVERY = 3,
-        FPST_DATUM_SEARCH        = 4,
+        FPST_LEAVING_DATUM       = 4,
         FPST_ABOVE_DATUM         = 5,
-        FPST_INITIALISED         = 6,
-        FPST_LOADING             = 7,
-        FPST_READY_FORWARD       = 8,
-        FPST_READY_BACKWARD      = 9,
-        FPST_MOVING              = 10,
-        FPST_FINISHED            = 11,
-        FPST_ABORTED             = 12,
-        FPST_COLLISION_DETECTED  = 13,
-        FPST_LIMIT_STOP          = 14,
-        FPST_COLLISION_RECOVERY  = 15,
+        FPST_DATUM_SEARCH        = 6,
+        FPST_INITIALISED         = 7,
+        FPST_LOADING             = 8,
+        FPST_READY_FORWARD       = 9,
+        FPST_READY_BACKWARD      = 10,
+        FPST_MOVING              = 11,
+        FPST_FINISHED            = 12,
+        FPST_ABORTED             = 13,
+        FPST_COLLISION_DETECTED  = 14,
+        FPST_LIMIT_STOP          = 15,
+        FPST_COLLISION_RECOVERY  = 16,
 
-        NUM_FPU_STATES      = 16,
+        NUM_FPU_STATES      = 17,
 
     } ;
 

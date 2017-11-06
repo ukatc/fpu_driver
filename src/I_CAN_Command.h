@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME I_CAN_Command.h
 // 
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid

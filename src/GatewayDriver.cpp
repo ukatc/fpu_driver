@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME
+// NAME GatewayDriver.cpp
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -557,9 +557,9 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const * const  com
 };
 
 
-void GatewayDriver::getGridState(t_grid_state& out_state)
+E_GridState GatewayDriver::getGridState(t_grid_state& out_state)
 {
-    fpuArray.getGridState(out_state);
+    return fpuArray.getGridState(out_state);
 }
 
 E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state)

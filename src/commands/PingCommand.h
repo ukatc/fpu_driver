@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME PingCommand.h
 // 
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -23,20 +23,17 @@
 
 namespace mpifps {
 
-    class ConfigureMotionCommand : public I_CAN_Command
+    class PingCommand : public I_CAN_Command
     {
 
       public:
 
-        ConfigureMotionCommand(){};
+        PingCommand(){};
 
-        void parametrize(int f_id, int16_t alpha_steps, int16_t beta_steps, bool first_entry, bool last_entry)
+        void parametrize(int f_id, long sequence_number)
         {
             fpu_id = f_id;
-            asteps = alpha_steps;
-            bsteps = beta_steps;
-            fentry = first_entry;
-            lentry = last_entry;                       
+            payload = sequence_number;
         };
 
         void SerializeToBuffer(const uint8_t busid,
@@ -57,10 +54,7 @@ namespace mpifps {
             // The protocol uses little-endian encoding here
             // (the byte order used in the CANOpen protocol).
             can_buffer.msg.identifier = htole64(can_addr);
-
-            #pragma message "fix command assembly here"
             
-            long payload = 0;
             can_buffer.msg.data[0] = payload & 0xff;
             can_buffer.msg.data[1] = (payload >> 8) & 0xff;
             can_buffer.msg.data[2] = (payload >> 16) & 0xff;
@@ -109,10 +103,7 @@ namespace mpifps {
 
       private:
         uint16_t fpu_id;
-        int16_t asteps;
-        int16_t bsteps;
-        bool fentry;
-        bool lentry;
+        long payload;
         
         
     }

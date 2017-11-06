@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME FPUArray.cpp
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -42,13 +42,14 @@ namespace mpifps
 // likely returns much more information than needed.
 // FIXME: replace internal type with slimmed down information
 // which is actually relevant for callers.
-void FPUarray::getGridState(t_grid_state& out_state)
+E_GridState FPUarray::getGridState(t_grid_state& out_state)
 {
 
     pthread_mutex_lock(&grid_state_mutex);
     // we simply copy the internal state
     out_state = FPUGridState;
     pthread_mutex_unlock(&grid_state_mutex);
+    E_GridState = getGridStateSummary(out_state);
 }
 
 
@@ -268,97 +269,14 @@ E_DRIVER_STATE FPUArray::getDriverState()
 }
 
 
-E_DRIVER_STATE FPUArray::getGridState()
-{
-    E_DRIVER_STATE dstate;
-    pthread_mutex_lock(&grid_state_mutex);
-    dstate = FPUGridState.driver_state;
-    pthread_mutex_unlock(&grid_state_mutex);
-
-    return dstate;
-}
-
 E_GridState FPUArray::getStateSummary_unprotected()
 {
-    // get the summary state of the grid.
+    // get the summary state of the grid member variable.
     // (This relies on that all FPU updates
     // do mirror the global counters correctly).
-    E_GridState sum_state = getStateSummary_unprotected();
 
-    
-    // we simply ignored the locked units
-
-    // this computation returns the "minimum operational state"
-    // of all FPUs.
-    // Note that his requires some ordering which is
-    // in part arbitray; the testes are carried out in that order.
-
-    // the high-priority error conditions are checked first
-    if (counts[ABORTED] > 0)
-    {
-        return GS_ABORTED;
-    }
-
-    if (counts[COLLISION_DETECTED] > 0)
-    {
-        return GS_COLLISION;
-    }
-
-    if (counts[LIMIT_STOP] > 0)
-    {
-        return GS_LIMITSTOP;
-    }
-
-    // now we check in order of operational states
-    if ((counts[UNINITIALISED] - counts[LOCKED]) > 0)
-    {
-        return GS_UNINITIALISED:
-    }
-
-    if (counts[COORDINATE_RECOVERY] > 0)
-    {
-        // results in the same: we don't know all
-        // the coordinates in the grid
-        return GS_UNINITIALISED;
-    }
-
-    if (counts[ABOVE_DATUM] > 0)
-    {
-        return GS_ABOVE_DATUM;
-    }
-
-    if (counts[DATUM_SEARCH] > 0)
-    {
-        return GS_DATUM_SEARCH;
-    }
-
-    if (counts[INITIALISED] > 0)
-    {
-        return GS_INITIALISED;
-    }
-
-    if (counts[LOADING] > 0)
-    {
-        return GS_LOADING;
-    }
-
-    if (counts[READY_FORWARD] > 0)
-    {
-        return GS_READY_FORWARD;
-    }
-
-    if (counts[READY_BACKWARD] > 0)
-    {
-        return GS_READY_BACKWARD;
-    }
-
-    if (counts[MOVING] > 0)
-    {
-        return GS_MOVING;
-    }
-
-    return FINISHED;
-    
+    return getGridStateSummary(FPUGrid);
+        
 }
 
 E_GridState FPUArray::getStateSummary()

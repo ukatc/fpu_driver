@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME FPUArray.h
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -89,6 +89,7 @@ typedef struct
     // which is fine. (Wrapping of unsigned integer
     // types does not cause undefined  behavior in C.)
     unsigned long count_timeout;
+
     
     // so far unreported error
     E_DriverState driver_state;
@@ -120,7 +121,7 @@ class FPUArray {
             t_fpu_state fpu_state;
             
             fpu_state.is_initialized    = false;
-            fpu_state.state             = UNINITIALIZED;
+            fpu_state.state             = FPST_UNINITIALIZED;
             fpu_state.pending_command   = NoCommand;
             fpu_state.cmd_timeout       = MAX_TIMEOUT;
             fpu_state.timeout_count     = 0;

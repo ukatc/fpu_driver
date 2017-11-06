@@ -26,6 +26,10 @@ namespace mpifps
 
 class GridDriver : public AsyncDriver
 {
+public:
+
+    // number of retries for each action
+    const int DEFAULT_NUM_RETRIES = 10;
 
     GridDriver()
         {
@@ -63,11 +67,16 @@ private:
     untangleFPU();
 
     clearCollision();
+
     
     // this mutex ensures that no new
     // command is initiated while a running
     // command waits for completion.
     pthread_mutex_t command_creation_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
+    // Buffer for retrieved state of the FPUs.
+    t_grid_state& grid_state;
 
 }
 

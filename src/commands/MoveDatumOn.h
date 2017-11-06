@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME MoveDatumOnCommand.h
 // 
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -23,12 +23,12 @@
 
 namespace mpifps {
 
-    class MoveDatumOffCommand : public I_CAN_Command
+    class MoveDatumOnCommand : public I_CAN_Command
     {
 
       public:
 
-        MoveDatumOffCommand(){};
+        MoveDatumOnCommand(){};
 
         void parametrize(int f_id, int alpha_direction, int beta_direction)
         {

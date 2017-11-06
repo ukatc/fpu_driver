@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME ConfigureMotionCommand.h
 // 
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -23,18 +23,20 @@
 
 namespace mpifps {
 
-    class MoveDatumOnCommand : public I_CAN_Command
+    class ConfigureMotionCommand : public I_CAN_Command
     {
 
       public:
 
-        MoveDatumOnCommand(){};
+        ConfigureMotionCommand(){};
 
-        void parametrize(int f_id, int alpha_direction, int beta_direction)
+        void parametrize(int f_id, int16_t alpha_steps, int16_t beta_steps, bool first_entry, bool last_entry)
         {
             fpu_id = f_id;
-            adir = alpha_direction;
-            bdir = beta_direction;
+            asteps = alpha_steps;
+            bsteps = beta_steps;
+            fentry = first_entry;
+            lentry = last_entry;                       
         };
 
         void SerializeToBuffer(const uint8_t busid,
@@ -107,8 +109,10 @@ namespace mpifps {
 
       private:
         uint16_t fpu_id;
-        int adir;
-        int bdir;
+        int16_t asteps;
+        int16_t bsteps;
+        bool fentry;
+        bool lentry;
         
         
     }

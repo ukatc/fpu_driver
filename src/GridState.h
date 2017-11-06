@@ -58,16 +58,18 @@ enum E_GridState
 
 enum E_WaitTarget
 {
-    TGT_AT_DATUM      = (GS_INITIALISED
-                         | GS_UNKNOWN
-                         | GS_COLLISION
-                         | GS_ABORTED),
-    
+        
     TGT_ABOVE_DATUM      = ( GS_ABOVE_DATUM
                              | GS_UNKNOWN
                              | GS_COLLISION
                              | GS_ABORTED),
     
+    TGT_AT_DATUM      = (GS_INITIALISED,
+                         | GS_LEAVING_DATUM,
+                         | GS_UNKNOWN
+                         | GS_COLLISION
+                         | GS_ABORTED),
+
     TGT_READY_TO_MOVE = (GS_READY_FORWARD
                          | GS_READY_BACKWARD
                          | GS_INITIALISED

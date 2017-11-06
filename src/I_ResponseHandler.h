@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME I_ResponseHandler.h
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -32,7 +32,7 @@
 namespace mpifps
 {
 
-class ResponseHandler
+class I_ResponseHandler
 {
 public:
     ResponseHandler() {};

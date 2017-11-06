@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPU_CAN_driver.h
+// NAME MoveDatumOffCommand.h
 // 
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -23,17 +23,18 @@
 
 namespace mpifps {
 
-    class PingCommand : public I_CAN_Command
+    class MoveDatumOffCommand : public I_CAN_Command
     {
 
       public:
 
-        PingCommand(){};
+        MoveDatumOffCommand(){};
 
-        void parametrize(int f_id, long sequence_number)
+        void parametrize(int f_id, int alpha_direction, int beta_direction)
         {
             fpu_id = f_id;
-            payload = sequence_number;
+            adir = alpha_direction;
+            bdir = beta_direction;
         };
 
         void SerializeToBuffer(const uint8_t busid,
@@ -54,7 +55,10 @@ namespace mpifps {
             // The protocol uses little-endian encoding here
             // (the byte order used in the CANOpen protocol).
             can_buffer.msg.identifier = htole64(can_addr);
+
+            #pragma message "fix command assembly here"
             
+            long payload = 0;
             can_buffer.msg.data[0] = payload & 0xff;
             can_buffer.msg.data[1] = (payload >> 8) & 0xff;
             can_buffer.msg.data[2] = (payload >> 16) & 0xff;
@@ -103,7 +107,8 @@ namespace mpifps {
 
       private:
         uint16_t fpu_id;
-        long payload;
+        int adir;
+        int bdir;
         
         
     }
