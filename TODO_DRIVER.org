@@ -79,6 +79,9 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 *** DONE use counter of still running threads?
 *** DONE use atomic usage count for socketfd for clean termination
 *** DONE issue shutdown() before close()
+** DONE Fix memory leak on exiting tx loop
+** TODO add condition variable to pop cmdqueue
+** TODO add comment to wait on pop
 ** TODO A few Top-level calls (just as example)
 ** TODO Move workstation
 ** TODO Error handling of syscalls

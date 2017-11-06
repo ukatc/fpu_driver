@@ -147,7 +147,7 @@ void GatewayDriver::connect(const int ngateways,
     
 };
 
-void GatewayDriver::disconnect()
+void GatewayDriver::disconnect(bool flush_pending_commands)
 {
     
     E_DRIVER_STATE dstate = fpuArray.getDriverState();
@@ -206,6 +206,7 @@ void GatewayDriver::disconnect()
     // this also signals callers of waitForState()
     // so they don't go into dead-lock.
     fpuArray.setDriverState(UNCONNECTED);
+
 
 };
 
@@ -311,84 +312,95 @@ void* GatewayDriver::threadTxFun(void *arg)
             // FIXME: split overly long method into smaller ones
             
             if (pfd[gateway_id]].revent & POLLOUT)
+        {
+
+            // because we use nonblocking writes, it is not
+            // likely, but entirely possible that some buffered data was
+            // not yet completely send. If so, we try to catch up now.
+            if (sbuffer[gateway_id].numUnsentBytes() > 0)
             {
+                // send remaining bytes of previous message
+                sbuffer[gateway_id].send_pending();
+            }
+            else
+            {
+                // we can send a new message. Safely pop the
+                // pending command coming from the control thread
+                active_can_command[gateway_id] = command_FIFO.dequeueCommand(gateway_id);
 
-                // because we use nonblocking writes, it is not
-                // likely, but entirely possible that some buffered data was
-                // not yet completely send. If so, we try to catch up now.
-                if (sbuffer[gateway_id].numUnsentBytes() > 0)
+                if (active_can_command[gateway_id] != null) 
                 {
-                    // send remaining bytes of previous message
-                    sbuffer[gateway_id].send_pending();
-                }
-                else
-                {
-                    // we can send a new message. Safely pop the
-                    // pending command coming from the control thread
-                    active_can_command[gateway_id] = command_FIFO.dequeueCommand(gateway_id);
 
-                    if (active_can_command[gateway_id] != null) 
-                    {
-
-                        int message_len = 0;
-                        t_CAN_buffer can_buffer;
-                        ssize_t result;
-                        int fpu_id = active_can_command[gateway_id].getFPU_ID();
-                        const uint16_t busid = address_map[fpu_id].bus_id;
-                        const uint8_t canid = address_map[fpu_id].can_id;
+                    int message_len = 0;
+                    t_CAN_buffer can_buffer;
+                    ssize_t result;
+                    int fpu_id = active_can_command[gateway_id].getFPU_ID();
+                    const uint16_t busid = address_map[fpu_id].bus_id;
+                    const uint8_t canid = address_map[fpu_id].can_id;
                                
-                        // serialize data
-                        active_can_command[gateway_id].SerializeToBuffer(busid,
-                                                                         canid,
-                                                                         message_len,
-                                                                         can_buffer);
-                        // byte-swizzle and send buffer
-                        result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_id],
-                                                                     message_len, &(can_buffer.bytes));
+                    // serialize data
+                    active_can_command[gateway_id].SerializeToBuffer(busid,
+                                                                     canid,
+                                                                     message_len,
+                                                                     can_buffer);
+                    // byte-swizzle and send buffer
+                    result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_id],
+                                                                 message_len, &(can_buffer.bytes));
 
 
-                        // FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                        // FIXME!!! the error checking here needs to be
-                        // unified and combined with the check of the
-                        // send_pending result.
-                        // FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    // FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    // FIXME!!! the error checking here needs to be
+                    // unified and combined with the check of the
+                    // send_pending result.
+                    // FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                         
-                        if (result == 0)
-                        {
-                            // this means the socket was closed,
-                            // either by shutting down or by a
-                            // serious connection error.
-                            exitFlag = true;
-                            // signal event listeners
-                            fpuArray.setDriverState(UNCONNECTED); 
-                        }
-
-                        // FIXME: checking errno here is brittle as it could become
-                        // overwritten; rather return it in a reference paramater
-                        if ((result < 0) && (errno  != EWOULDBLOCK ) && (errno  != EAGAIN))
-                        {
-                            // an error occured, we need to check errno
-                            exitFlag = true;
-                            perror("socket error in receive:");
-                        }
-
-                        
-                    }
-                    exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
-                    if (exitFlag)
+                    if (result == 0)
                     {
-                        break; // terminate thread
+                        // this means the socket was closed,
+                        // either by shutting down or by a
+                        // serious connection error.
+                        exitFlag = true;
+                        // signal event listeners
+                        fpuArray.setDriverState(UNCONNECTED); 
                     }
+
+                    // FIXME: checking errno here is brittle as it could become
+                    // overwritten; rather return it in a reference paramater
+                    if ((result < 0) && (errno  != EWOULDBLOCK ) && (errno  != EAGAIN))
+                    {
+                        // an error occured, we need to check errno
+                        exitFlag = true;
+                        perror("socket error in receive:");
+                    }
+
+                        
                 }
-                if ( (sbuffer[gateway_id].numUnsentBytes() > 0)
-                     && ( active_can_command[gateway_id] != null))
+                exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
+                if (exitFlag)
                 {
-                    // set send time in fpuArray memory structure
-                    updatePendingCommand(active_can_command[gateway_id]);
-                    // return CAN command instance to memory pool
-                    command_pool.recycleInstance(active_can_command[gateway_id]);
+                    break; // terminate thread
                 }
             }
+            if ( (sbuffer[gateway_id].numUnsentBytes() > 0)
+                 && ( active_can_command[gateway_id] != null))
+            {
+                // set send time in fpuArray memory structure
+                updatePendingCommand(active_can_command[gateway_id]);
+                // return CAN command instance to memory pool
+                command_pool.recycleInstance(active_can_command[gateway_id]);
+            }
+        }
+    }
+
+    // return pending commands to the *front* of the command queue
+    // so that they are not lost, and memory leaks are avoided
+    for (int i=0; i < num_gateways; i++)
+    {
+        unique_ptr<I_CANCommand> can_cmdf = active_can_command[gateway_id];
+        if (can_command != null)
+        {
+            command_FIFO.requeueCommand(gateway_id, can_cmd);
+        }
     }
 }
 

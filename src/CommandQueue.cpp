@@ -133,6 +133,33 @@ unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
     return rval;
 };
 
+
+// This should be used if a command which has
+// been dequeued cannot be sent, and is added
+// again to the head / front of the queue.
+E_QUEUE_STATE CommandQueue::requeue(int gateway_id,
+                                    unique_ptr<I_CAN_Command> new_command)
+{
+
+    ASSERT(gateway_id < NUM_GATEWAYS);
+    ASSERT(gateway_id >= 0);
+
+    if (new_command == null)
+    {
+        return MISSING_INSTANCE;
+    }
+
+    {
+        pthread_mutex_lock(&queue_mutex);
+    
+        fifos[gateway_id].push_front(new_command);
+    
+        pthread_mutex_unlock(&queue_mutex);
+    }
+
+};
+
+
 // IMPORTANT NOTE: This should only be called from
 // the control thread. Specifically, the memory pool
 // also has a protective lock

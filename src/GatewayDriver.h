@@ -78,6 +78,8 @@ public:
 
     E_DriverErrCode connect(const int ngateways, const t_gateway_address gateway_addresses[]);
 
+    // disconnect socket, and re-add any pending commands to
+    // the command queue.
     E_DriverErrCode disconnect();
 
     E_DriverErrCode initializeGrid();

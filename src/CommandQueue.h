@@ -68,6 +68,14 @@ public:
 
     unique_ptr<I_CAN_Command> dequeue(int gateway_id);
 
+
+    // This method adds an entry to the front of the
+    // queue. This is intended for error recovery,
+    // when a command has been dequeued but cannot
+    // be sent, and we don't want to throw away
+    // the command.
+    E_QUEUE_STATE requeue(int gateway_id, unique_ptr<I_CAN_Command> new_command);
+    
     // this method empties all queues, flushing
     // all messages to the memorypool pool of
     // unused  objects.
