@@ -27,20 +27,20 @@ namespace mpifps
     // Monotonic means that even at leap seconds,
     // it keeps increasing, so it is suitable
     // for measuring time-outs.
-    void timespec get_monotonic_time(timespec& now);
+    timespec get_monotonic_time(timespec& now);
 
     timespec add_time(const timespec& time_a,
                        const timespec& time_b);
 
-    bool time_smaller(timespec& const tm_a, timespec& const tm_b);
+    bool time_smaller(const timespec& tm_a, const timespec& tm_b);
 
-    bool time_equal(timespec& const tm_a, timespec& const tm_b);
+    bool time_equal(const timespec& tm_a, const timespec& tm_b);
 
-    bool time_smaller_equal(timespec& const tm_a, timespec& const tm_b)
+    bool time_smaller_equal(const timespec& tm_a, const timespec& tm_b);
     // computes the time to wait from cur_time to
     // next_timeout, clipping the result to zero
     // if the timeout has already passed.
-    timespec time_to_wait(timespec& const cur_time,
-                           timespec& const next_timeout);
+    timespec time_to_wait(const timespec& cur_time,
+                           const timespec& next_timeout);
 
 }

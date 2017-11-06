@@ -18,11 +18,13 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "time_utils.h"
+
 
 namespace mpifps
 {
 
-void timespec get_monotonic_time(timespec& now)
+timespec get_monotonic_time(timespec& now)
 {
     clock_gettime(CLOCK_MONOTONIC, &now);
 }
@@ -32,24 +34,27 @@ timespec add_time(const timespec& time_a,
                    const timespec& time_b)
 {
     timespec sum = time_a;
+    // FIXME: replace with Linux function!
     sum.tv_sec += time_b.tv_sec;
-    sum.tv_nsec += time_b tv_nsec;
+    sum.tv_nsec += time_b.tv_nsec;
     return sum;
 }
 
 
 // returns true if tv_a represents a smaller time than tv_b
-bool time_smaller(timespec&  onst tm_a, timespec& const tm_b)
+bool time_smaller(const timespec&  tm_a, const timespec& tm_b)
 {
+    // FIXME: replace with Linux function!
     return ((tm_a.tv_sec < tm_b.tv_sec)
             || ( (tm_a.tv_sec == tm_b.tv_sec)
                  && (tm_a.tv_nsec < tm_b.tv_nsec)));
                  
 }
 
-// returns true if tv_a represents a smaller time than tv_b
-bool time_equal(timespec& const tm_a, timespec& const tm_b)
+// returns true if tv_a represents the same time as tv_b
+bool time_equal(const timespec& tm_a, const timespec& tm_b)
 {
+    // FIXME: normalize both arguments!!!
     return ( (tm_a.tv_sec == tm_b.tv_sec)
              && (tm_a.tv_nsec == tm_b.tv_nsec));
                  
@@ -58,8 +63,9 @@ bool time_equal(timespec& const tm_a, timespec& const tm_b)
 
 // returns true if tv_a represents a smaller or equal
 // time than tv_b
-bool time_smaller_equal(timespec& const tm_a, timespec& const tm_b)
+bool time_smaller_equal(const timespec& tm_a, const timespec& tm_b)
 {
+    // FIXME: replace with Linux function!
     return ( (tm_a.tv_sec < tm_b.tv_sec)
              || ((tm_a.tv_sec == tm_b.tv_sec)
                  && (tm_a.tv_nsec <= tm_b.tv_nsec)));
@@ -70,11 +76,12 @@ bool time_smaller_equal(timespec& const tm_a, timespec& const tm_b)
 // computes the time to wait from cur_time to
 // next_timeout, clipping the result to zero
 // if the timeout has already passed.
-timespec time_to_wait(timespec& const cur_time,
-                       timespec& const next_timeout)
+timespec time_to_wait(const timespec& cur_time,
+                      const timespec& next_timeout)
 {
     timespec ttw = next_timeout;
 
+    // FIXME: use Linux functions!
     ttw.tv_sec -= cur_time.tv_sec;
     if (ttw.tv_sec < 0)
         ttw.tv_sec = 0;

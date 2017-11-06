@@ -89,6 +89,7 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 *** DONE check count of pending states
 ** TODO Move workstation
 ** TODO compile
+*** TODO write makefile
 * TODO Improvements
 ** DONE fix name field in header
 ** TODO put commands in namespace
@@ -102,6 +103,7 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
   up to the top level.
 ** TODO Clean-up
 *** TODO collect time utility functions into own file
+*** TODO replace hand-rolled time function with system standard funcs
 *** DONE consider: move locus of time-stamping sent command to after termination of sending
 *** TODO split SBuffer in independent read buffer and write buffer
 *** TODO Split declarations and implementations into source files as usual
