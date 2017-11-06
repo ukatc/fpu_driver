@@ -28,6 +28,18 @@ class AsyncDriver
 {
 public:
 
+    typedef struct
+    {
+        int16 alpha_steps;
+        int16 beta_steps;
+    } t_step_pair;
+    
+    typedef struct t_waveform
+    {
+        int fpu_id;
+        std::vector<t_step_pair> steps;
+    } t_wtable;
+    
     AsyncDriver()
         {
         }
@@ -36,27 +48,27 @@ public:
         {
         }
     
-    E_DriverErrCode initializeGridAsync();
+    E_DriverErrCode initializeGridAsync(t_grid_state& grid_state);
 
-    E_DriverErrCode resetFPUsAsync();
+    E_DriverErrCode resetFPUsAsync(t_grid_state& grid_state);
 
-    E_DriverErrCode findDatumAsync();
+    E_DriverErrCode findDatumAsync(t_grid_state& grid_state);
 
-    E_DriverErrCode configMotionAsync();
+    E_DriverErrCode configMotionAsync(const t_wtable& waveforms);
 
-    E_DriverErrCode executeMotionAsync();
+    E_DriverErrCode executeMotionAsync(t_grid_state& grid_state);
 
-    E_DriverErrCode repeatMotionAsync();
+    E_DriverErrCode repeatMotionAsync(t_grid_state& grid_state);
 
-    E_DriverErrCode reverseMotionAsync();
+    E_DriverErrCode reverseMotionAsync(t_grid_state& grid_state);
 
-    E_DriverErrCode abortMotionAsync();
+    E_DriverErrCode abortMotionAsync(t_grid_state& grid_state);
 
-    E_DriverErrCode assignPositionsAsync();
+    E_DriverErrCode assignPositionsAsync(t_grid_state& grid_state);
 
-    E_DriverErrCode lockFPUAsync();
+    E_DriverErrCode lockFPUAsync(t_grid_state& grid_state);
 
-    E_DriverErrCode unlockFPUAsync();
+    E_DriverErrCode unlockFPUAsync(t_grid_state& grid_state);
 
     void getGridState(t_grid_state& out_state);
 

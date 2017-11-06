@@ -18,29 +18,32 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-enum E_FPU_STATE
+namespace mpifps
 {
-    UNKNOWN             = 0,
-    UNINITIALISED       = 1,
-    LOCKED              = 2,
-    COORDINATE_RECOVERY = 3,
-    DATUM_SEARCH        = 4,
-    ABOVE_DATUM         = 5,
-    INITIALISED         = 6,
-    LOADING             = 7,
-    READY_FORWARD       = 8,
-    READY_BACKWARD      = 9,
-    MOVING              = 10,
-    FINISHED            = 11,
-    ABORTED             = 12,
-    COLLISION_DETECTED  = 13,
-    LIMIT_STOP          = 14,
-    COLLISION_RECOVERY  = 15,
 
-    NUM_FPU_STATES      = 16,
+    enum E_FPU_STATE
+    {
+        FPST_UNKNOWN             = 0,
+        FPST_UNINITIALISED       = 1,
+        FPST_LOCKED              = 2,
+        FPST_COORDINATE_RECOVERY = 3,
+        FPST_DATUM_SEARCH        = 4,
+        FPST_ABOVE_DATUM         = 5,
+        FPST_INITIALISED         = 6,
+        FPST_LOADING             = 7,
+        FPST_READY_FORWARD       = 8,
+        FPST_READY_BACKWARD      = 9,
+        FPST_MOVING              = 10,
+        FPST_FINISHED            = 11,
+        FPST_ABORTED             = 12,
+        FPST_COLLISION_DETECTED  = 13,
+        FPST_LIMIT_STOP          = 14,
+        FPST_COLLISION_RECOVERY  = 15,
 
-} ;
+        NUM_FPU_STATES      = 16,
 
+    } ;
 
+}
 
 

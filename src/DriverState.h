@@ -24,12 +24,12 @@ enum E_DriverState
 {
     // the driver can have the following
     // non-operative states
-    UNINITIALISED = 1,  // not yet initialized, or
+    DS_UNINITIALISED = 1,  // not yet initialized, or
                         // resource allocation failed,
                         // for example because out-of-memory
 
     
-    UNCONNECTED  = 2,   // the driver is not connected,
+    DS_UNCONNECTED  = 2,   // the driver is not connected,
                         // this is the state before connecting
                         // to the gateway or after the TCP
                         // connection was lost. The latter would
@@ -37,7 +37,7 @@ enum E_DriverState
                         // failure, like a broken cable or
                         // a system error with the gateway service.
 
-    CONNECTED  = 3,     // driver is connected to gateways
+    DS_CONNECTED  = 3,     // driver is connected to gateways
                         // and working
     
 
@@ -50,7 +50,7 @@ enum E_DriverState
 enum E_DriverErrCode
 {
     // everything worked
-    OK = 0,
+    DE_OK = 0,
 
     
     // A command was tried to send, or the
@@ -59,7 +59,7 @@ enum E_DriverErrCode
     // That can happen if the system goes
     // out of memory, or if a logical error
     // affects the initialization.
-    DRIVER_NOT_INITIALISED = 1,
+    DE_DRIVER_NOT_INITIALISED = 1,
 
 
     // A command was tried to send to the
@@ -75,19 +75,30 @@ enum E_DriverErrCode
     // time-outs on every single FPU command
     // to the corresponding gateways as they
     // all fail to respond.
-    NO_CONNECTION = 2,
+    DE_NO_CONNECTION = 2,
 
 
     // The user tried to send a high-level
     // command while another high-level
     // command was still not finished.
-    STILL_BUSY = 3,
+    DE_STILL_BUSY = 3,
+
+    // the user tried to start a movement
+    // command while at least one FPU was in collided
+    // or aborted state - the command
+    // was rejected because of that
+
+    DE_UNRESOLVED_COLLISION = 4,
+
+    // an FPU has not been initialised, so
+    // it cannot be moved accurately and safely.
+    DE_NOT_INITIALISED = 5,
     
     // An assumption about the driver state
     // is not met, the driver is switched off
     // and the problem logged.
 
-    ASSERTION_FAILED=4,
+    DE_ASSERTION_FAILED=99,
 
 } ;
 

@@ -322,6 +322,11 @@ E_GridState FPUArray::getStateSummary_unprotected()
         return GS_UNINITIALISED;
     }
 
+    if (counts[ABOVE_DATUM] > 0)
+    {
+        return GS_ABOVE_DATUM;
+    }
+
     if (counts[DATUM_SEARCH] > 0)
     {
         return GS_DATUM_SEARCH;

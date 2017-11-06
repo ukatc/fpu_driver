@@ -84,7 +84,9 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 ** DONE add comment to wait on pop
 ** DONE Error handling of syscalls
 *** DONE check errno as soon as possible, anywhere
-** TODO A few Top-level calls (just as example)
+** A few Top-level calls (just as example)
+*** TODO Top-level calls
+*** TODO check count of pending states
 ** TODO Move workstation
 ** TODO compile
 * TODO Improvements

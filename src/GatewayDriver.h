@@ -99,7 +99,7 @@ public:
     // send a CAN command to the gateway.
     // This method is thread-safe
     E_QUEUE_STATE sendCommand(int gateway_id, unique_ptr<I_CAN_Command> new_command);
-
+    
 
 
 private:
@@ -143,6 +143,8 @@ private:
     TimeOutList timeOutList; // list of pending time-outs 
 
     CommandPool command_pool; // memory pool for unused command objects
+
+    CommandQueue commandQueue();
 
 
 }

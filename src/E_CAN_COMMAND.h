@@ -23,24 +23,24 @@ namespace mpifps {
 
     enum E_CAN_COMMAND
     {
-        BROADCAST         = 0,
-        PING_FPU          = 1,
-        MOVE_DATUM_OFF    = 2,
-        MOVE_DATUM_ON     = 3,
-        CONFIG_MOTION     = 4,
-        EXECUTE_MOTION    = 5,
-        REPEAT_MOTION     = 6,
-        REVERSE_MOTION    = 7,
-        REQUEST_STATUS    = 8,
-        REPORT_POSITIONS  = 9,
-        ASSIGN_POSITION   = 10,
-        ABORT_MOTION      = 11,
-        UNTANGLE_FPU      = 12,
-        CLEAR_COLLISION   = 13,
-        CHECK_INTEGRITY   = 14,
-        RESET_FPU         = 15,
-        LOCK_UNIT         = 16,
-        UNLOCK_UNIT       = 17,
+        CCMD_BROADCAST         = 0,
+        CCMD_PING_FPU          = 1,
+        CCMD_MOVE_DATUM_OFF    = 2,
+        CCMD_MOVE_DATUM_ON     = 3,
+        CCMD_CONFIG_MOTION     = 4,
+        CCMD_EXECUTE_MOTION    = 5,
+        CCMD_REPEAT_MOTION     = 6,
+        CCMD_REVERSE_MOTION    = 7,
+        CCMD_REQUEST_STATUS    = 8,
+        CCMD_REPORT_POSITIONS  = 9,
+        CCMD_ASSIGN_POSITION   = 10,
+        CCMD_ABORT_MOTION      = 11,
+        CCMD_UNTANGLE_FPU      = 12,
+        CCMD_CLEAR_COLLISION   = 13,
+        CCMD_CHECK_INTEGRITY   = 14,
+        CCMD_RESET_FPU         = 15,
+        CCMD_LOCK_UNIT         = 16,
+        CCMD_UNLOCK_UNIT       = 17,
 
         NUM_CAN_COMMANDS  = 18,
     }
@@ -48,8 +48,8 @@ namespace mpifps {
         
     enum E_CAN_RESPONSE
     {
-        BROADCAST         = 0,
-        PING_RESPONSE     = 1,
+        CRSP_BROADCAST         = 0,
+        CRSP_PING_RESPONSE     = 1,
     }
  
 

@@ -573,9 +573,11 @@ unique_ptr<I_CAN_Command> GatewayDriver::provideInstance(E_CAN_COMMAND cmd_type)
 }
 
 
-E_QUEUE_STATE GatewayDriver::sendCommand(int gateway_id, unique_ptr<I_CAN_Command> new_command)
+E_QUEUE_STATE GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_CAN_Command> new_command)
 {
-    command_pool.enqueue(new_command);
+    const int gateway_id = address_map[fpu_id].gateway_id;
+    
+    commandQueue.enqueue(int gateway_id, new_command);
 }
 
 
