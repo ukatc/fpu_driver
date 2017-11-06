@@ -83,14 +83,11 @@ enum E_DriverErrCode
     // command was still not finished.
     STILL_BUSY = 3,
     
-    // It was tried to send more CAN commands
-    // at the same time than possible,
-    // so that the internal command pool
-    // became exhausted.
-    // This should only happen with low-level
-    // engineering commands.
-    COMMAND_POOL_EXHAUSTED = 4,
-    
+    // An assumption about the driver state
+    // is not met, the driver is switched off
+    // and the problem logged.
+
+    ASSERTION_FAILED=4,
 
 } ;
 

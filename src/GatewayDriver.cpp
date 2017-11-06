@@ -239,6 +239,50 @@ void GatewayDriver::updatePendingCommand(I_CAN_Command& can_command)
     }
 }
 
+// This method either fetches and sends a new buffer
+// of CAN command data to a gateway, or completes sending of
+// a pending buffer, returning the status of the connection.
+E_SocketStatus GatewayDriver::send_buffer(gateway_id)
+{
+    E_SocketStatus status = ST_OK;
+
+    // because we use nonblocking writes, it is not
+    // likely, but entirely possible that some buffered data was
+    // not yet completely send. If so, we try to catch up now.
+    if (sbuffer[gateway_id].numUnsentBytes() > 0)
+    {
+        // send remaining bytes of previous message
+        status = sbuffer[gateway_id].send_pending();
+    }
+    else
+    {
+        // we can send a new message. Safely pop the
+        // pending command coming from the control thread
+        active_can_command[gateway_id] = command_FIFO.dequeueCommand(gateway_id);
+
+        if (active_can_command[gateway_id] != null) 
+        {
+
+            int message_len = 0;
+            t_CAN_buffer can_buffer;
+            ssize_t result;
+            int fpu_id = active_can_command[gateway_id].getFPU_ID();
+            const uint16_t busid = address_map[fpu_id].bus_id;
+            const uint8_t canid = address_map[fpu_id].can_id;
+                               
+            // serialize data
+            active_can_command[gateway_id].SerializeToBuffer(busid,
+                                                             canid,
+                                                             message_len,
+                                                             can_buffer);
+            // byte-swizzle and send buffer
+            status  = sbuffer[gateway_id].encode_and_send(SockedID[gateway_id],
+                                                          message_len, &(can_buffer.bytes));                        
+                        
+        }
+    }
+    return status;
+}
 
 void* GatewayDriver::threadTxFun(void *arg)
 {
@@ -302,96 +346,79 @@ void* GatewayDriver::threadTxFun(void *arg)
         
         // this waits for a short time for sending data
         // (we could shorten the timeout if no command was pending)
-        retval =  ppoll(pfd, num_fds, MAX_TX_TIMEOUT, signal_set);
-        // TODO: error checking
-        ASSERT(retval >= 0);
+        bool retry = false;
+        while (retry)
+        {
+            retval =  ppoll(pfd, num_fds, MAX_TX_TIMEOUT, signal_set);
+            if (retval < 0)
+            {
+                int errcode = errno;
+                switch (errcode)
+                {
+                case EINTR: // an interrupt occured
+                    //         this can happen and is fixed by just trying again
+                    retry = true;
+                    break;
+                case EFAULT: // argument not contained in address space, see man page for ppoll()
+                case EINVAL: // nfds value too large
+                case ENOMEM: // out of memory
+                    fpuArray.setDriverState(ASSERTION_FAILED);
+                    exitFlag = true;
+                    break;
+                default:
+                    // unknown return code
+                    ASSERT(false);
+                
+                }
+            }
+        }
 
         // check all file descriptors for readiness
+        E_SocketStatus status = ST_OK;
         for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
         {
             // FIXME: split overly long method into smaller ones
             
-            if (pfd[gateway_id]].revent & POLLOUT)
-        {
-
-            // because we use nonblocking writes, it is not
-            // likely, but entirely possible that some buffered data was
-            // not yet completely send. If so, we try to catch up now.
-            if (sbuffer[gateway_id].numUnsentBytes() > 0)
+            if (pfd[gateway_id].revent & POLLOUT)
             {
-                // send remaining bytes of previous message
-                sbuffer[gateway_id].send_pending();
-            }
-            else
-            {
-                // we can send a new message. Safely pop the
-                // pending command coming from the control thread
-                active_can_command[gateway_id] = command_FIFO.dequeueCommand(gateway_id);
 
-                if (active_can_command[gateway_id] != null) 
+                status = send_buffer(gateway_id);
+                if ( (sbuffer[gateway_id].numUnsentBytes() == 0)
+                     && ( active_can_command[gateway_id] != null))
                 {
-
-                    int message_len = 0;
-                    t_CAN_buffer can_buffer;
-                    ssize_t result;
-                    int fpu_id = active_can_command[gateway_id].getFPU_ID();
-                    const uint16_t busid = address_map[fpu_id].bus_id;
-                    const uint8_t canid = address_map[fpu_id].can_id;
-                               
-                    // serialize data
-                    active_can_command[gateway_id].SerializeToBuffer(busid,
-                                                                     canid,
-                                                                     message_len,
-                                                                     can_buffer);
-                    // byte-swizzle and send buffer
-                    result = sbuffer[gateway_id].encode_and_send(SockedID[gateway_id],
-                                                                 message_len, &(can_buffer.bytes));
-
-
-                    // FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    // FIXME!!! the error checking here needs to be
-                    // unified and combined with the check of the
-                    // send_pending result.
-                    // FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                        
-                    if (result == 0)
-                    {
-                        // this means the socket was closed,
-                        // either by shutting down or by a
-                        // serious connection error.
-                        exitFlag = true;
-                        // signal event listeners
-                        fpuArray.setDriverState(UNCONNECTED); 
-                    }
-
-                    // FIXME: checking errno here is brittle as it could become
-                    // overwritten; rather return it in a reference paramater
-                    if ((result < 0) && (errno  != EWOULDBLOCK ) && (errno  != EAGAIN))
-                    {
-                        // an error occured, we need to check errno
-                        exitFlag = true;
-                        perror("socket error in receive:");
-                    }
-
-                        
+                    // we completed sending a command.
+                    // set send time in fpuArray memory structure
+                    updatePendingCommand(active_can_command[gateway_id]);
+                    // return CAN command instance to memory pool
+                    command_pool.recycleInstance(active_can_command[gateway_id]);
                 }
+                // check whether there was any serious error
+                // such as a broken connection
+                if (status != ST_OK)
+                {
+                    // this means the socket was closed,
+                    // either by shutting down or by a
+                    // serious connection error.
+                    exitFlag = true;
+                    // signal event listeners
+                    fpuArray.setDriverState(UNCONNECTED); 
+                }
+                // poll the exit flag, it might be set by another thread
                 exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
                 if (exitFlag)
                 {
-                    break; // terminate thread
+                    break; // break out of inner loop
                 }
             }
-            if ( (sbuffer[gateway_id].numUnsentBytes() > 0)
-                 && ( active_can_command[gateway_id] != null))
+            if (exitFlag)
             {
-                // set send time in fpuArray memory structure
-                updatePendingCommand(active_can_command[gateway_id]);
-                // return CAN command instance to memory pool
-                command_pool.recycleInstance(active_can_command[gateway_id]);
-            }
+                break; // break main loop and terminate thread
+            }            
         }
-    }
 
+    }
+    // clean-up before terminating the thread
+    
     // return pending commands to the *front* of the command queue
     // so that they are not lost, and memory leaks are avoided
     for (int i=0; i < num_gateways; i++)
@@ -403,9 +430,6 @@ void* GatewayDriver::threadTxFun(void *arg)
         }
     }
 }
-
-
-
 
 
 void* threadRxFun(void *arg)
@@ -444,19 +468,44 @@ void* threadRxFun(void *arg)
 
         timespec max_wait = time_to_wait(cur_time, next_timeout);
 
-        retval =  ppoll(pfd, num_fds, max_wait, signal_set);
-        // TODO: error checking
-        ASSERT(retval >= 0);
+
+        bool retry = false;
+        while (retry)
+        {
+            retval =  ppoll(pfd, num_fds, max_wait, signal_set);
+            if (retval < 0)
+            {
+                int errcode = errno;
+                switch (errcode)
+                {
+                case EINTR: // an interrupt occured.
+                    //         this is fixed by just trying again
+                    retry = true;
+                    break;
+                case EFAULT: // argument not contained in address space, see man page for ppoll()
+                case EINVAL: // nfds value too large
+                case ENOMEM: // out of memory
+                    fpuArray.setDriverState(ASSERTION_FAILED);
+                    exitFlag = true;
+                    break;
+                default:
+                    // unknown return code
+                    ASSERT(false);
+                
+                }
+            }
+        }
+        
 
         if (retval == 0)
         {
             // a time-out was hit - go through the list of FPUs
-            // and mark each operation which has timed out.
+            // and mark each FPU which has timed out.
             get_monotonic_time(cur_time);
             
             fpuArray.processTimeouts(cur_time, timeOutList);
         }
-        else
+        else if (retval > 0)
         {
             for (int gateway_id=0; gateway_id  < num_gateways; bus_id++)
             {
@@ -464,12 +513,12 @@ void* threadRxFun(void *arg)
                 if (pfd[i].revent | POLLIN)
                 {
 
-                    nread = decode_and_process(SocketID[gateway_id], gateway_id, this);
+                    E_SocketStatus status = decode_and_process(SocketID[gateway_id], gateway_id, this);
 
-                    if (nread <= 0)
+                    if (status != ST_OK)
                     {
                         // a error happened when reading the socket,
-                        // or connection was closed
+                        // or the connection was closed
                         exitFlag = true;
                         break;
                     }
@@ -484,7 +533,6 @@ void* threadRxFun(void *arg)
             fpuArray.setDriverState(UNCONNECTED); 
             break; // exit outer loop, and terminate thread
         }
-
     }
 };
 
