@@ -88,7 +88,7 @@ private:
     int ngateways;
     pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
     // condition variables which is signaled on state changes
-    pthread_cond_t cond_queue_append;
+    pthread_cond_t cond_queue_append; // is initialized with monotonic clock option
 
     std::dequeue<unique_ptr<I_CAN_Command>> fifos[MAX_NUM_GATEWAYS];
     

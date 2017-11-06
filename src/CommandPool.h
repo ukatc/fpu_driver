@@ -35,7 +35,9 @@ namespace mpifps
     class CommandPool {
       public:
 
-        CommandPool(int nfpus){ num_fpus = nfpus;};
+        CommandPool(int nfpus){
+            num_fpus = nfpus;
+        };
         
         ~CommandPool(){};
         
@@ -44,10 +46,9 @@ namespace mpifps
         E_DriverErrCode initialize();
         
         // method which provides a new CAN command
-        // instance for the given command type
-        // If the pool for that command type is empty,
-        // the method returns a NULL pointer.
-        // This should not happen in normal operation.
+        // instance for the given command type.
+        // If the pool is temporarily empty, the
+        // method blocks until an instance is available.
         unique_ptr<I_CAN_Command> provideInstance(E_CAN_COMMAND cmd_type);
 
         // method which recycles an instance that
@@ -62,5 +63,6 @@ namespace mpifps
         int num_fpus;
         t_cmdvec pool[NUM_CAN_COMMANDS];
         pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
+        pthread_cond_t cond_pool_add = PTHREAD_COND_INITIALIZER;
     }
 }

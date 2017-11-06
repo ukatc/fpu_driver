@@ -100,20 +100,38 @@ unique_ptr<I_CAN_Command> CommandPool::provideInstance(E_CAN_COMMAND cmd_type)
     unique_ptr<ICAN_Command> ptr = null;
 
     pthread_mutex_lock(&pool_mutex);
-    if (! pool[cmd_type].empty())
+    while (pool[cmd_type].empty())
     {
-        ptr = pool[cmd_type].pop_back():
+        // wait until a command instance is in the pool
+        // waiting should almost never happen because
+        // there is a surplus of instances - if
+        // we ever get a dead-lock here, we have a memory
+        // leak of command instances.
+        pthread_cond_wait(&pool_cond_add, &pool_mutex);
     }
+    
+    ptr = pool[cmd_type].pop_back():
     pthread_mutex_unlock(&pool_mutex);
 
     return ptr;
 }
 
+// Adds a used command to the pool again,
+// and if any thread is waiting, notify it
+// that there are command buffers available
+// again. 
 void CommandPool::recycleInstance(unique_ptr<I_COMMAND>& cmdptr)
 {
     pthread_mutex_lock(&pool_mutex);
+    bool was_empty = pool[cmd_type].empty();
     pool[cmd_type].push_back(cmdptr);
-    cmd_ptr = null; 
+    cmd_ptr = null;
+    // if we just added to an empty pool, notify one waiting thread
+    // that it can make progress.
+    if (was_empty)
+    {
+        pthread_cond_signal(&pool_cond_add);
+    }
     pthread_mutex_unlock(&pool_mutex);
 }
 
