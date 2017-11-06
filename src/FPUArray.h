@@ -57,8 +57,8 @@ typedef struct
     // id of any still running and incomplete command
     E_CAN_COMMAND pending_command;
     // time when any running command is considered timed out
-    // NOTE THIS TIME MUST USE THE MONOTONIC LINUX SYSTEM
-    // CLOCK SO THAT LEAP SECONDS DON'T TRIGGER BUGS
+    // Note: this time needs to use the monotonic linux system
+    // clock so that leap seconds don't trigger bugs.
     timespec cmd_timeout;
     // number of minor time-outs which have
     // been observed for the last command.

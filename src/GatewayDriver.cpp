@@ -557,6 +557,26 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const * const  com
 };
 
 
+void GatewayDriver::getGridState(t_grid_state& out_state)
+{
+    fpuArray.getGridState(out_state);
+}
+
+E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state)
+{
+    return fpuArray.waitForState(target, out_detailed_state);
+}
+
+unique_ptr<I_CAN_Command> GatewayDriver::provideInstance(E_CAN_COMMAND cmd_type)
+{
+    return command_pool.provideInstance(cmd_type);
+}
+
+
+E_QUEUE_STATE GatewayDriver::sendCommand(int gateway_id, unique_ptr<I_CAN_Command> new_command)
+{
+    command_pool.enqueue(new_command);
+}
 
 
 } // end of namespace

@@ -82,42 +82,30 @@ public:
     // the command queue.
     E_DriverErrCode disconnect();
 
-    E_DriverErrCode initializeGrid();
+    // get the current state of the FPU grid, which
+    // is stored in the reference parameter
+    void getGridState(t_grid_state& out_state);
 
-    E_DriverErrCode resetFPUs();
+    // get both the summed up state of the FPU grid,
+    // and a detailed status for each FPU.
+    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);
 
-    E_DriverErrCode findDatum();
+                     
 
-    E_DriverErrCode configMotion();
+    // provide a command instance with buffer space for
+    // sending CAN parameters. This method is thread-safe
+    unique_ptr<I_CAN_Command> provideInstance(E_CAN_COMMAND cmd_type);
 
-    E_DriverErrCode executeMotion();
-
-    E_DriverErrCode repeatMotion();
-
-    E_DriverErrCode reverseMotion();
-
-    E_DriverErrCode abortMotion();
-
-    E_DriverErrCode assignPositions();
-
-    E_DriverErrCode lockFPU();
-
-    E_DriverErrCode unlockFPU();
-
-
-    getCurrentState();
-
-    waitForState();
-
-
-    // method which handles decoded CAN response messages
-    virtual void handleFrame(int const gateway_id, uint8_t const * const  command_buffer, int const clen);
-
-
+    // send a CAN command to the gateway.
+    // This method is thread-safe
+    E_QUEUE_STATE sendCommand(int gateway_id, unique_ptr<I_CAN_Command> new_command);
 
 
 
 private:
+
+    // interface method which handles decoded CAN response messages
+    virtual void handleFrame(int const gateway_id, uint8_t const * const  command_buffer, int const clen);
 
 
     int num_gateways = 0;
@@ -141,18 +129,18 @@ private:
     pthread_mutex_t command_creation_mutex;
 
     // buffer class for encoded reads and writes to sockets
-        SBuffer sbuffer[MAX_NUM_GATEWAYS];
+    SBuffer sbuffer[MAX_NUM_GATEWAYS];
 
     // mapping of FPU IDs to physical addresses.
     // (can be made configurable if required)
     t_bus_address  address_map[MAX_NUM_POSITIONERS];
 
     // reverse map of addresses to FPU id.    
-    t_address_map fpu_id_by_adr;
+    t_address_map fpu_id_by_adr; // address map from fpu id to can bus addresses
         
-    FPUArray fpuArray;
+    FPUArray fpuArray;        // member which stores the state of the grid
     
-    TimeOutList timeOutList;
+    TimeOutList timeOutList; // list of pending time-outs 
 
     CommandPool command_pool; // memory pool for unused command objects
 

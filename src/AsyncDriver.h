@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME GridDriver.h
+// NAME AsyncDriver.h
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
@@ -24,51 +24,48 @@ namespace mpifps
 {
 
 
-class GridDriver : public AsyncDriver
+class AsyncDriver
 {
+public:
 
-    GridDriver()
+    AsyncDriver()
         {
         }
 
-    ~GridDriver()
+    ~AsyncDriver()
         {
         }
     
-    E_DriverErrCode initializeGrid();
+    E_DriverErrCode initializeGridAsync();
 
-    E_DriverErrCode resetFPUs();
+    E_DriverErrCode resetFPUsAsync();
 
-    E_DriverErrCode findDatum();
+    E_DriverErrCode findDatumAsync();
 
-    E_DriverErrCode configMotion();
+    E_DriverErrCode configMotionAsync();
 
-    E_DriverErrCode executeMotion();
+    E_DriverErrCode executeMotionAsync();
 
-    E_DriverErrCode repeatMotion();
+    E_DriverErrCode repeatMotionAsync();
 
-    E_DriverErrCode reverseMotion();
+    E_DriverErrCode reverseMotionAsync();
 
-    E_DriverErrCode abortMotion();
+    E_DriverErrCode abortMotionAsync();
 
-    E_DriverErrCode assignPositions();
+    E_DriverErrCode assignPositionsAsync();
 
-    E_DriverErrCode lockFPU();
+    E_DriverErrCode lockFPUAsync();
 
-    E_DriverErrCode unlockFPU();
+    E_DriverErrCode unlockFPUAsync();
 
+    void getGridState(t_grid_state& out_state);
+
+    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);
+    
     
 private:
 
-    untangleFPU();
-
-    clearCollision();
-    
-    // this mutex ensures that no new
-    // command is initiated while a running
-    // command waits for completion.
-    pthread_mutex_t command_creation_mutex = PTHREAD_MUTEX_INITIALIZER;
-
+    GatewayDriver gateway;
 }
 
 } // end of namespace

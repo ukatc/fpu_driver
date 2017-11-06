@@ -23,17 +23,20 @@
 
 namespace mpifps {
 
-    class PingCommand : public I_CAN_Command
+    class ConfigureMotionCommand : public I_CAN_Command
     {
 
       public:
 
-        PingCommand(){};
+        ConfigureMotionCommand(){};
 
-        void parametrize(int f_id, long sequence_number)
+        void parametrize(int f_id, int16_t alpha_steps, int16_t beta_steps, bool first_entry, bool last_entry)
         {
             fpu_id = f_id;
-            payload = sequence_number;
+            asteps = alpha_steps;
+            bsteps = beta_steps;
+            fentry = first_entry;
+            lentry = last_entry;                       
         };
 
         void SerializeToBuffer(const uint8_t busid,
@@ -54,7 +57,10 @@ namespace mpifps {
             // The protocol uses little-endian encoding here
             // (the byte order used in the CANOpen protocol).
             can_buffer.msg.identifier = htole64(can_addr);
+
+            #pragma message "fix command assembly here"
             
+            long payload = 0;
             can_buffer.msg.data[0] = payload & 0xff;
             can_buffer.msg.data[1] = (payload >> 8) & 0xff;
             can_buffer.msg.data[2] = (payload >> 16) & 0xff;
@@ -103,7 +109,10 @@ namespace mpifps {
 
       private:
         uint16_t fpu_id;
-        long payload;
+        int16_t asteps;
+        int16_t bsteps;
+        bool fentry;
+        bool lentry;
         
         
     }

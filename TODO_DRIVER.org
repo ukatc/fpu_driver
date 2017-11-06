@@ -83,7 +83,7 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 ** DONE add condition variable to pop cmdqueue
 ** DONE add comment to wait on pop
 ** DONE Error handling of syscalls
-*** TODO check errno as soon as possible, anywhere
+*** DONE check errno as soon as possible, anywhere
 ** TODO A few Top-level calls (just as example)
 ** TODO Move workstation
 ** TODO compile

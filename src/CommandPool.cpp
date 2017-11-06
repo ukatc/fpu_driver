@@ -81,6 +81,19 @@ E_DriverErrCode CommandPool::initialize()
                 pool[i].push_back(ptr);
                 break;
 
+            case CONFIG_MOTION        :
+                ptr = new ConfigureMotionCommand();
+                pool[i].push_back(ptr);
+                break;
+            case MOVE_DATUM_OFF        :
+                ptr = new MoveDatumOffCommand();
+                pool[i].push_back(ptr);
+                break;
+            case MOVE_DATUM_ON        :
+                ptr = new MoveDatumOnCommand();
+                pool[i].push_back(ptr);
+                break;
+                
             default:
                 // FIXME: add any missing constructors
                 //ASSERT(0);

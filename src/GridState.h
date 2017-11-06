@@ -35,15 +35,16 @@ enum E_GridState
     GS_UNKNOWN        = (1 << 1), // no information available
     GS_UNINITIALISED  = (1 << 2), // datum positions not known
     GS_DATUM_SEARCH   = (1 << 3), // some FPUs are searching datum
-    GS_INITIALISED    = (1 << 4), // datum is known, no waveforms loaded
-    GS_LOADING        = (1 << 5), // loading waveforms
-    GS_READY_FORWARD  = (1 << 6), // all FPUs are ready to go forward
-    GS_READY_BACKWARD = (1 << 7), // all FPUs are ready to go backward
-    GS_MOVING         = (1 << 8), // all or some FPUs are moving
-    GS_FINISHED       = (1 << 9), // all FPUs at target
-    GS_LIMITSTOP      = (1 << 10), // FPU alpha arm at limit switch
-    GS_COLLISION      = (1 << 11), // a collision was found
-    GS_ABORTED        = (1 << 12), // movement was aborted, error not cleared
+    GS_ABOVE_DATUM    = (1 << 4), // datum is known, no waveforms loaded
+    GS_INITIALISED    = (1 << 5), // datum is known, no waveforms loaded
+    GS_LOADING        = (1 << 6), // loading waveforms
+    GS_READY_FORWARD  = (1 << 7), // all FPUs are ready to go forward
+    GS_READY_BACKWARD = (1 << 8), // all FPUs are ready to go backward
+    GS_MOVING         = (1 << 9), // all or some FPUs are moving
+    GS_FINISHED       = (1 << 10), // all FPUs at target
+    GS_LIMITSTOP      = (1 << 11), // FPU alpha arm at limit switch
+    GS_COLLISION      = (1 << 12), // a collision was found
+    GS_ABORTED        = (1 << 13), // movement was aborted, error not cleared
 
 } ;
 
@@ -61,6 +62,11 @@ enum E_WaitTarget
                          | GS_UNKNOWN
                          | GS_COLLISION
                          | GS_ABORTED),
+    
+    TGT_ABOVE_DATUM      = ( GS_ABOVE_DATUM
+                             | GS_UNKNOWN
+                             | GS_COLLISION
+                             | GS_ABORTED),
     
     TGT_READY_TO_MOVE = (GS_READY_FORWARD
                          | GS_READY_BACKWARD
