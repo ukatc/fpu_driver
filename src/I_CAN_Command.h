@@ -61,6 +61,10 @@ public:
 
     // time-out period for a response to the message
     virtual timespec getTimeOut();
+
+    // if this is set, a response will be expected
+    // from all FPUs which are not locked.
+    virtual bool doBroadcast();
  
 }
 

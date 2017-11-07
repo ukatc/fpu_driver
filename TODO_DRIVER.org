@@ -109,3 +109,8 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 *** TODO Split declarations and implementations into source files as usual
 ** TODO compile -Wall
 ** TODO separate locked operation and reporting/logging of results
+** TODO make API const-correct
+** TODO API methods hould return state reference parameter
+.. in output argument. This requires an additional lock
+when the internal state struct is used.
+
