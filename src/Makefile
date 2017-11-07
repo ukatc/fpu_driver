@@ -1,6 +1,7 @@
 IDIR=.
-CC=g++
-CFLAGS=-I$(IDIR)
+CC="g++"
+
+CXXFLAGS=-I$(IDIR) -std=c++11
 
 ODIR=obj
 LDIR =../lib
@@ -28,10 +29,10 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
 $(ODIR)/%.o: %.cpp $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) $(CFLAGS) -c -o $@ $< 
 
 driver: $(OBJ)
-	gcc -o $@ $^ $(CFLAGS) $(LIBS)
+	$CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 
