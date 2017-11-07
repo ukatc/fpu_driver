@@ -89,7 +89,8 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 *** DONE check count of pending states
 ** TODO Move workstation
 ** TODO compile
-*** TODO write makefile
+*** DONE write makefile
+*** TODO Add semicolons
 ** TODO Add tentative CAN responses
 *** TODO config_motion
 *** TODO ping

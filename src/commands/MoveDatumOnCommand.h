@@ -51,9 +51,9 @@ namespace mpifps {
 
             // we use bit 7 to 10 for the command code,
             // and bit 0 to 6 for the FPU bus id.
-            ASSERT(PING_FPU <= 15);
-            ASSERT(fpu_id < FPUS_PER_BUS);
-            uint16_t can_addr = ( ((PING_FPU & 15) << 7)
+            assert(CCMD_PING_FPU <= 15);
+            assert(fpu_id < FPUS_PER_BUS);
+            uint16_t can_addr = ( ((CCMD_PING_FPU & 15) << 7)
                                   | (fpu_id & 128));
             
             // The protocol uses little-endian encoding here
@@ -83,11 +83,6 @@ namespace mpifps {
             return fpu_id;
         };
 
-        uint8 getMessageLength()
-        {
-            return mlen;
-        }
-
         // boolean value indicating whether
         // the driver should wait for a response
         bool expectsResponse()
@@ -97,7 +92,7 @@ namespace mpifps {
 
         E_CAN_COMMAND getCommandCode()
         {
-            return PING_FPU;
+            return CCMD_PING_FPU;
         };
 
         // time-out period for a response to the message
@@ -115,7 +110,7 @@ namespace mpifps {
         int bdir;
         
         
-    }
+    };
 
 }
 
