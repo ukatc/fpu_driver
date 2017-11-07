@@ -23,15 +23,7 @@ namespace mpifps {
 
 CommandQueue::CommandQueue(int ngw)
 {
-    ngateways = ngw;
-    for (int i= 0 ; i < ngateways; i++)
-    {
-        // FIXME: This can throw an exception on
-        // start-up if the system is out of memory
-        // - is this acceptable?
-        fifo[i].resize(MAX_MESSAGE_CAPACITY);
-    }
-
+    
     ASSERT(condition_init_monotonic(cond_queue_append) == 0);
     
 }
@@ -108,7 +100,13 @@ E_QUEUE_STATE CommandQueue::enqueue(int gateway_id,
 
     {
         pthread_mutex_lock(&queue_mutex);
-    
+
+        // FIXME: This can thow bad_alloc if the
+        // system is very low on memory.
+        // Best fix seems to be to replace std::dequeue
+        // with a fixed-size rungbuffer -
+        // will be done later.
+        #pragma message "TODO: make CommandQueue::emqueue() exception-safe"
         fifos[gateway_id].push_back(new_command);
     
         pthread_mutex_unlock(&queue_mutex);

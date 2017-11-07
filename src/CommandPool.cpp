@@ -73,7 +73,9 @@ E_DriverErrCode CommandPool::initialize()
         }
 
         pthread_mutex_lock(&pool_mutex);
-        pool[i].resize(capacity);
+        // FIXME: This can thow bad_alloc if the
+        // system is very low on memory.
+        pool[i].reserve(capacity);
         unique_ptr<I_CAN_CMD> ptr;
         for (int c = 0; c < capacity; c++)
         {
