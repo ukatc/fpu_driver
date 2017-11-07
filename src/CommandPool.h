@@ -60,8 +60,8 @@ class CommandPool {
         // instance for the given command type.
         // If the pool is temporarily empty, the
         // method blocks until an instance is available.
-    // template <typename T>
-    unique_ptr<I_CAN_Command> provideInstance(E_CAN_COMMAND cmd_type);
+    template <typename T>
+    unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type);
 
         // method which recycles an instance that
         // is no longer needed into the memory pool so that it can
