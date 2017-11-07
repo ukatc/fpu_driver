@@ -19,6 +19,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CommandPool.h"
 
 namespace mpifps
 {
@@ -76,7 +77,7 @@ E_DriverErrCode CommandPool::initialize()
         // FIXME: This can thow bad_alloc if the
         // system is very low on memory.
         pool[i].reserve(capacity);
-        unique_ptr<I_CAN_CMD> ptr;
+        unique_ptr<I_CAN_Command> ptr;
         for (int c = 0; c < capacity; c++)
         {
             switch (i)
@@ -113,16 +114,16 @@ E_DriverErrCode CommandPool::initialize()
     }
 }
 
-tenplkate<typename T>
+//template<typename T>
 unique_ptr<T> CommandPool::provideInstance(E_CAN_COMMAND cmd_type)
 {
-    unique_ptr<ICAN_Command> ptr = null;
+    unique_ptr<I_CAN_Command> ptr = null;
 
     pthread_mutex_lock(&pool_mutex);
     while (pool[cmd_type].empty())
     {
         // wait until a command instance is in the pool
-        // waiting should almost never happen because
+        // Waiting should almost never happen because
         // there is a surplus of instances - if
         // we ever get a dead-lock here, we have a memory
         // leak of command instances.
@@ -132,14 +133,15 @@ unique_ptr<T> CommandPool::provideInstance(E_CAN_COMMAND cmd_type)
     ptr = pool[cmd_type].pop_back();
     pthread_mutex_unlock(&pool_mutex);
 
-    return dynamic_cast<T>(ptr);
+    return ptr;
+    // return dynamic_cast<T>(ptr);
 }
 
 // Adds a used command to the pool again,
 // and if any thread is waiting, notify it
 // that there are command buffers available
 // again. 
-void CommandPool::recycleInstance(unique_ptr<I_COMMAND>& cmdptr)
+void CommandPool::recycleInstance(unique_ptr<I_CAN_Command>& cmdptr)
 {
     pthread_mutex_lock(&pool_mutex);
     bool was_empty = pool[cmd_type].empty();
