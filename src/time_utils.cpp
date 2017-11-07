@@ -33,31 +33,20 @@ timespec get_monotonic_time(timespec& now)
 timespec add_time(const timespec& time_a,
                    const timespec& time_b)
 {
-    timespec sum = time_a;
-    // FIXME: replace with Linux function!
-    sum.tv_sec += time_b.tv_sec;
-    sum.tv_nsec += time_b.tv_nsec;
-    return sum;
+    return timespec_add(time_a, time_b);
 }
 
 
-// returns true if tv_a represents a smaller time than tv_b
+// returns true if tm_a represents a smaller time than tm_b
 bool time_smaller(const timespec&  tm_a, const timespec& tm_b)
 {
-    // FIXME: replace with Linux function!
-    return ((tm_a.tv_sec < tm_b.tv_sec)
-            || ( (tm_a.tv_sec == tm_b.tv_sec)
-                 && (tm_a.tv_nsec < tm_b.tv_nsec)));
-                 
+    return (timespec_compare(tm_a, tm_b) < 0);                 
 }
 
 // returns true if tv_a represents the same time as tv_b
 bool time_equal(const timespec& tm_a, const timespec& tm_b)
 {
-    // FIXME: normalize both arguments!!!
-    return ( (tm_a.tv_sec == tm_b.tv_sec)
-             && (tm_a.tv_nsec == tm_b.tv_nsec));
-                 
+    return (timespec_compare(tm_a, tm_b) == 0);                 
 }
 
 
@@ -65,11 +54,7 @@ bool time_equal(const timespec& tm_a, const timespec& tm_b)
 // time than tv_b
 bool time_smaller_equal(const timespec& tm_a, const timespec& tm_b)
 {
-    // FIXME: replace with Linux function!
-    return ( (tm_a.tv_sec < tm_b.tv_sec)
-             || ((tm_a.tv_sec == tm_b.tv_sec)
-                 && (tm_a.tv_nsec <= tm_b.tv_nsec)));
-                 
+    return (timespec_compare(tm_a, tm_b) <= 0);                 
 }
 
 
@@ -79,18 +64,18 @@ bool time_smaller_equal(const timespec& tm_a, const timespec& tm_b)
 timespec time_to_wait(const timespec& cur_time,
                       const timespec& next_timeout)
 {
-    timespec ttw = next_timeout;
+    timespec zero_wait = {.tv_sec = 0, .tv_nsec = 0};
 
-    // FIXME: use Linux functions!
-    ttw.tv_sec -= cur_time.tv_sec;
-    if (ttw.tv_sec < 0)
-        ttw.tv_sec = 0;
+    // check whether next_timeout is already in the past.
+    if (time_smaller_equal(next_timeout, cur_time)
+    {
+        return zero_wait;
+    }
+    else
+    {
+        return timespec_sub(next_timeout, cur_time);
+    }
 
-    ttw.tv_nsec -= cur_time.tv_nsec;
-    if (ttw.tv_nsec < 0)
-        ttw.tv_nsec = 0;
-
-    
 }
 
 
