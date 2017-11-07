@@ -1,0 +1,40 @@
+IDIR=.
+CC=g++
+CFLAGS=-I$(IDIR)
+
+ODIR=obj
+LDIR =../lib
+
+LIBS=-lm -lpthread
+
+_DEPS = AsyncDriver.h      E_CAN_COMMAND.h  I_CAN_Command.h      \
+	CANError.h         FPUArray.h       I_ResponseHandler.h  \
+	CommandPool.h      FPUState.h       SBuffer.h            \
+	CommandQueue.h     GatewayDriver.h  sync_utils.h         \
+	DriverConstants.h  GridDriver.h     TimeOutList.h        \
+	DriverState.h      GridState.h      time_utils.h         \
+	commands/ConfigureMotionCommand.h  commands/MoveDatumOn.h \
+	commands/MoveDatumOffCommand.h     commands/PingCommand.h
+
+
+
+DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+
+_OBJ =  GridDriver.o    AsyncDriver.o FPUArray.o GridState.o \
+	CommandPool.o   GatewayDriver.o  TimeOutList.o \
+	CommandQueue.o  time_utils.o  sync_utils.o
+
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+
+$(ODIR)/%.o: %.cpp $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+driver: $(OBJ)
+	gcc -o $@ $^ $(CFLAGS) $(LIBS)
+
+.PHONY: clean
+
+clean:
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
+

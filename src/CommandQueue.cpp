@@ -21,7 +21,7 @@
 #include "CommandQueue,h"
 namespace mpifps {
 
-CommandQueue::CommandQueue(int ngw)
+CommandQueue::CommandQueue()
 {
     
     ASSERT(condition_init_monotonic(cond_queue_append) == 0);

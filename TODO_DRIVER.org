@@ -90,6 +90,11 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 ** TODO Move workstation
 ** TODO compile
 *** TODO write makefile
+** TODO Add tentative CAN responses
+*** TODO config_motion
+*** TODO ping
+*** TODO searchDatum
+*** TODO leaveDatum
 * TODO Improvements
 ** DONE fix name field in header
 ** TODO put commands in namespace

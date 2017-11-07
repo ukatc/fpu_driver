@@ -18,6 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "sync_utils.h"
 
 namespace mpifps
 {
@@ -42,7 +43,7 @@ namespace mpifps
         {
             goto exit;
         }
-        err = pthread_cond_init(&cond_queue_append, &cond_attr);
+        err = pthread_cond_init(&cond, &cond_attr);
         if (err != 0)
         {
             goto exit;

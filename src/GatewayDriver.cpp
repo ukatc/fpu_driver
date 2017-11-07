@@ -61,6 +61,13 @@ GatewayDriver::~GatewayDriver()
 
 };
 
+
+E_DriverErrCode GatewayDriver::initialize()
+{
+    return command_pool.initialize();
+}
+
+
 int make_socket(const char *ip, uint16_t port)
 {
     int sck;

@@ -46,7 +46,7 @@ public:
     
     typedef int t_command_mask;
 
-    CommandQueue(int ngateways);
+    CommandQueue();
 
     ~CommandQueue();
     

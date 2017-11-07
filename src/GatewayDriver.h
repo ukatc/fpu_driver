@@ -76,6 +76,8 @@ public:
     GatewayDriver(int num_fpus);
     ~GatewayDriver();
 
+    E_DriverErrCode initialize();
+
     E_DriverErrCode connect(const int ngateways, const t_gateway_address gateway_addresses[]);
 
     // disconnect socket, and re-add any pending commands to

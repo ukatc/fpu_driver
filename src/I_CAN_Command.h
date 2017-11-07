@@ -41,7 +41,8 @@ class I_CAN_Command
 {
 public:
 
-    virtual I_Can_Command(){};
+    I_Can_Command(){};
+    virtual ~I_Can_Command(){};
 
     // method which serializes parameters into
     // CAN message

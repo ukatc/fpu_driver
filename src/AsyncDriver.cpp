@@ -29,6 +29,22 @@
 namespace mpifps
 {
 
+E_DriverErrCode AsyncDriver::initializeDriver()
+{
+    return gateway.initialize();
+}
+
+
+E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_address gateway_addresses[])
+{
+    gateway.connect(ngateways, gateway_addresses);
+}
+
+E_DriverErrCode AsyncDriver::disconnect()
+{
+    gateway.disconnect();
+}
+
 
     
 E_DriverErrCode AsyncDriver::initializeGridAsync(t_grid_state& grid_state,

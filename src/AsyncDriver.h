@@ -49,6 +49,21 @@ public:
     ~AsyncDriver()
         {
         }
+
+    // Initialize internal data structures, allocate memory etc.
+    // (this can fail if the system is too low on memory).
+    E_DriverErrCode initializeDriver();
+
+
+    // connect to gateways
+    E_DriverErrCode connect(const int ngateways, const t_gateway_address gateway_addresses[]);
+
+    // disconnect sockets, and re-add any pending commands to
+    // the command queue. (This does not delete the
+    // available status information about the FPUs,
+    // but disables status updates).
+    E_DriverErrCode disconnect();
+
     
     E_DriverErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState state_summary);
 
