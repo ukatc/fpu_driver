@@ -19,11 +19,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "commands/ConfigureMotionCommand.h"
-#include "commands/MoveDatumOnCommand.h"
-#include "commands/MoveDatumOffCommand.h"
-#include "commands/PingCommand.h"
-
 
 namespace mpifps
 {
@@ -115,8 +110,9 @@ E_DriverErrCode CommandPool::initialize()
         
     }
 }
-        
-unique_ptr<I_CAN_Command> CommandPool::provideInstance(E_CAN_COMMAND cmd_type)
+
+tenplkate<typename T>
+unique_ptr<T> CommandPool::provideInstance(E_CAN_COMMAND cmd_type)
 {
     unique_ptr<ICAN_Command> ptr = null;
 
@@ -131,10 +127,10 @@ unique_ptr<I_CAN_Command> CommandPool::provideInstance(E_CAN_COMMAND cmd_type)
         pthread_cond_wait(&pool_cond_add, &pool_mutex);
     }
     
-    ptr = pool[cmd_type].pop_back():
+    ptr = pool[cmd_type].pop_back();
     pthread_mutex_unlock(&pool_mutex);
 
-    return ptr;
+    return dynamic_cast<T>(ptr);
 }
 
 // Adds a used command to the pool again,

@@ -26,7 +26,6 @@
 #include "commands/MoveDatumOffCommand.h"
 #include "commands/PingCommand.h"
 
-
 namespace mpifps
 {
 
@@ -80,7 +79,7 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
                                  || fpu_state.beta_steps < 0);
             if (move_alpha_up || move_beta_up)
             {
-                can_command1 = gateway.provideInstance(CCMD_MOVE_DATUM_OFF);
+                can_command1 = gateway.provideInstance<MoveDatumOff>(CCMD_MOVE_DATUM_OFF);
                 can_command1.parametrize(i,
                                         move_alpha_up ? 1 : 0,
                                         move_beta_up ? 1 : 0);
@@ -153,7 +152,7 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
             
             if (move_alpha_up || move_beta_up)
             {
-                can_command2 = gateway.provideInstance(CCMD_MOVE_DATUM_ON);
+                can_command2 = gateway.provideInstance<MoveDatumOn>(CCMD_MOVE_DATUM_ON);
                 can_command2.parametrize(i,
                                         move_alpha_down ? -1 : 0,
                                         move_beta_down ? -1 : 0);
@@ -226,7 +225,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             if (fpu_state.state != FPST_LOCKED)
             {
                 // get a command buffer
-                can_command = gateway.provideInstance(CCMD_CONFIG_MOTION);
+                can_command = gateway.provideInstance<ConfigureMotion>(CCMD_CONFIG_MOTION);
 
                 int fpu_id = waveforms[i].fpu_id;
                 t_step_pair step = waveforms[i][s];
