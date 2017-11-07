@@ -91,9 +91,12 @@ GridDriver::E_DriverErrCode configMotion(const t_wtable& waveforms)
         // on top of the FPUs. Probably has to be made
         // more robust for such cases.
         int num_fpus = cur_wtable.size();
-        for (int i = 0; i < num_fpus; i++)
+        // In this place, a down-counting loop is used
+        // so that erase() will not change the
+        // index of the next processed item.
+        for (int i = (num_fpus -1); i >= 0 ; i--)
         {
-            inr fpu_id = cur_wtable[i].fpu_id;
+            int fpu_id = cur_wtable[i].fpu_id;
             
             if (grid_state.FPUstate[fpu_id].state == FPST_READY_FORWARD)
             {
