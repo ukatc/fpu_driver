@@ -19,6 +19,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef TIMEOUT_LIST_H
+#define TIMEOUT_LIST_H
+
 #include <time.h>
 #include <stdio.h>
 #include <string.h>		/// strerror
@@ -95,3 +98,5 @@ namespace mpifps
     }
 
 }
+
+#endif

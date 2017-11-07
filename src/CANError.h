@@ -17,6 +17,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef CAN_ERROR_H
+#define CAN_ERROR_H
 
 enum E_CANError
 {
@@ -26,7 +28,10 @@ enum E_CANError
     LOST_CONNECTION           = 4,
     SOCKET_CLOSED             = 5,
     
-} ;
+};
+
+#endif
+
 
 
 

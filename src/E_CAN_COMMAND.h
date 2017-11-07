@@ -18,6 +18,9 @@
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
+#ifndef E_CAN_COMMAND_H
+
+#define E_CAN_COMMAND_H
 
 namespace mpifps {
 
@@ -43,14 +46,16 @@ namespace mpifps {
         CCMD_UNLOCK_UNIT       = 17,
 
         NUM_CAN_COMMANDS  = 18,
-    }
+    };
 
         
     enum E_CAN_RESPONSE
     {
         CRSP_BROADCAST         = 0,
         CRSP_PING_RESPONSE     = 1,
-    }
+    };
  
 
 } // end of namespace
+
+#endif

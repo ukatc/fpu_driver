@@ -17,7 +17,11 @@
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////
+
+#ifndef MOVE_DATUM_ON_COMMAND_H
+#define MOVE_DATUM_ON_COMMAND_H
 
 #include "I_CAN_Command.h"
 
@@ -114,3 +118,5 @@ namespace mpifps {
     }
 
 }
+
+#endif

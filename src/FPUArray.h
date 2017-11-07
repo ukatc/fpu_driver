@@ -19,6 +19,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef FPU_ARRAY_H
+#define FPU_ARRAY_H
+
 #include <time.h>
 #include <stdio.h>
 #include <string.h>		/// strerror
@@ -238,3 +241,5 @@ class FPUArray {
 }
 
 }
+
+#endif

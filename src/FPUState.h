@@ -17,6 +17,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef FPU_STATE_H
+#define FPU_STATE_H
 
 namespace mpifps
 {
@@ -48,3 +50,4 @@ namespace mpifps
 }
 
 
+#endif

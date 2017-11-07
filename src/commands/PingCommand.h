@@ -19,6 +19,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef PING_COMMAND_H
+#define PING_COMMAND_H
+
 #include "I_CAN_Command.h"
 
 namespace mpifps {
@@ -109,3 +112,5 @@ namespace mpifps {
     }
 
 }
+
+#endif

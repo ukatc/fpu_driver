@@ -19,6 +19,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef S_BUFFER_H
+#define S_BUFFER_H
 
 #include <stdio.h>
 #include <string.h>		/// strerror
@@ -369,3 +371,4 @@ private:
 }
 
 }
+#endif

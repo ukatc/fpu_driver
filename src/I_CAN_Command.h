@@ -19,7 +19,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef I_CAN_COMMAND_H
+#define I_CAN_COMMAND_H
+
 #include <endian.h>
+#include "E_CAN_COMMAND.h"
 
 namespace mpifps
 {
@@ -41,8 +45,8 @@ class I_CAN_Command
 {
 public:
 
-    I_Can_Command(){};
-    virtual ~I_Can_Command(){};
+    I_CAN_Command(){};
+    virtual ~I_CAN_Command(){};
 
     // method which serializes parameters into
     // CAN message
@@ -67,6 +71,8 @@ public:
     // from all FPUs which are not locked.
     virtual bool doBroadcast();
  
-}
+};
 
 } // end of namespace
+
+#endif

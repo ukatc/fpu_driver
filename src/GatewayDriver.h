@@ -19,6 +19,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef GATEWAY_DRIVER_H
+#define GATEWAY_DRIVER_H
 
 #include <stdio.h>
 #include <string.h>		/// strerror
@@ -152,3 +154,5 @@ private:
 }
 
 } // end of namespace
+
+#endif

@@ -17,6 +17,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef DRIVER_STATE_H
+#define DRIVER_STATE_H
+
 namespace mpifps
 {
 
@@ -105,3 +108,4 @@ enum E_DriverErrCode
 
 
 }
+#endif

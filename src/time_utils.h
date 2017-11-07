@@ -18,6 +18,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef TIME_UTILS_H
+#define TIME_UTILS_H
 #include <time.h> 
 
 namespace mpifps
@@ -44,3 +46,5 @@ namespace mpifps
                            const timespec& next_timeout);
 
 }
+
+#endif

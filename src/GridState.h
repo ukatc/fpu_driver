@@ -17,6 +17,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef GRID_STATE_H
+#define GRID_STATE_H
+
 namespace mpifps
 {
 
@@ -91,3 +94,4 @@ enum E_WaitTarget
 
 
 }
+#endif

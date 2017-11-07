@@ -18,6 +18,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef  COMMAND_QUEUE_H
+#define COMMAND_QUEUE_H
+
 #include "DriverConstants.h"
 #include "I_CAN_Command.h"
 #include "CommandPool.h"
@@ -94,3 +97,4 @@ private:
     
 }
 }
+#endif

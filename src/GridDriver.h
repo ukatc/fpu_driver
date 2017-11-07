@@ -18,6 +18,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef GRID_DRIVER_H
+#define GRID_DRIVER_H
+
 #include "GatewayDriver.hpp"
 
 namespace mpifps
@@ -81,3 +84,4 @@ private:
 }
 
 } // end of namespace
+#endif

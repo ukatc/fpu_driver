@@ -19,6 +19,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef I_RESPONSE_HANDLER_H
+#define I_RESPONSE_HANDLER_H
 
 #include <stdio.h>
 #include <string.h>		/// strerror
@@ -45,3 +47,5 @@ public:
     virtual void handleFrame(int const gateway_id, int const bus_id, uint8_t const * const  command_buffer, int const clen) = 0;
 }
 }
+
+#endif

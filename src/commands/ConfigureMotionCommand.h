@@ -19,6 +19,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef CONFIGURE_MOTION_COMMAND_H
+#define CONFIGURE_MOTION_COMMAND_H
+
 #include "I_CAN_Command.h"
 
 namespace mpifps {
@@ -118,3 +121,5 @@ namespace mpifps {
     }
 
 }
+
+#endif

@@ -18,6 +18,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef ASYNC_DRIVER_H
+#define ASYNC_DRIVER_H
+
 #include "GatewayDriver.hpp"
 
 namespace mpifps
@@ -98,3 +101,5 @@ private:
 }
 
 } // end of namespace
+
+#endif

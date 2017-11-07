@@ -18,6 +18,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef SYNC_UTILS_H
+#define SYNC_UTILS_H
+
 #include <time.h> 
 #include <pthread.h>
 
@@ -35,3 +38,5 @@ namespace mpifps
 
 
 }
+
+#endif

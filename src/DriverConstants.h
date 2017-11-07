@@ -19,6 +19,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef DRIVER_CONSTANTS_H
+#define DRIVER_CONSTANTS_H
+
 namespace mpifps
 {
 
@@ -40,3 +43,5 @@ namespace mpifps
     const int MAX_SUB_COMMANDS = 300;
 
 }
+
+#endif
