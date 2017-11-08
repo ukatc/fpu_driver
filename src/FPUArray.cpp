@@ -31,7 +31,7 @@
 #include "FPUArray.h" // defines thread-safe structure of FPU state info
 
 #include "GridState.h"
-
+#include <cassert>
 
 namespace mpifps
 {
@@ -280,8 +280,8 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
         FPUGridState.count_pending--;
 
         t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
-        fpu.last_command = fpu_pending_command;
-        fpu.pending_command = NoCommand;
+        fpu.last_command = fpu.pending_command;
+        fpu.pending_command = CCMD_NO_COMMAND;
         fpu.timeout_count++;
         
         
@@ -304,7 +304,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
 // callers of waitForState() when any relevant
 // change of the system happens, such as a lost
 // socket connection.
-void FPUArray::setDriverState(E_DRIVER_STATE const dstate)
+void FPUArray::setDriverState(E_DriverState const dstate)
 {
     pthread_mutex_lock(&grid_state_mutex);
     FPUGridState.driver_state = dstate;
@@ -314,12 +314,12 @@ void FPUArray::setDriverState(E_DRIVER_STATE const dstate)
 }
 
 
-E_DRIVER_STATE FPUArray::getDriverState()
+E_DriverState FPUArray::getDriverState()
 {
-    E_DRIVER_STATE retval;
+    E_DriverState retval;
     
     pthread_mutex_lock(&grid_state_mutex);
-    retsval = FPUGridState.driver_state;
+    retval = FPUGridState.driver_state;
     pthread_mutex_unlock(&grid_state_mutex);
 }
 
@@ -330,7 +330,7 @@ E_GridState FPUArray::getStateSummary_unprotected()
     // (This relies on that all FPU updates
     // do mirror the global counters correctly).
 
-    return getGridStateSummary(FPUGrid);
+    return getGridStateSummary(FPUGridState);
         
 }
 
@@ -348,9 +348,11 @@ E_GridState FPUArray::getStateSummary()
 }
 
 void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
-                                int gateway_id, uint8_t busid,
-                                uint16_t can_identifier,
-                                const t_response_buf& data, int blen,
+                                const int gateway_id,
+                                const uint8_t bus_id,
+                                const uint16_t can_identifier,
+                                const t_response_buf& data,
+                                const int blen,
                                 TimeOutList& tout_list)
 {
 
@@ -370,12 +372,12 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // code in bits 7 to 10, and the FPU id in bits
         //
 
-        uint cmd_id = (can_identifier >> 7);
+        uint8_t cmd_id = (can_identifier >> 7);
         int fpu_id = fpu_id_by_adr[gateway_id][bus_id][can_identifier & 128];
 
     
         // clear time-out flag for this FPU
-        tout_list.clearTimeOut(fpuid);
+        tout_list.clearTimeOut(fpu_id);
         FPUGridState.count_pending--;
 
         // FIXME: we need to adjust the time-out count
@@ -387,7 +389,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // TODO: signal cond_state_change if a command was
         // completed (e.g. all FPUs have finished moving)
 
-        handleFPUResponse(FPUGridState.FPU_state[fpu_id], data);    
+        handleFPUResponse(FPUGridState.FPU_state[fpu_id], data, blen);    
     
         // if no more commands are pending or tracing is active,
         // signal a state change to waitForState() callers.
@@ -405,19 +407,21 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 }
 
 
-void FPUArray::handleFPUResponse(t_fpu_state& fpu, uint8_t& data[8],
-                                 int blen)
+void FPUArray::handleFPUResponse(t_fpu_state& fpu,
+                                 const t_response_buf& data,
+                                 const int blen)
 {
     fpu.last_command = fpu.pending_command;
+    uint8_t cmd_id = data[0];
     switch (cmd_id)
     {
-    case PING_RESPONSE :
+    case CRSP_PING_RESPONSE :
         // that's just placeholder code
         fpu.ping_ok = true;
         break;
         // TODO: INSERT CORRESPONDING STATE CHANGES HERE
     }
-    fpu.pending_command = NoCommand;
+    fpu.pending_command = CCMD_NO_COMMAND;
 
 }
 

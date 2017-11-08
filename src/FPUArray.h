@@ -145,6 +145,9 @@ class FPUArray {
 
     E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);
 
+private:
+
+    
     // sets pending command for one FPU.
     
     void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val);
@@ -169,11 +172,17 @@ class FPUArray {
     // CAN IDs to fpu_ids. Timeouts are cleared.  Any relevant status
     // change of the grid will be signalled via the condition
     // variable.
-    void dispatchResponse(t_address_map& fpu_id_by_adr,
-                          int gateway_id, uint8_t busid, uint16_t canid,
-                          const t_response_buf& data, int blen, TimeOutList& timeOutList);
+    void dispatchResponse(const t_address_map& fpu_id_by_adr,
+                          const int gateway_id,
+                          const uint8_t busid,
+                          const uint16_t canid,
+                          const t_response_buf& data,
+                          const int blen,
+                          TimeOutList& timeOutList);
+
+    void handleFPUResponse(t_fpu_state& fpu, const t_response_buf& data,
+                           const int blen);
     
-  private:
 
    // returns summary state of FPU grid, without
    // lock protection.
