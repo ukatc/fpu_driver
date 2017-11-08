@@ -26,11 +26,7 @@
 #include <stdio.h>
 #include <string.h>		/// strerror
 #include <pthread.h>
-//#include "stdlib.h"		/// system("/bin/stty raw");
-//#include "stdbool.h"	/// bool
 #include <unistd.h>
-//#include <stdint.h>
-#include <std>
 #include "TimeOutList.h"
 #include "T_GridState.h"
 

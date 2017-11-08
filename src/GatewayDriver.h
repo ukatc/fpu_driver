@@ -29,7 +29,6 @@
 //#include "stdbool.h"	/// bool
 #include <unistd.h>
 //#include <stdint.h>
-#include <std>
 
 #include "SBuffer.h"          // coding and decoding message frames
 #include "ResponseHandler.h"  // interface for processing CAN responses

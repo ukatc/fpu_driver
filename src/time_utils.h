@@ -25,6 +25,41 @@
 namespace mpifps
 {
 
+    // the following three  definitions are from Linux-4.3.6
+    // kernel sources - they are not included in time.h.
+
+    const time_t TIME_T_MAX	= (time_t)((1UL << ((sizeof(time_t) << 3) - 1)) - 1);
+
+
+    static inline int timespec_equal(const struct timespec *a,
+                                 const struct timespec *b)
+    {
+	return (a->tv_sec == b->tv_sec) && (a->tv_nsec == b->tv_nsec);
+    }
+
+
+   /*
+    * lhs < rhs:  return <0
+    * lhs == rhs: return 0
+    * lhs > rhs:  return >0
+    */
+    static inline int timespec_compare(const struct timespec *lhs,
+                                       const struct timespec *rhs)
+    {
+	if (lhs->tv_sec < rhs->tv_sec)
+            return -1;
+	if (lhs->tv_sec > rhs->tv_sec)
+            return 1;
+	return lhs->tv_nsec - rhs->tv_nsec;
+    }
+        
+    static inline void set_normalized_timespec(struct timespec &new_val,
+        const time_t tv_sec, const long tv_nsec)
+    {
+    new_val.tv_sec = tv_sec + tv_nsec / 1000000000;
+    new_val.tv_nsec = tv_nsec % 1000000000;
+}
+
     // get current monotonic system time.
     // Monotonic means that even at leap seconds,
     // it keeps increasing, so it is suitable
@@ -43,8 +78,10 @@ namespace mpifps
     // next_timeout, clipping the result to zero
     // if the timeout has already passed.
     timespec time_to_wait(const timespec& cur_time,
-                           const timespec& next_timeout);
+        const timespec& next_timeout);
 
+        
+    
 }
 
 #endif
