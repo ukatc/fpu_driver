@@ -42,7 +42,13 @@ namespace mpifps
     // high-level command
 const int MAX_SUB_COMMANDS = 300;
 
+// bytes of CAN payload
 const int MAX_CAN_PAYLOAD_BYTES = 8;
+
+// length of message to gateway,
+// including CAN identifier and
+// bus identifier.
+const int MAX_CAN_MESSAGE_BYTES = 11;
 
 }
 

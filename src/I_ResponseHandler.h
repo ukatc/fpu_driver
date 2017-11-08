@@ -30,20 +30,21 @@
 #include <unistd.h>
 #include <stdint.h>
 
+#include "DriverConstants.h"
 namespace mpifps
 {
 
 class I_ResponseHandler
 {
 public:
-    ResponseHandler() {};
+    I_ResponseHandler() {};
 
-    virtual ~ResponseHandler() {};
+    virtual ~I_ResponseHandler() {};
 
     // method to handle any incoming CAN response message.
     // the implementation will set the appropiate status information
     // for the corresponsing FPUs
-    virtual void handleFrame(int const gateway_id, int const bus_id, uint8_t const * const  command_buffer, int const clen) = 0;
+    virtual void handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_CAN_MESSAGE_BYTES], int const clen) = 0;
 };
     
 }

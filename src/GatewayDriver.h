@@ -31,7 +31,7 @@
 //#include <stdint.h>
 
 #include "SBuffer.h"          // coding and decoding message frames
-#include "ResponseHandler.h"  // interface for processing CAN responses
+#include "I_ResponseHandler.h"  // interface for processing CAN responses
 
 #include "FPUArray.h" // defines thread-safe structure of FPU state info
     
