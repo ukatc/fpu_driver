@@ -81,7 +81,7 @@ private:
     // Buffer for retrieved state of the FPUs.
     t_grid_state& grid_state;
 
-}
+};
 
 } // end of namespace
 #endif

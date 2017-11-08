@@ -32,6 +32,7 @@
 //#include <stdint.h>
 #include <std>
 #include "TimeOutList.h"
+#include "T_GridState.h"
 
 namespace mpifps
 {
@@ -173,16 +174,14 @@ class FPUArray {
 
     std::atomic<int> num_trace_clients;
     
-    // flags which describe the state of the whole grid
+    // structures which describe the current state of the whole grid
     t_grid_state FPUGridState;
-
     // this mutex protects the FPU state array structure
     pthread_mutex_t grid_state_mutex = PTHREAD_MUTEX_INITIALIZER;
     // condition variables which is signaled on state changes
     pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER;
 
-}
-
+};
 }
 
 #endif

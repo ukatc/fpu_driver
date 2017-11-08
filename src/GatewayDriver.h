@@ -151,7 +151,7 @@ private:
     CommandQueue commandQueue();
 
 
-}
+};
 
 } // end of namespace
 

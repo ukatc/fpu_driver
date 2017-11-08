@@ -24,7 +24,6 @@
 #include <string.h>		/// strerror
 #include <pthread.h>
 #include <unistd.h>
-#include <std>
 #include "time_utils.h"
 
 
@@ -88,7 +87,11 @@ E_GridState FPUarray::waitForState(E_WaitTarget target, t_grid_state& out_detail
         }
         else
         {
-            // we copy the internal state
+            // We copy the internal state.  This is a comperatively
+            // expensive operation which as of today (2017) has a
+            // latency of about 25 microseconds. The reason we
+            // make a copy here is that it can't change later, therefore
+            // reading the copy does not need any locking.
             out_detailed_state = FPUGridState;
             got_value = true;
         }

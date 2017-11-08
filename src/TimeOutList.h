@@ -95,7 +95,7 @@ namespace mpifps
         int cached_minimum_multiplicity;
         int minimum_index_lbound;
 
-    }
+    };
 
 }
 

@@ -19,8 +19,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "AsyncDriver.h"
-
 #include "GatewayDriver.h"
+
+// we need to include the individual CAN commands
+// as they are parametrized here.
 #include "commands/ConfigureMotionCommand.h"
 #include "commands/MoveDatumOnCommand.h"
 #include "commands/MoveDatumOffCommand.h"

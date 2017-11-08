@@ -23,6 +23,9 @@
 #include <signal.h>
 #include "time_utils.h"
 
+#include "GatewayDriver.h"
+
+
 namespace mpifps
 {
 

@@ -368,7 +368,7 @@ private:
 
     uint8_t wbuf[BUFSIZE];
 
-}
+};
 
 }
 #endif

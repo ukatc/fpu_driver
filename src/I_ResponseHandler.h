@@ -45,7 +45,8 @@ public:
     // the implementation will set the appropiate status information
     // for the corresponsing FPUs
     virtual void handleFrame(int const gateway_id, int const bus_id, uint8_t const * const  command_buffer, int const clen) = 0;
-}
+};
+    
 }
 
 #endif

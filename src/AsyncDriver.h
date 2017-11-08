@@ -98,7 +98,7 @@ public:
 private:
 
     GatewayDriver gateway;
-}
+};
 
 } // end of namespace
 

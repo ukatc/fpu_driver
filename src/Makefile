@@ -13,9 +13,10 @@ _DEPS = AsyncDriver.h      E_CAN_COMMAND.h  I_CAN_Command.h      \
 	CommandPool.h      FPUState.h       SBuffer.h            \
 	CommandQueue.h     GatewayDriver.h  sync_utils.h         \
 	DriverConstants.h  GridDriver.h     TimeOutList.h        \
-	DriverState.h      GridState.h      time_utils.h         \
+	DriverState.h      time_utils.h         \
 	commands/ConfigureMotionCommand.h  commands/MoveDatumOn.h \
-	commands/MoveDatumOffCommand.h     commands/PingCommand.h
+	commands/MoveDatumOffCommand.h     commands/PingCommand.h \
+	GridState.h T_GridState.h E_GridState.h
 
 
 

@@ -18,7 +18,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CommandQueue,h"
+#include "CommandQueue.h"
+
+
 namespace mpifps {
 
 CommandQueue::CommandQueue()

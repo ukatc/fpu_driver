@@ -95,6 +95,7 @@ private:
 
     std::dequeue<unique_ptr<I_CAN_Command>> fifos[MAX_NUM_GATEWAYS];
     
-}
+};
+
 }
 #endif
