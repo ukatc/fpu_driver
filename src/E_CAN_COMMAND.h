@@ -26,7 +26,7 @@ namespace mpifps {
 
     enum E_CAN_COMMAND
     {
-        CCMD_BROADCAST         = 0,
+        CCMD_NO_COMMAND        = 0,
         CCMD_PING_FPU          = 1,
         CCMD_MOVE_DATUM_OFF    = 2,
         CCMD_MOVE_DATUM_ON     = 3,

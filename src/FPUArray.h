@@ -27,15 +27,15 @@
 #include <string.h>		/// strerror
 #include <pthread.h>
 #include <unistd.h>
+#include <atomic>
+
+#include "DriverConstants.h"
 #include "TimeOutList.h"
 #include "T_GridState.h"
+#include "E_GridState.h"
 
 namespace mpifps
 {
-
-// translation table to convert FPU ids in CAN addresses.
-typedef uint16 t_adress_map[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
-
 
 
 class FPUArray {
@@ -46,6 +46,21 @@ class FPUArray {
     // a response
     const timespec MAX_TIMEOUT = {.tv_sec = 10,  .tv_nsec = 0};
 
+    typedef struct
+    {
+        uint8_t gateway_id;
+        uint8_t bus_id;
+        uint8_t can_id;
+    } t_bus_address;
+
+    typedef t_bus_address  t_bus_address_map[MAX_NUM_POSITIONERS];
+
+    // translation table to convert FPU ids in CAN addresses.
+    typedef uint16_t t_address_map[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
+    
+
+    typedef  uint8_t t_response_buf[MAX_CAN_PAYLOAD_BYTES];
+    
     FPUArray(int nfpus)
     {
 
@@ -53,10 +68,13 @@ class FPUArray {
         // really need dynamic initialization.
         
         FPUGridState.count_timeout = 0;
+        FPUGridState.count_pending     = 0;
         
         memset(FPUGridState.Counts,
-               sizeof(FPUGridState.StateCounts), 0);
-        FPUGridState.StateCounts[UNKNOWN] = nfpus;
+               sizeof(FPUGridState.Counts), 0);
+
+        // for the beginning, we don't know the FPU states
+        FPUGridState.Counts[FPST_UNKNOWN] = nfpus;
         
         for (int i=0; i < MAX_NUM_POSITIONERS; i++)
         {
@@ -64,16 +82,16 @@ class FPUArray {
             t_fpu_state fpu_state;
             
             fpu_state.is_initialized    = false;
-            fpu_state.state             = FPST_UNINITIALIZED;
-            fpu_state.pending_command   = NoCommand;
+            fpu_state.state             = FPST_UNINITIALISED;
+            fpu_state.pending_command   = CCMD_NO_COMMAND;
             fpu_state.cmd_timeout       = MAX_TIMEOUT;
             fpu_state.timeout_count     = 0;
-            fpu_state.completed_command = NoCommand;
+            fpu_state.completed_command = CCMD_NO_COMMAND;
             // the values below are not valid, they need proper
             // initialization from a physical fpu response.
             fpu_state.alpha_steps       = 0;
             fpu_state.beta_steps        = 0;
-            fpu_state.on_alpha_data     = false;
+            fpu_state.on_alpha_datum    = false;
             fpu_state.on_beta_datum     = false;
             fpu_state.alpha_collision   = false;
             fpu_state.at_alpha_limit    = false;
@@ -101,7 +119,7 @@ class FPUArray {
     // this method retrieves the current grid state for all FPUs
     // (including collision states etc). It does not wait for
     // completion of commands, and can be called concurrently..
-    void  getGridState(t_grid_state& out_state);
+    E_GridState getGridState(t_grid_state& out_state);
 
     // returns summary state of FPU grid
     E_GridState getStateSummary();
@@ -109,10 +127,10 @@ class FPUArray {
 
     // sets and messages state changes in driver,
     // for example loss of a connection.
-    void  setDriverState(E_DRIVER_STATE const dstate);
+    void  setDriverState(E_DriverState const dstate);
 
     // gets state of the driver
-    E_DRIVER_STATE getDriverState();
+    E_DriverState getDriverState();
     
     // This method waits for a certain state (actually,
     // a bitmask of states)
@@ -131,11 +149,15 @@ class FPUArray {
     
     void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val);
 
-    // sets last command for a FPU
+    // sets last command for a FPU.
 
     void setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd);
 
 
+    // confirm response for one FPU, canceling the 'pending command'
+    // attributes. TODO: This should be done in the response
+    // handler.
+    void confirmResponse(int fpu_id);
     
     // updates state for all FPUs which did
     // not respond in time, popping their time-out entries
@@ -147,9 +169,9 @@ class FPUArray {
     // CAN IDs to fpu_ids. Timeouts are cleared.  Any relevant status
     // change of the grid will be signalled via the condition
     // variable.
-    void dispatchResponse(const t_address_map& fpu_id_by_adr,
+    void dispatchResponse(t_address_map& fpu_id_by_adr,
                           int gateway_id, uint8_t busid, uint16_t canid,
-                          uint8_t& data[8], int blen, TimeOutList& timeOutList)
+                          const t_response_buf& data, int blen, TimeOutList& timeOutList);
     
   private:
 

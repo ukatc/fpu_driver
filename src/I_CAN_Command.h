@@ -23,12 +23,14 @@
 #define I_CAN_COMMAND_H
 
 #include <endian.h>
+#include <stdint.h>
 #include "E_CAN_COMMAND.h"
 
 namespace mpifps
 {
 
 const int MAX_CAN_MESSAGE_LENGTH_BYTES = 16;
+
 
 typedef union __attribute__((packed))
 {

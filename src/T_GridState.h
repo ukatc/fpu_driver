@@ -54,7 +54,7 @@ namespace mpifps
         timespec cmd_timeout;
         // number of minor time-outs which have
         // been observed for the last command.
-        int8 timeout_count;
+        int8_t timeout_count;
 
         // id of last command that was issued but not completed.
         E_CAN_COMMAND last_command;
@@ -70,7 +70,7 @@ namespace mpifps
     {
         // individual states of each FPU. The index
         // is always the logical ID of each FPU.
-        t_FPU_state FPU_state[MAX_NUM_POSITIONERS];
+        t_fpu_state FPU_state[MAX_NUM_POSITIONERS];
 
         // count of each FPU state
         t_counts Counts;
@@ -82,9 +82,14 @@ namespace mpifps
         // types does not cause undefined  behavior in C.)
         unsigned long count_timeout;
 
+        // number of commands awaiting a response.
+        unsigned int count_pending;
+
     
         // so far unreported error
         E_DriverState driver_state;
     } t_grid_state;
 
 }
+
+#endif

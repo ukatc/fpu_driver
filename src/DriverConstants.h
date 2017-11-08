@@ -40,7 +40,9 @@ namespace mpifps
 
     // maximum number of elementary commands resulting from one
     // high-level command
-    const int MAX_SUB_COMMANDS = 300;
+const int MAX_SUB_COMMANDS = 300;
+
+const int MAX_CAN_PAYLOAD_BYTES = 8;
 
 }
 

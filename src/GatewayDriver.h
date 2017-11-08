@@ -39,12 +39,6 @@ namespace mpifps
 {
 
 
-typedef struct
-{
-    uint8 gateway_id;
-    uint8 bus_id;
-    uint8 can_id;
-} t_bus_address;
 
 typedef struct
 {
@@ -136,7 +130,7 @@ private:
 
     // mapping of FPU IDs to physical addresses.
     // (can be made configurable if required)
-    t_bus_address  address_map[MAX_NUM_POSITIONERS];
+    t_address_map  address_map;
 
     // reverse map of addresses to FPU id.    
     t_address_map fpu_id_by_adr; // address map from fpu id to can bus addresses
