@@ -90,7 +90,7 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 ** TODO Move workstation
 ** TODO compile
 *** DONE write makefile
-*** TODO Add semicolons
+*** DONE Add semicolons
 ** TODO Add tentative CAN responses
 *** TODO config_motion
 *** TODO ping
