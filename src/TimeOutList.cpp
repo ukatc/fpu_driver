@@ -56,16 +56,15 @@ TimeOutList::TimeOutList()
         TimeOutsByID[i] = MAX_TIMESPEC;
     }
     // initialize the cache
-    cached_timeout_multiplicity = MAX_NUM_POSITIONERS;
-    cached_timeout = MAX_TIMESPEC;
+    cached_minimum_multiplicity = MAX_NUM_POSITIONERS;
+    cached_minimum = MAX_TIMESPEC;
     minimum_index_lbound = 0;
 
-};
+}
 
-~TimeOutList::TimeOutList(){};
 
 // insert new value into list
-TimeOutList::insertTimeOut(int const id, timespec new_val)
+void TimeOutList::insertTimeOut(int const id, timespec new_val)
 {
 
     // we make use of the circumstance that
@@ -80,14 +79,14 @@ TimeOutList::insertTimeOut(int const id, timespec new_val)
     // as an edge case, the new value can be MAX_TIMEOUT,
     // which means in practice we clear the entry.
 
-    if (! time_equal(new_val, MAX_TIMEOUT))
+    if (! time_equal(new_val, MAX_TIMESPEC))
     {
         const long quant_nsec = 5000000; // 5 milliseconds
-        long nano_secs =  (((new_val.nsec + quant_nsec)
+        long nano_secs =  (((new_val.tv_nsec + quant_nsec)
                             / quant_nsec)
                            * quant_nsec);
         // normalize value
-        set_normalized_timespec(&new_val, new_val.sec, nano_secs);
+        set_normalized_timespec(new_val, new_val.tv_sec, nano_secs);
     }
         
         
@@ -98,8 +97,8 @@ TimeOutList::insertTimeOut(int const id, timespec new_val)
     // update invariants
 
     // true if the old value equalled the cached minimum
-    bool const was_equal_minimum = time_equal(cached_minimum,
-                                              fpu_state.cmd_timeout);
+    bool const was_equal_minimum = time_equal(new_val,
+                                              cached_minimum);
 
     // true if new value is now equal to minimum
     bool const is_equal_minimum = time_equal(new_val,
@@ -162,12 +161,12 @@ TimeOutList::insertTimeOut(int const id, timespec new_val)
     pthread_mutex_unlock(&list_mutex);
 
 
-};
+}
 
 // clear value from list
-TimeOutList::clearTimeOut(int fpu_id)
+void TimeOutList::clearTimeOut(int fpu_id)
 {
-    insertTimeOut(fpu_id, MAX_TIMEOUT);
+    insertTimeOut(fpu_id, MAX_TIMESPEC);
 }
 
 // get current minimum key (timeout value)
@@ -180,7 +179,7 @@ TimeOutList::clearTimeOut(int fpu_id)
 // internal.
 const timespec TimeOutList::minKey()
 {
-    timespec min_val = MAX_TIMEOUT;
+    timespec min_val = MAX_TIMESPEC;
     
 
     // first we try to use the cache
@@ -188,7 +187,7 @@ const timespec TimeOutList::minKey()
     if (cached_minimum_multiplicity > 0)
     {
         // cached value is still valid
-        if (time_smaller(cached_minimum, max_time))
+        if (time_smaller(cached_minimum, min_val))
         {
             min_val = cached_minimum;
         }
@@ -206,7 +205,7 @@ const timespec TimeOutList::minKey()
             // priority queue, however this does not happens
             // very often, and makes good use of the CPU cache.
             
-            time_spec const next_timeout = TimeOutsByID[i];
+            timespec const next_timeout = TimeOutsByID[i];
             if (time_smaller(next_timeout, min_val))
             {
                 min_val = next_timeout;
@@ -230,7 +229,7 @@ const timespec TimeOutList::minKey()
 
 
 // get and remove item with minimum value
-t_toentry TimeOutList::pop()
+TimeOutList::t_toentry TimeOutList::pop()
 {
     t_toentry result;
 
@@ -248,14 +247,15 @@ t_toentry TimeOutList::pop()
     {
         // guess the list was empty....
         result.id = 0;
-        result.val = MINVAL;
+        result.val = minval;
     }
     else
     {    
 
         // we need to search for the index of a minimum element
         // but we can use minimum_index_lbound as lower bound
-        for (int i = minimum_index_lbound; i < MAX_NUM_POSITIONERS; i++)
+        int i = 0;
+        for (i = minimum_index_lbound; i < MAX_NUM_POSITIONERS; i++)
         {
             if (time_equal(TimeOutsByID[i],
                            minval))
@@ -279,7 +279,7 @@ t_toentry TimeOutList::pop()
 // time for each FPU in the FPU grid which
 // has any pending command. If no time-out
 // is found, it returns the passed default value.
-timespec TimeOutList::getNextTimeOut(timespec const max_time)
+const timespec TimeOutList::getNextTimeOut(timespec const max_time)
 {
 
     timespec min_val;
@@ -294,7 +294,7 @@ timespec TimeOutList::getNextTimeOut(timespec const max_time)
     }
 
     return min_val;
-};
+}
 
 
 

@@ -23,11 +23,13 @@
 #define TIMEOUT_LIST_H
 
 #include <time.h>
+#include "time_utils.h"
 #include <stdio.h>
 #include <string.h>		/// strerror
 #include <pthread.h>
 #include <unistd.h>
 #include "DriverConstants.h"
+
 
 
 
@@ -54,11 +56,11 @@ namespace mpifps
 
         // insert new value into list
         // This is a O(1) operation
-        insertTimeOut(int const id, timespec const val);
+        void insertTimeOut(int const id, timespec const val);
 
         // clear value from list
         // This is a O(1) operation
-        clearTimeOut(id);
+        void clearTimeOut(int const id);
         
 
         // get time and  id of next time-out event
@@ -78,8 +80,8 @@ namespace mpifps
 
       private:
 
-        const timespec MAX_TIMESPEC = {tv_sec = TIME_T_MAX,
-                                       tv_nsec = 999999999};
+        const timespec MAX_TIMESPEC = {.tv_sec = TIME_T_MAX,
+                                       .tv_nsec = 999999999};
 
         // get current minimum key (timeout value)
         // This method is not thread-safe!
