@@ -88,8 +88,8 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
         // normalize value
         set_normalized_timespec(new_val, new_val.tv_sec, nano_secs);
     }
-        
-        
+
+
     pthread_mutex_lock(&list_mutex);
 
     TimeOutsByID[id] = new_val;
@@ -98,16 +98,16 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
 
     // true if the old value equalled the cached minimum
     bool const was_equal_minimum = time_equal(new_val,
-                                              cached_minimum);
+                                   cached_minimum);
 
     // true if new value is now equal to minimum
     bool const is_equal_minimum = time_equal(new_val,
-                                             cached_minimum);
+                                  cached_minimum);
 
     // true if new value is now smaller than minimum
     bool const is_smaller_minimum = time_smaller(new_val,
-                                                 cached_minimum);
-    
+                                    cached_minimum);
+
 
     // the following adjustments keep the invariant
     // that cached_minimum keeps the minimum value,
@@ -153,11 +153,11 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
         {
             // we lose information about the minimum
             // place
-            minimum_index_lbound = 0;            
+            minimum_index_lbound = 0;
         }
     }
-    
-           
+
+
     pthread_mutex_unlock(&list_mutex);
 
 
@@ -180,7 +180,7 @@ void TimeOutList::clearTimeOut(int fpu_id)
 const timespec TimeOutList::minKey()
 {
     timespec min_val = MAX_TIMESPEC;
-    
+
 
     // first we try to use the cache
 
@@ -204,7 +204,7 @@ const timespec TimeOutList::minKey()
             // than some combination of lists and a
             // priority queue, however this does not happens
             // very often, and makes good use of the CPU cache.
-            
+
             timespec const next_timeout = TimeOutsByID[i];
             if (time_smaller(next_timeout, min_val))
             {
@@ -221,7 +221,7 @@ const timespec TimeOutList::minKey()
                 // multiplicity count
                 cached_minimum_multiplicity += 1;
             }
-            
+
         }
     }
 
@@ -250,7 +250,7 @@ TimeOutList::t_toentry TimeOutList::pop()
         result.val = minval;
     }
     else
-    {    
+    {
 
         // we need to search for the index of a minimum element
         // but we can use minimum_index_lbound as lower bound
@@ -287,7 +287,7 @@ const timespec TimeOutList::getNextTimeOut(timespec const max_time)
     pthread_mutex_lock(&list_mutex);
     min_val = minKey();
     pthread_mutex_unlock(&list_mutex);
-    
+
     if (time_smaller(max_time, min_val))
     {
         min_val = max_time;

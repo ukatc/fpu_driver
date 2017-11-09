@@ -25,21 +25,21 @@
 namespace mpifps
 {
 
-    // number of can buses on one gateway
-    const int BUSES_PER_GATEWAY =  5;
-    // number of FPUs on one CAN bus
-    const int FPUS_PER_BUS = 67;
-    // number of gateways for the positioner grid
-    const int MAX_NUM_GATEWAYS = 3;
-    
-    // maximum number of fibre positioner units
-    const int MAX_NUM_POSITIONERS = (MAX_NUM_GATEWAYS
-                                     * BUSES_PER_GATEWAY
-                                     * FPUS_PER_BUS);
+// number of can buses on one gateway
+const int BUSES_PER_GATEWAY =  5;
+// number of FPUs on one CAN bus
+const int FPUS_PER_BUS = 67;
+// number of gateways for the positioner grid
+const int MAX_NUM_GATEWAYS = 3;
+
+// maximum number of fibre positioner units
+const int MAX_NUM_POSITIONERS = (MAX_NUM_GATEWAYS
+                                 * BUSES_PER_GATEWAY
+                                 * FPUS_PER_BUS);
 
 
-    // maximum number of elementary commands resulting from one
-    // high-level command
+// maximum number of elementary commands resulting from one
+// high-level command
 const int MAX_SUB_COMMANDS = 300;
 
 // bytes of CAN payload

@@ -21,20 +21,20 @@
 #ifndef SYNC_UTILS_H
 #define SYNC_UTILS_H
 
-#include <time.h> 
+#include <time.h>
 #include <pthread.h>
 
 namespace mpifps
 {
 
-    // initializes a pthreads condition variable
-    // so that it uses the Linux monotonic clock.
-    // returns a non-zero value if the initialization
-    // failed because passing an invalid argument.
-    //
-    // (The return value should likely be checked
-    // by an assert.)
-    int condition_init_monotonic(pthread_cond_t& cond);
+// initializes a pthreads condition variable
+// so that it uses the Linux monotonic clock.
+// returns a non-zero value if the initialization
+// failed because passing an invalid argument.
+//
+// (The return value should likely be checked
+// by an assert.)
+int condition_init_monotonic(pthread_cond_t& cond);
 
 
 }

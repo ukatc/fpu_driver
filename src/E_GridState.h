@@ -13,7 +13,7 @@
 // NAME GridState.h
 //
 // This header defines a global state description for the FPU grid.
-// 
+//
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -29,7 +29,7 @@ enum E_GridState
     // are sum descriptors for the state of the FPU grid.
     // They are intended as human-friendly summary information,
     // and probably not suitable to control the driver.
-    //    
+    //
     // The global state is computed in a "least common denominator"
     // manner (e.g. if 950 FPUs are "READY", 45 are "LOADING", 9 are
     // "LOCKED", and 1 "INITIALISED", the state would be
@@ -62,12 +62,12 @@ enum E_GridState
 
 enum E_WaitTarget
 {
-        
+
     TGT_ABOVE_DATUM      = ( GS_ABOVE_DATUM
                              | GS_UNKNOWN
                              | GS_COLLISION
                              | GS_ABORTED),
-    
+
     TGT_AT_DATUM      = (GS_INITIALISED
                          | GS_LEAVING_DATUM
                          | GS_UNKNOWN
@@ -81,10 +81,10 @@ enum E_WaitTarget
                          | GS_UNINITIALISED
                          | GS_COLLISION
                          | GS_ABORTED),
-    
+
     TGT_MOVEMENT_FINISHED = (GS_FINISHED
-                            | GS_COLLISION
-                            | GS_ABORTED),
+                             | GS_COLLISION
+                             | GS_ABORTED),
 
     // Note: Using this target requires much more
     // frequent signalling, this possibly

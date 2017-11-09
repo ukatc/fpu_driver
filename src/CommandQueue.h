@@ -2,7 +2,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // ESO - VLT Project
 //
-// Copyright 2017 E.S.O, 
+// Copyright 2017 E.S.O,
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
@@ -12,7 +12,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME CommandQueue.h
-// 
+//
 // This class implements a thread-safe array of FIFOs for commands to the CAN
 // layer which can be queried and waited for efficiently
 //
@@ -36,7 +36,8 @@ using std::unique_ptr;
 namespace mpifps
 {
 
-class CommandQueue {
+class CommandQueue
+{
 
 public:
     enum E_QueueState
@@ -48,13 +49,13 @@ public:
 
     const int MAX_MESSAGE_CAPACITY = MAX_NUM_POSITIONERS * MAX_SUB_COMMANDS;
 
-    
+
     typedef int t_command_mask;
 
     CommandQueue();
 
     ~CommandQueue();
-    
+
     // returns a bitmask indicating which gateway
     // has pending commands
     t_command_mask checkForCommand();
@@ -80,7 +81,7 @@ public:
     // be sent, and we don't want to throw away
     // the command.
     E_QueueState requeue(int gateway_id, unique_ptr<I_CAN_Command> new_command);
-    
+
     // this method empties all queues, flushing
     // all messages to the memorypool pool of
     // unused  objects.
@@ -96,7 +97,7 @@ private:
     pthread_cond_t cond_queue_append; // is initialized with monotonic clock option
 
     std::deque<unique_ptr<I_CAN_Command>> fifos[MAX_NUM_GATEWAYS];
-    
+
 };
 
 }

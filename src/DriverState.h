@@ -28,25 +28,25 @@ enum E_DriverState
     // the driver can have the following
     // non-operative states
     DS_UNINITIALISED = 1,  // not yet initialized, or
-                        // resource allocation failed,
-                        // for example because out-of-memory
+    // resource allocation failed,
+    // for example because out-of-memory
 
-    
+
     DS_UNCONNECTED  = 2,   // the driver is not connected,
-                        // this is the state before connecting
-                        // to the gateway or after the TCP
-                        // connection was lost. The latter would
-                        // happen if there is a serious extended
-                        // failure, like a broken cable or
-                        // a system error with the gateway service.
+    // this is the state before connecting
+    // to the gateway or after the TCP
+    // connection was lost. The latter would
+    // happen if there is a serious extended
+    // failure, like a broken cable or
+    // a system error with the gateway service.
 
     DS_CONNECTED  = 3,     // driver is connected to gateways
-                        // and working
-    
-    DS_ASSERTION_FAILED  = 4, // a fatal error occured,
-                               // such as out-of-memory during ppoll()
+    // and working
 
-    
+    DS_ASSERTION_FAILED  = 4, // a fatal error occured,
+    // such as out-of-memory during ppoll()
+
+
 } ;
 
 
@@ -58,7 +58,7 @@ enum E_DriverErrCode
     // everything worked
     DE_OK = 0,
 
-    
+
     // A command was tried to send, or the
     // driver was instructed to connect, but
     // the driver was not initialized properly.
@@ -99,7 +99,7 @@ enum E_DriverErrCode
     // an FPU has not been initialised, so
     // it cannot be moved accurately and safely.
     DE_NOT_INITIALISED = 5,
-    
+
     // An assumption about the driver state
     // is not met, the driver is switched off
     // and the problem logged.

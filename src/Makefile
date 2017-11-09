@@ -3,7 +3,8 @@ CC="g++"
 
 CXXFLAGS=-I$(IDIR) -std=c++11
 
-ODIR=obj
+ODIR = obj
+
 LDIR =../lib
 
 LIBS=-lm -lpthread
@@ -30,10 +31,11 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
 $(ODIR)/%.o: %.cpp $(DEPS)
-	$(CC) $(CFLAGS) -c -o $@ $< 
+	echo $(CC) $(CFLAGS) -c -o $(ODIR)/$@ $< 
+	$(CC) $(CFLAGS) -c -o $(ODIR)/$@ $< 
 
 driver: $(OBJ)
-	$CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 

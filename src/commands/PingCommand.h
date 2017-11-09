@@ -23,7 +23,7 @@
 #define PING_COMMAND_H
 
 #include <cassert>
-#include "I_CAN_Command.h"
+#include "../I_CAN_Command.h"
 
 namespace mpifps {
 
@@ -46,7 +46,7 @@ namespace mpifps {
                                t_CAN_buffer& can_buffer)
         {
             
-            can_buffer.msg.busid = busid;
+            can_buffer.message.busid = busid;
 
             // we use bit 7 to 10 for the command code,
             // and bit 0 to 6 for the FPU bus id.
@@ -57,16 +57,16 @@ namespace mpifps {
             
             // The protocol uses little-endian encoding here
             // (the byte order used in the CANOpen protocol).
-            can_buffer.msg.identifier = htole64(can_addr);
+            can_buffer.message.identifier = htole64(can_addr);
             
-            can_buffer.msg.data[0] = payload & 0xff;
-            can_buffer.msg.data[1] = (payload >> 8) & 0xff;
-            can_buffer.msg.data[2] = (payload >> 16) & 0xff;
-            can_buffer.msg.data[3] = (payload >> 24) & 0xff;
-            can_buffer.msg.data[4] = (payload >> 32) & 0xff;
-            can_buffer.msg.data[5] = (payload >> 40) & 0xff;
-            can_buffer.msg.data[6] = (payload >> 48) & 0xff;
-            can_buffer.msg.data[7] = (payload >> 56) & 0xff;
+            can_buffer.message.data[0] = payload & 0xff;
+            can_buffer.message.data[1] = (payload >> 8) & 0xff;
+            can_buffer.message.data[2] = (payload >> 16) & 0xff;
+            can_buffer.message.data[3] = (payload >> 24) & 0xff;
+            can_buffer.message.data[4] = (payload >> 32) & 0xff;
+            can_buffer.message.data[5] = (payload >> 40) & 0xff;
+            can_buffer.message.data[6] = (payload >> 48) & 0xff;
+            can_buffer.message.data[7] = (payload >> 56) & 0xff;
 
             buf_len = 8;
             

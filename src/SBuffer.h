@@ -51,10 +51,10 @@ public:
     {
         // everything worked
         ST_OK = 0,
-        
+
         // the connection was lost
         ST_NO_CONNECTION = 1,
-    
+
         // An assumption about the connection state
         // is not met (probably logical error)
 

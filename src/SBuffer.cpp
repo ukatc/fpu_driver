@@ -140,7 +140,7 @@ SBuffer::SBuffer()
     // set unsent length of write buffer to zero
     unsent_len = 0;
     out_offset = 0;
-    
+
     // zero out buffers - this is defensive
     memset(rbuf, 0, sizeof(rbuf));
     memset(wbuf, 0, sizeof(wbuf));
@@ -148,8 +148,8 @@ SBuffer::SBuffer()
 
 
 SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
-                                        int const input_len,
-                                        uint8_t src[MAX_CAN_MESSAGE_BYTES])
+        int const input_len,
+        uint8_t src[MAX_CAN_MESSAGE_BYTES])
 {
     int out_len = 0;
     ssize_t retval = 0;
@@ -226,12 +226,13 @@ SBuffer::E_SocketStatus SBuffer::send_pending(int sockfd)
                 // this should never happen.
                 // FIXME: add extended logging later
                 return ST_ASSERTION_FAILED;
-                    
-                        
+
+
             }
         }
-    } while (do_retry);
-            
+    }
+    while (do_retry);
+
     if (retval > 0)
     {
         // in this case, retval is the number of sent bytes.
@@ -269,7 +270,7 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
             case ECONNRESET:
             case ENOBUFS :
                 // reading data would block, and the MSG_DONTWAIT
-                // flag was set.  
+                // flag was set.
                 return ST_OK;
                 break;
 
@@ -293,11 +294,12 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
                 // this should never happen.
                 // FIXME: add extended logging later
                 return ST_ASSERTION_FAILED;
-                    
-                        
+
+
             }
         }
-    }while (do_retry);
+    }
+    while (do_retry);
 
     for (int i=0; i < rsize; i++)
     {
@@ -314,7 +316,7 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
 }
 
 
-    
+
 
 
 }

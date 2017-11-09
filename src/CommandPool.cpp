@@ -44,10 +44,10 @@ E_DriverErrCode CommandPool::initialize()
         const int cap_broadcast = 10;
         const int cap_individual = num_fpus * 10;
         const int cap_wform = num_fpus * MAX_SUB_COMMANDS;
-        
+
         switch (i)
         {
-            // broadcast commands
+        // broadcast commands
         case CCMD_RESET_FPU       :
         case CCMD_EXECUTE_MOTION       :
         case CCMD_REPEAT_MOTION       :
@@ -60,13 +60,13 @@ E_DriverErrCode CommandPool::initialize()
         case CCMD_ABORT_MOTION       :
             capacity = cap_broadcast;
             break;
-            
-            // waveform table
+
+        // waveform table
         case CCMD_CONFIG_MOTION   :
             capacity = cap_wform;
             break;
-            
-            // individual commands
+
+        // individual commands
         case CCMD_MOVE_DATUM_OFF  :
         case CCMD_MOVE_DATUM_ON   :
         case CCMD_ASSIGN_POSITION :
@@ -105,18 +105,18 @@ E_DriverErrCode CommandPool::initialize()
                 ptr.reset(new MoveDatumOnCommand());
                 pool[i].push_back(std::move(ptr));
                 break;
-                
+
             default:
                 // FIXME: add any missing constructors
                 assert(0);
-                
+
             }
         }
         pthread_mutex_unlock(&pool_mutex);
 
         return DE_OK;
 
-        
+
     }
 }
 
@@ -135,7 +135,7 @@ unique_ptr<T> CommandPool::provideInstance(E_CAN_COMMAND cmd_type)
         // leak of command instances.
         pthread_cond_wait(&cond_pool_add, &pool_mutex);
     }
-    
+
     ptr = pool[cmd_type].pop_back();
     pthread_mutex_unlock(&pool_mutex);
 
@@ -146,7 +146,7 @@ unique_ptr<T> CommandPool::provideInstance(E_CAN_COMMAND cmd_type)
 // Adds a used command to the pool again,
 // and if any thread is waiting, notify it
 // that there are command buffers available
-// again. 
+// again.
 void CommandPool::recycleInstance(unique_ptr<I_CAN_Command>& cmd_ptr)
 {
     pthread_mutex_lock(&pool_mutex);

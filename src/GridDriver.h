@@ -35,15 +35,15 @@ public:
     const int DEFAULT_NUM_RETRIES = 10;
 
     GridDriver(int nfpus) : AsyncDriver(nfpus)
-        {
-            num_fpus = nfpus;
-            memset((void*) &grid_state, sizeof(grid_state), 0);
-        }
+    {
+        num_fpus = nfpus;
+        memset((void*) &grid_state, sizeof(grid_state), 0);
+    }
 
     ~GridDriver()
-        {
-        }
-    
+    {
+    }
+
     E_DriverErrCode initializeGrid();
 
     E_DriverErrCode resetFPUs();
@@ -66,7 +66,7 @@ public:
 
     E_DriverErrCode unlockFPU();
 
-    
+
 private:
 
     E_DriverErrCode untangleFPU();
@@ -74,7 +74,7 @@ private:
     E_DriverErrCode clearCollision();
 
     int num_fpus;
-    
+
     // this mutex ensures that no new
     // command is initiated while a running
     // command waits for completion.

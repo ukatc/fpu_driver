@@ -23,39 +23,39 @@
 namespace mpifps
 {
 
-    int condition_init_monotonic(pthread_cond_t& cond)
+int condition_init_monotonic(pthread_cond_t& cond)
+{
+    // initialize the condition variable to
+    // use the Linux monotonic clock
+    pthread_condattr_t cond_attr;
+    int err = 0;
+    err = pthread_condattr_init(&cond_attr);
+    // non-zero return values are specified as
+    // logical errors, so the caller should just
+    // wrap this into ann assert.
+    if (err != 0)
     {
-        // initialize the condition variable to
-        // use the Linux monotonic clock
-        pthread_condattr_t cond_attr;
-        int err = 0;
-        err = pthread_condattr_init(&cond_attr);
-        // non-zero return values are specified as
-        // logical errors, so the caller should just
-        // wrap this into ann assert.
-        if (err != 0)
-        {
-            goto exit;
-        }
-        // set the Linux monotonic clock
-        err = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
-        if (err != 0)
-        {
-            goto exit;
-        }
-        err = pthread_cond_init(&cond, &cond_attr);
-        if (err != 0)
-        {
-            goto exit;
-        }
-        err = pthread_condattr_destroy(&cond_attr);
-        if (err != 0)
-        {
-            goto exit;
-        }
-
-      exit:
-        return err;
+        goto exit;
     }
+    // set the Linux monotonic clock
+    err = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+    if (err != 0)
+    {
+        goto exit;
+    }
+    err = pthread_cond_init(&cond, &cond_attr);
+    if (err != 0)
+    {
+        goto exit;
+    }
+    err = pthread_condattr_destroy(&cond_attr);
+    if (err != 0)
+    {
+        goto exit;
+    }
+
+exit:
+    return err;
+}
 
 }

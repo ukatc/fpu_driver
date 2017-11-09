@@ -21,13 +21,15 @@
 #ifndef GRID_STATE_H
 #define GRID_STATE_H
 
+#include <stdint.h>
+
 #include "T_GridState.h"
 #include "E_GridState.h"
 
 namespace mpifps
 {
 
-    E_GridState getGridStateSummary(const t_grid_state& grid_state);
+E_GridState getGridStateSummary(const t_grid_state& grid_state);
 
 }
 

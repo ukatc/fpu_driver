@@ -49,7 +49,7 @@ GatewayDriver::GatewayDriver(int num_fpus)
         bus_adr.can_id = (uint8_t)(i % (BUSES_PER_GATEWAY * FPUS_PER_BUS));
 
         address_map[i] = bus_adr;
-        
+
         fpu_id_by_adr[bus_adr.gateway_id][bus_adr.bus_id][bus_adr.can_id] = (uint16_t) i;
 
     }
@@ -127,7 +127,7 @@ void* threadRxEntryFun(void *arg)
 
 
 E_DriverErrCode GatewayDriver::connect(const int ngateways,
-                            const t_gateway_address gateway_addresses[])
+                                       const t_gateway_address gateway_addresses[])
 {
 
     assert(ngateways <= MAX_NUM_GATEWAYS);
@@ -153,7 +153,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     // FIXME: set error and driver state on success of
     // connection.
     int err = pthread_create(&rx_thread, &attr, &threadRxEntryFun,
-                         (void *) this);
+                             (void *) this);
     if (err != 0)  printf("\ncan't create thread :[%s]",
                               strerror(err));
 
@@ -167,14 +167,14 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     fpuArray.setDriverState(DS_CONNECTED);
 
-    
+
 };
 
 E_DriverErrCode GatewayDriver::disconnect()
 {
-    
+
     E_DriverState dstate = fpuArray.getDriverState();
-    
+
     if ( (dstate == DS_UNCONNECTED) || (dstate == DS_UNINITIALISED))
     {
         // nothing to be done
@@ -239,7 +239,7 @@ E_DriverErrCode GatewayDriver::disconnect()
 void GatewayDriver::updatePendingCommand(std::unique_ptr<I_CAN_Command>& can_command)
 {
     int fpu_id = can_command->getFPU_ID();
-    
+
     if (can_command->expectsResponse())
     {
 
@@ -251,7 +251,7 @@ void GatewayDriver::updatePendingCommand(std::unique_ptr<I_CAN_Command>& can_com
 
         timespec wait_period = can_command->getTimeOut();
         timespec deadline = time_add(send_time, wait_period);
-        
+
         fpuArray.setPendingCommand(fpu_id,
                                    can_command->getCommandCode(),
                                    deadline);
@@ -285,7 +285,7 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
         // pending command coming from the control thread
         active_can_command = commandQueue.dequeue(gateway_id);
 
-        if (active_can_command != nullptr) 
+        if (active_can_command != nullptr)
         {
 
             int message_len = 0;
@@ -294,16 +294,16 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
             int fpu_id = active_can_command->getFPU_ID();
             const uint16_t busid = address_map[fpu_id].bus_id;
             const uint8_t canid = address_map[fpu_id].can_id;
-                               
+
             // serialize data
             active_can_command->SerializeToBuffer(busid,
-                                                             canid,
-                                                             message_len,
-                                                             can_buffer);
+                                                  canid,
+                                                  message_len,
+                                                  can_buffer);
             // byte-swizzle and send buffer
             status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-                                                          message_len, can_buffer.bytes);                        
-                        
+                      message_len, can_buffer.bytes);
+
         }
     }
     return status;
@@ -323,7 +323,7 @@ void* GatewayDriver::threadTxFun()
     for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
     {
         pfd[gateway_id].fd = SocketID[gateway_id];
-        pfd[gateway_id].events = POLLOUT;        
+        pfd[gateway_id].events = POLLOUT;
     }
 
     /* Create mask to block SIGPIPE during calls to ppoll()*/
@@ -341,7 +341,7 @@ void* GatewayDriver::threadTxFun()
         // polled.
         // get currently pending commands
         CommandQueue::t_command_mask cmd_mask = commandQueue.checkForCommand();
-        
+
         for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
         {
             if (sbuffer[gateway_id].numUnsentBytes() > 0)
@@ -370,7 +370,7 @@ void* GatewayDriver::threadTxFun()
             }
         }
 
-        
+
         // this waits for a short time for sending data
         // (we could shorten the timeout if no command was pending)
         bool retry = false;
@@ -395,7 +395,7 @@ void* GatewayDriver::threadTxFun()
                 default:
                     // unknown return code
                     assert(false);
-                
+
                 }
             }
         }
@@ -405,14 +405,14 @@ void* GatewayDriver::threadTxFun()
         for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
         {
             // FIXME: split long method into smaller ones
-            
+
             if (pfd[gateway_id].revents & POLLOUT)
             {
 
                 status = send_buffer(active_can_command[gateway_id],
                                      gateway_id);
                 if ( (sbuffer[gateway_id].numUnsentBytes() == 0)
-                     && ( active_can_command[gateway_id] != nullptr))
+                        && ( active_can_command[gateway_id] != nullptr))
                 {
                     // we completed sending a command.
                     // set send time in fpuArray memory structure
@@ -429,7 +429,7 @@ void* GatewayDriver::threadTxFun()
                     // serious connection error.
                     exitFlag = true;
                     // signal event listeners
-                    fpuArray.setDriverState(DS_UNCONNECTED); 
+                    fpuArray.setDriverState(DS_UNCONNECTED);
                 }
                 // poll the exit flag, it might be set by another thread
                 exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
@@ -442,12 +442,12 @@ void* GatewayDriver::threadTxFun()
             {
                 exit_threads.store(true, std::memory_order_release);
                 break; // break main loop and terminate thread
-            }            
+            }
         }
 
     }
     // clean-up before terminating the thread
-    
+
     // return pending commands to the *front* of the command queue
     // so that they are not lost, and memory leaks are avoided
     for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
@@ -463,21 +463,21 @@ void* GatewayDriver::threadTxFun()
 
 void* GatewayDriver::threadRxFun()
 {
-    
+
     int		i;
     int		nread;
-    
+
     struct pollfd pfd[MAX_NUM_GATEWAYS];
 
     //int poll_timeout_ms = int(poll_timeout_sec * 1000);
     //assert(poll_timeout_ms > 0);
-    
+
     nfds_t num_fds = num_gateways;
-    
+
     for (int i=0; i < num_gateways; i++)
     {
         pfd[i].fd = SocketID[i];
-        pfd[i].events = POLLIN;        
+        pfd[i].events = POLLIN;
     }
 
     /* Create mask to block SIGPIPE during calls to ppoll()*/
@@ -493,7 +493,7 @@ void* GatewayDriver::threadRxFun()
         timespec cur_time;
 
 
-            
+
         timespec next_timeout = timeOutList.getNextTimeOut(MAX_RX_TIMEOUT);
         get_monotonic_time(cur_time);
 
@@ -522,18 +522,18 @@ void* GatewayDriver::threadRxFun()
                 default:
                     // unknown return code
                     assert(false);
-                
+
                 }
             }
         }
-        
+
 
         if (retval == 0)
         {
             // a time-out was hit - go through the list of FPUs
             // and mark each FPU which has timed out.
             get_monotonic_time(cur_time);
-            
+
             fpuArray.processTimeouts(cur_time, timeOutList);
         }
         else if (retval > 0)
@@ -562,7 +562,7 @@ void* GatewayDriver::threadRxFun()
         {
             // signal event listeners
             exit_threads.store(true, std::memory_order_release);
-            fpuArray.setDriverState(DS_UNCONNECTED); 
+            fpuArray.setDriverState(DS_UNCONNECTED);
             break; // exit outer loop, and terminate thread
         }
     }
@@ -573,19 +573,19 @@ void* GatewayDriver::threadRxFun()
 // FPUs which did respond.
 void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_CAN_MESSAGE_BYTES], int const clen)
 {
-    t_CAN_buffer* message = (t_CAN_buffer*) command_buffer;
+    t_CAN_buffer* can_msg = (t_CAN_buffer*) command_buffer;
 
-    if ((message != nullptr) && (clen >= 3))
+    if ((can_msg != nullptr) && (clen >= 3))
     {
-        const uint8_t busid = message->msg.busid;
-        const uint16_t can_identifier = message->msg.identifier;
+        const uint8_t busid = can_msg->message.busid;
+        const uint16_t can_identifier = can_msg->message.identifier;
 
         fpuArray.dispatchResponse(fpu_id_by_adr,
                                   gateway_id,
                                   busid,
                                   can_identifier,
-                                  message->msg.data,
-                                  clen -3, timeOutList);                   
+                                  can_msg->message.data,
+                                  clen -3, timeOutList);
     }
     // otherwise we have an invalid message
     // FIXME: logging of invalid messages
@@ -612,7 +612,7 @@ unique_ptr<T> GatewayDriver::provideInstance(E_CAN_COMMAND cmd_type)
 CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_CAN_Command> new_command)
 {
     const int gateway_id = address_map[fpu_id].gateway_id;
-    
+
     commandQueue.enqueue(gateway_id, std::move(new_command));
 }
 

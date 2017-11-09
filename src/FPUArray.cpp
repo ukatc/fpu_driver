@@ -55,7 +55,7 @@ E_GridState FPUArray::getGridState(t_grid_state& out_state)
     // we simply copy the internal state
     out_state = FPUGridState;
     pthread_mutex_unlock(&grid_state_mutex);
-    
+
     return getGridStateSummary(out_state);
 }
 
@@ -89,10 +89,10 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& out_detail
         // if a time-out occurs, we return always.
         // (the counter can wrap around - no problem!)
         bool timeout_count_unchanged = (
-            count_timeouts == FPUGridState.count_timeout);
-        
+                                           count_timeouts == FPUGridState.count_timeout);
+
         if ((! inTargetState(sum_state, target)
-             && timeout_count_unchanged))
+                && timeout_count_unchanged))
         {
             pthread_cond_wait(&cond_state_change,
                               &grid_state_mutex);
@@ -154,17 +154,17 @@ bool FPUArray::inTargetState(E_GridState sum_state,
     // the return value.
 
     return ((sum_state | tstate) != 0);
-    
 
-            
-    }
-    
+
+
+}
+
 
 
 
 // sets pending command for one FPU, increments the "pending"
 // grid-global counter.
-    
+
 void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val)
 {
     pthread_mutex_lock(&grid_state_mutex);
@@ -186,7 +186,7 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
         pthread_cond_broadcast(&cond_state_change);
     }
 
-    
+
     pthread_mutex_unlock(&grid_state_mutex);
 }
 
@@ -199,7 +199,7 @@ void FPUArray::setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd)
 
     t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
     fpu.pending_command = last_cmd;
-    
+
     // if tracing is active, signal state change
     // to waitForState() callers.
     if (num_trace_clients > 0)
@@ -224,15 +224,15 @@ void FPUArray::confirmResponse(int fpu_id)
     t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
 
     if ((fpu.pending_command != CCMD_NO_COMMAND)
-        && (FPUGridState.count_pending > 0))
+            && (FPUGridState.count_pending > 0))
     {
         FPUGridState.count_pending--;
     }
 
-    
+
     fpu.pending_command = fpu.last_command;
     fpu.pending_command = CCMD_NO_COMMAND;
-    
+
     // if tracing is active, signal state change
     // to waitForState() callers.
     if (num_trace_clients > 0)
@@ -278,7 +278,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
         int fpu_id = toentry.id;
         new_timeout = true;
         FPUGridState.count_timeout++;
-        
+
         assert(FPUGridState.count_pending > 0);
         FPUGridState.count_pending--;
 
@@ -286,9 +286,9 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
         fpu.last_command = fpu.pending_command;
         fpu.pending_command = CCMD_NO_COMMAND;
         fpu.timeout_count++;
-        
-        
-        
+
+
+
     }
 
     // signal any waiting control threads that
@@ -298,7 +298,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
         pthread_cond_broadcast(&cond_state_change);
     }
     pthread_mutex_unlock(&grid_state_mutex);
-    
+
 };
 
 
@@ -320,7 +320,7 @@ void FPUArray::setDriverState(E_DriverState const dstate)
 E_DriverState FPUArray::getDriverState()
 {
     E_DriverState retval;
-    
+
     pthread_mutex_lock(&grid_state_mutex);
     retval = FPUGridState.driver_state;
     pthread_mutex_unlock(&grid_state_mutex);
@@ -334,7 +334,7 @@ E_GridState FPUArray::getStateSummary_unprotected()
     // do mirror the global counters correctly).
 
     return getGridStateSummary(FPUGridState);
-        
+
 }
 
 E_GridState FPUArray::getStateSummary()
@@ -343,7 +343,7 @@ E_GridState FPUArray::getStateSummary()
     pthread_mutex_lock(&grid_state_mutex);
 
     sum_state = getStateSummary_unprotected();
-    
+
     pthread_mutex_unlock(&grid_state_mutex);
 
     return sum_state;
@@ -366,10 +366,10 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
     pthread_mutex_lock(&grid_state_mutex);
     {
-    
+
         // get canid of FPU (additional ids might be used
         // to report state of the gateway)
-        
+
 #pragma message "insert correct fpu_id computation here"
         // let's assume the CAN identifier has a response type
         // code in bits 7 to 10, and the FPU id in bits
@@ -378,13 +378,13 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         uint8_t cmd_id = (can_identifier >> 7);
         int fpu_id = fpu_id_by_adr[gateway_id][bus_id][can_identifier & 128];
 
-    
+
         // clear time-out flag for this FPU
         tout_list.clearTimeOut(fpu_id);
         FPUGridState.count_pending--;
 
         // FIXME: we need to adjust the time-out count
-    
+
         // TODO: unwrap response, and adjust FPU state according to
         // that
 
@@ -392,12 +392,12 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // TODO: signal cond_state_change if a command was
         // completed (e.g. all FPUs have finished moving)
 
-        handleFPUResponse(FPUGridState.FPU_state[fpu_id], data, blen);    
-    
+        handleFPUResponse(FPUGridState.FPU_state[fpu_id], data, blen);
+
         // if no more commands are pending or tracing is active,
         // signal a state change to waitForState() callers.
         if ((FPUGridState.count_pending == 0)
-            || (num_trace_clients > 0) )
+                || (num_trace_clients > 0) )
         {
             pthread_cond_broadcast(&cond_state_change);
         }

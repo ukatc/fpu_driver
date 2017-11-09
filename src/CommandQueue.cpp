@@ -2,7 +2,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // ESO - VLT Project
 //
-// Copyright 2017 E.S.O, 
+// Copyright 2017 E.S.O,
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
@@ -12,7 +12,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME CommandQueue.cpp
-// 
+//
 // This class implements a thread-safe array of FIFOs for commands to the CAN
 // layer which can be queried and waited for efficiently
 //
@@ -25,13 +25,14 @@
 #include "CommandQueue.h"
 
 
-namespace mpifps {
+namespace mpifps
+{
 
 CommandQueue::CommandQueue()
 {
-    
+
     assert(condition_init_monotonic(cond_queue_append) == 0);
-    
+
 }
 
 CommandQueue::t_command_mask CommandQueue::checkForCommand()
@@ -43,12 +44,12 @@ CommandQueue::t_command_mask CommandQueue::checkForCommand()
         if (! fifos[i].empty() )
         {
             rmask |= 1 << i;
-        }            
+        }
     }
     pthread_mutex_unlock(&queue_mutex);
 
     return rmask;
-    
+
 };
 
 CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
@@ -70,9 +71,9 @@ CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
             if (! fifos[i].empty() )
             {
                 rmask |= 1 << i;
-            }            
+            }
         }
-        
+
         if (rmask == 0)
         {
             // Note that, in difference to select() and poll(),
@@ -89,11 +90,11 @@ CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
 
     return rmask;
 
-    
+
 };
 
 CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
-                                    unique_ptr<I_CAN_Command> new_command)
+        unique_ptr<I_CAN_Command> new_command)
 {
 
     assert(gateway_id < MAX_NUM_GATEWAYS);
@@ -112,9 +113,9 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
         // Best fix seems to be to replace std::dequeue
         // with a fixed-size rungbuffer -
         // will be done later.
-        #pragma message "TODO: make CommandQueue::enqueue() exception-safe"
+#pragma message "TODO: make CommandQueue::enqueue() exception-safe"
         fifos[gateway_id].push_back(std::move(new_command));
-    
+
         pthread_mutex_unlock(&queue_mutex);
     }
 
@@ -129,10 +130,10 @@ unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
 
     {
         pthread_mutex_lock(&queue_mutex);
-    
+
         rval = std::move(fifos[gateway_id].front());
         fifos[gateway_id].pop_front();
-    
+
         pthread_mutex_unlock(&queue_mutex);
     }
     return rval;
@@ -143,7 +144,7 @@ unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
 // been dequeued cannot be sent, and is added
 // again to the head / front of the queue.
 CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
-                                    unique_ptr<I_CAN_Command> new_command)
+        unique_ptr<I_CAN_Command> new_command)
 {
 
     assert(gateway_id < MAX_NUM_GATEWAYS);
@@ -156,9 +157,9 @@ CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
 
     {
         pthread_mutex_lock(&queue_mutex);
-    
+
         fifos[gateway_id].push_front(std::move(new_command));
-    
+
         pthread_mutex_unlock(&queue_mutex);
     }
 
@@ -177,7 +178,7 @@ CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
 void CommandQueue::flushToPool(CommandPool& memory_pool)
 {
     unique_ptr<I_CAN_Command> cmd;
-    
+
     pthread_mutex_lock(&queue_mutex);
 
     for(int i=0; i < ngateways; i++)
@@ -189,7 +190,7 @@ void CommandQueue::flushToPool(CommandPool& memory_pool)
             fifos[i].pop_front();
         }
     }
-    
+
     pthread_mutex_unlock(&queue_mutex);
 };
 

@@ -71,17 +71,19 @@ public:
     // timeout for reading from command FIFO if nothing is
     // pending - 50 ms
     const timespec COMMAND_WAIT_TIME = { .tv_sec = 0,
-                                         .tv_nsec = 50000000 };
+                                         .tv_nsec = 50000000
+                                       };
     // timeout for polling write socket - 5 ms
     const timespec MAX_TX_TIMEOUT = { .tv_sec = 0,
-                                      .tv_nsec = 5000000 };
+                                      .tv_nsec = 5000000
+                                    };
 
     // default timeout for polling read socket - 5 sec
     // (this max times determines the time it takes to
     // shut down the conenction if nothing happens).
     const timespec MAX_RX_TIMEOUT = FPUArray::MAX_TIMEOUT;
 
-        
+
     GatewayDriver(int num_fpus);
     ~GatewayDriver();
 
@@ -103,7 +105,7 @@ public:
     // and a detailed status for each FPU.
     E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);
 
-                     
+
 
     // provide a command instance with buffer space for
     // sending CAN parameters. This method is thread-safe
@@ -120,9 +122,9 @@ public:
     // the following two methods are actually internal -
     // they need to be visible in a non-member function.
     void* threadTxFun();
-    void* threadRxFun();    
+    void* threadRxFun();
 
-    
+
 private:
 
 
@@ -166,12 +168,12 @@ private:
     // (can be made configurable if required)
     FPUArray::t_bus_address_map  address_map;
 
-    // reverse map of addresses to FPU id.    
+    // reverse map of addresses to FPU id.
     FPUArray::t_address_map fpu_id_by_adr; // address map from fpu id to can bus addresses
-        
+
     FPUArray fpuArray;        // member which stores the state of the grid
-    
-    TimeOutList timeOutList; // list of pending time-outs 
+
+    TimeOutList timeOutList; // list of pending time-outs
 
     CommandPool command_pool; // memory pool for unused command objects
 

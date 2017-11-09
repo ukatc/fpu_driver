@@ -38,8 +38,8 @@ public:
         int16_t alpha_steps;
         int16_t beta_steps;
     } t_step_pair;
-    
-    typedef struct 
+
+    typedef struct
     {
         int16_t fpu_id;
         std::vector<t_step_pair> steps;
@@ -49,13 +49,13 @@ public:
 
     AsyncDriver(int nfpus)
         : gateway(nfpus)
-        {
-            num_fpus = nfpus;
-        }
+    {
+        num_fpus = nfpus;
+    }
 
     ~AsyncDriver()
-        {
-        }
+    {
+    }
 
     // Initialize internal data structures, allocate memory etc.
     // (this can fail if the system is too low on memory).
@@ -71,7 +71,7 @@ public:
     // but disables status updates).
     E_DriverErrCode disconnect();
 
-    
+
     E_DriverErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary);
@@ -98,8 +98,8 @@ public:
 
     E_GridState waitForState(E_WaitTarget target,
                              t_grid_state& out_detailed_state);
-    
-    
+
+
 private:
 
     int num_fpus;

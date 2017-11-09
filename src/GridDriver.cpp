@@ -30,7 +30,7 @@ E_DriverErrCode GridDriver::findDatum()
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
     int num_avaliable_retries = DEFAULT_NUM_RETRIES;
-        
+
     pthread_mutex_lock(&command_creation_mutex);
 
     while (num_avaliable_retries > 0)
@@ -42,7 +42,7 @@ E_DriverErrCode GridDriver::findDatum()
         {
             break;
         }
-        
+
         num_avaliable_retries--;
     }
 
@@ -63,10 +63,10 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms)
 
     // copies the waveforms vector
     std::vector<t_waveform> cur_wtable(waveforms);
-        
+
     pthread_mutex_lock(&command_creation_mutex);
 
-    
+
     while (num_avaliable_retries > 0)
     {
         estatus = configMotionAsync(grid_state, state_summary, cur_wtable);
@@ -86,7 +86,7 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms)
         // waveforms again. To do that we strip FPUs from
         // the configuration which have already been configured
         // succcessfully.
-        // 
+        //
         // FIXME: This does not yet handle collisions or
         // complicated states like a large bird nesting
         // on top of the FPUs. Probably has to be made
@@ -96,11 +96,11 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms)
         // so that erase() will not change the
         // index of the next processed item.
         for (t_wtable::iterator it = cur_wtable.end();
-             it != cur_wtable.begin();
-             it--)
+                it != cur_wtable.begin();
+                it--)
         {
             int fpu_id = it->fpu_id;
-            
+
             if (grid_state.FPU_state[fpu_id].state == FPST_READY_FORWARD)
             {
                 // delete entry for this FPU from table -
@@ -108,7 +108,7 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms)
                 cur_wtable.erase(it);
             }
         }
-        
+
         num_avaliable_retries--;
     }
 

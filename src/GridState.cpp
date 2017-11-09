@@ -17,17 +17,19 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "DriverConstants.h"
+
 #include "GridState.h"
 
 namespace mpifps
 {
 
-E_GridState getGridStateSummary(const FPUGridState& grid_state)
+E_GridState getGridStateSummary(const t_grid_state& grid_state)
 {
     // get the summary state of the grid.
     // (This relies on that all FPU updates
     // do mirror the global counters correctly).
-    
+
     // we simply ignored the locked units
 
     // this computation returns the "minimum operational state"
@@ -52,9 +54,9 @@ E_GridState getGridStateSummary(const FPUGridState& grid_state)
     }
 
     // now we check in order of operational states
-    if ((grid_state.Counts[FPST_UNINITIALISED] - grid_state.Counts[LOCKED]) > 0)
+    if ((grid_state.Counts[FPST_UNINITIALISED] - grid_state.Counts[FPST_LOCKED]) > 0)
     {
-        return GS_UNINITIALISED:
+        return GS_UNINITIALISED;
     }
 
     if (grid_state.Counts[FPST_COORDINATE_RECOVERY] > 0)
@@ -104,8 +106,9 @@ E_GridState getGridStateSummary(const FPUGridState& grid_state)
         return GS_MOVING;
     }
 
-    return FINISHED;
-    
+    return GS_FINISHED;
+
 }
 
 }
+

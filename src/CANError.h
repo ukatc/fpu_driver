@@ -27,7 +27,7 @@ enum E_CANError
     MAJOR_TIMEOUT             = 3,
     LOST_CONNECTION           = 4,
     SOCKET_CLOSED             = 5,
-    
+
 };
 
 #endif

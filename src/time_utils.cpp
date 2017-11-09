@@ -31,7 +31,7 @@ timespec get_monotonic_time(timespec& now)
 
 
 timespec time_add(const timespec& time_a,
-                   const timespec& time_b)
+                  const timespec& time_b)
 {
     timespec sum;
     // FIXME: Overflow is not handled
@@ -43,14 +43,14 @@ timespec time_add(const timespec& time_a,
 }
 
 timespec time_sub(const timespec& time_a,
-                   const timespec& time_b)
+                  const timespec& time_b)
 {
     timespec diff;
     // FIXME: Underflow is not handled
     set_normalized_timespec(diff,
                             time_a.tv_sec - time_b.tv_sec,
                             time_a.tv_nsec - time_b.tv_nsec);
-    
+
     return diff;
 }
 
@@ -59,13 +59,13 @@ timespec time_sub(const timespec& time_a,
 // returns true if tm_a represents a smaller time than tm_b
 bool time_smaller(const timespec&  tm_a, const timespec& tm_b)
 {
-    return (timespec_compare(tm_a, tm_b) < 0);                 
+    return (timespec_compare(tm_a, tm_b) < 0);
 }
 
 // returns true if tv_a represents the same time as tv_b
 bool time_equal(const timespec& tm_a, const timespec& tm_b)
 {
-    return (timespec_compare(tm_a, tm_b) == 0);                 
+    return (timespec_compare(tm_a, tm_b) == 0);
 }
 
 
@@ -73,7 +73,7 @@ bool time_equal(const timespec& tm_a, const timespec& tm_b)
 // time than tv_b
 bool time_smaller_equal(const timespec& tm_a, const timespec& tm_b)
 {
-    return (timespec_compare(tm_a, tm_b) <= 0);                 
+    return (timespec_compare(tm_a, tm_b) <= 0);
 }
 
 

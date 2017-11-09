@@ -39,9 +39,10 @@ namespace mpifps
 {
 
 
-class FPUArray {
+class FPUArray
+{
 
-  public:
+public:
 
     // maximum timeout for CAN commands which require
     // a response
@@ -58,29 +59,29 @@ class FPUArray {
 
     // translation table to convert FPU ids in CAN addresses.
     typedef uint16_t t_address_map[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
-    
 
-    
+
+
     FPUArray(int nfpus)
     {
 
         // TODO: check if any condition variables
         // really need dynamic initialization.
-        
+
         FPUGridState.count_timeout = 0;
         FPUGridState.count_pending     = 0;
-        
+
         memset(FPUGridState.Counts,
                sizeof(FPUGridState.Counts), 0);
 
         // for the beginning, we don't know the FPU states
         FPUGridState.Counts[FPST_UNKNOWN] = nfpus;
-        
+
         for (int i=0; i < MAX_NUM_POSITIONERS; i++)
         {
-            
+
             t_fpu_state fpu_state;
-            
+
             fpu_state.is_initialized    = false;
             fpu_state.state             = FPST_UNINITIALISED;
             fpu_state.pending_command   = CCMD_NO_COMMAND;
@@ -99,19 +100,19 @@ class FPUArray {
             fpu_state.ping_ok           = false;
 
             FPUGridState.FPU_state[i] = fpu_state;
-            
+
         }
 
 
         num_fpus = nfpus;
-        num_trace_clients = 0;       
+        num_trace_clients = 0;
     }
 
     ~FPUArray()
     {
         // destroy condition variable
         pthread_cond_destroy(&cond_state_change);
-        
+
         // destroy grid state mutex
         pthread_mutex_destroy(&grid_state_mutex);
     }
@@ -131,7 +132,7 @@ class FPUArray {
 
     // gets state of the driver
     E_DriverState getDriverState();
-    
+
     // This method waits for a certain state (actually,
     // a bitmask of states)
     // and returns the grid state when either this
@@ -171,10 +172,10 @@ class FPUArray {
                           const int blen,
                           TimeOutList& timeOutList);
 
-    
+
 private:
 
-    
+
 
 
 
@@ -182,13 +183,13 @@ private:
     // attributes. TODO: This should be done in the response
     // handler.
     void confirmResponse(int fpu_id);
-    
+
     void handleFPUResponse(t_fpu_state& fpu, const t_response_buf& data,
                            const int blen);
-    
 
-   // returns summary state of FPU grid, without
-   // lock protection.
+
+    // returns summary state of FPU grid, without
+    // lock protection.
     E_GridState getStateSummary_unprotected();
 
 
@@ -203,7 +204,7 @@ private:
     int num_fpus;
 
     std::atomic<int> num_trace_clients;
-    
+
     // structures which describe the current state of the whole grid
     t_grid_state FPUGridState;
     // this mutex protects the FPU state array structure
