@@ -36,6 +36,9 @@
 namespace mpifps
 {
 
+const timespec MAX_TIMEOUT = {.tv_sec = 10,  .tv_nsec = 0};
+
+
 // this function returns a thread-safe copy of the current state of
 // the FPU grid.  The important aspect is that the returned value is
 // strictly isolated from ongoing concurrent changes in the reading

@@ -140,12 +140,16 @@ SBuffer::SBuffer()
     // set unsent length of write buffer to zero
     unsent_len = 0;
     out_offset = 0;
+    
+    // zero out buffers - this is defensive
+    memset(rbuf, 0, sizeof(rbuf));
+    memset(wbuf, 0, sizeof(wbuf));
 }
 
 
 SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
                                         int const input_len,
-                                        uint8_t const * const src)
+                                        uint8_t src[MAX_CAN_MESSAGE_BYTES])
 {
     int out_len = 0;
     ssize_t retval = 0;

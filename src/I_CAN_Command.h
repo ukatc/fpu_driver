@@ -33,6 +33,7 @@ namespace mpifps
 
 const int MAX_CAN_MESSAGE_LENGTH_BYTES = 16;
 
+typedef  uint8_t t_response_buf[MAX_CAN_PAYLOAD_BYTES];
 
 typedef union __attribute__((packed))
 {
@@ -40,9 +41,9 @@ typedef union __attribute__((packed))
     {
         uint8_t busid;
         uint16_t identifier; // little-endian
-        uint8_t data[8];
+        t_response_buf data;
     } msg;    
-    uint8_t bytes[11];
+    uint8_t bytes[MAX_CAN_MESSAGE_BYTES];
 } t_CAN_buffer;
 
 class I_CAN_Command

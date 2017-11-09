@@ -33,6 +33,7 @@
 #include "TimeOutList.h"
 #include "T_GridState.h"
 #include "E_GridState.h"
+#include "I_CAN_Command.h"
 
 namespace mpifps
 {
@@ -44,7 +45,7 @@ class FPUArray {
 
     // maximum timeout for CAN commands which require
     // a response
-    const timespec MAX_TIMEOUT = {.tv_sec = 10,  .tv_nsec = 0};
+    static const timespec MAX_TIMEOUT;
 
     typedef struct
     {
@@ -59,7 +60,6 @@ class FPUArray {
     typedef uint16_t t_address_map[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
     
 
-    typedef  uint8_t t_response_buf[MAX_CAN_PAYLOAD_BYTES];
     
     FPUArray(int nfpus)
     {
@@ -145,23 +145,14 @@ class FPUArray {
 
     E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);
 
-private:
 
-    
     // sets pending command for one FPU.
-    
     void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val);
 
-    // sets last command for a FPU.
 
+    // sets last command for a FPU.
     void setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd);
 
-
-    // confirm response for one FPU, canceling the 'pending command'
-    // attributes. TODO: This should be done in the response
-    // handler.
-    void confirmResponse(int fpu_id);
-    
     // updates state for all FPUs which did
     // not respond in time, popping their time-out entries
     // from the list. tolist must not be locked.
@@ -180,6 +171,18 @@ private:
                           const int blen,
                           TimeOutList& timeOutList);
 
+    
+private:
+
+    
+
+
+
+    // confirm response for one FPU, canceling the 'pending command'
+    // attributes. TODO: This should be done in the response
+    // handler.
+    void confirmResponse(int fpu_id);
+    
     void handleFPUResponse(t_fpu_state& fpu, const t_response_buf& data,
                            const int blen);
     

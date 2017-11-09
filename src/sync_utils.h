@@ -33,7 +33,7 @@ namespace mpifps
     // failed because passing an invalid argument.
     //
     // (The return value should likely be checked
-    // by an ASSERT.)
+    // by an assert.)
     int condition_init_monotonic(pthread_cond_t& cond);
 
 

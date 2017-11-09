@@ -43,7 +43,10 @@ enum E_DriverState
     DS_CONNECTED  = 3,     // driver is connected to gateways
                         // and working
     
+    DS_ASSERTION_FAILED  = 4, // a fatal error occured,
+                               // such as out-of-memory during ppoll()
 
+    
 } ;
 
 

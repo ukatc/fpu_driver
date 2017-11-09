@@ -32,7 +32,7 @@ namespace mpifps
         err = pthread_condattr_init(&cond_attr);
         // non-zero return values are specified as
         // logical errors, so the caller should just
-        // wrap this into ann ASSERT.
+        // wrap this into ann assert.
         if (err != 0)
         {
             goto exit;
