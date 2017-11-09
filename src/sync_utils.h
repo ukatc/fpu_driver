@@ -34,7 +34,7 @@ namespace mpifps
     //
     // (The return value should likely be checked
     // by an ASSERT.)
-    int conditon_init_monotonic(pthread_cond_t& cond);
+    int condition_init_monotonic(pthread_cond_t& cond);
 
 
 }

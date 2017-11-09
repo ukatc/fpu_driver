@@ -23,7 +23,7 @@
 namespace mpifps
 {
 
-    int conditon_init_monotonic(pthread_cond_t& cond)
+    int condition_init_monotonic(pthread_cond_t& cond)
     {
         // initialize the condition variable to
         // use the Linux monotonic clock

@@ -323,7 +323,7 @@ void* GatewayDriver::threadTxFun(void *arg)
         // for which commands are queued will be
         // polled.
         // get currently pending commands
-        t_command_mask cmd_mask = command_FIFO.checkForCommand();
+        CommandQueue::t_command_mask cmd_mask = command_FIFO.checkForCommand();
         
         for (int i=0; i < num_gateways; i++)
         {

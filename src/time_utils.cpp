@@ -30,11 +30,30 @@ timespec get_monotonic_time(timespec& now)
 }
 
 
-timespec add_time(const timespec& time_a,
+timespec time_add(const timespec& time_a,
                    const timespec& time_b)
 {
-    return timespec_add(time_a, time_b);
+    timespec sum;
+    // FIXME: Overflow is not handled
+    set_normalized_timespec(sum,
+                            time_a.tv_sec + time_b.tv_sec,
+                            time_a.tv_nsec + time_b.tv_nsec);
+
+    return sum;
 }
+
+timespec time_sub(const timespec& time_a,
+                   const timespec& time_b)
+{
+    timespec diff;
+    // FIXME: Underflow is not handled
+    set_normalized_timespec(diff,
+                            time_a.tv_sec - time_b.tv_sec,
+                            time_a.tv_nsec - time_b.tv_nsec);
+    
+    return diff;
+}
+
 
 
 // returns true if tm_a represents a smaller time than tm_b
@@ -67,13 +86,13 @@ timespec time_to_wait(const timespec& cur_time,
     timespec zero_wait = {.tv_sec = 0, .tv_nsec = 0};
 
     // check whether next_timeout is already in the past.
-    if (time_smaller_equal(next_timeout, cur_time)
+    if (time_smaller_equal(next_timeout, cur_time))
     {
         return zero_wait;
     }
     else
     {
-        return timespec_sub(next_timeout, cur_time);
+        return time_sub(next_timeout, cur_time);
     }
 
 }

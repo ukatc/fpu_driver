@@ -43,22 +43,27 @@ namespace mpifps
     * lhs == rhs: return 0
     * lhs > rhs:  return >0
     */
-    static inline int timespec_compare(const struct timespec *lhs,
-                                       const struct timespec *rhs)
+    static inline int timespec_compare(const struct timespec& lhs,
+                                       const struct timespec& rhs)
     {
-	if (lhs->tv_sec < rhs->tv_sec)
+	if (lhs.tv_sec < rhs.tv_sec)
             return -1;
-	if (lhs->tv_sec > rhs->tv_sec)
+	if (lhs.tv_sec > rhs.tv_sec)
             return 1;
-	return lhs->tv_nsec - rhs->tv_nsec;
+	return lhs.tv_nsec - rhs.tv_nsec;
     }
         
     static inline void set_normalized_timespec(struct timespec &new_val,
         const time_t tv_sec, const long tv_nsec)
     {
-    new_val.tv_sec = tv_sec + tv_nsec / 1000000000;
-    new_val.tv_nsec = tv_nsec % 1000000000;
-}
+        new_val.tv_sec = tv_sec + tv_nsec / 1000000000;
+        new_val.tv_nsec = tv_nsec % 1000000000;
+        // NOTE: correctness for negative nsec values
+        // depends on the C99 standard definition for
+        // the modulo operator (negative dividend ->
+        // negative remainder). THIS IS DIFFERENT
+        // FROM PYTHON.
+    }
 
     // get current monotonic system time.
     // Monotonic means that even at leap seconds,
@@ -66,9 +71,17 @@ namespace mpifps
     // for measuring time-outs.
     timespec get_monotonic_time(timespec& now);
 
-    timespec add_time(const timespec& time_a,
+    // Adds two timespecs. The sum must be representable,
+    // otherwise undefined behavior happens.
+    timespec time_add(const timespec& time_a,
                        const timespec& time_b);
 
+
+    // Subtracts two timespecs. The result must be representable,
+    // otherwise undefined behavior happens.
+    timespec time_sub(const timespec& time_a,
+                       const timespec& time_b);
+    
     bool time_smaller(const timespec& tm_a, const timespec& tm_b);
 
     bool time_equal(const timespec& tm_a, const timespec& tm_b);

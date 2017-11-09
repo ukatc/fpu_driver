@@ -24,6 +24,8 @@
 
 #include <endian.h>
 #include <stdint.h>
+#include <time.h>
+
 #include "E_CAN_COMMAND.h"
 
 namespace mpifps

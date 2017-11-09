@@ -18,6 +18,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <cassert>
+
+#include "sync_utils.h"
+
 #include "CommandQueue.h"
 
 
@@ -26,17 +30,17 @@ namespace mpifps {
 CommandQueue::CommandQueue()
 {
     
-    ASSERT(condition_init_monotonic(cond_queue_append) == 0);
+    assert(condition_init_monotonic(cond_queue_append) == 0);
     
 }
 
-t_command_mask CommandQueue::checkForCommand()
+CommandQueue::t_command_mask CommandQueue::checkForCommand()
 {
     t_command_mask rmask = 0;
     pthread_mutex_lock(&queue_mutex);
     for (int i=0; i < ngateways; i++)
     {
-        if (! fifo[i].empty() )
+        if (! fifos[i].empty() )
         {
             rmask |= 1 << i;
         }            
@@ -47,7 +51,7 @@ t_command_mask CommandQueue::checkForCommand()
     
 };
 
-t_command_mask CommandQueue::waitForCommand(timespec timeout)
+CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
 {
 
     t_command_mask rmask = 0;
@@ -63,7 +67,7 @@ t_command_mask CommandQueue::waitForCommand(timespec timeout)
     {
         for (int i=0; i < ngateways; i++)
         {
-            if (! fifo[i].empty() )
+            if (! fifos[i].empty() )
             {
                 rmask |= 1 << i;
             }            
@@ -74,11 +78,11 @@ t_command_mask CommandQueue::waitForCommand(timespec timeout)
             // Note that, in difference to select() and poll(),
             // pthread_cond_timedwait() takes an
             // *absolute* time value as time-out.
-            rval = pthread_cond_timedwait(cond_queue_append,
-                                          queue_mutex,
-                                          max_abs_time);
-            ASSERT( rval != EINVAL);
-            ASSERT(rval != EPERM);
+            rval = pthread_cond_timedwait(&cond_queue_append,
+                                          &queue_mutex,
+                                          &max_abs_time);
+            assert( rval != EINVAL);
+            assert(rval != EPERM);
         }
     }
     pthread_mutex_unlock(&queue_mutex);
@@ -88,14 +92,14 @@ t_command_mask CommandQueue::waitForCommand(timespec timeout)
     
 };
 
-E_QUEUE_STATE CommandQueue::enqueue(int gateway_id,
+CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
                                     unique_ptr<I_CAN_Command> new_command)
 {
 
-    ASSERT(gateway_id < NUM_GATEWAYS);
-    ASSERT(gateway_id >= 0);
+    assert(gateway_id < MAX_NUM_GATEWAYS);
+    assert(gateway_id >= 0);
 
-    if (new_command == null)
+    if (new_command == nullptr)
     {
         return MISSING_INSTANCE;
     }
@@ -108,8 +112,8 @@ E_QUEUE_STATE CommandQueue::enqueue(int gateway_id,
         // Best fix seems to be to replace std::dequeue
         // with a fixed-size rungbuffer -
         // will be done later.
-        #pragma message "TODO: make CommandQueue::emqueue() exception-safe"
-        fifos[gateway_id].push_back(new_command);
+        #pragma message "TODO: make CommandQueue::enqueue() exception-safe"
+        fifos[gateway_id].push_back(std::move(new_command));
     
         pthread_mutex_unlock(&queue_mutex);
     }
@@ -118,15 +122,16 @@ E_QUEUE_STATE CommandQueue::enqueue(int gateway_id,
 
 unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
 {
-    ASSERT(gateway_id < NUM_GATEWAYS);
-    ASSERT(gateway_id >= 0);
+    assert(gateway_id < MAX_NUM_GATEWAYS);
+    assert(gateway_id >= 0);
 
     unique_ptr<I_CAN_Command> rval;
 
     {
         pthread_mutex_lock(&queue_mutex);
     
-        rval = fifos[gateway_id].pop_front();
+        rval = std::move(fifos[gateway_id].front());
+        fifos[gateway_id].pop_front();
     
         pthread_mutex_unlock(&queue_mutex);
     }
@@ -137,14 +142,14 @@ unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
 // This should be used if a command which has
 // been dequeued cannot be sent, and is added
 // again to the head / front of the queue.
-E_QUEUE_STATE CommandQueue::requeue(int gateway_id,
+CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
                                     unique_ptr<I_CAN_Command> new_command)
 {
 
-    ASSERT(gateway_id < NUM_GATEWAYS);
-    ASSERT(gateway_id >= 0);
+    assert(gateway_id < MAX_NUM_GATEWAYS);
+    assert(gateway_id >= 0);
 
-    if (new_command == null)
+    if (new_command == nullptr)
     {
         return MISSING_INSTANCE;
     }
@@ -152,7 +157,7 @@ E_QUEUE_STATE CommandQueue::requeue(int gateway_id,
     {
         pthread_mutex_lock(&queue_mutex);
     
-        fifos[gateway_id].push_front(new_command);
+        fifos[gateway_id].push_front(std::move(new_command));
     
         pthread_mutex_unlock(&queue_mutex);
     }
@@ -179,8 +184,9 @@ void CommandQueue::flushToPool(CommandPool& memory_pool)
     {
         while (! fifos[i].empty())
         {
-            cmd = fifos[i].pop_front();
+            cmd = std::move(fifos[i].front());
             memory_pool.recycleInstance(cmd);
+            fifos[i].pop_front();
         }
     }
     

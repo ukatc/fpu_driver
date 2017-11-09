@@ -23,10 +23,12 @@
 
 #include "DriverConstants.h"
 #include "I_CAN_Command.h"
+
+#include "time_utils.h"
 #include "CommandPool.h"
 
 #include <memory>
-#include <dequeue>
+#include <deque>
 
 using std::unique_ptr;
 
@@ -67,7 +69,7 @@ public:
     // adds a CAN command to the queue for the corresponding
     // gateway
     // This command can fail if the system is out-of memory.
-    E_QUEUE_STATE enqueue(int gateway_id, unique_ptr<I_CAN_Command> new_command);
+    E_QueueState enqueue(int gateway_id, unique_ptr<I_CAN_Command> new_command);
 
     unique_ptr<I_CAN_Command> dequeue(int gateway_id);
 
@@ -77,7 +79,7 @@ public:
     // when a command has been dequeued but cannot
     // be sent, and we don't want to throw away
     // the command.
-    E_QUEUE_STATE requeue(int gateway_id, unique_ptr<I_CAN_Command> new_command);
+    E_QueueState requeue(int gateway_id, unique_ptr<I_CAN_Command> new_command);
     
     // this method empties all queues, flushing
     // all messages to the memorypool pool of
@@ -93,7 +95,7 @@ private:
     // condition variables which is signaled on state changes
     pthread_cond_t cond_queue_append; // is initialized with monotonic clock option
 
-    std::dequeue<unique_ptr<I_CAN_Command>> fifos[MAX_NUM_GATEWAYS];
+    std::deque<unique_ptr<I_CAN_Command>> fifos[MAX_NUM_GATEWAYS];
     
 };
 
