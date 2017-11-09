@@ -23,6 +23,7 @@
 #ifndef MOVE_DATUM_ON_COMMAND_H
 #define MOVE_DATUM_ON_COMMAND_H
 
+#include <cassert>
 #include "I_CAN_Command.h"
 
 namespace mpifps {

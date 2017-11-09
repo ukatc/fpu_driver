@@ -67,13 +67,13 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
-        return grid_state.driver_state;
+        return DE_NO_CONNECTION;
     }
 
     // check no FPUs have ongoing collisions
     for (int i=0; i < num_fpus; i++)
     {
-        E_FPU_STATE fpu_status = grid_state.FPUState[i].state;
+        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
             || (fpu_status == FPST_COLLISION_DETECTED)
             || (fpu_status == FPST_LIMIT_STOP))
@@ -84,10 +84,10 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
 
     // make sure each FPU is just right above datum
     int num_moving = 0;
-    unique_ptr<MoveDatumOff> can_command1;
+    unique_ptr<MoveDatumOffCommand> can_command1;
     for (int i=0; i < num_fpus; i++)
     {
-        t_fpu_state& fpu_state = grid_state.FPUState[i];
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
         if (fpu_state.state != FPST_LOCKED)
         {
             bool move_alpha_up = (fpu_state.on_alpha_datum
@@ -97,13 +97,13 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
                                  || fpu_state.beta_steps < 0);
             if (move_alpha_up || move_beta_up)
             {
-                can_command1 = gateway.provideInstance<MoveDatumOff>(CCMD_MOVE_DATUM_OFF);
-                can_command1.parametrize(i,
+                can_command1 = gateway.provideInstance<MoveDatumOffCommand>(CCMD_MOVE_DATUM_OFF);
+                can_command1->parametrize(i,
                                         move_alpha_up ? 1 : 0,
                                         move_beta_up ? 1 : 0);
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
-                gateway.sendCommand(can_command1);
+                gateway.sendCommand(i, std::move(can_command1));
                 
                 num_moving++;                                
             }
@@ -138,7 +138,7 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
     // check the result of the movement operation
     for (int i=0; i < num_fpus; i++)
     {
-        E_FPU_STATE fpu_status = grid_state.FPUState[i].fpu_state;
+        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status != FPST_LOCKED)
             || (fpu_status != FPST_ABOVE_DATUM))
         {
@@ -146,17 +146,17 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
             // desired state due to time-out or collision.
             // Both cases are handled on a higher level,
             // we return here.
-            return OK;
+            return DE_OK;
         }
     }
     
     // now, all fpus are moved above the datum switch.
     // move them until downward they hit the datum switch
         
-    unique_ptr<MoveDatumOn> can_command2;
+    unique_ptr<MoveDatumOnCommand> can_command2;
     for (int i=0; i < num_fpus; i++)
     {
-        t_fpu_state& fpu_state = grid_state.FPUState[i];
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
         if (fpu_state.state != FPST_LOCKED)
         {
             // FIXME!!!: we should add a security
@@ -168,13 +168,13 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
             
             bool move_beta_down = fpu_state.beta_steps > 0;
             
-            if (move_alpha_up || move_beta_up)
+            if (move_alpha_down || move_beta_down)
             {
-                can_command2 = gateway.provideInstance<MoveDatumOn>(CCMD_MOVE_DATUM_ON);
-                can_command2.parametrize(i,
+                can_command2 = gateway.provideInstance<MoveDatumOnCommand>(CCMD_MOVE_DATUM_ON);
+                can_command2->parametrize(i,
                                         move_alpha_down ? -1 : 0,
                                         move_beta_down ? -1 : 0);
-                gateway.sendCommand(i, can_command2);
+                gateway.sendCommand(i, std::move(can_command2));
                 num_moving++;                                
             }
         }
@@ -185,7 +185,7 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
         state_summary = gateway.waitForState(TGT_AT_DATUM,
                              grid_state);
 
-        num_moving = grid_state.Counts[DATUM_SEARCH];                        
+        num_moving = grid_state.Counts[FPST_DATUM_SEARCH];                        
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -208,14 +208,14 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
-        return grid_state.driver_state;
+        return DE_NO_CONNECTION;
     }
 
     // check no FPUs have ongoing collisions
     // and has been initialized
     for (int i=0; i < num_fpus; i++)
     {
-        E_FPU_STATE fpu_status = grid_state.FPUState[i].state;
+        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
             || (fpu_status == FPST_COLLISION_DETECTED)
             || (fpu_status == FPST_LIMIT_STOP))
@@ -223,7 +223,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             return DE_UNRESOLVED_COLLISION;
         }
 
-        if (!grid_state.FPUState[i].isinitialised)
+        if (!grid_state.FPU_state[i].is_initialized)
         {
             return DE_NOT_INITIALISED;
         }
@@ -232,28 +232,28 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
 
     int num_loading =  waveforms.size();
-    unique_ptr<ConfigureMotion> can_command;
+    unique_ptr<ConfigureMotionCommand> can_command;
     // loop over number of steps in the table
-    const int num_steps = waveforms[0].size();
-    for (int s=0; k < num_steps)
+    const int num_steps = waveforms[0].steps.size();
+    for (int s=0; s < num_steps; s++)
     {
         for (int i=0; i < num_fpus; i++)
         {
-            t_fpu_state& fpu_state = grid_state.FPUState[i];
+            t_fpu_state& fpu_state = grid_state.FPU_state[i];
             if (fpu_state.state != FPST_LOCKED)
             {
                 // get a command buffer
-                can_command = gateway.provideInstance<ConfigureMotion>(CCMD_CONFIG_MOTION);
+                can_command = gateway.provideInstance<ConfigureMotionCommand>(CCMD_CONFIG_MOTION);
 
                 int fpu_id = waveforms[i].fpu_id;
-                t_step_pair step = waveforms[i][s];
+                t_step_pair step = waveforms[i].steps[s];
                 bool first_entry = (s == 0);
                 bool last_entry = (s == (num_steps-1));
-                can_command.parametrize(fpu_id, step.alpha_steps, step.beta_steps, first_entry, last_entry);
+                can_command->parametrize(fpu_id, step.alpha_steps, step.beta_steps, first_entry, last_entry);
 
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
-                gateway.sendCommand(fpu_id, can_command);
+                gateway.sendCommand(fpu_id, std::move(can_command));
             }
         }
     }
@@ -313,7 +313,6 @@ E_GridState AsyncDriver::getGridState(t_grid_state& out_state)
 }
 
 E_GridState AsyncDriver::waitForState(E_WaitTarget target,
-                                      E_GridState state_summary,
                                       t_grid_state& out_detailed_state)
 {
     return gateway.waitForState(target, out_detailed_state);

@@ -112,9 +112,13 @@ public:
 
     // send a CAN command to the gateway.
     // This method is thread-safe
-    CommandQueue::E_QueueState sendCommand(int gateway_id, unique_ptr<I_CAN_Command> new_command);
-    
+    CommandQueue::E_QueueState sendCommand(int fpu_id, unique_ptr<I_CAN_Command> new_command);
 
+    int getGatewayIdByFPUID(int fpu_id);
+
+
+    // the following two methods are actually internal -
+    // they need to be visible in a non-member function.
     void* threadTxFun();
     void* threadRxFun();    
 

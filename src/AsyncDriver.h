@@ -21,7 +21,9 @@
 #ifndef ASYNC_DRIVER_H
 #define ASYNC_DRIVER_H
 
-#include "GatewayDriver.hpp"
+#include <stdint.h>
+
+#include "GatewayDriver.h"
 
 namespace mpifps
 {
@@ -33,20 +35,22 @@ public:
 
     typedef struct
     {
-        int16 alpha_steps;
-        int16 beta_steps;
+        int16_t alpha_steps;
+        int16_t beta_steps;
     } t_step_pair;
     
     typedef struct 
     {
-        int fpu_id;
+        int16_t fpu_id;
         std::vector<t_step_pair> steps;
     } t_waveform;
 
     typedef  std::vector<t_waveform> t_wtable;
 
-    AsyncDriver()
+    AsyncDriver(int nfpus)
+        : gateway(nfpus)
         {
+            num_fpus = nfpus;
         }
 
     ~AsyncDriver()
@@ -68,35 +72,37 @@ public:
     E_DriverErrCode disconnect();
 
     
-    E_DriverErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState state_summary);
+    E_DriverErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState state_summary);
+    E_DriverErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode findDatumAsync(t_grid_state& grid_state, E_GridState state_summary);
+    E_DriverErrCode findDatumAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode configMotionAsync(const t_wtable& waveforms, E_GridState state_summary);
+    E_DriverErrCode configMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, const t_wtable& waveforms);
 
-    E_DriverErrCode executeMotionAsync(t_grid_state& grid_state, E_GridState state_summary);
+    E_DriverErrCode executeMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode repeatMotionAsync(t_grid_state& grid_state, E_GridState state_summary);
+    E_DriverErrCode repeatMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode reverseMotionAsync(t_grid_state& grid_state, E_GridState state_summary);
+    E_DriverErrCode reverseMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode abortMotionAsync(t_grid_state& grid_state, E_GridState state_summary);
+    E_DriverErrCode abortMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode assignPositionsAsync(t_grid_state& grid_state, E_GridState state_summary);
+    E_DriverErrCode assignPositionsAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode lockFPUAsync(t_grid_state& grid_state, E_GridState state_summary);
+    E_DriverErrCode lockFPUAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode unlockFPUAsync(t_grid_state& grid_state, E_GridState state_summary);
+    E_DriverErrCode unlockFPUAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    void getGridState(t_grid_state& out_state);
+    E_GridState getGridState(t_grid_state& out_state);
 
-    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);
+    E_GridState waitForState(E_WaitTarget target,
+                             t_grid_state& out_detailed_state);
     
     
 private:
 
+    int num_fpus;
     GatewayDriver gateway;
 };
 

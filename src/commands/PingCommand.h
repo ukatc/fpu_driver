@@ -22,6 +22,7 @@
 #ifndef PING_COMMAND_H
 #define PING_COMMAND_H
 
+#include <cassert>
 #include "I_CAN_Command.h"
 
 namespace mpifps {

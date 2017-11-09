@@ -617,4 +617,10 @@ CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_C
 }
 
 
+int GatewayDriver::getGatewayIdByFPUID(const int fpu_id)
+{
+    return address_map[fpu_id].gateway_id;
+}
+
+
 } // end of namespace
