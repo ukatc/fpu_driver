@@ -21,7 +21,7 @@
 #ifndef GRID_DRIVER_H
 #define GRID_DRIVER_H
 
-#include "GatewayDriver.hpp"
+#include "AsyncDriver.h"
 
 namespace mpifps
 {
@@ -34,8 +34,10 @@ public:
     // number of retries for each action
     const int DEFAULT_NUM_RETRIES = 10;
 
-    GridDriver()
+    GridDriver(int nfpus) : AsyncDriver(nfpus)
         {
+            num_fpus = nfpus;
+            memset((void*) &grid_state, sizeof(grid_state), 0);
         }
 
     ~GridDriver()
@@ -48,7 +50,7 @@ public:
 
     E_DriverErrCode findDatum();
 
-    E_DriverErrCode configMotion();
+    E_DriverErrCode configMotion(const t_wtable& waveforms);
 
     E_DriverErrCode executeMotion();
 
@@ -67,10 +69,11 @@ public:
     
 private:
 
-    untangleFPU();
+    E_DriverErrCode untangleFPU();
 
-    clearCollision();
+    E_DriverErrCode clearCollision();
 
+    int num_fpus;
     
     // this mutex ensures that no new
     // command is initiated while a running
@@ -79,7 +82,7 @@ private:
 
 
     // Buffer for retrieved state of the FPUs.
-    t_grid_state& grid_state;
+    t_grid_state grid_state;
 
 };
 

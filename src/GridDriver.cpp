@@ -33,7 +33,6 @@ E_DriverErrCode GridDriver::findDatum()
         
     pthread_mutex_lock(&command_creation_mutex);
 
-    int num_avaliable_retries = DEFAULT_NUM_RETRIES;
     while (num_avaliable_retries > 0)
     {
         // writes grid_state into member variable
@@ -55,7 +54,7 @@ E_DriverErrCode GridDriver::findDatum()
 
 
 
-GridDriver::E_DriverErrCode configMotion(const t_wtable& waveforms)
+E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms)
 
 {
     E_DriverErrCode estatus = DE_OK;
@@ -92,19 +91,21 @@ GridDriver::E_DriverErrCode configMotion(const t_wtable& waveforms)
         // complicated states like a large bird nesting
         // on top of the FPUs. Probably has to be made
         // more robust for such cases.
-        int num_fpus = cur_wtable.size();
-        // In this place, a down-counting loop is used
+
+        // In this place, a down-counting iterator is used
         // so that erase() will not change the
         // index of the next processed item.
-        for (int i = (num_fpus -1); i >= 0 ; i--)
+        for (t_wtable::iterator it = cur_wtable.end();
+             it != cur_wtable.begin();
+             it--)
         {
-            int fpu_id = cur_wtable[i].fpu_id;
+            int fpu_id = it->fpu_id;
             
-            if (grid_state.FPUstate[fpu_id].state == FPST_READY_FORWARD)
+            if (grid_state.FPU_state[fpu_id].state == FPST_READY_FORWARD)
             {
                 // delete entry for this FPU from table -
                 // it does not need to be configured again
-                cur_wtable.erase(i);
+                cur_wtable.erase(it);
             }
         }
         
