@@ -27,6 +27,7 @@ namespace mpifps
 timespec get_monotonic_time(timespec& now)
 {
     clock_gettime(CLOCK_MONOTONIC, &now);
+    return now;
 }
 
 
@@ -83,7 +84,8 @@ bool time_smaller_equal(const timespec& tm_a, const timespec& tm_b)
 timespec time_to_wait(const timespec& cur_time,
                       const timespec& next_timeout)
 {
-    timespec zero_wait = {.tv_sec = 0, .tv_nsec = 0};
+    const struct timespec zero_wait = {/* .tv_sec = */ 0,
+                                       /* .tv_nsec = */ 0};
 
     // check whether next_timeout is already in the past.
     if (time_smaller_equal(next_timeout, cur_time))

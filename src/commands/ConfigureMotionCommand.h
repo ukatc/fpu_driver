@@ -101,8 +101,9 @@ namespace mpifps {
         // time-out period for a response to the message
         timespec getTimeOut()
         {
-            timespec const toval =
-                {.tv_sec = 1, .tv_nsec = 500000000 };
+            const struct timespec  toval =
+                {/* .tv_sec = */ 1,
+                 /* .tv_nsec = */ 500000000 };
             
             return toval;
         };

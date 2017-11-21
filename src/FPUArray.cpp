@@ -36,7 +36,8 @@
 namespace mpifps
 {
 
-const timespec FPUArray::MAX_TIMEOUT = {.tv_sec = 10,  .tv_nsec = 0};
+const timespec FPUArray::MAX_TIMEOUT = { /* .tv_sec = */ 10,
+                                         /* .tv_nsec = */ 0};
 
 
 // this function returns a thread-safe copy of the current state of
