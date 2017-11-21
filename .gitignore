@@ -4,4 +4,8 @@
 .\#*
 *.a
 *.so
+GPATH
+GRTAGS
+GSYMS
+GTAGS
 
