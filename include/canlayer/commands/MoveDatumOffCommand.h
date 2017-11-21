@@ -12,32 +12,37 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME PingCommand.h
+// NAME MoveDatumOffCommand.h
 // 
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PING_COMMAND_H
-#define PING_COMMAND_H
+#ifndef MOVE_DATUM_OFF_COMMAND_H
+#define MOVE_DATUM_OFF_COMMAND_H
 
 #include <cassert>
+
 #include "../I_CAN_Command.h"
 
 namespace mpifps {
 
-    class PingCommand : public I_CAN_Command
+namespace canlayer
+{
+
+    class MoveDatumOffCommand : public I_CAN_Command
     {
 
       public:
 
-        PingCommand(){};
+        MoveDatumOffCommand(){};
 
-        void parametrize(int f_id, long sequence_number)
+        void parametrize(int f_id, int alpha_direction, int beta_direction)
         {
             fpu_id = f_id;
-            payload = sequence_number;
+            adir = alpha_direction;
+            bdir = beta_direction;
         };
 
         void SerializeToBuffer(const uint8_t busid,
@@ -58,7 +63,10 @@ namespace mpifps {
             // The protocol uses little-endian encoding here
             // (the byte order used in the CANOpen protocol).
             can_buffer.message.identifier = htole64(can_addr);
+
+            #pragma message "fix command assembly here" 
             
+            long payload = 0;
             can_buffer.message.data[0] = payload & 0xff;
             can_buffer.message.data[1] = (payload >> 8) & 0xff;
             can_buffer.message.data[2] = (payload >> 16) & 0xff;
@@ -79,6 +87,7 @@ namespace mpifps {
             return fpu_id;
         };
 
+
         // boolean value indicating whether
         // the driver should wait for a response
         bool expectsResponse()
@@ -94,26 +103,27 @@ namespace mpifps {
         // time-out period for a response to the message
         timespec getTimeOut()
         {
-            timespec const toval =
-                {
-                    /* .tv_sec = */ 1,
-                    /* .tv_nsec = */ 500000000 };
+            const struct timespec toval =
+                {/* .tv_sec = */ 1,
+                 /* .tv_nsec = */ 500000000 };
             
             return toval;
         };
 
       bool doBroadcast()
       {
-        return true;
+        return false;
       }
 
     private:
         uint16_t fpu_id;
-        long payload;
+        int adir;
+        int bdir;
         
         
     };
 
 }
 
+}
 #endif

@@ -21,13 +21,13 @@
 #ifndef GRID_DRIVER_H
 #define GRID_DRIVER_H
 
-#include "AsyncDriver.h"
+#include "canlayer/AsyncDriver.h"
 
 namespace mpifps
 {
 
 
-class GridDriver : public AsyncDriver
+class GridDriver : public canlayer::AsyncDriver
 {
 public:
 

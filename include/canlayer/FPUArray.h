@@ -29,13 +29,17 @@
 #include <unistd.h>
 #include <atomic>
 
+#include "../E_GridState.h"
+#include "../T_GridState.h"
+
 #include "DriverConstants.h"
 #include "TimeOutList.h"
-#include "T_GridState.h"
-#include "E_GridState.h"
 #include "I_CAN_Command.h"
 
 namespace mpifps
+{
+
+namespace canlayer
 {
 
 
@@ -213,6 +217,9 @@ private:
     pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER;
 
 };
+
+}
+
 }
 
 #endif

@@ -21,16 +21,18 @@
 
 #include <cassert>
 
-#include "CommandPool.h"
-#include "DriverConstants.h"
-#include "commands/ConfigureMotionCommand.h"
-#include "commands/MoveDatumOnCommand.h"
-#include "commands/MoveDatumOffCommand.h"
-#include "commands/PingCommand.h"
+#include "canlayer/CommandPool.h"
+#include "canlayer/DriverConstants.h"
+#include "canlayer/commands/ConfigureMotionCommand.h"
+#include "canlayer/commands/MoveDatumOnCommand.h"
+#include "canlayer/commands/MoveDatumOffCommand.h"
+#include "canlayer/commands/PingCommand.h"
 
 namespace mpifps
 {
 
+namespace canlayer
+{
 
 
 E_DriverErrCode CommandPool::initialize()
@@ -151,6 +153,8 @@ void CommandPool::recycleInstance(unique_ptr<I_CAN_Command>& cmd_ptr)
         pthread_cond_signal(&cond_pool_add);
     }
     pthread_mutex_unlock(&pool_mutex);
+}
+
 }
 
 }

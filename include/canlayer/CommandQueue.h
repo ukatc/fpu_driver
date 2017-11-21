@@ -36,6 +36,9 @@ using std::unique_ptr;
 namespace mpifps
 {
 
+namespace canlayer
+{
+
 class CommandQueue
 {
 
@@ -99,6 +102,8 @@ private:
     std::deque<unique_ptr<I_CAN_Command>> fifos[MAX_NUM_GATEWAYS];
 
 };
+
+}
 
 }
 #endif

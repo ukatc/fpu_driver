@@ -27,6 +27,9 @@
 namespace mpifps
 {
 
+    namespace canlayer
+    {
+
 // initializes a pthreads condition variable
 // so that it uses the Linux monotonic clock.
 // returns a non-zero value if the initialization
@@ -34,9 +37,10 @@ namespace mpifps
 //
 // (The return value should likely be checked
 // by an assert.)
-int condition_init_monotonic(pthread_cond_t& cond);
+        int condition_init_monotonic(pthread_cond_t& cond);
 
+
+    }
 
 }
-
 #endif

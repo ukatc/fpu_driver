@@ -22,15 +22,18 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <errno.h>
-
 #include <cassert>
-#include "SBuffer.h"
+
+#include "canlayer/SBuffer.h"
 
 
 // FIXME: reading and writing data is for now technically
 // unrelated, and should probably splitted into two classes.
 
 namespace mpifps
+{
+
+namespace canlayer
 {
 
 const uint8_t STX = 0x02;
@@ -317,6 +320,6 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
 
 
 
-
+}
 
 }

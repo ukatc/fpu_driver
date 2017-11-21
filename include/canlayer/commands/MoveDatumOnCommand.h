@@ -28,6 +28,9 @@
 
 namespace mpifps {
 
+namespace canlayer
+{
+
     class MoveDatumOnCommand : public I_CAN_Command
     {
 
@@ -124,4 +127,5 @@ namespace mpifps {
 
 }
 
+}
 #endif

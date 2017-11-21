@@ -10,9 +10,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "../../src/T_GridState.h"
-#include "../../src/E_GridState.h"
-#include "../../src/GridDriver.h"
+
+#include "../../include/T_GridState.h"
+#include "../../include/E_GridState.h"
+#include "../../include/GridDriver.h"
 
 
 namespace   // Avoid cluttering the global namespace.

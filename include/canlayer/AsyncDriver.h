@@ -28,10 +28,12 @@
 namespace mpifps
 {
 
+namespace canlayer
+{
 
 class AsyncDriver
 {
-public:
+    public:
 
     typedef struct
     {
@@ -49,13 +51,13 @@ public:
 
     AsyncDriver(int nfpus)
         : gateway(nfpus)
-    {
-        num_fpus = nfpus;
-    }
+        {
+            num_fpus = nfpus;
+        }
 
     ~AsyncDriver()
-    {
-    }
+        {
+        }
 
     // Initialize internal data structures, allocate memory etc.
     // (this can fail if the system is too low on memory).
@@ -100,7 +102,7 @@ public:
                              t_grid_state& out_detailed_state);
 
 
-private:
+    private:
 
     int num_fpus;
     GatewayDriver gateway;
@@ -108,4 +110,5 @@ private:
 
 } // end of namespace
 
+} // end of namespace
 #endif

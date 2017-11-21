@@ -33,12 +33,16 @@
 //#include "stdbool.h"	/// bool
 //#include <unistd.h>
 
-#include "DriverState.h"
-#include "I_CAN_Command.h"
-#include "E_CAN_COMMAND.h"
+#include "../DriverState.h"
 
+
+#include "E_CAN_COMMAND.h"
+#include "I_CAN_Command.h"
 
 namespace mpifps
+{
+
+namespace canlayer
 {
 
 using std::unique_ptr;
@@ -105,5 +109,8 @@ private:
     pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t cond_pool_add = PTHREAD_COND_INITIALIZER;
 };
+
+}
+
 }
 #endif

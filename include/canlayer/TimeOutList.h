@@ -36,6 +36,9 @@
 namespace mpifps
 {
 
+namespace canlayer
+{
+
 class TimeOutList
 {
 public:
@@ -98,6 +101,8 @@ private:
     int minimum_index_lbound;
 
 };
+
+}
 
 }
 

@@ -25,6 +25,9 @@
 namespace mpifps
 {
 
+namespace canlayer
+{
+
 enum E_CAN_COMMAND
 {
     CCMD_NO_COMMAND        = 0,
@@ -56,6 +59,7 @@ enum E_CAN_RESPONSE
     CRSP_PING_RESPONSE     = 1,
 };
 
+}
 
 } // end of namespace
 

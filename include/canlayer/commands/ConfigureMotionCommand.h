@@ -26,7 +26,11 @@
 
 #include "../I_CAN_Command.h"
 
-namespace mpifps {
+namespace mpifps
+{
+
+namespace canlayer
+{
 
     class ConfigureMotionCommand : public I_CAN_Command
     {
@@ -125,4 +129,5 @@ namespace mpifps {
 
 }
 
+}
 #endif

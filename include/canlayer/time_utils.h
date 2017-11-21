@@ -25,6 +25,9 @@
 namespace mpifps
 {
 
+    namespace canlayer
+{
+
 // the following three  definitions are from Linux-4.3.6
 // kernel sources - they are not included in time.h.
 
@@ -94,6 +97,8 @@ timespec time_to_wait(const timespec& cur_time,
                       const timespec& next_timeout);
 
 
+
+}
 
 }
 

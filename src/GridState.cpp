@@ -17,9 +17,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "DriverConstants.h"
-
 #include "GridState.h"
+#include "canlayer/DriverConstants.h"
+
 
 namespace mpifps
 {

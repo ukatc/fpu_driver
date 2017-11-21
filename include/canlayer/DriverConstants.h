@@ -25,6 +25,12 @@
 namespace mpifps
 {
 
+// this namespace contains definitions
+// which are internal to the CAN bus access layer.
+
+namespace canlayer
+{
+
 // number of can buses on one gateway
 const int BUSES_PER_GATEWAY =  5;
 // number of FPUs on one CAN bus
@@ -52,4 +58,5 @@ const int MAX_CAN_MESSAGE_BYTES = 11;
 
 }
 
+}
 #endif

@@ -34,6 +34,9 @@
 namespace mpifps
 {
 
+namespace canlayer
+{
+
 class I_ResponseHandler
 {
 public:
@@ -46,6 +49,8 @@ public:
     // for the corresponsing FPUs
     virtual void handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_CAN_MESSAGE_BYTES], int const clen) = 0;
 };
+
+}
 
 }
 

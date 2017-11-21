@@ -24,11 +24,15 @@
 #include <string.h>		/// strerror
 #include <pthread.h>
 #include <unistd.h>
-#include "DriverConstants.h"
-#include "TimeOutList.h"
+
+#include "canlayer/DriverConstants.h"
+#include "canlayer/TimeOutList.h"
 
 
 namespace mpifps
+{
+
+namespace canlayer
 {
 
 
@@ -297,6 +301,6 @@ const timespec TimeOutList::getNextTimeOut(timespec const max_time)
 }
 
 
-
+}
 
 }

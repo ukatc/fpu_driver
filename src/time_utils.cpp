@@ -18,11 +18,15 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "time_utils.h"
+#include "canlayer/time_utils.h"
 
 
 namespace mpifps
 {
+
+namespace canlayer
+{
+
 
 timespec get_monotonic_time(timespec& now)
 {
@@ -100,5 +104,6 @@ timespec time_to_wait(const timespec& cur_time,
 }
 
 
+}
 
 }

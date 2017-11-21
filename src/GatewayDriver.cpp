@@ -22,12 +22,15 @@
 #include <cassert>
 #include <poll.h>
 #include <signal.h>
-#include "time_utils.h"
 
-#include "GatewayDriver.h"
+#include "canlayer/time_utils.h"
+#include "canlayer/GatewayDriver.h"
 
 
 namespace mpifps
+{
+
+namespace canlayer
 {
 
 
@@ -626,5 +629,6 @@ int GatewayDriver::getGatewayIdByFPUID(const int fpu_id)
     return address_map[fpu_id].gateway_id;
 }
 
+}
 
 } // end of namespace

@@ -24,16 +24,17 @@
 #include <string.h>		/// strerror
 #include <pthread.h>
 #include <unistd.h>
-#include "time_utils.h"
 #include <stdint.h>
-
-
-#include "FPUArray.h" // defines thread-safe structure of FPU state info
-
-#include "GridState.h"
 #include <cassert>
 
+#include "canlayer/time_utils.h"
+#include "canlayer/FPUArray.h" // defines thread-safe structure of FPU state info
+#include "GridState.h"
+
 namespace mpifps
+{
+
+namespace canlayer
 {
 
 const timespec FPUArray::MAX_TIMEOUT = { /* .tv_sec = */ 10,
@@ -432,5 +433,6 @@ void FPUArray::handleFPUResponse(t_fpu_state& fpu,
 }
 
 
+}
 
 }

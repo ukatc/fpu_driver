@@ -20,13 +20,16 @@
 
 #include <cassert>
 
-#include "sync_utils.h"
-
-#include "CommandQueue.h"
+#include "canlayer/sync_utils.h"
+#include "canlayer/CommandQueue.h"
 
 
 namespace mpifps
 {
+
+namespace canlayer
+{
+
 
 CommandQueue::CommandQueue()
 {
@@ -196,5 +199,6 @@ void CommandQueue::flushToPool(CommandPool& memory_pool)
     pthread_mutex_unlock(&queue_mutex);
 }
 
+}
 
 }

@@ -32,6 +32,10 @@
 namespace mpifps
 {
 
+namespace canlayer
+{
+
+
 // This refers to the byte-swizzled mesage over
 // the socket. We have two start bytes, two stop bytes,
 // and any payload byte can be swizzled to two bytes.
@@ -83,6 +87,8 @@ public:
     virtual bool doBroadcast() = 0;
 
 };
+
+}
 
 } // end of namespace
 

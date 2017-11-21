@@ -37,6 +37,9 @@
 namespace mpifps
 {
 
+namespace canlayer
+{
+
 /* this class provides a buffer that does the byte
    stuffing of messages which is required before
    sending them to the socket interface, as well
@@ -120,6 +123,8 @@ private:
     uint8_t wbuf[BUFSIZE];
 
 };
+
+}
 
 }
 #endif

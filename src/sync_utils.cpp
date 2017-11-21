@@ -18,10 +18,14 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "sync_utils.h"
+#include "canlayer/sync_utils.h"
 
 namespace mpifps
 {
+
+namespace canlayer
+{
+
 
 int condition_init_monotonic(pthread_cond_t& cond)
 {
@@ -56,6 +60,8 @@ int condition_init_monotonic(pthread_cond_t& cond)
 
 exit:
     return err;
+}
+
 }
 
 }

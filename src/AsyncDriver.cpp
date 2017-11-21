@@ -18,17 +18,20 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "AsyncDriver.h"
-#include "GatewayDriver.h"
+#include "canlayer/AsyncDriver.h"
+#include "canlayer/GatewayDriver.h"
 
 // we need to include the individual CAN commands
 // as they are parametrized here.
-#include "commands/ConfigureMotionCommand.h"
-#include "commands/MoveDatumOnCommand.h"
-#include "commands/MoveDatumOffCommand.h"
-#include "commands/PingCommand.h"
+#include "canlayer/commands/ConfigureMotionCommand.h"
+#include "canlayer/commands/MoveDatumOnCommand.h"
+#include "canlayer/commands/MoveDatumOffCommand.h"
+#include "canlayer/commands/PingCommand.h"
 
 namespace mpifps
+{
+
+namespace canlayer
 {
 
 E_DriverErrCode AsyncDriver::initializeDriver()
@@ -328,5 +331,6 @@ E_GridState AsyncDriver::waitForState(E_WaitTarget target,
 }
 
 
+}
 
 } // end of namespace
