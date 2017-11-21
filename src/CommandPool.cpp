@@ -36,21 +36,21 @@ namespace mpifps
 E_DriverErrCode CommandPool::initialize()
 {
 
-  assert(num_fpus > 0);
-  pthread_mutex_lock(&pool_mutex);
-  bool allocation_error = false;
-  try
+    assert(num_fpus > 0);
+    pthread_mutex_lock(&pool_mutex);
+    bool allocation_error = false;
+    try
     {
-      for (int i = 0; i < NUM_CAN_COMMANDS; i++)
+        for (int i = 0; i < NUM_CAN_COMMANDS; i++)
         {
-          int capacity=0;
-          const int cap_broadcast = 10;
-          const int cap_individual = num_fpus * 10;
-          const int cap_wform = num_fpus * MAX_SUB_COMMANDS;
+            int capacity=0;
+            const int cap_broadcast = 10;
+            const int cap_individual = num_fpus * 10;
+            const int cap_wform = num_fpus * MAX_SUB_COMMANDS;
 
-          switch (i)
+            switch (i)
             {
-              // broadcast commands
+            // broadcast commands
             case CCMD_RESET_FPU       :
             case CCMD_EXECUTE_MOTION       :
             case CCMD_REPEAT_MOTION       :
@@ -61,74 +61,74 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_CHECK_INTEGRITY       :
             case CCMD_PING_FPU       :
             case CCMD_ABORT_MOTION       :
-              capacity = cap_broadcast;
-              break;
+                capacity = cap_broadcast;
+                break;
 
-              // waveform table
+            // waveform table
             case CCMD_CONFIG_MOTION   :
-              capacity = cap_wform;
-              break;
+                capacity = cap_wform;
+                break;
 
-              // individual commands
+            // individual commands
             case CCMD_MOVE_DATUM_OFF  :
             case CCMD_MOVE_DATUM_ON   :
             case CCMD_ASSIGN_POSITION :
             case CCMD_UNTANGLE_FPU    :
             case CCMD_LOCK_UNIT       :
             case CCMD_UNLOCK_UNIT     :
-              capacity = cap_individual;
+                capacity = cap_individual;
             default:
-              // logical error
-              assert(false);
+                // logical error
+                assert(false);
             }
 
-          // FIXME: This can thow bad_alloc if the
-          // system is very low on memory.
-          pool[i].reserve(capacity);
-          unique_ptr<I_CAN_Command> ptr;
-          for (int c = 0; c < capacity; c++)
+            // FIXME: This can thow bad_alloc if the
+            // system is very low on memory.
+            pool[i].reserve(capacity);
+            unique_ptr<I_CAN_Command> ptr;
+            for (int c = 0; c < capacity; c++)
             {
-              switch (i)
+                switch (i)
                 {
                 case CCMD_PING_FPU        :
-                  ptr.reset(new PingCommand());
-                  pool[i].push_back(std::move(ptr));
-                  break;
+                    ptr.reset(new PingCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
 
                 case CCMD_CONFIG_MOTION        :
-                  ptr.reset(new ConfigureMotionCommand());
-                  pool[i].push_back(std::move(ptr));
-                  break;
+                    ptr.reset(new ConfigureMotionCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
                 case CCMD_MOVE_DATUM_OFF        :
-                  ptr.reset(new MoveDatumOffCommand());
-                  pool[i].push_back(std::move(ptr));
-                  break;
+                    ptr.reset(new MoveDatumOffCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
                 case CCMD_MOVE_DATUM_ON        :
-                  ptr.reset(new MoveDatumOnCommand());
-                  pool[i].push_back(std::move(ptr));
-                  break;
+                    ptr.reset(new MoveDatumOnCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
 
                 default:
-                  // FIXME: add any missing constructors
-                  assert(0);
+                    // FIXME: add any missing constructors
+                    assert(0);
 
                 }
             }
         }
     }
-  catch (std::bad_alloc& ba)
+    catch (std::bad_alloc& ba)
     {
-        
-      allocation_error = true;
+
+        allocation_error = true;
     }
-  pthread_mutex_unlock(&pool_mutex);
-  if (allocation_error)
+    pthread_mutex_unlock(&pool_mutex);
+    if (allocation_error)
     {
-      return DE_DRIVER_NOT_INITIALISED;
+        return DE_DRIVER_NOT_INITIALISED;
     }
-  else
+    else
     {
-      return DE_OK;
+        return DE_OK;
     }
 }
 

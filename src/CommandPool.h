@@ -65,32 +65,32 @@ public:
 //    template <typename T>
 //    unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type);
 //
-  template<typename T>
-  inline unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type)
-  {
-    unique_ptr<I_CAN_Command> ptr;
-    
-    pthread_mutex_lock(&pool_mutex);
-    while (pool[cmd_type].empty())
-      {
-        // wait until a command instance is in the pool
-        // Waiting should almost never happen because
-        // there is a surplus of instances - if
-        // we ever get a dead-lock here, we have a memory
-        // leak of command instances.
-        pthread_cond_wait(&cond_pool_add, &pool_mutex);
-      }
-    
-    ptr = std::move(pool[cmd_type].back());
-    pool[cmd_type].pop_back();
-    pthread_mutex_unlock(&pool_mutex);
-    
-    unique_ptr<T> ptrT;
-    // if this throws an exception it is a logic error.
-    ptrT.reset(dynamic_cast<T*>(ptr.get()));
-    return ptrT;
-  }
-  
+    template<typename T>
+    inline unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type)
+    {
+        unique_ptr<I_CAN_Command> ptr;
+
+        pthread_mutex_lock(&pool_mutex);
+        while (pool[cmd_type].empty())
+        {
+            // wait until a command instance is in the pool
+            // Waiting should almost never happen because
+            // there is a surplus of instances - if
+            // we ever get a dead-lock here, we have a memory
+            // leak of command instances.
+            pthread_cond_wait(&cond_pool_add, &pool_mutex);
+        }
+
+        ptr = std::move(pool[cmd_type].back());
+        pool[cmd_type].pop_back();
+        pthread_mutex_unlock(&pool_mutex);
+
+        unique_ptr<T> ptrT;
+        // if this throws an exception it is a logic error.
+        ptrT.reset(dynamic_cast<T*>(ptr.get()));
+        return ptrT;
+    }
+
     // method which recycles an instance that
     // is no longer needed into the memory pool so that it can
     // be used later without requiring a new

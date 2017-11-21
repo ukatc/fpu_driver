@@ -54,7 +54,7 @@ public:
 
     CommandQueue();
 
-  ~CommandQueue(){};
+    ~CommandQueue() {};
 
     // returns a bitmask indicating which gateway
     // has pending commands

@@ -40,11 +40,11 @@ const int MAX_CAN_MESSAGE_LENGTH_BYTES = (4 + 2 * MAX_CAN_MESSAGE_BYTES);
 typedef uint8_t t_response_buf[MAX_CAN_PAYLOAD_BYTES];
 
 typedef struct __attribute__((packed)) t_msg
-    {
-        uint8_t busid;
-        uint16_t identifier; // little-endian
-        t_response_buf data;
-    } t_msg;
+{
+    uint8_t busid;
+    uint16_t identifier; // little-endian
+    t_response_buf data;
+} t_msg;
 
 typedef union   __attribute__((packed))
 {
@@ -57,7 +57,7 @@ class I_CAN_Command
 public:
 
     I_CAN_Command() {};
-    virtual ~I_CAN_Command(){};
+    virtual ~I_CAN_Command() {};
 
     // method which serializes parameters into
     // CAN message
@@ -67,20 +67,20 @@ public:
 
 
     // FPU id to which message is sent
-  virtual int getFPU_ID()=0;
+    virtual int getFPU_ID()=0;
 
     // boolean value indicating whether
     // the driver should wait for a response
-  virtual bool expectsResponse() = 0;
+    virtual bool expectsResponse() = 0;
 
-  virtual E_CAN_COMMAND getCommandCode() = 0;
+    virtual E_CAN_COMMAND getCommandCode() = 0;
 
     // time-out period for a response to the message
-  virtual timespec getTimeOut() = 0;
+    virtual timespec getTimeOut() = 0;
 
     // if this is set, a response will be expected
     // from all FPUs which are not locked.
-  virtual bool doBroadcast() = 0;
+    virtual bool doBroadcast() = 0;
 
 };
 

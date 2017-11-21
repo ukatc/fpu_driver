@@ -139,7 +139,7 @@ unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
     }
     return rval;
 }
-  
+
 
 // This should be used if a command which has
 // been dequeued cannot be sent, and is added

@@ -48,7 +48,7 @@ public:
 
     TimeOutList();
 
-  ~TimeOutList(){};
+    ~TimeOutList() {};
 
     // All public methods are thread-safe.
     // Beware using internal methods without

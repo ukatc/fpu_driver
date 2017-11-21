@@ -110,11 +110,11 @@ public:
     // provide a command instance with buffer space for
     // sending CAN parameters. This method is thread-safe
 
-  template <typename T>
-  inline unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type)
-  {
-    return command_pool.provideInstance<T>(cmd_type);
-  }
+    template <typename T>
+    inline unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type)
+    {
+        return command_pool.provideInstance<T>(cmd_type);
+    }
 
     // send a CAN command to the gateway.
     // This method is thread-safe

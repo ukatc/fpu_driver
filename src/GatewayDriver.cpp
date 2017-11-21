@@ -303,7 +303,7 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
             // byte-swizzle and send buffer
             status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
                       message_len, can_buffer.bytes);
-            
+
         }
     }
     return status;
@@ -429,15 +429,16 @@ void* GatewayDriver::threadTxFun()
                     // serious connection error.
                     exitFlag = true;
                     // signal event listeners
-                    switch (status) {
+                    switch (status)
+                    {
                     case SBuffer::ST_NO_CONNECTION:
-                      fpuArray.setDriverState(DS_UNCONNECTED);
-                      break;
-                      
+                        fpuArray.setDriverState(DS_UNCONNECTED);
+                        break;
+
                     case SBuffer::ST_ASSERTION_FAILED:
                     default:
-                      fpuArray.setDriverState(DS_ASSERTION_FAILED);
-                      break;                
+                        fpuArray.setDriverState(DS_ASSERTION_FAILED);
+                        break;
                     }
 
                 }

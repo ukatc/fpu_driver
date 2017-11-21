@@ -52,13 +52,13 @@ E_DriverErrCode AsyncDriver::disconnect()
 E_DriverErrCode AsyncDriver::initializeGridAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-  return DE_OK;
+    return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-  return DE_OK;
+    return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
@@ -238,10 +238,10 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     const int num_steps = waveforms[0].steps.size();
     for (int s=0; s < num_steps; s++)
     {
-      int num_loading =  waveforms.size();
-      for (int i=0; i < num_loading; i++)
+        int num_loading =  waveforms.size();
+        for (int i=0; i < num_loading; i++)
         {
-          int fpu_id = waveforms[i].fpu_id;
+            int fpu_id = waveforms[i].fpu_id;
             t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
             if (fpu_state.state != FPST_LOCKED)
             {
@@ -277,43 +277,43 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-  return DE_OK;
+    return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-  return DE_OK;
+    return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-  return DE_OK;
+    return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-  return DE_OK;
+    return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::assignPositionsAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-  return DE_OK;
+    return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::lockFPUAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-  return DE_OK;
+    return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-  return DE_OK;
+    return DE_OK;
 }
 
 E_GridState AsyncDriver::getGridState(t_grid_state& out_state)
