@@ -67,7 +67,7 @@ enum E_DriverErrCode
     // affects the initialization.
     DE_DRIVER_NOT_INITIALISED = 1,
 
-
+ 
     // A command was tried to send to the
     // FPUs but this was not possible
     // because the driver was or became

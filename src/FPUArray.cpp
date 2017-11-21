@@ -36,7 +36,7 @@
 namespace mpifps
 {
 
-const timespec MAX_TIMEOUT = {.tv_sec = 10,  .tv_nsec = 0};
+const timespec FPUArray::MAX_TIMEOUT = {.tv_sec = 10,  .tv_nsec = 0};
 
 
 // this function returns a thread-safe copy of the current state of
@@ -179,6 +179,7 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
     }
 
     fpu.pending_command = pending_cmd;
+    fpu.cmd_timeout = tout_val;
 
     // if tracing is active, signal state change
     if (num_trace_clients > 0)
@@ -299,7 +300,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
     }
     pthread_mutex_unlock(&grid_state_mutex);
 
-};
+}
 
 
 // This function sets the global state of
@@ -324,6 +325,7 @@ E_DriverState FPUArray::getDriverState()
     pthread_mutex_lock(&grid_state_mutex);
     retval = FPUGridState.driver_state;
     pthread_mutex_unlock(&grid_state_mutex);
+    return retval;
 }
 
 

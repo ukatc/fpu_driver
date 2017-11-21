@@ -37,7 +37,7 @@ public:
     GridDriver(int nfpus) : AsyncDriver(nfpus)
     {
         num_fpus = nfpus;
-        memset((void*) &grid_state, sizeof(grid_state), 0);
+        memset((void*) &grid_state, 0, sizeof(grid_state));
     }
 
     ~GridDriver()

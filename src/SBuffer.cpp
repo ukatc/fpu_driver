@@ -152,7 +152,6 @@ SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
         uint8_t src[MAX_CAN_MESSAGE_BYTES])
 {
     int out_len = 0;
-    ssize_t retval = 0;
 
     encode_buffer(input_len, src, out_len, wbuf);
     out_offset = 0;
@@ -313,6 +312,7 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
         }
 
     }
+    return ST_OK;
 }
 
 

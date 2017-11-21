@@ -57,7 +57,7 @@ namespace mpifps {
             assert(CCMD_PING_FPU <= 15);
             assert(fpu_id < FPUS_PER_BUS);
             uint16_t can_addr = ( ((CCMD_PING_FPU & 15) << 7)
-                                  | (fpu_id & 128));
+                                  | (canid & 128));
             
             // The protocol uses little-endian encoding here
             // (the byte order used in the CANOpen protocol).
@@ -107,7 +107,12 @@ namespace mpifps {
             return toval;
         };
 
-      private:
+      bool doBroadcast()
+      {
+        return false;
+      }
+
+    private:
         uint16_t fpu_id;
         int16_t asteps;
         int16_t bsteps;

@@ -42,9 +42,9 @@ class CommandQueue
 public:
     enum E_QueueState
     {
-        OK = 1,
-        OUT_OF_MEMORY = 2,
-        MISSING_INSTANCE = 3,
+        QS_OK = 1,
+        QS_OUT_OF_MEMORY = 2,
+        QS_MISSING_INSTANCE = 3,
     };
 
     const int MAX_MESSAGE_CAPACITY = MAX_NUM_POSITIONERS * MAX_SUB_COMMANDS;
@@ -54,7 +54,7 @@ public:
 
     CommandQueue();
 
-    ~CommandQueue();
+  ~CommandQueue(){};
 
     // returns a bitmask indicating which gateway
     // has pending commands

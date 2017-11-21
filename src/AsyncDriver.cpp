@@ -39,12 +39,12 @@ E_DriverErrCode AsyncDriver::initializeDriver()
 
 E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_address gateway_addresses[])
 {
-    gateway.connect(ngateways, gateway_addresses);
+    return gateway.connect(ngateways, gateway_addresses);
 }
 
 E_DriverErrCode AsyncDriver::disconnect()
 {
-    gateway.disconnect();
+    return gateway.disconnect();
 }
 
 
@@ -52,11 +52,13 @@ E_DriverErrCode AsyncDriver::disconnect()
 E_DriverErrCode AsyncDriver::initializeGridAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+  return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+  return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
@@ -231,21 +233,21 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
 
 
-    int num_loading =  waveforms.size();
     unique_ptr<ConfigureMotionCommand> can_command;
     // loop over number of steps in the table
     const int num_steps = waveforms[0].steps.size();
     for (int s=0; s < num_steps; s++)
     {
-        for (int i=0; i < num_fpus; i++)
+      int num_loading =  waveforms.size();
+      for (int i=0; i < num_loading; i++)
         {
-            t_fpu_state& fpu_state = grid_state.FPU_state[i];
+          int fpu_id = waveforms[i].fpu_id;
+            t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
             if (fpu_state.state != FPST_LOCKED)
             {
                 // get a command buffer
                 can_command = gateway.provideInstance<ConfigureMotionCommand>(CCMD_CONFIG_MOTION);
 
-                int fpu_id = waveforms[i].fpu_id;
                 t_step_pair step = waveforms[i].steps[s];
                 bool first_entry = (s == 0);
                 bool last_entry = (s == (num_steps-1));
@@ -275,36 +277,43 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+  return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+  return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+  return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+  return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::assignPositionsAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+  return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::lockFPUAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+  return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+  return DE_OK;
 }
 
 E_GridState AsyncDriver::getGridState(t_grid_state& out_state)

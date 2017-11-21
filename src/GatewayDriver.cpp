@@ -56,13 +56,13 @@ GatewayDriver::GatewayDriver(int num_fpus)
 
     exit_threads = false;
 
-};
+}
 
 GatewayDriver::~GatewayDriver()
 {
 
 
-};
+}
 
 
 E_DriverErrCode GatewayDriver::initialize()
@@ -167,8 +167,9 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     fpuArray.setDriverState(DS_CONNECTED);
 
+    return DE_OK;
 
-};
+}
 
 E_DriverErrCode GatewayDriver::disconnect()
 {
@@ -232,7 +233,7 @@ E_DriverErrCode GatewayDriver::disconnect()
 
     return DE_OK;
 
-};
+}
 
 
 
@@ -290,7 +291,6 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
 
             int message_len = 0;
             t_CAN_buffer can_buffer;
-            ssize_t result;
             int fpu_id = active_can_command->getFPU_ID();
             const uint16_t busid = address_map[fpu_id].bus_id;
             const uint8_t canid = address_map[fpu_id].can_id;
@@ -303,7 +303,7 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
             // byte-swizzle and send buffer
             status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
                       message_len, can_buffer.bytes);
-
+            
         }
     }
     return status;
@@ -429,7 +429,17 @@ void* GatewayDriver::threadTxFun()
                     // serious connection error.
                     exitFlag = true;
                     // signal event listeners
-                    fpuArray.setDriverState(DS_UNCONNECTED);
+                    switch (status) {
+                    case SBuffer::ST_NO_CONNECTION:
+                      fpuArray.setDriverState(DS_UNCONNECTED);
+                      break;
+                      
+                    case SBuffer::ST_ASSERTION_FAILED:
+                    default:
+                      fpuArray.setDriverState(DS_ASSERTION_FAILED);
+                      break;                
+                    }
+
                 }
                 // poll the exit flag, it might be set by another thread
                 exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
@@ -458,14 +468,12 @@ void* GatewayDriver::threadTxFun()
             commandQueue.requeue(gateway_id, std::move(can_cmd));
         }
     }
+    return NULL;
 }
 
 
 void* GatewayDriver::threadRxFun()
 {
-
-    int		i;
-    int		nread;
 
     struct pollfd pfd[MAX_NUM_GATEWAYS];
 
@@ -566,7 +574,8 @@ void* GatewayDriver::threadRxFun()
             break; // exit outer loop, and terminate thread
         }
     }
-};
+    return NULL;
+}
 
 // This method parses any CAN response, dispatches it and stores
 // result in fpu state array. It also clears any time-out flags for
@@ -589,7 +598,7 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buff
     }
     // otherwise we have an invalid message
     // FIXME: logging of invalid messages
-};
+}
 
 
 E_GridState GatewayDriver::getGridState(t_grid_state& out_state)
@@ -602,18 +611,12 @@ E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_d
     return fpuArray.waitForState(target, out_detailed_state);
 }
 
-template <typename T>
-unique_ptr<T> GatewayDriver::provideInstance(E_CAN_COMMAND cmd_type)
-{
-    return command_pool.provideInstance<T>(cmd_type);
-}
-
 
 CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_CAN_Command> new_command)
 {
     const int gateway_id = address_map[fpu_id].gateway_id;
 
-    commandQueue.enqueue(gateway_id, std::move(new_command));
+    return commandQueue.enqueue(gateway_id, std::move(new_command));
 }
 
 

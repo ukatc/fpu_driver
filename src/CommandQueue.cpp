@@ -50,7 +50,7 @@ CommandQueue::t_command_mask CommandQueue::checkForCommand()
 
     return rmask;
 
-};
+}
 
 CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
 {
@@ -91,7 +91,7 @@ CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
     return rmask;
 
 
-};
+}
 
 CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
         unique_ptr<I_CAN_Command> new_command)
@@ -102,7 +102,7 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 
     if (new_command == nullptr)
     {
-        return MISSING_INSTANCE;
+        return QS_MISSING_INSTANCE;
     }
 
     {
@@ -118,8 +118,9 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 
         pthread_mutex_unlock(&queue_mutex);
     }
+    return QS_OK;
 
-};
+}
 
 unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
 {
@@ -137,8 +138,8 @@ unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
         pthread_mutex_unlock(&queue_mutex);
     }
     return rval;
-};
-
+}
+  
 
 // This should be used if a command which has
 // been dequeued cannot be sent, and is added
@@ -152,7 +153,7 @@ CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
 
     if (new_command == nullptr)
     {
-        return MISSING_INSTANCE;
+        return QS_MISSING_INSTANCE;
     }
 
     {
@@ -162,8 +163,9 @@ CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
 
         pthread_mutex_unlock(&queue_mutex);
     }
+    return QS_OK;
 
-};
+}
 
 
 // IMPORTANT NOTE: This should only be called from
@@ -192,7 +194,7 @@ void CommandQueue::flushToPool(CommandPool& memory_pool)
     }
 
     pthread_mutex_unlock(&queue_mutex);
-};
+}
 
 
 }

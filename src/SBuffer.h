@@ -58,7 +58,7 @@ public:
         // An assumption about the connection state
         // is not met (probably logical error)
 
-        ST_ASSERTION_FAILED=1,
+        ST_ASSERTION_FAILED=2,
     };
 
 

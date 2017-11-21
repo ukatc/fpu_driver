@@ -117,4 +117,51 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms)
     return estatus;
 
 }
+
+    E_DriverErrCode GridDriver::initializeGrid()
+    {
+      return DE_OK;
+    }
+
+    E_DriverErrCode GridDriver::resetFPUs()
+    {
+      return DE_OK;
+    }
+
+    E_DriverErrCode GridDriver::executeMotion()
+    {
+      return DE_OK;
+    }
+
+    E_DriverErrCode GridDriver::repeatMotion()
+    {
+      return DE_OK;
+    }
+
+    E_DriverErrCode GridDriver::reverseMotion()
+    {
+      return DE_OK;
+    }
+
+    E_DriverErrCode GridDriver::abortMotion()
+    {
+      return DE_OK;
+    }
+
+    E_DriverErrCode GridDriver::assignPositions()
+    {
+      return DE_OK;
+    }
+
+    E_DriverErrCode GridDriver::lockFPU()
+    {
+      return DE_OK;
+    }
+
+    E_DriverErrCode GridDriver::unlockFPU()
+    {
+      return DE_OK;
+    }
+
+  
 }

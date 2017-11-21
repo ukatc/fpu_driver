@@ -52,7 +52,6 @@ TimeOutList::TimeOutList()
 {
     for(int i = 0; i < MAX_NUM_POSITIONERS; i++)
     {
-        t_toentry entry;
         TimeOutsByID[i] = MAX_TIMESPEC;
     }
     // initialize the cache
@@ -225,6 +224,7 @@ const timespec TimeOutList::minKey()
         }
     }
 
+    return min_val;
 }
 
 

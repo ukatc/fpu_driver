@@ -23,6 +23,7 @@
 
 #include <time.h>
 #include <stdint.h>
+#include "DriverConstants.h"
 #include "FPUState.h"
 #include "E_CAN_COMMAND.h"
 #include "DriverState.h"
@@ -30,7 +31,7 @@
 namespace mpifps
 {
 
-typedef struct
+typedef struct t_fpu_state
 {
     // these members are the individual values
     // reported by FPU responses
@@ -39,11 +40,11 @@ typedef struct
     int beta_steps;
     bool is_initialized;
     bool on_alpha_datum;
-    bool on_beta_datum;
+    bool on_beta_datum; 
     bool alpha_collision;
     bool at_alpha_limit;
     bool beta_collision;
-    bool ping_ok;
+    bool ping_ok;       
 
 
 
@@ -63,6 +64,12 @@ typedef struct
     // id of last command that was completed
     E_CAN_COMMAND completed_command;
 
+  bool operator==(const  t_fpu_state &a) const
+  {
+    return (*this) == a;
+  }
+  
+  
 } t_fpu_state;
 
 typedef int t_counts[NUM_FPU_STATES];

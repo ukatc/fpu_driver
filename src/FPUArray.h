@@ -71,8 +71,8 @@ public:
         FPUGridState.count_timeout = 0;
         FPUGridState.count_pending     = 0;
 
-        memset(FPUGridState.Counts,
-               sizeof(FPUGridState.Counts), 0);
+        memset(FPUGridState.Counts, 0,
+               sizeof(FPUGridState.Counts));
 
         // for the beginning, we don't know the FPU states
         FPUGridState.Counts[FPST_UNKNOWN] = nfpus;

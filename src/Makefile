@@ -1,7 +1,7 @@
 IDIR=.
 CC="g++"
 
-CXXFLAGS=-I$(IDIR) -std=c++11
+CXXFLAGS=-I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -fPIC
 
 ODIR = obj
 
@@ -15,7 +15,7 @@ _DEPS = AsyncDriver.h      E_CAN_COMMAND.h  I_CAN_Command.h      \
 	CommandQueue.h     GatewayDriver.h  sync_utils.h         \
 	DriverConstants.h  GridDriver.h     TimeOutList.h        \
 	DriverState.h      time_utils.h         \
-	commands/ConfigureMotionCommand.h  commands/MoveDatumOn.h \
+	commands/ConfigureMotionCommand.h  commands/MoveDatumOnCommand.h \
 	commands/MoveDatumOffCommand.h     commands/PingCommand.h \
 	GridState.h T_GridState.h E_GridState.h
 
@@ -25,17 +25,19 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 _OBJ =  GridDriver.o    AsyncDriver.o FPUArray.o GridState.o \
 	CommandPool.o   GatewayDriver.o  TimeOutList.o \
-	CommandQueue.o  time_utils.o  sync_utils.o
+	CommandQueue.o  time_utils.o  sync_utils.o SBuffer.o 
+
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
 $(ODIR)/%.o: %.cpp $(DEPS)
-	echo $(CC) $(CFLAGS) -c -o $(ODIR)/$@ $< 
-	$(CC) $(CFLAGS) -c -o $(ODIR)/$@ $< 
+	$(CC) $(CXXFLAGS) -c -o $@ $< 
 
-driver: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+lib/libfpudriver.a: $(OBJ)
+	ar rcs   $@ $^ 
+
+driver: lib/libfpudriver.a
 
 .PHONY: clean
 

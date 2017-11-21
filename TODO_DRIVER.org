@@ -88,9 +88,13 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 *** DONE Top-level calls
 *** DONE check count of pending states
 ** TODO Move workstation
-** TODO compile
+** DONE compile
 *** DONE write makefile
 *** DONE Add semicolons
+** TODO Fix makefile to build static lib
+** TODO mark initializations of socket and threads for revision
+** TODO make signatures const-correct
+** TODO build with -Wall -pendandic -Wextra
 ** TODO Add tentative CAN responses
 *** TODO config_motion
 *** TODO ping
