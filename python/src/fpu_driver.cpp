@@ -168,6 +168,10 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readwrite("driver_state", &WrapGridState::driver_state)
     ;
 
+    class_<t_gateway_address>("t_gateway_address", init<const char*, int>())
+        .def_readwrite("ip", &t_gateway_address::ip)
+        .def_readwrite("port", &t_gateway_address::port);
+
     class_<GridDriver, boost::noncopyable>("GridDriver", init<int>())
     .def("connect", &GridDriver::connect)
     .def("disconnect", &GridDriver::disconnect)

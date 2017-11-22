@@ -153,7 +153,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     for (int i = 0; i < ngateways; i++)
     {
-        char* ip = gateway_addresses[i].ip;
+        const char* ip = gateway_addresses[i].ip;
         uint16_t port = gateway_addresses[i].port;
 
         SocketID[i] = make_socket(ip, port);

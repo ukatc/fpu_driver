@@ -27,6 +27,7 @@
 #include <atomic>
 
 #include "../E_GridState.h"
+#include "../T_GatewayAddress.h"
 
 #include "SBuffer.h"          // coding and decoding message frames
 #include "I_ResponseHandler.h"  // interface for processing CAN responses
@@ -41,12 +42,6 @@ namespace mpifps
 namespace canlayer
 {
 
-
-typedef struct
-{
-    char * ip;
-    uint16_t port;
-} t_gateway_address;
 
 void* threadTxFun(void *arg);
 void* threadRxFun(void *arg);
