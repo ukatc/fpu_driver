@@ -37,6 +37,11 @@ namespace canlayer
 
       public:
 
+        static E_CAN_COMMAND getCommandCode()
+        {
+            return CCMD_PING_FPU;
+        };
+
         ConfigureMotionCommand(){};
 
         void parametrize(int f_id, int16_t alpha_steps, int16_t beta_steps, bool first_entry, bool last_entry)
@@ -47,6 +52,12 @@ namespace canlayer
             fentry = first_entry;
             lentry = last_entry;                       
         };
+
+        E_CAN_COMMAND getInstanceCommandCode()
+        {
+            return getCommandCode();
+        };
+
 
         void SerializeToBuffer(const uint8_t busid,
                                const uint16_t canid,
@@ -95,11 +106,6 @@ namespace canlayer
         bool expectsResponse()
         {
             return true;
-        };
-
-        E_CAN_COMMAND getCommandCode()
-        {
-            return CCMD_PING_FPU;
         };
 
         // time-out period for a response to the message

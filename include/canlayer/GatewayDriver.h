@@ -99,9 +99,9 @@ public:
     // sending CAN parameters. This method is thread-safe
 
     template <typename T>
-    inline unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type)
+    inline unique_ptr<T> provideInstance()
     {
-        return command_pool.provideInstance<T>(cmd_type);
+        return command_pool.provideInstance<T>();
     }
 
     // send a CAN command to the gateway.

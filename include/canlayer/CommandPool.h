@@ -22,6 +22,7 @@
 #ifndef COMMAND_POOL_H
 #define COMMAND_POOL_H
 
+#include <cassert>
 #include <memory>
 #include <vector>
 
@@ -64,12 +65,16 @@ public:
 //    unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type);
 //
     template<typename T>
-    inline unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type)
+    inline unique_ptr<T> provideInstance()
     {
         unique_ptr<I_CAN_Command> ptr;
+        // get the command code for that class
+        E_CAN_COMMAND cmd_code = T::getCommandCode();
+        assert(cmd_code > 0);
+        assert(cmd_code < NUM_CAN_COMMANDS);
 
         pthread_mutex_lock(&pool_mutex);
-        while (pool[cmd_type].empty())
+        while (pool[cmd_code].empty())
         {
             // wait until a command instance is in the pool
             // Waiting should almost never happen because
@@ -79,8 +84,8 @@ public:
             pthread_cond_wait(&cond_pool_add, &pool_mutex);
         }
 
-        ptr = std::move(pool[cmd_type].back());
-        pool[cmd_type].pop_back();
+        ptr = std::move(pool[cmd_code].back());
+        pool[cmd_code].pop_back();
         pthread_mutex_unlock(&pool_mutex);
 
         unique_ptr<T> ptrT;

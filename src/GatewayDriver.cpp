@@ -264,14 +264,14 @@ void GatewayDriver::updatePendingCommand(std::unique_ptr<I_CAN_Command>& can_com
         timespec deadline = time_add(send_time, wait_period);
 
         fpuArray.setPendingCommand(fpu_id,
-                                   can_command->getCommandCode(),
+                                   can_command->getInstanceCommandCode(),
                                    deadline);
         timeOutList.insertTimeOut(fpu_id, deadline);
     }
     else
     {
         fpuArray.setLastCommand(fpu_id,
-                                can_command->getCommandCode());
+                                can_command->getInstanceCommandCode());
     }
 }
 

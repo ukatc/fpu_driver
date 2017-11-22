@@ -142,7 +142,7 @@ E_DriverErrCode CommandPool::initialize()
 void CommandPool::recycleInstance(unique_ptr<I_CAN_Command>& cmd_ptr)
 {
     pthread_mutex_lock(&pool_mutex);
-    E_CAN_COMMAND cmd_type = cmd_ptr->getCommandCode();
+    E_CAN_COMMAND cmd_type = cmd_ptr->getInstanceCommandCode();
     bool was_empty = pool[cmd_type].empty();
     pool[cmd_type].push_back(std::move(cmd_ptr));
     cmd_ptr = nullptr;

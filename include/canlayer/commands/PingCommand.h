@@ -35,7 +35,18 @@ namespace canlayer
 
       public:
 
+        static E_CAN_COMMAND getCommandCode()
+        {
+            return CCMD_PING_FPU;
+        };
+
         PingCommand(){};
+
+        E_CAN_COMMAND getInstanceCommandCode()
+        {
+            return getCommandCode();
+        };
+
 
         void parametrize(int f_id, long sequence_number)
         {
@@ -87,11 +98,6 @@ namespace canlayer
         bool expectsResponse()
         {
             return true;
-        };
-
-        E_CAN_COMMAND getCommandCode()
-        {
-            return CCMD_PING_FPU;
         };
 
         // time-out period for a response to the message

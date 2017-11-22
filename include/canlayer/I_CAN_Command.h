@@ -60,6 +60,7 @@ class I_CAN_Command
 {
 public:
 
+
     I_CAN_Command() {};
     virtual ~I_CAN_Command() {};
 
@@ -70,14 +71,14 @@ public:
                                    int& buf_len, t_CAN_buffer& buf) = 0;
 
 
+    virtual E_CAN_COMMAND getInstanceCommandCode() = 0;
+
     // FPU id to which message is sent
     virtual int getFPU_ID()=0;
 
     // boolean value indicating whether
     // the driver should wait for a response
     virtual bool expectsResponse() = 0;
-
-    virtual E_CAN_COMMAND getCommandCode() = 0;
 
     // time-out period for a response to the message
     virtual timespec getTimeOut() = 0;
