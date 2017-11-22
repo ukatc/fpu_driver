@@ -68,6 +68,59 @@ public:
     }
 };
 
+struct TooManyGatewaysException : std::exception
+{
+  char const* what() const throw() { return "Number of gateways exceeded driver limit"; }
+};
+
+struct TooFewGatewaysException : std::exception
+{
+  char const* what() const throw() { return "Need to configure at least one gateway"; }
+};
+
+void translate(TooManyGatewaysException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+void translate(TooFewGatewaysException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+class WrapGridDriver : public GridDriver
+{
+    public:
+    
+    WrapGridDriver(int nfpus) : GridDriver(nfpus)
+        {
+        };
+    
+    E_DriverErrCode connectGateways(std::vector<t_gateway_address>
+                                    vec_gateway_addresses)
+        {
+            const int MAX_GATEWAYS = canlayer::MAX_NUM_GATEWAYS;
+            const int actual_num_gw = vec_gateway_addresses.size();
+            
+            int num_gateways = 0;
+            t_gateway_address address_array[MAX_GATEWAYS];
+            
+            if (actual_num_gw > MAX_GATEWAYS)
+            {
+                throw TooManyGatewaysException();
+            }
+            
+            for (int i=0; i < actual_num_gw; i++)
+            {
+                address_array[i] = vec_gateway_addresses[i];
+            }
+            return connect(actual_num_gw, address_array);            
+            
+        };
+};
+
 }
 
 BOOST_PYTHON_MODULE(fpu_driver)
@@ -160,6 +213,9 @@ BOOST_PYTHON_MODULE(fpu_driver)
     class_<std::vector<long> >("IntVec")
     .def(vector_indexing_suite<std::vector<long> >());
 
+    class_<std::vector<t_gateway_address> >("GatewayAddressVec")
+        .def(vector_indexing_suite<std::vector<t_gateway_address> >());
+
     class_<WrapGridState>("GridState")
     .def_readonly("Fpu_state", &WrapGridState::getStateVec)
     .def_readonly("Counts", &WrapGridState::getCounts)
@@ -172,21 +228,21 @@ BOOST_PYTHON_MODULE(fpu_driver)
         .def_readwrite("ip", &t_gateway_address::ip)
         .def_readwrite("port", &t_gateway_address::port);
 
-    class_<GridDriver, boost::noncopyable>("GridDriver", init<int>())
-    .def("connect", &GridDriver::connect)
-    .def("disconnect", &GridDriver::disconnect)
-    .def("initializeDriver", &GridDriver::initializeDriver)
-    .def("initializeGrid", &GridDriver::initializeGrid)
-    .def("resetFPUs", &GridDriver::resetFPUs)
-    .def("findDatum", &GridDriver::findDatum)
-    .def("configMotion", &GridDriver::configMotion)
-    .def("executeMotion", &GridDriver::executeMotion)
-    .def("repeatMotion", &GridDriver::repeatMotion)
-    .def("reverseMotion", &GridDriver::reverseMotion)
-    .def("abortMotion", &GridDriver::abortMotion)
-    .def("assignPositions", &GridDriver::assignPositions)
-    .def("lockFPU", &GridDriver::lockFPU)
-    .def("unlockFPU", &GridDriver::unlockFPU)
+    class_<WrapGridDriver, boost::noncopyable>("GridDriver", init<int>())
+    .def("connect", &WrapGridDriver::connectGateways)
+    .def("disconnect", &WrapGridDriver::disconnect)
+    .def("initializeDriver", &WrapGridDriver::initializeDriver)
+    .def("initializeGrid", &WrapGridDriver::initializeGrid)
+    .def("resetFPUs", &WrapGridDriver::resetFPUs)
+    .def("findDatum", &WrapGridDriver::findDatum)
+    .def("configMotion", &WrapGridDriver::configMotion)
+    .def("executeMotion", &WrapGridDriver::executeMotion)
+    .def("repeatMotion", &WrapGridDriver::repeatMotion)
+    .def("reverseMotion", &WrapGridDriver::reverseMotion)
+    .def("abortMotion", &WrapGridDriver::abortMotion)
+    .def("assignPositions", &WrapGridDriver::assignPositions)
+    .def("lockFPU", &WrapGridDriver::lockFPU)
+    .def("unlockFPU", &WrapGridDriver::unlockFPU)
     ;
 
 }

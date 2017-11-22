@@ -68,6 +68,8 @@ enum E_DriverErrCode
     DE_DRIVER_NOT_INITIALISED = 1,
 
 
+    // driver has already been initialised,
+    // and another initialisation was tried.
     DE_DRIVER_ALREADY_INITIALISED = 2,
 
 
@@ -106,6 +108,7 @@ enum E_DriverErrCode
     // An assumption about the driver state
     // is not met, the driver is switched off
     // and the problem logged.
+
 
     DE_ASSERTION_FAILED=99,
 

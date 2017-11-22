@@ -47,6 +47,12 @@ namespace mpifps
                 ip = new_ip;
                 port = DEFAULT_GATEWAY_PORT;
             };
+
+        bool operator==(const  t_gateway_address &a) const
+            {
+                return (*this) == a;
+            };
+        
     } t_gateway_address;
 
 }
