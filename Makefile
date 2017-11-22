@@ -46,6 +46,9 @@ lib/libfpudriver.a: $(OBJ)
 
 driver: lib/libfpudriver.a
 
+pyextension: lib/libfpudriver.a python/src/fpu_driver.cpp $(DEPS)
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/fpu_driver.so python/src/fpu_driver.cpp -L./lib  -lfpudriver -lboost_python
+
 .PHONY: clean
 
 clean:
