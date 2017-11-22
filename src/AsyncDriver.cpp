@@ -36,17 +36,31 @@ namespace canlayer
 
 E_DriverErrCode AsyncDriver::initializeDriver()
 {
+    if (gateway.getDriverState() != DS_UNINITIALISED)
+    {
+        return DE_DRIVER_ALREADY_INITIALISED;
+    }
     return gateway.initialize();
 }
 
 
 E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_address gateway_addresses[])
 {
+    if (gateway.getDriverState() != DS_UNCONNECTED)
+    {
+        return DE_DRIVER_NOT_INITIALISED;
+    }
+
     return gateway.connect(ngateways, gateway_addresses);
 }
 
 E_DriverErrCode AsyncDriver::disconnect()
 {
+    if (gateway.getDriverState() != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
     return gateway.disconnect();
 }
 
@@ -55,18 +69,29 @@ E_DriverErrCode AsyncDriver::disconnect()
 E_DriverErrCode AsyncDriver::initializeGridAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+    if (gateway.getDriverState() != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }    
+
     return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+    if (gateway.getDriverState() != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }    
+
     return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+    
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     // check driver is connected
@@ -280,42 +305,98 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
     return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
     return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
     return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
     return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::assignPositionsAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
     return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::lockFPUAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
     return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
     return DE_OK;
 }
 

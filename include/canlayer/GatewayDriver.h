@@ -89,6 +89,10 @@ public:
     // is stored in the reference parameter
     E_GridState getGridState(t_grid_state& out_state);
 
+    // get the current state of the driver (this is a convenience
+    // function, the state is contained in the grid state).
+    E_DriverState getDriverState();
+
     // get both the summed up state of the FPU grid,
     // and a detailed status for each FPU.
     E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);

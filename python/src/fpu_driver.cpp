@@ -111,6 +111,18 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DS_ASSERTION_FAILED", DS_ASSERTION_FAILED    )
     .export_values();
 
+
+    enum_<E_DriverErrCode>("E_DriverErrCode")
+    .value("DE_OK",DE_OK)
+    .value("DE_DRIVER_NOT_INITIALISED",DE_DRIVER_NOT_INITIALISED)
+    .value("DE_DRIVER_ALREADY_INITIALISED",DE_DRIVER_ALREADY_INITIALISED)
+    .value("DE_NO_CONNECTION",DE_NO_CONNECTION)
+    .value("DE_STILL_BUSY",DE_STILL_BUSY)
+    .value("DE_UNRESOLVED_COLLISION",DE_UNRESOLVED_COLLISION)
+    .value("DE_NOT_INITIALISED",DE_NOT_INITIALISED)
+    .value("DE_ASSERTION_FAILED",DE_ASSERTION_FAILED)
+    .export_values();
+    
     enum_<E_GridState>("E_GridState")
     .value("GS_UNKNOWN", GS_UNKNOWN         )
     .value("GS_UNINITIALISED", GS_UNINITIALISED   )

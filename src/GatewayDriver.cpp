@@ -617,6 +617,15 @@ E_GridState GatewayDriver::getGridState(t_grid_state& out_state)
     return fpuArray.getGridState(out_state);
 }
 
+// get the current state of the driver
+E_DriverState GatewayDriver::getDriverState()
+{
+    t_grid_state state;
+    getGridState(state);
+    return state.driver_state;
+}
+
+
 E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state)
 {
     return fpuArray.waitForState(target, out_detailed_state);

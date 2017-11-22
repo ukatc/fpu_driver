@@ -68,6 +68,9 @@ enum E_DriverErrCode
     DE_DRIVER_NOT_INITIALISED = 1,
 
 
+    DE_DRIVER_ALREADY_INITIALISED = 2,
+
+
     // A command was tried to send to the
     // FPUs but this was not possible
     // because the driver was or became
@@ -81,24 +84,24 @@ enum E_DriverErrCode
     // time-outs on every single FPU command
     // to the corresponding gateways as they
     // all fail to respond.
-    DE_NO_CONNECTION = 2,
+    DE_NO_CONNECTION = 3,
 
 
     // The user tried to send a high-level
     // command while another high-level
     // command was still not finished.
-    DE_STILL_BUSY = 3,
+    DE_STILL_BUSY = 4,
 
     // the user tried to start a movement
     // command while at least one FPU was in collided
     // or aborted state - the command
     // was rejected because of that
 
-    DE_UNRESOLVED_COLLISION = 4,
+    DE_UNRESOLVED_COLLISION = 5,
 
     // an FPU has not been initialised, so
     // it cannot be moved accurately and safely.
-    DE_NOT_INITIALISED = 5,
+    DE_NOT_INITIALISED = 6,
 
     // An assumption about the driver state
     // is not met, the driver is switched off
