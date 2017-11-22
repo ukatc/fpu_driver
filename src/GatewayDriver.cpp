@@ -22,6 +22,13 @@
 #include <cassert>
 #include <poll.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include <arpa/inet.h>		/// inet_addr //
+#include <netinet/tcp.h>	/// TCP_NODELAY
+#include <pthread.h>
 
 #include "canlayer/time_utils.h"
 #include "canlayer/GatewayDriver.h"
@@ -116,13 +123,13 @@ int make_socket(const char *ip, uint16_t port)
 }
 
 
-void* threadTxEntryFun(void *arg)
+static void* threadTxEntryFun(void *arg)
 {
     GatewayDriver* driver = (GatewayDriver*) arg;
     return driver->threadTxFun();
 }
 
-void* threadRxEntryFun(void *arg)
+static void* threadRxEntryFun(void *arg)
 {
     GatewayDriver* driver = (GatewayDriver*) arg;
     return driver->threadRxFun();

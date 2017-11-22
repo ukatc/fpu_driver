@@ -22,12 +22,7 @@
 #ifndef S_BUFFER_H
 #define S_BUFFER_H
 
-#include <stdio.h>
-#include <string.h>		/// strerror
-#include <pthread.h>
-#include "stdlib.h"		/// system("/bin/stty raw");
-#include "stdbool.h"	/// bool
-#include <unistd.h>
+#include <string.h>		/// memset()
 #include <stdint.h>
 
 #include "DriverConstants.h"

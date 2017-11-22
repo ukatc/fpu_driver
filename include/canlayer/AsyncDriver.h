@@ -21,7 +21,6 @@
 #ifndef ASYNC_DRIVER_H
 #define ASYNC_DRIVER_H
 
-#include <stdint.h>
 
 #include "GatewayDriver.h"
 

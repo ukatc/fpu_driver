@@ -22,16 +22,10 @@
 #ifndef COMMAND_POOL_H
 #define COMMAND_POOL_H
 
-#include <stdint.h>
 #include <memory>
 #include <vector>
 
-//#include <stdio.h>
-//#include <string.h>		/// strerror
 #include <pthread.h>
-//#include "stdlib.h"		/// system("/bin/stty raw");
-//#include "stdbool.h"	/// bool
-//#include <unistd.h>
 
 #include "../DriverState.h"
 

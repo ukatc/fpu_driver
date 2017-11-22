@@ -20,10 +20,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <time.h>
-#include <stdio.h>
-#include <string.h>		/// strerror
+//#include <string.h>		/// strerror
 #include <pthread.h>
-#include <unistd.h>
 
 #include "canlayer/DriverConstants.h"
 #include "canlayer/TimeOutList.h"

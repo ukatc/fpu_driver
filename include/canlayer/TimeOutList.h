@@ -24,10 +24,7 @@
 
 #include <time.h>
 #include "time_utils.h"
-#include <stdio.h>
-#include <string.h>		/// strerror
-#include <pthread.h>
-#include <unistd.h>
+
 #include "DriverConstants.h"
 
 

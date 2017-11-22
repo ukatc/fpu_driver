@@ -23,11 +23,9 @@
 #define FPU_ARRAY_H
 
 #include <time.h>
-#include <stdio.h>
-#include <string.h>		/// strerror
 #include <pthread.h>
-#include <unistd.h>
 #include <atomic>
+#include <string.h>		/// memset()
 
 #include "../E_GridState.h"
 #include "../T_GridState.h"

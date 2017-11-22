@@ -22,21 +22,7 @@
 #ifndef GATEWAY_DRIVER_H
 #define GATEWAY_DRIVER_H
 
-#include <sys/types.h>
-#include <sys/socket.h>
 
-#include <arpa/inet.h>		/// inet_addr //
-//#include <unistd.h>			/// read, select & close ///
-#include <netinet/tcp.h>	/// TCP_NODELAY
-
-
-#include <stdio.h>
-#include <string.h>		/// strerror
-#include <pthread.h>
-//#include "stdlib.h"		/// system("/bin/stty raw");
-//#include "stdbool.h"	/// bool
-#include <unistd.h>
-//#include <stdint.h>
 
 #include <atomic>
 

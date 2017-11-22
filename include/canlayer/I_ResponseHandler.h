@@ -22,12 +22,6 @@
 #ifndef I_RESPONSE_HANDLER_H
 #define I_RESPONSE_HANDLER_H
 
-#include <stdio.h>
-#include <string.h>		/// strerror
-#include <pthread.h>
-#include "stdlib.h"		/// system("/bin/stty raw");
-#include "stdbool.h"	/// bool
-#include <unistd.h>
 #include <stdint.h>
 
 #include "DriverConstants.h"
