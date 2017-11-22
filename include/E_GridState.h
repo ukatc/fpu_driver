@@ -40,7 +40,7 @@ enum E_GridState
     GS_LEAVING_DATUM  = (1 << 3), // datum is known, no waveforms loaded
     GS_ABOVE_DATUM    = (1 << 4), // datum is known, no waveforms loaded
     GS_DATUM_SEARCH   = (1 << 5), // some FPUs are searching datum
-    GS_INITIALISED    = (1 << 6), // datum is known, no waveforms loaded
+    GS_AT_DATUM       = (1 << 6), // datum is known, no waveforms loaded
     GS_LOADING        = (1 << 7), // loading waveforms
     GS_READY_FORWARD  = (1 << 8), // all FPUs are ready to go forward
     GS_READY_BACKWARD = (1 << 9), // all FPUs are ready to go backward
@@ -68,7 +68,7 @@ enum E_WaitTarget
                              | GS_COLLISION
                              | GS_ABORTED),
 
-    TGT_AT_DATUM      = (GS_INITIALISED
+    TGT_AT_DATUM      = (GS_AT_DATUM
                          | GS_LEAVING_DATUM
                          | GS_UNKNOWN
                          | GS_COLLISION
@@ -76,7 +76,7 @@ enum E_WaitTarget
 
     TGT_READY_TO_MOVE = (GS_READY_FORWARD
                          | GS_READY_BACKWARD
-                         | GS_INITIALISED
+                         | GS_AT_DATUM
                          | GS_DATUM_SEARCH
                          | GS_UNINITIALISED
                          | GS_COLLISION

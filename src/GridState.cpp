@@ -81,9 +81,9 @@ E_GridState getGridStateSummary(const t_grid_state& grid_state)
         return GS_DATUM_SEARCH;
     }
 
-    if (grid_state.Counts[FPST_INITIALISED] > 0)
+    if (grid_state.Counts[FPST_AT_DATUM] > 0)
     {
-        return GS_INITIALISED;
+        return GS_AT_DATUM;
     }
 
     if (grid_state.Counts[FPST_LOADING] > 0)

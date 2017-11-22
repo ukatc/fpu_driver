@@ -32,7 +32,7 @@ enum E_FPU_STATE
     FPST_LEAVING_DATUM       = 4,
     FPST_ABOVE_DATUM         = 5,
     FPST_DATUM_SEARCH        = 6,
-    FPST_INITIALISED         = 7,
+    FPST_AT_DATUM            = 7,
     FPST_LOADING             = 8,
     FPST_READY_FORWARD       = 9,
     FPST_READY_BACKWARD      = 10,
