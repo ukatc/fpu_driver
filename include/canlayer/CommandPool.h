@@ -84,7 +84,8 @@ public:
         pthread_mutex_unlock(&pool_mutex);
 
         unique_ptr<T> ptrT;
-        // if this throws an exception it is a logic error.
+        // if this assert fails, it is a logical error.
+        assert(ptr.get() != nullptr);
         ptrT.reset(dynamic_cast<T*>(ptr.get()));
         return ptrT;
     }
