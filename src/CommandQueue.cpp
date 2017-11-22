@@ -34,9 +34,20 @@ namespace canlayer
 CommandQueue::CommandQueue()
 {
 
-    assert(condition_init_monotonic(cond_queue_append) == 0);
 
 }
+
+E_DriverErrCode CommandQueue::initialize()
+{
+
+    if (condition_init_monotonic(cond_queue_append) != 0)
+    {
+        return DE_DRIVER_NOT_INITIALISED;
+    }
+
+    return DE_OK;
+}
+
 
 CommandQueue::t_command_mask CommandQueue::checkForCommand()
 {

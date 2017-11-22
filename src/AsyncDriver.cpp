@@ -36,9 +36,18 @@ namespace canlayer
 
 E_DriverErrCode AsyncDriver::initializeDriver()
 {
-    if (gateway.getDriverState() != DS_UNINITIALISED)
+    switch (gateway.getDriverState())
     {
+    DS_UNINITIALISED:
+        break;
+        
+    DS_UNCONNECTED:
+    DS_CONNECTED:
         return DE_DRIVER_ALREADY_INITIALISED;
+
+    DS_ASSERTION_FAILED:
+    default:
+        return DE_ASSERTION_FAILED;
     }
     return gateway.initialize();
 }

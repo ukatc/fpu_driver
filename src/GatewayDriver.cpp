@@ -77,6 +77,13 @@ GatewayDriver::~GatewayDriver()
 
 E_DriverErrCode GatewayDriver::initialize()
 {
+    E_DriverErrCode status = command_pool.initialize();
+
+    if (status != DE_OK)
+    {
+        return status;
+    }
+    
     return command_pool.initialize();
 }
 

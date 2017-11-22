@@ -59,6 +59,10 @@ public:
 
     ~CommandQueue() {};
 
+    // initializes the internal data
+    E_DriverErrCode initialize();
+
+
     // returns a bitmask indicating which gateway
     // has pending commands
     t_command_mask checkForCommand();
