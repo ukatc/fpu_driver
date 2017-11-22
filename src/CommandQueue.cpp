@@ -111,12 +111,14 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
     {
         pthread_mutex_lock(&queue_mutex);
 
-        // FIXME: This can thow bad_alloc if the
-        // system is very low on memory.
-        // Best fix seems to be to replace std::dequeue
-        // with a fixed-size rungbuffer -
-        // will be done later.
-#pragma message "TODO: make CommandQueue::enqueue() exception-safe"
+        // FIXME: According to std::deque docs, this can throw a
+        // bad_alloc exception if the system is very low on
+        // memory. Because this entails the risk of losing control
+        // about very expensive hardware, this does not seems acceptable
+        // for delivery.  Best fix is possibly to replace std::dequeue
+        // with a fixed-size ringbuffer. Should be done by jnix
+        // before March 2018.
+#pragma message "FIXME: make CommandQueue::enqueue() exception-safe"
         fifos[gateway_id].push_back(std::move(new_command));
 
         pthread_mutex_unlock(&queue_mutex);
