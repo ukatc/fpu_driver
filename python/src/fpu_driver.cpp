@@ -6,6 +6,8 @@
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/enum.hpp>
+#include <boost/python/extract.hpp>
+#include <boost/python/list.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <iostream>
 #include <string>
@@ -90,6 +92,33 @@ void translate(TooFewGatewaysException const& e)
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
+
+class WrapGatewayAddress : public t_gateway_address
+    {
+        public:
+        WrapGatewayAddress()
+            {
+                ip = DEFAULT_GATEWAY_IP;
+                port = DEFAULT_GATEWAY_PORT;
+            };
+        WrapGatewayAddress(const char * new_ip, const int new_port)
+            {
+                ip = new_ip;
+                port = new_port;
+            };
+        WrapGatewayAddress(const char * new_ip)
+            {
+                ip = new_ip;
+                port = DEFAULT_GATEWAY_PORT;
+            };
+
+        bool operator==(const  t_gateway_address &a) const
+            {
+                return (*this) == a;
+            };
+        
+    };
+
 class WrapGridDriver : public GridDriver
 {
     public:
@@ -97,29 +126,42 @@ class WrapGridDriver : public GridDriver
     WrapGridDriver(int nfpus) : GridDriver(nfpus)
         {
         };
+
     
-    E_DriverErrCode connectGateways(std::vector<t_gateway_address>
-                                    vec_gateway_addresses)
+    E_DriverErrCode connectGateways(boost::python::list&
+                                    list_gateway_addresses)
         {
-            const int MAX_GATEWAYS = canlayer::MAX_NUM_GATEWAYS;
-            const int actual_num_gw = vec_gateway_addresses.size();
+            const int actual_num_gw = len(list_gateway_addresses);
             
             int num_gateways = 0;
-            t_gateway_address address_array[MAX_GATEWAYS];
+            t_gateway_address address_array[MAX_NUM_GATEWAYS];
             
-            if (actual_num_gw > MAX_GATEWAYS)
+            if (actual_num_gw > MAX_NUM_GATEWAYS)
             {
                 throw TooManyGatewaysException();
+            }
+            if (actual_num_gw == 0)
+            {
+                throw TooFewGatewaysException();
             }
             
             for (int i=0; i < actual_num_gw; i++)
             {
-                address_array[i] = vec_gateway_addresses[i];
+
+                // extract entry
+                WrapGatewayAddress address_entry =
+                    boost::python::extract<WrapGatewayAddress>(
+                    list_gateway_addresses[i]);
+                // cast (slice) to internal parameter type
+                address_array[i] = static_cast<t_gateway_address>(
+                    address_entry);
             }
             return connect(actual_num_gw, address_array);            
             
         };
 };
+
+
 
 }
 
@@ -213,8 +255,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     class_<std::vector<long> >("IntVec")
     .def(vector_indexing_suite<std::vector<long> >());
 
-    class_<std::vector<t_gateway_address> >("GatewayAddressVec")
-        .def(vector_indexing_suite<std::vector<t_gateway_address> >());
+    class_<std::vector<WrapGatewayAddress> >("GatewayAddressVec")
+        .def(vector_indexing_suite<std::vector<WrapGatewayAddress> >());
 
     class_<WrapGridState>("GridState")
     .def_readonly("Fpu_state", &WrapGridState::getStateVec)
@@ -224,9 +266,9 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readwrite("driver_state", &WrapGridState::driver_state)
     ;
 
-    class_<t_gateway_address>("t_gateway_address", init<const char*, int>())
-        .def_readwrite("ip", &t_gateway_address::ip)
-        .def_readwrite("port", &t_gateway_address::port);
+    class_<WrapGatewayAddress>("GatewayAddress", init<const char*, int>())
+        .def_readwrite("ip", &WrapGatewayAddress::ip)
+        .def_readwrite("port", &WrapGatewayAddress::port);
 
     class_<WrapGridDriver, boost::noncopyable>("GridDriver", init<int>())
     .def("connect", &WrapGridDriver::connectGateways)
