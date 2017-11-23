@@ -370,18 +370,15 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // get canid of FPU (additional ids might be used
         // to report state of the gateway)
 
-#pragma message "insert correct fpu_id computation here"
-        // let's assume the CAN identifier has a response type
-        // code in bits 7 to 10, and the FPU id in bits
-        //
-
-        uint8_t cmd_id = (can_identifier >> 7);
-        int fpu_id = fpu_id_by_adr[gateway_id][bus_id][can_identifier & 128];
+        // FIXME: if an FPU can send a broadcast abort
+        // message, this needs to be handled here.
+        uint8_t priority = (can_identifier >> 7);
+        uint8_t fpu_busid = data[0];
+        int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
 
 
         // clear time-out flag for this FPU
         tout_list.clearTimeOut(fpu_id);
-        FPUGridState.count_pending--;
 
         // FIXME: we need to adjust the time-out count
 
@@ -389,15 +386,31 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // that
 
 
-        // TODO: signal cond_state_change if a command was
-        // completed (e.g. all FPUs have finished moving)
 
+        const t_fpu_state oldstate = FPUGridState.FPU_state[fpu_id];
         handleFPUResponse(FPUGridState.FPU_state[fpu_id], data, blen);
+
+        // update global state counters
+        const t_fpu_state newstate = FPUGridState.FPU_state[fpu_id];
+        if ( (newstate.pending_command == CCMD_NO_COMMAND)
+             && (oldstate.pending_command == CCMD_NO_COMMAND))
+        {
+            FPUGridState.count_pending--;
+        }
+        FPUGridState.Counts[oldstate.state]--;
+        FPUGridState.Counts[newstate.state]++;
+
+        // the state of the grid can change when *all* FPUs have
+        // left an old state, or *at least one* has entered a new
+        // state.
+        bool state_transition = ((FPUGridState.Counts[oldstate.state] == 0)
+                                 || (FPUGridState.Counts[newstate.state] == 1));
 
         // if no more commands are pending or tracing is active,
         // signal a state change to waitForState() callers.
         if ((FPUGridState.count_pending == 0)
-                || (num_trace_clients > 0) )
+            || state_transition
+            || (num_trace_clients > 0) )
         {
             pthread_cond_broadcast(&cond_state_change);
         }
@@ -414,17 +427,104 @@ void FPUArray::handleFPUResponse(t_fpu_state& fpu,
                                  const t_response_buf& data,
                                  const int blen)
 {
-    fpu.last_command = fpu.pending_command;
-    uint8_t cmd_id = data[0];
+    uint8_t cmd_id = data[1];
+    uint8_t response_status = data[2];
+    uint8_t response_errcode = data[3];
     switch (cmd_id)
     {
-    case CRSP_PING_RESPONSE :
-        // that's just placeholder code
-        fpu.ping_ok = true;
+    case CCMD_CONFIG_MOTION   :  
+    case CCMD_EXECUTE_MOTION  :  
+        if (response_errcode == 0)
+        {
+            int asteps = (data[4] << 8) | data[5];
+            fpu.alpha_steps = asteps;
+            int bsteps = (data[6] << 8) | data[7];
+            fpu.beta_steps = bsteps;
+            fpu.state = FPST_FINISHED;
+        }
+        if (fpu.pending_command = CCMD_EXECUTE_MOTION)
+        {
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
         break;
-        // TODO: INSERT CORRESPONDING STATE CHANGES HERE
+        
+    case CCMD_ABORT_MOTION    :  
+        if (response_errcode == 0)
+        {
+            int asteps = (data[4] << 8) | data[5];
+            fpu.alpha_steps = asteps;
+            int bsteps = (data[6] << 8) | data[7];
+            fpu.beta_steps = bsteps;
+            fpu.state = FPST_ABORTED;
+        }
+        if (fpu.pending_command = CCMD_ABORT_MOTION)
+        {
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
+        break;
+    case CCMD_GET_STEPS_ALPHA :  
+        if (response_errcode == 0)
+        {
+            int asteps = (data[4] << 8) | data[5];
+            fpu.alpha_steps = asteps;
+        }
+        if (fpu.pending_command = CCMD_GET_STEPS_BETA)
+        {
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
+        break;
+        
+    case CCMD_GET_STEPS_BETA  :  
+        if (response_errcode == 0)
+        {
+            int bsteps = (data[4] << 8) | data[5];
+            fpu.beta_steps = bsteps;
+        }
+        if (fpu.pending_command = CCMD_GET_STEPS_ALPHA)
+        {
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
+        break;
+        
+    case CCMD_PING_FPU        :
+        if (response_errcode == 0)
+        {
+            fpu.ping_ok = true;
+        }
+        if (fpu.pending_command = CCMD_PING_FPU)
+        {
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
+        break;
+
+    case CCMD_RESET_FPU       :  
+    case CCMD_AUTO_MOVE_DATUM :  
+        if (response_errcode == 0)
+        {
+            fpu.is_initialized = true;
+            fpu.alpha_steps = 0;
+            fpu.beta_steps = 0;
+            fpu.state = static_cast<E_FPU_STATE>(response_status);
+        }
+        
+        if (fpu.pending_command = CCMD_AUTO_MOVE_DATUM)
+        {
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
+        break;
+    case CCMD_NO_COMMAND      :
+    default:
+        // invalid command, ignore for now
+        // FIXME: log invalid responses
+        break;
+
     }
-    fpu.pending_command = CCMD_NO_COMMAND;
 
 }
 

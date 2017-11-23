@@ -68,12 +68,6 @@ enum E_CAN_COMMAND
 };
 
 
-enum E_CAN_RESPONSE
-{
-    CRSP_BROADCAST         = 0,
-    CRSP_PING_RESPONSE     = 1,
-};
-
 
 // defines 4-bit priority value of CAN message
 inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)

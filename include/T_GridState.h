@@ -89,7 +89,7 @@ typedef struct
     // number of minor time-outs
     // Important: This unsigned counter wraps around
     // which is fine. (Wrapping of unsigned integer
-    // types does not cause undefined  behavior in C.)
+    // types does not cause undefined  behavior in C/C++.)
     unsigned long count_timeout;
 
     // number of commands awaiting a response.
