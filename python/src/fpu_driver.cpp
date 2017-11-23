@@ -312,16 +312,16 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .export_values();
 
     class_<t_fpu_state>("FpuState")
-    .def_readwrite("state", &t_fpu_state::state)
+    .def_readonly("state", &t_fpu_state::state)
     .def_readonly("alpha_steps", &t_fpu_state::alpha_steps)
-    .def_readwrite("beta_steps", &t_fpu_state::beta_steps)
-    .def_readwrite("is_initialized", &t_fpu_state::is_initialized)
-    .def_readwrite("on_alpha_datum", &t_fpu_state::on_alpha_datum)
-    .def_readwrite("on_beta_datum", &t_fpu_state::on_beta_datum)
-    .def_readwrite("alpha_collision", &t_fpu_state::alpha_collision)
-    .def_readwrite("at_alpha_limit", &t_fpu_state::at_alpha_limit)
-    .def_readwrite("beta_collision", &t_fpu_state::beta_collision)
-    .def_readwrite("ping_ok", &t_fpu_state::ping_ok)
+    .def_readonly("beta_steps", &t_fpu_state::beta_steps)
+    .def_readonly("is_initialized", &t_fpu_state::is_initialized)
+    .def_readonly("on_alpha_datum", &t_fpu_state::on_alpha_datum)
+    .def_readonly("on_beta_datum", &t_fpu_state::on_beta_datum)
+    .def_readonly("alpha_collision", &t_fpu_state::alpha_collision)
+    .def_readonly("at_alpha_limit", &t_fpu_state::at_alpha_limit)
+    .def_readonly("beta_collision", &t_fpu_state::beta_collision)
+    .def_readonly("ping_ok", &t_fpu_state::ping_ok)
     ;
 
 
@@ -337,9 +337,9 @@ BOOST_PYTHON_MODULE(fpu_driver)
     class_<WrapGridState>("GridState")
     .def_readonly("Fpu_state", &WrapGridState::getStateVec)
     .def_readonly("Counts", &WrapGridState::getCounts)
-    .def_readwrite("count_timeout", &WrapGridState::count_timeout)
-    .def_readwrite("count_pending", &WrapGridState::count_pending)
-    .def_readwrite("driver_state", &WrapGridState::driver_state)
+    .def_readonly("count_timeout", &WrapGridState::count_timeout)
+    .def_readonly("count_pending", &WrapGridState::count_pending)
+    .def_readonly("driver_state", &WrapGridState::driver_state)
     ;
 
     class_<WrapGatewayAddress>("GatewayAddress", init<const char*, int>())
