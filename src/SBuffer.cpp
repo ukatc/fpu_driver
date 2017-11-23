@@ -116,7 +116,7 @@ inline bool decode_and_append_byte(uint8_t* buf,
 
     if (sync)
     {
-        if (buflen < MAX_CAN_MESSAGE_BYTES)
+        if (buflen < MAX_UNENCODED_GATEWAY_MESSAGE_BYTES)
         {
             buf[buflen++] = data;
         }
@@ -152,7 +152,7 @@ SBuffer::SBuffer()
 
 SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
         int const input_len,
-        uint8_t src[MAX_CAN_MESSAGE_BYTES])
+        uint8_t src[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES])
 {
     int out_len = 0;
 
@@ -260,7 +260,7 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
     bool do_retry = false;
     do
     {
-        rsize = recv(sockfd, rbuf, BUFSIZE, MSG_DONTWAIT | MSG_NOSIGNAL);
+        rsize = recv(sockfd, rbuf, MAX_STUFFED_MESSAGE_LENGTH, MSG_DONTWAIT | MSG_NOSIGNAL);
 
         // check and process errors
         if (rsize < 0)

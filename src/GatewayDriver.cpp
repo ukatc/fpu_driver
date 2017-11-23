@@ -598,7 +598,7 @@ void* GatewayDriver::threadRxFun()
 // This method parses any CAN response, dispatches it and stores
 // result in fpu state array. It also clears any time-out flags for
 // FPUs which did respond.
-void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_CAN_MESSAGE_BYTES], int const clen)
+void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES], int const clen)
 {
     t_CAN_buffer* can_msg = (t_CAN_buffer*) command_buffer;
 

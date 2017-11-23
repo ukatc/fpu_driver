@@ -36,13 +36,12 @@ namespace canlayer
 {
 
 
-// This refers to the byte-swizzled mesage over
-// the socket. We have two start bytes, two stop bytes,
-// and any payload byte can be swizzled to two bytes.
-const int MAX_CAN_MESSAGE_LENGTH_BYTES = (4 + 2 * MAX_CAN_MESSAGE_BYTES);
 
+// buffer which can hold a CAN payload (8 bytes)
 typedef uint8_t t_response_buf[MAX_CAN_PAYLOAD_BYTES];
 
+// unstuffed message to gateway which holds address,
+// CAN identifier, and message
 typedef struct __attribute__((packed)) t_msg
 {
     uint8_t busid;
@@ -50,10 +49,12 @@ typedef struct __attribute__((packed)) t_msg
     t_response_buf data;
 } t_msg;
 
+// buffer which holds the unencoded (not byte-stuffed)
+// message to the EtherCAN gateway
 typedef union   __attribute__((packed))
 {
     struct t_msg message;
-    uint8_t bytes[MAX_CAN_MESSAGE_BYTES];
+    uint8_t bytes[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES];
 } t_CAN_buffer;
 
 class I_CAN_Command
@@ -63,6 +64,7 @@ public:
 
     I_CAN_Command() {};
     virtual ~I_CAN_Command() {};
+
 
     // method which serializes parameters into
     // CAN message

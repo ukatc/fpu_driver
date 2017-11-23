@@ -130,7 +130,7 @@ private:
                                         int gateway_id);
 
     // interface method which handles decoded CAN response messages
-    virtual void handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_CAN_MESSAGE_BYTES], int const clen);
+    virtual void handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES], int const clen);
 
 
     void updatePendingCommand(std::unique_ptr<I_CAN_Command>& can_command);

@@ -67,7 +67,7 @@ public:
     // this operation might block!
     E_SocketStatus encode_and_send(int sockfd,
                                    int const input_len,
-                                   uint8_t bytes[MAX_CAN_MESSAGE_BYTES]);
+                                   uint8_t bytes[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES]);
 
     // we send pending data and return the
     // result of the send command.
@@ -98,24 +98,26 @@ public:
 private:
 
 
-    // The internal buffer needs to have twice the maximum length of a
-    // CAN message because four sync bytes are added and each message
-    // byte could be encoded as two bytes.
-    const static int BUFSIZE = 2 * MAX_CAN_MESSAGE_BYTES;
+    // The internal buffer needs to have more than twice the maximum
+    // length of a CAN message because four sync bytes are added and
+    // each message byte could be encoded as two bytes.  We have two
+    // start bytes, two stop bytes, and any payload byte can be
+    // swizzled to two bytes.
+    static const int MAX_STUFFED_MESSAGE_LENGTH = (4 + 2 * MAX_UNENCODED_GATEWAY_MESSAGE_BYTES);
 
 
     // read buffer for data from socket
-    uint8_t rbuf[BUFSIZE];
+    uint8_t rbuf[MAX_STUFFED_MESSAGE_LENGTH];
     bool sync;
     bool dle;
     int unsent_len;
     int out_offset;
     // internal buffer for command
-    uint8_t command_buf[MAX_CAN_MESSAGE_BYTES];
+    uint8_t command_buf[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES];
     // length of command
     int clen;
 
-    uint8_t wbuf[BUFSIZE];
+    uint8_t wbuf[MAX_STUFFED_MESSAGE_LENGTH];
 
 };
 

@@ -22,6 +22,8 @@
 
 #define E_CAN_COMMAND_H
 
+#include <cassert>
+
 namespace mpifps
 {
 
@@ -59,7 +61,7 @@ enum E_CAN_COMMAND
     CCMD_REPORT_POSITIONS  = 21, // report alpha and beta position
     CCMD_ASSIGN_POSITION   = 22, // assign measured position in recovery
     CCMD_CHECK_INTEGRITY   = 23, // report firmware version and CRC
-    CCMD_LOCK_UNIT         = 24, // ignore any command except reset
+    CCMD_LOCK_UNIT         = 24, // ignore any command except reset and unlock
     CCMD_UNLOCK_UNIT       = 25, // listen to commands again
 
     NUM_CAN_COMMANDS  = 26,
@@ -71,6 +73,72 @@ enum E_CAN_RESPONSE
     CRSP_BROADCAST         = 0,
     CRSP_PING_RESPONSE     = 1,
 };
+
+
+// defines 4-bit priority value of CAN message
+inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
+{
+    uint8_t priority = 0x0f;
+    switch (cmd)
+    {
+        /* highest priority has smallest code */
+                
+        /* used for emergency stop */
+    case CCMD_ABORT_MOTION      :
+        priority = 0x01; break;
+
+        /* movement commands */
+    case CCMD_EXECUTE_MOTION    :
+        priority = 0x02; break;
+
+        /* datum finding */
+    case CCMD_MOVE_DATUM        :
+    case CCMD_MOVE_DATUM_OFF    :
+    case CCMD_MOVE_DATUM_ON     :
+        priority = 0x03; break;
+
+        /* fpu reset */
+    case CCMD_RESET_FPU         :
+        priority = 0x04; break;
+
+        /* motion configuration */
+    case CCMD_CONFIG_MOTION     :
+    case CCMD_ASSIGN_POSITION   :
+    case CCMD_RESET_STEPCOUNTER :
+    case CCMD_REPEAT_MOTION     :
+    case CCMD_REVERSE_MOTION    :
+    case CCMD_SET_USTEP         :
+        priority = 0x05; break;
+
+        /* error recovery */
+    case CCMD_CLEAR_COLLISION   :
+    case CCMD_UNTANGLE_FPU      :
+    case CCMD_LOCK_UNIT         :
+    case CCMD_UNLOCK_UNIT       :
+        priority = 0x08; break;
+
+        /* connectivity check */
+    case CCMD_PING_FPU          :
+        priority = 0x09; break;
+
+        /* status inquiry */
+    case CCMD_GET_STEPS_ALPHA   :
+    case CCMD_GET_STEPS_BETA    :
+    case CCMD_GET_ERROR_ALPHA   :
+    case CCMD_GET_ERROR_BETA    :
+    case CCMD_REQUEST_STATUS    :
+    case CCMD_REPORT_POSITIONS  :
+    case CCMD_CHECK_INTEGRITY   :                
+        priority = 0x0a; break;
+
+        // invalid cases
+    case CCMD_NO_COMMAND        :
+    default:
+        assert(false);
+
+    }
+    return priority;
+}
 
 }
 

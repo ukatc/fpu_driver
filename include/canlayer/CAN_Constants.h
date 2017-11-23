@@ -45,10 +45,11 @@ const int MAX_SUB_COMMANDS = 300;
 // bytes of CAN payload
 const int MAX_CAN_PAYLOAD_BYTES = 8;
 
-// length of message to gateway,
+// length of unstuffed message to gateway,
 // including CAN identifier and
 // bus identifier.
-const int MAX_CAN_MESSAGE_BYTES = 11;
+const int MAX_UNENCODED_GATEWAY_MESSAGE_BYTES = 11;
+
 
 }
 
