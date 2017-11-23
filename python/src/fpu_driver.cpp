@@ -8,6 +8,8 @@
 #include <boost/python/enum.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/list.hpp>
+#include <boost/python/dict.hpp>
+#include <boost/python/tuple.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <iostream>
 #include <string>
@@ -22,6 +24,14 @@ namespace   // Avoid cluttering the global namespace.
 {
 
 using namespace mpifps;
+
+using boost::python::object;
+using boost::python::extract;
+using boost::python::list;
+using boost::python::dict;
+using boost::python::tuple;
+
+
 
 // A friendly class.
 class hello
@@ -80,6 +90,16 @@ struct TooFewGatewaysException : std::exception
   char const* what() const throw() { return "Need to configure at least one gateway"; }
 };
 
+struct TooFewFPUsException : std::exception
+{
+  char const* what() const throw() { return "Waveform table needs to address at least one FPU."; }
+};
+
+struct TooFewStepsException : std::exception
+{
+  char const* what() const throw() { return "Waveform entry needs to contain at least one step."; }
+};
+
 void translate(TooManyGatewaysException const& e)
 {
     // Use the Python 'C' API to set up an exception object
@@ -87,6 +107,18 @@ void translate(TooManyGatewaysException const& e)
 }
 
 void translate(TooFewGatewaysException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+void translate(TooFewFPUsException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+void translate(TooFewStepsException const& e)
 {
     // Use the Python 'C' API to set up an exception object
     PyErr_SetString(PyExc_RuntimeError, e.what());
@@ -128,8 +160,7 @@ class WrapGridDriver : public GridDriver
         };
 
     
-    E_DriverErrCode connectGateways(boost::python::list&
-                                    list_gateway_addresses)
+    E_DriverErrCode connectGateways(list& list_gateway_addresses)
         {
             const int actual_num_gw = len(list_gateway_addresses);
             
@@ -150,7 +181,7 @@ class WrapGridDriver : public GridDriver
 
                 // extract entry
                 WrapGatewayAddress address_entry =
-                    boost::python::extract<WrapGatewayAddress>(
+                    extract<WrapGatewayAddress>(
                     list_gateway_addresses[i]);
                 // cast (slice) to internal parameter type
                 address_array[i] = static_cast<t_gateway_address>(
@@ -159,6 +190,51 @@ class WrapGridDriver : public GridDriver
             return connect(actual_num_gw, address_array);            
             
         };
+
+    E_DriverErrCode configMotionWithDict(dict& dict_waveforms)
+        {
+            list fpu_id_list = dict_waveforms.keys();
+            const int nkeys = len(fpu_id_list);
+
+            if (nkeys == 0)
+            {
+                throw TooFewFPUsException();
+            }
+
+            t_wtable wtable;
+            for(int i = 0; i < nkeys; i++)
+            {
+                object fpu_key = fpu_id_list[i];
+                int fpu_id = extract<int>(fpu_key);
+                list step_list = extract<list>(dict_waveforms[fpu_key]);
+                int num_steps = len(step_list);
+
+                if (num_steps == 0)
+                {
+                    throw TooFewStepsException();
+                }
+
+                std::vector<t_step_pair> steps;
+
+                for(int j = 0; j < num_steps; j++)
+                {
+                    tuple tstep_pair = extract<tuple>(step_list[j]);
+                    int16_t alpha_steps = extract<int>(tstep_pair[0]);
+                    int16_t beta_steps = extract<int>(tstep_pair[1]);
+                    t_step_pair step_pair;
+                    step_pair.alpha_steps = alpha_steps;
+                    step_pair.beta_steps = beta_steps;
+                    steps.push_back(step_pair);                    
+                }
+
+                t_waveform wform;
+                wform.fpu_id = fpu_id;
+                wform.steps = steps;
+                wtable.push_back(wform);
+            }
+            return configMotion(wtable);
+        };
+
 };
 
 
@@ -277,7 +353,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("initializeGrid", &WrapGridDriver::initializeGrid)
     .def("resetFPUs", &WrapGridDriver::resetFPUs)
     .def("findDatum", &WrapGridDriver::findDatum)
-    .def("configMotion", &WrapGridDriver::configMotion)
+        // call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
+    .def("configMotion", &WrapGridDriver::configMotionWithDict)
     .def("executeMotion", &WrapGridDriver::executeMotion)
     .def("repeatMotion", &WrapGridDriver::repeatMotion)
     .def("reverseMotion", &WrapGridDriver::reverseMotion)
