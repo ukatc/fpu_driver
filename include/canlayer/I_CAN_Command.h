@@ -69,7 +69,7 @@ public:
     // method which serializes parameters into
     // CAN message
     virtual void SerializeToBuffer(const uint8_t busid,
-                                   const uint16_t fpuid,
+                                   const uint8_t fpu_canid,
                                    int& buf_len, t_CAN_buffer& buf) = 0;
 
 

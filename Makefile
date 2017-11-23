@@ -15,13 +15,16 @@ LIBS = -lm -lpthread
 _DEPS = DriverState.h E_GridState.h FPUState.h GridDriver.h		\
 	GridState.h T_GridState.h canlayer/AsyncDriver.h		\
 	T_GatewayAddress.h canlayer/CANError.h canlayer/CommandPool.h	\
-	canlayer/CommandQueue.h DriverConstants.h		\
+	canlayer/CommandQueue.h DriverConstants.h			\
 	canlayer/CAN_Constants.h canlayer/E_CAN_COMMAND.h		\
 	canlayer/FPUArray.h canlayer/GatewayDriver.h			\
 	canlayer/I_CAN_Command.h canlayer/I_ResponseHandler.h		\
 	canlayer/SBuffer.h canlayer/TimeOutList.h			\
 	canlayer/sync_utils.h canlayer/time_utils.h			\
 	canlayer/commands/ConfigureMotionCommand.h			\
+	canlayer/commands/ExecuteMotionCommand.h			\
+	canlayer/commands/GetStepsAlphaCommand.h			\
+	canlayer/commands/AutoMoveDatumCommand.h			\
 	canlayer/commands/MoveDatumOffCommand.h				\
 	canlayer/commands/MoveDatumOnCommand.h				\
 	canlayer/commands/PingCommand.h

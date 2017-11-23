@@ -52,6 +52,33 @@ E_DriverErrCode GridDriver::findDatum()
 }
 
 
+E_DriverErrCode GridDriver::autoFindDatum()
+{
+    E_DriverErrCode estatus = DE_OK;
+    E_GridState state_summary;
+    int num_avaliable_retries = DEFAULT_NUM_RETRIES;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    while (num_avaliable_retries > 0)
+    {
+        // writes grid_state into member variable
+        estatus = autoFindDatumAsync(grid_state, state_summary);
+
+        if (estatus != DE_OK)
+        {
+            break;
+        }
+
+        num_avaliable_retries--;
+    }
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+
+
 
 
 E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms)

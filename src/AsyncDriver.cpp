@@ -24,6 +24,9 @@
 // we need to include the individual CAN commands
 // as they are parametrized here.
 #include "canlayer/commands/ConfigureMotionCommand.h"
+#include "canlayer/commands/ExecuteMotionCommand.h"
+#include "canlayer/commands/GetStepsAlphaCommand.h"
+#include "canlayer/commands/AutoMoveDatumCommand.h"
 #include "canlayer/commands/MoveDatumOnCommand.h"
 #include "canlayer/commands/MoveDatumOffCommand.h"
 #include "canlayer/commands/PingCommand.h"
@@ -38,14 +41,14 @@ E_DriverErrCode AsyncDriver::initializeDriver()
 {
     switch (gateway.getDriverState())
     {
-    DS_UNINITIALISED:
+    case DS_UNINITIALISED:
         break;
         
-    DS_UNCONNECTED:
-    DS_CONNECTED:
+    case DS_UNCONNECTED:
+    case DS_CONNECTED:
         return DE_DRIVER_ALREADY_INITIALISED;
 
-    DS_ASSERTION_FAILED:
+    case DS_ASSERTION_FAILED:
     default:
         return DE_ASSERTION_FAILED;
     }
@@ -97,6 +100,75 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
     return DE_OK;
 }
 
+E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
+        E_GridState& state_summary)
+{
+    
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    // check no FPUs have ongoing collisions
+    for (int i=0; i < num_fpus; i++)
+    {
+        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
+        if ((fpu_status == FPST_ABORTED)
+                || (fpu_status == FPST_COLLISION_DETECTED)
+                || (fpu_status == FPST_LIMIT_STOP))
+        {
+            return DE_UNRESOLVED_COLLISION;
+        }
+    }
+
+
+    // All fpus are moved automatically until they hit the datum
+    // switch.
+
+    int num_moving = 0;
+    unique_ptr<AutoMoveDatumCommand> can_command;
+    for (int i=0; i < num_fpus; i++)
+    {
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        if (fpu_state.state != FPST_LOCKED)
+        {
+            // FIXME!!!: we should add a security
+            // limit so that FPUs which are off position
+            // are not driven into the hard stop.
+#pragma message "avoid hitting a hard stop here"
+
+            bool broadcast = false;
+            int adir = 0;
+            int bdir = 0;
+            can_command = gateway.provideInstance<AutoMoveDatumCommand>();
+            can_command->parametrize(i, broadcast, adir, bdir);
+            gateway.sendCommand(i, std::move(can_command));
+            num_moving++;
+            
+        }
+    }
+
+    while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        state_summary = gateway.waitForState(TGT_AT_DATUM,
+                                             grid_state);
+
+        num_moving = grid_state.Counts[FPST_DATUM_SEARCH];
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    return DE_OK;
+
+}
+
+
 E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
@@ -137,7 +209,9 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
             if (move_alpha_up || move_beta_up)
             {
                 can_command1 = gateway.provideInstance<MoveDatumOffCommand>();
+                bool broadcast = false;
                 can_command1->parametrize(i,
+                                          broadcast,
                                           move_alpha_up ? 1 : 0,
                                           move_beta_up ? 1 : 0);
                 // send the command (the actual sending happens
@@ -210,7 +284,9 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
             if (move_alpha_down || move_beta_down)
             {
                 can_command2 = gateway.provideInstance<MoveDatumOnCommand>();
+                bool broadcast = false;
                 can_command2->parametrize(i,
+                                          broadcast,
                                           move_alpha_down ? -1 : 0,
                                           move_beta_down ? -1 : 0);
                 gateway.sendCommand(i, std::move(can_command2));

@@ -33,7 +33,7 @@ namespace canlayer
 enum E_CAN_COMMAND
 {
 
-    CCMD_NO_COMMAND        =  0, // reserved for invalid value
+    CCMD_NO_COMMAND        =  0, // reserved
     CCMD_CONFIG_MOTION     =  1, // configure waveform
     CCMD_EXECUTE_MOTION    =  2, // execute loaded waveform
     CCMD_ABORT_MOTION      =  3, // abort any ongoing movement
@@ -42,7 +42,7 @@ enum E_CAN_COMMAND
     CCMD_GET_STEPS_BETA    =  5, // get beta counts
     CCMD_PING_FPU          =  7, // check connectivity
     CCMD_RESET_FPU         =  8, // reset MCU
-    CCMD_MOVE_DATUM        =  9, // "automatic" datum search
+    CCMD_AUTO_MOVE_DATUM   =  9, // "automatic" datum search
     CCMD_RESET_STEPCOUNTER = 10, // only for debugging
     CCMD_REPEAT_MOTION     = 11, // re-use last waveform
     CCMD_REVERSE_MOTION    = 12, // invert last waveform
@@ -92,7 +92,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
         priority = 0x02; break;
 
         /* datum finding */
-    case CCMD_MOVE_DATUM        :
+    case CCMD_AUTO_MOVE_DATUM        :
     case CCMD_MOVE_DATUM_OFF    :
     case CCMD_MOVE_DATUM_ON     :
         priority = 0x03; break;

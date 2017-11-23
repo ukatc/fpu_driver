@@ -98,10 +98,10 @@ namespace canlayer
             can_buffer.message.data[1] = ( (fentry ? 1 : 0)
                                            | (lentry ? 2 : 0));
             // alpha and beta steps
-            can_buffer.message.data[2] = 0xff & (alpha_steps >> 8);
-            can_buffer.message.data[3] = 0xff & alpha_steps;
-            can_buffer.message.data[4] = 0xff & (beta_steps >>8);
-            can_buffer.message.data[5] = 0xff & beta_steps;
+            can_buffer.message.data[2] = 0xff & (asteps >> 8);
+            can_buffer.message.data[3] = 0xff & asteps;
+            can_buffer.message.data[4] = 0xff & (bsteps >>8);
+            can_buffer.message.data[5] = 0xff & bsteps;
 
             buf_len = 6;
             

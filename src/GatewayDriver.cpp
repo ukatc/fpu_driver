@@ -310,11 +310,11 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
             t_CAN_buffer can_buffer;
             int fpu_id = active_can_command->getFPU_ID();
             const uint16_t busid = address_map[fpu_id].bus_id;
-            const uint8_t canid = address_map[fpu_id].can_id;
+            const uint8_t fpu_canid = address_map[fpu_id].can_id;
 
             // serialize data
             active_can_command->SerializeToBuffer(busid,
-                                                  canid,
+                                                  fpu_canid,
                                                   message_len,
                                                   can_buffer);
             // byte-swizzle and send buffer

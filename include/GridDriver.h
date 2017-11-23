@@ -48,7 +48,11 @@ public:
 
     E_DriverErrCode resetFPUs();
 
+    // find datum with driver-controlled movement
     E_DriverErrCode findDatum();
+
+    // find datum with automatic firmware operation
+    E_DriverErrCode autoFindDatum();
 
     E_DriverErrCode configMotion(const t_wtable& waveforms);
 

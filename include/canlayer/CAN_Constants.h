@@ -46,8 +46,8 @@ const int MAX_SUB_COMMANDS = 300;
 const int MAX_CAN_PAYLOAD_BYTES = 8;
 
 // length of unstuffed message to gateway,
-// including CAN identifier and
-// bus identifier.
+// including 11-bit CAN identifier and
+// 8-bit bus identifier.
 const int MAX_UNENCODED_GATEWAY_MESSAGE_BYTES = 11;
 
 
