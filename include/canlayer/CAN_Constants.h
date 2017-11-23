@@ -19,14 +19,15 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DRIVER_CONSTANTS_H
-#define DRIVER_CONSTANTS_H
+#ifndef CAN_CONSTANTS_H
+#define CAN_CONSTANTS_H
 
 namespace mpifps
 {
 
 // this namespace contains definitions
 // which are internal to the CAN bus access layer.
+
 
 namespace canlayer
 {
@@ -35,13 +36,6 @@ namespace canlayer
 const int BUSES_PER_GATEWAY =  5;
 // number of FPUs on one CAN bus
 const int FPUS_PER_BUS = 67;
-// number of gateways for the positioner grid
-const int MAX_NUM_GATEWAYS = 3;
-
-// maximum number of fibre positioner units
-const int MAX_NUM_POSITIONERS = (MAX_NUM_GATEWAYS
-                                 * BUSES_PER_GATEWAY
-                                 * FPUS_PER_BUS);
 
 
 // maximum number of elementary commands resulting from one

@@ -21,8 +21,8 @@
 
 #include <cassert>
 
+#include "DriverConstants.h"
 #include "canlayer/CommandPool.h"
-#include "canlayer/DriverConstants.h"
 #include "canlayer/commands/ConfigureMotionCommand.h"
 #include "canlayer/commands/MoveDatumOnCommand.h"
 #include "canlayer/commands/MoveDatumOffCommand.h"

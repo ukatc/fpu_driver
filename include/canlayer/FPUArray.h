@@ -30,7 +30,8 @@
 #include "../E_GridState.h"
 #include "../T_GridState.h"
 
-#include "DriverConstants.h"
+#include "CAN_Constants.h"
+#include "../DriverConstants.h"
 #include "TimeOutList.h"
 #include "I_CAN_Command.h"
 

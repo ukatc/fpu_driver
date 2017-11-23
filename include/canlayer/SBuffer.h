@@ -25,7 +25,7 @@
 #include <string.h>		/// memset()
 #include <stdint.h>
 
-#include "DriverConstants.h"
+#include "CAN_Constants.h"
 
 #include "I_ResponseHandler.h"  // interface for processing received CAN responses
 

@@ -12,40 +12,34 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME I_ResponseHandler.h
+// NAME DriverConstants.h
 //
-// This class implements the low-level CAN driver for the MOONS fiber
-// positioner grid
+// This file defines global constants which reflect some
+// properties of the hardware.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef I_RESPONSE_HANDLER_H
-#define I_RESPONSE_HANDLER_H
+#ifndef DRIVER_CONSTANTS_H
+#define DRIVER_CONSTANTS_H
 
-#include <stdint.h>
+#include "canlayer/CAN_Constants.h"
 
-#include "CAN_Constants.h"
 namespace mpifps
 {
 
-namespace canlayer
-{
 
-class I_ResponseHandler
-{
-public:
-    I_ResponseHandler() {};
+// define default value for more convenient testing.
+static const char * DEFAULT_GATEWAY_IP= "192.168.0.10";
+static const int DEFAULT_GATEWAY_PORT = 4700;
 
-    virtual ~I_ResponseHandler() {};
 
-    // method to handle any incoming CAN response message.
-    // the implementation will set the appropiate status information
-    // for the corresponsing FPUs
-    virtual void handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_CAN_MESSAGE_BYTES], int const clen) = 0;
-};
+// number of gateways for the positioner grid
+const int MAX_NUM_GATEWAYS = 3;
+
+// maximum number of fibre positioner units
+const int MAX_NUM_POSITIONERS = (MAX_NUM_GATEWAYS
+                                 * canlayer::BUSES_PER_GATEWAY
+                                 * canlayer::FPUS_PER_BUS);
 
 }
-
-}
-
 #endif

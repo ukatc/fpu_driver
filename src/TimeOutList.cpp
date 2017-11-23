@@ -23,7 +23,7 @@
 //#include <string.h>		/// strerror
 #include <pthread.h>
 
-#include "canlayer/DriverConstants.h"
+#include "DriverConstants.h"
 #include "canlayer/TimeOutList.h"
 
 

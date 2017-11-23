@@ -23,7 +23,7 @@
 
 #include <time.h>
 #include <stdint.h>
-#include "canlayer/DriverConstants.h"
+#include "DriverConstants.h"
 #include "FPUState.h"
 #include "canlayer/E_CAN_COMMAND.h"
 #include "DriverState.h"
@@ -31,7 +31,6 @@
 namespace mpifps
 {
 
-using canlayer::MAX_NUM_POSITIONERS;
 using canlayer::E_CAN_COMMAND;
 
 typedef struct t_fpu_state

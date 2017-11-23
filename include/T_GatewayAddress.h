@@ -23,36 +23,11 @@
 
 namespace mpifps
 {
-    // define default value for more convenient testing.
-    static const char * DEFAULT_GATEWAY_IP= "192.168.0.10";
-    static const int DEFAULT_GATEWAY_PORT = 4700;
     
     typedef struct t_gateway_address
     {
-        public:
         const char * ip;
-        uint16_t port;
-        t_gateway_address()
-            {
-                ip = DEFAULT_GATEWAY_IP;
-                port = DEFAULT_GATEWAY_PORT;
-            };
-        t_gateway_address(const char * new_ip, const int new_port)
-            {
-                ip = new_ip;
-                port = new_port;
-            };
-        t_gateway_address(const char * new_ip)
-            {
-                ip = new_ip;
-                port = DEFAULT_GATEWAY_PORT;
-            };
-
-        bool operator==(const  t_gateway_address &a) const
-            {
-                return (*this) == a;
-            };
-        
+        uint16_t port;        
     } t_gateway_address;
 
 }

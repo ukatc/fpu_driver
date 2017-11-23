@@ -26,7 +26,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "DriverConstants.h"
+#include "CAN_Constants.h"
 #include "E_CAN_COMMAND.h"
 
 namespace mpifps
