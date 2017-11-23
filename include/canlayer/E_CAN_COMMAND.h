@@ -30,26 +30,39 @@ namespace canlayer
 
 enum E_CAN_COMMAND
 {
-    CCMD_NO_COMMAND        = 0,
-    CCMD_PING_FPU          = 1,
-    CCMD_MOVE_DATUM_OFF    = 2,
-    CCMD_MOVE_DATUM_ON     = 3,
-    CCMD_CONFIG_MOTION     = 4,
-    CCMD_EXECUTE_MOTION    = 5,
-    CCMD_REPEAT_MOTION     = 6,
-    CCMD_REVERSE_MOTION    = 7,
-    CCMD_REQUEST_STATUS    = 8,
-    CCMD_REPORT_POSITIONS  = 9,
-    CCMD_ASSIGN_POSITION   = 10,
-    CCMD_ABORT_MOTION      = 11,
-    CCMD_UNTANGLE_FPU      = 12,
-    CCMD_CLEAR_COLLISION   = 13,
-    CCMD_CHECK_INTEGRITY   = 14,
-    CCMD_RESET_FPU         = 15,
-    CCMD_LOCK_UNIT         = 16,
-    CCMD_UNLOCK_UNIT       = 17,
 
-    NUM_CAN_COMMANDS  = 18,
+    CCMD_NO_COMMAND        =  0, // reserved for invalid value
+    CCMD_CONFIG_MOTION     =  1, // configure waveform
+    CCMD_EXECUTE_MOTION    =  2, // execute loaded waveform
+    CCMD_ABORT_MOTION      =  3, // abort any ongoing movement
+    // FIXME: next two  schould be combined
+    CCMD_GET_STEPS_ALPHA   =  4, // get alpha counts
+    CCMD_GET_STEPS_BETA    =  5, // get beta counts
+    CCMD_PING_FPU          =  7, // check connectivity
+    CCMD_RESET_FPU         =  8, // reset MCU
+    CCMD_MOVE_DATUM        =  9, // "automatic" datum search
+    CCMD_RESET_STEPCOUNTER = 10, // only for debugging
+    CCMD_REPEAT_MOTION     = 11, // re-use last waveform
+    CCMD_REVERSE_MOTION    = 12, // invert last waveform
+    CCMD_CLEAR_COLLISION   = 13, // "ENABLE_COLLIDE"
+    CCMD_UNTANGLE_FPU      = 14, // "FREE_COLLIDE"
+    // FIXME: is the following needed ?
+    CCMD_SET_USTEP         = 15, // set motor micro-stepping (1,2,4,8 supported)
+    // FIXME: next two  schould be combined
+    CCMD_GET_ERROR_ALPHA   = 16, // get residue count at last datum hit
+    CCMD_GET_ERROR_BETA    = 17, // get residue count at last datum hit
+
+    // commands which are not yet implemented
+    CCMD_MOVE_DATUM_OFF    = 18, // move until datum switch is off
+    CCMD_MOVE_DATUM_ON     = 19, // move until datum switch is on
+    CCMD_REQUEST_STATUS    = 20, // report status and flags
+    CCMD_REPORT_POSITIONS  = 21, // report alpha and beta position
+    CCMD_ASSIGN_POSITION   = 22, // assign measured position in recovery
+    CCMD_CHECK_INTEGRITY   = 23, // report firmware version and CRC
+    CCMD_LOCK_UNIT         = 24, // ignore any command except reset
+    CCMD_UNLOCK_UNIT       = 25, // listen to commands again
+
+    NUM_CAN_COMMANDS  = 26,
 };
 
 
