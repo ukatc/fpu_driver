@@ -39,7 +39,7 @@ namespace canlayer
 
         static E_CAN_COMMAND getCommandCode()
         {
-            return CCMD_PING_FPU;
+            return CCMD_CONFIG_MOTION;
         };
 
         ConfigureMotionCommand(){};
@@ -59,41 +59,54 @@ namespace canlayer
         };
 
 
+        // the internal member fpu_id is the logical number of the
+        // fpu in the grid.
+        // Busid is the bus number the command should be sent to.
+        // canid is the id if the FPU on that bus.
         void SerializeToBuffer(const uint8_t busid,
-                               const uint16_t canid,
+                               const uint8_t fpu_canid,
                                int& buf_len,
                                t_CAN_buffer& can_buffer)
         {
-            
+
+            // CAN bus id for that gateway to which message should go
             can_buffer.message.busid = busid;
 
             // we use bit 7 to 10 for the command code,
             // and bit 0 to 6 for the FPU bus id.
-            assert(CCMD_PING_FPU <= 15);
-            assert(fpu_id < FPUS_PER_BUS);
-            uint16_t can_addr = ( ((CCMD_PING_FPU & 15) << 7)
-                                  | (canid & 128));
+            assert(fpu_canid < FPUS_PER_BUS);
+            assert(fpu_canid > 0);
             
+
+            // the CAN identifier is either all zeros (for a broadcast
+            // message) or bits 7 - 10 are the proiority and bits 0 -
+            // 6 the CAN id of the FPU.
+            const E_CAN_COMMAND cmd_code = getCommandCode();
+            
+            const uint16_t can_identifier = (getMessagePriority(cmd_code)
+                                             << 7) | fpu_canid;
+                                   
             // The protocol uses little-endian encoding here
-            // (the byte order used in the CANOpen protocol).
-            can_buffer.message.identifier = htole64(can_addr);
+            // (the byte order used in the CANOpen protocol).            
+            can_buffer.message.identifier = htole64(can_identifier);
 
-            #pragma message "fix command assembly here"
-            
-            long payload = 0;
-            can_buffer.message.data[0] = payload & 0xff;
-            can_buffer.message.data[1] = (payload >> 8) & 0xff;
-            can_buffer.message.data[2] = (payload >> 16) & 0xff;
-            can_buffer.message.data[3] = (payload >> 24) & 0xff;
-            can_buffer.message.data[4] = (payload >> 32) & 0xff;
-            can_buffer.message.data[5] = (payload >> 40) & 0xff;
-            can_buffer.message.data[6] = (payload >> 48) & 0xff;
-            can_buffer.message.data[7] = (payload >> 56) & 0xff;
 
-            buf_len = 8;
+            // CAN command code
+            can_buffer.message.data[0] = cmd_code;
+
+            // flags for first and last entry
+            can_buffer.message.data[1] = ( (fentry ? 1 : 0)
+                                           | (lentry ? 2 : 0));
+            // alpha and beta steps
+            can_buffer.message.data[2] = 0xff & (alpha_steps >> 8);
+            can_buffer.message.data[3] = 0xff & alpha_steps;
+            can_buffer.message.data[4] = 0xff & (beta_steps >>8);
+            can_buffer.message.data[5] = 0xff & beta_steps;
+
+            buf_len = 6;
             
         };
-
+ 
 
         // FPU id to which message is sent
         int getFPU_ID()

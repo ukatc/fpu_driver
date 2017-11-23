@@ -12,15 +12,16 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME MoveDatumOffCommand.h
+// NAME MoveDatumOnCommand.h
 // 
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////
 
-#ifndef MOVE_DATUM_OFF_COMMAND_H
-#define MOVE_DATUM_OFF_COMMAND_H
+#ifndef MOVE_DATUM_COMMAND_H
+#define MOVE_DATUM_COMMAND_H
 
 #include <cassert>
 #include "../I_CAN_Command.h"
@@ -30,17 +31,20 @@ namespace mpifps {
 namespace canlayer
 {
 
-    class MoveDatumOffCommand : public I_CAN_Command
+    class MoveDatumCommand : public I_CAN_Command
     {
 
       public:
 
         static E_CAN_COMMAND getCommandCode()
         {
-            return CCMD_MOVE_DATUM_OFF;
+            return CCMD_MOVE_DATUM;
         };
 
-        MoveDatumOffCommand(){};
+
+        MoveDatumOnCommand(){};
+      
+        ~MoveDatumOnCommand(){};
 
         E_CAN_COMMAND getInstanceCommandCode()
         {
@@ -98,7 +102,9 @@ namespace canlayer
             can_buffer.message.data[1] = 0xff & adir;
             can_buffer.message.data[2] = 0xff & bdir;
 
-            buf_len = 3;
+#pragma message "fix message buffer length when firmware fixed"
+            //buf_len = 3;
+            buf_len = 8;
             
         };
 

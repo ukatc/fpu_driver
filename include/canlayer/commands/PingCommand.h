@@ -48,43 +48,58 @@ namespace canlayer
         };
 
 
-        void parametrize(int f_id, long sequence_number)
+        void parametrize(int f_id, bool broadcast, long sequence_number)
         {
             fpu_id = f_id;
+            bcast = broadcast;
             payload = sequence_number;
         };
 
         void SerializeToBuffer(const uint8_t busid,
-                               const uint16_t canid,
+                               const uint8_t fpu_canid,
                                int& buf_len,
                                t_CAN_buffer& can_buffer)
         {
-            
+
+            // CAN bus id for that gateway to which message should go
             can_buffer.message.busid = busid;
 
             // we use bit 7 to 10 for the command code,
             // and bit 0 to 6 for the FPU bus id.
-            assert(CCMD_PING_FPU <= 15);
-            assert(fpu_id < FPUS_PER_BUS);
-            uint16_t can_addr = ( ((CCMD_PING_FPU & 15) << 7)
-                                  | (canid & 128));
+            assert(fpu_canid < FPUS_PER_BUS);
+            if (! bcast)
+            {
+                assert(fpu_canid > 0);
+            }
             
-            // The protocol uses little-endian encoding here
-            // (the byte order used in the CANOpen protocol).
-            can_buffer.message.identifier = htole64(can_addr);
-            
-            can_buffer.message.data[0] = payload & 0xff;
-            can_buffer.message.data[1] = (payload >> 8) & 0xff;
-            can_buffer.message.data[2] = (payload >> 16) & 0xff;
-            can_buffer.message.data[3] = (payload >> 24) & 0xff;
-            can_buffer.message.data[4] = (payload >> 32) & 0xff;
-            can_buffer.message.data[5] = (payload >> 40) & 0xff;
-            can_buffer.message.data[6] = (payload >> 48) & 0xff;
-            can_buffer.message.data[7] = (payload >> 56) & 0xff;
 
+            // the CAN identifier is either all zeros (for a broadcast
+            // message) or bits 7 - 10 are the proiority and bits 0 -
+            // 6 the CAN id of the FPU.
+            const E_CAN_COMMAND cmd_code = getCommandCode();
+
+            uint16_t can_identifier = 0;
+
+            if (! bcast)
+            {
+                can_identifier = (getMessagePriority(cmd_code)
+                                  << 7) | fpu_canid;
+            }
+                                   
+            // The protocol uses little-endian encoding here
+            // (the byte order used in the CANOpen protocol).            
+            can_buffer.message.identifier = htole64(can_identifier);
+
+
+            // CAN command code
+            can_buffer.message.data[0] = cmd_code;
+
+#pragma message "fix message buffer length when firmware fixed"
+            //buf_len = 1;
             buf_len = 8;
             
         };
+
 
 
         // FPU id to which message is sent
@@ -113,12 +128,13 @@ namespace canlayer
 
       bool doBroadcast()
       {
-        return true;
+        return bcast;
       }
 
     private:
         uint16_t fpu_id;
         long payload;
+        bool bcast;
         
         
     };

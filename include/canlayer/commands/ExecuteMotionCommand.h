@@ -12,15 +12,15 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME MoveDatumOffCommand.h
+// NAME ExecuteMotionCommand.h
 // 
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MOVE_DATUM_OFF_COMMAND_H
-#define MOVE_DATUM_OFF_COMMAND_H
+#ifndef EXECUTE_MOTION_COMMAND_H
+#define EXECUTE_MOTION_COMMAND_H
 
 #include <cassert>
 #include "../I_CAN_Command.h"
@@ -30,17 +30,17 @@ namespace mpifps {
 namespace canlayer
 {
 
-    class MoveDatumOffCommand : public I_CAN_Command
+    class ExecuteMotionCommand : public I_CAN_Command
     {
 
       public:
 
         static E_CAN_COMMAND getCommandCode()
         {
-            return CCMD_MOVE_DATUM_OFF;
+            return CCMD_EXECUTE_MOTION;
         };
 
-        MoveDatumOffCommand(){};
+        ExecuteMotionCommand(){};
 
         E_CAN_COMMAND getInstanceCommandCode()
         {
@@ -48,12 +48,10 @@ namespace canlayer
         };
 
 
-        void parametrize(int f_id, bool broadcast, int alpha_direction, int beta_direction)
+        void parametrize(int f_id, bool broadcast)
         {
             fpu_id = f_id;
             bcast = broadcast;
-            adir = alpha_direction;
-            bdir = beta_direction;
         };
 
         void SerializeToBuffer(const uint8_t busid,
@@ -68,6 +66,7 @@ namespace canlayer
             // we use bit 7 to 10 for the command code,
             // and bit 0 to 6 for the FPU bus id.
             assert(fpu_canid < FPUS_PER_BUS);
+
             if (! bcast)
             {
                 assert(fpu_canid > 0);
@@ -95,12 +94,12 @@ namespace canlayer
             // CAN command code
             can_buffer.message.data[0] = cmd_code;
 
-            can_buffer.message.data[1] = 0xff & adir;
-            can_buffer.message.data[2] = 0xff & bdir;
-
-            buf_len = 3;
+#pragma message "fix message buffer length when firmware fixed"
+            //buf_len = 1;
+            buf_len = 8;
             
         };
+
 
 
         // FPU id to which message is sent
@@ -119,9 +118,10 @@ namespace canlayer
         // time-out period for a response to the message
         timespec getTimeOut()
         {
-            const struct timespec  toval =
-                {/* .tv_sec = */ 1,
-                 /* .tv_nsec = */ 500000000 };
+            timespec const toval =
+                {
+                    /* .tv_sec = */ 1,
+                    /* .tv_nsec = */ 500000000 };
             
             return toval;
         };
@@ -131,10 +131,9 @@ namespace canlayer
         return bcast;
       }
 
-      private:
+    private:
         uint16_t fpu_id;
-        int adir;
-        int bdir;
+        long payload;
         bool bcast;
         
         
