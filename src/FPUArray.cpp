@@ -24,8 +24,10 @@
 #include <cassert>
 
 #include "canlayer/time_utils.h"
-#include "canlayer/FPUArray.h" // defines thread-safe structure of FPU state info
 #include "GridState.h"
+
+#include "canlayer/FPUArray.h" 
+#include "canlayer/handleFPUResponse.h"
 
 namespace mpifps
 {
@@ -380,15 +382,12 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // clear time-out flag for this FPU
         tout_list.clearTimeOut(fpu_id);
 
-        // FIXME: we need to adjust the time-out count
-
-        // TODO: unwrap response, and adjust FPU state according to
-        // that
-
-
+        // Unwrap response, and adjust FPU state according to
+        // that.
 
         const t_fpu_state oldstate = FPUGridState.FPU_state[fpu_id];
-        handleFPUResponse(FPUGridState.FPU_state[fpu_id], data, blen);
+        
+        canlayer::handleFPUResponse(FPUGridState.FPU_state[fpu_id], data, blen);
 
         // update global state counters
         const t_fpu_state newstate = FPUGridState.FPU_state[fpu_id];
@@ -423,110 +422,6 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 }
 
 
-void FPUArray::handleFPUResponse(t_fpu_state& fpu,
-                                 const t_response_buf& data,
-                                 const int blen)
-{
-    uint8_t cmd_id = data[1];
-    uint8_t response_status = data[2];
-    uint8_t response_errcode = data[3];
-    switch (cmd_id)
-    {
-    case CCMD_CONFIG_MOTION   :  
-    case CCMD_EXECUTE_MOTION  :  
-        if (response_errcode == 0)
-        {
-            int asteps = (data[4] << 8) | data[5];
-            fpu.alpha_steps = asteps;
-            int bsteps = (data[6] << 8) | data[7];
-            fpu.beta_steps = bsteps;
-            fpu.state = FPST_FINISHED;
-        }
-        if (fpu.pending_command = CCMD_EXECUTE_MOTION)
-        {
-            fpu.last_command = fpu.pending_command;
-            fpu.pending_command = CCMD_NO_COMMAND;
-        }
-        break;
-        
-    case CCMD_ABORT_MOTION    :  
-        if (response_errcode == 0)
-        {
-            int asteps = (data[4] << 8) | data[5];
-            fpu.alpha_steps = asteps;
-            int bsteps = (data[6] << 8) | data[7];
-            fpu.beta_steps = bsteps;
-            fpu.state = FPST_ABORTED;
-        }
-        if (fpu.pending_command = CCMD_ABORT_MOTION)
-        {
-            fpu.last_command = fpu.pending_command;
-            fpu.pending_command = CCMD_NO_COMMAND;
-        }
-        break;
-    case CCMD_GET_STEPS_ALPHA :  
-        if (response_errcode == 0)
-        {
-            int asteps = (data[4] << 8) | data[5];
-            fpu.alpha_steps = asteps;
-        }
-        if (fpu.pending_command = CCMD_GET_STEPS_BETA)
-        {
-            fpu.last_command = fpu.pending_command;
-            fpu.pending_command = CCMD_NO_COMMAND;
-        }
-        break;
-        
-    case CCMD_GET_STEPS_BETA  :  
-        if (response_errcode == 0)
-        {
-            int bsteps = (data[4] << 8) | data[5];
-            fpu.beta_steps = bsteps;
-        }
-        if (fpu.pending_command = CCMD_GET_STEPS_ALPHA)
-        {
-            fpu.last_command = fpu.pending_command;
-            fpu.pending_command = CCMD_NO_COMMAND;
-        }
-        break;
-        
-    case CCMD_PING_FPU        :
-        if (response_errcode == 0)
-        {
-            fpu.ping_ok = true;
-        }
-        if (fpu.pending_command = CCMD_PING_FPU)
-        {
-            fpu.last_command = fpu.pending_command;
-            fpu.pending_command = CCMD_NO_COMMAND;
-        }
-        break;
-
-    case CCMD_RESET_FPU       :  
-    case CCMD_AUTO_MOVE_DATUM :  
-        if (response_errcode == 0)
-        {
-            fpu.is_initialized = true;
-            fpu.alpha_steps = 0;
-            fpu.beta_steps = 0;
-            fpu.state = static_cast<E_FPU_STATE>(response_status);
-        }
-        
-        if (fpu.pending_command = CCMD_AUTO_MOVE_DATUM)
-        {
-            fpu.last_command = fpu.pending_command;
-            fpu.pending_command = CCMD_NO_COMMAND;
-        }
-        break;
-    case CCMD_NO_COMMAND      :
-    default:
-        // invalid command, ignore for now
-        // FIXME: log invalid responses
-        break;
-
-    }
-
-}
 
 
 }

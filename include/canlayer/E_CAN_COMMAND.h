@@ -23,6 +23,7 @@
 #define E_CAN_COMMAND_H
 
 #include <cassert>
+#include <stdint.h>
 
 namespace mpifps
 {

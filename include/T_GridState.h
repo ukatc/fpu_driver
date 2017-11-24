@@ -31,48 +31,7 @@
 namespace mpifps
 {
 
-using canlayer::E_CAN_COMMAND;
 
-typedef struct t_fpu_state
-{
-    // these members are the individual values
-    // reported by FPU responses
-    E_FPU_STATE state;
-    int alpha_steps;
-    int beta_steps;
-    bool is_initialized;
-    bool on_alpha_datum;
-    bool on_beta_datum;
-    bool alpha_collision;
-    bool at_alpha_limit;
-    bool beta_collision;
-    bool ping_ok;
-
-
-
-    // id of any still running and incomplete command
-    E_CAN_COMMAND pending_command;
-    // time when any running command is considered timed out
-    // Note: this time needs to use the monotonic linux system
-    // clock so that leap seconds don't trigger bugs.
-    timespec cmd_timeout;
-    // number of minor time-outs which have
-    // been observed for the last command.
-    int8_t timeout_count;
-
-    // id of last command that was issued but not completed.
-    E_CAN_COMMAND last_command;
-
-    // id of last command that was completed
-    E_CAN_COMMAND completed_command;
-
-    bool operator==(const  t_fpu_state &a) const
-    {
-        return (*this) == a;
-    }
-
-
-} t_fpu_state;
 
 typedef int t_counts[NUM_FPU_STATES];
 
@@ -88,7 +47,7 @@ typedef struct
 
     // number of minor time-outs
     // Important: This unsigned counter wraps around
-    // which is fine. (Wrapping of unsigned integer
+    // which is fine. (Wrapping of unsigned integral
     // types does not cause undefined  behavior in C/C++.)
     unsigned long count_timeout;
 
@@ -96,7 +55,7 @@ typedef struct
     unsigned int count_pending;
 
 
-    // so far unreported error
+    // state of the driver itself
     E_DriverState driver_state;
 } t_grid_state;
 
