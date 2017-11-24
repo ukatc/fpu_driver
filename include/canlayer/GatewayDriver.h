@@ -111,6 +111,10 @@ public:
 
     int getGatewayIdByFPUID(int fpu_id);
 
+    // returns whether an FPU is currently marked as locked.
+    bool isLocked(int fpu_id);
+
+
 
     // the following two methods are actually internal -
     // they need to be visible in a non-member function.

@@ -58,6 +58,8 @@ public:
 
     E_DriverErrCode executeMotion();
 
+    E_DriverErrCode getPositions();
+
     E_DriverErrCode repeatMotion();
 
     E_DriverErrCode reverseMotion();

@@ -26,10 +26,12 @@
 #include "canlayer/commands/ConfigureMotionCommand.h"
 #include "canlayer/commands/ExecuteMotionCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
+#include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/AutoMoveDatumCommand.h"
 #include "canlayer/commands/MoveDatumOnCommand.h"
 #include "canlayer/commands/MoveDatumOffCommand.h"
 #include "canlayer/commands/PingCommand.h"
+#include "canlayer/time_utils.h"
 
 namespace mpifps
 {
@@ -466,6 +468,168 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     
     return DE_OK;
 }
+
+
+
+// function that checks whether all FPUs have an refreshed status
+// timestamp.
+bool check_all_fpus_updated(int num_fpus,
+                            t_grid_state& old_grid_state,
+                            t_grid_state& grid_state)
+{
+    bool all_updated = true;
+    for(int i = 0; i < num_fpus; i++)
+    {
+        if (grid_state.FPU_state[i].state != FPST_LOCKED)
+        {
+            timespec new_timestamp = grid_state.FPU_state[i].last_updated;
+            timespec old_timestamp = old_grid_state.FPU_state[i].last_updated;
+            if (time_equal(old_timestamp, new_timestamp))
+            {
+                all_updated = false;
+                break;
+            }
+                
+        }
+    }
+    return all_updated;
+}
+
+
+E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
+                                               E_GridState& state_summary)
+{
+    
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    // this needs a few KB of stack space.
+    t_grid_state old_grid_state = grid_state;
+
+
+    unique_ptr<GetStepsAlphaCommand> can_command1;
+    for (int i=0; i < num_fpus; i++)
+    {
+        // we exclude locked FPUs
+        if (! gateway.isLocked(i) )
+        {
+            can_command1 = gateway.provideInstance<GetStepsAlphaCommand>();
+            bool broadcast = false;
+            can_command1->parametrize(i, broadcast);
+            // send the command (the actual sending happens
+            // in the TX thread in the background).
+            gateway.sendCommand(i, std::move(can_command1));
+        }
+    }
+
+    // We do not expect the locked FPUs to respond.
+    // FIXME: This needs to be documented and checked
+    // with the firmware protocol.
+    int num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
+
+    // fpus are now responding in parallel. 
+    //
+    // As long as any fpus need to respond, wait for
+    // them to finish.
+    while ( (num_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        // as we do not effect any change on the grid,
+        // we need to wait for any response event,
+        // and filter out whether we are actually ready.
+        state_summary = gateway.waitForState(TGT_ANY_CHANGE,
+                                             grid_state);
+
+        // get fresh count of pending fpus
+        num_pending = grid_state.count_pending;
+
+        // check for any time-out. (Note this checks on
+        // purpose for inequality, as the time-out counter
+        // is unsigned and can wrap around. But in difference
+        // to a signed counter, this won't cause undefined
+        // behavior and is safe to use.).
+        bool new_timeout = (old_grid_state.count_timeout
+                            != grid_state.count_timeout);
+
+        // we return if no more commands are pending,
+        // and we either have all fpus updated (the normal case)
+        // or we observed a time-out.
+        // In the latter case, we return to avoid a dead-lock.
+        if ((num_pending == 0)
+            && ( new_timeout
+                 || (check_all_fpus_updated(num_fpus,
+                                            old_grid_state,
+                                            grid_state))))
+        {
+            break;
+        }
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    unique_ptr<GetStepsBetaCommand> can_command2;
+    for (int i=0; i < num_fpus; i++)
+    {
+        // we exclude locked FPUs
+        if (! gateway.isLocked(i) )
+        {
+            can_command2 = gateway.provideInstance<GetStepsBetaCommand>();
+            bool broadcast = false;
+            can_command2->parametrize(i, broadcast);
+            // send the command (the actual sending happens
+            // in the TX thread in the background).
+            gateway.sendCommand(i, std::move(can_command2));
+        }
+    }
+    
+    num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
+
+    while ( (num_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        // as we do not effect any change on the grid,
+        // we need to wait for any response event,
+        // and filter out whether we are actually ready.
+        state_summary = gateway.waitForState(TGT_ANY_CHANGE,
+                                             grid_state);
+
+        // get fresh count of pending fpus
+        num_pending = grid_state.count_pending;
+
+        // check for any time-out
+        bool new_timeout = (old_grid_state.count_timeout
+                            != grid_state.count_timeout);
+
+        // we return if no more commands are pending,
+        // and we either have all fpus updated (the normal case)
+        // or we observed a time-out.
+        // In the latter case, we return to avoid a dead-lock.
+        if ((num_pending == 0)
+            && ( new_timeout
+                 || (check_all_fpus_updated(num_fpus,
+                                            old_grid_state,
+                                            grid_state))))
+        {
+            break;
+        }
+    }
+
+    
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    return DE_OK;
+
+}
+
 
 E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)

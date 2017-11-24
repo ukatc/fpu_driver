@@ -84,7 +84,9 @@ typedef struct t_fpu_state
     E_CAN_COMMAND last_command;
 
     // id of last command that was completed
-    E_CAN_COMMAND completed_command;
+    E_CAN_COMMAND completed_command;    
+
+    timespec last_updated;
 
     bool operator==(const  t_fpu_state &a) const
         {

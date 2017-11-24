@@ -87,6 +87,11 @@ E_DriverErrCode GatewayDriver::initialize()
     return command_pool.initialize();
 }
 
+bool GatewayDriver::isLocked(int fpu_id)
+{
+    return fpuArray.isLocked(fpu_id);
+}
+
 
 int make_socket(const char *ip, uint16_t port)
 {

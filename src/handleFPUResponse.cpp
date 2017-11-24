@@ -24,6 +24,7 @@
 
 #include "FPUState.h"
 #include "canlayer/handleFPUResponse.h"
+#include "canlayer/time_utils.h"
 
 namespace mpifps
 {
@@ -39,6 +40,10 @@ void handleFPUResponse(t_fpu_state& fpu,
     uint8_t cmd_id = data[1];
     uint8_t response_status = data[2];
     uint8_t response_errcode = data[3];
+    timespec cur_time;
+    
+    get_monotonic_time(cur_time);
+    
     switch (cmd_id)
     {
     case CCMD_CONFIG_MOTION   :  
@@ -60,6 +65,7 @@ void handleFPUResponse(t_fpu_state& fpu,
             fpu.last_command = fpu.pending_command;
             fpu.pending_command = CCMD_NO_COMMAND;
         }
+        fpu.last_updated = cur_time;
         break;
         
     case CCMD_ABORT_MOTION    :  
@@ -80,6 +86,7 @@ void handleFPUResponse(t_fpu_state& fpu,
             fpu.last_command = fpu.pending_command;
             fpu.pending_command = CCMD_NO_COMMAND;
         }
+        fpu.last_updated = cur_time;
         break;
     case CCMD_GET_STEPS_ALPHA :  
         if (response_errcode == 0)
@@ -96,6 +103,7 @@ void handleFPUResponse(t_fpu_state& fpu,
             fpu.last_command = fpu.pending_command;
             fpu.pending_command = CCMD_NO_COMMAND;
         }
+        fpu.last_updated = cur_time;
         break;
         
     case CCMD_GET_STEPS_BETA  :  
@@ -109,6 +117,7 @@ void handleFPUResponse(t_fpu_state& fpu,
             fpu.last_command = fpu.pending_command;
             fpu.pending_command = CCMD_NO_COMMAND;
         }
+        fpu.last_updated = cur_time;
         break;
         
     case CCMD_PING_FPU        :
@@ -121,6 +130,7 @@ void handleFPUResponse(t_fpu_state& fpu,
             fpu.last_command = fpu.pending_command;
             fpu.pending_command = CCMD_NO_COMMAND;
         }
+        fpu.last_updated = cur_time;
         break;
 
     case CCMD_RESET_FPU       :  
@@ -139,6 +149,7 @@ void handleFPUResponse(t_fpu_state& fpu,
             fpu.last_command = fpu.pending_command;
             fpu.pending_command = CCMD_NO_COMMAND;
         }
+        fpu.last_updated = cur_time;
         break;
     case CCMD_NO_COMMAND      :
     default:
