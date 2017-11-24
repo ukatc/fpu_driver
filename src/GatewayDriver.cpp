@@ -41,11 +41,11 @@ namespace canlayer
 {
 
 
-GatewayDriver::GatewayDriver(int num_fpus)
-    : fpuArray(num_fpus), command_pool(num_fpus)
+GatewayDriver::GatewayDriver(int nfpus)
+    : fpuArray(nfpus), command_pool(nfpus)
 {
 
-
+    num_fpus = nfpus;
 
 
     // assing default mapping and reverse mapping to
@@ -254,9 +254,9 @@ E_DriverErrCode GatewayDriver::disconnect()
 
 
 
-void GatewayDriver::updatePendingCommand(std::unique_ptr<I_CAN_Command>& can_command)
+void GatewayDriver::updatePendingCommand(int fpu_id,
+                                         std::unique_ptr<I_CAN_Command>& can_command)
 {
-    int fpu_id = can_command->getFPU_ID();
 
     if (can_command->expectsResponse())
     {
@@ -433,7 +433,25 @@ void* GatewayDriver::threadTxFun()
                 {
                     // we completed sending a command.
                     // set send time in fpuArray memory structure
-                    updatePendingCommand(active_can_command[gateway_id]);
+                    if (! active_can_command[gateway_id]->doBroadcast())
+                    {
+                        updatePendingCommand(active_can_command[gateway_id]->getFPU_ID(),
+                                             active_can_command[gateway_id]);
+                    }
+                    else
+                    {
+                        // set pending command for all FPUs on the
+                        // gateway (will ignore if locked).
+                        for (int i; i < num_fpus; i++)
+                        {
+                            if (address_map[i].gateway_id
+                                == gateway_id)
+                            {
+                                updatePendingCommand(i,
+                                                     active_can_command[gateway_id]);
+                            }
+                        }
+                    }
                     // return CAN command instance to memory pool
                     command_pool.recycleInstance(active_can_command[gateway_id]);
                 }
@@ -642,6 +660,12 @@ E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_d
 CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_CAN_Command> new_command)
 {
     const int gateway_id = address_map[fpu_id].gateway_id;
+
+    return commandQueue.enqueue(gateway_id, std::move(new_command));
+}
+
+CommandQueue::E_QueueState GatewayDriver::broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command> new_command)
+{
 
     return commandQueue.enqueue(gateway_id, std::move(new_command));
 }

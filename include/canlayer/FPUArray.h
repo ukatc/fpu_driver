@@ -150,6 +150,10 @@ public:
     E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);
 
 
+    // queries whether an FPU is locked.
+    // (FIXME: this is unused - delete it?)
+    bool isLocked(int fpu_id);
+    
     // sets pending command for one FPU.
     void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val);
 
@@ -182,11 +186,11 @@ private:
 
 
 
-    // confirm response for one FPU, canceling the 'pending command'
-    // attributes. TODO: This should be done in the response
-    // handler.
-    void confirmResponse(int fpu_id);
-
+///     // confirm response for one FPU, canceling the 'pending command'
+///     // attributes. TODO: This should be done in the response
+///     // handler.
+///     void confirmResponse(int fpu_id);
+/// 
     void handleFPUResponse(t_fpu_state& fpu, const t_response_buf& data,
                            const int blen);
 

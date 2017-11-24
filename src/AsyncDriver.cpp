@@ -63,7 +63,13 @@ E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_addres
         return DE_DRIVER_NOT_INITIALISED;
     }
 
-    return gateway.connect(ngateways, gateway_addresses);
+    E_DriverErrCode err_code =  gateway.connect(ngateways, gateway_addresses);
+    if (err_code == DE_OK)
+    {
+        num_gateways = ngateways;
+    }
+
+    return err_code;
 }
 
 E_DriverErrCode AsyncDriver::disconnect()
@@ -73,7 +79,15 @@ E_DriverErrCode AsyncDriver::disconnect()
         return DE_NO_CONNECTION;
     }
 
-    return gateway.disconnect();
+    E_DriverErrCode err_code = gateway.disconnect();
+
+    if (err_code == DE_OK)
+    {
+        num_gateways = 0;
+    }
+
+    return err_code;
+
 }
 
 
@@ -398,6 +412,58 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+    // check no FPUs have ongoing collisions
+    for (int i=0; i < num_fpus; i++)
+    {
+        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
+        if ((fpu_status == FPST_ABORTED)
+                || (fpu_status == FPST_COLLISION_DETECTED)
+                || (fpu_status == FPST_LIMIT_STOP))
+        {
+            return DE_UNRESOLVED_COLLISION;
+        }
+    }
+
+
+    // send broadcast command to each gateway to start movement of all
+    // FPUs.
+    unique_ptr<ExecuteMotionCommand> can_command;
+
+    // Get number of FPUs which will move
+    int num_moving = (grid_state.Counts[FPST_READY_FORWARD]
+                      + grid_state.Counts[FPST_READY_BACKWARD]);
+
+    if (num_moving > 0)
+    {
+        for (int i=0; i < num_gateways; i++)
+        {
+            can_command = gateway.provideInstance<ExecuteMotionCommand>();
+            bool do_broadcast = true;
+            can_command->parametrize(i, do_broadcast);
+            gateway.broadcastCommand(i, std::move(can_command));
+        }
+    }
+
+    // Wait until movement is finished.
+    while ( (num_moving > 0)
+            && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        state_summary = gateway.waitForState(TGT_MOVEMENT_FINISHED,
+                                             grid_state);
+        
+        // we include the "ready" counts too because it will
+        // take a moment to pick up the command.
+        num_moving = (grid_state.Counts[FPST_MOVING]
+                      + grid_state.Counts[FPST_READY_FORWARD]
+                      + grid_state.Counts[FPST_READY_BACKWARD]);
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    
     return DE_OK;
 }
 

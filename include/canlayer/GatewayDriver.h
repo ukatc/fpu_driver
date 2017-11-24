@@ -107,6 +107,8 @@ public:
     // This method is thread-safe
     CommandQueue::E_QueueState sendCommand(int fpu_id, unique_ptr<I_CAN_Command> new_command);
 
+    CommandQueue::E_QueueState broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command> new_command);
+
     int getGatewayIdByFPUID(int fpu_id);
 
 
@@ -133,7 +135,8 @@ private:
     virtual void handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES], int const clen);
 
 
-    void updatePendingCommand(std::unique_ptr<I_CAN_Command>& can_command);
+    void updatePendingCommand(int fpu_id,
+                              std::unique_ptr<I_CAN_Command>& can_command);
 
 
 
@@ -161,6 +164,8 @@ private:
 
     // reverse map of addresses to FPU id.
     FPUArray::t_address_map fpu_id_by_adr; // address map from fpu id to can bus addresses
+
+    int num_fpus;
 
     FPUArray fpuArray;        // member which stores the state of the grid
 

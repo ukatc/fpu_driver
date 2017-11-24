@@ -52,6 +52,7 @@ class AsyncDriver
         : gateway(nfpus)
         {
             num_fpus = nfpus;
+            num_gateways = 0;
         }
 
     ~AsyncDriver()
@@ -106,6 +107,7 @@ class AsyncDriver
     private:
 
     int num_fpus;
+    int num_gateways;
     GatewayDriver gateway;
 };
 

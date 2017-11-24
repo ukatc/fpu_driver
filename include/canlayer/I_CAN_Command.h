@@ -23,7 +23,6 @@
 #define I_CAN_COMMAND_H
 
 #include <endian.h>
-#include <stdint.h>
 #include <time.h>
 
 #include "CAN_Constants.h"

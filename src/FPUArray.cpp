@@ -160,6 +160,16 @@ bool FPUArray::inTargetState(E_GridState sum_state,
 }
 
 
+bool FPUArray::isLocked(int fpu_id)
+{
+    bool is_locked = false;
+    pthread_mutex_lock(&grid_state_mutex);
+    is_locked = (FPUGridState.FPU_state[fpu_id].state == FPST_LOCKED);
+    pthread_mutex_unlock(&grid_state_mutex);
+
+    return is_locked;
+}
+
 
 
 // sets pending command for one FPU, increments the "pending"
@@ -171,20 +181,29 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
 
 
     t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
-    // increment pending counter unless there is an
-    // ongoing command.
-    if (fpu.pending_command != CCMD_NO_COMMAND)
-    {
-        FPUGridState.count_pending++;
-    }
 
-    fpu.pending_command = pending_cmd;
-    fpu.cmd_timeout = tout_val;
-
-    // if tracing is active, signal state change
-    if (num_trace_clients > 0)
+    // check whether command might not apply because
+    // the FPU is locked.
+    bool does_apply = ((fpu.state != FPST_LOCKED)
+                       || (pending_cmd == CCMD_UNLOCK_UNIT)
+                       || (pending_cmd == CCMD_RESET_FPU));
+    if (does_apply)
     {
-        pthread_cond_broadcast(&cond_state_change);
+        // increment pending counter unless there is an
+        // ongoing command.
+        if (fpu.pending_command != CCMD_NO_COMMAND)
+        {
+            FPUGridState.count_pending++;
+        }
+
+        fpu.pending_command = pending_cmd;
+        fpu.cmd_timeout = tout_val;
+
+        // if tracing is active, signal state change
+        if (num_trace_clients > 0)
+        {
+            pthread_cond_broadcast(&cond_state_change);
+        }
     }
 
 
@@ -211,39 +230,39 @@ void FPUArray::setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd)
 }
 
 
-// confirm response from FPU for a command,
-// cancelling timeout settings and pending count.
-// FIXME: This needs to be worked out more,
-// probably this should be done without locking in the
-// general response handler.
-void FPUArray::confirmResponse(int fpu_id)
-{
-
-    pthread_mutex_lock(&grid_state_mutex);
-
-
-    t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
-
-    if ((fpu.pending_command != CCMD_NO_COMMAND)
-            && (FPUGridState.count_pending > 0))
-    {
-        FPUGridState.count_pending--;
-    }
-
-
-    fpu.pending_command = fpu.last_command;
-    fpu.pending_command = CCMD_NO_COMMAND;
-
-    // if tracing is active, signal state change
-    // to waitForState() callers.
-    if (num_trace_clients > 0)
-    {
-        pthread_cond_broadcast(&cond_state_change);
-    }
-    pthread_mutex_unlock(&grid_state_mutex);
-
-}
-
+/// // confirm response from FPU for a command,
+/// // cancelling timeout settings and pending count.
+/// // FIXME: This needs to be worked out more,
+/// // probably this should be done without locking in the
+/// // general response handler.
+/// void FPUArray::confirmResponse(int fpu_id)
+/// {
+/// 
+///     pthread_mutex_lock(&grid_state_mutex);
+/// 
+/// 
+///     t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
+/// 
+///     if ((fpu.pending_command != CCMD_NO_COMMAND)
+///             && (FPUGridState.count_pending > 0))
+///     {
+///         FPUGridState.count_pending--;
+///     }
+/// 
+/// 
+///     fpu.pending_command = fpu.last_command;
+///     fpu.pending_command = CCMD_NO_COMMAND;
+/// 
+///     // if tracing is active, signal state change
+///     // to waitForState() callers.
+///     if (num_trace_clients > 0)
+///     {
+///         pthread_cond_broadcast(&cond_state_change);
+///     }
+///     pthread_mutex_unlock(&grid_state_mutex);
+/// 
+/// }
+/// 
 
 // updates state for all FPUs which did
 // not respond in time

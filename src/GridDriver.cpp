@@ -157,7 +157,16 @@ E_DriverErrCode GridDriver::resetFPUs()
 
 E_DriverErrCode GridDriver::executeMotion()
 {
-    return DE_OK;
+    E_DriverErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    estatus = executeMotionAsync(grid_state, state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
 }
 
 E_DriverErrCode GridDriver::repeatMotion()
