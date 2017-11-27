@@ -29,6 +29,10 @@
 #include "canlayer/FPUArray.h" 
 #include "canlayer/handleFPUResponse.h"
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
+
 namespace mpifps
 {
 
@@ -308,7 +312,17 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
     while (true)
     {
         TimeOutList::t_toentry toentry;
-        next_key = tout_list.getNextTimeOut(MAX_TIMEOUT);
+        timespec cur_time;
+        get_monotonic_time(cur_time);
+        // get absolute timeout value
+        timespec max_tmout = time_add(cur_time, MAX_TIMEOUT);
+        
+        next_key = tout_list.getNextTimeOut(max_tmout);
+#ifdef DEBUG_VERBOSE
+        printf("cur time: %li/%li, next timeout: %li/%li\n",
+               cur_time.tv_sec, cur_time.tv_nsec,
+               next_key.tv_sec, next_key.tv_nsec);
+#endif
         if (time_smaller(cur_time, next_key))
         {
             break;
