@@ -58,13 +58,15 @@ public:
                                        };
     // timeout for polling write socket - 5 ms
     const struct timespec MAX_TX_TIMEOUT = { /* .tv_sec = */ 0,
-                                      /* .tv_nsec = */ 5000000
+                                      /* .tv_nsec = */ 50000000
                                     };
 
-    // default timeout for polling read socket - 5 sec
+    // default timeout for polling read socket - 0.1 sec
     // (this max times determines the time it takes to
     // shut down the conenction if nothing happens).
-    const timespec MAX_RX_TIMEOUT = FPUArray::MAX_TIMEOUT;
+    const timespec MAX_RX_TIMEOUT = { /* .tv_sec = */ 0,
+                                      /* .tv_nsec = */ 100000000
+                                    };
 
 
     GatewayDriver(int num_fpus);
