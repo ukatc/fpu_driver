@@ -191,7 +191,7 @@ class WrapGridDriver : public GridDriver
             
         };
 
-    E_DriverErrCode configMotionWithDict(dict& dict_waveforms)
+    E_DriverErrCode configMotionWithDict(dict& dict_waveforms, t_grid_state& grid_state)
         {
             list fpu_id_list = dict_waveforms.keys();
             const int nkeys = len(fpu_id_list);
@@ -232,7 +232,7 @@ class WrapGridDriver : public GridDriver
                 wform.steps = steps;
                 wtable.push_back(wform);
             }
-            return configMotion(wtable);
+            return configMotion(wtable, grid_state);
         };
 
 };
