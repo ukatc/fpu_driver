@@ -598,10 +598,12 @@ void* GatewayDriver::threadRxFun()
         int retval;
         timespec cur_time;
 
-
-
-        timespec next_timeout = timeOutList.getNextTimeOut(MAX_RX_TIMEOUT);
         get_monotonic_time(cur_time);
+        // get absolute timeout value
+        timespec next_rx_tmout = time_add(cur_time, MAX_RX_TIMEOUT);
+
+
+        timespec next_timeout = timeOutList.getNextTimeOut(next_rx_tmout);
 
         timespec max_wait = time_to_wait(cur_time, next_timeout);
 
