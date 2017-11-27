@@ -167,6 +167,15 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
         }
     }
 
+    // FIXME: In this and all other methods, the "asynchronously
+    // sending commands" part and the "waiting for completion"
+    // part should probably be split into two twin methods,
+    // so that the final ESO driver can execute asynchronously.
+    //
+    // Also, handling of time-outs needs to be revisited later,
+    // depending whether we want to return on the first time-out,
+    // or only after the last pending command was
+    // closed.
     while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
         state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
