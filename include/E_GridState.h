@@ -49,6 +49,12 @@ enum E_GridState
     GS_LIMITSTOP      = (1 << 12), // FPU alpha arm at limit switch
     GS_COLLISION      = (1 << 13), // a collision was found
     GS_ABORTED        = (1 << 14), // movement was aborted, error not cleared
+    // the following are pseudo-states which are used
+    // as wait targets but are no actual grid states
+    GS_NOPENDING      = (1 << 15), // no commands are left marked as pending
+    GS_TIMEOUT        = (1 << 16), // a time-out occurred
+
+    GS_ALL_UPDATED   = (1 << 17), // all fpus have been updated
 
 } ;
 
@@ -85,6 +91,15 @@ enum E_WaitTarget
     TGT_MOVEMENT_FINISHED = (GS_FINISHED
                              | GS_COLLISION
                              | GS_ABORTED),
+
+    // Target for info-requesting commands that don't change
+    // the state of the FPUs
+    TGT_NO_MORE_PENDING = GS_NOPENDING,
+
+    TGT_TIMEOUT = GS_TIMEOUT, // return on timeout
+
+    TGT_ALL_UPDATED = GS_ALL_UPDATED, // return when all FPUs have fresh info
+
 
     // Note: Using this target requires much more
     // frequent signalling, this possibly

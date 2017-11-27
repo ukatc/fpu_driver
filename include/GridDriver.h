@@ -37,41 +37,41 @@ public:
     GridDriver(int nfpus) : AsyncDriver(nfpus)
     {
         num_fpus = nfpus;
-        memset((void*) &grid_state, 0, sizeof(grid_state));
     }
 
     ~GridDriver()
     {
     }
 
-    E_DriverErrCode initializeGrid();
+    E_DriverErrCode initializeGrid(t_grid_state& grid_state);
 
-    E_DriverErrCode resetFPUs();
+    E_DriverErrCode resetFPUs(t_grid_state& grid_state);
 
     // find datum with driver-controlled movement
-    E_DriverErrCode findDatum();
+    E_DriverErrCode findDatum(t_grid_state& grid_state);
 
     // find datum with automatic firmware operation
-    E_DriverErrCode autoFindDatum();
+    E_DriverErrCode autoFindDatum(t_grid_state& grid_state);
 
-    E_DriverErrCode configMotion(const t_wtable& waveforms);
+    E_DriverErrCode configMotion(const t_wtable& waveforms, t_grid_state& grid_state);
 
-    E_DriverErrCode executeMotion();
+    E_DriverErrCode executeMotion(t_grid_state& grid_state);
 
-    E_DriverErrCode getPositions();
+    E_DriverErrCode getPositions(t_grid_state& grid_state);
 
-    E_DriverErrCode repeatMotion();
+    E_DriverErrCode repeatMotion(t_grid_state& grid_state);
 
-    E_DriverErrCode reverseMotion();
+    E_DriverErrCode reverseMotion(t_grid_state& grid_state);
 
-    E_DriverErrCode abortMotion();
+    E_DriverErrCode abortMotion(t_grid_state& grid_state);
 
-    E_DriverErrCode assignPositions();
+    E_DriverErrCode assignPositions(t_grid_state& grid_state);
 
-    E_DriverErrCode lockFPU();
+    E_DriverErrCode lockFPU(t_grid_state& grid_state);
 
-    E_DriverErrCode unlockFPU();
+    E_DriverErrCode unlockFPU(t_grid_state& grid_state);
 
+    
 
 private:
 
@@ -87,8 +87,6 @@ private:
     pthread_mutex_t command_creation_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
-    // Buffer for retrieved state of the FPUs.
-    t_grid_state grid_state;
 
 };
 

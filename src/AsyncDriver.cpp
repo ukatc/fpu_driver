@@ -169,10 +169,12 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
 
     while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        state_summary = gateway.waitForState(TGT_AT_DATUM,
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
+                                                          | TGT_NO_MORE_PENDING),
                                              grid_state);
 
-        num_moving = grid_state.Counts[FPST_DATUM_SEARCH];
+        num_moving = (grid_state.Counts[FPST_DATUM_SEARCH]
+                      + + gateway.getNumUnsentCommands());
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -248,7 +250,8 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
     // them to finish.
     while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        state_summary = gateway.waitForState(TGT_ABOVE_DATUM,
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_ABOVE_DATUM
+                                                          | TGT_NO_MORE_PENDING),
                                              grid_state);
 
         // refresh count of moving fpus
@@ -256,7 +259,8 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
         // when it reaches the datum, or otherwise
         // the time-out handler sets the status back
         // to FPST_UNINITIALISED.
-        num_moving = grid_state.Counts[FPST_LEAVING_DATUM];
+        num_moving = (grid_state.Counts[FPST_LEAVING_DATUM]
+                      + gateway.getNumUnsentCommands());
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -313,10 +317,12 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
 
     while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        state_summary = gateway.waitForState(TGT_AT_DATUM,
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
+                                                          | TGT_NO_MORE_PENDING),
                                              grid_state);
 
-        num_moving = grid_state.Counts[FPST_DATUM_SEARCH];
+        num_moving = ( grid_state.Counts[FPST_DATUM_SEARCH]
+                       + gateway.getNumUnsentCommands() );
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -457,7 +463,8 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         // take a moment to pick up the command.
         num_moving = (grid_state.Counts[FPST_MOVING]
                       + grid_state.Counts[FPST_READY_FORWARD]
-                      + grid_state.Counts[FPST_READY_BACKWARD]);
+                      + grid_state.Counts[FPST_READY_BACKWARD]
+                     + gateway.getNumUnsentCommands());
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -471,29 +478,6 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
 
 
 
-// function that checks whether all FPUs have an refreshed status
-// timestamp.
-bool check_all_fpus_updated(int num_fpus,
-                            t_grid_state& old_grid_state,
-                            t_grid_state& grid_state)
-{
-    bool all_updated = true;
-    for(int i = 0; i < num_fpus; i++)
-    {
-        if (grid_state.FPU_state[i].state != FPST_LOCKED)
-        {
-            timespec new_timestamp = grid_state.FPU_state[i].last_updated;
-            timespec old_timestamp = old_grid_state.FPU_state[i].last_updated;
-            if (time_equal(old_timestamp, new_timestamp))
-            {
-                all_updated = false;
-                break;
-            }
-                
-        }
-    }
-    return all_updated;
-}
 
 
 E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
@@ -541,32 +525,17 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // as we do not effect any change on the grid,
         // we need to wait for any response event,
         // and filter out whether we are actually ready.
-        state_summary = gateway.waitForState(TGT_ANY_CHANGE,
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING
+                                                          | TGT_ALL_UPDATED),
                                              grid_state);
 
-        // get fresh count of pending fpus
-        num_pending = grid_state.count_pending;
+        // get fresh count of pending fpus.
+        // The reason we add the unsent command is that
+        // the Tx thread might not have had opportunity
+        // to send all the commands.
+        num_pending = (grid_state.count_pending
+                       + gateway.getNumUnsentCommands());
 
-        // check for any time-out. (Note this checks on
-        // purpose for inequality, as the time-out counter
-        // is unsigned and can wrap around. But in difference
-        // to a signed counter, this won't cause undefined
-        // behavior and is safe to use.).
-        bool new_timeout = (old_grid_state.count_timeout
-                            != grid_state.count_timeout);
-
-        // we return if no more commands are pending,
-        // and we either have all fpus updated (the normal case)
-        // or we observed a time-out.
-        // In the latter case, we return to avoid a dead-lock.
-        if ((num_pending == 0)
-            && ( new_timeout
-                 || (check_all_fpus_updated(num_fpus,
-                                            old_grid_state,
-                                            grid_state))))
-        {
-            break;
-        }
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -591,33 +560,31 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
     
     num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
 
+    // fpus are now responding in parallel. 
+    //
+    // As long as any fpus need to respond, wait for
+    // them to finish.
     while ( (num_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
         // as we do not effect any change on the grid,
         // we need to wait for any response event,
         // and filter out whether we are actually ready.
-        state_summary = gateway.waitForState(TGT_ANY_CHANGE,
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING
+                                                          | TGT_ALL_UPDATED),
                                              grid_state);
 
-        // get fresh count of pending fpus
-        num_pending = grid_state.count_pending;
+        // get fresh count of pending fpus.
+        // The reason we add the unsent command is that
+        // the Tx thread might not have had opportunity
+        // to send all the commands.
+        num_pending = (grid_state.count_pending
+                       + gateway.getNumUnsentCommands());
 
-        // check for any time-out
-        bool new_timeout = (old_grid_state.count_timeout
-                            != grid_state.count_timeout);
+    }
 
-        // we return if no more commands are pending,
-        // and we either have all fpus updated (the normal case)
-        // or we observed a time-out.
-        // In the latter case, we return to avoid a dead-lock.
-        if ((num_pending == 0)
-            && ( new_timeout
-                 || (check_all_fpus_updated(num_fpus,
-                                            old_grid_state,
-                                            grid_state))))
-        {
-            break;
-        }
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
     }
 
     

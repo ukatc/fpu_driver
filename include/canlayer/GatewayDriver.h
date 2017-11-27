@@ -109,11 +109,14 @@ public:
 
     CommandQueue::E_QueueState broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command> new_command);
 
+    // returns gateway ID for an FPU
     int getGatewayIdByFPUID(int fpu_id);
 
     // returns whether an FPU is currently marked as locked.
     bool isLocked(int fpu_id);
 
+    // get number of unsent commands
+    int getNumUnsentCommands();
 
 
     // the following two methods are actually internal -
@@ -178,6 +181,8 @@ private:
     CommandPool command_pool; // memory pool for unused command objects
 
 
+    std::atomic<int> num_commands_being_sent;
+    
 
 };
 

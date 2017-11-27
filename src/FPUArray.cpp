@@ -60,7 +60,33 @@ E_GridState FPUArray::getGridState(t_grid_state& out_state)
 }
 
 
-E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state)
+// function that checks whether all FPUs have an refreshed status
+// timestamp.
+bool check_all_fpus_updated(int num_fpus,
+                            t_grid_state& old_grid_state,
+                            t_grid_state& grid_state)
+{
+    bool all_updated = true;
+    for(int i = 0; i < num_fpus; i++)
+    {
+        if (grid_state.FPU_state[i].state != FPST_LOCKED)
+        {
+            timespec new_timestamp = grid_state.FPU_state[i].last_updated;
+            timespec old_timestamp = old_grid_state.FPU_state[i].last_updated;
+            if (time_equal(old_timestamp, new_timestamp))
+            {
+                all_updated = false;
+                break;
+            }
+                
+        }
+    }
+    return all_updated;
+}
+
+
+
+E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_state)
 {
 
     bool got_value = false;
@@ -78,7 +104,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& out_detail
     }
     pthread_mutex_lock(&grid_state_mutex);
 
-    unsigned long count_timeouts = FPUGridState.count_timeout;
+    unsigned long count_timeouts = reference_state.count_timeout;
 
     while (! got_value)
     {
@@ -86,27 +112,42 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& out_detail
         // note this test functions *must* me be called
         // in 'locked' (mutex-protected) state!
         sum_state = getStateSummary_unprotected();
-        // if a time-out occurs, we return always.
+        
+        // if a time-out occurs and qualifies, we return early.
         // (the counter can wrap around - no problem!)
-        bool timeout_count_unchanged = (
-                                           count_timeouts == FPUGridState.count_timeout);
+        const bool timeout_triggered = (
+            (count_timeouts != FPUGridState.count_timeout)
+            && (target | TGT_TIMEOUT));
 
-        if ((! inTargetState(sum_state, target)
-                && timeout_count_unchanged))
+        // If all FPUs have been updated, that might be
+        // enough.
+        const bool all_updated = ((target | GS_ALL_UPDATED) &&
+                             check_all_fpus_updated(num_fpus,
+                                                    reference_state,
+                                                    FPUGridState));
+
+        const bool end_wait = (inTargetState(sum_state, target)
+                         || timeout_triggered
+                         || all_updated);
+
+
+        if (end_wait)
+        {
+            // We copy the internal state.  This is a comperatively
+            // expensive operation which as of today (2017) has a
+            // latency of about 25 microseconds. The reason we return
+            // a copy here is that it can't change under the hood
+            // later, therefore using the copy does not need any
+            // locking.
+            reference_state = FPUGridState;
+            got_value = true;
+        }
+        else
         {
             pthread_cond_wait(&cond_state_change,
                               &grid_state_mutex);
         }
-        else
-        {
-            // We copy the internal state.  This is a comperatively
-            // expensive operation which as of today (2017) has a
-            // latency of about 25 microseconds. The reason we
-            // make a copy here is that it can't change later, therefore
-            // reading the copy does not need any locking.
-            out_detailed_state = FPUGridState;
-            got_value = true;
-        }
+       
     }
     pthread_mutex_unlock(&grid_state_mutex);
     if (target == TGT_ANY_CHANGE)
@@ -149,6 +190,18 @@ bool FPUArray::inTargetState(E_GridState sum_state,
         return true;
     }
 
+    
+    // return whether we wait for no more
+    // pending commands - this is needed
+    // if the caller merely wants to get new
+    // info from the grid, instead of a state change.
+    if ((tstate | TGT_NO_MORE_PENDING)
+        && (FPUGridState.count_pending == 0))
+    {
+        return true;
+    }
+    
+    
     // Now, we check whether the bit mask for
     // the state we are looking at matches
     // the return value.
@@ -361,7 +414,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
         // FIXME: if an FPU can send a broadcast abort
         // message, this needs to be handled here.
-        uint8_t priority = (can_identifier >> 7);
+        /// uint8_t priority = (can_identifier >> 7);
         uint8_t fpu_busid = data[0];
         int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
 

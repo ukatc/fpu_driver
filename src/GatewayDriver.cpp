@@ -46,6 +46,9 @@ GatewayDriver::GatewayDriver(int nfpus)
 {
 
     num_fpus = nfpus;
+    
+    // number of commands which are being processed
+    num_commands_being_sent = 0;
 
 
     // assing default mapping and reverse mapping to
@@ -285,6 +288,8 @@ void GatewayDriver::updatePendingCommand(int fpu_id,
         fpuArray.setLastCommand(fpu_id,
                                 can_command->getInstanceCommandCode());
     }
+    // update number of commands being sent
+    num_commands_being_sent--;
 }
 
 // This method either fetches and sends a new buffer
@@ -306,6 +311,11 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
     {
         // we can send a new message. Safely pop the
         // pending command coming from the control thread
+        
+        // update number of commands being sent first
+        // (this avoids a race condition when querying
+        // the number of commands which are not sent).
+        num_commands_being_sent++;
         active_can_command = commandQueue.dequeue(gateway_id);
 
         if (active_can_command != nullptr)
@@ -330,6 +340,19 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
     }
     return status;
 }
+
+// returns number of commands which are not yet sent
+// in a thread-safe way. This is needed for waiting
+// until all commands are sent.
+int GatewayDriver::getNumUnsentCommands()
+{
+    // TODO: Check for potential race conditions if a
+    // command is being sent and is processed very
+    // quickly.
+    return (num_commands_being_sent
+            + commandQueue.getNumQueuedCommands());
+}
+
 
 
 void* GatewayDriver::threadTxFun()

@@ -101,6 +101,7 @@ public:
     // allocation.
     void recycleInstance(unique_ptr<I_CAN_Command>& cmdptr);
 
+
 private:
     typedef std::vector<unique_ptr<I_CAN_Command>> t_cmdvec;
 

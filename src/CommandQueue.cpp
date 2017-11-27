@@ -212,6 +212,20 @@ void CommandQueue::flushToPool(CommandPool& memory_pool)
     pthread_mutex_unlock(&queue_mutex);
 }
 
+
+int CommandQueue::getNumQueuedCommands()
+{
+    int numQueued = 0;
+    pthread_mutex_lock(&queue_mutex);
+    for(int i=0; i < ngateways; i++)
+    {
+        numQueued += fifos[i].size();
+    }
+    pthread_mutex_unlock(&queue_mutex);
+    return numQueued;
+}
+
+
 }
 
 }

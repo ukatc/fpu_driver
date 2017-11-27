@@ -25,7 +25,7 @@ namespace mpifps
 {
 
 
-E_DriverErrCode GridDriver::findDatum()
+E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -52,7 +52,7 @@ E_DriverErrCode GridDriver::findDatum()
 }
 
 
-E_DriverErrCode GridDriver::autoFindDatum()
+E_DriverErrCode GridDriver::autoFindDatum(t_grid_state& grid_state)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -81,7 +81,7 @@ E_DriverErrCode GridDriver::autoFindDatum()
 
 
 
-E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms)
+E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state& grid_state)
 
 {
     E_DriverErrCode estatus = DE_OK;
@@ -145,17 +145,17 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms)
 
 }
 
-E_DriverErrCode GridDriver::initializeGrid()
+E_DriverErrCode GridDriver::initializeGrid(t_grid_state& grid_state)
 {
     return DE_OK;
 }
 
-E_DriverErrCode GridDriver::resetFPUs()
+E_DriverErrCode GridDriver::resetFPUs(t_grid_state& grid_state)
 {
     return DE_OK;
 }
 
-E_DriverErrCode GridDriver::executeMotion()
+E_DriverErrCode GridDriver::executeMotion(t_grid_state& grid_state)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -169,32 +169,32 @@ E_DriverErrCode GridDriver::executeMotion()
     return estatus;
 }
 
-E_DriverErrCode GridDriver::repeatMotion()
+E_DriverErrCode GridDriver::repeatMotion(t_grid_state& grid_state)
 {
     return DE_OK;
 }
 
-E_DriverErrCode GridDriver::reverseMotion()
+E_DriverErrCode GridDriver::reverseMotion(t_grid_state& grid_state)
 {
     return DE_OK;
 }
 
-E_DriverErrCode GridDriver::abortMotion()
+E_DriverErrCode GridDriver::abortMotion(t_grid_state& grid_state)
 {
     return DE_OK;
 }
 
-E_DriverErrCode GridDriver::assignPositions()
+E_DriverErrCode GridDriver::assignPositions(t_grid_state& grid_state)
 {
     return DE_OK;
 }
 
-E_DriverErrCode GridDriver::lockFPU()
+E_DriverErrCode GridDriver::lockFPU(t_grid_state& grid_state)
 {
     return DE_OK;
 }
 
-E_DriverErrCode GridDriver::unlockFPU()
+E_DriverErrCode GridDriver::unlockFPU(t_grid_state& grid_state)
 {
     return DE_OK;
 }
