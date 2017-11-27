@@ -57,9 +57,7 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_EXECUTE_MOTION       :
             case CCMD_REPEAT_MOTION       :
             case CCMD_REVERSE_MOTION       :
-            case CCMD_REQUEST_STATUS       :
             case CCMD_REPORT_POSITIONS       :
-            case CCMD_CLEAR_COLLISION       :
             case CCMD_CHECK_INTEGRITY       :
             case CCMD_PING_FPU       :
             case CCMD_ABORT_MOTION       :
@@ -72,6 +70,15 @@ E_DriverErrCode CommandPool::initialize()
                 break;
 
             // individual commands
+            case CCMD_GET_ERROR_ALPHA :
+            case CCMD_GET_ERROR_BETA :
+            case CCMD_SET_USTEP :
+            case CCMD_REQUEST_STATUS :
+            case CCMD_CLEAR_COLLISION :
+            case CCMD_GET_STEPS_ALPHA:
+            case CCMD_GET_STEPS_BETA:
+            case CCMD_AUTO_MOVE_DATUM :
+            case CCMD_RESET_STEPCOUNTER :
             case CCMD_MOVE_DATUM_OFF  :
             case CCMD_MOVE_DATUM_ON   :
             case CCMD_ASSIGN_POSITION :
