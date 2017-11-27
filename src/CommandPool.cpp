@@ -23,6 +23,10 @@
 
 #include "DriverConstants.h"
 #include "canlayer/CommandPool.h"
+#include "canlayer/commands/AutoMoveDatumCommand.h"
+#include "canlayer/commands/ExecuteMotionCommand.h"
+#include "canlayer/commands/GetStepsAlphaCommand.h"
+#include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/ConfigureMotionCommand.h"
 #include "canlayer/commands/MoveDatumOnCommand.h"
 #include "canlayer/commands/MoveDatumOffCommand.h"
@@ -108,18 +112,40 @@ E_DriverErrCode CommandPool::initialize()
                     ptr.reset(new ConfigureMotionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
+                    
+                case CCMD_EXECUTE_MOTION        :
+                    ptr.reset(new ExecuteMotionCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+                    
+                case CCMD_AUTO_MOVE_DATUM        :
+                    ptr.reset(new AutoMoveDatumCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+                    
                 case CCMD_MOVE_DATUM_OFF        :
                     ptr.reset(new MoveDatumOffCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
+                    
                 case CCMD_MOVE_DATUM_ON        :
                     ptr.reset(new MoveDatumOnCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
+                    
+                case CCMD_GET_STEPS_ALPHA        :
+                    ptr.reset(new GetStepsAlphaCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+                    
+                case CCMD_GET_STEPS_BETA        :
+                    ptr.reset(new GetStepsBetaCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
 
                 default:
-                    // FIXME: add any missing constructors
-                    assert(0);
+                    #pragma message "FIXME: add any missing constructors"
+                    //assert(0);
 
                 }
             }
