@@ -41,6 +41,7 @@ enum E_CAN_COMMAND
     // FIXME: next two  schould be combined
     CCMD_GET_STEPS_ALPHA   =  4, // get alpha counts
     CCMD_GET_STEPS_BETA    =  5, // get beta counts
+    CCMD_READ_REGISTER     =  6, // read register - unused
     CCMD_PING_FPU          =  7, // check connectivity
     CCMD_RESET_FPU         =  8, // reset MCU
     CCMD_AUTO_MOVE_DATUM   =  9, // "automatic" datum search

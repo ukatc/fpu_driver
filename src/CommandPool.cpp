@@ -95,6 +95,7 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_UNTANGLE_FPU    :
             case CCMD_LOCK_UNIT       :
             case CCMD_UNLOCK_UNIT     :
+            case CCMD_READ_REGISTER   :
                 capacity = cap_individual;
                 break;
                 

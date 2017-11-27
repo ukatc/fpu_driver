@@ -103,7 +103,7 @@ enum E_DriverErrCode
 
     // an FPU has not been initialised, so
     // it cannot be moved accurately and safely.
-    DE_NOT_INITIALIZED = 6,
+    DE_FPU_NOT_INITIALIZED = 6,
 
     // driver is already initialized
     DE_DRIVER_ALREADY_CONNECTED = 7,

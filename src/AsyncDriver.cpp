@@ -382,7 +382,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
         if (!grid_state.FPU_state[i].is_initialized)
         {
-            return DE_NOT_INITIALIZED;
+            return DE_DRIVER_NOT_INITIALIZED;
         }
     }
 

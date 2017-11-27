@@ -235,6 +235,12 @@ class WrapGridDriver : public GridDriver
             return configMotion(wtable, grid_state);
         };
 
+    t_grid_state wrap_getGridState()
+        {
+            t_grid_state grid_state;
+            getGridState(grid_state);
+            return grid_state;
+        }
 };
 
 
@@ -292,7 +298,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_NO_CONNECTION",DE_NO_CONNECTION)
     .value("DE_STILL_BUSY",DE_STILL_BUSY)
     .value("DE_UNRESOLVED_COLLISION",DE_UNRESOLVED_COLLISION)
-    .value("DE_NOT_INITIALIZED",DE_NOT_INITIALIZED)
+    .value("DE_DRIVER_NOT_INITIALIZED",DE_DRIVER_NOT_INITIALIZED)
+    .value("DE_FPU_NOT_INITIALIZED",DE_FPU_NOT_INITIALIZED)
     .value("DE_ASSERTION_FAILED",DE_ASSERTION_FAILED)
     .export_values();
     
@@ -360,7 +367,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
         // call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
     .def("configMotion", &WrapGridDriver::configMotionWithDict)
     .def("executeMotion", &WrapGridDriver::executeMotion)
-    .def("getGridState", &WrapGridDriver::getGridState)
+    .def("getGridState", &WrapGridDriver::wrap_getGridState)
     .def("getPositions", &WrapGridDriver::getPositions)
     .def("repeatMotion", &WrapGridDriver::repeatMotion)
     .def("reverseMotion", &WrapGridDriver::reverseMotion)

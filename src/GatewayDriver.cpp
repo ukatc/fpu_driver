@@ -81,9 +81,21 @@ GatewayDriver::~GatewayDriver()
 
 E_DriverErrCode GatewayDriver::initialize()
 {
+    E_DriverErrCode status;
     
     fpuArray.setDriverState(DS_UNINITIALIZED);
-    return command_pool.initialize();
+    status = command_pool.initialize();
+
+    if (status != DE_OK)
+    {
+        return status;
+    }
+    
+    fpuArray.setDriverState(DS_UNCONNECTED);
+
+    return DE_OK;
+    
+
 }
 
 bool GatewayDriver::isLocked(int fpu_id)
@@ -153,6 +165,32 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     assert(ngateways <= MAX_NUM_GATEWAYS);
     assert(ngateways >= 0);
+
+    // check initialization state
+    E_DriverState state = fpuArray.getDriverState();
+    switch (state)
+    {
+    case DS_UNCONNECTED:
+        break; // OK
+
+    case DS_UNINITIALIZED:
+        return DE_DRIVER_NOT_INITIALIZED;        
+        
+    case DS_CONNECTED:
+        return DE_DRIVER_ALREADY_CONNECTED;
+        
+    default:
+    case DS_ASSERTION_FAILED:
+        return DE_ASSERTION_FAILED;
+    }
+        
+    E_DriverErrCode rval = command_pool.initialize();
+
+    if (rval != DE_OK)
+    {
+        return rval;
+    }
+
 
 
     for (int i = 0; i < ngateways; i++)
