@@ -32,6 +32,10 @@
 #include "canlayer/commands/MoveDatumOffCommand.h"
 #include "canlayer/commands/PingCommand.h"
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
+
 namespace mpifps
 {
 
@@ -47,7 +51,9 @@ E_DriverErrCode CommandPool::initialize()
     bool allocation_error = false;
     try
     {
-        for (int i = 0; i < NUM_CAN_COMMANDS; i++)
+        // This starts to count with 1 because 0 is no
+        // actual command.
+        for (int i = 1; i < NUM_CAN_COMMANDS; i++)
         {
             int capacity=0;
             const int cap_broadcast = 10;
@@ -90,11 +96,16 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_LOCK_UNIT       :
             case CCMD_UNLOCK_UNIT     :
                 capacity = cap_individual;
+                break;
+                
             default:
                 // logical error
+#ifdef DEBUG
+                printf("fatal error: command code %i not found!\n", i);
+#endif
                 assert(false);
             }
-
+ 
             // FIXME: This can thow bad_alloc if the
             // system is very low on memory.
             pool[i].reserve(capacity);

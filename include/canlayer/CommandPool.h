@@ -106,7 +106,7 @@ private:
     typedef std::vector<unique_ptr<I_CAN_Command>> t_cmdvec;
 
     int num_fpus;
-    t_cmdvec pool[NUM_CAN_COMMANDS];
+    t_cmdvec pool[NUM_CAN_COMMANDS+1]; // numbers are one-based
     pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t cond_pool_add = PTHREAD_COND_INITIALIZER;
 };
