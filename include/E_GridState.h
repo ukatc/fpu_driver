@@ -32,11 +32,11 @@ enum E_GridState
     //
     // The global state is computed in a "least common denominator"
     // manner (e.g. if 950 FPUs are "READY", 45 are "LOADING", 9 are
-    // "LOCKED", and 1 "INITIALISED", the state would be
-    // "INITIALISED".
+    // "LOCKED", and 1 "INITIALIZED", the state would be
+    // "INITIALIZED".
 
     GS_UNKNOWN        = (1 << 1), // no information available
-    GS_UNINITIALISED  = (1 << 2), // datum positions not known
+    GS_UNINITIALIZED  = (1 << 2), // datum positions not known
     GS_LEAVING_DATUM  = (1 << 3), // datum is known, no waveforms loaded
     GS_ABOVE_DATUM    = (1 << 4), // datum is known, no waveforms loaded
     GS_DATUM_SEARCH   = (1 << 5), // some FPUs are searching datum
@@ -84,7 +84,7 @@ enum E_WaitTarget
                          | GS_READY_BACKWARD
                          | GS_AT_DATUM
                          | GS_DATUM_SEARCH
-                         | GS_UNINITIALISED
+                         | GS_UNINITIALIZED
                          | GS_COLLISION
                          | GS_ABORTED),
 

@@ -49,6 +49,7 @@ GatewayDriver::GatewayDriver(int nfpus)
     
     // number of commands which are being processed
     num_commands_being_sent = 0;
+    fpuArray.setDriverState(DS_UNINITIALIZED);
 
 
     // assing default mapping and reverse mapping to
@@ -80,13 +81,8 @@ GatewayDriver::~GatewayDriver()
 
 E_DriverErrCode GatewayDriver::initialize()
 {
-    E_DriverErrCode status = command_pool.initialize();
-
-    if (status != DE_OK)
-    {
-        return status;
-    }
     
+    fpuArray.setDriverState(DS_UNINITIALIZED);
     return command_pool.initialize();
 }
 
@@ -201,7 +197,7 @@ E_DriverErrCode GatewayDriver::disconnect()
 
     E_DriverState dstate = fpuArray.getDriverState();
 
-    if ( (dstate == DS_UNCONNECTED) || (dstate == DS_UNINITIALISED))
+    if ( (dstate == DS_UNCONNECTED) || (dstate == DS_UNINITIALIZED))
     {
         // nothing to be done
         return DE_NO_CONNECTION;

@@ -200,4 +200,14 @@ E_DriverErrCode GridDriver::unlockFPU(t_grid_state& grid_state)
 }
 
 
+E_DriverErrCode GridDriver::getPositions(t_grid_state& grid_state)
+{
+    E_GridState state_summary;
+    E_DriverErrCode status;
+    status = getPositionsAsync(grid_state, state_summary);
+    
+    return status;
+}
+
+
 }

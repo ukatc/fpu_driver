@@ -126,12 +126,11 @@ E_DriverErrCode CommandPool::initialize()
     pthread_mutex_unlock(&pool_mutex);
     if (allocation_error)
     {
-        return DE_DRIVER_NOT_INITIALISED;
+        return DE_DRIVER_NOT_INITIALIZED;
     }
-    else
-    {
-        return DE_OK;
-    }
+
+    return DE_OK;
+
 }
 
 

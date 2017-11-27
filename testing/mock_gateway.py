@@ -13,25 +13,33 @@ coroutines.
 from __future__ import print_function
 from gevent.server import StreamServer
 
+import codec
+
+def command_handler(cmd):
+    print(cmd)
+    response = codec.encode(cmd)
+    socket.sendall(response)
+    print("echoed %r" % response)
 
 # this handler will be run for each incoming connection in a dedicated greenlet
 def echo(socket, address):
     print('New connection from %s:%s' % address)
     # using a makefile because we want to use readline()
     msg_len = 10
+    prot = codec.Decoder()
+    
     while True:
         command = socket.recv(msg_len)
         if not command:
             print("client disconnected")
             break
-        socket.sendall(command)
-        print("echoed %r" % command)
+        prot.decode(command, command_handler)
+        
 
 if __name__ == '__main__':
-    # to make the server use SSL, pass certfile and keyfile arguments to the constructor
     ports = [ 4700, 4701, 4702]
     servers = [ StreamServer(('0.0.0.0', p), echo) for p in ports]
-    # to start the server asynchronously, use its start() method;
+    # to start the servers asynchronously, we use its start() method;
     # we use blocking serve_forever() for the third and last connection.
     print('Starting mock gateway on ports %s' % ports)
     ##server.serve_forever()

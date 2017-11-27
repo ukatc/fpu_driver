@@ -42,7 +42,7 @@ E_DriverErrCode CommandQueue::initialize()
 
     if (condition_init_monotonic(cond_queue_append) != 0)
     {
-        return DE_DRIVER_NOT_INITIALISED;
+        return DE_DRIVER_NOT_INITIALIZED;
     }
 
     return DE_OK;

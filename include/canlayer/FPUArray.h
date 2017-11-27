@@ -86,7 +86,7 @@ public:
             t_fpu_state fpu_state;
 
             fpu_state.is_initialized       = false;
-            fpu_state.state             = FPST_UNINITIALISED;
+            fpu_state.state             = FPST_UNINITIALIZED;
             fpu_state.pending_command   = CCMD_NO_COMMAND;
             fpu_state.cmd_timeout       = MAX_TIMEOUT;
             fpu_state.last_updated.tv_sec = 0;

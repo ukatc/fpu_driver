@@ -43,12 +43,12 @@ E_DriverErrCode AsyncDriver::initializeDriver()
 {
     switch (gateway.getDriverState())
     {
-    case DS_UNINITIALISED:
+    case DS_UNINITIALIZED:
         break;
         
     case DS_UNCONNECTED:
     case DS_CONNECTED:
-        return DE_DRIVER_ALREADY_INITIALISED;
+        return DE_DRIVER_ALREADY_INITIALIZED;
 
     case DS_ASSERTION_FAILED:
     default:
@@ -60,9 +60,20 @@ E_DriverErrCode AsyncDriver::initializeDriver()
 
 E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_address gateway_addresses[])
 {
-    if (gateway.getDriverState() != DS_UNCONNECTED)
+    switch (gateway.getDriverState())
     {
-        return DE_DRIVER_NOT_INITIALISED;
+    case DS_UNINITIALIZED:
+        return DE_DRIVER_NOT_INITIALIZED;
+        
+    case DS_UNCONNECTED:
+        break;
+        
+    case DS_CONNECTED:
+        return DE_DRIVER_ALREADY_CONNECTED;
+
+    case DS_ASSERTION_FAILED:
+    default:
+        return DE_ASSERTION_FAILED;
     }
 
     E_DriverErrCode err_code =  gateway.connect(ngateways, gateway_addresses);
@@ -251,7 +262,7 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
     }
 
     // fpus are now moving in parallel. Their status
-    // goes from FPST_UNINITIALISED OR FPST_FINISHED
+    // goes from FPST_UNINITIALIZED OR FPST_FINISHED
     // to FPST_LEAVING_DATUM, and changes to
     // FPST_ABOVE_DATUM once the command sent finishes.
     //
@@ -267,7 +278,7 @@ E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
         // This relies on that each FPU sends a response
         // when it reaches the datum, or otherwise
         // the time-out handler sets the status back
-        // to FPST_UNINITIALISED.
+        // to FPST_UNINITIALIZED.
         num_moving = (grid_state.Counts[FPST_LEAVING_DATUM]
                       + gateway.getNumUnsentCommands());
     }
@@ -371,7 +382,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
         if (!grid_state.FPU_state[i].is_initialized)
         {
-            return DE_NOT_INITIALISED;
+            return DE_NOT_INITIALIZED;
         }
     }
 

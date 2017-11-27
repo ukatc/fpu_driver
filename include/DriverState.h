@@ -27,7 +27,7 @@ enum E_DriverState
 {
     // the driver can have the following
     // non-operative states
-    DS_UNINITIALISED = 1,  // not yet initialized, or
+    DS_UNINITIALIZED = 1,  // not yet initialized, or
     // resource allocation failed,
     // for example because out-of-memory
 
@@ -65,12 +65,12 @@ enum E_DriverErrCode
     // That can happen if the system goes
     // out of memory, or if a logical error
     // affects the initialization.
-    DE_DRIVER_NOT_INITIALISED = 1,
+    DE_DRIVER_NOT_INITIALIZED = 1,
 
 
     // driver has already been initialised,
     // and another initialisation was tried.
-    DE_DRIVER_ALREADY_INITIALISED = 2,
+    DE_DRIVER_ALREADY_INITIALIZED = 2,
 
 
     // A command was tried to send to the
@@ -103,7 +103,10 @@ enum E_DriverErrCode
 
     // an FPU has not been initialised, so
     // it cannot be moved accurately and safely.
-    DE_NOT_INITIALISED = 6,
+    DE_NOT_INITIALIZED = 6,
+
+    // driver is already initialized
+    DE_DRIVER_ALREADY_CONNECTED = 7,
 
     // An assumption about the driver state
     // is not met, the driver is switched off

@@ -54,16 +54,16 @@ E_GridState getGridStateSummary(const t_grid_state& grid_state)
     }
 
     // now we check in order of operational states
-    if ((grid_state.Counts[FPST_UNINITIALISED] - grid_state.Counts[FPST_LOCKED]) > 0)
+    if ((grid_state.Counts[FPST_UNINITIALIZED] - grid_state.Counts[FPST_LOCKED]) > 0)
     {
-        return GS_UNINITIALISED;
+        return GS_UNINITIALIZED;
     }
 
     if (grid_state.Counts[FPST_COORDINATE_RECOVERY] > 0)
     {
         // results in the same: we don't know all
         // the coordinates in the grid
-        return GS_UNINITIALISED;
+        return GS_UNINITIALIZED;
     }
 
     if (grid_state.Counts[FPST_LEAVING_DATUM] > 0)

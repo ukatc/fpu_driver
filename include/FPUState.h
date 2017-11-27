@@ -31,7 +31,7 @@ using canlayer::E_CAN_COMMAND;
 enum E_FPU_STATE
 {
     FPST_UNKNOWN             = 0,
-    FPST_UNINITIALISED       = 1,
+    FPST_UNINITIALIZED       = 1,
     FPST_LOCKED              = 2,
     FPST_COORDINATE_RECOVERY = 3,
     FPST_LEAVING_DATUM       = 4,
