@@ -59,7 +59,7 @@ enum E_CAN_COMMAND
     CCMD_REQUEST_STATUS = 20,   // report status and flags
     CCMD_REPORT_POSITIONS              = 21, // report alpha and beta position
     CCMD_GET_FIRMWARE_VERSION          = 22, // get firmware version
-    CCMD_CHECK_INTEGRITY               = 23, // report firmware version and CRC
+    CCMD_CHECK_INTEGRITY               = 23, // report firmware CRC
     CCMD_LOCK_UNIT                     = 24, // ignore any command except reset and unlock
     CCMD_UNLOCK_UNIT                   = 25, // listen to commands again
     CCMD_FREE_ALPHA_LIMIT_BREACH       = 26, // untangle alpha arm

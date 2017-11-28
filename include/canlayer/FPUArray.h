@@ -104,6 +104,7 @@ public:
             fpu_state.ping_ok              = false;
             fpu_state.direction_alpha      = DIRST_UNKNOWN;
             fpu_state.direction_beta       = DIRST_UNKNOWN;
+            fpu_state.num_waveforms = 0;
 
             FPUGridState.FPU_state[i] = fpu_state;
 

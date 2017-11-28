@@ -67,15 +67,16 @@ typedef struct t_fpu_state
     E_FPU_STATE state;
     int alpha_steps;
     int beta_steps;
+    int num_waveforms;
+    char direction_alpha;
+    char direction_beta;
+    bool ping_ok;
     bool is_initialized;
     bool is_locked;
     bool on_alpha_datum;
     bool on_beta_datum;
     bool at_alpha_limit;
     bool beta_collision;
-    char direction_alpha;
-    char direction_beta;
-    bool ping_ok;
 
 
 
