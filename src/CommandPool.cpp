@@ -28,8 +28,6 @@
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/ConfigureMotionCommand.h"
-#include "canlayer/commands/MoveDatumOnCommand.h"
-#include "canlayer/commands/MoveDatumOffCommand.h"
 #include "canlayer/commands/PingCommand.h"
 
 #ifdef DEBUG
@@ -84,18 +82,20 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_GET_ERROR_BETA :
             case CCMD_SET_USTEP :
             case CCMD_REQUEST_STATUS :
-            case CCMD_CLEAR_COLLISION :
+            case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
             case CCMD_GET_STEPS_ALPHA:
             case CCMD_GET_STEPS_BETA:
             case CCMD_AUTO_MOVE_DATUM :
             case CCMD_RESET_STEPCOUNTER :
-            case CCMD_MOVE_DATUM_OFF  :
-            case CCMD_MOVE_DATUM_ON   :
-            case CCMD_ASSIGN_POSITION :
-            case CCMD_UNTANGLE_FPU    :
+            case CCMD_FREE_BETA_COLLISION    :
             case CCMD_LOCK_UNIT       :
             case CCMD_UNLOCK_UNIT     :
             case CCMD_READ_REGISTER   :
+            case CCMD_GET_FIRMWARE_VERSION          :
+            case CCMD_FREE_ALPHA_LIMIT_BREACH       :
+            case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
+            case CCMD_SET_TIME_STEP                 :
+            case CCMD_SET_MIN_FREQUENCY             :
                 capacity = cap_individual;
                 break;
                 
@@ -134,17 +134,7 @@ E_DriverErrCode CommandPool::initialize()
                     ptr.reset(new AutoMoveDatumCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                    
-                case CCMD_MOVE_DATUM_OFF        :
-                    ptr.reset(new MoveDatumOffCommand());
-                    pool[i].push_back(std::move(ptr));
-                    break;
-                    
-                case CCMD_MOVE_DATUM_ON        :
-                    ptr.reset(new MoveDatumOnCommand());
-                    pool[i].push_back(std::move(ptr));
-                    break;
-                    
+                                        
                 case CCMD_GET_STEPS_ALPHA        :
                     ptr.reset(new GetStepsAlphaCommand());
                     pool[i].push_back(std::move(ptr));

@@ -30,26 +30,33 @@ using canlayer::E_CAN_COMMAND;
     
 enum E_FPU_STATE
 {
-    FPST_UNKNOWN             = 0,
-    FPST_UNINITIALIZED       = 1,
-    FPST_LOCKED              = 2,
-    FPST_COORDINATE_RECOVERY = 3,
-    FPST_LEAVING_DATUM       = 4,
-    FPST_ABOVE_DATUM         = 5,
-    FPST_DATUM_SEARCH        = 6,
-    FPST_AT_DATUM            = 7,
-    FPST_LOADING             = 8,
-    FPST_READY_FORWARD       = 9,
-    FPST_READY_BACKWARD      = 10,
-    FPST_MOVING              = 11,
-    FPST_FINISHED            = 12,
-    FPST_ABORTED             = 13,
-    FPST_COLLISION_DETECTED  = 14,
-    FPST_LIMIT_STOP          = 15,
-    FPST_COLLISION_RECOVERY  = 16,
+    FPST_UNKNOWN                 = 0,
+    FPST_UNINITIALIZED           = 1,
+    FPST_LOCKED                  = 2,
+    FPST_DATUM_SEARCH            = 3,
+    FPST_AT_DATUM                = 4,
+    FPST_LOADING                 = 5,
+    FPST_READY_FORWARD           = 6,
+    FPST_READY_BACKWARD          = 7,
+    FPST_MOVING                  = 8,
+    FPST_FINISHED                = 9,
+    FPST_ABORTED                 = 10,
+    FPST_BETA_COLLISION_DETECTED = 11,
+    FPST_ALPHA_LIMIT_STOP        = 12,
 
-    NUM_FPU_STATES      = 17,
+    NUM_FPU_STATES               = 13,
 
+};
+
+// known direction of movement
+// (keep in mind that the command parameter
+// is differently encoded)
+enum E_MOVEMENT_DIRECTION
+{
+    DIRST_UNKNOWN            =  0,
+    DIRST_NONE               =  1,
+    DIRST_COUNTER_CLOCKWISE  =  3,
+    DIRST_CLOCKWISE          =  4,
 };
 
 
@@ -61,11 +68,13 @@ typedef struct t_fpu_state
     int alpha_steps;
     int beta_steps;
     bool is_initialized;
+    bool is_locked;
     bool on_alpha_datum;
     bool on_beta_datum;
-    bool alpha_collision;
     bool at_alpha_limit;
     bool beta_collision;
+    char direction_alpha;
+    char direction_beta;
     bool ping_ok;
 
 

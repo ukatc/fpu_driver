@@ -28,8 +28,6 @@
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/AutoMoveDatumCommand.h"
-#include "canlayer/commands/MoveDatumOnCommand.h"
-#include "canlayer/commands/MoveDatumOffCommand.h"
 #include "canlayer/commands/PingCommand.h"
 #include "canlayer/time_utils.h"
 
@@ -144,8 +142,8 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_COLLISION_DETECTED)
-                || (fpu_status == FPST_LIMIT_STOP))
+                || (fpu_status == FPST_BETA_COLLISION_DETECTED)
+                || (fpu_status == FPST_ALPHA_LIMIT_STOP))
         {
             return DE_UNRESOLVED_COLLISION;
         }
@@ -207,152 +205,6 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
 }
 
 
-E_DriverErrCode AsyncDriver::findDatumAsync(t_grid_state& grid_state,
-        E_GridState& state_summary)
-{
-    
-    // first, get current state of the grid
-    state_summary = gateway.getGridState(grid_state);
-    // check driver is connected
-    if (grid_state.driver_state != DS_CONNECTED)
-    {
-        return DE_NO_CONNECTION;
-    }
-
-    // check no FPUs have ongoing collisions
-    for (int i=0; i < num_fpus; i++)
-    {
-        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
-        if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_COLLISION_DETECTED)
-                || (fpu_status == FPST_LIMIT_STOP))
-        {
-            return DE_UNRESOLVED_COLLISION;
-        }
-    }
-
-    // make sure each FPU is just right above datum
-    int num_moving = 0;
-    unique_ptr<MoveDatumOffCommand> can_command1;
-    for (int i=0; i < num_fpus; i++)
-    {
-        t_fpu_state& fpu_state = grid_state.FPU_state[i];
-        if (fpu_state.state != FPST_LOCKED)
-        {
-            bool move_alpha_up = (fpu_state.on_alpha_datum
-                                  || fpu_state.alpha_steps < 0);
-
-            bool move_beta_up = (fpu_state.on_beta_datum
-                                 || fpu_state.beta_steps < 0);
-            if (move_alpha_up || move_beta_up)
-            {
-                can_command1 = gateway.provideInstance<MoveDatumOffCommand>();
-                bool broadcast = false;
-                can_command1->parametrize(i,
-                                          broadcast,
-                                          move_alpha_up ? 1 : 0,
-                                          move_beta_up ? 1 : 0);
-                // send the command (the actual sending happens
-                // in the TX thread in the background).
-                gateway.sendCommand(i, std::move(can_command1));
-
-                num_moving++;
-            }
-        }
-    }
-
-    // fpus are now moving in parallel. Their status
-    // goes from FPST_UNINITIALIZED OR FPST_FINISHED
-    // to FPST_LEAVING_DATUM, and changes to
-    // FPST_ABOVE_DATUM once the command sent finishes.
-    //
-    // As long as any fpus need to move, wait for
-    // them to finish.
-    while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
-    {
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_ABOVE_DATUM
-                                                          | TGT_NO_MORE_PENDING),
-                                             grid_state);
-
-        // refresh count of moving fpus
-        // This relies on that each FPU sends a response
-        // when it reaches the datum, or otherwise
-        // the time-out handler sets the status back
-        // to FPST_UNINITIALIZED.
-        num_moving = (grid_state.Counts[FPST_LEAVING_DATUM]
-                      + gateway.getNumUnsentCommands());
-    }
-
-    if (grid_state.driver_state != DS_CONNECTED)
-    {
-        return DE_NO_CONNECTION;
-    }
-
-    // check the result of the movement operation
-    for (int i=0; i < num_fpus; i++)
-    {
-        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
-        if ((fpu_status != FPST_LOCKED)
-                || (fpu_status != FPST_ABOVE_DATUM))
-        {
-            // at least one FPU did not reach the
-            // desired state due to time-out or collision.
-            // Both cases are handled on a higher level,
-            // we return here.
-            return DE_OK;
-        }
-    }
-
-    // now, all fpus are moved above the datum switch.
-    // move them until downward they hit the datum switch
-
-    unique_ptr<MoveDatumOnCommand> can_command2;
-    for (int i=0; i < num_fpus; i++)
-    {
-        t_fpu_state& fpu_state = grid_state.FPU_state[i];
-        if (fpu_state.state != FPST_LOCKED)
-        {
-            // FIXME!!!: we should add a security
-            // limit so that FPUs which are off position
-            // are not driven into the hard stop.
-#pragma message "avoid hitting a hard stop here"
-
-            bool move_alpha_down = fpu_state.alpha_steps > 0;
-
-            bool move_beta_down = fpu_state.beta_steps > 0;
-
-            if (move_alpha_down || move_beta_down)
-            {
-                can_command2 = gateway.provideInstance<MoveDatumOnCommand>();
-                bool broadcast = false;
-                can_command2->parametrize(i,
-                                          broadcast,
-                                          move_alpha_down ? -1 : 0,
-                                          move_beta_down ? -1 : 0);
-                gateway.sendCommand(i, std::move(can_command2));
-                num_moving++;
-            }
-        }
-    }
-
-    while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
-    {
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
-                                                          | TGT_NO_MORE_PENDING),
-                                             grid_state);
-
-        num_moving = ( grid_state.Counts[FPST_DATUM_SEARCH]
-                       + gateway.getNumUnsentCommands() );
-    }
-
-    if (grid_state.driver_state != DS_CONNECTED)
-    {
-        return DE_NO_CONNECTION;
-    }
-
-    return DE_OK;
-
-}
 
 
 E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
@@ -374,8 +226,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_COLLISION_DETECTED)
-                || (fpu_status == FPST_LIMIT_STOP))
+                || (fpu_status == FPST_BETA_COLLISION_DETECTED)
+                || (fpu_status == FPST_ALPHA_LIMIT_STOP))
         {
             return DE_UNRESOLVED_COLLISION;
         }
@@ -445,8 +297,8 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_COLLISION_DETECTED)
-                || (fpu_status == FPST_LIMIT_STOP))
+                || (fpu_status == FPST_BETA_COLLISION_DETECTED)
+                || (fpu_status == FPST_ALPHA_LIMIT_STOP))
         {
             return DE_UNRESOLVED_COLLISION;
         }

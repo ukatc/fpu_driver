@@ -448,6 +448,12 @@ void* GatewayDriver::threadTxFun()
                 pfd[gateway_id].events = 0;
             }
         }
+#ifdef DEBUG
+        if (cmd_mask == 0)
+        {
+            printf("Q"); fflush(stdout);
+        }
+#endif
 
 
         // this waits for a short time for sending data
@@ -477,7 +483,14 @@ void* GatewayDriver::threadTxFun()
 
                 }
             }
+#ifdef DEBUG
+            if (retval == 0)
+            {
+                printf("T"); fflush(stdout);
+            }
+#endif
         }
+        
 
         // check all file descriptors for readiness
         SBuffer::E_SocketStatus status = SBuffer::ST_OK;
@@ -640,6 +653,9 @@ void* GatewayDriver::threadRxFun()
         {
             // a time-out was hit - go through the list of FPUs
             // and mark each FPU which has timed out.
+#ifdef DEBUG
+            printf("R"); fflush(stdout);
+#endif
             get_monotonic_time(cur_time);
 
             fpuArray.processTimeouts(cur_time, timeOutList);

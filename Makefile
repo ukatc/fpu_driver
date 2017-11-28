@@ -26,8 +26,6 @@ _DEPS = DriverState.h E_GridState.h FPUState.h GridDriver.h	\
 	canlayer/commands/ExecuteMotionCommand.h		\
 	canlayer/commands/GetStepsAlphaCommand.h		\
 	canlayer/commands/AutoMoveDatumCommand.h		\
-	canlayer/commands/MoveDatumOffCommand.h			\
-	canlayer/commands/MoveDatumOnCommand.h			\
 	canlayer/commands/PingCommand.h
 
 

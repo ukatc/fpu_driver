@@ -43,12 +43,12 @@ E_GridState getGridStateSummary(const t_grid_state& grid_state)
         return GS_ABORTED;
     }
 
-    if (grid_state.Counts[FPST_COLLISION_DETECTED] > 0)
+    if (grid_state.Counts[FPST_BETA_COLLISION_DETECTED] > 0)
     {
         return GS_COLLISION;
     }
 
-    if (grid_state.Counts[FPST_LIMIT_STOP] > 0)
+    if (grid_state.Counts[FPST_ALPHA_LIMIT_STOP] > 0)
     {
         return GS_LIMITSTOP;
     }
@@ -59,22 +59,7 @@ E_GridState getGridStateSummary(const t_grid_state& grid_state)
         return GS_UNINITIALIZED;
     }
 
-    if (grid_state.Counts[FPST_COORDINATE_RECOVERY] > 0)
-    {
-        // results in the same: we don't know all
-        // the coordinates in the grid
-        return GS_UNINITIALIZED;
-    }
 
-    if (grid_state.Counts[FPST_LEAVING_DATUM] > 0)
-    {
-        return GS_LEAVING_DATUM;
-    }
-
-    if (grid_state.Counts[FPST_ABOVE_DATUM] > 0)
-    {
-        return GS_ABOVE_DATUM;
-    }
 
     if (grid_state.Counts[FPST_DATUM_SEARCH] > 0)
     {

@@ -87,40 +87,44 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 ** DONE A few Top-level calls (just as example)
 *** DONE Top-level calls
 *** DONE check count of pending states
-** TODO Move workstation
 ** DONE compile
 *** DONE write makefile
 *** DONE Add semicolons
 ** DONE Fix makefile to build static lib
 ** DONE build with -Wall -pendandic -Wextra
-** TODO mark initializations of socket and threads for revision
-** TODO make signatures const-correct
-** TODO Add tentative CAN responses
-*** TODO config_motion
-*** TODO ping
-*** TODO searchDatum
-*** TODO leaveDatum
+** TODO Move workstation
 * TODO Improvements
+** DONE API methods hould return state reference parameter
+.. in output argument. This requires an additional lock
+when the internal state struct is used.
 ** DONE fix name field in header
-** TODO put commands in namespace
-** TODO put can level stuff into namespace
-
-** TODO split methods in initialize() / uninitialize():
+** DONE put commands in namespace
+** DONE put can level stuff into namespace
+** DONE split methods in initialize() / uninitialize():
   anywhere we allocate memory via the STL, to catch
   out-of-memory exceptions
 
   Also, thread tghrough the calls of these methods
   up to the top level.
+** DONE compile -Wall
 ** TODO Clean-up
-*** TODO collect time utility functions into own file
-*** TODO replace hand-rolled time function with system standard funcs
+*** DONE Split declarations and implementations into source files as usual
 *** DONE consider: move locus of time-stamping sent command to after termination of sending
+*** DONE collect time utility functions into own file
+*** DONE replace hand-rolled time function with system standard funcs
 *** TODO split SBuffer in independent read buffer and write buffer
-*** TODO Split declarations and implementations into source files as usual
-** TODO compile -Wall
-** TODO separate locked operation and reporting/logging of results
+** TODO Fix CPU hogging
+** TODO fix Python wrapper for grid_state
+** TODO Add tentative CAN responses
+*** TODO config_motion
+*** TODO ping
+*** TODO searchDatum
+*** TODO leaveDatum
+*** TODO print frequency of epoll / cond_wait calls
+*** TODO solve argument passing of grid_state
+*** TODO print invalid responses
+** TODO add separate reporting/logging of results
 ** TODO make API const-correct
-** TODO API methods hould return state reference parameter
-.. in output argument. This requires an additional lock
-when the internal state struct is used.
+** TODO make signatures const-correct
+** TODO revise initializations of socket and threads
 
