@@ -62,12 +62,28 @@ enum E_MOVEMENT_DIRECTION
 
 typedef struct t_fpu_state
 {
+    E_FPU_STATE state;
+    // id of any still running and incomplete command
+    E_CAN_COMMAND pending_command;
+    // id of last command that was issued but not completed.
+    E_CAN_COMMAND last_command;
+    // id of last command that was completed
+    E_CAN_COMMAND completed_command;    
+
+    // time when any running command is considered timed out
+    // Note: this time needs to use the monotonic linux system
+    // clock so that leap seconds don't trigger bugs.
+    timespec cmd_timeout;
+    timespec last_updated;
+
     // these members are the individual values
     // reported by FPU responses
-    E_FPU_STATE state;
     int alpha_steps;
     int beta_steps;
     int num_waveforms;
+    // number of minor time-outs which have
+    // been observed for the last command.
+    uint16_t timeout_count;
     char direction_alpha;
     char direction_beta;
     bool ping_ok;
@@ -80,23 +96,7 @@ typedef struct t_fpu_state
 
 
 
-    // id of any still running and incomplete command
-    E_CAN_COMMAND pending_command;
-    // time when any running command is considered timed out
-    // Note: this time needs to use the monotonic linux system
-    // clock so that leap seconds don't trigger bugs.
-    timespec cmd_timeout;
-    // number of minor time-outs which have
-    // been observed for the last command.
-    int8_t timeout_count;
 
-    // id of last command that was issued but not completed.
-    E_CAN_COMMAND last_command;
-
-    // id of last command that was completed
-    E_CAN_COMMAND completed_command;    
-
-    timespec last_updated;
 
     bool operator==(const  t_fpu_state &a) const
         {
