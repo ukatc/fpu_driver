@@ -85,7 +85,7 @@ enum E_CAN_COMMAND
 // this is a one-bit parameter to several commands
 enum E_REQUEST_DIRECTION
 {
-    REQD_COUNTER_CLOCKWISE = 0,
+    REQD_ANTI_CLOCKWISE = 0,
     REQD_CLOCKWISE         = 1,
 };
 

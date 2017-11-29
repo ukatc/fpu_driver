@@ -55,7 +55,7 @@ enum E_MOVEMENT_DIRECTION
 {
     DIRST_UNKNOWN            =  0,
     DIRST_NONE               =  1,
-    DIRST_COUNTER_CLOCKWISE  =  3,
+    DIRST_ANTI_CLOCKWISE  =  3,
     DIRST_CLOCKWISE          =  4,
 };
 
