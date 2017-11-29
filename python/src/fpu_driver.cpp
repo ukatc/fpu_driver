@@ -195,7 +195,7 @@ class WrapGridDriver : public GridDriver
             
         };
 
-    E_DriverErrCode configMotionWithDict(dict& dict_waveforms, t_grid_state& grid_state)
+    E_DriverErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state)
         {
             list fpu_id_list = dict_waveforms.keys();
             const int nkeys = len(fpu_id_list);
@@ -245,6 +245,65 @@ class WrapGridDriver : public GridDriver
             getGridState(grid_state);
             return grid_state;
         }
+
+    E_DriverErrCode wrap_initializeGrid(WrapGridState& grid_state)
+        {
+            return initializeGrid(grid_state);
+        }
+
+    E_DriverErrCode wrap_resetFPUs(WrapGridState& grid_state)
+        {
+            return resetFPUs(grid_state);
+        }
+
+
+
+
+
+    E_DriverErrCode wrap_getPositions(WrapGridState& grid_state)
+        {
+            return getPositions(grid_state);
+        }
+
+    E_DriverErrCode wrap_findDatum(WrapGridState& grid_state)
+        {
+            return findDatum(grid_state);
+        }
+
+
+    E_DriverErrCode wrap_executeMotion(WrapGridState& grid_state)
+        {
+            return executeMotion(grid_state);
+        }
+
+    E_DriverErrCode wrap_repeatMotion(WrapGridState& grid_state)
+        {
+            return repeatMotion(grid_state);
+        }
+
+    E_DriverErrCode wrap_reverseMotion(WrapGridState& grid_state)
+        {
+            return reverseMotion(grid_state);
+        }
+
+    E_DriverErrCode wrap_abortMotion(WrapGridState& grid_state)
+        {
+            return abortMotion(grid_state);
+        }
+
+    E_DriverErrCode wrap_lockFPU(WrapGridState& grid_state)
+        {
+            return lockFPU(grid_state);
+        }
+
+    E_DriverErrCode wrap_unlockFPU(WrapGridState& grid_state)
+        {
+            return unlockFPU(grid_state);
+        }
+
+
+
+    
 };
 
 
@@ -373,19 +432,18 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("connect", &WrapGridDriver::connectGateways)
     .def("disconnect", &WrapGridDriver::disconnect)
     .def("initializeDriver", &WrapGridDriver::initializeDriver)
-    .def("initializeGrid", &WrapGridDriver::initializeGrid)
-    .def("resetFPUs", &WrapGridDriver::resetFPUs)
-    .def("getPositions", &WrapGridDriver::getPositions)
-    .def("findDatum", &WrapGridDriver::findDatum)
+    .def("initializeGrid", &WrapGridDriver::wrap_initializeGrid)
+    .def("resetFPUs", &WrapGridDriver::wrap_resetFPUs)
+    .def("getPositions", &WrapGridDriver::wrap_getPositions)
+    .def("findDatum", &WrapGridDriver::wrap_findDatum)
         // call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
     .def("configMotion", &WrapGridDriver::configMotionWithDict)
-    .def("executeMotion", &WrapGridDriver::executeMotion)
+    .def("executeMotion", &WrapGridDriver::wrap_executeMotion)
     .def("getGridState", &WrapGridDriver::wrap_getGridState)
-    .def("getPositions", &WrapGridDriver::getPositions)
-    .def("repeatMotion", &WrapGridDriver::repeatMotion)
-    .def("reverseMotion", &WrapGridDriver::reverseMotion)
-    .def("abortMotion", &WrapGridDriver::abortMotion)
-    .def("assignPositions", &WrapGridDriver::assignPositions)
+    .def("getPositions", &WrapGridDriver::wrap_getPositions)
+    .def("repeatMotion", &WrapGridDriver::wrap_repeatMotion)
+    .def("reverseMotion", &WrapGridDriver::wrap_reverseMotion)
+    .def("abortMotion", &WrapGridDriver::wrap_abortMotion)
     .def("lockFPU", &WrapGridDriver::lockFPU)
     .def("unlockFPU", &WrapGridDriver::unlockFPU)
     ;
