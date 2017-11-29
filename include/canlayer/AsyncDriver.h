@@ -63,6 +63,9 @@ class AsyncDriver
     // (this can fail if the system is too low on memory).
     E_DriverErrCode initializeDriver();
 
+    // deinitialize internal data structures..
+    E_DriverErrCode deInitializeDriver();
+
 
     // connect to gateways
     E_DriverErrCode connect(const int ngateways, const t_gateway_address gateway_addresses[]);

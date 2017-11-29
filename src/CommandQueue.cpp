@@ -42,8 +42,16 @@ E_DriverErrCode CommandQueue::initialize()
 
     if (condition_init_monotonic(cond_queue_append) != 0)
     {
-        return DE_DRIVER_NOT_INITIALIZED;
+        return DE_ASSERTION_FAILED;
     }
+
+    return DE_OK;
+}
+
+E_DriverErrCode CommandQueue::deInitialize()
+{
+
+    pthread_cond_destroy(&cond_queue_append);
 
     return DE_OK;
 }

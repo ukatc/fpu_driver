@@ -73,6 +73,8 @@ public:
     ~GatewayDriver();
 
     E_DriverErrCode initialize();
+    
+    E_DriverErrCode deInitialize();
 
     E_DriverErrCode connect(const int ngateways, const t_gateway_address gateway_addresses[]);
 

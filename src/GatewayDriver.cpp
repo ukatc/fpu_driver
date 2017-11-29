@@ -90,13 +90,61 @@ E_DriverErrCode GatewayDriver::initialize()
     {
         return status;
     }
-    
+
+    status = commandQueue.initialize();
+
+    if (status != DE_OK)
+    {
+        return status;
+    }
+
     fpuArray.setDriverState(DS_UNCONNECTED);
 
     return DE_OK;
     
 
 }
+
+
+E_DriverErrCode GatewayDriver::deInitialize()
+{
+    E_DriverErrCode status;
+
+    switch (fpuArray.getDriverState())
+    {
+    case DS_ASSERTION_FAILED:
+    case DS_UNCONNECTED:
+        break;
+
+    case DS_CONNECTED:
+        return DE_DRIVER_STILL_CONNECTED;
+        
+    case DS_UNINITIALIZED:
+        return DE_DRIVER_NOT_INITIALIZED;
+    }
+                                        
+    
+    status = command_pool.deInitialize();
+
+    if (status != DE_OK)
+    {
+        return status;
+    }
+
+    status = commandQueue.deInitialize();
+
+    if (status != DE_OK)
+    {
+        return status;
+    }
+
+    fpuArray.setDriverState(DS_UNINITIALIZED);
+
+    return DE_OK;
+    
+
+}
+
 
 bool GatewayDriver::isLocked(int fpu_id)
 {
@@ -587,6 +635,7 @@ void* GatewayDriver::threadTxFun()
 inline void print_time(char* label, struct timespec tm)
 {
     printf("%s : %li / %09li\n", label, tm.tv_sec, tm.tv_nsec);
+    fflush(stdout);
 }
 
 inline void print_curtime(char* label)    
@@ -594,6 +643,7 @@ inline void print_curtime(char* label)
     struct timespec tm;
     get_monotonic_time(tm);
     print_time(label, tm);
+    fflush(stdout);
 }
 
 #endif
@@ -629,9 +679,15 @@ void* GatewayDriver::threadRxFun()
         get_monotonic_time(cur_time);
         // get absolute timeout value
         timespec next_rx_tmout = time_add(cur_time, MAX_RX_TIMEOUT);
+#ifdef DEBUG
+        print_time("next time-out maximum:    ", next_rx_tmout);
+#endif
 
 
         timespec next_timeout = timeOutList.getNextTimeOut(next_rx_tmout);
+#ifdef DEBUG
+        print_time("next time-out from list:  ", next_timeout);
+#endif
 
         timespec max_wait = time_to_wait(cur_time, next_timeout);
 #ifdef DEBUG
@@ -644,7 +700,7 @@ void* GatewayDriver::threadRxFun()
         {
             retval =  ppoll(pfd, num_fds, &max_wait, &signal_set);
 #ifdef DEBUG
-        print_curtime("cur_time after read poll:");
+        print_curtime("cur_time after read poll: ");
 #endif
             if (retval < 0)
             {

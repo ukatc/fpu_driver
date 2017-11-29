@@ -63,6 +63,9 @@ public:
     E_DriverErrCode initialize();
 
 
+    // deinitialize, returning internal resources
+    E_DriverErrCode deInitialize();
+
     // returns a bitmask indicating which gateway
     // has pending commands
     t_command_mask checkForCommand();

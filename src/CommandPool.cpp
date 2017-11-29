@@ -169,6 +169,41 @@ E_DriverErrCode CommandPool::initialize()
 }
 
 
+
+E_DriverErrCode CommandPool::deInitialize()
+{
+
+    assert(num_fpus > 0);
+    bool allocation_error = false;
+    try
+    {
+        // This starts to count with 1 because 0 is no
+        // actual command.
+        for (int i = 1; i < NUM_CAN_COMMANDS; i++)
+        {
+ 
+            // FIXME: This can thow bad_alloc if the
+            // system is very low on memory.
+            pool[i].clear();
+            pool[i].shrink_to_fit();
+            
+        }
+    }
+    catch (std::bad_alloc& ba)
+    {
+
+        allocation_error = true;
+    }
+    if (allocation_error)
+    {
+        return DE_ASSERTION_FAILED;
+    }
+
+    return DE_OK;
+
+}
+
+
 // Adds a used command to the pool again,
 // and if any thread is waiting, notify it
 // that there are command buffers available

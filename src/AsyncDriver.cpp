@@ -56,6 +56,27 @@ E_DriverErrCode AsyncDriver::initializeDriver()
 }
 
 
+E_DriverErrCode AsyncDriver::deInitializeDriver()
+{
+    switch (gateway.getDriverState())
+    {
+    case DS_ASSERTION_FAILED:
+    case DS_UNCONNECTED:
+        break;
+        
+    case DS_UNINITIALIZED:
+        return DE_DRIVER_NOT_INITIALIZED;
+        
+    case DS_CONNECTED:
+        return DE_DRIVER_STILL_CONNECTED;
+
+    default:
+        return DE_ASSERTION_FAILED;
+    };
+    
+    return gateway.deInitialize();
+}
+
 E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_address gateway_addresses[])
 {
     switch (gateway.getDriverState())
@@ -85,9 +106,19 @@ E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_addres
 
 E_DriverErrCode AsyncDriver::disconnect()
 {
-    if (gateway.getDriverState() != DS_CONNECTED)
+    
+    switch (gateway.getDriverState())
     {
+    case DS_UNINITIALIZED:
+        return DE_DRIVER_NOT_INITIALIZED;
+        
+    case DS_UNCONNECTED:
         return DE_NO_CONNECTION;
+        
+    case DS_ASSERTION_FAILED:
+    case DS_CONNECTED:
+    default:
+        break;
     }
 
     E_DriverErrCode err_code = gateway.disconnect();

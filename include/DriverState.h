@@ -108,6 +108,9 @@ enum E_DriverErrCode
     // driver is already initialized
     DE_DRIVER_ALREADY_CONNECTED = 7,
 
+    // driver is connected
+    DE_DRIVER_STILL_CONNECTED = 8,
+
     // An assumption about the driver state
     // is not met, the driver is switched off
     // and the problem logged.

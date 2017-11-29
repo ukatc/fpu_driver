@@ -57,13 +57,18 @@ public:
     // all the required memory for once
     E_DriverErrCode initialize();
 
+
+    // de-initialize pool and return memory.
+    // Most only be called when driver is shut down.
+    E_DriverErrCode deInitialize();
+    
     // method which provides a new CAN command
     // instance for the given command type.
     // If the pool is temporarily empty, the
     // method blocks until an instance is available.
-//    template <typename T>
-//    unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type);
-//
+    //    template <typename T>
+    //    unique_ptr<T> provideInstance(E_CAN_COMMAND cmd_type);
+    //
     template<typename T>
     inline unique_ptr<T> provideInstance()
     {
