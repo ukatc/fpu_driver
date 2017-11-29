@@ -582,6 +582,20 @@ void* GatewayDriver::threadTxFun()
     return NULL;
 }
 
+#ifdef DEBUG
+inline void print_time(char* label, struct timespec tm)
+{
+    printf("%s : %li / %09li\n", label, tm.tv_sec, tm.tv_nsec);
+}
+
+inline void print_curtime(char* label)    
+{
+    struct timespec tm;
+    get_monotonic_time(tm);
+    print_time(label, tm);
+}
+
+#endif
 
 void* GatewayDriver::threadRxFun()
 {
@@ -619,12 +633,18 @@ void* GatewayDriver::threadRxFun()
         timespec next_timeout = timeOutList.getNextTimeOut(next_rx_tmout);
 
         timespec max_wait = time_to_wait(cur_time, next_timeout);
-
+#ifdef DEBUG
+        print_time("max_wait for socket write:", max_wait);
+        print_time("cur_time before read poll:", cur_time);
+#endif
 
         bool retry = false;
         while (retry)
         {
             retval =  ppoll(pfd, num_fds, &max_wait, &signal_set);
+#ifdef DEBUG
+        print_curtime("cur_time after read poll:");
+#endif
             if (retval < 0)
             {
                 int errcode = errno;
