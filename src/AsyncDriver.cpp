@@ -31,6 +31,10 @@
 #include "canlayer/commands/PingCommand.h"
 #include "canlayer/time_utils.h"
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
+
 namespace mpifps
 {
 
@@ -79,6 +83,9 @@ E_DriverErrCode AsyncDriver::deInitializeDriver()
 
 E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_address gateway_addresses[])
 {
+#ifdef DEBUG
+    printf("driver state before connect: %i", gateway.getDriverState());
+#endif
     switch (gateway.getDriverState())
     {
     case DS_UNINITIALIZED:
@@ -101,6 +108,9 @@ E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_addres
         num_gateways = ngateways;
     }
 
+#ifdef DEBUG
+    printf("driver state after connect: %i", gateway.getDriverState());
+#endif
     return err_code;
 }
 
@@ -587,6 +597,10 @@ E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state,
 
 E_GridState AsyncDriver::getGridState(t_grid_state& out_state)
 {
+#ifdef DEBUG
+    printf("current driver state: %i", gateway.getDriverState());
+#endif
+
     return gateway.getGridState(out_state);
 }
 

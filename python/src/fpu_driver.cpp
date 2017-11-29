@@ -239,9 +239,9 @@ class WrapGridDriver : public GridDriver
             return configMotion(wtable, grid_state);
         };
 
-    t_grid_state wrap_getGridState()
+    WrapGridState wrap_getGridState()
         {
-            t_grid_state grid_state;
+            WrapGridState grid_state;
             getGridState(grid_state);
             return grid_state;
         }

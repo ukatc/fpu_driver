@@ -591,6 +591,9 @@ void* GatewayDriver::threadTxFun()
                     switch (status)
                     {
                     case SBuffer::ST_NO_CONNECTION:
+#ifdef DEBUG
+                        printf("TX error: disconnecting driver\n");
+#endif
                         fpuArray.setDriverState(DS_UNCONNECTED);
                         break;
 
@@ -692,7 +695,7 @@ void* GatewayDriver::threadRxFun()
         timespec max_wait = time_to_wait(cur_time, next_timeout);
 #ifdef DEBUG
         print_time("max_wait for socket write:", max_wait);
-        print_time("cur_time before read poll:", cur_time);
+        print_time("cur_time before write poll:", cur_time);
 #endif
 
         bool retry = false;
@@ -700,7 +703,7 @@ void* GatewayDriver::threadRxFun()
         {
             retval =  ppoll(pfd, num_fds, &max_wait, &signal_set);
 #ifdef DEBUG
-        print_curtime("cur_time after read poll: ");
+        print_curtime("cur_time after write poll: ");
 #endif
             if (retval < 0)
             {
@@ -751,6 +754,10 @@ void* GatewayDriver::threadRxFun()
                     {
                         // a error happened when reading the socket,
                         // or the connection was closed
+#ifdef DEBUG
+                        printf("RX error: sbuffer socket status = %i, exiting\n",
+                              status);
+#endif
                         exitFlag = true;
                         break;
                     }
@@ -763,6 +770,9 @@ void* GatewayDriver::threadRxFun()
         {
             // signal event listeners
             exit_threads.store(true, std::memory_order_release);
+#ifdef DEBUG
+            printf("RX error: disconnecting driver\n");
+#endif
             fpuArray.setDriverState(DS_UNCONNECTED);
             break; // exit outer loop, and terminate thread
         }
