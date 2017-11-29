@@ -53,10 +53,11 @@ enum E_FPU_STATE
 // is differently encoded)
 enum E_MOVEMENT_DIRECTION
 {
-    DIRST_UNKNOWN            =  0,
-    DIRST_NONE               =  1,
-    DIRST_ANTI_CLOCKWISE  =  3,
-    DIRST_CLOCKWISE          =  4,
+    DIRST_UNKNOWN          = 0,
+    DIRST_ANTI_CLOCKWISE   = 3, // we could also use WYDDERSHINS here
+    DIRST_CLOCKWISE        = 4, // and "DEOSIL" here which is from Gaelic
+    DIRST_RESTING_LAST_CW  = 5, // might or might not be needed
+    DIRST_RESTING_LAST_ACW = 6, // might or might not be needed
 };
 
 

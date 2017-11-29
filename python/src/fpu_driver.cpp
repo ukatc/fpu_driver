@@ -316,6 +316,18 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("GS_ABORTED", GS_ABORTED         )
     .export_values();
 
+
+
+    enum_<E_MOVEMENT_DIRECTION>("E_MOVEMENT_DIRECTION")
+        .value("DIRST_UNKNOWN"         , DIRST_UNKNOWN         )
+        .value("DIRST_ANTI_CLOCKWISE"  , DIRST_ANTI_CLOCKWISE  )
+        .value("DIRST_CLOCKWISE"       , DIRST_CLOCKWISE       )
+        // the following two might not be needed
+        .value("DIRST_RESTING_LAST_CW" , DIRST_RESTING_LAST_CW )
+        .value("DIRST_RESTING_LAST_ACW", DIRST_RESTING_LAST_ACW)
+        .export_values();
+
+    
     class_<t_fpu_state>("FpuState")
     .def_readonly("state", &t_fpu_state::state)
     .def_readonly("alpha_steps", &t_fpu_state::alpha_steps)
