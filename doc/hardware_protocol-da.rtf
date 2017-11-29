@@ -1,0 +1,290 @@
+{\rtf1\ansi\deff0\nouicompat{\fonttbl{\f0\fnil\fcharset0 Courier New;}}
+{\colortbl ;\red255\green0\blue0;}
+{\*\generator Riched20 10.0.14393}\viewkind4\uc1 
+\pard\f0\fs22\lang2057 Updates to the hardware protocol\par
+\par
+Command identifiers are written in mixedCase,\par
+state identifiers in ALLCAPS.\par
+\par
+Clarifications and details to Version 1\par
+---------------------------------------\par
+\par
+Direction values:\par
+\par
+bit0 indicates the direction:\par
+1 - clockweise\par
+0 - counter-clockwise\par
+\par
+\par
+# CONFIG_MOTION:\par
+\par
+## rx0\par
+\par
+rx0 (rx byte 0) carries the first / last boolean flags:\par
+bit 0 - first flag\par
+bit 1 - last flag\par
+\par
+## rx6 -- rx7\par
+rx6 and rx7 are obsolete (value is computed in firmware)\par
+\par
+# Set_Ustep / setUStep\par
+\par
+Sets microstepping in controller\par
+\par
+rx1 is the microstep level, allowed values 1,2,4,8\par
+\par
+# Free_Collide / freeCollide\par
+\par
+Move beta arm slowly after collision was detected.\par
+Parameter in rx1 is direction.\par
+\par
+rx1 contains direction in bit 0\par
+\par
+The step size could be added, but is currently fixed\par
+in order to protect the hardware.\par
+\par
+# Read_Reg / readRegister\par
+\par
+reads one byte from the controller memory,\par
+rx1 contains the bank and rx2 the 8 - bit address\par
+\par
+\par
+\par
+\par
+\par
+# message priorities:\par
+\par
+- apart from the broadcast messages, FPU responses have higher\par
+  priorities than commands\par
+\par
+0000 - FPU warnings\par
+0001 - FPU responses\par
+0010 - high-priority driver commands\par
+0011 - low-priority driver commands\par
+\par
+\par
+\par
+Changes for Version 2\par
+---------------------\par
+\par
+# obsolete commands and messages\par
+\par
+WARNSTALLX and WARNSTALLY are dropped\par
+\par
+# changes / combined commands\par
+\par
+Get_ErrX and Get_ErrY are combined to getError\par
+\par
+Get_StepsX and Get_StepsY are combined to getPosition\par
+\par
+The response to configMotion, repeatMotion, and\par
+reverseMotion commands report the\par
+number of waveform entries in parameter tx4.\par
+\par
+\cf1 [DA] I agree that with configMotion the waveform table size should be returned.   However, for repeatMotion and reverMotion wouldn't the position counts be more useful?\par
+\cf0\par
+\par
+# additional commands\par
+\par
+## setTimestep - sets time division in 100 nanosecond units\par
+\par
+\cf1 [DA] This is currently stored as a 24-bit word.   So currently there are 2,500,000 100ns MCU clock cycles in the 250ms time frame.  So the current default avlue stored in 3-bytes of memory as 0x2625A0.  So the command structure could be:\par
+\par
+\tab rx0 = command ID\par
+\tab rx1 = time frame Byte0 (LSB)\par
+\tab rx2 = time frame Byte1\par
+\tab rx3 = time frame Byte2 (MSB)\par
+\par
+Agree?\par
+\cf0\par
+## setMinFrequency - sets minimum frequency at the end of waveforms\par
+\par
+\cf1 [DA] start and end of waveforms.\par
+\par
+i currently store this value as the number of steps to be executed in a standard time frame.  That is in 250ms to achieve 500Hz there would need be 125 steps.  It is stored this way because this is how the subroutine routine that works out the step frequency executes.   I have assigned 2-byte of memory to store this number.   Currently:  0x007D.  Is it ok to keep this format?   So the "Min Freq" data value is actually sent as the product of the time frame (0.25s) and min Freq (500Hz)     \cf0\par
+\par
+\par
+
+\pard\cf1\tab rx0 = command ID\par
+\tab rx1 = Byte0 (LSB)\par
+\tab rx2 = Byte1 (MSB)\par
+\par
+Therefore if the path analysis time frame is changed both setTimestep and setMinFrequency will need to be executed.\par
+
+\pard\cf0\par
+\par
+## getStatus - gets the status information\par
+\par
+
+\pard\cf1 [DA] Is this needed?  Can Ping just be used?    Or do we want to use it for additional information not included in the ping reply? where ping gives standard info return of:\par
+
+\pard\par
+
+\pard\tab tx1 - command \par
+\tab tx2 - status flags \par
+\tab tx3 - error/state\par
+\tab tx4 - tx5 : alpha steps (signed 16-bit number)\par
+\tab tx6 - tx7 : beta steps (signed 16-bit number)\par
+
+\pard\par
+I supposed it could be used to return engineering status data?  Not sure if its needed.\par
+\cf0\par
+\par
+## getFirmwareVersion - gets Firmware version and creation date\par
+Byte tx2 - tx4 : major version / minor version / patchlevel\par
+Byte tx5 - tx7 : year / month / day\par
+\par
+\cf1 [DA] Is the date alone not sufficient? This would be the subversion release tag.   \cf0\par
+\par
+\par
+## checkIntegrity - gets CRC checksum of firmware (if possible to implement)\par
+\par
+# renamed commands and states\par
+\par
+## INITIALISED - renamed to AT_DATUM\par
+\par
+## Enable_Collide - renamed to enableBetaCollisionProtection\par
+\par
+## Free_Collide - renamed to freeBetaCollision\par
+\par
+\cf1 [DA] These new names are much more descriptive which I like, but are quite verbose!   I'm not sure if the assembly code compiler will handle them.  I'll need to check.  If not I can shorten in the code and add a comment to show full name.  I think it's probably good for your code though. \par
+   \cf0\par
+\par
+\par
+## state COLLISION_DETECTED - renamed to BETA_COLLISION_DETECTED\par
+\par
+## state COLLISION_RECOVERY - renamed to BETA_COLLISION_RECOVERY\par
+\par
+## state LIMIT_STOP - renamed to ALPHA_LIMIT_STOP\par
+\par
+# Additional commands and states\par
+\par
+## freeAlphaLimitBreach - moves alpha arm in small steps\par
+Parameter in rx1 is direction. The correct direction\par
+to move should, under any normal circumstance, be\par
+reflected in the direction bit for the alpha arm,\par
+and the alpha step counter.\par
+\par
+## enableAlphaLimitProtection - re-activates\par
+protection logic for alpha arm.\par
+\par
+## lockFPU / unlockFPU\par
+\par
+The lockFPU command puts the FPU into locked state,\par
+and it will only respond to resetFPU and unlockFPU.\par
+\par
+The unlockFPU command will clear the locked state,\par
+and if the "INITIALIZED" status bit is set, will\par
+put it into "FINISHED" state; otherwise, into\par
+UNINITIALIZED state.\par
+\par
+\par
+## abortMotion\par
+\par
+The abortMotion command will as quickly as possible stop each FPU, and\par
+switch the state to ABORTED.  The FPU will ignore any movement\par
+commands until it receives an enableMove message. Stopping should be\par
+done so that no accuracy is lost int he step counter.\par
+\par
+## enableMove\par
+\par
+Switches FPUs from the ABORTED state to the FINISHED state,\par
+which enables them to receive further movement commands.\par
+\par
+## findDatum\par
+\par
+\cf1 [DA] The firmware will always datum the beta arm before the alpha arm.\cf0\par
+\par
+The findDatum command works always the same\par
+for the alpha arm. For the beta arm, there are\par
+three alternatives to determine the movement direction:\par
+\par
+rx1 - bit 0 : AUTO : search datum according to internal step counter,\par
+and ignore bit 1.\par
+\par
+rx1 - bit 1 : UP_FIRST : assume true position is negative, so move\par
+first in positive direction until datum switch is hit and left\par
+again. If both bit 0 and bit 1 are not set, move into negative\par
+direction until datum switch is hit.\par
+\par
+
+\pard\cf1 [DA] I'd prefer we define this as per the exising convention that  \par
+\tab\par
+\tab 1 = clockwise\par
+\tab 0 = counter-clockwise\par
+
+\pard\par
+That is if bit 1 is set the positioner will search for datum in the clockwise direction.  Is that OK?\par
+\par
+\par
+\cf0\par
+The finishedDatum reponse to this command does *NOT* contain the step\par
+counters, but the value of the step counters when the datum switch was\par
+hit and before they were resetted.  \cf1 [DA] correct, which are the new position error values. \par
+\cf0\par
+\par
+\par
+## getError\par
+\par
+Retrieves offset of step counter at last datum operation.\par
+\par
+## enableBetaCollisionProtection\par
+\par
+re-activates the collision detection circuit\par
+and clears the collision status bit.\par
+\par
+# Replies\par
+\par
+- all responses and warnings have the same structure and contain\par
+position, FPU status code, FPU status flags, and error code.\par
+(The only exception is the finishedDatum response which contains\par
+not the position, but the devidation of the step counter from\par
+the value of zero when hitting the datum switch.)\par
+\par
+tx0 - FPU id (this is redundant but might be useful for checking\par
+and is probably easier in the firmware)\par
+\par
+tx1 - echo of command code, or ID of warning message\par
+\par
+tx2 - status flags (8 bit, as defined below)\par
+\par
+tx3 - error code and state number:\par
+\par
+bits 0 - 3 : state number\par
+bit 4 - 7  : error code (for example invalid command, or too\par
+             many entries in waveform) \par
+\par
+tx4 - tx5 : alpha steps (signed 16-bit number)\par
+tx6 - tx7 : beta steps (signed 16-bit number)\par
+\par
+## status flags\par
+\par
+The bits of the status flags are defined as follows:\par
+\par
+bit 0 - Alpha at datum\par
+bit 1 - Beta at datum\par
+bit 2 - collision was detected\par
+bit 3 - alpha arm at limit\par
+bit 4 - FPU is locked\par
+bit 5 - last direction for alpha\par
+bit 6 - last direction for beta\par
+bit 7 - fpu was initialized at least once\par
+\par
+\par
+## Message length\par
+\par
+In protocol version 2, messages are sent with minimum length to save\par
+some bandwidth.\par
+\par
+\par
+# Changes to state diagram\par
+\par
+## states for collision handling renamed\par
+\par
+## handling of hitting the alpha limit switch made\par
+separate from beta collision handling.\par
+\par
+## state "COORDINATE_RECOVERY" deleted.\par
+\par
+}
+ 
