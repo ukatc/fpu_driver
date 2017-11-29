@@ -56,18 +56,18 @@ enum E_CAN_COMMAND
     CCMD_GET_ERROR_BETA                   = 17, // get residue count at last datum hit
 
     // commands which are not yet implemented
-    CCMD_REQUEST_STATUS = 20,   // report status and flags
-    CCMD_REPORT_POSITIONS              = 21, // report alpha and beta position
-    CCMD_GET_FIRMWARE_VERSION          = 22, // get firmware version
-    CCMD_CHECK_INTEGRITY               = 23, // report firmware CRC
-    CCMD_LOCK_UNIT                     = 24, // ignore any command except reset and unlock
-    CCMD_UNLOCK_UNIT                   = 25, // listen to commands again
-    CCMD_FREE_ALPHA_LIMIT_BREACH       = 26, // untangle alpha arm
-    CCMD_ENABLE_ALPHA_LIMIT_PROTECTION = 27, // re-enable limit switch
-    CCMD_SET_TIME_STEP                 = 28, // set movement time interval
-    CCMD_SET_MIN_FREQUENCY             = 29, // set minimum step frequency
+    CCMD_REQUEST_STATUS                = 18,   // report status and flags
+    CCMD_REPORT_POSITIONS              = 19, // report alpha and beta position
+    CCMD_GET_FIRMWARE_VERSION          = 20, // get firmware version
+    CCMD_CHECK_INTEGRITY               = 21, // report firmware CRC
+    CCMD_LOCK_UNIT                     = 22, // ignore any command except reset and unlock
+    CCMD_UNLOCK_UNIT                   = 23, // listen to commands again
+    CCMD_FREE_ALPHA_LIMIT_BREACH       = 24, // untangle alpha arm
+    CCMD_ENABLE_ALPHA_LIMIT_PROTECTION = 25, // re-enable limit switch
+    CCMD_SET_TIME_STEP                 = 26, // set movement time interval
+    CCMD_SET_MIN_FREQUENCY             = 27, // set minimum step frequency
 
-    NUM_CAN_COMMANDS = 30,
+    NUM_CAN_COMMANDS = 28,
 
     /***************************************/
     /* FPU warning messages */
