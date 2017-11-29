@@ -259,15 +259,29 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     // we create only one thread for reading and writing.
     // FIXME: set error and driver state on success of
     // connection.
+    exit_threads = false;
+
     int err = pthread_create(&rx_thread, &attr, &threadRxEntryFun,
                              (void *) this);
-    if (err != 0)  printf("\ncan't create thread :[%s]",
+    
+    if (err != 0)
+    {
+        printf("\ncan't create thread :[%s]",
                               strerror(err));
+    }
 
-    err = pthread_create(&tx_thread, &attr, &threadTxEntryFun,
+    if (err == 0)
+    {
+
+        err = pthread_create(&tx_thread, &attr, &threadTxEntryFun,
                          (void *) this);
-    if (err != 0)  printf("\ncan't create thread :[%s]",
-                              strerror(err));
+        if (err != 0)
+        {
+            exit_threads.store(true, std::memory_order_release);
+            printf("\ncan't create thread :[%s]",
+                   strerror(err));
+        }
+    }
 
     pthread_attr_destroy(&attr);
 
@@ -501,6 +515,10 @@ void* GatewayDriver::threadTxFun()
         {
             printf("Q"); fflush(stdout);
         }
+        printf("E%s", exit_threads.load(std::memory_order_acquire)
+               ? "1" : "0");
+        fflush(stdout);
+        
 #endif
 
 
@@ -509,6 +527,7 @@ void* GatewayDriver::threadTxFun()
         bool retry = false;
         do
         {
+            retry = false;
             int retval =  ppoll(pfd, num_fds, &MAX_TX_TIMEOUT, &signal_set);
             if (retval < 0)
             {
@@ -522,6 +541,10 @@ void* GatewayDriver::threadTxFun()
                 case EFAULT: // argument not contained in address space, see man page for ppoll()
                 case EINVAL: // nfds value too large
                 case ENOMEM: // out of memory
+#ifdef DEBUG
+                    printf("TX error: fatal error returnd from ppoll(), retval = %i\n",
+                           retval);
+#endif
                     fpuArray.setDriverState(DS_ASSERTION_FAILED);
                     exitFlag = true;
                     break;
@@ -592,30 +615,34 @@ void* GatewayDriver::threadTxFun()
                     {
                     case SBuffer::ST_NO_CONNECTION:
 #ifdef DEBUG
-                        printf("TX error: disconnecting driver\n");
+                        printf("TX error: SBuffer::ST_NO_CONNECTION, disconnecting driver\n");
 #endif
                         fpuArray.setDriverState(DS_UNCONNECTED);
                         break;
 
                     case SBuffer::ST_ASSERTION_FAILED:
                     default:
+#ifdef DEBUG
+                        printf("TX error: SBuffer::ST_ASSERTION_FAILED or unknown state, disconnecting driver\n");
+#endif
                         fpuArray.setDriverState(DS_ASSERTION_FAILED);
                         break;
                     }
 
                 }
-                // poll the exit flag, it might be set by another thread
-                exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
-                if (exitFlag)
-                {
-                    break; // break out of inner loop
-                }
             }
+            exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
             if (exitFlag)
             {
                 exit_threads.store(true, std::memory_order_release);
-                break; // break main loop and terminate thread
+                break; // break out of inner loop (iterating gateways)
             }
+        }
+        // poll the exit flag, it might be set by another thread
+        exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
+        if (exitFlag)
+        {
+            break; // break main loop and terminate thread
         }
 
     }
@@ -701,6 +728,7 @@ void* GatewayDriver::threadRxFun()
         bool retry = false;
         do
         {
+            retry = false;
             retval =  ppoll(pfd, num_fds, &max_wait, &signal_set);
 #ifdef DEBUG
         print_curtime("cur_time after write poll: ");
@@ -717,6 +745,9 @@ void* GatewayDriver::threadRxFun()
                 case EFAULT: // argument not contained in address space, see man page for ppoll()
                 case EINVAL: // nfds value too large
                 case ENOMEM: // out of memory
+#ifdef DEBUG
+                    printf("RX error: fatal error from ppoll(), disconnecting driver\n");
+#endif
                     fpuArray.setDriverState(DS_ASSERTION_FAILED);
                     exitFlag = true;
                     break;

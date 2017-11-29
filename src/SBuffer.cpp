@@ -176,6 +176,7 @@ SBuffer::E_SocketStatus SBuffer::send_pending(int sockfd)
     int out_len = unsent_len;
     do
     {
+        do_retry = false;
         retval = send(sockfd, wbuf + out_offset, out_len,
                       MSG_DONTWAIT | MSG_NOSIGNAL);
         if (retval == 0)
@@ -260,6 +261,7 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
     bool do_retry = false;
     do
     {
+        do_retry = false;
         rsize = recv(sockfd, rbuf, MAX_STUFFED_MESSAGE_LENGTH, MSG_DONTWAIT | MSG_NOSIGNAL);
 
         // check and process errors
