@@ -260,6 +260,8 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     // FIXME: set error and driver state on success of
     // connection.
     exit_threads = false;
+    num_gateways = ngateways;
+    
 
     int err = pthread_create(&rx_thread, &attr, &threadRxEntryFun,
                              (void *) this);
@@ -460,7 +462,9 @@ void* GatewayDriver::threadTxFun()
     struct pollfd pfd[MAX_NUM_GATEWAYS];
 
     nfds_t num_fds = num_gateways;
-
+#ifdef DEBUG
+    printf("TX : num_gateways = %i\n", num_gateways);
+#endif
     for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
     {
         pfd[gateway_id].fd = SocketID[gateway_id];
@@ -529,6 +533,7 @@ void* GatewayDriver::threadTxFun()
         {
             retry = false;
             int retval =  ppoll(pfd, num_fds, &MAX_TX_TIMEOUT, &signal_set);
+            //int retval =  ppoll(pfd, num_fds, &MAX_TX_TIMEOUT, NULL);
             if (retval < 0)
             {
                 int errcode = errno;
@@ -687,6 +692,9 @@ void* GatewayDriver::threadRxFun()
     //assert(poll_timeout_ms > 0);
 
     nfds_t num_fds = num_gateways;
+#ifdef DEBUG
+    printf("RX : num_gateways = %i\n", num_gateways);
+#endif
 
     for (int i=0; i < num_gateways; i++)
     {
@@ -710,25 +718,30 @@ void* GatewayDriver::threadRxFun()
         // get absolute timeout value
         timespec next_rx_tmout = time_add(cur_time, MAX_RX_TIMEOUT);
 #ifdef DEBUG
-        print_time("next time-out maximum:    ", next_rx_tmout);
+        print_time("RX next time-out maximum:    ", next_rx_tmout);
 #endif
 
 
         timespec next_timeout = timeOutList.getNextTimeOut(next_rx_tmout);
 #ifdef DEBUG
-        print_time("next time-out from list:  ", next_timeout);
+        print_time("RX next time-out from list:  ", next_timeout);
 #endif
 
         timespec max_wait = time_to_wait(cur_time, next_timeout);
 #ifdef DEBUG
-        print_time("max_wait for socket write:", max_wait);
-        print_time("cur_time before write poll:", cur_time);
+        print_time("RX max_wait for socket read:", max_wait);
+        print_time("RX cur_time before read poll:", cur_time);
 #endif
 
         bool retry = false;
         do
         {
             retry = false;
+#ifdef DEBUG
+            print_time("rx timeout = ", max_wait);
+#endif
+// bug is seemingly NOT caused by signal_set
+//            retval =  ppoll(pfd, num_fds, &max_wait, NULL);
             retval =  ppoll(pfd, num_fds, &max_wait, &signal_set);
 #ifdef DEBUG
         print_curtime("cur_time after write poll: ");
@@ -746,7 +759,7 @@ void* GatewayDriver::threadRxFun()
                 case EINVAL: // nfds value too large
                 case ENOMEM: // out of memory
 #ifdef DEBUG
-                    printf("RX error: fatal error from ppoll(), disconnecting driver\n");
+                    printf("RX error: fatal error from ppoll() (errno = %i), disconnecting driver\n", errcode);
 #endif
                     fpuArray.setDriverState(DS_ASSERTION_FAILED);
                     exitFlag = true;
