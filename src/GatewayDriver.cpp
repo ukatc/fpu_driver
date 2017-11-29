@@ -459,7 +459,7 @@ void* GatewayDriver::threadTxFun()
         // this waits for a short time for sending data
         // (we could shorten the timeout if no command was pending)
         bool retry = false;
-        while (retry)
+        do
         {
             int retval =  ppoll(pfd, num_fds, &MAX_TX_TIMEOUT, &signal_set);
             if (retval < 0)
@@ -490,7 +490,8 @@ void* GatewayDriver::threadTxFun()
             }
 #endif
         }
-        
+        while (retry);
+
 
         // check all file descriptors for readiness
         SBuffer::E_SocketStatus status = SBuffer::ST_OK;
@@ -639,7 +640,7 @@ void* GatewayDriver::threadRxFun()
 #endif
 
         bool retry = false;
-        while (retry)
+        do
         {
             retval =  ppoll(pfd, num_fds, &max_wait, &signal_set);
 #ifdef DEBUG
@@ -667,7 +668,7 @@ void* GatewayDriver::threadRxFun()
                 }
             }
         }
-
+        while (retry);
 
         if (retval == 0)
         {
