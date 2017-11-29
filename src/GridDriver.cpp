@@ -159,10 +159,6 @@ E_DriverErrCode GridDriver::abortMotion(t_grid_state& grid_state)
     return DE_OK;
 }
 
-E_DriverErrCode GridDriver::assignPositions(t_grid_state& grid_state)
-{
-    return DE_OK;
-}
 
 E_DriverErrCode GridDriver::lockFPU(t_grid_state& grid_state)
 {
