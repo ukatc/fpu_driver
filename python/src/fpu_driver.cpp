@@ -133,14 +133,16 @@ class WrapGatewayAddress : public t_gateway_address
                 ip = DEFAULT_GATEWAY_IP;
                 port = DEFAULT_GATEWAY_PORT;
             };
-        WrapGatewayAddress(const char * new_ip, const int new_port)
+        WrapGatewayAddress(const std::string& new_ip, const int new_port)
             {
-                ip = new_ip;
+                _ip = new_ip;
+                ip = _ip.c_str();
                 port = new_port;
             };
-        WrapGatewayAddress(const char * new_ip)
+        WrapGatewayAddress(const std::string& new_ip)
             {
-                ip = new_ip;
+                _ip = new_ip;
+                ip = _ip.c_str();
                 port = DEFAULT_GATEWAY_PORT;
             };
 
@@ -148,6 +150,8 @@ class WrapGatewayAddress : public t_gateway_address
             {
                 return (*this) == a;
             };
+        private:
+        std::string _ip;
         
     };
 
