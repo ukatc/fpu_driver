@@ -63,8 +63,6 @@ public:
 
     E_DriverErrCode abortMotion(t_grid_state& grid_state);
 
-    E_DriverErrCode assignPositions(t_grid_state& grid_state);
-
     E_DriverErrCode lockFPU(t_grid_state& grid_state);
 
     E_DriverErrCode unlockFPU(t_grid_state& grid_state);
