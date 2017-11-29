@@ -53,18 +53,18 @@ public:
 
     // timeout for reading from command FIFO if nothing is
     // pending - 500 ms
-    const struct timespec COMMAND_WAIT_TIME = { /* .tv_sec = */ 10,
+    const struct timespec COMMAND_WAIT_TIME = { /* .tv_sec = */ 0,
                                          /* .tv_nsec = */ 500000000
                                        };
     // timeout for polling write socket - 5 ms
-    const struct timespec MAX_TX_TIMEOUT = { /* .tv_sec = */ 10,
+    const struct timespec MAX_TX_TIMEOUT = { /* .tv_sec = */ 0,
                                       /* .tv_nsec = */ 500000000
                                     };
 
     // default timeout for polling read socket - 0.5 sec
     // (this max times determines the time it takes to
     // shut down the conenction if nothing happens).
-    const timespec MAX_RX_TIMEOUT = { /* .tv_sec = */ 10,
+    const timespec MAX_RX_TIMEOUT = { /* .tv_sec = */ 0,
                                       /* .tv_nsec = */ 500000000
                                     };
 
