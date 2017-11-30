@@ -67,11 +67,6 @@ namespace canlayer
             // and bit 0 to 6 for the FPU bus id.
             assert(fpu_canid < FPUS_PER_BUS);
 
-            if (! bcast)
-            {
-                assert(fpu_canid > 0);
-            }
-            
 
             // the CAN identifier is either all zeros (for a broadcast
             // message) or bits 7 - 10 are the proiority and bits 0 -

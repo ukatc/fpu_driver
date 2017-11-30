@@ -66,18 +66,14 @@ namespace canlayer
             // we use bit 7 to 10 for the command code,
             // and bit 0 to 6 for the FPU bus id.
             assert(fpu_canid < FPUS_PER_BUS);
-
-            if (! bcast)
-            {
-                assert(fpu_canid > 0);
-            }
             
 
             // the CAN identifier is either all zeros (for a broadcast
             // message) or bits 7 - 10 are the proiority and bits 0 -
             // 6 the CAN id of the FPU.
+            
             const E_CAN_COMMAND cmd_code = getCommandCode();
-
+            
             uint16_t can_identifier = 0;
 
             if (! bcast)
