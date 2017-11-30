@@ -45,6 +45,7 @@ GatewayDriver::GatewayDriver(int nfpus)
     : fpuArray(nfpus), command_pool(nfpus)
 {
 
+    assert(nfpus <= MAX_NUM_POSITIONERS);
     num_fpus = nfpus;
     
     // number of commands which are being processed
@@ -288,6 +289,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     pthread_attr_destroy(&attr);
 
 
+    commandQueue.setNumGateways(ngateways);
     fpuArray.setDriverState(DS_CONNECTED);
 
     return DE_OK;
@@ -304,6 +306,9 @@ E_DriverErrCode GatewayDriver::disconnect()
         // nothing to be done
         return DE_NO_CONNECTION;
     }
+
+    // disable retrieval of new commands from command queue
+    commandQueue.setNumGateways(0);
 
     bool sockets_closed = false;
 
@@ -869,17 +874,24 @@ E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_d
 }
 
 
-CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_CAN_Command> new_command)
+CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_CAN_Command>& new_command)
 {
     const int gateway_id = address_map[fpu_id].gateway_id;
-
-    return commandQueue.enqueue(gateway_id, std::move(new_command));
+    
+#ifdef DEBUG
+    if (! new_command)
+    {
+        printf("nullpointer passed!\n");
+    }
+#endif
+    
+    return commandQueue.enqueue(gateway_id, new_command);
 }
 
-CommandQueue::E_QueueState GatewayDriver::broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command> new_command)
+CommandQueue::E_QueueState GatewayDriver::broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command>& new_command)
 {
 
-    return commandQueue.enqueue(gateway_id, std::move(new_command));
+    return commandQueue.enqueue(gateway_id, new_command);
 }
 
 
