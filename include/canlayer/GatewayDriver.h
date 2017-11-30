@@ -109,9 +109,9 @@ public:
 
     // send a CAN command to the gateway.
     // This method is thread-safe
-    CommandQueue::E_QueueState sendCommand(int fpu_id, unique_ptr<I_CAN_Command> new_command);
+    CommandQueue::E_QueueState sendCommand(int fpu_id, unique_ptr<I_CAN_Command>& new_command);
 
-    CommandQueue::E_QueueState broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command> new_command);
+    CommandQueue::E_QueueState broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command>& new_command);
 
     // returns gateway ID for an FPU
     int getGatewayIdByFPUID(int fpu_id);
