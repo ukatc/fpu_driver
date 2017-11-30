@@ -55,7 +55,7 @@ timespec time_add(const timespec& time_a,
         long b = time_b.tv_sec;
         
         assert( ( (b >= 0) && (a < (TIME_T_MAX - b)))
-                || (b < 0) && ( a > (LONG_MIN - b)));
+                || ((b < 0) && ( a > (LONG_MIN - b))));
     }
 
     set_normalized_timespec(sum,
@@ -99,7 +99,7 @@ timespec time_sub(const timespec& time_a,
         long b = time_b.tv_sec;
         
         assert( ( (b >= 0) && (a > (LONG_MIN + b)))
-                || (b < 0) && ( a < (TIME_T_MAX + b)));
+                || ((b < 0) && ( a < (TIME_T_MAX + b))));
     }
 
 
