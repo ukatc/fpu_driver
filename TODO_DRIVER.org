@@ -107,14 +107,9 @@ when the internal state struct is used.
   Also, thread tghrough the calls of these methods
   up to the top level.
 ** DONE compile -Wall
-** TODO Clean-up
-*** DONE Split declarations and implementations into source files as usual
-*** DONE consider: move locus of time-stamping sent command to after termination of sending
-*** DONE collect time utility functions into own file
-*** DONE replace hand-rolled time function with system standard funcs
-*** TODO split SBuffer in independent read buffer and write buffer
-** TODO Fix CPU hogging
-** TODO fix Python wrapper for grid_state
+** DONE Fix CPU hogging
+** DONE fix Python wrapper for grid_state
+** TODO Add eventfds for new commands and for driver shutdown
 ** TODO Add tentative CAN responses
 *** TODO config_motion
 *** TODO ping
@@ -126,5 +121,11 @@ when the internal state struct is used.
 ** TODO add separate reporting/logging of results
 ** TODO make API const-correct
 ** TODO make signatures const-correct
+** TODO Clean-up
+*** DONE Split declarations and implementations into source files as usual
+*** DONE consider: move locus of time-stamping sent command to after termination of sending
+*** DONE collect time utility functions into own file
+*** DONE replace hand-rolled time function with system standard funcs
+*** TODO split SBuffer in independent read buffer and write buffer
 ** TODO revise initializations of socket and threads
 
