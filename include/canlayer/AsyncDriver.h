@@ -107,8 +107,6 @@ class AsyncDriver
 
     E_DriverErrCode abortMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode assignPositionsAsync(t_grid_state& grid_state, E_GridState& state_summary);
-
     E_DriverErrCode lockFPUAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode unlockFPUAsync(t_grid_state& grid_state, E_GridState& state_summary);

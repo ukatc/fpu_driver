@@ -57,6 +57,9 @@ public:
 
     CommandQueue();
 
+    // set number of active gateways for which queue is polled
+    void setNumGateways(int ngws);
+
     ~CommandQueue() {};
 
     // initializes the internal data
@@ -80,7 +83,7 @@ public:
     // adds a CAN command to the queue for the corresponding
     // gateway
     // This command can fail if the system is out-of memory.
-    E_QueueState enqueue(int gateway_id, unique_ptr<I_CAN_Command> new_command);
+    E_QueueState enqueue(int gateway_id, unique_ptr<I_CAN_Command>& new_command);
 
     unique_ptr<I_CAN_Command> dequeue(int gateway_id);
 

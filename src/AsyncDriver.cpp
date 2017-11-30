@@ -211,7 +211,8 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
             int bdir = 0;
             can_command = gateway.provideInstance<AutoMoveDatumCommand>();
             can_command->parametrize(i, broadcast, adir, bdir);
-            gateway.sendCommand(i, std::move(can_command));
+            unique_ptr<I_CAN_Command> cmd(can_command.release());
+            gateway.sendCommand(i, cmd);
             num_moving++;
             
         }
@@ -303,7 +304,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
-                gateway.sendCommand(fpu_id, std::move(can_command));
+                unique_ptr<I_CAN_Command> cmd(can_command.release());
+                gateway.sendCommand(fpu_id, cmd);
             }
         }
     }
@@ -361,7 +363,8 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
             can_command = gateway.provideInstance<ExecuteMotionCommand>();
             bool do_broadcast = true;
             can_command->parametrize(i, do_broadcast);
-            gateway.broadcastCommand(i, std::move(can_command));
+            unique_ptr<I_CAN_Command> cmd(can_command.release());
+            gateway.broadcastCommand(i, cmd);
         }
     }
 
@@ -409,6 +412,10 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
     t_grid_state old_grid_state = grid_state;
 
 
+#ifdef DEBUG
+            printf(" Sending GetStepsAlpha commands:");
+            fflush(stdout);
+#endif
     unique_ptr<GetStepsAlphaCommand> can_command1;
     for (int i=0; i < num_fpus; i++)
     {
@@ -416,13 +423,34 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         if (! gateway.isLocked(i) )
         {
             can_command1 = gateway.provideInstance<GetStepsAlphaCommand>();
+#ifdef DEBUG
+            if (!can_command1)
+            {
+                printf("no AlphaCommand provided\n");
+            }
+#endif
             bool broadcast = false;
             can_command1->parametrize(i, broadcast);
             // send the command (the actual sending happens
             // in the TX thread in the background).
-            gateway.sendCommand(i, std::move(can_command1));
+#ifdef DEBUG
+            printf(".");
+#endif
+            CommandQueue::E_QueueState qstate;
+            unique_ptr<I_CAN_Command> cmd1(can_command1.release());
+            qstate = gateway.sendCommand(i, cmd1);
+#ifdef DEBUG
+            if (qstate != CommandQueue::QS_OK)
+            {
+                printf("(Queue state : %i) ", qstate);
+            }
+#endif
+            
         }
     }
+#ifdef DEBUG
+            printf("\n");
+#endif
 
     // We do not expect the locked FPUs to respond.
     // FIXME: This needs to be documented and checked
@@ -456,6 +484,10 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+#ifdef DEBUG
+            printf(" Sending GetStepsBeta commands:");
+            fflush(stdout);
+#endif
     unique_ptr<GetStepsBetaCommand> can_command2;
     for (int i=0; i < num_fpus; i++)
     {
@@ -463,13 +495,33 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         if (! gateway.isLocked(i) )
         {
             can_command2 = gateway.provideInstance<GetStepsBetaCommand>();
+#ifdef DEBUG
+            if (!can_command2)
+            {
+                printf("no BetaCommand provided\n");
+            }
+#endif
             bool broadcast = false;
             can_command2->parametrize(i, broadcast);
             // send the command (the actual sending happens
             // in the TX thread in the background).
-            gateway.sendCommand(i, std::move(can_command2));
+#ifdef DEBUG
+            printf(",");
+#endif
+            CommandQueue::E_QueueState qstate;
+            unique_ptr<I_CAN_Command> cmd2(can_command2.release());
+            qstate = gateway.sendCommand(i, cmd2);
+#ifdef DEBUG
+            if (qstate != CommandQueue::QS_OK)
+            {
+                printf("(Queue state : %i) ", qstate);
+            }
+#endif
         }
     }
+#ifdef DEBUG
+            printf("\n");
+#endif
     
     num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
 
@@ -553,19 +605,6 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
     return DE_OK;
 }
 
-E_DriverErrCode AsyncDriver::assignPositionsAsync(t_grid_state& grid_state,
-        E_GridState& state_summary)
-{
-    // first, get current state of the grid
-    state_summary = gateway.getGridState(grid_state);
-    // check driver is connected
-    if (grid_state.driver_state != DS_CONNECTED)
-    {
-        return DE_NO_CONNECTION;
-    }
-
-    return DE_OK;
-}
 
 E_DriverErrCode AsyncDriver::lockFPUAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
@@ -597,10 +636,6 @@ E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state,
 
 E_GridState AsyncDriver::getGridState(t_grid_state& out_state)
 {
-#ifdef DEBUG
-    printf("current driver state: %i", gateway.getDriverState());
-#endif
-
     return gateway.getGridState(out_state);
 }
 

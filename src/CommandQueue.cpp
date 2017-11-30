@@ -33,8 +33,7 @@ namespace canlayer
 
 CommandQueue::CommandQueue()
 {
-
-
+    ngateways = 0;
 }
 
 E_DriverErrCode CommandQueue::initialize()
@@ -56,10 +55,19 @@ E_DriverErrCode CommandQueue::deInitialize()
     return DE_OK;
 }
 
+void CommandQueue::setNumGateways(int ngws)
+{
+    assert(ngws <= MAX_NUM_GATEWAYS);
+    ngateways = ngws;
+}
+
 
 CommandQueue::t_command_mask CommandQueue::checkForCommand()
 {
     t_command_mask rmask = 0;
+#ifdef DEBUG
+    printf("CommandQueue: checking for new commands (ngw=%i)..", ngateways);
+#endif
     pthread_mutex_lock(&queue_mutex);
     for (int i=0; i < ngateways; i++)
     {
@@ -69,6 +77,10 @@ CommandQueue::t_command_mask CommandQueue::checkForCommand()
         }
     }
     pthread_mutex_unlock(&queue_mutex);
+
+#ifdef DEBUG
+    printf("rmask = %i\n", rmask);
+#endif
 
     return rmask;
 
@@ -116,16 +128,23 @@ CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
 }
 
 CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
-        unique_ptr<I_CAN_Command> new_command)
+        unique_ptr<I_CAN_Command>& new_command)
 {
 
     assert(gateway_id < MAX_NUM_GATEWAYS);
     assert(gateway_id >= 0);
 
-    if (new_command == nullptr)
+    if (! new_command)
     {
         return QS_MISSING_INSTANCE;
     }
+#ifdef DEBUG
+
+    printf("CQ: sending command: %i to FPU # %i", 
+           new_command->getInstanceCommandCode(),
+           new_command->getFPU_ID());
+    fflush(stdout);
+#endif
 
     {
         pthread_mutex_lock(&queue_mutex);
@@ -161,6 +180,12 @@ unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
 
         pthread_mutex_unlock(&queue_mutex);
     }
+#ifdef DEBUG
+    printf("dequeuing command: %i to FPU # %i",
+           rval->getInstanceCommandCode(),
+           rval->getFPU_ID());
+    fflush(stdout);
+#endif
     return rval;
 }
 
