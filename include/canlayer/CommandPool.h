@@ -96,7 +96,7 @@ public:
         unique_ptr<T> ptrT;
         // if this assert fails, it is a logical error.
         assert(ptr.get() != nullptr);
-        ptrT.reset(dynamic_cast<T*>(ptr.get()));
+        ptrT.reset(dynamic_cast<T*>(ptr.release()));
         return ptrT;
     }
 
