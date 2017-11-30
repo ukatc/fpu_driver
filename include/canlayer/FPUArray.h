@@ -64,66 +64,9 @@ public:
     typedef uint16_t t_address_map[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
 
 
+    FPUArray(int nfpus);
 
-    FPUArray(int nfpus)
-    {
-
-        // TODO: check if any condition variables
-        // really need dynamic initialization.
-
-        FPUGridState.count_timeout = 0;
-        FPUGridState.count_pending     = 0;
-
-        memset(FPUGridState.Counts, 0,
-               sizeof(FPUGridState.Counts));
-
-        // for the beginning, we don't know the FPU states
-        FPUGridState.Counts[FPST_UNKNOWN] = nfpus;
-
-        for (int i=0; i < MAX_NUM_POSITIONERS; i++)
-        {
-
-            t_fpu_state fpu_state;
-
-            fpu_state.is_initialized       = false;
-            fpu_state.is_locked            = false;
-            fpu_state.state                = FPST_UNINITIALIZED;
-            fpu_state.pending_command      = CCMD_NO_COMMAND;
-            fpu_state.cmd_timeout          = MAX_TIMEOUT;
-            fpu_state.last_updated.tv_sec  = 0;
-            fpu_state.last_updated.tv_nsec = 0;
-            fpu_state.timeout_count        = 0;
-            fpu_state.completed_command    = CCMD_NO_COMMAND;
-            // the values below are not valid, they need proper
-            // initialization from a physical fpu response.
-            fpu_state.alpha_steps          = 0;
-            fpu_state.beta_steps           = 0;
-            fpu_state.on_alpha_datum       = false;
-            fpu_state.on_beta_datum        = false;
-            fpu_state.at_alpha_limit       = false;
-            fpu_state.beta_collision       = false;
-            fpu_state.ping_ok              = false;
-            fpu_state.direction_alpha      = DIRST_UNKNOWN;
-            fpu_state.direction_beta       = DIRST_UNKNOWN;
-            fpu_state.num_waveforms = 0;
-
-            FPUGridState.FPU_state[i] = fpu_state;
-
-        }
-
-
-        num_fpus = nfpus;
-        num_trace_clients = 0;
-    }
-
-    ~FPUArray()
-    {
-        // destroy condition variable
-        pthread_cond_destroy(&cond_state_change);
-
-        // destroy grid state mutex
-        pthread_mutex_destroy(&grid_state_mutex);
-    }
+    ~FPUArray();
 
     // this method retrieves the current grid state for all FPUs
     // (including collision states etc). It does not wait for
