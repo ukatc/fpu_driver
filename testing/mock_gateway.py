@@ -16,11 +16,11 @@ import array
 
 import codec
 
-def command_handler(cmd):
-    print(cmd)
+def command_handler(cmd, socket):
+    print("command decoded bytes are:", cmd)
     response = codec.encode(cmd)
     socket.sendall(response)
-    print("echoed %r" % response)
+    #print("echoed %r" % response)
 
 # this handler will be run for each incoming connection in a dedicated greenlet
 def echo(socket, address):
@@ -34,9 +34,7 @@ def echo(socket, address):
         if not command:
             print("client disconnected")
             break
-        command_bytes = array.array('B', command)
-        print("command bytes (undecoded)= ", command_bytes)
-        prot.decode(command_bytes, command_handler)
+        prot.decode(command, command_handler, socket)
         
 
 if __name__ == '__main__':
