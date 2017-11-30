@@ -12,6 +12,7 @@ coroutines.
 """
 from __future__ import print_function
 from gevent.server import StreamServer
+import array
 
 import codec
 
@@ -33,7 +34,9 @@ def echo(socket, address):
         if not command:
             print("client disconnected")
             break
-        prot.decode(command, command_handler)
+        command_bytes = array.array('B', command)
+        print("command bytes (undecoded)= ", command_bytes)
+        prot.decode(command_bytes, command_handler)
         
 
 if __name__ == '__main__':
