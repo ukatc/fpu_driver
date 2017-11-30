@@ -19,7 +19,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "canlayer/time_utils.h"
-
+#include <cassert>
+#include <limits.h>
 
 namespace mpifps
 {
@@ -39,7 +40,24 @@ timespec time_add(const timespec& time_a,
                   const timespec& time_b)
 {
     timespec sum;
-    // FIXME: Overflow is not handled
+    const long nano = 1000000000;
+    // treat value TIME_T_MAX like a floating point inf symbol
+    if ((time_a.tv_sec == TIME_T_MAX) || (time_b.tv_sec == TIME_T_MAX))
+    {
+        sum.tv_sec = TIME_T_MAX;
+        sum.tv_nsec = nano -1;
+        return sum;
+    }
+
+    // check for overflow
+    {
+        long a = time_a.tv_sec;
+        long b = time_b.tv_sec;
+        
+        assert( ( (b >= 0) && (a < (TIME_T_MAX - b)))
+                || (b < 0) && ( a > (LONG_MIN - b)));
+    }
+
     set_normalized_timespec(sum,
                             time_a.tv_sec + time_b.tv_sec,
                             time_a.tv_nsec + time_b.tv_nsec);
@@ -51,7 +69,41 @@ timespec time_sub(const timespec& time_a,
                   const timespec& time_b)
 {
     timespec diff;
-    // FIXME: Underflow is not handled
+
+    const long nano = 1000000000;
+
+    // treat value TIME_T_MAX like a floating point inf symbol
+
+    // inf - inf = undefined
+    assert(! ((time_a.tv_sec == TIME_T_MAX) && (time_b.tv_sec == TIME_T_MAX)));
+
+    // inf - x = inf
+    if ((time_a.tv_sec == TIME_T_MAX) && (time_b.tv_sec != TIME_T_MAX))
+    {
+        diff.tv_sec = TIME_T_MAX;
+        diff.tv_nsec = nano -1;
+        return diff;
+    }
+
+    // x - inf = 0
+    if ((time_a.tv_sec != TIME_T_MAX) && (time_b.tv_sec == TIME_T_MAX))
+    {
+        diff.tv_sec = 0;
+        diff.tv_nsec = 0;
+        return diff;
+    }
+
+    // check for overflow
+    {
+        long a = time_a.tv_sec;
+        long b = time_b.tv_sec;
+        
+        assert( ( (b >= 0) && (a > (LONG_MIN + b)))
+                || (b < 0) && ( a < (TIME_T_MAX + b)));
+    }
+
+
+
     set_normalized_timespec(diff,
                             time_a.tv_sec - time_b.tv_sec,
                             time_a.tv_nsec - time_b.tv_nsec);

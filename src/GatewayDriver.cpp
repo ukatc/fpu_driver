@@ -759,7 +759,8 @@ void* GatewayDriver::threadRxFun()
                 case EINVAL: // nfds value too large
                 case ENOMEM: // out of memory
 #ifdef DEBUG
-                    printf("RX error: fatal error from ppoll() (errno = %i), disconnecting driver\n", errcode);
+                    printf("RX error: fatal error from ppoll() (errno = %i),"
+                           " disconnecting driver\n", errcode);
 #endif
                     fpuArray.setDriverState(DS_ASSERTION_FAILED);
                     exitFlag = true;

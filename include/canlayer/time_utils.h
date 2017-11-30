@@ -60,13 +60,34 @@ static inline int timespec_compare(const struct timespec& lhs,
 static inline void set_normalized_timespec(struct timespec &new_val,
         const time_t tv_sec, const long tv_nsec)
 {
-    new_val.tv_sec = tv_sec + tv_nsec / 1000000000;
-    new_val.tv_nsec = tv_nsec % 1000000000;
-    // NOTE: correctness for negative nsec values
-    // depends on the C99 standard definition for
-    // the modulo operator (negative dividend ->
-    // negative remainder). THIS IS DIFFERENT
-    // FROM PYTHON.
+    const long nano = 1000000000;
+
+    // treat value TIME_T_MAX like a floating point inf symbol
+    if (tv_sec == TIME_T_MAX)
+    {
+        new_val.tv_sec = TIME_T_MAX;
+        new_val.tv_nsec = nano -1;
+        return;
+    }
+    
+    long _tv_sec = tv_sec + tv_nsec / nano;
+    long _tv_nsec = tv_nsec % nano;
+    // NOTE: In the above modulo operation, correctness for negative
+    // tv_nsec values depends on the C99 standard definition for the
+    // modulo operator (negative dividend -> negative remainder). THIS
+    // IS DIFFERENT FROM PYTHON.
+
+    // carry over if nsec field has different sign from sec field
+    long sign = (_tv_sec >= 0) ? 1 : -1;
+    
+    if (_tv_nsec * sign < 0)
+    {
+        _tv_nsec += nano * sign;
+        _tv_nsec -= (1 * sign);
+    }
+    
+    new_val.tv_sec = _tv_sec;
+    new_val.tv_nsec = _tv_nsec;
 }
 
 // get current monotonic system time.
