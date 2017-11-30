@@ -352,15 +352,17 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_OK",DE_OK)
     .value("DE_DRIVER_NOT_INITIALIZED",DE_DRIVER_NOT_INITIALIZED)
     .value("DE_DRIVER_ALREADY_INITIALIZED",DE_DRIVER_ALREADY_INITIALIZED)
-    .value("DE_DRIVER_ALREADY_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
     .value("DE_DRIVER_ALREADY_INITIALIZED",DE_DRIVER_ALREADY_INITIALIZED)
     .value("DE_NO_CONNECTION",DE_NO_CONNECTION)
     .value("DE_STILL_BUSY",DE_STILL_BUSY)
     .value("DE_UNRESOLVED_COLLISION",DE_UNRESOLVED_COLLISION)
     .value("DE_DRIVER_NOT_INITIALIZED",DE_DRIVER_NOT_INITIALIZED)
     .value("DE_FPU_NOT_INITIALIZED",DE_FPU_NOT_INITIALIZED)
+    .value("DE_DRIVER_ALREADY_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
+    .value("DE_DRIVER_STILL_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
     .value("DE_ASSERTION_FAILED",DE_ASSERTION_FAILED)
-    .export_values();
+
+.export_values();
     
     enum_<E_GridState>("E_GridState")
     .value("GS_UNKNOWN", GS_UNKNOWN         )
@@ -391,7 +393,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
         .export_values();
 
     
-    class_<t_fpu_state>("FpuState")
+    class_<t_fpu_state>("FPUState")
     .def_readonly("state", &t_fpu_state::state)
     .def_readonly("alpha_steps", &t_fpu_state::alpha_steps)
     .def_readonly("beta_steps", &t_fpu_state::beta_steps)
@@ -432,6 +434,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("connect", &WrapGridDriver::connectGateways)
     .def("disconnect", &WrapGridDriver::disconnect)
     .def("initializeDriver", &WrapGridDriver::initializeDriver)
+    .def("deInitializeDriver", &WrapGridDriver::deInitializeDriver)
     .def("initializeGrid", &WrapGridDriver::wrap_initializeGrid)
     .def("resetFPUs", &WrapGridDriver::wrap_resetFPUs)
     .def("getPositions", &WrapGridDriver::wrap_getPositions)

@@ -99,6 +99,7 @@ public:
             fpu_state.alpha_steps          = 0;
             fpu_state.beta_steps           = 0;
             fpu_state.on_alpha_datum       = false;
+            fpu_state.on_beta_datum        = false;
             fpu_state.at_alpha_limit       = false;
             fpu_state.beta_collision       = false;
             fpu_state.ping_ok              = false;
