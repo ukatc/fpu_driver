@@ -514,7 +514,7 @@ void* GatewayDriver::threadTxFun()
                 pfd[gateway_id].events = 0;
             }
         }
-#ifdef DEBUG
+#ifdef DEBUG_POLL
         if (cmd_mask == 0)
         {
             printf("Q"); fflush(stdout);
@@ -559,7 +559,7 @@ void* GatewayDriver::threadTxFun()
 
                 }
             }
-#ifdef DEBUG
+#ifdef DEBUG_POLL
             if (retval == 0)
             {
                 printf("T"); fflush(stdout);
@@ -717,18 +717,18 @@ void* GatewayDriver::threadRxFun()
         get_monotonic_time(cur_time);
         // get absolute timeout value
         timespec next_rx_tmout = time_add(cur_time, MAX_RX_TIMEOUT);
-#ifdef DEBUG
+#ifdef DEBUG_POLL
         print_time("RX next time-out maximum:    ", next_rx_tmout);
 #endif
 
 
         timespec next_timeout = timeOutList.getNextTimeOut(next_rx_tmout);
-#ifdef DEBUG
+#ifdef DEBUG_POLL
         print_time("RX next time-out from list:  ", next_timeout);
 #endif
 
         timespec max_wait = time_to_wait(cur_time, next_timeout);
-#ifdef DEBUG
+#ifdef DEBUG_POLL
         print_time("RX max_wait for socket read:", max_wait);
         print_time("RX cur_time before read poll:", cur_time);
 #endif
@@ -737,13 +737,13 @@ void* GatewayDriver::threadRxFun()
         do
         {
             retry = false;
-#ifdef DEBUG
+#ifdef DEBUG_POLL
             print_time("rx timeout = ", max_wait);
 #endif
 // bug is seemingly NOT caused by signal_set
 //            retval =  ppoll(pfd, num_fds, &max_wait, NULL);
             retval =  ppoll(pfd, num_fds, &max_wait, &signal_set);
-#ifdef DEBUG
+#ifdef DEBUG_POLL
         print_curtime("cur_time after write poll: ");
 #endif
             if (retval < 0)
@@ -778,7 +778,7 @@ void* GatewayDriver::threadRxFun()
         {
             // a time-out was hit - go through the list of FPUs
             // and mark each FPU which has timed out.
-#ifdef DEBUG
+#ifdef DEBUG_POLL
             printf("R"); fflush(stdout);
 #endif
             get_monotonic_time(cur_time);
