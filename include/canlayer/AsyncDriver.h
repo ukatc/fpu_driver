@@ -57,6 +57,15 @@ class AsyncDriver
 
     ~AsyncDriver()
         {
+            if ( gateway.getDriverState() != DS_UNCONNECTED)
+            {
+                disconnect();
+            }
+            if ( gateway.getDriverState() != DS_UNINITIALIZED)
+            {
+                deInitializeDriver();
+            }
+
         }
 
     // Initialize internal data structures, allocate memory etc.
