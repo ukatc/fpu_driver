@@ -419,7 +419,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
         .def(vector_indexing_suite<std::vector<WrapGatewayAddress> >());
 
     class_<WrapGridState>("GridState")
-    .def_readonly("Fpu_state", &WrapGridState::getStateVec)
+    .def_readonly("FPU", &WrapGridState::getStateVec)
     .def_readonly("Counts", &WrapGridState::getCounts)
     .def_readonly("count_timeout", &WrapGridState::count_timeout)
     .def_readonly("count_pending", &WrapGridState::count_pending)
@@ -449,6 +449,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("abortMotion", &WrapGridDriver::wrap_abortMotion)
     .def("lockFPU", &WrapGridDriver::lockFPU)
     .def("unlockFPU", &WrapGridDriver::unlockFPU)
+    .def_readonly("NumFPUs", &WrapGridDriver::getNumFPUs)
     ;
 
 }

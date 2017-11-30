@@ -67,7 +67,7 @@ public:
 
     E_DriverErrCode unlockFPU(t_grid_state& grid_state);
 
-    
+    int getNumFPUs();
 
 private:
 
