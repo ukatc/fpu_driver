@@ -55,17 +55,18 @@ GatewayDriver::GatewayDriver(int nfpus)
 
     // assing default mapping and reverse mapping to
     // logical FPU ids.
-    for (int i=0; i < MAX_NUM_POSITIONERS; i++)
+    for (int fpuid=0; fpuid < MAX_NUM_POSITIONERS; fpuid++)
     {
 
         FPUArray::t_bus_address bus_adr;
-        bus_adr.gateway_id = (uint8_t) (i / (FPUS_PER_BUS * BUSES_PER_GATEWAY));
-        bus_adr.bus_id =  (uint8_t) (i % BUSES_PER_GATEWAY);
-        bus_adr.can_id = (uint8_t)(i % (BUSES_PER_GATEWAY * FPUS_PER_BUS));
+        int busnum = fpuid / FPUS_PER_BUS;
+        bus_adr.gateway_id = (uint8_t) (busnum / BUSES_PER_GATEWAY);
+        bus_adr.bus_id =  (uint8_t) (busnum % BUSES_PER_GATEWAY);
+        bus_adr.can_id = (uint8_t)(fpuid % (BUSES_PER_GATEWAY * FPUS_PER_BUS));
 
-        address_map[i] = bus_adr;
+        address_map[fpuid] = bus_adr;
 
-        fpu_id_by_adr[bus_adr.gateway_id][bus_adr.bus_id][bus_adr.can_id] = (uint16_t) i;
+        fpu_id_by_adr[bus_adr.gateway_id][bus_adr.bus_id][bus_adr.can_id] = (uint16_t) fpuid;
 
     }
 
@@ -429,7 +430,10 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
             int fpu_id = active_can_command->getFPU_ID();
             const uint16_t busid = address_map[fpu_id].bus_id;
             const uint8_t fpu_canid = address_map[fpu_id].can_id;
-
+#ifdef DEBUG
+            printf("command pars: fpu_id=%i, GW = %i, busid = %i, "
+                   " fpu_canid = %i\n", fpu_id, gateway_id, busid, fpu_canid);
+#endif
             // serialize data
             active_can_command->SerializeToBuffer(busid,
                                                   fpu_canid,

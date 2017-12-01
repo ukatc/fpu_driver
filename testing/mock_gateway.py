@@ -18,6 +18,15 @@ import codec
 
 def command_handler(cmd, socket):
     print("command decoded bytes are:", cmd)
+    gateway_id = gateway_map[socket.getsockname()]
+    busid = cmd[0]
+    canid = cmd[1] + (cmd[2] << 8)
+    fpuid = canid & 0x7f
+    priority = (canid >> 7)
+    command_id = cmd[3]
+    print("CAN command to gw %i, bus %i, fpu # %i (priority %i), command id=%i"
+          % (gateway_id, busid, fpuid, priority, command_id))
+          
     response = codec.encode(cmd)
     socket.sendall(response)
     #print("echoed %r" % response)
@@ -39,7 +48,10 @@ def echo(socket, address):
 
 if __name__ == '__main__':
     ports = [ 4700, 4701, 4702]
-    servers = [ StreamServer(('0.0.0.0', p), echo) for p in ports]
+    ip = '127.0.0.1'
+    gateway_map = { (ip, ports[i]) : i for i in range(len(ports))  }
+    print("gateway map:", gateway_map)
+    servers = [ StreamServer((ip, p), echo, 50) for p in ports]
     # to start the servers asynchronously, we use its start() method;
     # we use blocking serve_forever() for the third and last connection.
     print('Starting mock gateway on ports %s' % ports)

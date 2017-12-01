@@ -92,7 +92,7 @@ namespace canlayer
 
 #pragma message "fix message buffer length when firmware fixed"
             //buf_len = 1;
-            buf_len = 8;
+            buf_len = 4;
             
         };
 

@@ -151,7 +151,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     case CCMD_SET_TIME_STEP                 :
     case CCMD_SET_MIN_FREQUENCY             :
     case CCMD_SET_USTEP         :
-        priority = 0x04; break;
+        priority = 0x05; break;
 
         // invalid cases
     case CCMD_NO_COMMAND        :
