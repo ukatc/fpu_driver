@@ -99,7 +99,7 @@ void handleFPUResponse(t_fpu_state& fpu,
             {
                 break;
             }
-            int asteps = (((data[4] << 8) | data[5]) << 8 | data[6]);
+            int asteps = (((data[6] << 8) | data[5]) << 8 | data[4]);
 #ifdef DEBUG
             printf("updating FPU.alpha_steps from %i to %i", fpu.alpha_steps, asteps);
                    
@@ -121,7 +121,7 @@ void handleFPUResponse(t_fpu_state& fpu,
             {
                 break;
             }
-            int bsteps = (((data[4] << 8) | data[5]) << 8 | data[6]);
+            int bsteps = (((data[6] << 8) | data[5]) << 8 | data[4]);
 #ifdef DEBUG
             printf("updating FPU.beta_steps from %i to %i", fpu.beta_steps, bsteps);
                    
