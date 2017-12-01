@@ -65,7 +65,7 @@ void CommandQueue::setNumGateways(int ngws)
 CommandQueue::t_command_mask CommandQueue::checkForCommand()
 {
     t_command_mask rmask = 0;
-#ifdef DEBUG
+#ifdef DEBUG3
     printf("CommandQueue: checking for new commands (ngw=%i)..", ngateways);
 #endif
     pthread_mutex_lock(&queue_mutex);
@@ -78,7 +78,7 @@ CommandQueue::t_command_mask CommandQueue::checkForCommand()
     }
     pthread_mutex_unlock(&queue_mutex);
 
-#ifdef DEBUG
+#ifdef DEBUG3
     printf("rmask = %i\n", rmask);
 #endif
 
