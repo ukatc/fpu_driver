@@ -466,8 +466,10 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // as we do not effect any change on the grid,
         // we need to wait for any response event,
         // and filter out whether we are actually ready.
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING
-                                                          | TGT_ALL_UPDATED),
+//        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING
+//                                                          | TGT_ALL_UPDATED),
+//                                             grid_state);
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
                                              grid_state);
 
         // get fresh count of pending fpus.
@@ -534,8 +536,10 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // as we do not effect any change on the grid,
         // we need to wait for any response event,
         // and filter out whether we are actually ready.
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING
-                                                          | TGT_ALL_UPDATED),
+//        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING
+//                                                          | TGT_ALL_UPDATED),
+//                                             grid_state);
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
                                              grid_state);
 
         // get fresh count of pending fpus.

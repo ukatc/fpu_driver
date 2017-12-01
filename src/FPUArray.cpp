@@ -195,9 +195,13 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
                                                     reference_state,
                                                     FPUGridState));
 
+        const bool no_more_pending = ((target | TGT_NO_MORE_PENDING)
+                                      && (FPUGridState.count_pending == 0));
+
         const bool end_wait = (inTargetState(sum_state, target)
-                         || timeout_triggered
-                         || all_updated);
+                               || timeout_triggered
+                               || all_updated
+                               || no_more_pending);
 
 
         if (end_wait)
@@ -411,6 +415,15 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
 #ifdef DEBUG
             printf("-- timeout: FPUGridState.count_pending now %i\n",
                    FPUGridState.count_pending);
+            printf("FPUs still pending: [");
+            for(int i=0; i < num_fpus; i++)
+            {
+                if (FPUGridState.FPU_state[i].pending_command != CCMD_NO_COMMAND)
+                {
+                    printf("%i, ", i);
+                }
+            }
+            printf("]\n");
 #endif
 
             fpu.last_command = fpu.pending_command;
