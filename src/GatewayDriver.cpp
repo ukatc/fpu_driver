@@ -62,7 +62,7 @@ GatewayDriver::GatewayDriver(int nfpus)
         int busnum = fpuid / FPUS_PER_BUS;
         bus_adr.gateway_id = (uint8_t) (busnum / BUSES_PER_GATEWAY);
         bus_adr.bus_id =  (uint8_t) (busnum % BUSES_PER_GATEWAY);
-        bus_adr.can_id = (uint8_t)(fpuid % (BUSES_PER_GATEWAY * FPUS_PER_BUS));
+        bus_adr.can_id = (uint8_t)(fpuid % FPUS_PER_BUS);
 
         address_map[fpuid] = bus_adr;
 
