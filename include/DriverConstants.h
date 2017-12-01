@@ -24,6 +24,10 @@
 
 #include "canlayer/CAN_Constants.h"
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
+
 namespace mpifps
 {
 

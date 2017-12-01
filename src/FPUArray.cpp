@@ -484,12 +484,15 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     // the response but also the response type.
 
     // flag to indicate the message does not address something else.
+    int fpu_busid = can_identifier & 0xf7;
 #ifdef DEBUG
     int priority = can_identifier >> 7;
-    int fpu_busid = can_identifier & 0xf7;
     printf("dispatching response: gateway_id=%i, bus_id=%i,can_identifier=%i,"
            "priority=%i, fpu_busid=%i, data[%i] =",
            gateway_id, bus_id, can_identifier, priority, fpu_busid, blen);
+
+    assert(gateway_id < MAX_NUM_GATEWAYS);
+
     int nbytes = blen;
     if (nbytes > MAX_CAN_PAYLOAD_BYTES)
     {
@@ -508,6 +511,43 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     printf("\n");               
 #endif
 
+    if (fpu_busid >= FPUS_PER_BUS)
+    {
+#ifdef DEBUG
+        printf("fpu_busid too large (%i), ignored\n", fpu_busid);
+#endif
+        return;
+    }
+    if (bus_id >= BUSES_PER_GATEWAY)
+    {
+#ifdef DEBUG
+        printf("bus_id too large (%i), ignored\n", bus_id);
+#endif
+        return;
+    }
+
+    // FIXME: This is part of the current protocol -
+    // a rather ugly redundancy. Check if we can get rid of this.
+    if (data[0] != fpu_busid)
+    {
+#ifdef DEBUG
+            printf("RX invalid message: payload fpu_busid does"
+                   " not match fpu_busid from canid - ignored.\n");
+#endif
+            return;
+    }
+    
+    int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
+    if ((fpu_id > num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
+    {
+#ifdef DEBUG
+        printf("fpu_id too large (%i), ignored\n", fpu_id);
+#endif
+        return;
+    }
+
+
+    
     pthread_mutex_lock(&grid_state_mutex);
     {
 
@@ -517,8 +557,6 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // FIXME: if an FPU can send a broadcast abort
         // message, this needs to be handled here.
         /// uint8_t priority = (can_identifier >> 7);
-        uint8_t fpu_busid = data[0];
-        int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
 
 
         // clear time-out flag for this FPU
@@ -534,9 +572,13 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // update global state counters
         const t_fpu_state newstate = FPUGridState.FPU_state[fpu_id];
         if ( (newstate.pending_command == CCMD_NO_COMMAND)
-             && (oldstate.pending_command == CCMD_NO_COMMAND))
+             && (oldstate.pending_command != CCMD_NO_COMMAND))
         {
             FPUGridState.count_pending--;
+#ifdef DEBUG
+            printf("-- FPUGridState.count_pending now %i\n",
+                   FPUGridState.count_pending);
+#endif
         }
         FPUGridState.Counts[oldstate.state]--;
         FPUGridState.Counts[newstate.state]++;

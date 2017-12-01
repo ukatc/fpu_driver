@@ -26,6 +26,10 @@
 #include "canlayer/handleFPUResponse.h"
 #include "canlayer/time_utils.h"
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
+
 namespace mpifps
 {
 
@@ -95,10 +99,14 @@ void handleFPUResponse(t_fpu_state& fpu,
             {
                 break;
             }
-            int asteps = (data[4] << 8) | data[5];
+            int asteps = (((data[4] << 8) | data[5]) << 8 | data[6]);
+#ifdef DEBUG
+            printf("updating FPU.alpha_steps from %i to %i", fpu.alpha_steps, asteps);
+                   
+#endif
             fpu.alpha_steps = asteps;
         }
-        if (fpu.pending_command == CCMD_GET_STEPS_BETA)
+        if (fpu.pending_command == CCMD_GET_STEPS_ALPHA)
         {
             fpu.last_command = fpu.pending_command;
             fpu.pending_command = CCMD_NO_COMMAND;
@@ -109,10 +117,18 @@ void handleFPUResponse(t_fpu_state& fpu,
     case CCMD_GET_STEPS_BETA  :  
         if (response_errcode == 0)
         {
-            int bsteps = (data[4] << 8) | data[5];
+            if (blen < 6)
+            {
+                break;
+            }
+            int bsteps = (((data[4] << 8) | data[5]) << 8 | data[6]);
+#ifdef DEBUG
+            printf("updating FPU.beta_steps from %i to %i", fpu.beta_steps, bsteps);
+                   
+#endif
             fpu.beta_steps = bsteps;
         }
-        if (fpu.pending_command == CCMD_GET_STEPS_ALPHA)
+        if (fpu.pending_command == CCMD_GET_STEPS_BETA)
         {
             fpu.last_command = fpu.pending_command;
             fpu.pending_command = CCMD_NO_COMMAND;

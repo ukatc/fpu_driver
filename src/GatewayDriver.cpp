@@ -841,7 +841,21 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buff
 {
     t_CAN_buffer* can_msg = (t_CAN_buffer*) command_buffer;
 
-    if ((can_msg != nullptr) && (clen >= 3))
+    if (can_msg == nullptr)
+    {
+        // FIXME: logging of invalid messages
+#ifdef DEBUG
+            printf("RX invalid CAN message (empty)- ignoring.\n");
+#endif
+    }
+
+    if (clen < 3)
+    {
+        // FIXME: logging of invalid messages
+#ifdef DEBUG
+        printf("RX invalid CAN message (length is only %i)- ignoring.\n", clen);
+#endif
+    }
     {
         const uint8_t busid = can_msg->message.busid;
         const uint16_t can_identifier = can_msg->message.identifier;
@@ -853,8 +867,6 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buff
                                   can_msg->message.data,
                                   clen -3, timeOutList);
     }
-    // otherwise we have an invalid message
-    // FIXME: logging of invalid messages
 }
 
 
@@ -880,6 +892,8 @@ E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_d
 
 CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_CAN_Command>& new_command)
 {
+
+    assert(fpu_id < num_fpus);
     const int gateway_id = address_map[fpu_id].gateway_id;
     
 #ifdef DEBUG
@@ -895,6 +909,7 @@ CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_C
 CommandQueue::E_QueueState GatewayDriver::broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command>& new_command)
 {
 
+    assert(gateway_id < MAX_NUM_GATEWAYS);
     return commandQueue.enqueue(gateway_id, new_command);
 }
 
