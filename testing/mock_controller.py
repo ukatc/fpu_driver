@@ -28,7 +28,11 @@ def command_handler(cmd, socket):
     tx1_cmdid = command_id
     tx2_status = 0
     tx3_errcode = 0
-    pos = 2000
+    if command_id == 4:
+        pos = 10000 + fpuid
+    else:
+        pos = 10000 + fpuid * 100
+        
     tx4_count0 = pos & 0xff
     tx5_count1 = (pos >> 8) & 0xff
     tx6_count2 = (pos >> 16) & 0xff

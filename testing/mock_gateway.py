@@ -12,6 +12,7 @@ coroutines.
 """
 from __future__ import print_function
 from gevent.server import StreamServer
+from socket import IPPROTO_TCP, TCP_NODELAY
 import array
 
 import codec
@@ -26,7 +27,9 @@ def echo(socket, address):
     # using a makefile because we want to use readline()
     msg_len = 10
     prot = codec.Decoder()
-    
+
+    socket.setsockopt(IPPROTO_TCP, TCP_NODELAY, 1)
+
     while True:
         command = socket.recv(msg_len)
         if not command:
