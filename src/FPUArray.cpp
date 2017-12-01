@@ -313,9 +313,14 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
     {
         // increment pending counter unless there is an
         // ongoing command.
-        if (fpu.pending_command != CCMD_NO_COMMAND)
+        if ((fpu.pending_command == CCMD_NO_COMMAND)
+            && (pending_cmd != CCMD_NO_COMMAND))
         {
             FPUGridState.count_pending++;
+#ifdef DEBUG
+            printf("++ FPUGridState.count_pending now %i\n",
+                   FPUGridState.count_pending);
+#endif
         }
 
         fpu.pending_command = pending_cmd;
@@ -340,7 +345,7 @@ void FPUArray::setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd)
 
 
     t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
-    fpu.pending_command = last_cmd;
+    fpu.last_command = last_cmd;
 
     // if tracing is active, signal state change
     // to waitForState() callers.
@@ -377,8 +382,6 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
     while (true)
     {
         TimeOutList::t_toentry toentry;
-        timespec cur_time;
-        get_monotonic_time(cur_time);
         // get absolute timeout value
         timespec max_tmout = time_add(cur_time, MAX_TIMEOUT);
         
@@ -395,19 +398,26 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
         toentry = tout_list.pop();
 
         int fpu_id = toentry.id;
-        new_timeout = true;
-        FPUGridState.count_timeout++;
-
-        assert(FPUGridState.count_pending > 0);
-        FPUGridState.count_pending--;
 
         t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
-        fpu.last_command = fpu.pending_command;
-        fpu.pending_command = CCMD_NO_COMMAND;
-        fpu.timeout_count++;
-        fpu.last_updated = cur_time;
+        if (fpu.pending_command != CCMD_NO_COMMAND)
+        {
 
+            new_timeout = true;
+            FPUGridState.count_timeout++;
 
+            assert(FPUGridState.count_pending > 0);
+            FPUGridState.count_pending--;
+#ifdef DEBUG
+            printf("-- timeout: FPUGridState.count_pending now %i\n",
+                   FPUGridState.count_pending);
+#endif
+
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+            fpu.timeout_count++;
+            fpu.last_updated = cur_time;
+        }
 
     }
 
@@ -484,7 +494,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     // the response but also the response type.
 
     // flag to indicate the message does not address something else.
-    int fpu_busid = can_identifier & 0xf7;
+    int fpu_busid = can_identifier & 0x7f;
 #ifdef DEBUG
     int priority = can_identifier >> 7;
     printf("dispatching response: gateway_id=%i, bus_id=%i,can_identifier=%i,"
@@ -531,8 +541,9 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     if (data[0] != fpu_busid)
     {
 #ifdef DEBUG
-            printf("RX invalid message: payload fpu_busid does"
-                   " not match fpu_busid from canid - ignored.\n");
+            printf("RX invalid message: payload fpu_busid (%i) does"
+                   " not match fpu_busid from canid (%i) - ignored.\n",
+                   data[0], fpu_busid);
 #endif
             return;
     }
@@ -574,6 +585,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         if ( (newstate.pending_command == CCMD_NO_COMMAND)
              && (oldstate.pending_command != CCMD_NO_COMMAND))
         {
+            assert(FPUGridState.count_pending > 0);
             FPUGridState.count_pending--;
 #ifdef DEBUG
             printf("-- FPUGridState.count_pending now %i\n",
