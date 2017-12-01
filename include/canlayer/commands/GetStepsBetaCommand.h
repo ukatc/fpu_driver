@@ -115,7 +115,7 @@ namespace canlayer
         {
             timespec const toval =
                 {
-                    /* .tv_sec = */ 1,
+                    /* .tv_sec = */ 3,
                     /* .tv_nsec = */ 500000000 };
             
             return toval;
