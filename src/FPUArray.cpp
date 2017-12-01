@@ -484,6 +484,29 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     // the response but also the response type.
 
     // flag to indicate the message does not address something else.
+#ifdef DEBUG
+    int priority = can_identifier >> 7;
+    int fpu_busid = can_identifier & 0xf7;
+    printf("dispatching response: gateway_id=%i, bus_id=%i,can_identifier=%i,"
+           "priority=%i, fpu_busid=%i, data[%i] =",
+           gateway_id, bus_id, can_identifier, priority, fpu_busid, blen);
+    int nbytes = blen;
+    if (nbytes > MAX_CAN_PAYLOAD_BYTES)
+    {
+        printf("WARNING: blen too long");
+        nbytes = MAX_CAN_PAYLOAD_BYTES;
+    }
+    if (nbytes < 0)
+    {
+        printf("WARNING: blen negative");
+        nbytes = 0;
+    }
+    for (int i=0; i < nbytes; i++)
+    {
+        printf(" %02i", data[i]);
+    }
+    printf("\n");               
+#endif
 
     pthread_mutex_lock(&grid_state_mutex);
     {
