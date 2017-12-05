@@ -138,7 +138,7 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
     {
         return QS_MISSING_INSTANCE;
     }
-#ifdef DEBUG
+#ifdef DEBUG3
 
     printf("CQ: sending command: %i to FPU # %i", 
            new_command->getInstanceCommandCode(),
@@ -180,7 +180,7 @@ unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
 
         pthread_mutex_unlock(&queue_mutex);
     }
-#ifdef DEBUG
+#ifdef DEBUG3
     printf("dequeuing command: %i to FPU # %i",
            rval->getInstanceCommandCode(),
            rval->getFPU_ID());

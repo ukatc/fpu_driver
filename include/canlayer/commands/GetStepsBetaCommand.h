@@ -40,7 +40,11 @@ namespace canlayer
             return CCMD_GET_STEPS_BETA;
         };
 
-        GetStepsBetaCommand(){};
+        GetStepsBetaCommand()
+        {
+            fpu_id = -1;
+            bcast = false;
+        };
 
         E_CAN_COMMAND getInstanceCommandCode()
         {

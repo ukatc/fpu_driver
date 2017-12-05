@@ -49,7 +49,6 @@ GatewayDriver::GatewayDriver(int nfpus)
     num_fpus = nfpus;
     
     // number of commands which are being processed
-    num_commands_being_sent = 0;
     fpuArray.setDriverState(DS_UNINITIALIZED);
 
 
@@ -393,7 +392,7 @@ void GatewayDriver::updatePendingCommand(int fpu_id,
                                 can_command->getInstanceCommandCode());
     }
     // update number of commands being sent
-    num_commands_being_sent--;
+    fpuArray.decSending();
 }
 
 // This method either fetches and sends a new buffer
@@ -410,6 +409,9 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
     {
         // send remaining bytes of previous message
         status = sbuffer[gateway_id].send_pending(SocketID[gateway_id]);
+#ifdef DEBUG
+        printf("p"); fflush(stdout);
+#endif
     }
     else
     {
@@ -419,10 +421,10 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
         // update number of commands being sent first
         // (this avoids a race condition when querying
         // the number of commands which are not sent).
-        num_commands_being_sent++;
+        fpuArray.incSending();
         active_can_command = commandQueue.dequeue(gateway_id);
 
-        if (active_can_command != nullptr)
+        if (active_can_command)
         {
 
             int message_len = 0;
@@ -431,8 +433,10 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
             const uint16_t busid = address_map[fpu_id].bus_id;
             const uint8_t fpu_canid = address_map[fpu_id].can_id;
 #ifdef DEBUG
-            printf("command pars: fpu_id=%i, GW = %i, busid = %i, "
-                   " fpu_canid = %i\n", fpu_id, gateway_id, busid, fpu_canid);
+            printf("txFPU#%i[%i] ", fpu_id, active_can_command->getInstanceCommandCode());
+            fflush(stdout);
+//            printf("command pars: fpu_id=%i, GW = %i, busid = %i, "
+//                   " fpu_canid = %i\n", fpu_id, gateway_id, busid, fpu_canid);
 #endif
             // serialize data
             active_can_command->SerializeToBuffer(busid,
@@ -456,7 +460,7 @@ int GatewayDriver::getNumUnsentCommands()
     // TODO: Check for potential race conditions if a
     // command is being sent and is processed very
     // quickly.
-    return (num_commands_being_sent
+    return (fpuArray.countSending()
             + commandQueue.getNumQueuedCommands());
 }
 
@@ -471,7 +475,7 @@ void* GatewayDriver::threadTxFun()
     struct pollfd pfd[MAX_NUM_GATEWAYS];
 
     nfds_t num_fds = num_gateways;
-#ifdef DEBUG
+#ifdef DEBUG3
     printf("TX : num_gateways = %i\n", num_gateways);
 #endif
     for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
@@ -587,10 +591,12 @@ void* GatewayDriver::threadTxFun()
             if (pfd[gateway_id].revents & POLLOUT)
             {
 
+                // gets command and sends buffer
                 status = send_buffer(active_can_command[gateway_id],
                                      gateway_id);
+                // if finished, set command to pending
                 if ( (sbuffer[gateway_id].numUnsentBytes() == 0)
-                        && ( active_can_command[gateway_id] != nullptr))
+                        && ( active_can_command[gateway_id]))
                 {
                     // we completed sending a command.
                     // set send time in fpuArray memory structure
@@ -602,7 +608,7 @@ void* GatewayDriver::threadTxFun()
                     else
                     {
                         // set pending command for all FPUs on the
-                        // gateway (will ignore if locked).
+                        // gateway (will ignore if state is locked).
                         for (int i; i < num_fpus; i++)
                         {
                             if (address_map[i].gateway_id
@@ -701,7 +707,7 @@ void* GatewayDriver::threadRxFun()
     //assert(poll_timeout_ms > 0);
 
     nfds_t num_fds = num_gateways;
-#ifdef DEBUG
+#ifdef DEBUG3
     printf("RX : num_gateways = %i\n", num_gateways);
 #endif
 

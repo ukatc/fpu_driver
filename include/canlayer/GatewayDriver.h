@@ -185,7 +185,6 @@ private:
     CommandPool command_pool; // memory pool for unused command objects
 
 
-    std::atomic<int> num_commands_being_sent;
     
 
 };

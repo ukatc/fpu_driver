@@ -1,6 +1,6 @@
 import fpu_driver
 
-NUM_FPUS = 500
+NUM_FPUS = 100
 ga = fpu_driver.GatewayAddress("127.0.0.1", 4700)
 
 gd = fpu_driver.GridDriver(NUM_FPUS)

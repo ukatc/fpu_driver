@@ -128,6 +128,20 @@ public:
                           TimeOutList& timeOutList);
 
 
+    // this field can be updated by the tx thread without extra
+    // locking - it is used for commands which are
+    // being prepared but which might not yet appear
+    // as "pending".
+
+
+    // increment and decrement number of commands
+    // which are currently sent.
+    void incSending();
+    void decSending();
+
+    // get number of commands which are being sent.
+    int  countSending();
+
 private:
 
 
@@ -139,7 +153,7 @@ private:
 ///     // handler.
 ///     void confirmResponse(int fpu_id);
 /// 
-    void handleFPUResponse(t_fpu_state& fpu, const t_response_buf& data,
+    void handleFPUResponse(int fpu_id, t_fpu_state& fpu, const t_response_buf& data,
                            const int blen);
 
 
@@ -159,6 +173,7 @@ private:
     int num_fpus;
 
     std::atomic<int> num_trace_clients;
+    std::atomic<int> num_commands_being_sent;
 
     // structures which describe the current state of the whole grid
     t_grid_state FPUGridState;

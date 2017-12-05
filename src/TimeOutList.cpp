@@ -248,7 +248,7 @@ TimeOutList::t_toentry TimeOutList::pop()
     if (time_equal(minval, MAX_TIMESPEC))
     {
         // guess the list was empty....
-        result.id = 0;
+        result.id = -1;
         result.val = minval;
     }
     else

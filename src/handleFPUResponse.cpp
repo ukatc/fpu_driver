@@ -37,7 +37,7 @@ namespace canlayer
 {
 
  
-void handleFPUResponse(t_fpu_state& fpu,
+void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
                        const t_response_buf& data,
                        const int blen)
 {
@@ -101,7 +101,7 @@ void handleFPUResponse(t_fpu_state& fpu,
             }
             int asteps = (((data[6] << 8) | data[5]) << 8 | data[4]);
 #ifdef DEBUG
-            printf("updating FPU.alpha_steps from %i to %i", fpu.alpha_steps, asteps);
+            printf("updating FPU[%i].alpha_steps from %i to %i", fpu_id, fpu.alpha_steps, asteps);
                    
 #endif
             fpu.alpha_steps = asteps;
@@ -123,7 +123,8 @@ void handleFPUResponse(t_fpu_state& fpu,
             }
             int bsteps = (((data[6] << 8) | data[5]) << 8 | data[4]);
 #ifdef DEBUG
-            printf("updating FPU.beta_steps from %i to %i", fpu.beta_steps, bsteps);
+
+            printf("updating FPU[%i].beta_steps from %i to %i", fpu_id, fpu.beta_steps, bsteps);
                    
 #endif
             fpu.beta_steps = bsteps;
