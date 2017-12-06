@@ -41,10 +41,9 @@ enum E_FPU_STATE
     FPST_MOVING                  = 8,
     FPST_FINISHED                = 9,
     FPST_ABORTED                 = 10,
-    FPST_BETA_COLLISION_DETECTED = 11,
-    FPST_ALPHA_LIMIT_STOP        = 12,
+    FPST_MOVEMENT_INTERRUPTED    = 11,
 
-    NUM_FPU_STATES               = 13,
+    NUM_FPU_STATES               = 12,
 
 };
 
@@ -59,6 +58,7 @@ enum E_MOVEMENT_DIRECTION
     DIRST_RESTING_LAST_CW  = 5, // might or might not be needed
     DIRST_RESTING_LAST_ACW = 6, // might or might not be needed
 };
+
 
 
 typedef struct t_fpu_state
@@ -85,15 +85,21 @@ typedef struct t_fpu_state
     // number of minor time-outs which have
     // been observed for the last command.
     uint16_t timeout_count;
-    char direction_alpha;
-    char direction_beta;
-    bool ping_ok;
-    bool is_initialized;
-    bool is_locked;
-    bool on_alpha_datum;
-    bool on_beta_datum;
-    bool at_alpha_limit;
+    E_MOVEMENT_DIRECTION direction_alpha;
+    E_MOVEMENT_DIRECTION direction_beta;
+    uint8_t sequence_number; // number of last pending / received command
+    bool ping_ok;    // connection working
+    bool was_zeroed; /* steps are validly calibrated by finding datum.
+                        This is required for any science observatons. */
+    bool is_locked;  // FPU was locked by operator
+    bool alpha_datum_switch_active; // alpha datum switch is on
+    bool beta_datum_switch_active; // beta datum switch is on
+    bool at_alpha_limit; // alpha arm has reached limit (detected by datum off)
     bool beta_collision;
+    bool waveform_valid; /* waveform completely loaded and not invalidated by collision
+                            or abort message. */
+    bool waveform_ready; // FPU can execute waveform
+    bool waveform_reversed; // false means anti-clockwise for positive step numbers
 
 
 

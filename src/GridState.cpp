@@ -43,14 +43,9 @@ E_GridState getGridStateSummary(const t_grid_state& grid_state)
         return GS_ABORTED;
     }
 
-    if (grid_state.Counts[FPST_BETA_COLLISION_DETECTED] > 0)
+    if (grid_state.Counts[FPST_MOVEMENT_INTERRUPTED] > 0)
     {
         return GS_COLLISION;
-    }
-
-    if (grid_state.Counts[FPST_ALPHA_LIMIT_STOP] > 0)
-    {
-        return GS_LIMITSTOP;
     }
 
     // now we check in order of operational states
@@ -58,7 +53,6 @@ E_GridState getGridStateSummary(const t_grid_state& grid_state)
     {
         return GS_UNINITIALIZED;
     }
-
 
 
     if (grid_state.Counts[FPST_DATUM_SEARCH] > 0)

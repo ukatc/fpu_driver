@@ -65,27 +65,31 @@ FPUArray::FPUArray(int nfpus)
 
         t_fpu_state& fpu_state = FPUGridState.FPU_state[i];
 
-        fpu_state.is_initialized       = false;
-        fpu_state.is_locked            = false;
-        fpu_state.state                = FPST_UNINITIALIZED;
-        fpu_state.pending_command      = CCMD_NO_COMMAND;
-        fpu_state.cmd_timeout          = MAX_TIMEOUT;
-        fpu_state.last_updated.tv_sec  = 0;
-        fpu_state.last_updated.tv_nsec = 0;
-        fpu_state.timeout_count        = 0;
-        fpu_state.completed_command    = CCMD_NO_COMMAND;
+        fpu_state.was_zeroed                = false;
+        fpu_state.is_locked                 = false;
+        fpu_state.state                     = FPST_UNINITIALIZED;
+        fpu_state.pending_command           = CCMD_NO_COMMAND;
+        fpu_state.cmd_timeout               = MAX_TIMEOUT;
+        fpu_state.last_updated.tv_sec       = 0;
+        fpu_state.last_updated.tv_nsec      = 0;
+        fpu_state.timeout_count             = 0;
+        fpu_state.completed_command         = CCMD_NO_COMMAND;
+        fpu_state.sequence_number           = 0;
         // the values below are not valid, they need proper
         // initialization from a physical fpu response.
-        fpu_state.alpha_steps          = 0;
-        fpu_state.beta_steps           = 0;
-        fpu_state.on_alpha_datum       = false;
-        fpu_state.on_beta_datum        = false;
-        fpu_state.at_alpha_limit       = false;
-        fpu_state.beta_collision       = false;
-        fpu_state.ping_ok              = false;
-        fpu_state.direction_alpha      = DIRST_UNKNOWN;
-        fpu_state.direction_beta       = DIRST_UNKNOWN;
-        fpu_state.num_waveforms = 0;
+        fpu_state.alpha_steps               = 0;
+        fpu_state.beta_steps                = 0;
+        fpu_state.alpha_datum_switch_active = false;
+        fpu_state.beta_datum_switch_active  = false;
+        fpu_state.at_alpha_limit            = false;
+        fpu_state.beta_collision            = false;
+        fpu_state.ping_ok                   = false;
+        fpu_state.direction_alpha           = DIRST_UNKNOWN;
+        fpu_state.direction_beta            = DIRST_UNKNOWN;
+        fpu_state.num_waveforms             = 0;
+        fpu_state.waveform_valid            = false;
+        fpu_state.waveform_ready            = false;
+        fpu_state.waveform_reversed         = false;
 
     }
 

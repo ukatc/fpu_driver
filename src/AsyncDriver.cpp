@@ -183,8 +183,7 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_BETA_COLLISION_DETECTED)
-                || (fpu_status == FPST_ALPHA_LIMIT_STOP))
+                || (fpu_status == FPST_MOVEMENT_INTERRUPTED))
         {
             return DE_UNRESOLVED_COLLISION;
         }
@@ -268,13 +267,12 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_BETA_COLLISION_DETECTED)
-                || (fpu_status == FPST_ALPHA_LIMIT_STOP))
+                || (fpu_status == FPST_MOVEMENT_INTERRUPTED))
         {
             return DE_UNRESOLVED_COLLISION;
         }
 
-        if (!grid_state.FPU_state[i].is_initialized)
+        if (!grid_state.FPU_state[i].was_zeroed)
         {
             return DE_DRIVER_NOT_INITIALIZED;
         }
@@ -340,8 +338,7 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_BETA_COLLISION_DETECTED)
-                || (fpu_status == FPST_ALPHA_LIMIT_STOP))
+                || (fpu_status == FPST_MOVEMENT_INTERRUPTED))
         {
             return DE_UNRESOLVED_COLLISION;
         }

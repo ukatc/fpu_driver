@@ -46,15 +46,14 @@ enum E_GridState
     GS_READY_BACKWARD = (1 << 9), // all FPUs are ready to go backward
     GS_MOVING         = (1 << 10), // all or some FPUs are moving
     GS_FINISHED       = (1 << 11), // all FPUs at target
-    GS_LIMITSTOP      = (1 << 12), // FPU alpha arm at limit switch
-    GS_COLLISION      = (1 << 13), // a collision was found
-    GS_ABORTED        = (1 << 14), // movement was aborted, error not cleared
+    GS_COLLISION      = (1 << 12), // a collision or limit stop was detected
+    GS_ABORTED        = (1 << 13), // movement was aborted, error not cleared
     // the following are pseudo-states which are used
     // as wait targets but are no actual grid states
-    GS_NOPENDING      = (1 << 15), // no commands are left marked as pending
-    GS_TIMEOUT        = (1 << 16), // a time-out occurred
+    GS_NOPENDING      = (1 << 14), // no commands are left marked as pending
+    GS_TIMEOUT        = (1 << 15), // a new time-out occurred
 
-    GS_ALL_UPDATED   = (1 << 17), // all fpus have been updated
+    GS_ALL_UPDATED   = (1 << 16), // all fpus have been updated
 
 } ;
 

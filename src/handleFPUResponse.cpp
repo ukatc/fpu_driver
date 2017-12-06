@@ -155,7 +155,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         if (response_errcode == 0)
         {
 
-            fpu.is_initialized = true;
+            fpu.was_zeroed = true;
             fpu.alpha_steps = 0;
             fpu.beta_steps = 0;
             fpu.state = static_cast<E_FPU_STATE>(response_status);

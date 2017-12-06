@@ -75,8 +75,9 @@ enum E_CAN_COMMAND
     /* code 102 unused */
     CMSG_FINISHED_MOTION               = 103, // executeMotion finished
     CMSG_FINISHED_DATUM                = 104, // findDatum finished
-    CMSG_WARNCOLLISION_BETA            = 105, // collision at beta arm
-    CMSG_WARNLIMIT_ALPHA               = 106, // limit switch at alpha arm
+    CMSG_WARN_COLLISION_BETA           = 105, // collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA              = 106, // limit switch at alpha arm
+    CMSG_WARN_TIMEOUT_DATUM = 107, // datum search time out
     /* code 107 probably unused */
 
 };
@@ -86,7 +87,7 @@ enum E_CAN_COMMAND
 enum E_REQUEST_DIRECTION
 {
     REQD_ANTI_CLOCKWISE = 0,
-    REQD_CLOCKWISE         = 1,
+    REQD_CLOCKWISE      = 1,
 };
 
 // this uses the unsigned specifier because
@@ -94,14 +95,17 @@ enum E_REQUEST_DIRECTION
 // implementation-defined
 typedef struct t_fpu_status_flags
 {
-    unsigned int alpha_at_datum : 1;
-    unsigned int beta_at_datum : 1;
+    unsigned int alpha_datum_switch_active : 1;
+    unsigned int beta_datum_switch_active : 1;
     unsigned int beta_collision_detected : 1;
-    unsigned int alpha_limitswitch_triggered : 1;
+    unsigned int alpha_limitswitch_active : 1;
     unsigned int is_locked : 1;
     unsigned int dir_alpha : 1; 
     unsigned int dir_beta : 1;
     unsigned int was_initialized : 1;
+    unsigned int waveform_valid : 1;
+    unsigned int waveform_ready : 1;
+    unsigned int waveform_reversed : 1; // 0 means anti-clockwise for positive step numbers
 } t_fpu_status_flags;
  
 
