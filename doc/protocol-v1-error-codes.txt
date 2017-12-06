@@ -1,0 +1,45 @@
+
+Hi Johannes,
+
+Here are the original error codes /status bits.  Most of which aren’t useful to the software anymore. 
+
+Note that these are actually transmitted on byte tx4.   If there is an error then byte tx3 = 0xFF, then tx4 is one of these:-
+
+Original protocol error codes:
+
+; Error Codes
+ER_STALLX           EQU 0x01        ; x motor stall
+ER_STALLY           EQU 0x02        ; y motor stall
+ER_COLLIDE          EQU 0x03        ; FPU collision detected
+ER_INVALID          EQU 0x04        ; command not valid
+ER_WAVENRDY         EQU 0x05        ; waveform not ready 
+ER_WAVE2BIG         EQU 0x06        ; waveform exceeds memory allocation
+ER_TIMING           EQU 0x07        ; step timing error (interrupt race condition)
+ER_M1LIMIT          EQU  0x08     ; M1 Limit switch breached
+ER_M2LIMIT            EQU  0x09     ; M1 Limit switch breached
+ER_PARAM              EQU  0x10     ; parameter out of range
+
+
+The bits on the status word are as follows (again most of these not useful to you but flags used by the MCU):-
+
+Status bits
+
+MSGRCV          EQU 0   ; message received over CANBUS
+WAVE_READY      EQU 1   ; waveform ready (executed on "execute" command)
+EXECUTE_WAVE    EQU 2   ; execute waveform motion stored in table 
+RUNNING_WAVE    EQU 3   ; running waveform
+ABORT_WAVE      EQU 4   ; abort waveform
+M1LIMIT         EQU 5      ; M1 Limit breached 
+M2LIMIT         EQU 6      ; M2 Limit breached
+REVERSE_WAVE    EQU 7      ; waveform to be run in reverse
+
+
+D
+
+-------------------
+David Atkinson
+UK ATC
+Royal Observatory
+Edinburgh
+
+
