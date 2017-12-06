@@ -122,7 +122,7 @@ FPUArray::~FPUArray()
 E_GridState FPUArray::getGridState(t_grid_state& out_state)
 {
 
-#ifdef DEBUG
+#ifdef DEBUG3
     printf("copying gridstate");
 #endif
     pthread_mutex_lock(&grid_state_mutex);
@@ -357,7 +357,7 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
 ///            && (pending_cmd != CCMD_NO_COMMAND))
 ///        {
             FPUGridState.count_pending++;
-#ifdef DEBUG
+#ifdef DEBUG3
             printf("++ FPUGridState.count_pending now %i\n",
                    FPUGridState.count_pending);
 #endif
@@ -459,7 +459,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
                 fpu.timeout_count++;
                 fpu.last_updated = cur_time;
 
-#ifdef DEBUG
+#ifdef DEBUG3
                 printf("-- timeout for FPU %i: FPUGridState.count_pending now %i\n",
                        fpu_id,
                        FPUGridState.count_pending);
@@ -618,7 +618,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 #endif
         return;
     }
-#ifdef DEBUG
+#ifdef DEBUG3
     printf("rxFPU#%i[%i] ",fpu_id, data[1]);
     fflush(stdout);
 #endif
@@ -654,7 +654,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 //        {
 //            assert(FPUGridState.count_pending > 0);
             FPUGridState.count_pending--;
-#ifdef DEBUG
+#ifdef DEBUG3
             printf("-- FPUGridState.count_pending now %i (FPU[%i])\n",
                    FPUGridState.count_pending, fpu_id);
 #endif

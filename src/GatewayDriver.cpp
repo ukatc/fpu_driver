@@ -432,7 +432,7 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
             int fpu_id = active_can_command->getFPU_ID();
             const uint16_t busid = address_map[fpu_id].bus_id;
             const uint8_t fpu_canid = address_map[fpu_id].can_id;
-#ifdef DEBUG
+#ifdef DEBUG3
             printf("txFPU#%i[%i] ", fpu_id, active_can_command->getInstanceCommandCode());
             fflush(stdout);
 //            printf("command pars: fpu_id=%i, GW = %i, busid = %i, "

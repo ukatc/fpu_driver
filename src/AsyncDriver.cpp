@@ -409,7 +409,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
     t_grid_state old_grid_state = grid_state;
 
 
-#ifdef DEBUG
+#ifdef DEBUG3
             printf(" Sending GetStepsAlpha commands:");
             fflush(stdout);
 #endif
@@ -430,7 +430,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
             can_command1->parametrize(i, broadcast);
             // send the command (the actual sending happens
             // in the TX thread in the background).
-#ifdef DEBUG
+#ifdef DEBUG3
             printf(".");
 #endif
             CommandQueue::E_QueueState qstate;
@@ -483,7 +483,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
-#ifdef DEBUG
+#ifdef DEBUG3
             printf(" Sending GetStepsBeta commands:");
             fflush(stdout);
 #endif
@@ -504,7 +504,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
             can_command2->parametrize(i, broadcast);
             // send the command (the actual sending happens
             // in the TX thread in the background).
-#ifdef DEBUG
+#ifdef DEBUG3
             printf(",");
 #endif
             CommandQueue::E_QueueState qstate;
