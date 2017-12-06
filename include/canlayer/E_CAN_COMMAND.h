@@ -25,6 +25,8 @@
 #include <cassert>
 #include <stdint.h>
 
+#define CAN_PROTOCOL_VERSION 1
+
 namespace mpifps
 {
 
@@ -38,36 +40,46 @@ enum E_CAN_COMMAND
     CCMD_CONFIG_MOTION                    = 1, // configure waveform
     CCMD_EXECUTE_MOTION                   = 2, // execute loaded waveform
     CCMD_ABORT_MOTION                     = 3, // abort any ongoing movement
-    // FIXME: next two  schould be combined
+#if (CAN_PROTOCOL_VERSION == 1)
+    // In version 2, two are covered by the ping command, which also
+    // reports the current positions.
     CCMD_GET_STEPS_ALPHA                  = 4, // get alpha counts
     CCMD_GET_STEPS_BETA                   = 5, // get beta counts
+#else
+    CCMD_LOCK_UNIT                        = 4, // ignore any command except reset and unlock
+    CCMD_UNLOCK_UNIT                      = 5, // listen to commands again
+#endif
     CCMD_READ_REGISTER                    = 6, // read register - unused
     CCMD_PING_FPU                         = 7, // check connectivity
     CCMD_RESET_FPU                        = 8, // reset MCU
-    CCMD_AUTO_MOVE_DATUM                  = 9, // "automatic" datum search
+    CCMD_FIND_DATUM                  = 9, // "automatic" datum search
     CCMD_RESET_STEPCOUNTER                = 10, // only for debugging
     CCMD_REPEAT_MOTION                    = 11, // re-use last waveform
     CCMD_REVERSE_MOTION                   = 12, // invert last waveform
     CCMD_ENABLE_BETA_COLLISION_PROTECTION = 13, // "ENABLE_COLLIDE"
     CCMD_FREE_BETA_COLLISION              = 14, // "FREE_COLLIDE"
     CCMD_SET_USTEP                        = 15, // set motor micro-stepping (1,2,4,8 supported)
-    // FIXME: next two  schould be combined
+
+#if (CAN_PROTOCOL_VERSION == 1)
+    // the next two are combined in version 2
     CCMD_GET_ERROR_ALPHA                  = 16, // get residue count at last datum hit
     CCMD_GET_ERROR_BETA                   = 17, // get residue count at last datum hit
-
+    
+    NUM_CAN_COMMANDS = 18,
+#else
     // commands which are not yet implemented
-    CCMD_REQUEST_STATUS                = 18,   // report status and flags
-    CCMD_REPORT_POSITIONS              = 19, // report alpha and beta position
-    CCMD_GET_FIRMWARE_VERSION          = 20, // get firmware version
-    CCMD_CHECK_INTEGRITY               = 21, // report firmware CRC
-    CCMD_LOCK_UNIT                     = 22, // ignore any command except reset and unlock
-    CCMD_UNLOCK_UNIT                   = 23, // listen to commands again
-    CCMD_FREE_ALPHA_LIMIT_BREACH       = 24, // untangle alpha arm
-    CCMD_ENABLE_ALPHA_LIMIT_PROTECTION = 25, // re-enable limit switch
-    CCMD_SET_TIME_STEP                 = 26, // set movement time interval
-    CCMD_SET_MIN_FREQUENCY             = 27, // set minimum step frequency
+    CCMD_GET_COUNTER_DEVIATION            = 16, // get alpha and beta residue count    
+    CCMD_GET_FIRMWARE_VERSION             = 17, // get firmware version
+    CCMD_CHECK_INTEGRITY                  = 18, // report firmware CRC
+    CCMD_FREE_ALPHA_LIMIT_BREACH          = 19, // untangle alpha arm
+    CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    = 20, // re-enable limit switch
+    CCMD_SET_TIME_STEP                    = 21, // set movement time interval
+    CCMD_SET_MIN_FREQUENCY                = 22, // set minimum step frequency
 
-    NUM_CAN_COMMANDS = 28,
+    NUM_CAN_COMMANDS = 23,
+    
+#endif
+
 
     /***************************************/
     /* FPU warning messages */
@@ -83,6 +95,43 @@ enum E_CAN_COMMAND
 };
 
 
+#if CAN_PROTOCOL_VERSION == 1
+/* Error Codes from FPU response messages (note some codes are obsolete
+   or only used internally */
+enum E_MOC_ERRCODE
+{
+    ER_STALLX           = 0x01        , // x motor stall (obsolete)
+    ER_STALLY           = 0x02        , // y motor stall (obsolete)
+    ER_COLLIDE          = 0x03        , // FPU collision detected
+    ER_INVALID          = 0x04        , // received command not valid
+    ER_WAVENRDY         = 0x05        , // waveform not ready 
+    ER_WAVE2BIG         = 0x06        , // waveform exceeds memory allocation
+    ER_TIMING           = 0x07        , // step timing error (interrupt race condition)
+    ER_M1LIMIT          = 0x08        , // M1 Limit switch breached
+    ER_M2LIMIT          = 0x09        , // no longer used
+    ER_PARAM            = 0x10        , // parameter out of range
+};
+
+
+/* Status bits in FPU response message (many only used
+   internally in the controller) */
+
+enum E_FPU_STATUS_BITS
+{
+    STBT_MSGRCV          = 0   , // message received over CANBUS
+    STBT_WAVE_READY      = 1   , // waveform good and ready for execution
+    STBT_EXECUTE_WAVE    = 2   , // internal start flag to start executing waveform
+    STBT_RUNNING_WAVE    = 3   , // FPU is running the waveform
+    STBT_ABORT_WAVE      = 4   , // abort waveform
+    STBT_M1LIMIT         = 5   , // M1 Limit breached 
+    STBT_M2LIMIT         = 6   , // no longer used
+    STBT_REVERSE_WAVE    = 7   , // waveform to be run in reverse
+};
+
+#endif
+
+ 
+
 // this is a one-bit parameter to several commands
 enum E_REQUEST_DIRECTION
 {
@@ -95,6 +144,16 @@ enum E_REQUEST_DIRECTION
 // implementation-defined
 typedef struct t_fpu_status_flags
 {
+#if (CAN_PROTOCOL_VERSION == 1)
+    unsigned int message_received : 1; // unused
+    unsigned int waveform_ready : 1;
+    unsigned int _internal_execute_wave : 1; // only internally used
+    unsigned int running_wave : 1; // waveform is being executed
+    unsigned int abort_wave : 1;
+    unsigned int alpha_limit_active;
+    unsigned int _unused_m2limit_switch_active: 1; // no longer used
+    unsigned int waveform_reversed : 1;
+#else    
     unsigned int alpha_datum_switch_active : 1;
     unsigned int beta_datum_switch_active : 1;
     unsigned int beta_collision_detected : 1;
@@ -106,6 +165,7 @@ typedef struct t_fpu_status_flags
     unsigned int waveform_valid : 1;
     unsigned int waveform_ready : 1;
     unsigned int waveform_reversed : 1; // 0 means anti-clockwise for positive step numbers
+#endif    
 } t_fpu_status_flags;
  
 
@@ -124,7 +184,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     case CCMD_ABORT_MOTION      : 
         /* movement commands, usually broadcast */
     case CCMD_EXECUTE_MOTION    :
-    case CCMD_AUTO_MOVE_DATUM        :
+    case CCMD_FIND_DATUM        :
         priority = 0x02; break;
 
         /* motion configuration */
@@ -132,28 +192,31 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
         /* error recovery */
     case CCMD_RESET_FPU         :
     case CCMD_RESET_STEPCOUNTER :
+#if CAN_PROTOCOL_VERSION == 1
+    case CCMD_GET_STEPS_ALPHA   :
+    case CCMD_GET_STEPS_BETA    :
+    case CCMD_GET_ERROR_ALPHA   :
+    case CCMD_GET_ERROR_BETA    :
+#else        
     case CCMD_ENABLE_BETA_COLLISION_PROTECTION   :
     case CCMD_FREE_BETA_COLLISION      : 
     case CCMD_FREE_ALPHA_LIMIT_BREACH       :
     case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
     case CCMD_LOCK_UNIT         :
     case CCMD_UNLOCK_UNIT       :
+    case CCMD_CHECK_INTEGRITY   :                
+    case CCMD_GET_FIRMWARE_VERSION          :
+#endif        
     case CCMD_REPEAT_MOTION     :
     case CCMD_REVERSE_MOTION    :
         priority = 0x03; break;
 
         /* status inquiry */
     case CCMD_PING_FPU          :
-    case CCMD_GET_STEPS_ALPHA   :
-    case CCMD_GET_STEPS_BETA    :
-    case CCMD_GET_ERROR_ALPHA   :
-    case CCMD_GET_ERROR_BETA    :
-    case CCMD_REQUEST_STATUS    :
-    case CCMD_REPORT_POSITIONS  :
-    case CCMD_CHECK_INTEGRITY   :                
-    case CCMD_GET_FIRMWARE_VERSION          :
+#if CAN_PROTOCOL_VERSION != 1
     case CCMD_SET_TIME_STEP                 :
     case CCMD_SET_MIN_FREQUENCY             :
+#endif        
     case CCMD_SET_USTEP         :
         priority = 0x05; break;
 

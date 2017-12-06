@@ -151,7 +151,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
 
     case CCMD_RESET_FPU       :  
-    case CCMD_AUTO_MOVE_DATUM :  
+    case CCMD_FIND_DATUM :  
         if (response_errcode == 0)
         {
 
@@ -161,7 +161,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.state = static_cast<E_FPU_STATE>(response_status);
         }
         
-        if (fpu.pending_command == CCMD_AUTO_MOVE_DATUM)
+        if (fpu.pending_command == CCMD_FIND_DATUM)
         {
             fpu.last_command = fpu.pending_command;
             fpu.pending_command = CCMD_NO_COMMAND;

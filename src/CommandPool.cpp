@@ -23,7 +23,7 @@
 
 #include "DriverConstants.h"
 #include "canlayer/CommandPool.h"
-#include "canlayer/commands/AutoMoveDatumCommand.h"
+#include "canlayer/commands/FindDatumCommand.h"
 #include "canlayer/commands/ExecuteMotionCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
@@ -65,8 +65,9 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_EXECUTE_MOTION       :
             case CCMD_REPEAT_MOTION       :
             case CCMD_REVERSE_MOTION       :
-            case CCMD_REPORT_POSITIONS       :
+#if CAN_PROTOCOL_VERSION > 1                
             case CCMD_CHECK_INTEGRITY       :
+#endif                
             case CCMD_PING_FPU       :
             case CCMD_ABORT_MOTION       :
                 capacity = cap_broadcast;
@@ -78,24 +79,27 @@ E_DriverErrCode CommandPool::initialize()
                 break;
 
             // individual commands
+#if CAN_PROTOCOL_VERSION == 1                
             case CCMD_GET_ERROR_ALPHA :
             case CCMD_GET_ERROR_BETA :
-            case CCMD_SET_USTEP :
-            case CCMD_REQUEST_STATUS :
-            case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
             case CCMD_GET_STEPS_ALPHA:
             case CCMD_GET_STEPS_BETA:
-            case CCMD_AUTO_MOVE_DATUM :
-            case CCMD_RESET_STEPCOUNTER :
-            case CCMD_FREE_BETA_COLLISION    :
+#else
             case CCMD_LOCK_UNIT       :
             case CCMD_UNLOCK_UNIT     :
-            case CCMD_READ_REGISTER   :
+            case CCMD_GET_COUNTER_DEVIATION:
             case CCMD_GET_FIRMWARE_VERSION          :
-            case CCMD_FREE_ALPHA_LIMIT_BREACH       :
-            case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
             case CCMD_SET_TIME_STEP                 :
             case CCMD_SET_MIN_FREQUENCY             :
+            case CCMD_FREE_ALPHA_LIMIT_BREACH       :
+            case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
+#endif                
+            case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
+            case CCMD_FREE_BETA_COLLISION    :
+            case CCMD_SET_USTEP :
+            case CCMD_FIND_DATUM :
+            case CCMD_RESET_STEPCOUNTER :
+            case CCMD_READ_REGISTER   :
                 capacity = cap_individual;
                 break;
                 
@@ -130,8 +134,8 @@ E_DriverErrCode CommandPool::initialize()
                     pool[i].push_back(std::move(ptr));
                     break;
                     
-                case CCMD_AUTO_MOVE_DATUM        :
-                    ptr.reset(new AutoMoveDatumCommand());
+                case CCMD_FIND_DATUM        :
+                    ptr.reset(new FindDatumCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
                                         

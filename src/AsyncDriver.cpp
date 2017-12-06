@@ -27,7 +27,7 @@
 #include "canlayer/commands/ExecuteMotionCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
-#include "canlayer/commands/AutoMoveDatumCommand.h"
+#include "canlayer/commands/FindDatumCommand.h"
 #include "canlayer/commands/PingCommand.h"
 #include "canlayer/time_utils.h"
 
@@ -194,7 +194,7 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
     // switch.
 
     int num_moving = 0;
-    unique_ptr<AutoMoveDatumCommand> can_command;
+    unique_ptr<FindDatumCommand> can_command;
     for (int i=0; i < num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
@@ -208,7 +208,7 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
             bool broadcast = false;
             int adir = 0;
             int bdir = 0;
-            can_command = gateway.provideInstance<AutoMoveDatumCommand>();
+            can_command = gateway.provideInstance<FindDatumCommand>();
             can_command->parametrize(i, broadcast, adir, bdir);
             unique_ptr<I_CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);

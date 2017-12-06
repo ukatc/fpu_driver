@@ -344,7 +344,9 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
     // expectsResponse, and fpu.state added
     // as a parameter.
     bool does_apply = ((fpu.state != FPST_LOCKED)
+#if (CAN_PROTOCOL_VERSION != 1)                       
                        || (pending_cmd == CCMD_UNLOCK_UNIT)
+#endif                       
                        || (pending_cmd == CCMD_RESET_FPU));
     if (does_apply)
     {

@@ -31,20 +31,20 @@ namespace mpifps {
 namespace canlayer
 {
 
-    class AutoMoveDatumCommand : public I_CAN_Command
+    class FindDatumCommand : public I_CAN_Command
     {
 
       public:
 
         static E_CAN_COMMAND getCommandCode()
         {
-            return CCMD_AUTO_MOVE_DATUM;
+            return CCMD_FIND_DATUM;
         };
 
 
-        AutoMoveDatumCommand(){};
+        FindDatumCommand(){};
       
-        ~AutoMoveDatumCommand(){};
+        ~FindDatumCommand(){};
 
         E_CAN_COMMAND getInstanceCommandCode()
         {
