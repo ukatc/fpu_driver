@@ -41,7 +41,7 @@ enum E_FPU_STATE
     FPST_MOVING                  = 8,
     FPST_FINISHED                = 9,
     FPST_ABORTED                 = 10,
-    FPST_MOVEMENT_INTERRUPTED    = 11,
+    FPST_OBSTACLE_ERROR          = 11,
 
     NUM_FPU_STATES               = 12,
 

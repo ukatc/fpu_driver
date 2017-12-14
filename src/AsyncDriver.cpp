@@ -183,7 +183,7 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_MOVEMENT_INTERRUPTED))
+                || (fpu_status == FPST_OBSTACLE_ERROR))
         {
             return DE_UNRESOLVED_COLLISION;
         }
@@ -267,7 +267,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_MOVEMENT_INTERRUPTED))
+                || (fpu_status == FPST_OBSTACLE_ERROR))
         {
             return DE_UNRESOLVED_COLLISION;
         }
@@ -338,7 +338,7 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_MOVEMENT_INTERRUPTED))
+                || (fpu_status == FPST_OBSTACLE_ERROR))
         {
             return DE_UNRESOLVED_COLLISION;
         }

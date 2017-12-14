@@ -43,7 +43,7 @@ E_GridState getGridStateSummary(const t_grid_state& grid_state)
         return GS_ABORTED;
     }
 
-    if (grid_state.Counts[FPST_MOVEMENT_INTERRUPTED] > 0)
+    if (grid_state.Counts[FPST_OBSTACLE_ERROR] > 0)
     {
         return GS_COLLISION;
     }
