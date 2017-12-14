@@ -75,22 +75,31 @@ enum E_CAN_COMMAND
     CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    = 20, // re-enable limit switch
     CCMD_SET_TIME_STEP                    = 21, // set movement time interval
     CCMD_SET_MIN_FREQUENCY                = 22, // set minimum step frequency
+    CCMD_ENABLE_MOVE                      = 23, // set minimum step frequency
 
-    NUM_CAN_COMMANDS = 23,
+    NUM_CAN_COMMANDS = 24,
     
 #endif
 
 
     /***************************************/
     /* FPU warning messages */
+#if  (CAN_PROTOCOL_VERSION == 1)
     /* code 101 unused */
     /* code 102 unused */
     CMSG_FINISHED_MOTION               = 103, // executeMotion finished
     CMSG_FINISHED_DATUM                = 104, // findDatum finished
     CMSG_WARN_COLLISION_BETA           = 105, // collision at beta arm
     CMSG_WARN_LIMIT_ALPHA              = 106, // limit switch at alpha arm
-    CMSG_WARN_TIMEOUT_DATUM = 107, // datum search time out
+    CMSG_WARN_TIMEOUT_DATUM            = 107, // datum search time out
     /* code 107 probably unused */
+#else
+    CMSG_FINISHED_MOTION               = 23, // executeMotion finished
+    CMSG_FINISHED_DATUM                = 24, // findDatum finished
+    CMSG_WARN_COLLISION_BETA           = 25, // collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA              = 26, // limit switch at alpha arm
+    CMSG_WARN_TIMEOUT_DATUM            = 27, // datum search time out
+#endif
 
 };
 
@@ -206,6 +215,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     case CCMD_UNLOCK_UNIT       :
     case CCMD_CHECK_INTEGRITY   :                
     case CCMD_GET_FIRMWARE_VERSION          :
+    case CCMD_ENABLE_MOVE       :
 #endif        
     case CCMD_REPEAT_MOTION     :
     case CCMD_REVERSE_MOTION    :

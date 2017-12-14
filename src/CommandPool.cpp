@@ -93,6 +93,7 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_SET_MIN_FREQUENCY             :
             case CCMD_FREE_ALPHA_LIMIT_BREACH       :
             case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
+            case CCMD_ENABLE_MOVE   :
 #endif                
             case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
             case CCMD_FREE_BETA_COLLISION    :
