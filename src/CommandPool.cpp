@@ -90,7 +90,7 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_GET_COUNTER_DEVIATION:
             case CCMD_GET_FIRMWARE_VERSION          :
             case CCMD_SET_TIME_STEP                 :
-            case CCMD_SET_MIN_FREQUENCY             :
+            case CCMD_SET_STEPS_PER_FRAME             :
             case CCMD_FREE_ALPHA_LIMIT_BREACH       :
             case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
             case CCMD_ENABLE_MOVE   :
