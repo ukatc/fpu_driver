@@ -161,11 +161,15 @@ bool check_all_fpus_updated(int num_fpus,
 
 void FPUArray::incSending()
 {
+    pthread_mutex_lock(&grid_state_mutex);
     num_commands_being_sent++;
+    pthread_mutex_unlock(&grid_state_mutex);
 }
 
 int  FPUArray::countSending()
 {
+    // this read access does not need locking
+    // because the accessed value is atomic
     return num_commands_being_sent;
 }
 
@@ -585,7 +589,8 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 #endif    
 #endif
 
-    if (fpu_busid >= FPUS_PER_BUS)
+    // fpu_busid is a one-based index
+    if (fpu_busid > FPUS_PER_BUS)
     {
 #ifdef DEBUG
         printf("fpu_busid too large (%i), ignored\n", fpu_busid);
@@ -611,7 +616,9 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 #endif
             return;
     }
-    
+
+    // fpu_busid used a one-based index here, this is
+    // deliberate.
     int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
     if ((fpu_id > num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
     {

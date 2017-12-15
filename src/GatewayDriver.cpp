@@ -52,6 +52,8 @@ GatewayDriver::GatewayDriver(int nfpus)
     fpuArray.setDriverState(DS_UNINITIALIZED);
 
 
+    // initialize address map
+    memset(fpu_id_by_adr, 0, sizeof(fpu_id_by_adr));
     // assing default mapping and reverse mapping to
     // logical FPU ids.
     for (int fpuid=0; fpuid < MAX_NUM_POSITIONERS; fpuid++)
@@ -61,7 +63,7 @@ GatewayDriver::GatewayDriver(int nfpus)
         int busnum = fpuid / FPUS_PER_BUS;
         bus_adr.gateway_id = (uint8_t) (busnum / BUSES_PER_GATEWAY);
         bus_adr.bus_id =  (uint8_t) (busnum % BUSES_PER_GATEWAY);
-        bus_adr.can_id = (uint8_t)(fpuid % FPUS_PER_BUS);
+        bus_adr.can_id = 1 + (uint8_t)(fpuid % FPUS_PER_BUS);
 
         address_map[fpuid] = bus_adr;
 

@@ -20,11 +20,11 @@ def command_handler(cmd, socket):
     gateway_id = gateway_map[socket.getsockname()]
     busid = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
-    fpu_busid = canid & 0x7f
+    fpu_busid = canid & 0x7f # this is a one-based index
     priority = (canid >> 7)
     command_id = cmd[3]
     busnum = busid + gateway_id * BUSES_PER_GATEWAY
-    fpu_id = fpu_busid + busnum * FPUS_PER_BUS
+    fpu_id = (fpu_busid-1) + busnum * FPUS_PER_BUS
     print("CAN command to gw %i, bus %i, fpu # %i (priority %i), command id=%i"
           % (gateway_id, busid, fpu_busid, priority, command_id))
     print("CAN command #%i to FPU %i" % (command_id, fpu_id))

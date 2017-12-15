@@ -61,7 +61,8 @@ public:
     typedef t_bus_address  t_bus_address_map[MAX_NUM_POSITIONERS];
 
     // translation table to convert FPU ids in CAN addresses.
-    typedef uint16_t t_address_map[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][FPUS_PER_BUS];
+    // for the can bus ID, the index 0 is not used
+    typedef uint16_t t_address_map[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][1 + FPUS_PER_BUS];
 
 
     FPUArray(int nfpus);
