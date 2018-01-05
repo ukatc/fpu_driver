@@ -189,6 +189,19 @@ private:
 
 };
 
+
+// functions for enabling / disabling real-time scheduling
+// for time-critical broadcast commands.
+
+void set_rt_priority(int prio);
+
+void unset_rt_priority();
+
+// real-time priority values for threads
+const int CONTROL_PRIORITY = 1;
+const int WRITER_PRIORITY = 2;
+const int READER_PRIORITY = 3;
+
 }
 
 } // end of namespace

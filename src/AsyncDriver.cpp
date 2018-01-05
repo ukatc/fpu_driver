@@ -367,17 +367,21 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     int num_moving = (grid_state.Counts[FPST_READY_FORWARD]
                       + grid_state.Counts[FPST_READY_BACKWARD]);
 
+    set_rt_priority(CONTROL_PRIORITY);
+    
     if (num_moving > 0)
     {
         for (int i=0; i < num_gateways; i++)
         {
             can_command = gateway.provideInstance<ExecuteMotionCommand>();
-            bool do_broadcast = true;
+            const bool do_broadcast = true;
             can_command->parametrize(i, do_broadcast);
             unique_ptr<I_CAN_Command> cmd(can_command.release());
             gateway.broadcastCommand(i, cmd);
         }
     }
+    unset_rt_priority();
+
 
     // Wait until movement is finished.
     while ( (num_moving > 0)

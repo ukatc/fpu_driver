@@ -24,6 +24,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/mman.h>
 #include <unistd.h> 
 #include <sched.h> // sched_setscheduler()
 
@@ -42,11 +43,6 @@ namespace mpifps
 
 namespace canlayer
 {
-
-// real-time priority values for threads
-const int CONTROL_PRIORITY = 1;
-const int WRITER_PRIORITY = 2;
-const int READER_PRIORITY = 3;
 
 
 GatewayDriver::GatewayDriver(int nfpus)
@@ -226,6 +222,13 @@ void set_rt_priority(int prio)
     int rv = sched_setscheduler(pid, SCHED_FIFO, &sparam);
     if (rv == 0)
     {
+        
+        // allocate reserve pages and lock memory to avoid paging latency
+        const size_t MEM_RESERVE_BYTES = 1024 * 1024 * 5;
+        char mem_reserve[MEM_RESERVE_BYTES];
+        memset(mem_reserve, 1, sizeof(mem_reserve));
+        mlockall(MCL_FUTURE);
+        
 #ifdef DEBUG
         printf("Info: real-time priority successfully set to %i\n", prio);
 #endif
@@ -240,6 +243,16 @@ void set_rt_priority(int prio)
 #endif
     }
 
+    
+}
+
+void unset_rt_priority()
+{
+    const pid_t pid = 0;
+    struct sched_param sparam;
+    sparam.sched_priority = 0;
+        
+    int rv = sched_setscheduler(pid, SCHED_OTHER, &sparam);
 }
 
 E_DriverErrCode GatewayDriver::connect(const int ngateways,
@@ -330,6 +343,8 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     commandQueue.setNumGateways(ngateways);
     fpuArray.setDriverState(DS_CONNECTED);
+
+    unset_rt_priority();
 
     return DE_OK;
 
