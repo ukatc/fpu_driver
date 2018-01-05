@@ -24,7 +24,10 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <unistd.h>
+#include <unistd.h> 
+#include <sched.h> // sched_setscheduler()
+
+
 
 #include <arpa/inet.h>		/// inet_addr //
 #include <netinet/tcp.h>	/// TCP_NODELAY
@@ -39,6 +42,11 @@ namespace mpifps
 
 namespace canlayer
 {
+
+// real-time priority values for threads
+const int CONTROL_PRIORITY = 1;
+const int WRITER_PRIORITY = 2;
+const int READER_PRIORITY = 3;
 
 
 GatewayDriver::GatewayDriver(int nfpus)
@@ -209,6 +217,30 @@ static void* threadRxEntryFun(void *arg)
     return driver->threadRxFun();
 }
 
+void set_rt_priority(int prio)
+{
+    const pid_t pid = 0;
+    struct sched_param sparam;
+    sparam.sched_priority = prio;
+        
+    int rv = sched_setscheduler(pid, SCHED_FIFO, &sparam);
+    if (rv == 0)
+    {
+#ifdef DEBUG
+        printf("Info: real-time priority successfully set to %i\n", prio);
+#endif
+    }
+    else
+    {
+        int errcode = errno;
+        
+        assert(errcode == EPERM);
+#ifdef DEBUG
+        printf("Warning: real-time scheduling not active, occasional large latencies are possible.\n");
+#endif
+    }
+
+}
 
 E_DriverErrCode GatewayDriver::connect(const int ngateways,
                                        const t_gateway_address gateway_addresses[])
@@ -264,7 +296,12 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     // connection.
     exit_threads = false;
     num_gateways = ngateways;
-    
+
+    // if possible, set real-time scheduling policy to keep latency low
+
+
+
+    set_rt_priority(CONTROL_PRIORITY);
 
     int err = pthread_create(&rx_thread, &attr, &threadRxEntryFun,
                              (void *) this);
@@ -493,6 +530,9 @@ void* GatewayDriver::threadTxFun()
 
     unique_ptr<I_CAN_Command> active_can_command[MAX_NUM_GATEWAYS];
 
+
+    set_rt_priority(WRITER_PRIORITY);
+    
     while (true)
     {
 
@@ -724,6 +764,8 @@ void* GatewayDriver::threadRxFun()
     sigemptyset(&signal_set);
     sigaddset(&signal_set, SIGPIPE);
 
+    set_rt_priority(READER_PRIORITY);
+    
 
     while (true)
     {
