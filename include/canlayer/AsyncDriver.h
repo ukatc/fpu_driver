@@ -37,7 +37,11 @@ class AsyncDriver
     typedef struct
     {
         int16_t alpha_steps;
+        bool alpha_pause;
+        bool alpha_clockwise;
         int16_t beta_steps;
+        bool beta_pause;
+        bool beta_clockwise;
     } t_step_pair;
 
     typedef struct

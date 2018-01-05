@@ -31,6 +31,8 @@
 #include "canlayer/commands/PingCommand.h"
 #include "canlayer/time_utils.h"
 
+#include <cassert>
+
 #ifdef DEBUG
 #include <stdio.h>
 #endif
@@ -298,7 +300,19 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 t_step_pair step = waveforms[i].steps[s];
                 bool first_entry = (s == 0);
                 bool last_entry = (s == (num_steps-1));
-                can_command->parametrize(fpu_id, step.alpha_steps, step.beta_steps, first_entry, last_entry);
+
+                // assert precondition of 14-bit step size
+                assert( (step.alpha_steps >> 14) == 0);
+                assert( (step.beta_steps >> 14) == 0);
+                
+                can_command->parametrize(fpu_id,
+                                         step.alpha_steps,
+                                         step.alpha_pause,
+                                         step.alpha_clockwise,
+                                         step.beta_steps,
+                                         step.beta_pause,
+                                         step.beta_clockwise,
+                                         first_entry, last_entry);
 
                 // send the command (the actual sending happens
                 // in the TX thread in the background).

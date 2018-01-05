@@ -44,10 +44,21 @@ namespace canlayer
 
         ConfigureMotionCommand(){};
 
-        void parametrize(int f_id, int16_t alpha_steps, int16_t beta_steps, bool first_entry, bool last_entry)
+        void parametrize(int f_id,
+                         int16_t alpha_steps,
+                         bool alpha_pause,
+                         bool alpha_clockwise,
+                         int16_t beta_steps,
+                         bool beta_pause,
+                         bool beta_clockwise,
+                         bool first_entry, bool last_entry)
         {
             fpu_id = f_id;
             asteps = alpha_steps;
+            apause = alpha_pause;
+            aclockwise = alpha_clockwise;
+            bpause = beta_pause;
+            bclockwise = beta_clockwise;            
             bsteps = beta_steps;
             fentry = first_entry;
             lentry = last_entry;                       
@@ -96,14 +107,19 @@ namespace canlayer
 
             // flags for first and last entry
             can_buffer.message.data[1] = ( (fentry ? 1 : 0)
-                                           | (lentry ? 2 : 0));
+                                           | ((lentry ? 1 : 0) << 1));
             // alpha and beta steps
-            can_buffer.message.data[2] = 0xff & (asteps >> 8);
-            can_buffer.message.data[3] = 0xff & asteps;
-            can_buffer.message.data[4] = 0xff & (bsteps >>8);
-            can_buffer.message.data[5] = 0xff & bsteps;
-
-            buf_len = 6;
+            can_buffer.message.data[2] = 0xff & asteps;
+            can_buffer.message.data[3] = (0x3f & (asteps >> 8)
+                                          | ((apause ? 1 : 0) << 6)
+                                          | ((aclockwise ? 1 : 0) << 7));
+            
+            can_buffer.message.data[4] = 0xff & bsteps;
+            can_buffer.message.data[5] = (0x3f & (bsteps >> 8)
+                                          | ((bpause ? 1 : 0) << 6)
+                                          | ((bclockwise ? 1 : 0) << 7));
+            
+            buf_len = 8;
             
         };
  
@@ -140,6 +156,10 @@ namespace canlayer
         uint16_t fpu_id;
         int16_t asteps;
         int16_t bsteps;
+        bool apause;
+        bool bpause;
+        bool aclockwise;
+        bool bclockwise;
         bool fentry;
         bool lentry;
         
