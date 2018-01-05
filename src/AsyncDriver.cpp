@@ -367,6 +367,11 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     int num_moving = (grid_state.Counts[FPST_READY_FORWARD]
                       + grid_state.Counts[FPST_READY_BACKWARD]);
 
+    // acquire real-time priority so that consecutive broadcasts to
+    // the different gateways are really sent in the same few
+    // milliseconds.  (A lag of more than 10 - 20 milliseconds, for
+    // example caused by low memory conditions and swapping, could
+    // otherwise lead to collisions.)
     set_rt_priority(CONTROL_PRIORITY);
     
     if (num_moving > 0)
@@ -380,6 +385,8 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
             gateway.broadcastCommand(i, cmd);
         }
     }
+    // Give up real-time priority (this is important when the caller
+    // process enters, for example, an endless loop).
     unset_rt_priority();
 
 
