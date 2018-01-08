@@ -62,7 +62,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.alpha_steps = asteps;
             int bsteps = (data[6] << 8) | data[7];
             fpu.beta_steps = bsteps;
-            fpu.state = FPST_FINISHED;
+            fpu.state = FPST_RESTING;
         }
         if (fpu.pending_command == CCMD_EXECUTE_MOTION)
         {

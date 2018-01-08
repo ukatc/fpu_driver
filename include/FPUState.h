@@ -39,7 +39,7 @@ enum E_FPU_STATE
     FPST_READY_FORWARD           = 6,
     FPST_READY_BACKWARD          = 7,
     FPST_MOVING                  = 8,
-    FPST_FINISHED                = 9,
+    FPST_RESTING                 = 9,
     FPST_ABORTED                 = 10,
     FPST_OBSTACLE_ERROR          = 11,
 

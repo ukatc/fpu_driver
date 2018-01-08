@@ -173,7 +173,7 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
     
-    // first, get current state of the grid
+    // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -193,26 +193,35 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
     }
 
 
-    // All fpus are moved automatically until they hit the datum
-    // switch.
+    // All fpus which are allowed to move, are moved automatically
+    // until they hit the datum switch.
 
     int num_moving = 0;
     unique_ptr<FindDatumCommand> can_command;
     for (int i=0; i < num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
-        if (fpu_state.state != FPST_LOCKED)
+        if ( (fpu_state.state != FPST_UNINITIALIZED)
+            || (fpu_state.state != FPST_AT_DATUM)
+            || (fpu_state.state != FPST_READY_FORWARD)
+            || (fpu_state.state != FPST_READY_BACKWARD)
+             || (fpu_state.state != FPST_RESTING))
+
         {
-            // FIXME!!!: we should add a security
-            // limit so that FPUs which are off position
+            // FIXME!!!: For production, we might better add a
+            // security limit so that FPUs which are far off position
             // are not driven into the hard stop.
 #pragma message "avoid hitting a hard stop here"
 
             bool broadcast = false;
-            int adir = 0;
-            int bdir = 0;
             can_command = gateway.provideInstance<FindDatumCommand>();
-            can_command->parametrize(i, broadcast, adir, bdir);
+#if (CAN_PROTOCOL_VERSION == 1)
+            can_command->parametrize(i, broadcast);
+#else
+            bool auto_datum = true;
+            bool clockwise_first = false; // only relevant for non-auto
+            can_command->parametrize(i, broadcast, auto_datum, clockwise_first);
+#endif
             unique_ptr<I_CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
             num_moving++;
@@ -220,23 +229,18 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
         }
     }
 
-    // FIXME: In this and all other methods, the "asynchronously
-    // sending commands" part and the "waiting for completion"
-    // part should probably be split into two twin methods,
-    // so that the final ESO driver can execute asynchronously.
-    //
-    // Also, handling of time-outs needs to be revisited later,
-    // depending whether we want to return on the first time-out,
-    // or only after the last pending command was
-    // closed.
+    // FIXME: The "asynchronously sending commands" part and the
+    // "waiting for completion" part might need to be split into two
+    // twin methods, so that the final ESO driver can execute
+    // asynchronously.
     while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
         state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
-                                                          | TGT_NO_MORE_PENDING),
+                                                          | TGT_TIMEOUT),
                                              grid_state);
 
         num_moving = (grid_state.Counts[FPST_DATUM_SEARCH]
-                      + + gateway.getNumUnsentCommands());
+                      + gateway.getNumUnsentCommands());
     }
 
     if (grid_state.driver_state != DS_CONNECTED)

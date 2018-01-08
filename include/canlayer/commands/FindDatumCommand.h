@@ -52,13 +52,22 @@ namespace canlayer
         };
 
 
-        void parametrize(int f_id, bool broadcast, int alpha_direction, int beta_direction)
+#if (CAN_PROTOCOL_VERSION == 1)
+        void parametrize(int f_id, bool broadcast)
         {
             fpu_id = f_id;
             bcast = broadcast;
-            adir = alpha_direction;
-            bdir = beta_direction;
         };
+#else
+        void parametrize(int f_id, bool broadcast, bool auto_datum, bool clockwise_first)
+        {
+            fpu_id = f_id;
+            bcast = broadcast;
+            _auto_datum = auto_datum;
+            _clockwise_first = clockwise_first;
+        };
+#endif
+        
 
         void SerializeToBuffer(const uint8_t busid,
                                const uint8_t fpu_canid,
@@ -98,11 +107,11 @@ namespace canlayer
 
             // CAN command code
             can_buffer.message.data[0] = cmd_code;
+#if (CAN_PROTOCOL_VERSION > 1)
+            can_buffer.message.data[2] = ( ( _auto_datum ? 1 : 0)
+                                           | ((_clockwise_first ?  1 : 0) << 1));
+#endif
 
-            can_buffer.message.data[1] = 0xff & adir;
-            can_buffer.message.data[2] = 0xff & bdir;
-
-            //buf_len = 3;
             buf_len = 8;
             
         };
@@ -124,9 +133,11 @@ namespace canlayer
         // time-out period for a response to the message
         timespec getTimeOut()
         {
+            // Largest possible waiting time for a working datum
+            // search is 35 seconds.
             const struct timespec  toval =
-                {/* .tv_sec = */ 1,
-                 /* .tv_nsec = */ 500000000 };
+                {/* .tv_sec = */ 40,
+                 /* .tv_nsec = */ 0 };
             
             return toval;
         };
@@ -138,8 +149,10 @@ namespace canlayer
 
       private:
         uint16_t fpu_id;
-        int adir;
-        int bdir;
+#if (CAN_PROTOCOL_VERSION > 1)
+        bool _auto_datum;
+        bool _clockwise_first;
+#endif
         bool bcast;
         
         

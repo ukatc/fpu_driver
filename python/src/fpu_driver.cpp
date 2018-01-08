@@ -333,7 +333,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("FPST_READY_FORWARD", FPST_READY_FORWARD       )
     .value("FPST_READY_BACKWARD", FPST_READY_BACKWARD      )
     .value("FPST_MOVING", FPST_MOVING              )
-    .value("FPST_FINISHED", FPST_FINISHED            )
+    .value("FPST_RESTING", FPST_RESTING            )
     .value("FPST_ABORTED", FPST_ABORTED             )
     .value("FPST_OBSTACLE_ERROR", FPST_OBSTACLE_ERROR  )
     .export_values();
