@@ -36,6 +36,7 @@
 
 #include "canlayer/time_utils.h"
 #include "canlayer/GatewayDriver.h"
+#include "canlayer/commands/AbortMotionCommand.h"
 
 
 namespace mpifps
@@ -253,6 +254,7 @@ void unset_rt_priority()
     sparam.sched_priority = 0;
         
     int rv = sched_setscheduler(pid, SCHED_OTHER, &sparam);
+    assert(rv == 0);
 }
 
 E_DriverErrCode GatewayDriver::connect(const int ngateways,
@@ -983,6 +985,46 @@ int GatewayDriver::getGatewayIdByFPUID(const int fpu_id)
 {
     return address_map[fpu_id].gateway_id;
 }
+
+
+
+// This command is implemented on the gateway driver level so that the
+// reading thread can call it directly in the case that too many
+// collisions have been observed.
+//
+// This command should always be called from a thread executing with
+// real-time priority in order to keep latencies between the different
+// gateway messages low.
+
+E_DriverErrCode GatewayDriver::abortMotion(t_grid_state& grid_state,
+        E_GridState& state_summary)
+{
+    // first, get current state of the grid
+    state_summary = getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+
+    // send broadcast command to each gateway to abort movement of all
+    // FPUs.
+    unique_ptr<AbortMotionCommand> can_command;
+    
+    for (int i=0; i < num_gateways; i++)
+    {
+        can_command = provideInstance<AbortMotionCommand>();
+        const bool do_broadcast = true;
+        can_command->parametrize(i, do_broadcast);
+        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        broadcastCommand(i, cmd);
+    }
+        
+    
+    return DE_OK;
+}
+
 
 }
 

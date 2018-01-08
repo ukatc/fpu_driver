@@ -25,6 +25,7 @@
 #include "canlayer/CommandPool.h"
 #include "canlayer/commands/FindDatumCommand.h"
 #include "canlayer/commands/ExecuteMotionCommand.h"
+#include "canlayer/commands/AbortMotionCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/ConfigureMotionCommand.h"
@@ -132,6 +133,11 @@ E_DriverErrCode CommandPool::initialize()
                     
                 case CCMD_EXECUTE_MOTION        :
                     ptr.reset(new ExecuteMotionCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+                    
+                case CCMD_ABORT_MOTION        :
+                    ptr.reset(new AbortMotionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
                     

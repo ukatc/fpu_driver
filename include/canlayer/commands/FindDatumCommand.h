@@ -102,7 +102,6 @@ namespace canlayer
             can_buffer.message.data[1] = 0xff & adir;
             can_buffer.message.data[2] = 0xff & bdir;
 
-#pragma message "fix message buffer length when firmware fixed"
             //buf_len = 3;
             buf_len = 8;
             

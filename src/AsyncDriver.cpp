@@ -25,6 +25,7 @@
 // as they are parametrized here.
 #include "canlayer/commands/ConfigureMotionCommand.h"
 #include "canlayer/commands/ExecuteMotionCommand.h"
+#include "canlayer/commands/AbortMotionCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/FindDatumCommand.h"
@@ -386,7 +387,7 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         }
     }
     // Give up real-time priority (this is important when the caller
-    // process enters, for example, an endless loop).
+    // thread later enters, for example, an endless loop).
     unset_rt_priority();
 
 
@@ -430,8 +431,6 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
-    // this needs a few KB of stack space.
-    t_grid_state old_grid_state = grid_state;
 
 
 #ifdef DEBUG3
@@ -620,6 +619,8 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
 E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+
+
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     // check driver is connected
@@ -628,7 +629,41 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+
+    // acquire real-time priority so that consecutive broadcasts to
+    // the different gateways are really sent in the same few
+    // milliseconds.  (A lag of more than 10 - 20 milliseconds, for
+    // example caused by low memory conditions and swapping, could
+    // otherwise lead to collisions.)
+    set_rt_priority(CONTROL_PRIORITY);
+
+    gateway.abortMotion(grid_state, state_summary);
+    
+    // Give up real-time priority (this is important when the caller
+    // thread later enters, for example, an endless loop).
+    unset_rt_priority();
+
+
+    // Wait until all movements are cancelled.
+    int num_moving = grid_state.Counts[FPST_MOVING] + gateway.getNumUnsentCommands();
+    while ( (num_moving > 0)
+            && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        state_summary = gateway.waitForState(TGT_MOVEMENT_FINISHED,
+                                             grid_state);
+        
+        num_moving = (grid_state.Counts[FPST_MOVING]
+                     + gateway.getNumUnsentCommands());
+    } 
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    
     return DE_OK;
+    
 }
 
 

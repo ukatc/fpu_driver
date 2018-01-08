@@ -94,7 +94,6 @@ namespace canlayer
             // CAN command code
             can_buffer.message.data[0] = cmd_code;
 
-#pragma message "fix message buffer length when firmware fixed"
             //buf_len = 1;
             buf_len = 4;
             

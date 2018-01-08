@@ -122,6 +122,13 @@ public:
     // get number of unsent commands
     int getNumUnsentCommands();
 
+    // Send an abortMotion broadcast command to all gateways.
+    //
+    // (This is implemented at the CAN driver level because we need
+    // the Rx thread to be able to trigger an automatic abort if too
+    // many collisions happen in a short time span.).
+    E_DriverErrCode abortMotion(t_grid_state& grid_state,
+                                E_GridState& state_summary);
 
     // the following two methods are actually internal -
     // they need to be visible in a non-member function.
