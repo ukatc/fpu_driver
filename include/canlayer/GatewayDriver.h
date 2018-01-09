@@ -56,14 +56,12 @@ public:
     const struct timespec COMMAND_WAIT_TIME = { /* .tv_sec = */ 0,
                                          /* .tv_nsec = */ 500000000
                                        };
-    // timeout for polling write socket - 5 ms
+    // timeout for polling write socket - 500 ms
     const struct timespec MAX_TX_TIMEOUT = { /* .tv_sec = */ 0,
                                       /* .tv_nsec = */ 500000000
                                     };
 
-    // default timeout for polling read socket - 0.5 sec
-    // (this max times determines the time it takes to
-    // shut down the conenction if nothing happens).
+    // default timeout for polling read socket - 500 msec
     const timespec MAX_RX_TIMEOUT = { /* .tv_sec = */ 0,
                                       /* .tv_nsec = */ 500000000
                                     };
@@ -142,6 +140,9 @@ private:
     int num_gateways = 0;
     // socket descriptor
     int SocketID[MAX_NUM_GATEWAYS];
+    int DescriptorCommandEvent; // eventfd for new command
+    int DescriptorCloseEvent;  // eventfd for closing connection
+    
     CommandQueue commandQueue;
 
 

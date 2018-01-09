@@ -24,6 +24,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/eventfd.h>
 #include <sys/mman.h>
 #include <unistd.h> 
 #include <sched.h> // sched_setscheduler()
@@ -281,7 +282,21 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     case DS_ASSERTION_FAILED:
         return DE_ASSERTION_FAILED;
     }
-        
+
+    // create two eventfds to signal changes while waiting for I/O
+    DescriptorCommandEvent = eventfd(0, EFD_NONBLOCK);
+    if (DescriptorCommandEvent < 0)
+    {
+        return DE_ASSERTION_FAILED;
+    }
+    
+    DescriptorCloseEvent = eventfd(0, EFD_NONBLOCK);
+
+    if (DescriptorCloseEvent < 0)
+    {
+        return DE_ASSERTION_FAILED;
+    }
+    
     E_DriverErrCode rval = command_pool.initialize();
 
     if (rval != DE_OK)
@@ -290,7 +305,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     }
 
 
-
+    
     for (int i = 0; i < ngateways; i++)
     {
         const char* ip = gateway_addresses[i].ip;
@@ -348,6 +363,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     unset_rt_priority();
 
+    
     return DE_OK;
 
 }
@@ -382,6 +398,7 @@ E_DriverErrCode GatewayDriver::disconnect()
         {
             shutdown(SocketID[i], SHUT_RDWR);
         }
+        
     }
     else
     {
@@ -391,6 +408,11 @@ E_DriverErrCode GatewayDriver::disconnect()
         }
         sockets_closed = true;
     }
+
+    // Write to close-event descriptor to make epoll calls return
+    // without waiting for time-out.
+    uint64_t val = 2;
+    write(DescriptorCloseEvent, &val, sizeof(val));
 
 
     // (both threads have to exit now!)
@@ -410,11 +432,18 @@ E_DriverErrCode GatewayDriver::disconnect()
             close(SocketID[i]);
         }
     }
+
+    // close eventfds
+    
+    assert(close(DescriptorCloseEvent) == 0);
+    assert(close(DescriptorCommandEvent) == 0);
+    
     // we update the grid state - importantly,
     // this also signals callers of waitForState()
     // so they don't go into dead-lock.
     fpuArray.setDriverState(DS_UNCONNECTED);
 
+    
     return DE_OK;
 
 }
@@ -528,9 +557,12 @@ void* GatewayDriver::threadTxFun()
 
     bool exitFlag = false;
 
-    struct pollfd pfd[MAX_NUM_GATEWAYS];
+    const int NUM_TX_DESCRIPTORS = MAX_NUM_GATEWAYS + 2;
 
-    nfds_t num_fds = num_gateways;
+    struct pollfd pfd[NUM_TX_DESCRIPTORS];
+
+    nfds_t num_fds = NUM_TX_DESCRIPTORS;
+    
 #ifdef DEBUG3
     printf("TX : num_gateways = %i\n", num_gateways);
 #endif
@@ -539,6 +571,18 @@ void* GatewayDriver::threadTxFun()
         pfd[gateway_id].fd = SocketID[gateway_id];
         pfd[gateway_id].events = POLLOUT;
     }
+
+    // add eventfd for closing connection
+    const int idx_close_event = num_gateways;
+    pfd[idx_close_event].fd = DescriptorCloseEvent;
+    pfd[idx_close_event].events = POLLIN;
+
+    // add eventfd for new command in queue
+    const int idx_cmd_event = num_gateways +1;
+    pfd[idx_cmd_event].fd = DescriptorCommandEvent;
+    pfd[idx_cmd_event].events = POLLIN;
+
+    commandQueue.setEventDescriptor(DescriptorCommandEvent);
 
     /* Create mask to block SIGPIPE during calls to ppoll()*/
     sigset_t signal_set;
@@ -600,12 +644,12 @@ void* GatewayDriver::threadTxFun()
 
         // this waits for a short time for sending data
         // (we could shorten the timeout if no command was pending)
+        int retval = 0;
         bool retry = false;
         do
         {
             retry = false;
-            int retval =  ppoll(pfd, num_fds, &MAX_TX_TIMEOUT, &signal_set);
-            //int retval =  ppoll(pfd, num_fds, &MAX_TX_TIMEOUT, NULL);
+            retval =  ppoll(pfd, num_fds, &MAX_TX_TIMEOUT, &signal_set);
             if (retval < 0)
             {
                 int errcode = errno;
@@ -631,7 +675,7 @@ void* GatewayDriver::threadTxFun()
 
                 }
             }
-#ifdef DEBUG_POLL
+#ifdef DEBUG2
             if (retval == 0)
             {
                 printf("T"); fflush(stdout);
@@ -641,13 +685,20 @@ void* GatewayDriver::threadTxFun()
         while (retry);
 
 
-        // check all file descriptors for readiness
+        if ((retval > 0 ) && (pfd[idx_cmd_event].revents & POLLIN))
+        {
+            // we need to read the descriptor to clear the event.
+            uint64_t val;
+            read(DescriptorCommandEvent, &val, sizeof(val));
+        }
+
+        // check all writable file descriptors for readiness
         SBuffer::E_SocketStatus status = SBuffer::ST_OK;
         for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
         {
             // FIXME: split long method into smaller ones
 
-            if (pfd[gateway_id].revents & POLLOUT)
+            if ((retval > 0 ) && (pfd[gateway_id].revents & POLLOUT))
             {
 
                 // gets command and sends buffer
@@ -737,6 +788,10 @@ void* GatewayDriver::threadTxFun()
             commandQueue.requeue(gateway_id, std::move(can_cmd));
         }
     }
+
+    // clear event descriptor on commandQueue
+    commandQueue.setEventDescriptor(-1);
+    
     return NULL;
 }
 
@@ -765,7 +820,7 @@ void* GatewayDriver::threadRxFun()
     //int poll_timeout_ms = int(poll_timeout_sec * 1000);
     //assert(poll_timeout_ms > 0);
 
-    nfds_t num_fds = num_gateways;
+    nfds_t num_fds = num_gateways + 1;
 #ifdef DEBUG3
     printf("RX : num_gateways = %i\n", num_gateways);
 #endif
@@ -776,6 +831,11 @@ void* GatewayDriver::threadRxFun()
         pfd[i].events = POLLIN;
     }
 
+
+    // add eventfd for closing connection
+    pfd[num_gateways].fd = DescriptorCloseEvent;
+    pfd[num_gateways].events = POLLIN;
+    
     /* Create mask to block SIGPIPE during calls to ppoll()*/
     sigset_t signal_set;
     sigemptyset(&signal_set);
@@ -892,7 +952,7 @@ void* GatewayDriver::threadRxFun()
             // signal event listeners
             exit_threads.store(true, std::memory_order_release);
 #ifdef DEBUG
-            printf("RX error: disconnecting driver\n");
+            printf("RX thread: disconnecting driver\n");
 #endif
             fpuArray.setDriverState(DS_UNCONNECTED);
             break; // exit outer loop, and terminate thread

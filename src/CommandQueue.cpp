@@ -18,11 +18,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <unistd.h>
 #include <cassert>
 
 #include "canlayer/sync_utils.h"
 #include "canlayer/CommandQueue.h"
-
 
 namespace mpifps
 {
@@ -34,6 +34,7 @@ namespace canlayer
 CommandQueue::CommandQueue()
 {
     ngateways = 0;
+    EventDescriptorNewCommand = -1;
 }
 
 E_DriverErrCode CommandQueue::initialize()
@@ -127,6 +128,12 @@ CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
 
 }
 
+void CommandQueue::setEventDescriptor(int fd)
+{
+    EventDescriptorNewCommand = fd;
+}
+
+
 CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
         unique_ptr<I_CAN_Command>& new_command)
 {
@@ -149,6 +156,8 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
     {
         pthread_mutex_lock(&queue_mutex);
 
+        bool was_empty = fifos[gateway_id].empty();
+
         // FIXME: According to std::deque docs, this can throw a
         // bad_alloc exception if the system is very low on
         // memory. Because this entails the risk of losing control
@@ -159,8 +168,21 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 #pragma message "FIXME: make CommandQueue::enqueue() exception-safe"
         fifos[gateway_id].push_back(std::move(new_command));
 
+        // if we changed from an empty queue to a non-empty one,
+        // signal an event to notify any waiting poll.
+        if ((was_empty) && (EventDescriptorNewCommand >= 0))
+        {
+            uint64_t val = 1;
+#ifdef DEBUG
+            printf("sending new command event via descriptor!\n");
+#endif            
+            
+            write(EventDescriptorNewCommand, &val, sizeof(val));
+        }
+
         pthread_mutex_unlock(&queue_mutex);
     }
+    
     return QS_OK;
 
 }
