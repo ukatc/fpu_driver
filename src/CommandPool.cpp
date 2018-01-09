@@ -26,10 +26,11 @@
 #include "canlayer/commands/FindDatumCommand.h"
 #include "canlayer/commands/ExecuteMotionCommand.h"
 #include "canlayer/commands/AbortMotionCommand.h"
+#include "canlayer/commands/ResetFPUCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/ConfigureMotionCommand.h"
-#include "canlayer/commands/PingCommand.h"
+#include "canlayer/commands/PingFPUCommand.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -122,7 +123,7 @@ E_DriverErrCode CommandPool::initialize()
                 switch (i)
                 {
                 case CCMD_PING_FPU        :
-                    ptr.reset(new PingCommand());
+                    ptr.reset(new PingFPUCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
 
@@ -138,6 +139,11 @@ E_DriverErrCode CommandPool::initialize()
                     
                 case CCMD_ABORT_MOTION        :
                     ptr.reset(new AbortMotionCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+
+                case CCMD_RESET_FPU:
+                    ptr.reset(new ResetFPUCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
                     

@@ -141,7 +141,7 @@ namespace canlayer
         timespec getTimeOut()
         {
             const struct timespec  toval =
-                {/* .tv_sec = */ 1,
+                {/* .tv_sec = */ 0,
                  /* .tv_nsec = */ 500000000 };
             
             return toval;

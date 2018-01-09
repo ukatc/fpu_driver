@@ -26,10 +26,11 @@
 #include "canlayer/commands/ConfigureMotionCommand.h"
 #include "canlayer/commands/ExecuteMotionCommand.h"
 #include "canlayer/commands/AbortMotionCommand.h"
+#include "canlayer/commands/ResetFPUCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/FindDatumCommand.h"
-#include "canlayer/commands/PingCommand.h"
+#include "canlayer/commands/PingFPUCommand.h"
 #include "canlayer/time_utils.h"
 
 #include <cassert>
@@ -161,12 +162,65 @@ E_DriverErrCode AsyncDriver::initializeGridAsync(t_grid_state& grid_state,
 E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-    if (gateway.getDriverState() != DS_CONNECTED)
+    
+    // first, get current state and time-out count of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;
-    }    
+    }
+
+    // make sure no FPU is moving or finding datum
+    bool resetok=true;
+    for (int i=0; i < num_fpus; i++)
+    {
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        // we exclude moving FPUs, but include FPUs which are
+        // searching datum. (FIXME: double-check that).
+        if ( (fpu_state.state == FPST_MOVING)
+             && (fpu_state.state == FPST_DATUM_SEARCH))
+        {
+            resetok = false;
+        }
+    }
+
+    if (! resetok)
+    {
+        // We do not perform a reset when there are moving FPUs.  (In
+        // that case, the user should send an abortMotion command
+        // first.)
+        return DE_STILL_BUSY;
+    }
+
+
+    unique_ptr<ResetFPUCommand> can_command;
+    for (int i=0; i < num_fpus; i++)
+    {
+        bool broadcast = false;
+        can_command = gateway.provideInstance<ResetFPUCommand>();
+        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        gateway.sendCommand(i, cmd);
+    }
+    
+    int count_pending = num_fpus;
+
+    while ( (count_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state);
+
+        count_pending = (grid_state.count_pending
+                         + gateway.getNumUnsentCommands());
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
 
     return DE_OK;
+
 }
 
 E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
@@ -698,6 +752,66 @@ E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state,
 
     return DE_OK;
 }
+
+
+E_DriverErrCode AsyncDriver::pingFPUAsync(t_grid_state& grid_state,
+        E_GridState& state_summary)
+{
+    
+    // first, get current state and time-out count of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+
+    // All fpus which are not moving are pinged.
+
+    int count_pending = 0;
+    unique_ptr<PingFPUCommand> can_command;
+    for (int i=0; i < num_fpus; i++)
+    {
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        // we exclude moving FPUs, but include FPUs which are
+        // searching datum. (FIXME: double-check that).
+        if (fpu_state.state != FPST_MOVING)
+        {
+
+            // We use a non-broadcast instance. The advantage of
+            // this is that he CAN protocol is able to reliably
+            // detect whether this command was received - for
+            // a broadcast command, this is not absolutely sure.
+            bool broadcast = false;
+            can_command = gateway.provideInstance<PingFPUCommand>();
+            unique_ptr<I_CAN_Command> cmd(can_command.release());
+            gateway.sendCommand(i, cmd);
+            count_pending++;
+            
+        }
+    }
+
+    // wait until all generated ping commands have been responded to
+    // or have timed out.
+    while ( (count_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state);
+
+        count_pending = (grid_state.count_pending
+                         + gateway.getNumUnsentCommands());
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    return DE_OK;
+
+}
+
 
 E_GridState AsyncDriver::getGridState(t_grid_state& out_state)
 {

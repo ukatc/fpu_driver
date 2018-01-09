@@ -92,6 +92,8 @@ class AsyncDriver
 
     E_DriverErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
+    E_DriverErrCode pingFPUAsync(t_grid_state& grid_state, E_GridState& state_summary);
+
     E_DriverErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode findDatumAsync(t_grid_state& grid_state, E_GridState& state_summary);

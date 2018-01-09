@@ -23,11 +23,12 @@ _DEPS = DriverState.h E_GridState.h FPUState.h GridDriver.h	\
 	canlayer/SBuffer.h canlayer/TimeOutList.h		\
 	canlayer/sync_utils.h canlayer/time_utils.h		\
 	canlayer/commands/ConfigureMotionCommand.h		\
-	canlayer/commands/AbortMotionCommand.h		\
+	canlayer/commands/AbortMotionCommand.h  		\
+	canlayer/commands/ResetFPUCommand.h	         	\
 	canlayer/commands/ExecuteMotionCommand.h		\
 	canlayer/commands/GetStepsAlphaCommand.h		\
 	canlayer/commands/FindDatumCommand.h		        \
-	canlayer/commands/PingCommand.h
+	canlayer/commands/PingFPUCommand.h
 
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))

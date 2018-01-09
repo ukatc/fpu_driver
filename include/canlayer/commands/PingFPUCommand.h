@@ -12,15 +12,15 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME ExecuteMotionCommand.h
+// NAME PingCommand.h
 // 
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ABORT_MOTION_COMMAND_H
-#define ABORT_MOTION_COMMAND_H
+#ifndef PING_FPU_COMMAND_H
+#define PING_FPU_COMMAND_H
 
 #include <cassert>
 #include "../I_CAN_Command.h"
@@ -30,17 +30,17 @@ namespace mpifps {
 namespace canlayer
 {
 
-    class AbortMotionCommand : public I_CAN_Command
+    class PingFPUCommand : public I_CAN_Command
     {
 
       public:
 
         static E_CAN_COMMAND getCommandCode()
         {
-            return CCMD_ABORT_MOTION;
+            return CCMD_PING_FPU;
         };
 
-        AbortMotionCommand(){};
+        PingFPUCommand(){};
 
         E_CAN_COMMAND getInstanceCommandCode()
         {
@@ -48,10 +48,11 @@ namespace canlayer
         };
 
 
-        void parametrize(int f_id, bool broadcast)
+        void parametrize(int f_id, bool broadcast, long sequence_number)
         {
             fpu_id = f_id;
             bcast = broadcast;
+            payload = sequence_number;
         };
 
         void SerializeToBuffer(const uint8_t busid,
@@ -66,7 +67,11 @@ namespace canlayer
             // we use bit 7 to 10 for the command code,
             // and bit 0 to 6 for the FPU bus id.
             assert(fpu_canid <= FPUS_PER_BUS);
-
+            if (! bcast)
+            {
+                assert(fpu_canid > 0);
+            }
+            
 
             // the CAN identifier is either all zeros (for a broadcast
             // message) or bits 7 - 10 are the proiority and bits 0 -
@@ -114,7 +119,7 @@ namespace canlayer
             timespec const toval =
                 {
                     /* .tv_sec = */ 1,
-                    /* .tv_nsec = */ 0 };
+                    /* .tv_nsec = */ 000000000 };
             
             return toval;
         };
@@ -126,6 +131,7 @@ namespace canlayer
 
     private:
         uint16_t fpu_id;
+        long payload;
         bool bcast;
         
         
