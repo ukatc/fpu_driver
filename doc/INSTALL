@@ -1,0 +1,134 @@
+INSTALLATION OF FPU DRIVER
+
+
+PREREQUISITES
+=============
+
+1) for the C++ driver and static library
+
+* gcc-4.9 (essentially, with support for C++11)
+* Linux-2.6 or newer (requiring support for eventfd)
+* glibc-2.3.2 (epoll support)
+
+2) for the test code and Python bindings
+
+* Python-2.7
+* boost-1-66 , which can be downloaded from http://www.boost.org/users/download/
+
+INSTALLATION
+============
+
+INSTALLING BOOST LIBRARIES
+--------------------------
+
+Recent Boost libraries are required to build the Python module, which
+is needed in the verification system (but not in the final ICS
+software).
+
+Please keep in mind that any installed different version of boost
+libraries is very likely an essential part of your Linux system, so do
+NOT uninstall older versions from your system!
+
+* for security, verify boost package signature using gnupg
+
+* unpack boost package:
+
+$ tar xzf boost_1_66_0.tar.gz
+
+* build package:
+
+$ cd boost_1_66_0/
+$ ./bootstrap.sh
+$ ./b2
+
+* install package into /usr/local directory:
+
+$ su
+# ./b2 install
+
+To make the boost libraries accessible when the
+final program is run, you need to add the
+command
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+to your shell configuration (usually, $HOME/.bashrc).
+
+Also, you should add the directory with the boost header files (by
+default /usr/local/include) to the path configured in the environment
+variable CPLUS_INCLUDE_PATH, so that gcc can find them when building
+the module.
+
+INSTALLING GEVENT MODULE
+------------------------
+
+The Python mock-up gateway uses the gevent
+library which is used to serve parallel requests
+using asynchronous code. In difference to
+Python3's asyncio, it is available both in
+Pyhon2 and Python3.
+
+Install it as follows:
+
+pip install gevent
+
+(This command seems to be need to be run as root in order to install
+under /usr/local ).
+
+
+
+BUILDING THE DRIVER
+-------------------
+
+Build the driver as follows:
+
+# cd fpu_driver
+# make driver
+
+This places the static library libfpudriver.a into
+the subdirectory "/lib".
+
+BUILDING THE PYTHON MODULE
+--------------------------
+
+Run
+
+# make pyextension
+
+This builds the binary extension module fpu_driver.so
+and places it into the subdirectory /python.
+In the same subdirectory, there are some test
+scripts which can be used to test the module.
+
+
+RUNNING THE TEST GATEWAY
+------------------------
+
+In the sub-directory /testing, the package contains a mock-up test
+gateway which responds to messages as specified by the hardware
+protocol. To run it, change into a new terminal window and
+issue
+
+# cd testing
+
+python2 mock_gateway.py
+
+
+This test code opens three socket connections on localhost and will
+display received messages and commands. It will not run with the full
+speed of the hardware but should match the hardware protocol
+faithfully.
+
+[In future,] Use the command line option "--help" to check for additional features,
+such as simulating communication failures etc.
+
+In another terminal window, you can run the tests:
+python2 -i test1.py.
+
+
+
+
+
+
+
+
