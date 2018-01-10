@@ -459,6 +459,10 @@ void GatewayDriver::updatePendingCommand(int fpu_id,
                                          std::unique_ptr<I_CAN_Command>& can_command)
 {
 
+  /* FIXME: (Review) Should a response depend on the current state of
+     an FPU?  Probably not, because we do not know the current state
+     with certainty. */
+  
     if (can_command->expectsResponse())
     {
 

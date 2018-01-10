@@ -78,7 +78,11 @@ enum E_WaitTarget
                          | GS_UNKNOWN
                          | GS_COLLISION
                          | GS_ABORTED),
+    
+    TGT_LOADING      = (GS_AT_DATUM
+                         | GS_LOADING),
 
+    
     TGT_READY_TO_MOVE = (GS_READY_FORWARD
                          | GS_READY_BACKWARD
                          | GS_AT_DATUM

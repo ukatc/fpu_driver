@@ -134,7 +134,8 @@ namespace canlayer
         // the driver should wait for a response
         bool expectsResponse()
         {
-            return true;
+          // send response if this is the first or last entry
+          return (fentry || lentry);
         };
 
         // time-out period for a response to the message

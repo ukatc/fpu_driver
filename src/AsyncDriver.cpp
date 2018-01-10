@@ -344,7 +344,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     unique_ptr<ConfigureMotionCommand> can_command;
     // loop over number of steps in the table
     const int num_steps = waveforms[0].steps.size();
-    for (int s=0; s < num_steps; s++)
+    int step_count = 0;
+    int retry_downcount = 5;
+    while (step_count < num_steps)
     {
         int num_loading =  waveforms.size();
         for (int i=0; i < num_loading; i++)
@@ -356,9 +358,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 // get a command buffer
                 can_command = gateway.provideInstance<ConfigureMotionCommand>();
 
-                t_step_pair step = waveforms[i].steps[s];
-                bool first_entry = (s == 0);
-                bool last_entry = (s == (num_steps-1));
+                t_step_pair step = waveforms[i].steps[step_count];
+                bool first_entry = (step_count == 0);
+                bool last_entry = (step_count == (num_steps-1));
 
                 // assert precondition of 14-bit step size
                 assert( (step.alpha_steps >> 14) == 0);
@@ -379,6 +381,41 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 gateway.sendCommand(fpu_id, cmd);
             }
         }
+        if ((step_count == 0) && (num_steps > 1))
+        {
+          /* Wait and check that all FPUs are registered in LOADING
+             state.  This is needed to make sure we have later a clear
+             state transition for finishing the load with the last
+             flag set. */
+          state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
+                                               grid_state);
+          bool do_retry = false;
+          int num_loading =  waveforms.size();
+          for (int i=0; i < num_loading; i++)
+            {
+              int fpu_id = waveforms[i].fpu_id;
+              t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
+              // we retry if an FPU which we tried to configure and is
+              // not locked did not change to FPST_LOADING state.
+              if ((fpu_state.state != FPST_LOADING)
+                  && (fpu_state.state != FPST_LOCKED))
+                {
+                  if (retry_downcount <= 0)
+                    {
+                      return DE_MAX_RETRIES_EXCEEDED;
+                    }
+                  do_retry = true;              
+                }
+            }
+          if (do_retry)
+            {
+              // we start again with loading the first step
+              retry_downcount--;
+              continue;
+            }
+            
+        }
+        step_count++;
     }
 
     // fpus are now loading data.
@@ -690,7 +727,7 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
     if (grid_state.driver_state != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;
-    }
+    } // 
 
 
     // acquire real-time priority so that consecutive broadcasts to
@@ -794,6 +831,8 @@ E_DriverErrCode AsyncDriver::pingFPUAsync(t_grid_state& grid_state,
             // a broadcast command, this is not absolutely sure.
             bool broadcast = false;
             can_command = gateway.provideInstance<PingFPUCommand>();
+            
+            can_command->parametrize(i, broadcast);
             unique_ptr<I_CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
             count_pending++;

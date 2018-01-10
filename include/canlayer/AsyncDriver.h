@@ -52,6 +52,10 @@ class AsyncDriver
 
     typedef  std::vector<t_waveform> t_wtable;
 
+  /* Maximum number of retries to initialize configure
+     motion before the driver will give up. */  
+  const int MAX_CONFIG_MOTION_RETRIES = 5;
+
     AsyncDriver(int nfpus)
         : gateway(nfpus)
         {

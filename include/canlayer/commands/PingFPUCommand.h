@@ -48,11 +48,10 @@ namespace canlayer
         };
 
 
-        void parametrize(int f_id, bool broadcast, long sequence_number)
+        void parametrize(int f_id, bool broadcast)
         {
             fpu_id = f_id;
             bcast = broadcast;
-            payload = sequence_number;
         };
 
         void SerializeToBuffer(const uint8_t busid,
@@ -131,7 +130,6 @@ namespace canlayer
 
     private:
         uint16_t fpu_id;
-        long payload;
         bool bcast;
         
         

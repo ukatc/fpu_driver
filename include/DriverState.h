@@ -115,6 +115,8 @@ enum E_DriverErrCode
     // is not met, the driver is switched off
     // and the problem logged.
 
+    // maximum retry count was exceeded for command
+    DE_MAX_RETRIES_EXCEEDED = 9,
 
     DE_ASSERTION_FAILED=99,
 

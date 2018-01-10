@@ -88,7 +88,6 @@ typedef struct t_fpu_state
     E_MOVEMENT_DIRECTION direction_alpha;
     E_MOVEMENT_DIRECTION direction_beta;
     uint8_t sequence_number; // number of last pending / received command
-    bool ping_ok;    // connection working
     bool was_zeroed; /* steps are validly calibrated by finding datum.
                         This is required for any science observatons. */
     bool is_locked;  // FPU was locked by operator

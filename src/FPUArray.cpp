@@ -83,7 +83,6 @@ FPUArray::FPUArray(int nfpus)
         fpu_state.beta_datum_switch_active  = false;
         fpu_state.at_alpha_limit            = false;
         fpu_state.beta_collision            = false;
-        fpu_state.ping_ok                   = false;
         fpu_state.direction_alpha           = DIRST_UNKNOWN;
         fpu_state.direction_beta            = DIRST_UNKNOWN;
         fpu_state.num_waveforms             = 0;
@@ -354,23 +353,10 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
                        || (pending_cmd == CCMD_RESET_FPU));
     if (does_apply)
     {
-        // increment pending counter
-///        // unless there is an
-///        // ongoing command.
-/// The condition test is WRONG because we can NOT be sure
-///  that we reach this test before the reply was processed.        
-///        if ((fpu.pending_command == CCMD_NO_COMMAND)
-///            && (pending_cmd != CCMD_NO_COMMAND))
-///        {
-            FPUGridState.count_pending++;
-#ifdef DEBUG3
-            printf("++ FPUGridState.count_pending now %i\n",
-                   FPUGridState.count_pending);
-#endif
-///        }
+      FPUGridState.count_pending++;
 
-        fpu.pending_command = pending_cmd;
-        fpu.cmd_timeout = tout_val;
+      fpu.pending_command = pending_cmd;
+      fpu.cmd_timeout = tout_val;
 
         // if tracing is active, signal state change
         if (num_trace_clients > 0)
