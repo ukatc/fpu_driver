@@ -217,6 +217,8 @@ static void* threadRxEntryFun(void *arg)
 
 void set_rt_priority(int prio)
 {
+  if (USE_REALTIME_SCHEDULING)
+    {
     const pid_t pid = 0;
     struct sched_param sparam;
     sparam.sched_priority = prio;
@@ -244,18 +246,21 @@ void set_rt_priority(int prio)
         printf("Warning: real-time scheduling not active, occasional large latencies are possible.\n");
 #endif
     }
-
+    }
     
 }
 
 void unset_rt_priority()
 {
+  if (USE_REALTIME_SCHEDULING)
+    {
     const pid_t pid = 0;
     struct sched_param sparam;
     sparam.sched_priority = 0;
         
     int rv = sched_setscheduler(pid, SCHED_OTHER, &sparam);
     assert(rv == 0);
+    }
 }
 
 E_DriverErrCode GatewayDriver::connect(const int ngateways,

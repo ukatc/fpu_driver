@@ -431,7 +431,10 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     // milliseconds.  (A lag of more than 10 - 20 milliseconds, for
     // example caused by low memory conditions and swapping, could
     // otherwise lead to collisions.)
+  if (USE_REALTIME_SCHEDULING)
+  {
     set_rt_priority(CONTROL_PRIORITY);
+  }
     
     if (num_moving > 0)
     {
@@ -446,8 +449,10 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     }
     // Give up real-time priority (this is important when the caller
     // thread later enters, for example, an endless loop).
-    unset_rt_priority();
-
+    if (USE_REALTIME_SCHEDULING)
+    {
+        unset_rt_priority();
+    }
 
     // Wait until movement is finished.
     while ( (num_moving > 0)
@@ -693,14 +698,18 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
     // milliseconds.  (A lag of more than 10 - 20 milliseconds, for
     // example caused by low memory conditions and swapping, could
     // otherwise lead to collisions.)
-    set_rt_priority(CONTROL_PRIORITY);
-
+    if (USE_REALTIME_SCHEDULING)
+      {
+        set_rt_priority(CONTROL_PRIORITY);
+      }
     gateway.abortMotion(grid_state, state_summary);
     
     // Give up real-time priority (this is important when the caller
     // thread later enters, for example, an endless loop).
-    unset_rt_priority();
-
+    if (USE_REALTIME_SCHEDULING)
+      {
+        unset_rt_priority();
+      }
 
     // Wait until all movements are cancelled.
     int num_moving = grid_state.Counts[FPST_MOVING] + gateway.getNumUnsentCommands();
