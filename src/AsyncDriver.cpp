@@ -23,14 +23,16 @@
 
 // we need to include the individual CAN commands
 // as they are parametrized here.
-#include "canlayer/commands/ConfigureMotionCommand.h"
-#include "canlayer/commands/ExecuteMotionCommand.h"
 #include "canlayer/commands/AbortMotionCommand.h"
-#include "canlayer/commands/ResetFPUCommand.h"
+#include "canlayer/commands/ConfigureMotionCommand.h"
+#include "canlayer/commands/EnableBetaCollisionProtectionCommand.h"
+#include "canlayer/commands/ExecuteMotionCommand.h"
+#include "canlayer/commands/FindDatumCommand.h"
+#include "canlayer/commands/FreeBetaCollisionCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
-#include "canlayer/commands/FindDatumCommand.h"
 #include "canlayer/commands/PingFPUCommand.h"
+#include "canlayer/commands/ResetFPUCommand.h"
 #include "canlayer/time_utils.h"
 
 #include <cassert>
@@ -199,6 +201,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
     {
         bool broadcast = false;
         can_command = gateway.provideInstance<ResetFPUCommand>();
+        can_command->parametrize(i, broadcast);
         unique_ptr<I_CAN_Command> cmd(can_command.release());
         gateway.sendCommand(i, cmd);
     }
@@ -820,6 +823,134 @@ E_DriverErrCode AsyncDriver::pingFPUAsync(t_grid_state& grid_state,
 
     return DE_OK;
 
+}
+
+
+E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& grid_state,
+                                                                E_GridState& state_summary)
+{
+    // first, get current state and time-out count of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+
+    // make sure no FPU is moving or finding datum
+    bool recoveryok=true;
+    for (int i=0; i < num_fpus; i++)
+    {
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        // we exclude moving FPUs, but include FPUs which are
+        // searching datum. (FIXME: double-check that).
+        if ( (fpu_state.state == FPST_MOVING)
+             && (fpu_state.state == FPST_DATUM_SEARCH))
+        {
+            recoveryok = false;
+        }
+    }
+
+    if (! recoveryok)
+    {
+        // We do not allow recovery when there are moving FPUs.  (In
+        // that case, the user should send an abortMotion command
+        // first.)
+        return DE_STILL_BUSY;
+    }
+
+
+    unique_ptr<EnableBetaCollisionProtectionCommand> can_command;
+    for (int i=0; i < num_fpus; i++)
+    {
+        bool broadcast = false;
+        can_command = gateway.provideInstance<EnableBetaCollisionProtectionCommand>();
+        can_command->parametrize(i, broadcast);
+        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        gateway.sendCommand(i, cmd);
+    }
+    
+    int cnt_pending = num_fpus;
+
+    while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state);
+
+        cnt_pending = (grid_state.count_pending
+                         + gateway.getNumUnsentCommands());
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    return DE_OK;
+}
+
+E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(t_grid_state& grid_state,
+                                           E_GridState& state_summary)
+{
+    // first, get current state and time-out count of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    // make sure no FPU is moving or finding datum
+    bool recoveryok=true;
+    for (int i=0; i < num_fpus; i++)
+    {
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        // we exclude moving FPUs, but include FPUs which are
+        // searching datum. (FIXME: double-check that).
+        if ( (fpu_state.state == FPST_MOVING)
+             && (fpu_state.state == FPST_DATUM_SEARCH))
+        {
+            recoveryok = false;
+        }
+    }
+
+    if (! recoveryok)
+    {
+        // We do not allow recovery when there are moving FPUs.  (In
+        // that case, the user should send an abortMotion command
+        // first.)
+        return DE_STILL_BUSY;
+    }
+
+
+    unique_ptr<FreeBetaCollisionCommand> can_command;
+    for (int i=0; i < num_fpus; i++)
+    {
+        bool broadcast = false;
+        can_command = gateway.provideInstance<FreeBetaCollisionCommand>();
+        can_command->parametrize(i, broadcast);
+        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        gateway.sendCommand(i, cmd);
+    }
+    
+    int cnt_pending = num_fpus;
+
+    while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state);
+
+        cnt_pending = (grid_state.count_pending
+                         + gateway.getNumUnsentCommands());
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    return DE_OK;
 }
 
 

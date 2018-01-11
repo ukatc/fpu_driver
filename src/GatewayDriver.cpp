@@ -1083,8 +1083,10 @@ E_DriverErrCode GatewayDriver::abortMotion(t_grid_state& grid_state,
     // so that abort message is sent without delay.
     commandQueue.flushToPool(command_pool);
     
-    // send broadcast command to each gateway to abort movement of all
+    // Send broadcast command to each gateway to abort movement of all
     // FPUs.
+    // FIXME: In protocol version 2, this needs to be changed to
+    // use the gateway SYNC message.
     unique_ptr<AbortMotionCommand> can_command;
     
     for (int i=0; i < num_gateways; i++)

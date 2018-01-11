@@ -416,6 +416,8 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
     timespec next_key;
     pthread_mutex_lock(&grid_state_mutex);
 
+    bool recount_pending = false;
+
     while (true)
     {
         TimeOutList::t_toentry toentry;
@@ -441,7 +443,15 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
             int fpu_id = toentry.id;
 
             t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
-            if (fpu.pending_command != CCMD_NO_COMMAND)
+            if (fpu.pending_command == CCMD_NO_COMMAND)
+            {
+                // a pending command might have been overwritten
+                // (e.g. due to an abortMotion), before exiting
+                // re-count the number of pending commands to fix the
+                // balance.
+                recount_pending = true;
+            }
+            else
             {
 
                 new_timeout = true;
@@ -471,6 +481,32 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
             }
         }
 
+    }
+
+    /* If the driver waits for more than one command at a time, (for
+       example, an executeMotion and an abortMotion), and one command
+       is responded in time and the other not, it can happen that the
+       pending count becomes unbalanced. To prevent this case,
+       re-count the pending balance if no timed-out command was
+       found. */
+
+    if (recount_pending)
+    {
+        int cp = FPUGridState.count_pending;
+        int cp2 = 0;
+        for(int i=0; i < num_fpus; i++)
+        {
+            if (FPUGridState.FPU_state[i].pending_command != CCMD_NO_COMMAND)
+            {
+                cp2++;
+            }
+        }
+#ifdef DEBUG
+        if (cp2 != cp)
+        {
+            printf("!(%i/%i)", cp2, FPUGridState.count_pending); fflush(stdout);
+        }
+#endif        
     }
 
     // signal any waiting control threads that

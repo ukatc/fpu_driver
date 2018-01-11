@@ -23,14 +23,16 @@
 
 #include "DriverConstants.h"
 #include "canlayer/CommandPool.h"
-#include "canlayer/commands/FindDatumCommand.h"
-#include "canlayer/commands/ExecuteMotionCommand.h"
 #include "canlayer/commands/AbortMotionCommand.h"
-#include "canlayer/commands/ResetFPUCommand.h"
+#include "canlayer/commands/ConfigureMotionCommand.h"
+#include "canlayer/commands/EnableBetaCollisionProtectionCommand.h"
+#include "canlayer/commands/ExecuteMotionCommand.h"
+#include "canlayer/commands/FindDatumCommand.h"
+#include "canlayer/commands/FreeBetaCollisionCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
-#include "canlayer/commands/ConfigureMotionCommand.h"
 #include "canlayer/commands/PingFPUCommand.h"
+#include "canlayer/commands/ResetFPUCommand.h"
 
 #ifdef DEBUG
 #include <stdio.h>
