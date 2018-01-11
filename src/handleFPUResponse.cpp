@@ -136,6 +136,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // FIXME: Update step counter in protocol version 2
             // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
             fpu.state = FPST_MOVING;
+            // status byte should show RUNNING_WAVE, too
         }
         fpu.last_updated = cur_time;
         break;
@@ -291,6 +292,48 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     case CMSG_WARN_LIMIT_ALPHA:
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.at_alpha_limit = true;
+        // FIXME: Update step counter in protocol version 2
+        //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
+        
+        if (fpu.pending_command != CCMD_NO_COMMAND)
+        {
+            // clear time-out flag
+            clear_pending = true;
+        
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
+        fpu.last_updated = cur_time;
+        break;
+
+
+    case CCMD_ENABLE_BETA_COLLISION_PROTECTION:
+        if (response_errcode != 0)
+        {
+            fpu.state = FPST_OBSTACLE_ERROR;
+            fpu.beta_collision = true;
+        }
+        else
+        {
+            fpu.state = FPST_RESTING;
+            fpu.beta_collision = false;
+        }
+        // FIXME: Update step counter in protocol version 2
+        //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
+        
+        if (fpu.pending_command != CCMD_NO_COMMAND)
+        {
+            // clear time-out flag
+            clear_pending = true;
+        
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
+        fpu.last_updated = cur_time;
+        break;
+        
+    case CCMD_FREE_BETA_COLLISION:
+        fpu.state = FPST_OBSTACLE_ERROR;
         // FIXME: Update step counter in protocol version 2
         //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
         
