@@ -19,8 +19,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef RESET_FPU_COMMAND_H
-#define RESET_FPU_COMMAND_H
+#ifndef FREE_BETA_COLLISION_COMMAND_H
+#define FREE_BETA_COLLISION_COMMAND_H
 
 #include <cassert>
 #include "../I_CAN_Command.h"
@@ -30,17 +30,17 @@ namespace mpifps {
 namespace canlayer
 {
 
-    class ResetFPUCommand : public I_CAN_Command
+    class FreeBetaCollisionCommand : public I_CAN_Command
     {
 
       public:
 
         static E_CAN_COMMAND getCommandCode()
         {
-            return CCMD_RESET_FPU;
+            return CCMD_FREE_BETA_COLLISION;
         };
 
-        ResetFPUCommand(){};
+        FreeBetaCollisionCommand(){};
 
         E_CAN_COMMAND getInstanceCommandCode()
         {
