@@ -22,6 +22,8 @@
 
 #include <cassert>
 
+#include <pthread.h>
+
 #include "FPUState.h"
 #include "canlayer/handleFPUResponse.h"
 #include "canlayer/time_utils.h"
@@ -71,59 +73,80 @@ namespace canlayer
          fpu_id, err_msg);
 #endif
 }
- 
+
+
+void update_steps(int &alpha_steps, int &beta_steps, const t_response_buf& data)
+{
+    alpha_steps = (data[4] << 8) | data[5];
+    beta_steps = (data[6] << 8) | data[7];
+}
+
 void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
                        const t_response_buf& data,
-                       const int blen)
+                       const int blen, bool& clear_pending)
 {
     uint8_t cmd_id = data[1];
     uint8_t response_status = data[2];
     uint8_t response_errcode = data[3] ? data[4] : 0;
     timespec cur_time;
+
+    assert(blen == 8);
     
     get_monotonic_time(cur_time);
     
     switch (cmd_id)
     {
     case CCMD_CONFIG_MOTION   :
-      if (response_errcode != 0)
+        // clear time-out flag
+        clear_pending = true;
+        if (response_errcode != 0)
         {
-          logErrorStatus(fpu_id, cur_time, response_errcode);
-          // if the FPU was in loading state, it is switched to RESTING,
-          // otherwise unchanged.
-          if (fpu.state == FPST_LOADING)
-          {
-            fpu.state = FPST_RESTING;
-          }
-        }
-      else
-        {
-          if (response_status == STBT_WAVE_READY)
+            logErrorStatus(fpu_id, cur_time, response_errcode);
+            // if the FPU was in loading state, it is switched to RESTING,
+            // otherwise unchanged.
+            if (fpu.state == FPST_LOADING)
             {
-              fpu.state = FPST_READY_FORWARD;
-            }
-          else
-            {
-              fpu.state = FPST_LOADING;
+                fpu.state = FPST_RESTING;
             }
         }
-          if (fpu.pending_command == CCMD_CONFIG_MOTION)
+        else
+        {
+            if (response_status == STBT_WAVE_READY)
             {
-              fpu.last_command = fpu.pending_command;
-              fpu.pending_command = CCMD_NO_COMMAND;
+                fpu.state = FPST_READY_FORWARD;
             }
-      break;
-    case CCMD_EXECUTE_MOTION  :  
+            else
+            {
+                fpu.state = FPST_LOADING;
+            }
+        }
+        if (fpu.pending_command == CCMD_CONFIG_MOTION)
+        {
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
+        fpu.last_updated = cur_time;
+        break;
+        
+    case CCMD_EXECUTE_MOTION  :
+        // we do not clear the time-out flag now, but rather
+        // wait for CMSG_FINISHED_MOTION for that.
         if (response_errcode == 0)
         {
-            if (blen < 8)
-            {
-                break;
-            }
-            int asteps = (data[4] << 8) | data[5];
-            fpu.alpha_steps = asteps;
-            int bsteps = (data[6] << 8) | data[7];
-            fpu.beta_steps = bsteps;
+            // FIXME: Update step counter in protocol version 2
+            // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
+            fpu.state = FPST_MOVING;
+        }
+        fpu.last_updated = cur_time;
+        break;
+
+    case CMSG_FINISHED_MOTION:
+        // clear time-out flag
+        clear_pending = true;
+        if (response_errcode == 0)
+        {
+            // FIXME: Update step counter in protocol version 2
+            // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
             fpu.state = FPST_RESTING;
         }
         if (fpu.pending_command == CCMD_EXECUTE_MOTION)
@@ -135,16 +158,12 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
         
     case CCMD_ABORT_MOTION    :  
+        // clear time-out flag
+        clear_pending = true;
         if (response_errcode == 0)
         {
-            if (blen < 8)
-            {
-                break;
-            }
-            int asteps = (data[4] << 8) | data[5];
-            fpu.alpha_steps = asteps;
-            int bsteps = (data[6] << 8) | data[7];
-            fpu.beta_steps = bsteps;
+            // FIXME: Update step counter in protocol version 2
+            //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
             fpu.state = FPST_ABORTED;
         }
         if (fpu.pending_command == CCMD_ABORT_MOTION)
@@ -154,13 +173,12 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         }
         fpu.last_updated = cur_time;
         break;
+        
     case CCMD_GET_STEPS_ALPHA :  
+        // clear time-out flag
+        clear_pending = true;
         if (response_errcode == 0)
         {
-            if (blen < 6)
-            {
-                break;
-            }
             int asteps = (((data[6] << 8) | data[5]) << 8 | data[4]);
             fpu.alpha_steps = asteps;
         }
@@ -171,14 +189,12 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         }
         fpu.last_updated = cur_time;
         break;
-        
+         
     case CCMD_GET_STEPS_BETA  :  
+        // clear time-out flag
+        clear_pending = true;
         if (response_errcode == 0)
         {
-            if (blen < 6)
-            {
-                break;
-            }
             int bsteps = (((data[6] << 8) | data[5]) << 8 | data[4]);
             fpu.beta_steps = bsteps;
         }
@@ -191,6 +207,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
         
     case CCMD_PING_FPU        :
+        // clear time-out flag
+        clear_pending = true;
         if (fpu.pending_command == CCMD_PING_FPU)
         {
             fpu.last_command = fpu.pending_command;
@@ -200,14 +218,49 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
 
     case CCMD_RESET_FPU       :  
-    case CCMD_FIND_DATUM :  
+        // clear time-out flag
+        clear_pending = true;
+        if (fpu.pending_command == CCMD_RESET_FPU)
+        {
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
         if (response_errcode == 0)
+        {
+            fpu.state = FPST_UNINITIALIZED;
+        }
+        fpu.last_updated = cur_time;
+        break;
+        
+    case CCMD_FIND_DATUM :
+        // we do not clear the time-out entry, because
+        // we wait for the datum search to finish
+        if (response_errcode == 0)
+        {
+            // datum search was successfully started
+            fpu.state = FPST_DATUM_SEARCH;
+        }
+        // we leave findDatum as pending command, because
+        // we have to wait for the final response.
+        fpu.last_updated = cur_time;
+        break;
+    case CMSG_FINISHED_DATUM :  
+        // clear time-out flag
+        clear_pending = true;
+        if (response_errcode != 0)
+        {
+            if (fpu.state == FPST_DATUM_SEARCH)
+            {
+                fpu.state = FPST_UNINITIALIZED;
+            }
+        }
+        else
         {
 
             fpu.was_zeroed = true;
             fpu.alpha_steps = 0;
             fpu.beta_steps = 0;
-            fpu.state = static_cast<E_FPU_STATE>(response_status);
+            fpu.state = FPST_AT_DATUM;
         }
         
         if (fpu.pending_command == CCMD_FIND_DATUM)
@@ -217,9 +270,44 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         }
         fpu.last_updated = cur_time;
         break;
+    case CMSG_WARN_COLLISION_BETA:
+        
+        fpu.state = FPST_OBSTACLE_ERROR;
+        fpu.beta_collision = true;
+        // FIXME: Update step counter in protocol version 2
+        //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
+        
+        if (fpu.pending_command != CCMD_NO_COMMAND)
+        {
+            // clear time-out flag
+            clear_pending = true;
+        
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
+        fpu.last_updated = cur_time;
+        break;
+        
+    case CMSG_WARN_LIMIT_ALPHA:
+        fpu.state = FPST_OBSTACLE_ERROR;
+        fpu.at_alpha_limit = true;
+        // FIXME: Update step counter in protocol version 2
+        //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
+        
+        if (fpu.pending_command != CCMD_NO_COMMAND)
+        {
+            // clear time-out flag
+            clear_pending = true;
+        
+            fpu.last_command = fpu.pending_command;
+            fpu.pending_command = CCMD_NO_COMMAND;
+        }
+        fpu.last_updated = cur_time;
+        break;
+        
     case CCMD_NO_COMMAND      :
     default:
-        // invalid command, ignore for now
+        // invalid command, ignore 
         // FIXME: log invalid responses
         break;
 

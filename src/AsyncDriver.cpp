@@ -203,14 +203,14 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         gateway.sendCommand(i, cmd);
     }
     
-    int count_pending = num_fpus;
+    int cnt_pending = num_fpus;
 
-    while ( (count_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state);
 
-        count_pending = (grid_state.count_pending
+        cnt_pending = (grid_state.count_pending
                          + gateway.getNumUnsentCommands());
     }
 
@@ -448,7 +448,7 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_OBSTACLE_ERROR))
+            || (fpu_status == FPST_OBSTACLE_ERROR))
         {
             return DE_UNRESOLVED_COLLISION;
         }
@@ -468,11 +468,16 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     // milliseconds.  (A lag of more than 10 - 20 milliseconds, for
     // example caused by low memory conditions and swapping, could
     // otherwise lead to collisions.)
-  if (USE_REALTIME_SCHEDULING)
-  {
-    set_rt_priority(CONTROL_PRIORITY);
-  }
-    
+    if (USE_REALTIME_SCHEDULING)
+    {
+        set_rt_priority(CONTROL_PRIORITY);
+    }
+
+    // FIXME: This is preliminary for use in the verificaiton
+    // system. In the ICS driver, this needs to be changed to use the
+    // gateway SYNC message to make sure that FPUs move with minimum
+    // lag in respect to each other.
+
     if (num_moving > 0)
     {
         for (int i=0; i < num_gateways; i++)
@@ -503,7 +508,7 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         num_moving = (grid_state.Counts[FPST_MOVING]
                       + grid_state.Counts[FPST_READY_FORWARD]
                       + grid_state.Counts[FPST_READY_BACKWARD]
-                     + gateway.getNumUnsentCommands());
+                      + gateway.getNumUnsentCommands());
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -533,10 +538,6 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
 
 
 
-#ifdef DEBUG3
-            printf(" Sending GetStepsAlpha commands:");
-            fflush(stdout);
-#endif
     unique_ptr<GetStepsAlphaCommand> can_command1;
     for (int i=0; i < num_fpus; i++)
     {
@@ -544,34 +545,18 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         if (! gateway.isLocked(i) )
         {
             can_command1 = gateway.provideInstance<GetStepsAlphaCommand>();
-#ifdef DEBUG
-            if (!can_command1)
-            {
-                printf("no AlphaCommand provided\n");
-            }
-#endif
+            assert(can_command1);
             bool broadcast = false;
             can_command1->parametrize(i, broadcast);
             // send the command (the actual sending happens
             // in the TX thread in the background).
-#ifdef DEBUG3
-            printf(".");
-#endif
             CommandQueue::E_QueueState qstate;
             unique_ptr<I_CAN_Command> cmd1(can_command1.release());
             qstate = gateway.sendCommand(i, cmd1);
-#ifdef DEBUG
-            if (qstate != CommandQueue::QS_OK)
-            {
-                printf("(Queue state : %i) ", qstate);
-            }
-#endif
+            assert(qstate == CommandQueue::QS_OK);
             
         }
     }
-#ifdef DEBUG
-            printf("\n");
-#endif
 
     // We do not expect the locked FPUs to respond.
     // FIXME: This needs to be documented and checked
@@ -587,10 +572,9 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // as we do not effect any change on the grid,
         // we need to wait for any response event,
         // and filter out whether we are actually ready.
-//        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING
-//                                                          | TGT_ALL_UPDATED),
-//                                             grid_state);
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        
+        ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state);
 
         // get fresh count of pending fpus.
@@ -607,10 +591,6 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
-#ifdef DEBUG3
-            printf(" Sending GetStepsBeta commands:");
-            fflush(stdout);
-#endif
     unique_ptr<GetStepsBetaCommand> can_command2;
     for (int i=0; i < num_fpus; i++)
     {
@@ -618,33 +598,17 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         if (! gateway.isLocked(i) )
         {
             can_command2 = gateway.provideInstance<GetStepsBetaCommand>();
-#ifdef DEBUG
-            if (!can_command2)
-            {
-                printf("no BetaCommand provided\n");
-            }
-#endif
+            assert(can_command2);
             bool broadcast = false;
             can_command2->parametrize(i, broadcast);
             // send the command (the actual sending happens
             // in the TX thread in the background).
-#ifdef DEBUG3
-            printf(",");
-#endif
             CommandQueue::E_QueueState qstate;
             unique_ptr<I_CAN_Command> cmd2(can_command2.release());
             qstate = gateway.sendCommand(i, cmd2);
-#ifdef DEBUG
-            if (qstate != CommandQueue::QS_OK)
-            {
-                printf("(Queue state : %i) ", qstate);
-            }
-#endif
+            assert(qstate == CommandQueue::QS_OK);
         }
     }
-#ifdef DEBUG
-            printf("\n");
-#endif
     
     num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
 
@@ -657,10 +621,8 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // as we do not effect any change on the grid,
         // we need to wait for any response event,
         // and filter out whether we are actually ready.
-//        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING
-//                                                          | TGT_ALL_UPDATED),
-//                                             grid_state);
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        //state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state);
 
         // get fresh count of pending fpus.
@@ -815,7 +777,7 @@ E_DriverErrCode AsyncDriver::pingFPUAsync(t_grid_state& grid_state,
 
     // All fpus which are not moving are pinged.
 
-    int count_pending = 0;
+    int cnt_pending = 0;
     unique_ptr<PingFPUCommand> can_command;
     for (int i=0; i < num_fpus; i++)
     {
@@ -835,19 +797,19 @@ E_DriverErrCode AsyncDriver::pingFPUAsync(t_grid_state& grid_state,
             can_command->parametrize(i, broadcast);
             unique_ptr<I_CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
-            count_pending++;
+            cnt_pending++;
             
         }
     }
 
     // wait until all generated ping commands have been responded to
     // or have timed out.
-    while ( (count_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state);
 
-        count_pending = (grid_state.count_pending
+        cnt_pending = (grid_state.count_pending
                          + gateway.getNumUnsentCommands());
     }
 

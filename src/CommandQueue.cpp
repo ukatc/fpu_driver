@@ -173,9 +173,6 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
         if ((was_empty) && (EventDescriptorNewCommand >= 0))
         {
             uint64_t val = 1;
-#ifdef DEBUG
-            printf("sending new command event via descriptor!\n");
-#endif            
             
             write(EventDescriptorNewCommand, &val, sizeof(val));
         }

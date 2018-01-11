@@ -977,6 +977,8 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buff
 {
     t_CAN_buffer* can_msg = (t_CAN_buffer*) command_buffer;
 
+    // do basic filtering for correctness, and
+    // call fpu-secific handler.
     if (can_msg == nullptr)
     {
         // FIXME: logging of invalid messages
@@ -984,14 +986,14 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buff
             printf("RX invalid CAN message (empty)- ignoring.\n");
 #endif
     }
-
-    if (clen < 3)
+    else if (clen < 3)
     {
         // FIXME: logging of invalid messages
 #ifdef DEBUG
         printf("RX invalid CAN message (length is only %i)- ignoring.\n", clen);
 #endif
     }
+    else
     {
         const uint8_t busid = can_msg->message.busid;
         const uint16_t can_identifier = can_msg->message.identifier;
@@ -1077,6 +1079,10 @@ E_DriverErrCode GatewayDriver::abortMotion(t_grid_state& grid_state,
     }
 
 
+    // Flush all queued commands from queue to command pool,
+    // so that abort message is sent without delay.
+    commandQueue.flushToPool(command_pool);
+    
     // send broadcast command to each gateway to abort movement of all
     // FPUs.
     unique_ptr<AbortMotionCommand> can_command;

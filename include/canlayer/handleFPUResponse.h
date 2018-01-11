@@ -30,7 +30,7 @@ namespace canlayer
 {
     void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
                            const t_response_buf& data,
-                           const int blen);
+                           const int blen, bool& clear_pending);
 
 }
 }

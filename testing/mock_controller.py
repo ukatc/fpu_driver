@@ -44,7 +44,8 @@ def command_handler(cmd, socket):
     tx4_count0 = pos & 0xff
     tx5_count1 = (pos >> 8) & 0xff
     tx6_count2 = (pos >> 16) & 0xff
-    
+
+    tx7_dummy = 0
     
     resp = [ tx_busid,
              (tx_canid & 0xff),
@@ -55,8 +56,14 @@ def command_handler(cmd, socket):
              tx3_errcode,
              tx4_count0,
              tx5_count1,
-             tx6_count2]
+             tx6_count2,
+             tx7_dummy ]
     
     response = codec.encode(resp)
     socket.sendall(response)
     #print("echoed %r" % response)
+
+
+if __name__ == "__main__":
+    print("run mock_gateway to use this module.")
+

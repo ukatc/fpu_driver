@@ -91,8 +91,6 @@ enum E_CAN_COMMAND
     CMSG_FINISHED_DATUM                = 104, // findDatum finished
     CMSG_WARN_COLLISION_BETA           = 105, // collision at beta arm
     CMSG_WARN_LIMIT_ALPHA              = 106, // limit switch at alpha arm
-    CMSG_WARN_TIMEOUT_DATUM            = 107, // datum search time out
-    /* code 107 probably unused */
 #else
     CMSG_FINISHED_MOTION               = 23, // executeMotion finished
     CMSG_FINISHED_DATUM                = 24, // findDatum finished

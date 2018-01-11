@@ -341,28 +341,33 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
 
     t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
 
-    // check whether command might not apply because
-    // the FPU is locked.
-    // FIXME: This code needs to be moved to
-    // expectsResponse, and fpu.state added
-    // as a parameter.
-    bool does_apply = ((fpu.state != FPST_LOCKED)
-#if (CAN_PROTOCOL_VERSION != 1)                       
-                       || (pending_cmd == CCMD_UNLOCK_UNIT)
-#endif                       
-                       || (pending_cmd == CCMD_RESET_FPU));
-    if (does_apply)
+    // Currently, we do assume that commands expect a response
+    // independently from the FPU state, even if the FPU is
+    // locked. The only exception are configureMotion commands where
+    // both the first and last flags are not set.
+
+    FPUGridState.count_pending++;
+
+    static int warn_thrice = 3;
+#ifdef DEBUG
+    
+    if ((warn_thrice-- > 0)
+        && (fpu.pending_command != CCMD_NO_COMMAND)
+        && (pending_cmd != CCMD_ABORT_MOTION))
     {
-      FPUGridState.count_pending++;
+        printf("WARNING: new command overriding existing pending command (%i -> %i)\n",
+               pending_cmd, fpu.pending_command);
 
-      fpu.pending_command = pending_cmd;
-      fpu.cmd_timeout = tout_val;
+    }
+#endif
 
-        // if tracing is active, signal state change
-        if (num_trace_clients > 0)
-        {
-            pthread_cond_broadcast(&cond_state_change);
-        }
+    fpu.pending_command = pending_cmd;
+    fpu.cmd_timeout = tout_val;
+
+    // if tracing is active, signal state change
+    if (num_trace_clients > 0)
+    {
+        pthread_cond_broadcast(&cond_state_change);
     }
 
 
@@ -441,9 +446,6 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
 
                 new_timeout = true;
                 FPUGridState.count_timeout++;
-///             This assertion is WRONG. We cannot assume that
-///             replies are always processed after requests.
-///                assert(FPUGridState.count_pending > 0);
                 FPUGridState.count_pending--;
                 
                 fpu.last_command = fpu.pending_command;
@@ -540,10 +542,6 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
                                 TimeOutList& tout_list)
 {
 
-    // FIXME: the 16-bit canid probably not only encodes the FPU which sent
-    // the response but also the response type.
-
-    // flag to indicate the message does not address something else.
     int fpu_busid = can_identifier & 0x7f;
 #ifdef DEBUG
 #ifdef PRINT_BYTES    
@@ -575,7 +573,24 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 #endif    
 #endif
 
+#if (CAN_PROTOCOL_VERSION == 1)
+    if (blen != 8)
+    {
+#ifdef DEBUG
+        printf("wrong message length (blen=%i) for version 1 - ignored.\n", blen);
+#endif        
+        return;
+    }
+#endif    
+
     // fpu_busid is a one-based index
+    if (fpu_busid == 0)
+    {
+#ifdef DEBUG
+        printf("fpu_busid zero, ignored\n");
+#endif
+        return;
+    }
     if (fpu_busid > FPUS_PER_BUS)
     {
 #ifdef DEBUG
@@ -591,8 +606,8 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         return;
     }
 
-    // FIXME: This is part of the current protocol -
-    // a rather ugly redundancy. Check if we can get rid of this.
+    // The redundant fpu_id is part of the version 1 protocol,
+    // version 2 gets rid of this.
     if (data[0] != fpu_busid)
     {
 #ifdef DEBUG
@@ -603,8 +618,8 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
             return;
     }
 
-    // fpu_busid used a one-based index here, this is
-    // deliberate.
+    // fpu_busid uses a one-based index here, this is
+    // deliberate and reflected in the array size.
     int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
     if ((fpu_id > num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
     {
@@ -624,51 +639,57 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // get canid of FPU (additional ids might be used
         // to report state of the gateway)
 
-        // FIXME: if an FPU can send a broadcast abort
-        // message, this needs to be handled here.
-        /// uint8_t priority = (can_identifier >> 7);
 
-
-        // clear time-out flag for this FPU
-        tout_list.clearTimeOut(fpu_id);
-
+  
         // Unwrap response, and adjust FPU state according to
         // that.
 
         const t_fpu_state oldstate = FPUGridState.FPU_state[fpu_id];
-        
-        canlayer::handleFPUResponse(fpu_id, FPUGridState.FPU_state[fpu_id], data, blen);
+
+        bool clear_pending = false;
+        canlayer::handleFPUResponse(fpu_id, FPUGridState.FPU_state[fpu_id], data, blen, clear_pending);
+        if (clear_pending)
+        {
+            tout_list.clearTimeOut(fpu_id);
+            
+            // Track decrease in number of pending commands.
+            // Note this is more tricky than it seems, because
+            // we can get responses before pending commands
+            // have been registered by the sending thread.
+            
+            FPUGridState.count_pending--;
+        }
+
 
         // update global state counters
         t_fpu_state newstate = FPUGridState.FPU_state[fpu_id];
-// THIS IS WRONG. We can NOT assume that a reply is processed
-// after the pending command was registered - it can
-// be processed before.
-//        if ( (newstate.pending_command == CCMD_NO_COMMAND)
-//             && (oldstate.pending_command != CCMD_NO_COMMAND))
-//        {
-//            assert(FPUGridState.count_pending > 0);
-            FPUGridState.count_pending--;
-#ifdef DEBUG3
-            printf("-- FPUGridState.count_pending now %i (FPU[%i])\n",
-                   FPUGridState.count_pending, fpu_id);
-#endif
-//        }
-//#ifdef DEBUG
-//        else
-//        {
-//            printf("== FPUGridState.count_pending now %i (FPU[%i], old cmd=%i, new cmd=%i)\n",
-//                   FPUGridState.count_pending, fpu_id,
-//                   oldstate.pending_command, newstate.pending_command);
-//        }
-//#endif
+        
+        // IMPORTANT NOTE ON MESSAGE ORDERING. We can NOT assume that
+        // a reply is processed /after/ the pending command was
+        // registered - it can be processed before.
+        //
+        // In combination with that protocol version 1 does not use
+        // sequence numbers, this means we can currently only have one
+        // command pending at a time. If we want to send more commands
+        // with a confirmed response, we always need to wait for
+        // completion.
         
         FPUGridState.Counts[oldstate.state]--;
         FPUGridState.Counts[newstate.state]++;
 
-        // the state of the grid can change when *all* FPUs have
-        // left an old state, or *at least one* has entered a new
-        // state.
+#ifdef DEBUG3
+        printf("count_pending= %i\n", FPUGridState.count_pending);
+        printf("gridstate.Counts[] = [");
+        for (int i=0; i < NUM_FPU_STATES; i++)
+        {
+            printf("%i%s", FPUGridState.Counts[i],
+                   (i < (NUM_FPU_STATES -1)) ? ", " : "" );
+        }
+        printf("]\n"); fflush(stdout);
+#endif        
+
+        // The state of the grid can change when *all* FPUs have left
+        // an old state, or *at least one* has entered a new state.
         bool state_transition = ((FPUGridState.Counts[oldstate.state] == 0)
                                  || (FPUGridState.Counts[newstate.state] == 1));
 
