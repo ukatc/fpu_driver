@@ -586,6 +586,10 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // to send all the commands.
         num_pending = (grid_state.count_pending
                        + gateway.getNumUnsentCommands());
+#ifdef DEBUG3
+        printf("getPositions(alpha) num_pending=%i\n", num_pending);
+#endif
+        
 
     }
 
@@ -635,6 +639,9 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         num_pending = (grid_state.count_pending
                        + gateway.getNumUnsentCommands());
 
+#ifdef DEBUG3
+        printf("getPositions(beta) num_pending=%i\n", num_pending);
+#endif
     }
 
     if (grid_state.driver_state != DS_CONNECTED)

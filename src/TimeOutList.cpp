@@ -50,6 +50,11 @@ namespace canlayer
 // More efficient data structures are possible but might not
 // be trivial to implement.
 
+const timespec TimeOutList::MAX_TIMESPEC = {/* .tv_sec = */ TIME_T_MAX,
+                                          /* .tv_nsec = */ 999999999
+};
+
+
 TimeOutList::TimeOutList()
 {
     for(int i = 0; i < MAX_NUM_POSITIONERS; i++)

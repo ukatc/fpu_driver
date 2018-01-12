@@ -105,6 +105,10 @@ public:
         return command_pool.provideInstance<T>();
     }
 
+    void updatePendingSets(unique_ptr<I_CAN_Command> &active_can_command,
+                           int gateway_id);
+    
+
     // send a CAN command to the gateway.
     // This method is thread-safe
     CommandQueue::E_QueueState sendCommand(int fpu_id, unique_ptr<I_CAN_Command>& new_command);

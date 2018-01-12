@@ -24,6 +24,7 @@
 #include <cassert>
 
 #include "canlayer/time_utils.h"
+
 #include "GridState.h"
 
 #include "canlayer/FPUArray.h" 
@@ -38,9 +39,6 @@ namespace mpifps
 
 namespace canlayer
 {
-
-const timespec FPUArray::MAX_TIMEOUT = { /* .tv_sec = */ 10,
-                                         /* .tv_nsec = */ 0};
 
 
 
@@ -68,8 +66,11 @@ FPUArray::FPUArray(int nfpus)
         fpu_state.was_zeroed                = false;
         fpu_state.is_locked                 = false;
         fpu_state.state                     = FPST_UNINITIALIZED;
-        fpu_state.pending_command           = CCMD_NO_COMMAND;
-        fpu_state.cmd_timeout               = MAX_TIMEOUT;
+        fpu_state.pending_command_set       = 0;
+        for(int i=0; i < NUM_CAN_COMMANDS; i++)
+        {
+            fpu_state.cmd_timeouts[i]       = TimeOutList::MAX_TIMESPEC;
+        }
         fpu_state.last_updated.tv_sec       = 0;
         fpu_state.last_updated.tv_nsec      = 0;
         fpu_state.timeout_count             = 0;
@@ -167,9 +168,14 @@ void FPUArray::incSending()
 
 int  FPUArray::countSending()
 {
+    int rv;
     // this read access does not need locking
     // because the accessed value is atomic
-    return num_commands_being_sent;
+    pthread_mutex_lock(&grid_state_mutex);
+    rv = num_commands_being_sent;
+    pthread_mutex_unlock(&grid_state_mutex);
+    
+    return rv;
 }
 
 
@@ -177,7 +183,8 @@ void FPUArray::decSending()
 {
     pthread_mutex_lock(&grid_state_mutex);
     num_commands_being_sent--;
-    if (num_commands_being_sent == 0)
+    if ( (num_commands_being_sent == 0)
+         && (FPUGridState.count_pending == 0) )
     {
         pthread_cond_broadcast(&cond_state_change);
     }
@@ -334,7 +341,8 @@ bool FPUArray::isLocked(int fpu_id)
 // sets pending command for one FPU, increments the "pending"
 // grid-global counter.
 
-void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val)
+void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val,
+                                TimeOutList& timeout_list)
 {
     pthread_mutex_lock(&grid_state_mutex);
 
@@ -346,24 +354,9 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
     // locked. The only exception are configureMotion commands where
     // both the first and last flags are not set.
 
-    FPUGridState.count_pending++;
 
-    static int warn_thrice = 3;
-#ifdef DEBUG
-    
-    if ((warn_thrice-- > 0)
-        && (fpu.pending_command != CCMD_NO_COMMAND)
-        && (pending_cmd != CCMD_ABORT_MOTION))
-    {
-        printf("WARNING: new command overriding existing pending command (%i -> %i)\n",
-               pending_cmd, fpu.pending_command);
-
-    }
-#endif
-
-    fpu.pending_command = pending_cmd;
-    fpu.cmd_timeout = tout_val;
-
+    add_pending(fpu, fpu_id, pending_cmd, tout_val, timeout_list,
+                FPUGridState.count_pending);
     // if tracing is active, signal state change
     if (num_trace_clients > 0)
     {
@@ -412,16 +405,23 @@ void FPUArray::setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd)
 
 void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
 {
-    bool new_timeout = false;
     timespec next_key;
     pthread_mutex_lock(&grid_state_mutex);
 
-    bool recount_pending = false;
+    unsigned int old_count_pending = FPUGridState.count_pending;
+
 
     while (true)
     {
         TimeOutList::t_toentry toentry;
         // get absolute timeout value
+        //
+        // FIXME: the naming is a bit confusing here.  we simply
+        // define a later time to derive a value which indicates a
+        // negative result (no timeout key found).
+        const timespec MAX_TIMEOUT = { /* .tv_sec = */ 10,
+                                       /* .tv_nsec = */ 0};
+
         timespec max_tmout = time_add(cur_time, MAX_TIMEOUT);
         
         next_key = tout_list.getNextTimeOut(max_tmout);
@@ -443,75 +443,24 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
             int fpu_id = toentry.id;
 
             t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
-            if (fpu.pending_command == CCMD_NO_COMMAND)
-            {
-                // a pending command might have been overwritten
-                // (e.g. due to an abortMotion), before exiting
-                // re-count the number of pending commands to fix the
-                // balance.
-                recount_pending = true;
-            }
-            else
-            {
 
-                new_timeout = true;
-                FPUGridState.count_timeout++;
-                FPUGridState.count_pending--;
-                
-                fpu.last_command = fpu.pending_command;
-                fpu.pending_command = CCMD_NO_COMMAND;
-                fpu.timeout_count++;
-                fpu.last_updated = cur_time;
+            // remlove entries which are expired, and adjust pending count
+            timespec next_timeout = expire_pending(fpu, fpu_id,
+                                                   cur_time,
+                                                   FPUGridState.count_pending);
 
-#ifdef DEBUG3
-                printf("-- timeout for FPU %i: FPUGridState.count_pending now %i\n",
-                       fpu_id,
-                       FPUGridState.count_pending);
-                printf("FPUs still pending: [");
-                for(int i=0; i < num_fpus; i++)
-                {
-                    if (FPUGridState.FPU_state[i].pending_command != CCMD_NO_COMMAND)
-                    {
-                        printf("%i, ", i);
-                    }
-                }
-                printf("]\n");
-#endif
+            // re-insert smallest time-out of remaining pending commands
+            tout_list.insertTimeOut(fpu_id, next_timeout);
 
-            }
+            
         }
 
     }
 
-    /* If the driver waits for more than one command at a time, (for
-       example, an executeMotion and an abortMotion), and one command
-       is responded in time and the other not, it can happen that the
-       pending count becomes unbalanced. To prevent this case,
-       re-count the pending balance if no timed-out command was
-       found. */
 
-    if (recount_pending)
-    {
-        int cp = FPUGridState.count_pending;
-        int cp2 = 0;
-        for(int i=0; i < num_fpus; i++)
-        {
-            if (FPUGridState.FPU_state[i].pending_command != CCMD_NO_COMMAND)
-            {
-                cp2++;
-            }
-        }
-#ifdef DEBUG
-        if (cp2 != cp)
-        {
-            printf("!(%i/%i)", cp2, FPUGridState.count_pending); fflush(stdout);
-        }
-#endif        
-    }
-
-    // signal any waiting control threads that
+    // signal any waiting control threads if
     // the grid state has changed
-    if (new_timeout)
+    if (old_count_pending > FPUGridState.count_pending)
     {
         pthread_cond_broadcast(&cond_state_change);
     }
@@ -682,19 +631,8 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
         const t_fpu_state oldstate = FPUGridState.FPU_state[fpu_id];
 
-        bool clear_pending = false;
-        canlayer::handleFPUResponse(fpu_id, FPUGridState.FPU_state[fpu_id], data, blen, clear_pending);
-        if (clear_pending)
-        {
-            tout_list.clearTimeOut(fpu_id);
-            
-            // Track decrease in number of pending commands.
-            // Note this is more tricky than it seems, because
-            // we can get responses before pending commands
-            // have been registered by the sending thread.
-            
-            FPUGridState.count_pending--;
-        }
+        canlayer::handleFPUResponse(fpu_id, FPUGridState.FPU_state[fpu_id], data, blen,
+                                    tout_list, FPUGridState.count_pending);
 
 
         // update global state counters
@@ -746,6 +684,119 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 }
 
 
+timespec get_min_pending(const t_fpu_state& fpu)
+{
+   // get earliest previous time-out value
+    timespec min_val = TimeOutList::MAX_TIMESPEC;
+    for (int i=0; i < NUM_CAN_COMMANDS; i++)
+    {
+        if ( ((fpu.pending_command_set >> i) & 1) != 0)
+        {
+            timespec cmp_val = fpu.cmd_timeouts[i];
+            if ( time_smaller(cmp_val, min_val))
+            {
+                min_val = cmp_val;
+            }
+        }
+    }
+    return min_val;
+}
+
+void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code, timespec new_timeout,
+                 TimeOutList& timeout_list, unsigned int &count_pending)
+{
+#ifdef DEBUG
+    printf("fpu #%i: adding cmd code %i\n", fpu_id, cmd_code);
+#endif
+    // assert this command is not yet pending
+    assert( ((fpu.pending_command_set >> cmd_code) & 1) == 0);
+
+    // add command to pending set
+    fpu.pending_command_set |= ((unsigned int)1) << cmd_code;
+
+    // get earliest previous time-out value
+    timespec min_val = get_min_pending(fpu);
+
+    fpu.cmd_timeouts[cmd_code] = new_timeout;
+    // if the new value is smaller than the previous ones,
+    // overwrite the time-out list entry for this fpu
+    if (time_smaller(new_timeout, min_val))
+    {
+        timeout_list.insertTimeOut(fpu_id, new_timeout);
+    }
+
+    count_pending++;
+
+}
+
+void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
+                    TimeOutList& timeout_list, unsigned int &count_pending)
+{
+    // ignore if a command was already removed by time-out expiration
+
+
+    if ( ((fpu.pending_command_set >> cmd_code) & 1) == 0)
+    {
+#ifdef DEBUG
+    printf("fpu #%i:  cmd code %i was already removed\n", fpu_id, cmd_code);
+#endif
+        return;
+    }
+
+#ifdef DEBUG3
+    printf("fpu #%i: removing cmd code %i %i ==> %i\n", fpu_id, cmd_code,
+           fpu.pending_command_set,
+           fpu.pending_command_set & ~(((unsigned int)1) << cmd_code));
+#endif
+
+    // get timespec which is to be removed
+
+    timespec removed_val = fpu.cmd_timeouts[cmd_code];
+
+    fpu.cmd_timeouts[cmd_code] = TimeOutList::MAX_TIMESPEC;
+    
+    // remove command from pending set
+    fpu.pending_command_set &= ~(((unsigned int)1) << cmd_code);
+    fpu.last_command = cmd_code;
+
+    // get earliest remaining time-out value.
+    // This can be MAX_TIMESPEC as well, no problem.
+    timespec new_min_val = get_min_pending(fpu);
+
+    if (time_smaller(removed_val, new_min_val))
+    {
+        timeout_list.insertTimeOut(fpu_id, new_min_val);
+    }
+
+    count_pending--;
+
+}
+
+timespec expire_pending(t_fpu_state& fpu, int fpu_id, timespec expiration_time,
+                         unsigned int &count_pending)
+{
+
+    // remove all commands in the pending set which have a timeout
+    // value before the expiration time, adjust pending count, and
+    // return the remaining minimum time.
+
+    for (int i = 0; i < NUM_CAN_COMMANDS; i++)
+    {
+        if ( (((fpu.pending_command_set >> i) & 1) != 0)
+             && (time_smaller(fpu.cmd_timeouts[i], expiration_time)))
+        {
+#ifdef DEBUG
+    printf("fpu #%i: expiring cmd code %i\n", fpu_id, i);
+#endif
+            count_pending--;
+            fpu.timeout_count++;
+            fpu.pending_command_set &= ~(((unsigned int)1) << i);
+        }
+    }
+    timespec new_min_val = get_min_pending(fpu);
+
+    return new_min_val;
+}
 
 
 }

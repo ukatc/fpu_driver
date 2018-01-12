@@ -477,17 +477,48 @@ void GatewayDriver::updatePendingCommand(int fpu_id,
 
         fpuArray.setPendingCommand(fpu_id,
                                    can_command->getInstanceCommandCode(),
-                                   deadline);
-        timeOutList.insertTimeOut(fpu_id, deadline);
+                                   deadline, timeOutList);
     }
     else
     {
         fpuArray.setLastCommand(fpu_id,
                                 can_command->getInstanceCommandCode());
     }
-    // update number of commands being sent
-    fpuArray.decSending();
 }
+
+
+// update the pending sets either of one FPU or of all FPUs
+// to which a broadcast command is sent.
+//
+// Note: Getting timing issues is tricky but it is probably best to
+// set the pending flags before the command is actually sent.
+// Otherwise, it is possible and happens that the response is
+// processed before the pending bit is set which is confusing.
+
+void GatewayDriver::updatePendingSets(unique_ptr<I_CAN_Command> &active_can_command,
+                                      int gateway_id)
+{
+    if (! active_can_command->doBroadcast())
+    {
+        updatePendingCommand(active_can_command->getFPU_ID(),
+                             active_can_command);
+    }
+    else
+    {
+        // set pending command for all FPUs on the same
+        // gateway (will ignore if state is locked).
+        for (int i; i < num_fpus; i++)
+        {
+            if (address_map[i].gateway_id
+                == gateway_id)
+            {
+                updatePendingCommand(i,
+                                     active_can_command);
+            }
+        }
+    }
+}
+
 
 // This method either fetches and sends a new buffer
 // of CAN command data to a gateway, or completes sending of
@@ -512,7 +543,7 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
         // we can send a new message. Safely pop the
         // pending command coming from the control thread
         
-        // update number of commands being sent first
+        // Update number of commands being sent first
         // (this avoids a race condition when querying
         // the number of commands which are not sent).
         fpuArray.incSending();
@@ -537,6 +568,8 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
                                                   fpu_canid,
                                                   message_len,
                                                   can_buffer);
+
+            updatePendingSets(active_can_command, gateway_id);
             // byte-swizzle and send buffer
             status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
                       message_len, can_buffer.bytes);
@@ -717,27 +750,9 @@ void* GatewayDriver::threadTxFun()
                 if ( (sbuffer[gateway_id].numUnsentBytes() == 0)
                         && ( active_can_command[gateway_id]))
                 {
-                    // we completed sending a command.
-                    // set send time in fpuArray memory structure
-                    if (! active_can_command[gateway_id]->doBroadcast())
-                    {
-                        updatePendingCommand(active_can_command[gateway_id]->getFPU_ID(),
-                                             active_can_command[gateway_id]);
-                    }
-                    else
-                    {
-                        // set pending command for all FPUs on the
-                        // gateway (will ignore if state is locked).
-                        for (int i; i < num_fpus; i++)
-                        {
-                            if (address_map[i].gateway_id
-                                == gateway_id)
-                            {
-                                updatePendingCommand(i,
-                                                     active_can_command[gateway_id]);
-                            }
-                        }
-                    }
+
+                    // update number of commands being sent
+                    fpuArray.decSending();
                     // return CAN command instance to memory pool
                     command_pool.recycleInstance(active_can_command[gateway_id]);
                 }

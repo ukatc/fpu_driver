@@ -46,6 +46,8 @@ public:
         int id; // corresponding fpu id
     } t_toentry;
 
+    static const timespec MAX_TIMESPEC; 
+
     TimeOutList();
 
     ~TimeOutList() {};
@@ -80,9 +82,6 @@ public:
 
 private:
 
-    const timespec MAX_TIMESPEC = {/* .tv_sec = */ TIME_T_MAX,
-                                          /* .tv_nsec = */ 999999999
-    };
 
     // get current minimum key (timeout value)
     // This method is not thread-safe!

@@ -27,6 +27,7 @@ namespace mpifps
 {
 
 using canlayer::E_CAN_COMMAND;
+using canlayer::NUM_CAN_COMMANDS;
     
 enum E_FPU_STATE
 {
@@ -64,8 +65,8 @@ enum E_MOVEMENT_DIRECTION
 typedef struct t_fpu_state
 {
     E_FPU_STATE state;
-    // id of any still running and incomplete command
-    E_CAN_COMMAND pending_command;
+    // set of any still running and incomplete commands
+    uint32_t pending_command_set;
     // id of last command that was issued but not completed.
     E_CAN_COMMAND last_command;
     // id of last command that was completed
@@ -74,7 +75,7 @@ typedef struct t_fpu_state
     // time when any running command is considered timed out
     // Note: this time needs to use the monotonic linux system
     // clock so that leap seconds don't trigger bugs.
-    timespec cmd_timeout;
+    timespec cmd_timeouts[NUM_CAN_COMMANDS];
     timespec last_updated;
 
     // these members are the individual values

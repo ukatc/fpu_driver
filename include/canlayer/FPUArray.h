@@ -104,7 +104,7 @@ public:
     bool isLocked(int fpu_id);
     
     // sets pending command for one FPU.
-    void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val);
+    void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val, TimeOutList& timeout_list);
 
 
     // sets last command for a FPU.
@@ -150,10 +150,8 @@ private:
 
 
 ///     // confirm response for one FPU, canceling the 'pending command'
-///     // attributes. TODO: This should be done in the response
-///     // handler.
-///     void confirmResponse(int fpu_id);
-/// 
+///     // attributes.
+    
     void handleFPUResponse(int fpu_id, t_fpu_state& fpu, const t_response_buf& data,
                            const int blen);
 
@@ -184,6 +182,26 @@ private:
     pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER;
 
 };
+
+
+// add new pending command to pending command set and time-out list
+void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code, timespec new_timeout,
+                 TimeOutList& timeout_list,
+                unsigned int &count_pending);
+
+// remove a command from the pending command set, and refresh the
+// time-out list with the next time out.
+void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
+                    TimeOutList& timeout_list,
+                    unsigned int &count_pending);
+
+// Remove time out entries which are earlier than the expiration time
+// from the fpu pending set, and return the next time-out value from
+// the remaining set (or MAX_TIMESPEC if the set is empty)
+timespec expire_pending(t_fpu_state& fpu, int fpu_id, timespec expiration_time,
+                         unsigned int  &count_pending);
+
+
 
 }
 
