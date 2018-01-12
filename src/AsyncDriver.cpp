@@ -587,6 +587,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         num_pending = (grid_state.count_pending
                        + gateway.getNumUnsentCommands());
 #ifdef DEBUG3
+//        printf("$"); fflush(stdout);
         printf("getPositions(alpha) num_pending=%i\n", num_pending);
 #endif
         

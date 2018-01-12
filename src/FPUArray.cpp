@@ -460,7 +460,9 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
 
     // signal any waiting control threads if
     // the grid state has changed
-    if (old_count_pending > FPUGridState.count_pending)
+    if ((FPUGridState.count_pending == 0) ||
+        ((old_count_pending > FPUGridState.count_pending)
+         && ((num_trace_clients > 0))))
     {
         pthread_cond_broadcast(&cond_state_change);
     }
@@ -670,6 +672,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // if no more commands are pending or tracing is active,
         // signal a state change to waitForState() callers.
         if ((FPUGridState.count_pending == 0)
+            || ((num_commands_being_sent == 0) && (FPUGridState.count_pending == 0))
             || state_transition
             || (num_trace_clients > 0) )
         {
@@ -702,10 +705,11 @@ timespec get_min_pending(const t_fpu_state& fpu)
     return min_val;
 }
 
-void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code, timespec new_timeout,
+void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
+                 const timespec& new_timeout,
                  TimeOutList& timeout_list, unsigned int &count_pending)
 {
-#ifdef DEBUG
+#ifdef DEBUG3
     printf("fpu #%i: adding cmd code %i\n", fpu_id, cmd_code);
 #endif
     // assert this command is not yet pending
@@ -772,7 +776,7 @@ void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 
 }
 
-timespec expire_pending(t_fpu_state& fpu, int fpu_id, timespec expiration_time,
+timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
                          unsigned int &count_pending)
 {
 

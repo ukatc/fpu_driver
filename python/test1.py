@@ -1,6 +1,6 @@
 import fpu_driver
 
-NUM_FPUS = 100
+NUM_FPUS = 1000
 gateway_adr_list = [ fpu_driver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 

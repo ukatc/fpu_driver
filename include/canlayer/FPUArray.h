@@ -185,9 +185,10 @@ private:
 
 
 // add new pending command to pending command set and time-out list
-void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code, timespec new_timeout,
+void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
+                 const timespec& new_timeout,
                  TimeOutList& timeout_list,
-                unsigned int &count_pending);
+                 unsigned int &count_pending);
 
 // remove a command from the pending command set, and refresh the
 // time-out list with the next time out.
@@ -198,7 +199,7 @@ void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 // Remove time out entries which are earlier than the expiration time
 // from the fpu pending set, and return the next time-out value from
 // the remaining set (or MAX_TIMESPEC if the set is empty)
-timespec expire_pending(t_fpu_state& fpu, int fpu_id, timespec expiration_time,
+timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
                          unsigned int  &count_pending);
 
 
