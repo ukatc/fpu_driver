@@ -224,10 +224,19 @@ class WrapGridDriver : public GridDriver
                 {
                     tuple tstep_pair = extract<tuple>(step_list[j]);
                     int16_t alpha_steps = extract<int>(tstep_pair[0]);
-                    int16_t beta_steps = extract<int>(tstep_pair[1]);
+                    bool alpha_pause = extract<bool>(tstep_pair[1]);
+                    bool alpha_clockwise = extract<bool>(tstep_pair[2]);
+                        
+                    int16_t beta_steps = extract<int>(tstep_pair[3]);
+                    bool beta_pause = extract<bool>(tstep_pair[4]);
+                    bool beta_clockwise = extract<bool>(tstep_pair[5]);
                     t_step_pair step_pair;
                     step_pair.alpha_steps = alpha_steps;
+                    step_pair.alpha_pause = alpha_pause;
+                    step_pair.alpha_clockwise = alpha_clockwise;
                     step_pair.beta_steps = beta_steps;
+                    step_pair.beta_pause = beta_pause;
+                    step_pair.beta_clockwise = beta_clockwise;
                     steps.push_back(step_pair);                    
                 }
 
