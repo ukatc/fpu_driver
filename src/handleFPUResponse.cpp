@@ -86,7 +86,7 @@ void update_steps(int &alpha_steps, int &beta_steps, const t_response_buf& data)
 void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
                        const t_response_buf& data,
                        const int blen, TimeOutList& timeout_list,
-                       unsigned int &count_pending)
+                       int &count_pending)
 {
     E_CAN_COMMAND cmd_id = static_cast<E_CAN_COMMAND>(data[1]);
     uint8_t response_status = data[2];

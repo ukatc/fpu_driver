@@ -546,7 +546,6 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
         // Update number of commands being sent first
         // (this avoids a race condition when querying
         // the number of commands which are not sent).
-        fpuArray.incSending();
         active_can_command = commandQueue.dequeue(gateway_id);
 
         if (active_can_command)
@@ -570,6 +569,9 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
                                                   can_buffer);
 
             updatePendingSets(active_can_command, gateway_id);
+            // update number of queued commands
+            fpuArray.decSending();
+            
             // byte-swizzle and send buffer
             status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
                       message_len, can_buffer.bytes);
@@ -587,11 +589,14 @@ int GatewayDriver::getNumUnsentCommands()
     // TODO: Check for potential race conditions if a
     // command is being sent and is processed very
     // quickly.
-    return (fpuArray.countSending()
-            + commandQueue.getNumQueuedCommands());
+    return fpuArray.countSending();
 }
 
 
+void GatewayDriver::incSending()    
+{
+    fpuArray.incSending();
+}
 
 void* GatewayDriver::threadTxFun()
 {
@@ -751,8 +756,6 @@ void* GatewayDriver::threadTxFun()
                         && ( active_can_command[gateway_id]))
                 {
 
-                    // update number of commands being sent
-                    fpuArray.decSending();
                     // return CAN command instance to memory pool
                     command_pool.recycleInstance(active_can_command[gateway_id]);
                 }
@@ -1056,6 +1059,7 @@ CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_C
     }
 #endif
     
+    incSending();
     return commandQueue.enqueue(gateway_id, new_command);
 }
 
@@ -1063,6 +1067,7 @@ CommandQueue::E_QueueState GatewayDriver::broadcastCommand(const int gateway_id,
 {
 
     assert(gateway_id < MAX_NUM_GATEWAYS);
+    incSending();
     return commandQueue.enqueue(gateway_id, new_command);
 }
 

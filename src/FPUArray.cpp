@@ -96,7 +96,7 @@ FPUArray::FPUArray(int nfpus)
 
     num_fpus = nfpus;
     num_trace_clients = 0;
-    num_commands_being_sent = 0;
+    FPUGridState.num_queued = 0;
 }
 
 
@@ -162,17 +162,18 @@ bool check_all_fpus_updated(int num_fpus,
 void FPUArray::incSending()
 {
     pthread_mutex_lock(&grid_state_mutex);
-    num_commands_being_sent++;
+    FPUGridState.num_queued++;
     pthread_mutex_unlock(&grid_state_mutex);
+#ifdef DEBUG3
+    printf("num_queued++ -> %i\n", FPUGridState.num_queued);
+#endif    
 }
 
 int  FPUArray::countSending()
 {
     int rv;
-    // this read access does not need locking
-    // because the accessed value is atomic
     pthread_mutex_lock(&grid_state_mutex);
-    rv = num_commands_being_sent;
+    rv = FPUGridState.num_queued;
     pthread_mutex_unlock(&grid_state_mutex);
     
     return rv;
@@ -182,11 +183,15 @@ int  FPUArray::countSending()
 void FPUArray::decSending()
 {
     pthread_mutex_lock(&grid_state_mutex);
-    num_commands_being_sent--;
-    if ( (num_commands_being_sent == 0)
+    FPUGridState.num_queued--;
+#ifdef DEBUG3
+    printf("num_queued-- -> %i\n", FPUGridState.num_queued);
+#endif    
+    if ( (FPUGridState.num_queued == 0)
          && (FPUGridState.count_pending == 0) )
     {
         pthread_cond_broadcast(&cond_state_change);
+        //printf("¡");fflush(stdout);
     }
     pthread_mutex_unlock(&grid_state_mutex);
     
@@ -223,7 +228,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         
         // if a time-out occurs and qualifies, we return early.
         // (the counter can wrap around - no problem!)
-        const bool timeout_triggered = (
+        const bool new_timeout_triggered = (
             (count_timeouts != FPUGridState.count_timeout)
             && (target | TGT_TIMEOUT));
 
@@ -234,14 +239,10 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
                                                     reference_state,
                                                     FPUGridState));
 
-        const bool no_more_pending = (((target | TGT_NO_MORE_PENDING)
-                                       && (FPUGridState.count_pending == 0))
-                                      && (num_commands_being_sent == 0));
 
         const bool end_wait = (inTargetState(sum_state, target)
-                               || timeout_triggered
-                               || all_updated
-                               || no_more_pending);
+                               || new_timeout_triggered
+                               || all_updated);
 
 
         if (end_wait)
@@ -309,11 +310,12 @@ bool FPUArray::inTargetState(E_GridState sum_state,
     // if the caller merely wants to get new
     // info from the grid, instead of a state change.
     if ((tstate | TGT_NO_MORE_PENDING)
-        && (FPUGridState.count_pending == 0))
+        && (FPUGridState.count_pending == 0)
+        && (FPUGridState.num_queued == 0))
     {
         return true;
     }
-    
+
     
     // Now, we check whether the bit mask for
     // the state we are looking at matches
@@ -408,7 +410,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
     timespec next_key;
     pthread_mutex_lock(&grid_state_mutex);
 
-    unsigned int old_count_pending = FPUGridState.count_pending;
+    int old_count_pending = FPUGridState.count_pending;
 
 
     while (true)
@@ -655,6 +657,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
 #ifdef DEBUG3
         printf("count_pending= %i\n", FPUGridState.count_pending);
+        printf("state %i -> %i\n", oldstate.state, newstate.state);
         printf("gridstate.Counts[] = [");
         for (int i=0; i < NUM_FPU_STATES; i++)
         {
@@ -666,21 +669,32 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
         // The state of the grid can change when *all* FPUs have left
         // an old state, or *at least one* has entered a new state.
-        bool state_transition = ((FPUGridState.Counts[oldstate.state] == 0)
-                                 || (FPUGridState.Counts[newstate.state] == 1));
+        bool state_transition = ((oldstate.state != newstate.state)
+                                 && ((FPUGridState.Counts[oldstate.state] == 0)
+                                     || (FPUGridState.Counts[newstate.state] == 1)));
 
         // if no more commands are pending or tracing is active,
         // signal a state change to waitForState() callers.
-        if ((FPUGridState.count_pending == 0)
-            || ((num_commands_being_sent == 0) && (FPUGridState.count_pending == 0))
-            || state_transition
-            || (num_trace_clients > 0) )
+        if ( ((FPUGridState.num_queued == 0) && (FPUGridState.count_pending == 0))
+             || state_transition
+             || (num_trace_clients > 0) )
         {
             pthread_cond_broadcast(&cond_state_change);
+#if 0
+            int n = num_trace_clients;
+            printf("![%i/%i,%i,%i]", FPUGridState.num_queued,
+                   FPUGridState.count_pending,
+                   state_transition ? 1 :0,
+                   n);fflush(stdout);
+#endif            
         }
 
     } // end of locked block
+    int cnt =  FPUGridState.num_queued + FPUGridState.count_pending;
     pthread_mutex_unlock(&grid_state_mutex);
+    
+    printf("\rpending: %i    ", cnt);
+    fflush(stdout);
 
 
 
@@ -707,7 +721,7 @@ timespec get_min_pending(const t_fpu_state& fpu)
 
 void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
                  const timespec& new_timeout,
-                 TimeOutList& timeout_list, unsigned int &count_pending)
+                 TimeOutList& timeout_list, int &count_pending)
 {
 #ifdef DEBUG3
     printf("fpu #%i: adding cmd code %i\n", fpu_id, cmd_code);
@@ -734,7 +748,7 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 }
 
 void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
-                    TimeOutList& timeout_list, unsigned int &count_pending)
+                    TimeOutList& timeout_list, int &count_pending)
 {
     // ignore if a command was already removed by time-out expiration
 
@@ -777,7 +791,7 @@ void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 }
 
 timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
-                         unsigned int &count_pending)
+                         int &count_pending)
 {
 
     // remove all commands in the pending set which have a timeout

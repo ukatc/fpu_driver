@@ -52,7 +52,10 @@ typedef struct
     unsigned long count_timeout;
 
     // number of commands awaiting a response.
-    unsigned int count_pending;
+    int count_pending;
+
+    // number of queued commands
+    int num_queued;
 
 
     // state of the driver itself

@@ -172,7 +172,6 @@ private:
     int num_fpus;
 
     std::atomic<int> num_trace_clients;
-    std::atomic<int> num_commands_being_sent;
 
     // structures which describe the current state of the whole grid
     t_grid_state FPUGridState;
@@ -188,19 +187,19 @@ private:
 void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
                  const timespec& new_timeout,
                  TimeOutList& timeout_list,
-                 unsigned int &count_pending);
+                 int &count_pending);
 
 // remove a command from the pending command set, and refresh the
 // time-out list with the next time out.
 void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
                     TimeOutList& timeout_list,
-                    unsigned int &count_pending);
+                    int &count_pending);
 
 // Remove time out entries which are earlier than the expiration time
 // from the fpu pending set, and return the next time-out value from
 // the remaining set (or MAX_TIMESPEC if the set is empty)
 timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
-                         unsigned int  &count_pending);
+                         int  &count_pending);
 
 
 

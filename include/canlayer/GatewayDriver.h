@@ -121,8 +121,8 @@ public:
     // returns whether an FPU is currently marked as locked.
     bool isLocked(int fpu_id);
 
-    // get number of unsent commands
-    int getNumUnsentCommands();
+
+    
 
     // Send an abortMotion broadcast command to all gateways.
     //
@@ -139,6 +139,11 @@ public:
 
 
 private:
+
+    void incSending();
+
+    // get number of unsent commands
+    int getNumUnsentCommands();
 
 
     int num_gateways = 0;

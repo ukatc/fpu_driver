@@ -213,8 +213,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state);
 
-        cnt_pending = (grid_state.count_pending
-                         + gateway.getNumUnsentCommands());
+        cnt_pending = (grid_state.count_pending + grid_state.num_queued);
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -297,7 +296,8 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
                                              grid_state);
 
         num_moving = (grid_state.Counts[FPST_DATUM_SEARCH]
-                      + gateway.getNumUnsentCommands());
+                      + grid_state.count_pending
+                      + grid_state.num_queued);
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -511,7 +511,8 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         num_moving = (grid_state.Counts[FPST_MOVING]
                       + grid_state.Counts[FPST_READY_FORWARD]
                       + grid_state.Counts[FPST_READY_BACKWARD]
-                      + gateway.getNumUnsentCommands());
+                      + grid_state.count_pending
+                      + grid_state.num_queued);
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -584,8 +585,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // The reason we add the unsent command is that
         // the Tx thread might not have had opportunity
         // to send all the commands.
-        num_pending = (grid_state.count_pending
-                       + gateway.getNumUnsentCommands());
+        num_pending = (grid_state.count_pending + grid_state.num_queued);
 #ifdef DEBUG3
 //        printf("$"); fflush(stdout);
         printf("getPositions(alpha) num_pending=%i\n", num_pending);
@@ -638,7 +638,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // the Tx thread might not have had opportunity
         // to send all the commands.
         num_pending = (grid_state.count_pending
-                       + gateway.getNumUnsentCommands());
+                      + grid_state.num_queued);
 
 #ifdef DEBUG3
         printf("getPositions(beta) num_pending=%i\n", num_pending);
@@ -722,7 +722,10 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
       }
 
     // Wait until all movements are cancelled.
-    int num_moving = grid_state.Counts[FPST_MOVING] + gateway.getNumUnsentCommands();
+    int num_moving = ( grid_state.Counts[FPST_MOVING]
+                       + grid_state.count_pending
+                       + grid_state.num_queued);
+    
     while ( (num_moving > 0)
             && ((grid_state.driver_state == DS_CONNECTED)))
     {
@@ -730,7 +733,8 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
                                              grid_state);
         
         num_moving = (grid_state.Counts[FPST_MOVING]
-                     + gateway.getNumUnsentCommands());
+                      + grid_state.count_pending
+                      + grid_state.num_queued);
     } 
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -821,7 +825,7 @@ E_DriverErrCode AsyncDriver::pingFPUAsync(t_grid_state& grid_state,
                                              grid_state);
 
         cnt_pending = (grid_state.count_pending
-                         + gateway.getNumUnsentCommands());
+                       + grid_state.num_queued);
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -887,7 +891,7 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
                                              grid_state);
 
         cnt_pending = (grid_state.count_pending
-                         + gateway.getNumUnsentCommands());
+                       + grid_state.num_queued);
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -950,7 +954,7 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(t_grid_state& grid_state,
                                              grid_state);
 
         cnt_pending = (grid_state.count_pending
-                         + gateway.getNumUnsentCommands());
+                       + grid_state.num_queued);
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
