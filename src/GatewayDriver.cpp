@@ -842,7 +842,7 @@ inline void print_curtime(char* label)
 void* GatewayDriver::threadRxFun()
 {
 
-    struct pollfd pfd[MAX_NUM_GATEWAYS];
+    struct pollfd pfd[MAX_NUM_GATEWAYS+1];
 
     //int poll_timeout_ms = int(poll_timeout_sec * 1000);
     //assert(poll_timeout_ms > 0);
