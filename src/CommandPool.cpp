@@ -62,6 +62,7 @@ E_DriverErrCode CommandPool::initialize()
             const int cap_individual = num_fpus * 10;
             const int cap_wform = num_fpus * MAX_SUB_COMMANDS;
 
+//            printf("CommandPool::initialize(): cap_individual = %i\n", cap_individual);
             switch (i)
             {
             // broadcast commands

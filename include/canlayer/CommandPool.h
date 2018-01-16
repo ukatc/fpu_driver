@@ -86,6 +86,9 @@ public:
             // there is a surplus of instances - if
             // we ever get a dead-lock here, we have a memory
             // leak of command instances.
+#ifdef DEBUG
+            printf("CommandPool::provideInstance() : waiting for resource\n");
+#endif
             pthread_cond_wait(&cond_pool_add, &pool_mutex);
         }
 
