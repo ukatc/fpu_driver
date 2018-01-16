@@ -19,13 +19,13 @@ class FPU:
     def __init__(self, fpu_id):
         self.fpu_id = fpu_id
         self.alpha_steps = fpu_id
-        self.beta_steps = 10000 + fpu_id * 100
+        self.beta_steps = fpu_id * 1000
         self.moving = False
-        self.wave_ready = false
+        self.wave_ready = False
         self.nwave_entries = 0
-        self.steps = np.zeros((256, 2), detype=np.int)
-        self.pause = np.zeros((256, 2), detype=np.bool)
-        self.clockwise = np.zeros((256, 2), detype=np.bool)
+        self.steps = np.zeros((256, 2), dtype=np.int)
+        self.pause = np.zeros((256, 2), dtype=np.bool)
+        self.clockwise = np.zeros((256, 2), dtype=np.bool)
 
 
     def addStep(self, first, last,

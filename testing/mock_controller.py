@@ -138,7 +138,7 @@ def handle_ConfigMotion(fpu_id, cmd):
     tx6_dummy = 0
     tx7_dummy = 0
     
-    resp = [ tx_busid,
+    return [ tx_busid,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
              tx0_fpu_busid,
@@ -173,7 +173,7 @@ def handle_GetX(fpu_id, cmd):
 
     tx7_dummy = 0
     
-    resp = [ tx_busid,
+    return [ tx_busid,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
              tx0_fpu_busid,
@@ -208,7 +208,7 @@ def handle_GetY(fpu_id, cmd):
 
     tx7_dummy = 0
     
-    resp = [ tx_busid,
+    return [ tx_busid,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
              tx0_fpu_busid,
@@ -242,7 +242,7 @@ def handle_invalidCommand(fpu_id, cmd):
     tx6_dummy = 0
     tx7_dummy = 0
     
-    resp = [ tx_busid,
+    return [ tx_busid,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
              tx0_fpu_busid,
@@ -255,30 +255,31 @@ def handle_invalidCommand(fpu_id, cmd):
              tx7_dummy ]
 
 
-def get_fpuid(cmd):
+
+gCountTotalCommands = 0
+
+def command_handler(cmd, socket):
+    global gCountTotalCommands
+    gCountTotalCommands += 1
+    print("command decoded bytes are:", cmd)
     gateway_id = gateway_map[socket.getsockname()]
     busid = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
+    priority = (canid >> 7)
     fpu_busid = canid & 0x7f # this is a one-based index
     command_id = cmd[3]
     busnum = busid + gateway_id * BUSES_PER_GATEWAY
     fpu_id = (fpu_busid-1) + busnum * FPUS_PER_BUS
-
-    return fpu_id
-
-
-def command_handler(cmd, socket):
-    print("command decoded bytes are:", cmd)
-    print("CAN command to gw %i, bus %i, fpu # %i (priority %i), command id=%i"
-          % (gateway_id, busid, fpu_busid, priority, command_id))
+    
+    print("CAN command [%i] to gw %i, bus %i, fpu # %i (priority %i), command id=%i"
+          % (gCountTotalCommands, gateway_id, busid, fpu_busid, priority, command_id))
     print("CAN command #%i to FPU %i" % (command_id, fpu_id))
 
-    fpu_id = get_fpuid(cmd)
     
     if command_id == CCMD_GET_STEPS_ALPHA:
         resp = handle_GetX(fpu_id, cmd)
     elif command_id == CCMD_GET_STEPS_BETA:
-        resp = handle_GetX(fpu_id, cmd)
+        resp = handle_GetY(fpu_id, cmd)
 
     elif command_id == CCMD_CONFIG_MOTION  :
         resp = handle_ConfigMotion(fpu_id, cmd)
