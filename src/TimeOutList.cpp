@@ -98,12 +98,18 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
 
     pthread_mutex_lock(&list_mutex);
 
+    const timespec old_val = TimeOutsByID[id];
     TimeOutsByID[id] = new_val;
+    
+#ifdef DEBUGT
+    printf("insertTimeOut(): new timeout for FPU #%i = %li / %li\n",
+           id, TimeOutsByID[id].tv_sec, TimeOutsByID[id].tv_nsec);
+#endif    
 
     // update invariants
 
     // true if the old value equalled the cached minimum
-    bool const was_equal_minimum = time_equal(new_val,
+    bool const was_equal_minimum = time_equal(old_val,
                                    cached_minimum);
 
     // true if new value is now equal to minimum
@@ -140,10 +146,11 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
             // we increment the count, if it was not
             // already included
             cached_minimum_multiplicity += 1;
-        }
-        if (id < minimum_index_lbound)
-        {
-            minimum_index_lbound = id;
+            
+            if (id < minimum_index_lbound)
+            {
+                minimum_index_lbound = id;
+            }
         }
     }
     else if (was_equal_minimum)
@@ -187,10 +194,18 @@ const timespec TimeOutList::minKey()
 {
     timespec min_val = MAX_TIMESPEC;
 
+#ifdef DEBUG    
+    clock_t t0 = clock();
+#endif
+
 
     // first we try to use the cache
 
+#if 0
     if (cached_minimum_multiplicity > 0)
+#else        
+    if (false)
+#endif        
     {
         // cached value is still valid
         if (time_smaller(cached_minimum, min_val))
@@ -231,6 +246,14 @@ const timespec TimeOutList::minKey()
         }
     }
 
+#ifdef DEBUG    
+    clock_t t1 = clock();
+    clock_t td = t1 - t0;
+    if (td > 100)
+    {
+        printf("minKey : took %li usec\n", td);
+    }
+#endif
     return min_val;
 }
 
@@ -262,18 +285,27 @@ TimeOutList::t_toentry TimeOutList::pop()
         // we need to search for the index of a minimum element
         // but we can use minimum_index_lbound as lower bound
         int i = 0;
+        bool found = false;
         for (i = minimum_index_lbound; i < MAX_NUM_POSITIONERS; i++)
         {
             if (time_equal(TimeOutsByID[i],
                            minval))
             {
+                found = true;
                 break;
             }
         }
         result.val = minval;
-        result.id = i;
-        TimeOutsByID[i] = MAX_TIMESPEC;
-        minimum_index_lbound = i + 1;
+        if (found)
+        {
+            result.id = i;
+            TimeOutsByID[i] = MAX_TIMESPEC;
+            minimum_index_lbound = i + 1;
+        }
+        else
+        {
+            result.id = -1;
+        }
 
     }
     pthread_mutex_unlock(&list_mutex);
@@ -285,8 +317,8 @@ TimeOutList::t_toentry TimeOutList::pop()
 // this function retrieves the minimum time-out
 // time for each FPU in the FPU grid which
 // has any pending command. If no time-out
-// is found, it returns the passed default value.
-const timespec TimeOutList::getNextTimeOut(timespec const max_time)
+// is found, it returns MAX_TIMESPEC.
+const timespec TimeOutList::getNextTimeOut()
 {
 
     timespec min_val;
@@ -294,11 +326,6 @@ const timespec TimeOutList::getNextTimeOut(timespec const max_time)
     pthread_mutex_lock(&list_mutex);
     min_val = minKey();
     pthread_mutex_unlock(&list_mutex);
-
-    if (time_smaller(max_time, min_val))
-    {
-        min_val = max_time;
-    }
 
     return min_val;
 }

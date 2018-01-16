@@ -65,16 +65,13 @@ public:
     void clearTimeOut(int const id);
 
 
-    // get time and  id of next time-out event
-    // which limits the maximum waiting time for a response.
-    // The returned time value is Linux' monotonic
-    // clock. The max_time parameter is the
-    // value which is returned if no time_out is pending.
+    // get time and id of next time-out event.  The returned time
+    // value is Linux' monotonic clock. If no time_out is pending,
+    // MAX_TIMESPEC is returned.
     //
-    // This is O(N) in the worst case but is
-    // optimized toward O(1) in typical use,
-    // when most entries have the same value.
-    const timespec getNextTimeOut(timespec max_time);
+    // This is O(N) in the worst case but is optimized toward O(1) in
+    // typical use, when most entries have the same value.
+    const timespec getNextTimeOut();
 
     // get and remove item with minimum value
     t_toentry pop();
