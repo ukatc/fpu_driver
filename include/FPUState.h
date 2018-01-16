@@ -60,44 +60,55 @@ enum E_MOVEMENT_DIRECTION
     DIRST_RESTING_LAST_ACW = 6, // might or might not be needed
 };
 
+const int MAX_NUM_TIMEOUTS = 4;
 
-
-typedef struct t_fpu_state
+typedef struct __attribute__((packed)) tout_entry
 {
-    E_FPU_STATE state;
+    timespec tout_val;
+    uint8_t cmd_code;
+} tout_entry;
+
+typedef struct __attribute__((packed)) t_fpu_state
+{
+    // time when any running command is considered timed out
+    // Note: this time needs to use the monotonic linux system
+    // clock so that leap seconds don't trigger bugs.
+    tout_entry cmd_timeouts[MAX_NUM_TIMEOUTS];
+    timespec last_updated;
     // set of any still running and incomplete commands
     uint32_t pending_command_set;
-    // id of last command that was issued but not completed.
+
+    // current state of FPU
+    E_FPU_STATE state;    
+    // id of last command that was issued
     E_CAN_COMMAND last_command;
     // id of last command that was completed
     E_CAN_COMMAND completed_command;    
 
-    // time when any running command is considered timed out
-    // Note: this time needs to use the monotonic linux system
-    // clock so that leap seconds don't trigger bugs.
-    timespec cmd_timeouts[NUM_CAN_COMMANDS];
-    timespec last_updated;
 
     // these members are the individual values
     // reported by FPU responses
     int alpha_steps;
     int beta_steps;
-    int num_waveforms;
     // number of minor time-outs which have
     // been observed for the last command.
     uint16_t timeout_count;
     E_MOVEMENT_DIRECTION direction_alpha;
     E_MOVEMENT_DIRECTION direction_beta;
+    uint8_t num_waveforms;
+    int8_t num_active_timeouts;
     uint8_t sequence_number; // number of last pending / received command
-    bool was_zeroed; /* steps are validly calibrated by finding datum.
-                        This is required for any science observatons. */
+    bool was_zeroed; /* steps are validly calibrated by
+                                    finding datum.  This is required
+                                    for any science observatons. */
     bool is_locked;  // FPU was locked by operator
     bool alpha_datum_switch_active; // alpha datum switch is on
     bool beta_datum_switch_active; // beta datum switch is on
     bool at_alpha_limit; // alpha arm has reached limit (detected by datum off)
     bool beta_collision;
-    bool waveform_valid; /* waveform completely loaded and not invalidated by collision
-                            or abort message. */
+    bool waveform_valid; /* waveform completely loaded and
+                                        not invalidated by collision
+                                        or abort message. */
     bool waveform_ready; // FPU can execute waveform
     bool waveform_reversed; // false means anti-clockwise for positive step numbers
 

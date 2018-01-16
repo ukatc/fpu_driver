@@ -36,6 +36,7 @@
 #include "canlayer/time_utils.h"
 
 #include <cassert>
+#include <unistd.h>
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -578,6 +579,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // and filter out whether we are actually ready.
         
         ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        //sleep(1);
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state);
 

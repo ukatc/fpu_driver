@@ -21,6 +21,8 @@
 
 
 #include <pthread.h>
+//#include <unistd.h> // sleep
+
 #include <cassert>
 
 #include "canlayer/time_utils.h"
@@ -67,10 +69,12 @@ FPUArray::FPUArray(int nfpus)
         fpu_state.is_locked                 = false;
         fpu_state.state                     = FPST_UNINITIALIZED;
         fpu_state.pending_command_set       = 0;
-        for(int i=0; i < NUM_CAN_COMMANDS; i++)
+        for(int i=0; i < MAX_NUM_TIMEOUTS; i++)
         {
-            fpu_state.cmd_timeouts[i]       = TimeOutList::MAX_TIMESPEC;
+            fpu_state.cmd_timeouts[i].tout_val       = TimeOutList::MAX_TIMESPEC;
+            fpu_state.cmd_timeouts[i].cmd_code       = CCMD_NO_COMMAND;
         }
+        fpu_state.num_active_timeouts = 0;
         fpu_state.last_updated.tv_sec       = 0;
         fpu_state.last_updated.tv_nsec      = 0;
         fpu_state.timeout_count             = 0;
@@ -163,6 +167,14 @@ void FPUArray::incSending()
 {
     pthread_mutex_lock(&grid_state_mutex);
     FPUGridState.num_queued++;
+#ifdef DEBUG    
+    if ( (FPUGridState.num_queued == 0)
+         && (FPUGridState.count_pending == 0) )
+    {
+        pthread_cond_broadcast(&cond_state_change);
+        printf("X1: out-of-order increment!!");fflush(stdout);
+    }
+#endif    
     pthread_mutex_unlock(&grid_state_mutex);
 #ifdef DEBUG3
     printf("num_queued++ -> %i\n", FPUGridState.num_queued);
@@ -191,7 +203,7 @@ void FPUArray::decSending()
          && (FPUGridState.count_pending == 0) )
     {
         pthread_cond_broadcast(&cond_state_change);
-        //printf("¡");fflush(stdout);
+        printf("¡1");fflush(stdout);
     }
     pthread_mutex_unlock(&grid_state_mutex);
     
@@ -202,7 +214,6 @@ void FPUArray::decSending()
 E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_state)
 {
 
-    bool got_value = false;
     E_GridState sum_state = GS_UNKNOWN;
     // if we want to get signaled on any minor changes,
     // we increment a special counter to trigger
@@ -215,10 +226,22 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         // more specific target.
         num_trace_clients++;
     }
+#ifdef DEBUG2
+    clock_t t0 = clock();
+#endif    
     pthread_mutex_lock(&grid_state_mutex);
+#ifdef DEBUG2    
+    clock_t t1 = clock();
+    clock_t td = t1 - t0;
+    if (td > 100)
+    {
+        printf("waitForState(): took %li us to get lock\n", td);
+    }
+#endif    
 
     unsigned long count_timeouts = reference_state.count_timeout;
 
+    bool got_value = false;
     while (! got_value)
     {
 
@@ -255,9 +278,11 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
             // locking.
             reference_state = FPUGridState;
             got_value = true;
+            break;
         }
         else
         {
+            printf("WFS: q=%i / p= %i\n", FPUGridState.num_queued, FPUGridState.count_pending);
             pthread_cond_wait(&cond_state_change,
                               &grid_state_mutex);
         }
@@ -362,6 +387,8 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
     // if tracing is active, signal state change
     if (num_trace_clients > 0)
     {
+        printf("T"); fflush(stdout);
+        printf("¡2");fflush(stdout);
         pthread_cond_broadcast(&cond_state_change);
     }
 
@@ -383,6 +410,8 @@ void FPUArray::setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd)
     // to waitForState() callers.
     if (num_trace_clients > 0)
     {
+        printf("T"); fflush(stdout);
+        printf("¡3");fflush(stdout);
         pthread_cond_broadcast(&cond_state_change);
     }
     pthread_mutex_unlock(&grid_state_mutex);
@@ -426,8 +455,11 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
 
         timespec max_tmout = time_add(cur_time, MAX_TIMEOUT);
         
-        next_key = tout_list.getNextTimeOut(max_tmout);
-#ifdef DEBUG3
+        next_key = tout_list.getNextTimeOut();
+
+        assert(next_key.tv_sec > 0);
+        
+#ifdef DEBUG2
         printf("cur time: %li/%li, next timeout: %li/%li\n",
                cur_time.tv_sec, cur_time.tv_nsec,
                next_key.tv_sec, next_key.tv_nsec);
@@ -439,33 +471,50 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
         toentry = tout_list.pop();
 
         // check whether entry was found
-        if (toentry.id != -1)
+        if (toentry.id == -1)
         {
-
-            int fpu_id = toentry.id;
-
-            t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
-
-            // remlove entries which are expired, and adjust pending count
-            timespec next_timeout = expire_pending(fpu, fpu_id,
-                                                   cur_time,
-                                                   FPUGridState.count_pending);
-
-            // re-insert smallest time-out of remaining pending commands
-            tout_list.insertTimeOut(fpu_id, next_timeout);
-
-            
+            printf("no more entries found, break\n");
+            break;
         }
 
+        assert(toentry.id < num_fpus);
+            
+        int fpu_id = toentry.id;
+        
+        t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
+            
+        // remlove entries which are expired, and adjust pending count
+        timespec next_timeout = expire_pending(fpu, fpu_id,
+                                               cur_time,
+                                               FPUGridState.count_pending);
+        
+#ifdef DEBUG2
+        printf("inserting next timeout for FPU #%i: %li/%li\n",
+               fpu_id,
+               next_timeout.tv_sec, next_timeout.tv_nsec);
+#endif
+        // re-insert smallest time-out of remaining pending commands
+        tout_list.insertTimeOut(fpu_id, next_timeout);
+        
+
     }
+    
+#ifdef DEBUG2
+    timespec dbg_next_key = tout_list.getNextTimeOut();
+    printf("resulting next timeout (after expiring): %li/%li\n",
+           dbg_next_key.tv_sec, dbg_next_key.tv_nsec);
+    assert(time_smaller(cur_time, dbg_next_key));
+#endif    
 
 
     // signal any waiting control threads if
     // the grid state has changed
-    if ((FPUGridState.count_pending == 0) ||
+    if (((FPUGridState.count_pending == 0)
+         && (FPUGridState.num_queued == 0)) ||
         ((old_count_pending > FPUGridState.count_pending)
          && ((num_trace_clients > 0))))
     {
+//        printf("¡4");fflush(stdout);
         pthread_cond_broadcast(&cond_state_change);
     }
     pthread_mutex_unlock(&grid_state_mutex);
@@ -481,8 +530,14 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
 void FPUArray::setDriverState(E_DriverState const dstate)
 {
     pthread_mutex_lock(&grid_state_mutex);
+    E_DriverState old_state = FPUGridState.driver_state;        
     FPUGridState.driver_state = dstate;
-    pthread_cond_broadcast(&cond_state_change);
+    
+    if (old_state != dstate)
+    {
+        printf("¡5");fflush(stdout);
+        pthread_cond_broadcast(&cond_state_change);
+    }
     pthread_mutex_unlock(&grid_state_mutex);
 
 }
@@ -621,8 +676,21 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     printf("rxFPU#%i[%i] ",fpu_id, data[1]);
     fflush(stdout);
 #endif
+
+#ifdef DEBUG2
+    clock_t t0 = clock();
+#endif
     
     pthread_mutex_lock(&grid_state_mutex);
+    
+#ifdef DEBUG2    
+    clock_t t1 = clock();
+    clock_t td = t1 - t0;
+    if (td > 100)
+    {
+        printf("dispatchResponse(): took %li us to get lock\n", td);
+    }
+#endif    
     {
 
         // get canid of FPU (additional ids might be used
@@ -642,15 +710,6 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // update global state counters
         t_fpu_state newstate = FPUGridState.FPU_state[fpu_id];
         
-        // IMPORTANT NOTE ON MESSAGE ORDERING. We can NOT assume that
-        // a reply is processed /after/ the pending command was
-        // registered - it can be processed before.
-        //
-        // In combination with that protocol version 1 does not use
-        // sequence numbers, this means we can currently only have one
-        // command pending at a time. If we want to send more commands
-        // with a confirmed response, we always need to wait for
-        // completion.
         
         FPUGridState.Counts[oldstate.state]--;
         FPUGridState.Counts[newstate.state]++;
@@ -690,11 +749,14 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         }
 
     } // end of locked block
+#ifdef DEBUG2
     int cnt =  FPUGridState.num_queued + FPUGridState.count_pending;
+#endif    
     pthread_mutex_unlock(&grid_state_mutex);
+#ifdef DEBUG3
+    printf("handle_request count_pending=%i\n", cnt);
+#endif    
     
-    printf("\rpending: %i    ", cnt);
-    fflush(stdout);
 
 
 
@@ -704,16 +766,18 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 timespec get_min_pending(const t_fpu_state& fpu)
 {
    // get earliest previous time-out value
+    assert(fpu.num_active_timeouts >= 0);
+#ifdef DEBUG3
+    printf("get_min_pending(): fpu.num_active_timeouts = %i\n",
+           fpu.num_active_timeouts);
+#endif
     timespec min_val = TimeOutList::MAX_TIMESPEC;
-    for (int i=0; i < NUM_CAN_COMMANDS; i++)
+    for (int i=0; i < fpu.num_active_timeouts; i++)
     {
-        if ( ((fpu.pending_command_set >> i) & 1) != 0)
+        timespec cmp_val = fpu.cmd_timeouts[i].tout_val;
+        if ( time_smaller(cmp_val, min_val))
         {
-            timespec cmp_val = fpu.cmd_timeouts[i];
-            if ( time_smaller(cmp_val, min_val))
-            {
-                min_val = cmp_val;
-            }
+            min_val = cmp_val;
         }
     }
     return min_val;
@@ -728,6 +792,8 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 #endif
     // assert this command is not yet pending
     assert( ((fpu.pending_command_set >> cmd_code) & 1) == 0);
+    assert(fpu.num_active_timeouts < (MAX_NUM_TIMEOUTS-1));
+    assert(fpu.num_active_timeouts >= 0);
 
     // add command to pending set
     fpu.pending_command_set |= ((unsigned int)1) << cmd_code;
@@ -735,7 +801,11 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
     // get earliest previous time-out value
     timespec min_val = get_min_pending(fpu);
 
-    fpu.cmd_timeouts[cmd_code] = new_timeout;
+    tout_entry new_entry;
+    new_entry.cmd_code = cmd_code;
+    new_entry.tout_val = new_timeout;
+        
+    fpu.cmd_timeouts[fpu.num_active_timeouts++] = new_entry;
     // if the new value is smaller than the previous ones,
     // overwrite the time-out list entry for this fpu
     if (time_smaller(new_timeout, min_val))
@@ -744,6 +814,7 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
     }
 
     count_pending++;
+    assert(fpu.num_active_timeouts >= 1);
 
 }
 
@@ -752,6 +823,8 @@ void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 {
     // ignore if a command was already removed by time-out expiration
 
+    assert(fpu.num_active_timeouts > 0);
+    assert(cmd_code != CCMD_NO_COMMAND);
 
     if ( ((fpu.pending_command_set >> cmd_code) & 1) == 0)
     {
@@ -761,21 +834,45 @@ void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
         return;
     }
 
-#ifdef DEBUG3
+#ifdef DEBUG2
     printf("fpu #%i: removing cmd code %i %i ==> %i\n", fpu_id, cmd_code,
            fpu.pending_command_set,
            fpu.pending_command_set & ~(((unsigned int)1) << cmd_code));
 #endif
 
-    // get timespec which is to be removed
+    // iterate list to find entry and value which is to be removed
+    timespec removed_val;
+    int del_index;
+    bool found = false;
+    for(int i = 0; i < fpu.num_active_timeouts; i++)
+    {
+        if (fpu.cmd_timeouts[i].cmd_code == cmd_code)
+        {
+            del_index = i;
+            removed_val = fpu.cmd_timeouts[i].tout_val;
+            found = true;
+            break;
+        }
+    }
+    assert(found);
+    // move all/any following entries to previous position
+    for (int i = del_index; i < (fpu.num_active_timeouts - 1); i++)
+    {
+        fpu.cmd_timeouts[i] = fpu.cmd_timeouts[i+1];
+    }
 
-    timespec removed_val = fpu.cmd_timeouts[cmd_code];
-
-    fpu.cmd_timeouts[cmd_code] = TimeOutList::MAX_TIMESPEC;
+    // overwrite last entry (not necessary, but could help debugging)
+    tout_entry del_entry;
+    del_entry.cmd_code = CCMD_NO_COMMAND;
+    del_entry.tout_val = TimeOutList::MAX_TIMESPEC;
+    fpu.cmd_timeouts[fpu.num_active_timeouts - 1] = del_entry;
+    
+    fpu.num_active_timeouts--;
+    
     
     // remove command from pending set
     fpu.pending_command_set &= ~(((unsigned int)1) << cmd_code);
-    fpu.last_command = cmd_code;
+    fpu.completed_command = cmd_code;
 
     // get earliest remaining time-out value.
     // This can be MAX_TIMESPEC as well, no problem.
@@ -787,6 +884,7 @@ void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
     }
 
     count_pending--;
+    assert(fpu.num_active_timeouts >= 0);
 
 }
 
@@ -795,24 +893,77 @@ timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration
 {
 
     // remove all commands in the pending set which have a timeout
-    // value before the expiration time, adjust pending count, and
-    // return the remaining minimum time.
+    // value before or equal to the expiration time, adjust pending
+    // count, and return the remaining minimum time.
+    printf("entering expire_pending, fpuid=%i, fpu.num_active_timeouts = %i\n",
+           fpu_id, fpu.num_active_timeouts);
+    assert(fpu.num_active_timeouts >= 0);
 
-    for (int i = 0; i < NUM_CAN_COMMANDS; i++)
+    if (fpu.num_active_timeouts == 0)
     {
-        if ( (((fpu.pending_command_set >> i) & 1) != 0)
-             && (time_smaller(fpu.cmd_timeouts[i], expiration_time)))
+        return TimeOutList::MAX_TIMESPEC;
+    }
+    
+    const int old_active_timeouts = fpu.num_active_timeouts;
+    int read_index = 0;
+    int write_index = 0;
+    while ( read_index < old_active_timeouts)
+    {
+        bool preserve = time_smaller(fpu.cmd_timeouts[read_index].tout_val,
+                                     expiration_time);
+        if (preserve)
         {
-#ifdef DEBUG
-    printf("fpu #%i: expiring cmd code %i\n", fpu_id, i);
-#endif
+            if (read_index > write_index)
+            {
+                fpu.cmd_timeouts[write_index] = fpu.cmd_timeouts[read_index];
+            }
+            write_index ++;
+        }
+        else
+        {
+            uint8_t cmd_code = fpu.cmd_timeouts[read_index].cmd_code;
+            fpu.pending_command_set &= ~(((unsigned int)1) << cmd_code);
+            fpu.last_command = static_cast<E_CAN_COMMAND>(cmd_code);
+            
             count_pending--;
-            fpu.timeout_count++;
-            fpu.pending_command_set &= ~(((unsigned int)1) << i);
+            printf("decrementing num_active_timeouts %i -> %i\n",
+                   fpu.num_active_timeouts, fpu.num_active_timeouts -1);
+            fflush(stdout);
+            fpu.num_active_timeouts--;
+        }
+        read_index++;
+        
+    }
+
+    if (old_active_timeouts > write_index)
+    {
+        tout_entry del_entry;
+        del_entry.cmd_code = CCMD_NO_COMMAND;
+        del_entry.tout_val = TimeOutList::MAX_TIMESPEC;
+
+        for (int i = write_index; i < old_active_timeouts; i++)
+        {
+            // overwrite last entry (not necessary, but could help debugging)
+            fpu.cmd_timeouts[i] = del_entry;
+    
         }
     }
-    timespec new_min_val = get_min_pending(fpu);
 
+    
+    
+    assert(fpu.num_active_timeouts >= 0);
+
+    const timespec new_min_val = get_min_pending(fpu);
+
+    if (fpu.num_active_timeouts == 0)
+    {
+        assert( (new_min_val.tv_sec == TimeOutList::MAX_TIMESPEC.tv_sec)
+              && (new_min_val.tv_nsec == TimeOutList::MAX_TIMESPEC.tv_nsec));
+    }
+    printf("expirePending() next timeout: %li/%li\n",
+           new_min_val.tv_sec, new_min_val.tv_nsec);
+
+    printf("exiting expire_pending, n_active = %i\n", fpu.num_active_timeouts);
     return new_min_val;
 }
 

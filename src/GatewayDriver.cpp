@@ -878,20 +878,31 @@ void* GatewayDriver::threadRxFun()
         timespec cur_time;
 
         get_monotonic_time(cur_time);
-        // get absolute timeout value
-        timespec next_rx_tmout = time_add(cur_time, MAX_RX_TIMEOUT);
-#ifdef DEBUG_POLL
-        print_time("RX next time-out maximum:    ", next_rx_tmout);
-#endif
+        
+        // compute a bounded absolute time
 
 
-        timespec next_timeout = timeOutList.getNextTimeOut(next_rx_tmout);
-#ifdef DEBUG_POLL
+        timespec next_timeout = timeOutList.getNextTimeOut();
+        
+#ifdef DEBUG2
         print_time("RX next time-out from list:  ", next_timeout);
 #endif
 
+        timespec max_rx_tmout = time_add(cur_time, MAX_RX_TIMEOUT);
+#ifdef DEBUG2
+        print_time("RX next time-out maximum:    ", max_rx_tmout);
+#endif
+        if (time_smaller(max_rx_tmout, next_timeout))
+        {
+            next_timeout = max_rx_tmout;
+        }
+
+#ifdef DEBUG2
+        print_time("RX capped next:              ", next_timeout);
+#endif        
+
         timespec max_wait = time_to_wait(cur_time, next_timeout);
-#ifdef DEBUG_POLL
+#ifdef DEBUG2
         print_time("RX max_wait for socket read:", max_wait);
         print_time("RX cur_time before read poll:", cur_time);
 #endif
@@ -941,7 +952,7 @@ void* GatewayDriver::threadRxFun()
         {
             // a time-out was hit - go through the list of FPUs
             // and mark each FPU which has timed out.
-#ifdef DEBUG_POLL
+#ifdef DEBUG2
             printf("R"); fflush(stdout);
 #endif
             get_monotonic_time(cur_time);
