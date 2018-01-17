@@ -40,11 +40,13 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state)
         // writes grid_state into member variable
         estatus = autoFindDatumAsync(grid_state, state_summary);
 
-        if (estatus != DE_OK)
-        {
-            break;
-        }
-
+        break; // insert retry code later
+        
+//         if (estatus != DE_OK)
+//         {
+//             break;
+//         }
+// 
         num_avaliable_retries--;
     }
 

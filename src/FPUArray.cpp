@@ -67,7 +67,7 @@ FPUArray::FPUArray(int nfpus)
 
         fpu_state.was_zeroed                = false;
         fpu_state.is_locked                 = false;
-        fpu_state.state                     = FPST_UNINITIALIZED;
+        fpu_state.state                     = FPST_UNKNOWN;
         fpu_state.pending_command_set       = 0;
         for(int i=0; i < MAX_NUM_TIMEOUTS; i++)
         {
@@ -227,6 +227,12 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         // more specific target.
         num_trace_clients++;
     }
+#ifdef DEBUG
+    if (num_trace_clients > 0)
+    {
+        printf("waitForState(): tracing any change\n");
+    }
+#endif    
 #ifdef DEBUG2
     clock_t t0 = clock();
 #endif    
@@ -252,9 +258,8 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         
         // if a time-out occurs and qualifies, we return early.
         // (the counter can wrap around - no problem!)
-        const bool new_timeout_triggered = (
-            (count_timeouts != FPUGridState.count_timeout)
-            && (target | TGT_TIMEOUT));
+        const bool new_timeout_triggered = ( (target | TGT_TIMEOUT) &&
+            (count_timeouts != FPUGridState.count_timeout));
 
         // If all FPUs have been updated, that might be
         // enough.
@@ -279,6 +284,8 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
             // locking.
             reference_state = FPUGridState;
             got_value = true;
+            assert(0);
+            error, debug why it is leaving here too early!
             break;
         }
         else
@@ -741,7 +748,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
              || (num_trace_clients > 0) )
         {
             pthread_cond_broadcast(&cond_state_change);
-#if 0
+#if 1
             int n = num_trace_clients;
             printf("![%i/%i,%i,%i]", FPUGridState.num_queued,
                    FPUGridState.count_pending,

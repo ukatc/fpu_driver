@@ -74,8 +74,8 @@ enum E_CAN_COMMAND
     CCMD_FREE_ALPHA_LIMIT_BREACH          = 19, // untangle alpha arm
     CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    = 20, // re-enable limit switch
     CCMD_SET_TIME_STEP                    = 21, // set movement time interval
-    CCMD_SET_STEPS_PER_FRAME                = 22, // set minimum step frequency
-    CCMD_ENABLE_MOVE                      = 23, // set minimum step frequency
+    CCMD_SET_STEPS_PER_FRAME              = 22, // set minimum step frequency
+    CCMD_ENABLE_MOVE                      = 23, // leave aborted state
 
     NUM_CAN_COMMANDS = 24,
     

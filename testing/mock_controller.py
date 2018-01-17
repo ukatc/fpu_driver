@@ -10,6 +10,8 @@ from __future__ import print_function
 import codec
 from fpu_sim import FPU
 
+from gevent import sleep
+
 #  number of buses on one gateway
 BUSES_PER_GATEWAY =  5
 # number of FPUs on one CAN bus
@@ -46,6 +48,13 @@ if CAN_PROTOCOL_VERSION == 1:
     CCMD_GET_ERROR_BETA                   = 17 # get residue count at last datum hit
     
     NUM_CAN_COMMANDS = 18
+    
+    # code 101 unused 
+    # code 102 unused 
+    CMSG_FINISHED_MOTION               = 103 #  executeMotion finished
+    CMSG_FINISHED_DATUM                = 104 #  findDatum finished
+    CMSG_WARN_COLLISION_BETA           = 105 #  collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA              = 106 #  limit switch at alpha arm
 else:
     CCMD_LOCK_UNIT                        = 4 # ignore any command except reset and unlock
     CCMD_UNLOCK_UNIT                      = 5 # listen to commands again
@@ -60,6 +69,12 @@ else:
     CCMD_SET_STEPS_PER_FRAME               = 22 # set minimum step frequency
     CCMD_ENABLE_MOVE                      = 23 # set minimum step frequency
 
+    CMSG_FINISHED_MOTION               = 23 # executeMotion finished
+    CMSG_FINISHED_DATUM                = 24 # findDatum finished
+    CMSG_WARN_COLLISION_BETA           = 25 # collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA              = 26 # limit switch at alpha arm
+    CMSG_WARN_TIMEOUT_DATUM            = 27 # datum search time out
+    
     NUM_CAN_COMMANDS = 24
 
 
@@ -184,7 +199,51 @@ def handle_GetX(fpu_id, cmd):
              tx5_count1,
              tx6_count2,
              tx7_dummy ]
+
+def handle_findDatum(fpu_id, cmd):
+        
+    print("starting findDatum for FPU %i" % fpu_id)
     
+    busid = cmd[0]
+    canid = cmd[1] + (cmd[2] << 8)
+    fpu_busid = canid & 0x7f # this is a one-based index
+    priority = (canid >> 7)
+    command_id = cmd[3]
+
+    tx_busid = busid
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_busid
+    tx0_fpu_busid = fpu_busid
+    if FPUGrid[fpu_id].is_collided:
+        tx1_cmdid = command_id
+        tx2_status = 0xff
+        tx3_errflag = ER_COLLIDE
+    else:
+        FPUGrid[fpu_id].findDatum(sleep)
+        tx1_cmdid = CMSG_FINISHED_DATUM
+        tx2_status = 0
+        tx3_errflag = 0
+
+    tx4_dummy0 = 0
+    tx5_dummy1 = 0
+    tx6_dummy2 = 0
+
+    tx7_dummy3 = 0
+    
+    print("responding findDatum for FPU %i" % fpu_id)
+    
+    return [ tx_busid,
+             (tx_canid & 0xff),
+             ((tx_canid >> 8) & 0xff),
+             tx0_fpu_busid,
+             tx1_cmdid,
+             tx2_status,
+             tx3_errflag,
+             tx4_dummy0,
+             tx5_dummy1,
+             tx6_dummy2,
+             tx7_dummy3 ]
+
 
 def handle_GetY(fpu_id, cmd):
     busid = cmd[0]
@@ -278,30 +337,21 @@ def command_handler(cmd, socket, verbose=0):
     
         print("CAN command #%i to FPU %i" % (command_id, fpu_id))
 
-    
-    if command_id == CCMD_GET_STEPS_ALPHA:
-        resp = handle_GetX(fpu_id, cmd)
-    elif command_id == CCMD_GET_STEPS_BETA:
-        resp = handle_GetY(fpu_id, cmd)
 
-    elif command_id == CCMD_CONFIG_MOTION  :
-        resp = handle_ConfigMotion(fpu_id, cmd)
-        
-    elif command_id == CCMD_EXECUTE_MOTION :
-        pass
-    elif command_id == CCMD_ABORT_MOTION   :
-        pass        
-    elif command_id == CCMD_LOCK_UNIT                        :
-        pass
-    elif command_id == CCMD_UNLOCK_UNIT                      :
-        pass
-    elif command_id == CCMD_READ_REGISTER                    :
-        pass
-    elif command_id == CCMD_PING_FPU                         :
+
+    if command_id == CCMD_PING_FPU                         :
         pass
     elif command_id == CCMD_RESET_FPU                        :
         pass
     elif command_id == CCMD_FIND_DATUM                       :
+        resp = handle_findDatum(fpu_id, cmd)        
+    elif command_id == CCMD_CONFIG_MOTION  :
+        resp = handle_ConfigMotion(fpu_id, cmd)        
+    elif command_id == CCMD_EXECUTE_MOTION :
+        pass
+    elif command_id == CCMD_ABORT_MOTION   :
+        pass        
+    elif command_id == CCMD_READ_REGISTER                    :
         pass
     elif command_id == CCMD_RESET_STEPCOUNTER                :
         pass
@@ -315,28 +365,40 @@ def command_handler(cmd, socket, verbose=0):
         pass
     elif command_id == CCMD_SET_USTEP                        :
         pass
-    elif command_id == CCMD_GET_ERROR_ALPHA                  :
-        pass
-    elif command_id == CCMD_GET_ERROR_BETA                   :
-        pass
-    elif command_id == CCMD_GET_COUNTER_DEVIATION            :
-        pass
-    elif command_id == CCMD_GET_FIRMWARE_VERSION             :
-        pass
-    elif command_id == CCMD_CHECK_INTEGRITY                  :
-        pass
-    elif command_id == CCMD_FREE_ALPHA_LIMIT_BREACH          :
-        pass
-    elif command_id == CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    :
-        pass
-    elif command_id == CCMD_SET_TIME_STEP                    :
-        pass
-    elif command_id == CCMD_SET_STEPS_PER_FRAME              :
-        pass
-    elif command_id == CCMD_ENABLE_MOVE                      :
-        pass        
+    elif CAN_PROTOCOL_VERSION == 1:
+        if command_id == CCMD_GET_STEPS_ALPHA:
+            resp = handle_GetX(fpu_id, cmd)
+        elif command_id == CCMD_GET_STEPS_BETA:
+            resp = handle_GetY(fpu_id, cmd)
+        elif command_id == CCMD_GET_ERROR_ALPHA                  :
+            pass
+        elif command_id == CCMD_GET_ERROR_BETA                   :
+            pass
+        else:
+            resp = handle_invalidCommand(fpu_busid, cmd)
     else:
-        resp = handle_invalidCommand(fpu_busid, cmd)
+        if command_id == CCMD_LOCK_UNIT                        :
+            pass
+        elif command_id == CCMD_UNLOCK_UNIT                      :
+            pass
+        elif command_id == CCMD_GET_COUNTER_DEVIATION            :
+            pass
+        elif command_id == CCMD_GET_FIRMWARE_VERSION             :
+            pass
+        elif command_id == CCMD_CHECK_INTEGRITY                  :
+            pass
+        elif command_id == CCMD_FREE_ALPHA_LIMIT_BREACH          :
+            pass
+        elif command_id == CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    :
+            pass
+        elif command_id == CCMD_SET_TIME_STEP                    :
+            pass
+        elif command_id == CCMD_SET_STEPS_PER_FRAME              :
+            pass
+        elif command_id == CCMD_ENABLE_MOVE                      :
+            pass        
+        else:
+            resp = handle_invalidCommand(fpu_busid, cmd)
             
     response = codec.encode(resp, verbose=verbose)
     socket.sendall(response)

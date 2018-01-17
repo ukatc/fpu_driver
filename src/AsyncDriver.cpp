@@ -290,17 +290,29 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
     // "waiting for completion" part might need to be split into two
     // twin methods, so that the final ESO driver can execute
     // asynchronously.
-    while ( (num_moving > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+
+    printf("waiting for datum search to finish...\n");
+    while ( (num_moving > 0) && (grid_state.driver_state == DS_CONNECTED))
     {
+#if 0        
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state);
+#else        
         state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
                                                           | TGT_TIMEOUT),
                                              grid_state);
+#endif        
 
-        num_moving = (grid_state.Counts[FPST_DATUM_SEARCH]
+        num_moving = (// grid_state.Counts[FPST_DATUM_SEARCH]
                       + grid_state.count_pending
                       + grid_state.num_queued);
+        printf("count_pending=%i, num_queued=%i, num_moving = %i\n, %s\n",
+               grid_state.count_pending, grid_state.num_queued,
+               num_moving, (num_moving > 0) ? "retry" : "finished");
     }
 
+
+    
     if (grid_state.driver_state != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;

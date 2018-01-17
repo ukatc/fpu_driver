@@ -26,6 +26,9 @@ class FPU:
         self.steps = np.zeros((256, 2), dtype=np.int)
         self.pause = np.zeros((256, 2), dtype=np.bool)
         self.clockwise = np.zeros((256, 2), dtype=np.bool)
+        self.is_collided = False
+        self.alpha_limit_breach = False
+        
 
 
     def addStep(self, first, last,
@@ -58,6 +61,11 @@ class FPU:
             self.wave_ready = True
             
         
+        
+    def findDatum(self, sleep):
+        #sleep(0.1)
+        self.alpha_steps = 0
+        self.beta_steps = 0
         
 
     
