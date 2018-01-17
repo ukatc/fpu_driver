@@ -26,17 +26,7 @@ namespace   // Avoid cluttering the global namespace.
 
 using namespace mpifps;
 
-using mpifps::canlayer::E_MOC_ERRCODE;
-using mpifps::canlayer::ER_OK;
-using mpifps::canlayer::ER_OK_UNCONFIRMED;
-using mpifps::canlayer::ER_TIMEDOUT;
-using mpifps::canlayer::ER_COLLIDE;
-using mpifps::canlayer::ER_INVALID;
-using mpifps::canlayer::ER_WAVENRDY;
-using mpifps::canlayer::ER_WAVE2BIG;
-using mpifps::canlayer::ER_TIMING;
-using mpifps::canlayer::ER_M1LIMIT;
-using mpifps::canlayer::ER_PARAM;
+using namespace mpifps::canlayer;
 
 using boost::python::object;
 using boost::python::extract;
@@ -441,6 +431,58 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .export_values();
 
 
+    enum_<E_CAN_COMMAND>("E_CAN_COMMAND")
+        .value("CCMD_NO_COMMAND", CCMD_NO_COMMAND)                       
+        .value("CCMD_CONFIG_MOTION", CCMD_CONFIG_MOTION)                    
+        .value("CCMD_EXECUTE_MOTION", CCMD_EXECUTE_MOTION)                   
+        .value("CCMD_ABORT_MOTION", CCMD_ABORT_MOTION)                     
+#if    (CAN_PROTOCOL_VERSION == 1)
+        .value("CCMD_GET_STEPS_ALPHA", CCMD_GET_STEPS_ALPHA)                  
+        .value("CCMD_GET_STEPS_BETA", CCMD_GET_STEPS_BETA)                   
+        .value("CCMD_GET_ERROR_ALPHA", CCMD_GET_ERROR_ALPHA)                  
+        .value("CCMD_GET_ERROR_BETA", CCMD_GET_ERROR_BETA)                   
+#else
+        .value("CCMD_LOCK_UNIT", CCMD_LOCK_UNIT)                        
+        .value("CCMD_UNLOCK_UNIT", CCMD_UNLOCK_UNIT)                      
+        .value("CCMD_GET_COUNTER_DEVIATION", CCMD_GET_COUNTER_DEVIATION)            
+        .value("CCMD_GET_FIRMWARE_VERSION", CCMD_GET_FIRMWARE_VERSION)             
+        .value("CCMD_CHECK_INTEGRITY", CCMD_CHECK_INTEGRITY)                  
+        .value("CCMD_FREE_ALPHA_LIMIT_BREACH", CCMD_FREE_ALPHA_LIMIT_BREACH)          
+        .value("CCMD_ENABLE_ALPHA_LIMIT_PROTECTION", CCMD_ENABLE_ALPHA_LIMIT_PROTECTION)    
+        .value("CCMD_SET_TIME_STEP", CCMD_SET_TIME_STEP)                    
+        .value("CCMD_SET_STEPS_PER_FRAME", CCMD_SET_STEPS_PER_FRAME)              
+        .value("CCMD_ENABLE_MOVE", CCMD_ENABLE_MOVE)                      
+#endif
+        .value("CCMD_READ_REGISTER", CCMD_READ_REGISTER)                    
+        .value("CCMD_PING_FPU", CCMD_PING_FPU)                         
+        .value("CCMD_RESET_FPU", CCMD_RESET_FPU)                        
+        .value("CCMD_FIND_DATUM", CCMD_FIND_DATUM)                       
+        .value("CCMD_RESET_STEPCOUNTER", CCMD_RESET_STEPCOUNTER)                
+        .value("CCMD_REPEAT_MOTION", CCMD_REPEAT_MOTION)                    
+        .value("CCMD_REVERSE_MOTION", CCMD_REVERSE_MOTION)                   
+        .value("CCMD_ENABLE_BETA_COLLISION_PROTECTION", CCMD_ENABLE_BETA_COLLISION_PROTECTION) 
+        .value("CCMD_FREE_BETA_COLLISION", CCMD_FREE_BETA_COLLISION)              
+        .value("CCMD_SET_USTEP", CCMD_SET_USTEP)                        
+   
+   
+   
+#if    (CAN_PROTOCOL_VERSION == 1)       
+        .value("CMSG_FINISHED_MOTION", CMSG_FINISHED_MOTION)               
+        .value("CMSG_FINISHED_DATUM", CMSG_FINISHED_DATUM)                
+        .value("CMSG_WARN_COLLISION_BETA", CMSG_WARN_COLLISION_BETA)           
+        .value("CMSG_WARN_LIMIT_ALPHA", CMSG_WARN_LIMIT_ALPHA)              
+#else
+        .value("CMSG_FINISHED_MOTION", CMSG_FINISHED_MOTION)               
+        .value("CMSG_FINISHED_DATUM", CMSG_FINISHED_DATUM)                
+        .value("CMSG_WARN_COLLISION_BETA", CMSG_WARN_COLLISION_BETA)           
+        .value("CMSG_WARN_LIMIT_ALPHA", CMSG_WARN_LIMIT_ALPHA)              
+        .value("CMSG_WARN_TIMEOUT_DATUM", CMSG_WARN_TIMEOUT_DATUM)            
+#endif
+   
+        .value("NUM_CAN_COMMANDS", NUM_CAN_COMMANDS)                        
+    .export_values();
+   
+    
     enum_<E_DriverErrCode>("E_DriverErrCode")
     .value("DE_OK",DE_OK)
     .value("DE_DRIVER_NOT_INITIALIZED",DE_DRIVER_NOT_INITIALIZED)
