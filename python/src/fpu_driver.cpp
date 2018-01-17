@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 
+#include "../../include/canlayer/E_CAN_COMMAND.h"
 #include "../../include/T_GridState.h"
 #include "../../include/E_GridState.h"
 #include "../../include/GridDriver.h"
@@ -25,6 +26,18 @@ namespace   // Avoid cluttering the global namespace.
 
 using namespace mpifps;
 
+using mpifps::canlayer::E_MOC_ERRCODE;
+using mpifps::canlayer::ER_OK;
+using mpifps::canlayer::ER_OK_UNCONFIRMED;
+using mpifps::canlayer::ER_TIMEDOUT;
+using mpifps::canlayer::ER_COLLIDE;
+using mpifps::canlayer::ER_INVALID;
+using mpifps::canlayer::ER_WAVENRDY;
+using mpifps::canlayer::ER_WAVE2BIG;
+using mpifps::canlayer::ER_TIMING;
+using mpifps::canlayer::ER_M1LIMIT;
+using mpifps::canlayer::ER_PARAM;
+
 using boost::python::object;
 using boost::python::extract;
 using boost::python::list;
@@ -32,39 +45,92 @@ using boost::python::dict;
 using boost::python::tuple;
 
 
+///   
+///   // A friendly class.
+///   class hello
+///   {
+///   public:
+///       hello(const std::string& country)
+///       {
+///           this->country = country;
+///       }
+///       std::string greet() const
+///       {
+///           return "Hello from " + country;
+///       }
+///   private:
+///       std::string country;
+///   };
+///   
+///   // A function taking a hello object as an argument.
+///   std::string invite(const hello& w)
+///   {
+///       return w.greet() + "! Please come soon!";
+///   }
+///
 
-// A friendly class.
-class hello
+class WrapFPUState : public t_fpu_state
 {
-public:
-    hello(const std::string& country)
+
+    public:
+
+    bool was_zeroed;
+    bool is_locked;
+    bool alpha_datum_switch_active;
+    bool beta_datum_switch_active;
+    bool at_alpha_limit;
+    bool beta_collision;
+    bool waveform_valid;
+    bool waveform_ready; 
+    bool waveform_reversed; 
+
+    WrapFPUState(){}
+
+    WrapFPUState(const t_fpu_state& fpu_state)
     {
-        this->country = country;
+        memcpy(cmd_timeouts,fpu_state.cmd_timeouts, sizeof(cmd_timeouts));
+        last_updated              = fpu_state.last_updated;                 
+        pending_command_set       = fpu_state.pending_command_set;          
+        state                     = fpu_state.state;                        
+        last_command              = fpu_state.last_command;
+        last_status               = fpu_state.last_status;
+        alpha_steps               = fpu_state.alpha_steps;                  
+        beta_steps                = fpu_state.beta_steps;                   
+        timeout_count             = fpu_state.timeout_count;                
+        direction_alpha           = fpu_state.direction_alpha;              
+        direction_beta            = fpu_state.direction_beta;               
+        num_waveforms             = fpu_state.num_waveforms;                
+        num_active_timeouts       = fpu_state.num_active_timeouts;          
+        sequence_number           = fpu_state.sequence_number;              
+        was_zeroed                = fpu_state.was_zeroed;                   
+        is_locked                 = fpu_state.is_locked;                    
+        alpha_datum_switch_active = fpu_state.alpha_datum_switch_active;    
+        beta_datum_switch_active  = fpu_state.beta_datum_switch_active;     
+        at_alpha_limit            = fpu_state.at_alpha_limit;               
+        beta_collision            = fpu_state.beta_collision;               
+        waveform_valid            = fpu_state.waveform_valid;               
+        waveform_ready            = fpu_state.waveform_ready;               
+        waveform_reversed         = fpu_state.waveform_reversed;            
+        
     }
-    std::string greet() const
+    
+    bool operator==(const  WrapFPUState &a) const
     {
-        return "Hello from " + country;
+        return (*this) == a;
     }
-private:
-    std::string country;
+
 };
-
-// A function taking a hello object as an argument.
-std::string invite(const hello& w)
-{
-    return w.greet() + "! Please come soon!";
-}
-
 
 class WrapGridState : public t_grid_state
 {
 public:
-    std::vector<t_fpu_state>getStateVec()
+    std::vector<WrapFPUState>getStateVec()
     {
-        std::vector<t_fpu_state> state_vec;
+        std::vector<WrapFPUState> state_vec;
         for (int i=0; i < MAX_NUM_POSITIONERS; i++)
         {
-            state_vec.push_back(FPU_state[i]);
+            WrapFPUState fpu_state(FPU_state[i]);
+                state_vec.push_back(fpu_state);
         }
         return state_vec;
     }
@@ -322,15 +388,16 @@ class WrapGridDriver : public GridDriver
 BOOST_PYTHON_MODULE(fpu_driver)
 {
     using namespace boost::python;
-    class_<hello>("hello", init<std::string>())
-    // Add a regular member function.
-    .def("greet", &hello::greet)
-    // Add invite() as a member of hello!
-    .def("invite", invite)
-    ;
-
-    // Also add invite() as a regular function to the module.
-    def("invite", invite);
+    
+///     class_<hello>("hello", init<std::string>())
+///     // Add a regular member function.
+///     .def("greet", &hello::greet)
+///     // Add invite() as a member of hello!
+///     .def("invite", invite)
+///     ;
+/// 
+///     // Also add invite() as a regular function to the module.
+///     def("invite", invite);
 
     enum_<E_FPU_STATE>("E_FPU_STATE")
     .value("FPST_UNKNOWN", FPST_UNKNOWN             )
@@ -355,6 +422,24 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DS_ASSERTION_FAILED", DS_ASSERTION_FAILED    )
     .export_values();
 
+    /* The following codes are used in the last_status flag.  These
+       values depend on the firmware protocol. It is legitimate to use
+       them for engineering and troubleshooting but thy should *not*
+       be used by normal driver client code.
+     */
+    enum_<E_MOC_ERRCODE>("E_MOC_ERRCODE")
+    .value("_ER_OK"            ,ER_OK            )
+    .value("_ER_COLLIDE"       ,ER_COLLIDE       )
+    .value("_ER_INVALID"       ,ER_INVALID       )
+    .value("_ER_WAVENRDY"      ,ER_WAVENRDY      )
+    .value("_ER_WAVE2BIG"      ,ER_WAVE2BIG      )
+    .value("_ER_TIMING"        ,ER_TIMING        )
+    .value("_ER_M1LIMIT"       ,ER_M1LIMIT       )
+    .value("_ER_PARAM"         ,ER_PARAM         )
+    .value("_ER_OK_UNCONFIRMED",ER_OK_UNCONFIRMED)
+    .value("_ER_TIMEDOUT"      ,ER_TIMEDOUT      )
+    .export_values();
+
 
     enum_<E_DriverErrCode>("E_DriverErrCode")
     .value("DE_OK",DE_OK)
@@ -369,8 +454,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_DRIVER_ALREADY_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
     .value("DE_DRIVER_STILL_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
     .value("DE_ASSERTION_FAILED",DE_ASSERTION_FAILED)
-
-.export_values();
+    .export_values();
     
     enum_<E_GridState>("E_GridState")
     .value("GS_UNKNOWN", GS_UNKNOWN         )
@@ -400,26 +484,28 @@ BOOST_PYTHON_MODULE(fpu_driver)
         .export_values();
 
     
-    class_<t_fpu_state>("FPUState")
-    .def_readonly("state", &t_fpu_state::state)
-    .def_readonly("alpha_steps", &t_fpu_state::alpha_steps)
-    .def_readonly("beta_steps", &t_fpu_state::beta_steps)
-    .def_readonly("was_zeroed", &t_fpu_state::was_zeroed)
-    .def_readonly("is_locked", &t_fpu_state::is_locked)
-    .def_readonly("alpha_datum_switch_active", &t_fpu_state::alpha_datum_switch_active)
-    .def_readonly("beta_datum_switch_active", &t_fpu_state::beta_datum_switch_active)
-    .def_readonly("at_alpha_limit", &t_fpu_state::at_alpha_limit)
-    .def_readonly("beta_collision", &t_fpu_state::beta_collision)
-    .def_readonly("direction_alpha", &t_fpu_state::direction_alpha)
-    .def_readonly("direction_beta", &t_fpu_state::direction_beta)
-    .def_readonly("waveform_valid", &t_fpu_state::waveform_valid)
-    .def_readonly("waveform_ready", &t_fpu_state::waveform_ready)
-    .def_readonly("waveform_reversed", &t_fpu_state::waveform_reversed)
+    class_<WrapFPUState>("FPUState")
+    .def_readonly("state", &WrapFPUState::state)
+    .def_readonly("last_command", &WrapFPUState::last_command)
+    .def_readonly("_last_status", &WrapFPUState::last_status)
+    .def_readonly("alpha_steps", &WrapFPUState::alpha_steps)
+    .def_readonly("beta_steps", &WrapFPUState::beta_steps)
+    .def_readonly("was_zeroed", &WrapFPUState::was_zeroed)
+    .def_readonly("is_locked", &WrapFPUState::is_locked)
+    .def_readonly("alpha_datum_switch_active", &WrapFPUState::alpha_datum_switch_active)
+    .def_readonly("beta_datum_switch_active", &WrapFPUState::beta_datum_switch_active)
+    .def_readonly("at_alpha_limit", &WrapFPUState::at_alpha_limit)
+    .def_readonly("beta_collision", &WrapFPUState::beta_collision)
+    .def_readonly("direction_alpha", &WrapFPUState::direction_alpha)
+    .def_readonly("direction_beta", &WrapFPUState::direction_beta)
+    .def_readonly("waveform_valid", &WrapFPUState::waveform_valid)
+    .def_readonly("waveform_ready", &WrapFPUState::waveform_ready)
+    .def_readonly("waveform_reversed", &WrapFPUState::waveform_reversed)
     ;
 
 
-    class_<std::vector<t_fpu_state> >("StateVec")
-    .def(vector_indexing_suite<std::vector<t_fpu_state> >());
+    class_<std::vector<WrapFPUState> >("StateVec")
+    .def(vector_indexing_suite<std::vector<WrapFPUState> >());
 
     class_<std::vector<long> >("IntVec")
     .def(vector_indexing_suite<std::vector<long> >());

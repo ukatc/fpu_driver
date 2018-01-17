@@ -258,10 +258,11 @@ def handle_invalidCommand(fpu_id, cmd):
 
 gCountTotalCommands = 0
 
-def command_handler(cmd, socket):
+def command_handler(cmd, socket, verbose=0):
     global gCountTotalCommands
     gCountTotalCommands += 1
-    print("command decoded bytes are:", cmd)
+    if verbose:
+        print("command decoded bytes are:", cmd)
     gateway_id = gateway_map[socket.getsockname()]
     busid = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
@@ -270,10 +271,12 @@ def command_handler(cmd, socket):
     command_id = cmd[3]
     busnum = busid + gateway_id * BUSES_PER_GATEWAY
     fpu_id = (fpu_busid-1) + busnum * FPUS_PER_BUS
-    
-    print("CAN command [%i] to gw %i, bus %i, fpu # %i (priority %i), command id=%i"
+
+    if verbose:
+        print("CAN command [%i] to gw %i, bus %i, fpu # %i (priority %i), command id=%i"
           % (gCountTotalCommands, gateway_id, busid, fpu_busid, priority, command_id))
-    print("CAN command #%i to FPU %i" % (command_id, fpu_id))
+    
+        print("CAN command #%i to FPU %i" % (command_id, fpu_id))
 
     
     if command_id == CCMD_GET_STEPS_ALPHA:
@@ -335,7 +338,7 @@ def command_handler(cmd, socket):
     else:
         resp = handle_invalidCommand(fpu_busid, cmd)
             
-    response = codec.encode(resp)
+    response = codec.encode(resp, verbose=verbose)
     socket.sendall(response)
     #print("echoed %r" % response)
 

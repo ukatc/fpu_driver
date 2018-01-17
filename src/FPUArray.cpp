@@ -78,7 +78,8 @@ FPUArray::FPUArray(int nfpus)
         fpu_state.last_updated.tv_sec       = 0;
         fpu_state.last_updated.tv_nsec      = 0;
         fpu_state.timeout_count             = 0;
-        fpu_state.completed_command         = CCMD_NO_COMMAND;
+        fpu_state.last_command              = CCMD_NO_COMMAND;
+        fpu_state.last_status               = ER_OK;
         fpu_state.sequence_number           = 0;
         // the values below are not valid, they need proper
         // initialization from a physical fpu response.
@@ -405,6 +406,7 @@ void FPUArray::setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd)
 
     t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
     fpu.last_command = last_cmd;
+    fpu.last_status = ER_OK_UNCONFIRMED;
 
     // if tracing is active, signal state change
     // to waitForState() callers.
@@ -818,7 +820,8 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 
 }
 
-void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
+void remove_pending(t_fpu_state& fpu, int fpu_id,
+                    E_CAN_COMMAND cmd_code, E_MOC_ERRCODE cmd_status,
                     TimeOutList& timeout_list, int &count_pending)
 {
     // ignore if a command was already removed by time-out expiration
@@ -872,7 +875,8 @@ void remove_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
     
     // remove command from pending set
     fpu.pending_command_set &= ~(((unsigned int)1) << cmd_code);
-    fpu.completed_command = cmd_code;
+    fpu.last_command = cmd_code;
+    fpu.last_status = cmd_status;
 
     // get earliest remaining time-out value.
     // This can be MAX_TIMESPEC as well, no problem.
@@ -924,6 +928,7 @@ timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration
             uint8_t cmd_code = fpu.cmd_timeouts[read_index].cmd_code;
             fpu.pending_command_set &= ~(((unsigned int)1) << cmd_code);
             fpu.last_command = static_cast<E_CAN_COMMAND>(cmd_code);
+            fpu.last_status = ER_TIMEDOUT;
             
             count_pending--;
             printf("decrementing num_active_timeouts %i -> %i\n",

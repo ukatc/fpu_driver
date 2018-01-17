@@ -11,6 +11,7 @@ coroutines.
 
 """
 from __future__ import print_function
+import os
 from gevent.server import StreamServer
 from socket import IPPROTO_TCP, TCP_NODELAY
 import array
@@ -20,13 +21,14 @@ import codec
 import mock_controller
 from mock_controller import command_handler
 
+DEBUG=int(os.environ.get("DEBUG","0"))
 
 # this handler will be run for each incoming connection in a dedicated greenlet
 def echo(socket, address):
     print('New connection from %s:%s' % address)
     # using a makefile because we want to use readline()
     msg_len = 10
-    prot = codec.Decoder()
+    prot = codec.Decoder(verbose=DEBUG)
 
     socket.setsockopt(IPPROTO_TCP, TCP_NODELAY, 1)
 

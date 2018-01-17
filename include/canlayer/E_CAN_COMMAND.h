@@ -107,6 +107,7 @@ enum E_CAN_COMMAND
    or only used internally */
 enum E_MOC_ERRCODE
 {
+    ER_OK               = 0x00        , // no error
     ER_STALLX           = 0x01        , // x motor stall (obsolete)
     ER_STALLY           = 0x02        , // y motor stall (obsolete)
     ER_COLLIDE          = 0x03        , // FPU collision detected
@@ -117,6 +118,8 @@ enum E_MOC_ERRCODE
     ER_M1LIMIT          = 0x08        , // M1 Limit switch breached
     ER_M2LIMIT          = 0x09        , // no longer used
     ER_PARAM            = 0x10        , // parameter out of range
+    ER_OK_UNCONFIRMED   = 0x11        , // command will not be confirmed if OK
+    ER_TIMEDOUT         = 0x12        , // command hit time-out
 };
 
 

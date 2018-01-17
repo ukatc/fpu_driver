@@ -90,7 +90,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 {
     E_CAN_COMMAND cmd_id = static_cast<E_CAN_COMMAND>(data[1]);
     uint8_t response_status = data[2];
-    uint8_t response_errcode = data[3] ? data[4] : 0;
+    E_MOC_ERRCODE response_errcode = data[3] ? static_cast<E_MOC_ERRCODE>(data[4]) : ER_OK;
     timespec cur_time;
 
     assert(blen == 8);
@@ -101,7 +101,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     {
     case CCMD_CONFIG_MOTION   :
         // clear time-out flag
-        remove_pending(fpu, fpu_id, cmd_id, timeout_list, count_pending);
+        remove_pending(fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
         {
             logErrorStatus(fpu_id, cur_time, response_errcode);
@@ -142,7 +142,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 
     case CMSG_FINISHED_MOTION:
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, timeout_list, count_pending);
+        remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
             // FIXME: Update step counter in protocol version 2
@@ -154,21 +154,21 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         
     case CCMD_ABORT_MOTION    :  
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, timeout_list, count_pending);
         if (response_errcode == 0)
         {
             // FIXME: Update step counter in protocol version 2
             //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
             fpu.state = FPST_ABORTED;
             // remove executeMotion from pending commands
-            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, timeout_list, count_pending);
+            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
         }
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
         break;
         
     case CCMD_GET_STEPS_ALPHA :  
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, timeout_list, count_pending);
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode,timeout_list, count_pending);
         if (response_errcode == 0)
         {
             int asteps = (((data[6] << 8) | data[5]) << 8 | data[4]);
@@ -179,7 +179,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
          
     case CCMD_GET_STEPS_BETA  :  
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, timeout_list, count_pending);
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
             int bsteps = (((data[6] << 8) | data[5]) << 8 | data[4]);
@@ -190,13 +190,13 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         
     case CCMD_PING_FPU        :
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, timeout_list, count_pending);
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
         break;
 
     case CCMD_RESET_FPU       :  
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, timeout_list, count_pending);
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
             fpu.state = FPST_UNINITIALIZED;
@@ -218,7 +218,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
     case CMSG_FINISHED_DATUM :  
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, timeout_list, count_pending);
+        remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
         {
             if (fpu.state == FPST_DATUM_SEARCH)
@@ -242,14 +242,14 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         if (fpu.state == FPST_MOVING)
         {
             // clear time-out flag
-            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, timeout_list, count_pending);
+            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
         
         }
 
         if (fpu.state == FPST_DATUM_SEARCH)
         {
             // clear time-out flag
-            remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, timeout_list, count_pending);
+            remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
         
         }
         
@@ -265,14 +265,14 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         if (fpu.state == FPST_MOVING)
         {
             // clear time-out flag
-            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, timeout_list, count_pending);
+            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
         
         }
 
         if (fpu.state == FPST_DATUM_SEARCH)
         {
             // clear time-out flag
-            remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, timeout_list, count_pending);        
+            remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);        
         }
 
         fpu.state = FPST_OBSTACLE_ERROR;
@@ -294,7 +294,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.beta_collision = false;
         }
         
-        remove_pending(fpu, fpu_id,  cmd_id, timeout_list, count_pending);
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
         break;
         
@@ -303,7 +303,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         // FIXME: Update step counter in protocol version 2
         //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
         
-        remove_pending(fpu, fpu_id,  cmd_id, timeout_list, count_pending);        
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);        
         fpu.last_updated = cur_time;
         break;
         

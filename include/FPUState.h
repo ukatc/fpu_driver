@@ -27,6 +27,7 @@ namespace mpifps
 {
 
 using canlayer::E_CAN_COMMAND;
+using canlayer::E_MOC_ERRCODE;
 using canlayer::NUM_CAN_COMMANDS;
     
 enum E_FPU_STATE
@@ -62,6 +63,7 @@ enum E_MOVEMENT_DIRECTION
 
 const int MAX_NUM_TIMEOUTS = 4;
 
+
 typedef struct __attribute__((packed)) tout_entry
 {
     timespec tout_val;
@@ -82,9 +84,10 @@ typedef struct __attribute__((packed)) t_fpu_state
     E_FPU_STATE state;    
     // id of last command that was issued
     E_CAN_COMMAND last_command;
-    // id of last command that was completed
-    E_CAN_COMMAND completed_command;    
-
+    // motion controller status response for last command
+    E_MOC_ERRCODE last_status; /* note this is very low-level
+                                  information which should only used
+                                  by the CAN driver */
 
     // these members are the individual values
     // reported by FPU responses
@@ -98,28 +101,20 @@ typedef struct __attribute__((packed)) t_fpu_state
     uint8_t num_waveforms;
     int8_t num_active_timeouts;
     uint8_t sequence_number; // number of last pending / received command
-    bool was_zeroed; /* steps are validly calibrated by
+    unsigned int was_zeroed: 1; /* steps are validly calibrated by
                                     finding datum.  This is required
                                     for any science observatons. */
-    bool is_locked;  // FPU was locked by operator
-    bool alpha_datum_switch_active; // alpha datum switch is on
-    bool beta_datum_switch_active; // beta datum switch is on
-    bool at_alpha_limit; // alpha arm has reached limit (detected by datum off)
-    bool beta_collision;
-    bool waveform_valid; /* waveform completely loaded and
+    unsigned int is_locked: 1;  // FPU was locked by operator
+    unsigned int alpha_datum_switch_active: 1; // alpha datum switch is on
+    unsigned int beta_datum_switch_active: 1; // beta datum switch is on
+    unsigned int at_alpha_limit: 1; // alpha arm has reached limit (detected by datum off)
+    unsigned int beta_collision: 1;
+    unsigned int waveform_valid: 1; /* waveform completely loaded and
                                         not invalidated by collision
                                         or abort message. */
-    bool waveform_ready; // FPU can execute waveform
-    bool waveform_reversed; // false means anti-clockwise for positive step numbers
+    unsigned int waveform_ready: 1; // FPU can execute waveform
+    unsigned int waveform_reversed: 1; // false means anti-clockwise for positive step numbers
 
-
-
-
-
-    bool operator==(const  t_fpu_state &a) const
-        {
-            return (*this) == a;
-        }
 
 
 } t_fpu_state;

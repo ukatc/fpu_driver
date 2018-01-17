@@ -15,9 +15,10 @@ class E_STATE:
     
 
 class Decoder:
-    def __init__(self):
+    def __init__(self, verbose=0):
         self.state = E_STATE.UNSYNC
         self.bytelist = []
+        self.verbose=verbose
 
 
     def add_byte(self, b, callback, socket):
@@ -32,7 +33,8 @@ class Decoder:
         elif b == ETX:
             if self.state == E_STATE.DLE_ESCAPE:
                 self.state = E_STATE.UNSYNC
-                callback(array.array('B', self.bytelist), socket)
+                callback(array.array('B', self.bytelist), socket,
+                         verbose=self.verbose)
             elif self.state == E_STATE.IN_FRAME:
                 self.bytelist.append(b)
             else:
@@ -53,14 +55,16 @@ class Decoder:
         
     def decode(self, command, callback, socket):
         command_bytes = array.array('B', command)
-        print("command bytes (undecoded)= ", command_bytes)
+        if self.verbose:
+            print("command bytes (undecoded)= ", command_bytes)
 
         for b in command_bytes:
             self.add_byte(b, callback, socket)
                 
             
-def encode(bytevals):
-    print("response bytevals=", bytevals)
+def encode(bytevals,verbose=0):
+    if verbose:
+        print("response bytevals=", bytevals)
     outbytes = [DLE, STX]
     for b in bytevals:
         outbytes.append(b)
