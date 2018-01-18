@@ -247,7 +247,7 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
              tx7_dummy3 ]
 
         if 1:
-            print("FPU %i: sending confirmation to findDatum command", fpu_id);
+            print("FPU %i: sending confirmation to findDatum command" % fpu_id);
             confirmation = codec.encode(conf_msg, verbose=verbose)
             socket.send(confirmation)
 

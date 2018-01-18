@@ -65,9 +65,9 @@ class FPU:
         
         
     def findDatum(self, sleep):
-        dtime_mu = 0.1
-        dtime_sigma = 0.2
-        dtime_sec = min(max(random.gauss(dtime_mu, dtime_sigma), 0), 5)
+        dtime_mu = 5
+        dtime_sigma = 15.0
+        dtime_sec = min(max(random.gauss(dtime_mu, dtime_sigma), 0), 15)
         #sleep(dtime_sec)
         self.alpha_steps = 0
         self.beta_steps = 0
