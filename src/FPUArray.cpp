@@ -284,8 +284,16 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
             // locking.
             reference_state = FPUGridState;
             got_value = true;
-            assert(0);
-            error, debug why it is leaving here too early!
+#ifdef DEBUG
+            int n = num_trace_clients;
+            printf("W[%i/%i,x,%i] ", FPUGridState.num_queued,
+                   FPUGridState.count_pending,
+                   n);
+            printf("waitForState(): leaving with inTargetState=%i (sum_state=%i, "
+                   "wait target = %i), new_timeout=%i, all_updated=%i\n",
+                   inTargetState(sum_state, target), sum_state, target,
+                   new_timeout_triggered, all_updated);
+#endif            
             break;
         }
         else
@@ -459,11 +467,12 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
         // FIXME: the naming is a bit confusing here.  we simply
         // define a later time to derive a value which indicates a
         // negative result (no timeout key found).
-        const timespec MAX_TIMEOUT = { /* .tv_sec = */ 10,
-                                       /* .tv_nsec = */ 0};
-
-        timespec max_tmout = time_add(cur_time, MAX_TIMEOUT);
         
+///        const timespec MAX_TIMEOUT = { /* .tv_sec = */ 10,
+///                                       /* .tv_nsec = */ 0};
+///
+///        timespec max_tmout = time_add(cur_time, MAX_TIMEOUT);
+///        
         next_key = tout_list.getNextTimeOut();
 
         assert(next_key.tv_sec > 0);

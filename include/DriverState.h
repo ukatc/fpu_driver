@@ -94,29 +94,32 @@ enum E_DriverErrCode
     // command was still not finished.
     DE_STILL_BUSY = 4,
 
+
+    // a collision occured, and the operation was aborted
+    DE_NEW_COLLISION = 5,
+    
     // the user tried to start a movement
     // command while at least one FPU was in collided
     // or aborted state - the command
     // was rejected because of that
-
-    DE_UNRESOLVED_COLLISION = 5,
+    DE_UNRESOLVED_COLLISION = 6,
 
     // an FPU has not been initialised, so
     // it cannot be moved accurately and safely.
-    DE_FPU_NOT_INITIALIZED = 6,
+    DE_FPU_NOT_INITIALIZED = 7,
 
     // driver is already initialized
-    DE_DRIVER_ALREADY_CONNECTED = 7,
+    DE_DRIVER_ALREADY_CONNECTED = 8,
 
     // driver is connected
-    DE_DRIVER_STILL_CONNECTED = 8,
+    DE_DRIVER_STILL_CONNECTED = 9,
 
     // An assumption about the driver state
     // is not met, the driver is switched off
     // and the problem logged.
 
     // maximum retry count was exceeded for command
-    DE_MAX_RETRIES_EXCEEDED = 9,
+    DE_MAX_RETRIES_EXCEEDED = 10,
 
     DE_ASSERTION_FAILED=99,
 

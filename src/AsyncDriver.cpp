@@ -294,21 +294,33 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
     printf("waiting for datum search to finish...\n");
     while ( (num_moving > 0) && (grid_state.driver_state == DS_CONNECTED))
     {
-#if 0        
+#if 0
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state);
-#else        
+#else
+        // for this target, it is necessary to check num_queued
+        // because this might not be updated. The target can have
+        // advantages in a multi-FPU grid because it will notify
+        // early on collisions, without waiting for the operation
+        // to complete.
         state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
                                                           | TGT_TIMEOUT),
                                              grid_state);
 #endif        
 
-        num_moving = (// grid_state.Counts[FPST_DATUM_SEARCH]
+        num_moving = (grid_state.Counts[FPST_DATUM_SEARCH]
                       + grid_state.count_pending
                       + grid_state.num_queued);
-        printf("count_pending=%i, num_queued=%i, num_moving = %i\n, %s\n",
+        printf("Counts[DATUM_SEARCH]=%i, count_pending=%i, num_queued=%i, num_moving = %i\n, %s\n",
+               grid_state.Counts[FPST_DATUM_SEARCH],
                grid_state.count_pending, grid_state.num_queued,
                num_moving, (num_moving > 0) ? "retry" : "finished");
+
+        if (state_summary == GS_COLLISION)
+        {
+            printf("collision detected, aborting datum search");
+            return DE_NEW_COLLISION;
+        }
     }
 
 
