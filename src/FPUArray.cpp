@@ -883,7 +883,13 @@ void remove_pending(t_fpu_state& fpu, int fpu_id,
 {
     // ignore if a command was already removed by time-out expiration
 
-    assert(fpu.num_active_timeouts > 0);
+    if (fpu.num_active_timeouts == 0)
+    {
+#ifdef DEBUG
+    printf("fpu #%i:  cmd code %i was already removed by time-out\n", fpu_id, cmd_code);
+#endif
+        return;
+    }
     assert(cmd_code != CCMD_NO_COMMAND);
 
     if ( ((fpu.pending_command_set >> cmd_code) & 1) == 0)
