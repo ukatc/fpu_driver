@@ -28,6 +28,7 @@ class FPU:
         self.clockwise = np.zeros((256, 2), dtype=np.bool)
         self.is_collided = False
         self.alpha_limit_breach = False
+        self.at_datum = False
         
 
 
@@ -63,10 +64,10 @@ class FPU:
         
         
     def findDatum(self, sleep):
-        #sleep(0.1)
+        sleep(0.1)
         self.alpha_steps = 0
         self.beta_steps = 0
-        
+        self.at_datum = True
 
     
         

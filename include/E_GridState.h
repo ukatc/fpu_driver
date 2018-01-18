@@ -74,7 +74,6 @@ enum E_WaitTarget
                              | GS_ABORTED),
 
     TGT_AT_DATUM      = (GS_AT_DATUM
-                         | GS_LEAVING_DATUM
                          | GS_UNKNOWN
                          | GS_COLLISION
                          | GS_ABORTED),

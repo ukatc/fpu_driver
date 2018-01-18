@@ -258,18 +258,19 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         
         // if a time-out occurs and qualifies, we return early.
         // (the counter can wrap around - no problem!)
-        const bool new_timeout_triggered = ( (target | TGT_TIMEOUT) &&
+        bool new_timeout_triggered = ( (target & TGT_TIMEOUT) &&
             (count_timeouts != FPUGridState.count_timeout));
 
         // If all FPUs have been updated, that might be
         // enough.
-        const bool all_updated = ((target | GS_ALL_UPDATED) &&
+        bool all_updated = ((target & GS_ALL_UPDATED) &&
                              check_all_fpus_updated(num_fpus,
                                                     reference_state,
                                                     FPUGridState));
 
+        bool target_reached = inTargetState(sum_state, target);
 
-        const bool end_wait = (inTargetState(sum_state, target)
+        bool end_wait = (target_reached
                                || new_timeout_triggered
                                || all_updated);
 
@@ -291,7 +292,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
                    n);
             printf("waitForState(): leaving with inTargetState=%i (sum_state=%i, "
                    "wait target = %i), new_timeout=%i, all_updated=%i\n",
-                   inTargetState(sum_state, target), sum_state, target,
+                   target_reached, sum_state, target,
                    new_timeout_triggered, all_updated);
 #endif            
             break;
@@ -340,7 +341,7 @@ bool FPUArray::inTargetState(E_GridState sum_state,
         return true;
     }
 
-    if (tstate != TGT_ANY_CHANGE)
+    if (tstate == TGT_ANY_CHANGE)
     {
         return true;
     }
@@ -350,10 +351,16 @@ bool FPUArray::inTargetState(E_GridState sum_state,
     // pending commands - this is needed
     // if the caller merely wants to get new
     // info from the grid, instead of a state change.
-    if ((tstate | TGT_NO_MORE_PENDING)
+    if ((tstate & TGT_NO_MORE_PENDING)
         && (FPUGridState.count_pending == 0)
         && (FPUGridState.num_queued == 0))
     {
+#ifdef DEBUG2
+        printf("inTargetState: returning true,  tstate=%i, NO_MORE_PENDING=%i,"
+               " count_pending=%, num_queued=%i\n",
+               tstate, (tstate & TGT_NO_MORE_PENDING) != 0,
+               FPUGridState.count_pending, FPUGridState.num_queued);
+#endif        
         return true;
     }
 
@@ -362,7 +369,7 @@ bool FPUArray::inTargetState(E_GridState sum_state,
     // the state we are looking at matches
     // the return value.
 
-    return ((sum_state | tstate) != 0);
+    return ((sum_state & tstate) != 0);
 
 
 

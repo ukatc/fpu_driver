@@ -220,6 +220,7 @@ def handle_findDatum(fpu_id, cmd):
         tx3_errflag = ER_COLLIDE
     else:
         FPUGrid[fpu_id].findDatum(sleep)
+        ##tx1_cmdid = command_id # DEBUG: report only start of search
         tx1_cmdid = CMSG_FINISHED_DATUM
         tx2_status = 0
         tx3_errflag = 0
