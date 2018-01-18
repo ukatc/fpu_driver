@@ -219,7 +219,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     case CCMD_FIND_DATUM :
         // we do not clear the pending flag, because
         // we wait for the datum search to finish
-        printf("confirmed: datum search for FPU %i \n", fpu_id);
+        //printf("confirmed: datum search for FPU %i \n", fpu_id);
         if (response_errcode == 0)
         {
             // datum search was successfully started
@@ -231,7 +231,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
     case CMSG_FINISHED_DATUM :  
         // clear time-out flag
-        printf("finished: datum search for FPU %i \n", fpu_id);
+        //printf("finished: datum search for FPU %i \n", fpu_id);
         remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
         {
