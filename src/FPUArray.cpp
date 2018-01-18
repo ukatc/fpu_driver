@@ -31,6 +31,7 @@
 
 #include "canlayer/FPUArray.h" 
 #include "canlayer/handleFPUResponse.h"
+#include "canlayer/handleTimeout.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -68,6 +69,7 @@ FPUArray::FPUArray(int nfpus)
         fpu_state.was_zeroed                = false;
         fpu_state.is_locked                 = false;
         fpu_state.state                     = FPST_UNKNOWN;
+        fpu_state.previous_state            = FPST_UNKNOWN;
         fpu_state.pending_command_set       = 0;
         for(int i=0; i < MAX_NUM_TIMEOUTS; i++)
         {
@@ -227,7 +229,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         // more specific target.
         num_trace_clients++;
     }
-#ifdef DEBUG
+#ifdef DEBUG2
     if (num_trace_clients > 0)
     {
         printf("waitForState(): tracing any change\n");
@@ -246,7 +248,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
     }
 #endif    
 
-    unsigned long count_timeouts = reference_state.count_timeout;
+    const unsigned long count_timeouts = reference_state.count_timeout;
 
     bool got_value = false;
     while (! got_value)
@@ -258,19 +260,24 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         
         // if a time-out occurs and qualifies, we return early.
         // (the counter can wrap around - no problem!)
-        bool new_timeout_triggered = ( (target & TGT_TIMEOUT) &&
+        const bool new_timeout_triggered = ( (target & TGT_TIMEOUT) &&
             (count_timeouts != FPUGridState.count_timeout));
+
+#ifdef DEBUG2
+        printf("WFS: count_timeouts=%lu, FPUGridState.count_timeout=%lu, new TO=%i\n",
+               count_timeouts, FPUGridState.count_timeout, new_timeout_triggered);
+#endif
 
         // If all FPUs have been updated, that might be
         // enough.
-        bool all_updated = ((target & GS_ALL_UPDATED) &&
+        const bool all_updated = ((target & GS_ALL_UPDATED) &&
                              check_all_fpus_updated(num_fpus,
                                                     reference_state,
                                                     FPUGridState));
 
-        bool target_reached = inTargetState(sum_state, target);
+        const bool target_reached = inTargetState(sum_state, target);
 
-        bool end_wait = (target_reached
+        const bool end_wait = (target_reached
                                || new_timeout_triggered
                                || all_updated);
 
@@ -285,7 +292,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
             // locking.
             reference_state = FPUGridState;
             got_value = true;
-#ifdef DEBUG
+#ifdef DEBUG2
             int n = num_trace_clients;
             printf("W[%i/%i,x,%i] ", FPUGridState.num_queued,
                    FPUGridState.count_pending,
@@ -464,7 +471,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
     pthread_mutex_lock(&grid_state_mutex);
 
     int old_count_pending = FPUGridState.count_pending;
-
+    bool state_count_changed = false;
 
     while (true)
     {
@@ -485,7 +492,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
         assert(next_key.tv_sec > 0);
         
 #ifdef DEBUG2
-        printf("cur time: %li/%li, next timeout: %li/%li\n",
+        printf("processTimeouts(): cur time: %li/%li, next timeout: %li/%li\n",
                cur_time.tv_sec, cur_time.tv_nsec,
                next_key.tv_sec, next_key.tv_nsec);
 #endif
@@ -506,12 +513,29 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
             
         int fpu_id = toentry.id;
         
+#ifdef DEBUG2
+        printf("processTimeouts(): popped from list fpu#%i, timeout: %li/%li\n",
+               fpu_id,
+               next_key.tv_sec, next_key.tv_nsec);
+#endif
+
         t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
-            
+
+        const E_FPU_STATE old_state = fpu.state;
+        
         // remlove entries which are expired, and adjust pending count
         timespec next_timeout = expire_pending(fpu, fpu_id,
                                                cur_time,
-                                               FPUGridState.count_pending);
+                                               FPUGridState.count_pending,
+                                               FPUGridState.count_timeout);
+        
+        const E_FPU_STATE new_state = fpu.state;
+        if (old_state != new_state)
+        {
+            FPUGridState.Counts[old_state]--;
+            FPUGridState.Counts[new_state]++;
+            state_count_changed = true;
+        }
         
 #ifdef DEBUG2
         printf("inserting next timeout for FPU #%i: %li/%li\n",
@@ -535,11 +559,14 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
     // signal any waiting control threads if
     // the grid state has changed
     if (((FPUGridState.count_pending == 0)
-         && (FPUGridState.num_queued == 0)) ||
+         && (FPUGridState.num_queued == 0))  ||
         ((old_count_pending > FPUGridState.count_pending)
-         && ((num_trace_clients > 0))))
+         && ((num_trace_clients > 0)))
+       || state_count_changed )
     {
-//        printf("¡4");fflush(stdout);
+#ifdef DEBUG2        
+        printf("¡4");fflush(stdout);
+#endif        
         pthread_cond_broadcast(&cond_state_change);
     }
     pthread_mutex_unlock(&grid_state_mutex);
@@ -734,7 +761,12 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
         // update global state counters
         t_fpu_state newstate = FPUGridState.FPU_state[fpu_id];
-        
+
+        // remember previous state
+        if(newstate.state != oldstate.state)
+        {
+            FPUGridState.FPU_state[fpu_id].previous_state = oldstate.state;
+        }
         
         FPUGridState.Counts[oldstate.state]--;
         FPUGridState.Counts[newstate.state]++;
@@ -916,7 +948,7 @@ void remove_pending(t_fpu_state& fpu, int fpu_id,
 }
 
 timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
-                         int &count_pending)
+                        int &count_pending, unsigned long &count_timeouts)
 {
 
     // remove all commands in the pending set which have a timeout
@@ -936,8 +968,8 @@ timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration
     int write_index = 0;
     while ( read_index < old_active_timeouts)
     {
-        bool preserve = time_smaller(fpu.cmd_timeouts[read_index].tout_val,
-                                     expiration_time);
+        bool preserve = time_smaller(expiration_time,
+                                     fpu.cmd_timeouts[read_index].tout_val);
         if (preserve)
         {
             if (read_index > write_index)
@@ -954,10 +986,16 @@ timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration
             fpu.last_status = ER_TIMEDOUT;
             
             count_pending--;
+            // Note: the counter below wraps and this is intended,
+            // it is an unsigned value which will wrap around
+            // and is only compared against change.
+            count_timeouts++;
             printf("decrementing num_active_timeouts %i -> %i\n",
                    fpu.num_active_timeouts, fpu.num_active_timeouts -1);
             fflush(stdout);
             fpu.num_active_timeouts--;
+            // fix state if necessary
+            canlayer::handleTimeout(fpu_id, fpu, static_cast<E_CAN_COMMAND>(cmd_code));
         }
         read_index++;
         

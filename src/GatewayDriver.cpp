@@ -911,14 +911,14 @@ void* GatewayDriver::threadRxFun()
         do
         {
             retry = false;
-#ifdef DEBUG_POLL
+#ifdef DEBUG2
             print_time("rx timeout = ", max_wait);
 #endif
 // bug is seemingly NOT caused by signal_set
 //            retval =  ppoll(pfd, num_fds, &max_wait, NULL);
             retval =  ppoll(pfd, num_fds, &max_wait, &signal_set);
-#ifdef DEBUG_POLL
-        print_curtime("cur_time after write poll: ");
+#ifdef DEBUG2
+        print_curtime("cur_time after RX poll: ");
 #endif
             if (retval < 0)
             {
@@ -953,7 +953,7 @@ void* GatewayDriver::threadRxFun()
             // a time-out was hit - go through the list of FPUs
             // and mark each FPU which has timed out.
 #ifdef DEBUG2
-            printf("R"); fflush(stdout);
+            printf("[TO]"); fflush(stdout);
 #endif
             get_monotonic_time(cur_time);
 

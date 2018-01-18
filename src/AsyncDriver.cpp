@@ -299,10 +299,10 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
                                              grid_state);
 #else
         // for this target, it is necessary to check num_queued
-        // because this might not be updated. The target can have
-        // advantages in a multi-FPU grid because it will notify
-        // early on collisions, without waiting for the operation
-        // to complete.
+        // because this might not yet be updated on return. The target
+        // has safety a advantage in a multi-FPU grid because it will
+        // notify early on collisions, without waiting for the
+        // operation to complete.
         state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
                                                           | TGT_TIMEOUT),
                                              grid_state);

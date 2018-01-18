@@ -82,6 +82,8 @@ typedef struct __attribute__((packed)) t_fpu_state
 
     // current state of FPU
     E_FPU_STATE state;    
+    // previous state of FPU (used for time-out handling etc.)
+    E_FPU_STATE previous_state;    
     // id of last command that was issued
     E_CAN_COMMAND last_command;
     // motion controller status response for last command

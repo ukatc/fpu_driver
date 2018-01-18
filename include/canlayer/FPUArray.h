@@ -152,9 +152,10 @@ private:
 ///     // confirm response for one FPU, canceling the 'pending command'
 ///     // attributes.
     
-    void handleFPUResponse(int fpu_id, t_fpu_state& fpu, const t_response_buf& data,
-                           const int blen);
-
+///    void handleFPUResponse(int fpu_id, t_fpu_state& fpu, const t_response_buf& data,
+///                           const int blen);
+///
+    
 
     // returns summary state of FPU grid, without
     // lock protection.
@@ -200,7 +201,7 @@ void remove_pending(t_fpu_state& fpu, int fpu_id,
 // from the fpu pending set, and return the next time-out value from
 // the remaining set (or MAX_TIMESPEC if the set is empty)
 timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
-                         int  &count_pending);
+                        int  &count_pending, unsigned long &count_timeouts);
 
 
 

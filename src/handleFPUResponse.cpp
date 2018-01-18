@@ -22,7 +22,7 @@
 
 #include <cassert>
 
-#include <pthread.h>
+//#include <pthread.h>
 
 #include "FPUState.h"
 #include "canlayer/handleFPUResponse.h"
