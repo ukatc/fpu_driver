@@ -9,6 +9,7 @@ internal state
 from __future__ import print_function
 
 import numpy as np
+import random
 
 MAX_ENTRIES = 256
 
@@ -64,7 +65,10 @@ class FPU:
         
         
     def findDatum(self, sleep):
-        sleep(0.1)
+        dtime_mu = 0.1
+        dtime_sigma = 0.2
+        dtime_sec = min(max(random.gauss(dtime_mu, dtime_sigma), 0), 5)
+        #sleep(dtime_sec)
         self.alpha_steps = 0
         self.beta_steps = 0
         self.at_datum = True

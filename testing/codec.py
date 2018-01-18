@@ -29,6 +29,7 @@ class Decoder:
                 self.state = E_STATE.DLE_ESCAPE
             elif self.state == E_STATE.DLE_ESCAPE:
                 self.bytelist.append(DLE)
+                self.state = E_STATE.IN_FRAME
                 
         elif b == ETX:
             if self.state == E_STATE.DLE_ESCAPE:

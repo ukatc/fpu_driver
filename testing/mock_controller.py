@@ -200,9 +200,13 @@ def handle_GetX(fpu_id, cmd):
              tx6_count2,
              tx7_dummy ]
 
-def handle_findDatum(fpu_id, cmd, socket):
+def handle_findDatum(fpu_id, cmd, socket, verbose=False):
         
     print("starting findDatum for FPU %i" % fpu_id)
+
+    if len(cmd) < 8:
+        print("CAN command format error, length must be 8");
+        return []
     
     busid = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
@@ -242,9 +246,10 @@ def handle_findDatum(fpu_id, cmd, socket):
              tx6_dummy2,
              tx7_dummy3 ]
 
-        print("FPU %i: sending confirmation to findDatum command", fpu_id);
-        confirmation = codec.encode(conf_msg, verbose=verbose)
-        socket.sendall(confirmation)
+        if 1:
+            print("FPU %i: sending confirmation to findDatum command", fpu_id);
+            confirmation = codec.encode(conf_msg, verbose=verbose)
+            socket.send(confirmation)
 
         # simulate findDatum FPU operation
         FPUGrid[fpu_id].findDatum(sleep)
@@ -367,7 +372,7 @@ def command_handler(cmd, socket, verbose=0):
         pass
     elif command_id == CCMD_FIND_DATUM                       :
         # we pass the socket here to send an interim confirmation
-        resp = handle_findDatum(fpu_id, cmd, socket)
+        resp = handle_findDatum(fpu_id, cmd, socket, verbose=verbose)
         
     elif command_id == CCMD_CONFIG_MOTION  :
         resp = handle_ConfigMotion(fpu_id, cmd)        
