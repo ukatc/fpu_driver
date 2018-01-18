@@ -306,7 +306,9 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         }
         else
         {
+#ifdef DEBUG2            
             printf("WFS: q=%i / p= %i\n", FPUGridState.num_queued, FPUGridState.count_pending);
+#endif            
             pthread_cond_wait(&cond_state_change,
                               &grid_state_mutex);
         }
@@ -796,7 +798,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
              || (num_trace_clients > 0) )
         {
             pthread_cond_broadcast(&cond_state_change);
-#if 1
+#ifdef DEBUG2
             int n = num_trace_clients;
             printf("![%i/%i,%i,%i]", FPUGridState.num_queued,
                    FPUGridState.count_pending,

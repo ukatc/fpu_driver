@@ -200,7 +200,7 @@ def handle_GetX(fpu_id, cmd):
              tx6_count2,
              tx7_dummy ]
 
-def handle_findDatum(fpu_id, cmd):
+def handle_findDatum(fpu_id, cmd, socket):
         
     print("starting findDatum for FPU %i" % fpu_id)
     
@@ -214,22 +214,43 @@ def handle_findDatum(fpu_id, cmd):
     tx_prio = 0x02
     tx_canid = (tx_prio << 7) | fpu_busid
     tx0_fpu_busid = fpu_busid
+    
+    tx4_dummy0 = 0
+    tx5_dummy1 = 0
+    tx6_dummy2 = 0
+    tx7_dummy3 = 0
+
     if FPUGrid[fpu_id].is_collided:
         tx1_cmdid = command_id
         tx2_status = 0xff
         tx3_errflag = ER_COLLIDE
     else:
-        FPUGrid[fpu_id].findDatum(sleep)
-        #tx1_cmdid = command_id # DEBUG: report only start of search
-        tx1_cmdid = CMSG_FINISHED_DATUM
+        tx1_cmdid = command_id 
         tx2_status = 0
         tx3_errflag = 0
 
-    tx4_dummy0 = 0
-    tx5_dummy1 = 0
-    tx6_dummy2 = 0
+        ## send confirmation message first
+        conf_msg = [ tx_busid,
+             (tx_canid & 0xff),
+             ((tx_canid >> 8) & 0xff),
+             tx0_fpu_busid,
+             tx1_cmdid,
+             tx2_status,
+             tx3_errflag,
+             tx4_dummy0,
+             tx5_dummy1,
+             tx6_dummy2,
+             tx7_dummy3 ]
 
-    tx7_dummy3 = 0
+        print("FPU %i: sending confirmation to findDatum command", fpu_id);
+        confirmation = codec.encode(conf_msg, verbose=verbose)
+        socket.sendall(confirmation)
+
+        # simulate findDatum FPU operation
+        FPUGrid[fpu_id].findDatum(sleep)
+
+    
+        tx1_cmdid = CMSG_FINISHED_DATUM
     
     print("responding findDatum for FPU %i" % fpu_id)
     
@@ -345,7 +366,9 @@ def command_handler(cmd, socket, verbose=0):
     elif command_id == CCMD_RESET_FPU                        :
         pass
     elif command_id == CCMD_FIND_DATUM                       :
-        resp = handle_findDatum(fpu_id, cmd)        
+        # we pass the socket here to send an interim confirmation
+        resp = handle_findDatum(fpu_id, cmd, socket)
+        
     elif command_id == CCMD_CONFIG_MOTION  :
         resp = handle_ConfigMotion(fpu_id, cmd)        
     elif command_id == CCMD_EXECUTE_MOTION :
