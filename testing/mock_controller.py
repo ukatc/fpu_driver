@@ -10,7 +10,7 @@ from __future__ import print_function
 import codec
 from fpu_sim import FPU
 
-from gevent import sleep
+from gevent import sleep, spawn, spawn_later
 
 #  number of buses on one gateway
 BUSES_PER_GATEWAY =  5
@@ -104,6 +104,11 @@ STBT_REVERSE_WAVE    = 7   #  waveform to be run in reverse
 NUM_FPUS = 15 * 67
 
 FPUGrid = [FPU(i) for i in range(NUM_FPUS) ]
+
+def encode_and_send(msg, socket, verbose=False):
+    confirmation = codec.encode(msg, verbose=verbose)
+    socket.sendall(confirmation)
+
 
 def fold_stepcount(val):
     low_limit = - 10000
@@ -260,8 +265,7 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
 
         if 1:
             print("FPU %i: sending confirmation to findDatum command" % fpu_id);
-            confirmation = codec.encode(conf_msg, verbose=verbose)
-            socket.send(confirmation)
+            encode_and_send(conf_msg, socket, verbose=verbose)
 
         # simulate findDatum FPU operation
         FPUGrid[fpu_id].findDatum(sleep)
@@ -354,7 +358,7 @@ def handle_PingFPU(fpu_id, cmd):
              tx7_count3 ]
 
 
-def handle_resetFPU(fpu_id, cmd):
+def handle_resetFPU_old(fpu_id, cmd):
     busid = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
     fpu_busid = canid & 0x7f # this is a one-based index
@@ -392,6 +396,54 @@ def handle_resetFPU(fpu_id, cmd):
              tx6_count2,
              tx7_count3 ]
 
+def handle_resetFPU(fpu_id, cmd, socket, verbose=False):
+
+    def reset_func(fpu_id, cmd, socket, verbose=False):
+        busid = cmd[0]
+        canid = cmd[1] + (cmd[2] << 8)
+        fpu_busid = canid & 0x7f # this is a one-based index
+        priority = (canid >> 7)
+        command_id = cmd[3]
+
+        FPUGrid[fpu_id].resetFPU(fpu_id, sleep);
+
+        tx_busid = busid
+        tx_prio = 0x02
+        tx_canid = (tx_prio << 7) | fpu_busid
+
+
+    
+        tx0_fpu_busid = fpu_busid
+        tx1_cmdid = command_id
+        tx2_status = 0
+        tx3_errflag = 0
+        
+        tx4_count0 = 0
+        tx5_count1 = 0
+    
+        tx6_count2 = 0
+        tx7_count3 = 0
+
+        conf_msg = [ tx_busid,
+             (tx_canid & 0xff),
+             ((tx_canid >> 8) & 0xff),
+             tx0_fpu_busid,
+             tx1_cmdid,
+             tx2_status,
+             tx3_errflag,
+             tx4_count0,
+             tx5_count1,
+             tx6_count2,
+             tx7_count3 ]
+
+        print("fpu #%i: sending reset confirmation" % fpu_id)
+        encode_and_send(conf_msg, socket, verbose=verbose)
+
+    spawn(reset_func, fpu_id, cmd, socket, verbose=verbose)
+        
+    print("returning from reset message")
+    
+    return None
 
 def handle_invalidCommand(fpu_id, cmd):
     
@@ -456,7 +508,8 @@ def command_handler(cmd, socket, verbose=0):
         resp = handle_PingFPU(fpu_id, cmd)
         
     elif command_id == CCMD_RESET_FPU                        :
-        resp = handle_resetFPU(fpu_id, cmd)
+        resp = handle_resetFPU(fpu_id, cmd, socket, verbose=verbose)
+        
     elif command_id == CCMD_FIND_DATUM                       :
         # we pass the socket here to send an interim confirmation
         resp = handle_findDatum(fpu_id, cmd, socket, verbose=verbose)
@@ -515,10 +568,10 @@ def command_handler(cmd, socket, verbose=0):
             pass        
         else:
             resp = handle_invalidCommand(fpu_busid, cmd)
-            
-    response = codec.encode(resp, verbose=verbose)
-    socket.sendall(response)
-    #print("echoed %r" % response)
+
+    if resp != None:
+        encode_and_send(resp, socket, verbose=verbose)
+        #print("echoed %r" % response)
 
 
 if __name__ == "__main__":
