@@ -321,6 +321,11 @@ class WrapGridDriver : public GridDriver
             return resetFPUs(grid_state);
         }
 
+    E_DriverErrCode wrap_pingFPUs(WrapGridState& grid_state)
+        {
+            return pingFPUs(grid_state);
+        }
+
 
 
 
@@ -574,6 +579,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("deInitializeDriver", &WrapGridDriver::deInitializeDriver)
     .def("initializeGrid", &WrapGridDriver::wrap_initializeGrid)
     .def("resetFPUs", &WrapGridDriver::wrap_resetFPUs)
+    .def("pingFPUs", &WrapGridDriver::wrap_pingFPUs)
     .def("getPositions", &WrapGridDriver::wrap_getPositions)
     .def("findDatum", &WrapGridDriver::wrap_findDatum)
         // call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
