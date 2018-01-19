@@ -136,7 +136,7 @@ namespace canlayer
             // Largest possible waiting time for a working datum
             // search is 35 seconds.
             const struct timespec  toval =
-                {/* .tv_sec = */ 10,
+                {/* .tv_sec = */ 20,
                  /* .tv_nsec = */ 0 };
             
             return toval;

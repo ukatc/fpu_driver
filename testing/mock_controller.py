@@ -250,8 +250,54 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
         tx2_status = 0
         tx3_errflag = 0
 
-        ## send confirmation message first
-        conf_msg = [ tx_busid,
+
+        def findDatum_func(fpu_id, cmd, socket, verbose=False):
+
+            busid = cmd[0]
+            canid = cmd[1] + (cmd[2] << 8)
+            fpu_busid = canid & 0x7f # this is a one-based index
+            priority = (canid >> 7)
+            command_id = cmd[3]
+            
+            tx_busid = busid
+            tx_prio = 0x02
+            tx_canid = (tx_prio << 7) | fpu_busid
+            tx0_fpu_busid = fpu_busid
+            
+            tx4_dummy0 = 0
+            tx5_dummy1 = 0
+            tx6_dummy2 = 0
+            tx7_dummy3 = 0
+
+            
+
+            # simulate findDatum FPU operation
+            FPUGrid[fpu_id].findDatum(sleep)
+
+    
+            tx1_cmdid = CMSG_FINISHED_DATUM
+    
+            print("responding findDatum for FPU %i" % fpu_id)
+            finish_message =  [ tx_busid,
+                                (tx_canid & 0xff),
+                                ((tx_canid >> 8) & 0xff),
+                                tx0_fpu_busid,
+                                tx1_cmdid,
+                                tx2_status,
+                                tx3_errflag,
+                                tx4_dummy0,
+                                tx5_dummy1,
+                                tx6_dummy2,
+                                tx7_dummy3 ]
+            
+            print("FPU %i: findDatum command finished" % fpu_id);
+            encode_and_send(finish_message, socket, verbose=verbose)
+
+        spawn_later(1, findDatum_func, fpu_id, cmd, socket, verbose=verbose)
+    
+    ## send confirmation message 
+    print("FPU %i: sending confirmation to findDatum command" % fpu_id);
+    conf_msg = [ tx_busid,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
              tx0_fpu_busid,
@@ -263,29 +309,7 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
              tx6_dummy2,
              tx7_dummy3 ]
 
-        if 1:
-            print("FPU %i: sending confirmation to findDatum command" % fpu_id);
-            encode_and_send(conf_msg, socket, verbose=verbose)
-
-        # simulate findDatum FPU operation
-        FPUGrid[fpu_id].findDatum(sleep)
-
-    
-        tx1_cmdid = CMSG_FINISHED_DATUM
-    
-    print("responding findDatum for FPU %i" % fpu_id)
-    
-    return [ tx_busid,
-             (tx_canid & 0xff),
-             ((tx_canid >> 8) & 0xff),
-             tx0_fpu_busid,
-             tx1_cmdid,
-             tx2_status,
-             tx3_errflag,
-             tx4_dummy0,
-             tx5_dummy1,
-             tx6_dummy2,
-             tx7_dummy3 ]
+    return conf_msg
 
 
 def handle_GetY(fpu_id, cmd):
