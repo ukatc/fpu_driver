@@ -105,6 +105,17 @@ NUM_FPUS = 15 * 67
 
 FPUGrid = [FPU(i) for i in range(NUM_FPUS) ]
 
+def fold_stepcount(val):
+    low_limit = - 10000
+    vrange = 1 << 16
+    assert( (val >= low_limit) and (val <= (low_limit + vrange)))
+    # convert to unsigned 16-bit number
+            
+    if val < 0:
+        val += (1 << 16)
+
+    return val
+
 def handle_ConfigMotion(fpu_id, cmd):
     busid = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
@@ -181,10 +192,11 @@ def handle_GetX(fpu_id, cmd):
     tx2_status = 0
     tx3_errflag = 0
 
-    pos = FPUGrid[fpu_id].alpha_steps
+    pos = fold_stepcount(FPUGrid[fpu_id].alpha_steps)
     tx4_count0 = pos & 0xff
     tx5_count1 = (pos >> 8) & 0xff
-    tx6_count2 = (pos >> 16) & 0xff
+    # protocol changed here
+    tx6_count2 = 0
 
     tx7_dummy = 0
     
@@ -287,10 +299,10 @@ def handle_GetY(fpu_id, cmd):
     tx2_status = 0
     tx3_errflag = 0
 
-    pos = FPUGrid[fpu_id].beta_steps
+    pos = fold_stepcount(FPUGrid[fpu_id].beta_steps)
     tx4_count0 = pos & 0xff
     tx5_count1 = (pos >> 8) & 0xff
-    tx6_count2 = (pos >> 16) & 0xff
+    tx6_count2 = 0
 
     tx7_dummy = 0
     
@@ -305,6 +317,41 @@ def handle_GetY(fpu_id, cmd):
              tx5_count1,
              tx6_count2,
              tx7_dummy ]
+
+def handle_PingFPU(fpu_id, cmd):
+    busid = cmd[0]
+    canid = cmd[1] + (cmd[2] << 8)
+    fpu_busid = canid & 0x7f # this is a one-based index
+    priority = (canid >> 7)
+    command_id = cmd[3]
+
+    tx_busid = busid
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_busid
+    tx0_fpu_busid = fpu_busid
+    tx1_cmdid = command_id
+    tx2_status = 0
+    tx3_errflag = 0
+
+    pos_alpha = fold_stepcount(FPUGrid[fpu_id].alpha_steps)
+    tx4_count0 = pos_alpha & 0xff
+    tx5_count1 = (pos_alpha >> 8) & 0xff
+    
+    pos_beta = fold_stepcount(FPUGrid[fpu_id].beta_steps)
+    tx6_count2 = pos_beta & 0xff
+    tx7_count3 = (pos_beta >> 8) & 0xff
+    
+    return [ tx_busid,
+             (tx_canid & 0xff),
+             ((tx_canid >> 8) & 0xff),
+             tx0_fpu_busid,
+             tx1_cmdid,
+             tx2_status,
+             tx3_errflag,
+             tx4_count0,
+             tx5_count1,
+             tx6_count2,
+             tx7_count3 ]
 
 
 def handle_invalidCommand(fpu_id, cmd):
@@ -367,7 +414,8 @@ def command_handler(cmd, socket, verbose=0):
 
 
     if command_id == CCMD_PING_FPU                         :
-        pass
+        resp = handle_PingFPU(fpu_id, cmd)
+        
     elif command_id == CCMD_RESET_FPU                        :
         pass
     elif command_id == CCMD_FIND_DATUM                       :

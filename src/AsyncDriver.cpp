@@ -800,7 +800,7 @@ E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state,
 }
 
 
-E_DriverErrCode AsyncDriver::pingFPUAsync(t_grid_state& grid_state,
+E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
     

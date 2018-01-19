@@ -73,7 +73,6 @@ E_DriverErrCode CommandPool::initialize()
 #if CAN_PROTOCOL_VERSION > 1                
             case CCMD_CHECK_INTEGRITY       :
 #endif                
-            case CCMD_PING_FPU       :
             case CCMD_ABORT_MOTION       :
                 capacity = cap_broadcast;
                 break;
@@ -100,6 +99,7 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
             case CCMD_ENABLE_MOVE   :
 #endif                
+            case CCMD_PING_FPU       :
             case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
             case CCMD_FREE_BETA_COLLISION    :
             case CCMD_SET_USTEP :

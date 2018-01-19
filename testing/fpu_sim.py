@@ -19,8 +19,8 @@ class FPU:
     
     def __init__(self, fpu_id):
         self.fpu_id = fpu_id
-        self.alpha_steps = fpu_id
-        self.beta_steps = fpu_id * 1000
+        self.alpha_steps = fpu_id - 50
+        self.beta_steps = fpu_id * 10 - 50
         self.moving = False
         self.wave_ready = False
         self.nwave_entries = 0

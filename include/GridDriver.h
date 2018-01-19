@@ -46,6 +46,8 @@ public:
     E_DriverErrCode initializeGrid(t_grid_state& grid_state);
 
     E_DriverErrCode resetFPUs(t_grid_state& grid_state);
+    
+    E_DriverErrCode pingFPUs(t_grid_state& grid_state);
 
     // find datum with automatic firmware operation
     E_DriverErrCode findDatum(t_grid_state& grid_state);

@@ -83,6 +83,19 @@ void update_steps(int &alpha_steps, int &beta_steps, const t_response_buf& data)
     beta_steps = (data[6] << 8) | data[7];
 }
 
+// decodes step count as a 16-bit value
+// with an asymmetric range
+int unfold_stepcount(const uint16_t step_count)
+{
+    int val = static_cast<int>(step_count);
+    if (val > 55000)
+    {
+        val -= (1 << 16);
+    }
+    return val;
+    
+}
+
 void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
                        const t_response_buf& data,
                        const int blen, TimeOutList& timeout_list,
@@ -171,7 +184,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         remove_pending(fpu, fpu_id,  cmd_id, response_errcode,timeout_list, count_pending);
         if (response_errcode == 0)
         {
-            int asteps = (((data[6] << 8) | data[5]) << 8 | data[4]);
+            const uint16_t steps_coded = (data[5] << 8) | data[4];
+            const int asteps = unfold_stepcount(steps_coded);
             fpu.alpha_steps = asteps;
         }
         fpu.last_updated = cur_time;
@@ -186,7 +200,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
-            int bsteps = (((data[6] << 8) | data[5]) << 8 | data[4]);
+            const uint16_t steps_coded = (data[5] << 8) |  data[4];
+            const int bsteps = unfold_stepcount(steps_coded);
             fpu.beta_steps = bsteps;
         }
         fpu.last_updated = cur_time;
@@ -198,12 +213,25 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         
     case CCMD_PING_FPU        :
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);   
         fpu.last_updated = cur_time;
         if (fpu.state == FPST_UNKNOWN)
         {
             fpu.state = FPST_UNINITIALIZED;
         }
+
+        if (response_errcode == 0)
+        {
+            const uint16_t asteps_coded = (data[5] << 8) |  data[4];
+            const uint16_t bsteps_coded = (data[7] << 8) |  data[6];
+            const int asteps = unfold_stepcount(asteps_coded);
+            const int bsteps = unfold_stepcount(bsteps_coded);
+            
+            fpu.alpha_steps = asteps;
+            fpu.beta_steps = bsteps;
+        }
+
+        
         break;
 
     case CCMD_RESET_FPU       :  
