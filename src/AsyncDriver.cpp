@@ -369,36 +369,45 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     unique_ptr<ConfigureMotionCommand> can_command;
     // loop over number of steps in the table
     const int num_steps = waveforms[0].steps.size();
-    int step_count = 0;
+    int step_index = 0;
     int retry_downcount = 5;
-    while (step_count < num_steps)
+    while (step_index < num_steps)
     {
         int num_loading =  waveforms.size();
-        for (int i=0; i < num_loading; i++)
+        for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
         {
-            int fpu_id = waveforms[i].fpu_id;
+            int fpu_id = waveforms[fpu_index].fpu_id;
             t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
             if (fpu_state.state != FPST_LOCKED)
             {
                 // get a command buffer
                 can_command = gateway.provideInstance<ConfigureMotionCommand>();
 
-                t_step_pair step = waveforms[i].steps[step_count];
-                bool first_entry = (step_count == 0);
-                bool last_entry = (step_count == (num_steps-1));
+                const t_step_pair& step = waveforms[fpu_index].steps[step_index];
+                const bool first_entry = (step_index == 0);
+                const bool last_entry = (step_index == (num_steps-1));
 
                 // assert precondition of 14-bit step size
-                assert( (step.alpha_steps >> 14) == 0);
-                assert( (step.beta_steps >> 14) == 0);
+                const int abs_alpha_steps = abs(step.alpha_steps);
+                const bool alpha_pause = abs_alpha_steps == 0;
+                const bool alpha_clockwise = (step.alpha_steps < 0);
+                
+                const int abs_beta_steps = abs(step.beta_steps);
+                const bool beta_pause = abs_beta_steps == 0;
+                const bool beta_clockwise = (step.beta_steps < 0);
+                
+                assert( (abs_alpha_steps >> 14) == 0);
+                assert( (abs_beta_steps >> 14) == 0);
                 
                 can_command->parametrize(fpu_id,
-                                         step.alpha_steps,
-                                         step.alpha_pause,
-                                         step.alpha_clockwise,
-                                         step.beta_steps,
-                                         step.beta_pause,
-                                         step.beta_clockwise,
-                                         first_entry, last_entry);
+                                         abs_alpha_steps,
+                                         alpha_pause,
+                                         alpha_clockwise,
+                                         abs_beta_steps,
+                                         beta_pause,
+                                         beta_clockwise,
+                                         first_entry,
+                                         last_entry);
 
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
@@ -406,7 +415,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 gateway.sendCommand(fpu_id, cmd);
             }
         }
-        if ((step_count == 0) && (num_steps > 1))
+        if ((step_index == 0) && (num_steps > 1))
         {
           /* Wait and check that all FPUs are registered in LOADING
              state.  This is needed to make sure we have later a clear
@@ -415,10 +424,10 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
           state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
                                                grid_state);
           bool do_retry = false;
-          int num_loading =  waveforms.size();
-          for (int i=0; i < num_loading; i++)
+          //int num_loading =  waveforms.size();
+          for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
             {
-              int fpu_id = waveforms[i].fpu_id;
+              int fpu_id = waveforms[fpu_index].fpu_id;
               t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
               // we retry if an FPU which we tried to configure and is
               // not locked did not change to FPST_LOADING state.
@@ -429,7 +438,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                     {
                       return DE_MAX_RETRIES_EXCEEDED;
                     }
-                  do_retry = true;              
+                  do_retry = true;
+                  printf("state not confirmed for FPU #%i, retry!\n", fpu_id);
                 }
             }
           if (do_retry)
@@ -440,7 +450,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             }
             
         }
-        step_count++;
+        step_index++;
     }
 
     // fpus are now loading data.

@@ -11,11 +11,12 @@ from __future__ import print_function
 import numpy as np
 import random
 
-MAX_ENTRIES = 256
+MAX_WAVE_ENTRIES = 256
+
+IDXA = 0
+IDXB = 1
 
 class FPU:
-    IDXA = 0
-    IDXB = 1
     
     def __init__(self, fpu_id):
         self.initialize(fpu_id)
@@ -48,7 +49,7 @@ class FPU:
 
     def addStep(self, first, last,
                 asteps, apause, aclockwise,
-                bsteps, bpause, blockwise):
+                bsteps, bpause, bclockwise):
         if self.moving:
             raise RuntimeError("FPU is moving")
         
@@ -74,12 +75,16 @@ class FPU:
         self.nwave_entries  += 1
         if last:
             self.wave_ready = True
+            n = self.nwave_entries
+            print("fpu #%i: wavetable ready, n=%i, content=%s" % (
+                
+                self.fpu_id, n, (self.steps[0:n], self.pause[0:n], self.clockwise[0:n])))
             
         
         
     def findDatum(self, sleep):
-        dtime_mu = 10
-        dtime_sigma = 5
+        dtime_mu = 1
+        dtime_sigma = 2
         dtime_sec = min(max(random.gauss(dtime_mu, dtime_sigma), 0), 15)
         sleep(dtime_sec)
         self.alpha_steps = 0

@@ -120,6 +120,20 @@ namespace canlayer
                                           | ((bclockwise ? 1 : 0) << 7);
             
             buf_len = 8;
+
+
+#ifdef DEBUG
+            printf("ConfigureMotion for FPU canid #%i: "
+                   "(asteps=%i, apause=%i, acw=%i, bsteps=%i, bpause=%i, bcw=%i)\n[",
+                   fpu_id, asteps, apause, aclockwise,
+                   bsteps, bpause, bclockwise);
+            for (int i=0; i < buf_len; i++)
+            {
+                printf(" %02i", can_buffer.message.data[i]);
+            }
+            printf(" ]\n");
+#endif    
+
             
         };
  

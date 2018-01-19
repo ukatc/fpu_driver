@@ -123,7 +123,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             if (fpu.state == FPST_LOADING)
             {
                 fpu.state = FPST_RESTING;
-            }
+            } 
         }
         else
         {

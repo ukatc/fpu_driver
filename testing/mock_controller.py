@@ -121,7 +121,7 @@ def fold_stepcount(val):
 
     return val
 
-def handle_ConfigMotion(fpu_id, cmd):
+def handle_configMotion(fpu_id, cmd):
     busid = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
     fpu_busid = canid & 0x7f # this is a one-based index
@@ -147,13 +147,14 @@ def handle_ConfigMotion(fpu_id, cmd):
     bpause = (cmd[5] >> 6) & 1
     bclockwise = (cmd[5] >> 7) & 1
 
+    print("FPU #%i command = " % fpu_id, cmd)
     try:
         FPUGrid[fpu_id].addStep(first_entry, last_entry,
                                 astep, apause, aclockwise,
                                 bstep, bpause, bclockwise)
 
         if FPUGrid[fpu_id].wave_ready:
-            tx2_status = WAVE_READY
+            tx2_status = STBT_WAVE_READY
         else:
             tx2_status = 0
     
@@ -168,8 +169,9 @@ def handle_ConfigMotion(fpu_id, cmd):
     tx5_dummy = 0
     tx6_dummy = 0
     tx7_dummy = 0
-    
-    return [ tx_busid,
+
+    if first_entry or last_entry:
+        confirmation = [ tx_busid,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
              tx0_fpu_busid,
@@ -180,6 +182,10 @@ def handle_ConfigMotion(fpu_id, cmd):
              tx5_dummy,
              tx6_dummy ,
              tx7_dummy ]
+        return confirmation
+    else:
+        # no confirmation
+        return None
 
 
 def handle_GetX(fpu_id, cmd):
@@ -277,7 +283,6 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
     
             tx1_cmdid = CMSG_FINISHED_DATUM
     
-            print("responding findDatum for FPU %i" % fpu_id)
             finish_message =  [ tx_busid,
                                 (tx_canid & 0xff),
                                 ((tx_canid >> 8) & 0xff),
@@ -290,13 +295,13 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
                                 tx6_dummy2,
                                 tx7_dummy3 ]
             
-            print("FPU %i: findDatum command finished" % fpu_id);
+            #print("FPU %i: findDatum command finished" % fpu_id);
             encode_and_send(finish_message, socket, verbose=verbose)
 
         spawn_later(1, findDatum_func, fpu_id, cmd, socket, verbose=verbose)
     
     ## send confirmation message 
-    print("FPU %i: sending confirmation to findDatum command" % fpu_id);
+    #print("FPU %i: sending confirmation to findDatum command" % fpu_id);
     conf_msg = [ tx_busid,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
@@ -539,7 +544,7 @@ def command_handler(cmd, socket, verbose=0):
         resp = handle_findDatum(fpu_id, cmd, socket, verbose=verbose)
         
     elif command_id == CCMD_CONFIG_MOTION  :
-        resp = handle_ConfigMotion(fpu_id, cmd)        
+        resp = handle_configMotion(fpu_id, cmd)        
     elif command_id == CCMD_EXECUTE_MOTION :
         pass
     elif command_id == CCMD_ABORT_MOTION   :
