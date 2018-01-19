@@ -11,9 +11,11 @@ coroutines.
 
 """
 from __future__ import print_function
-import os
 from gevent.server import StreamServer
+from gevent.pool import Pool
+from gevent.monkey import patch_all
 from socket import IPPROTO_TCP, TCP_NODELAY
+import os
 import array
 
 import codec
@@ -45,7 +47,8 @@ if __name__ == '__main__':
     ip = '127.0.0.1'
     mock_controller.gateway_map = { (ip, ports[i]) : i for i in range(len(ports))  }
     print("gateway map:", mock_controller.gateway_map)
-    servers = [ StreamServer((ip, p), echo, 50) for p in ports]
+    pool = Pool(10000)
+    servers = [ StreamServer((ip, p), echo, spawn=pool) for p in ports]
     # to start the servers asynchronously, we use its start() method;
     # we use blocking serve_forever() for the third and last connection.
     print('Starting mock gateway on ports %s' % ports)

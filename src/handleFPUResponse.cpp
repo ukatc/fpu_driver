@@ -252,6 +252,17 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         {
             // datum search was successfully started
             fpu.state = FPST_DATUM_SEARCH;
+
+            // As an edge case, it is possible that the command has
+            // already been removed by a time-out handler. In that
+            // case, re-add it as pending to avoid a stuck state.
+            if (! (fpu.pending_command_set & (1 << CCMD_FIND_DATUM)))
+            {
+                const timespec new_timeout = {40, 0};
+                add_pending(fpu, fpu_id, CCMD_FIND_DATUM,
+                            new_timeout,
+                            timeout_list, count_pending);
+            }
         }
         // we leave findDatum as pending command, because
         // we have to wait for the final response.

@@ -18,6 +18,9 @@ class FPU:
     IDXB = 1
     
     def __init__(self, fpu_id):
+        self.initialize(fpu_id)
+
+    def initialize(self, fpu_id):
         self.fpu_id = fpu_id
         self.alpha_steps = fpu_id - 50
         self.beta_steps = fpu_id * 10 - 50
@@ -32,6 +35,16 @@ class FPU:
         self.at_datum = False
         
 
+    def resetFPU(self, fpu_id, sleep):
+        print("resetting FPU #%i..." % fpu_id)
+        dtime_mu = 0.1
+        dtime_sigma = 1.0
+        dtime_sec = min(max(random.gauss(dtime_mu, dtime_sigma), 0.1), 2)
+        sleep(dtime_sec)
+        self.initialize(fpu_id)
+        print("resetting FPU #%i... ready" % fpu_id)
+        
+        
 
     def addStep(self, first, last,
                 asteps, apause, aclockwise,
@@ -65,10 +78,10 @@ class FPU:
         
         
     def findDatum(self, sleep):
-        dtime_mu = 5
-        dtime_sigma = 15.0
+        dtime_mu = 0.1
+        dtime_sigma = 0.5
         dtime_sec = min(max(random.gauss(dtime_mu, dtime_sigma), 0), 15)
-        #sleep(dtime_sec)
+        sleep(dtime_sec)
         self.alpha_steps = 0
         self.beta_steps = 0
         self.at_datum = True

@@ -354,6 +354,45 @@ def handle_PingFPU(fpu_id, cmd):
              tx7_count3 ]
 
 
+def handle_resetFPU(fpu_id, cmd):
+    busid = cmd[0]
+    canid = cmd[1] + (cmd[2] << 8)
+    fpu_busid = canid & 0x7f # this is a one-based index
+    priority = (canid >> 7)
+    command_id = cmd[3]
+
+    FPUGrid[fpu_id].resetFPU(fpu_id, sleep);
+
+    tx_busid = busid
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_busid
+
+
+    
+    tx0_fpu_busid = fpu_busid
+    tx1_cmdid = command_id
+    tx2_status = 0
+    tx3_errflag = 0
+
+    tx4_count0 = 0
+    tx5_count1 = 0
+    
+    tx6_count2 = 0
+    tx7_count3 = 0
+    
+    return [ tx_busid,
+             (tx_canid & 0xff),
+             ((tx_canid >> 8) & 0xff),
+             tx0_fpu_busid,
+             tx1_cmdid,
+             tx2_status,
+             tx3_errflag,
+             tx4_count0,
+             tx5_count1,
+             tx6_count2,
+             tx7_count3 ]
+
+
 def handle_invalidCommand(fpu_id, cmd):
     
     busid = cmd[0]
@@ -417,7 +456,7 @@ def command_handler(cmd, socket, verbose=0):
         resp = handle_PingFPU(fpu_id, cmd)
         
     elif command_id == CCMD_RESET_FPU                        :
-        pass
+        resp = handle_resetFPU(fpu_id, cmd)
     elif command_id == CCMD_FIND_DATUM                       :
         # we pass the socket here to send an interim confirmation
         resp = handle_findDatum(fpu_id, cmd, socket, verbose=verbose)

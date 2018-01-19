@@ -885,7 +885,7 @@ void remove_pending(t_fpu_state& fpu, int fpu_id,
 
     if (fpu.num_active_timeouts == 0)
     {
-#ifdef DEBUG
+#ifdef DEBUG2
     printf("fpu #%i:  cmd code %i was already removed by time-out\n", fpu_id, cmd_code);
 #endif
         return;
@@ -894,7 +894,7 @@ void remove_pending(t_fpu_state& fpu, int fpu_id,
 
     if ( ((fpu.pending_command_set >> cmd_code) & 1) == 0)
     {
-#ifdef DEBUG
+#ifdef DEBUG2
     printf("fpu #%i:  cmd code %i was already removed\n", fpu_id, cmd_code);
 #endif
         return;

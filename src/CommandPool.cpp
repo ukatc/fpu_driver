@@ -66,7 +66,6 @@ E_DriverErrCode CommandPool::initialize()
             switch (i)
             {
             // broadcast commands
-            case CCMD_RESET_FPU       :
             case CCMD_EXECUTE_MOTION       :
             case CCMD_REPEAT_MOTION       :
             case CCMD_REVERSE_MOTION       :
@@ -99,6 +98,7 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
             case CCMD_ENABLE_MOVE   :
 #endif                
+            case CCMD_RESET_FPU       :
             case CCMD_PING_FPU       :
             case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
             case CCMD_FREE_BETA_COLLISION    :
