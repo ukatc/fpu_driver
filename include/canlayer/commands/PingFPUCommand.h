@@ -21,6 +21,7 @@
 
 #ifndef PING_FPU_COMMAND_H
 #define PING_FPU_COMMAND_H
+#include <string.h>
 
 #include <cassert>
 #include "../I_CAN_Command.h"
@@ -60,6 +61,8 @@ namespace canlayer
                                t_CAN_buffer& can_buffer)
         {
 
+            // zero buffer to make sure no spurious DLEs are sent
+            bzero(&can_buffer.message, sizeof(can_buffer.message));
             // CAN bus id for that gateway to which message should go
             can_buffer.message.busid = busid;
 

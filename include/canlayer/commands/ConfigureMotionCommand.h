@@ -24,6 +24,8 @@
 
 #include <cassert>
 
+#include <string.h>
+
 #include "../I_CAN_Command.h"
 
 namespace mpifps
@@ -98,7 +100,9 @@ namespace canlayer
                                              << 7) | fpu_canid;
                                    
             // The protocol uses little-endian encoding here
-            // (the byte order used in the CANOpen protocol).            
+            // (the byte order used in the CANOpen protocol).
+            // zero buffer to make sure no spurious DLEs are sent
+            bzero(&can_buffer.message, sizeof(can_buffer.message));
             can_buffer.message.identifier = htole64(can_identifier);
 
 
