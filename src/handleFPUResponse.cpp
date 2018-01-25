@@ -43,11 +43,12 @@ namespace canlayer
 // logs error status in CAN response
   void logErrorStatus(int fpu_id, timespec time_stamp, int err_code)
 {
-  const char * err_msg = nullptr;
+  char * err_msg = "(no error)";
+#if 0    
   switch (err_code)
     {
     case 0:
-      err_msg = nullptr;
+      err_msg = "(no error)";
       break;
 
       
@@ -66,13 +67,17 @@ namespace canlayer
     case ER_M2LIMIT:      err_msg = "obsolete error code received";      break;
       
     }
+#endif  
 #ifdef DEBUG
   // FIXME: In production code, the logging should be taken out of
   // the time-critical path so that even a large amount of log messages
   // will not affect the responsiveness of the driver.
-  printf("[%lu.%lu]: FPU #%04i %s\n",
-         time_stamp.tv_sec, time_stamp.tv_nsec,
-         fpu_id, err_msg);
+    printf("%s : %li / %09li\n", "ok", time_stamp.tv_sec, time_stamp.tv_nsec);
+    fflush(stdout);
+  
+//    printf("[%lu.%lu]: FPU #%04i %s\n",
+//         time_stamp.tv_sec, time_stamp.tv_nsec,
+//         fpu_id, err_msg);
 #endif
 }
 
@@ -117,7 +122,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         remove_pending(fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
         {
-            logErrorStatus(fpu_id, cur_time, response_errcode);
+            //logErrorStatus(fpu_id, cur_time, response_errcode);
             // if the FPU was in loading state, it is switched to RESTING,
             // otherwise unchanged.
             if (fpu.state == FPST_LOADING)

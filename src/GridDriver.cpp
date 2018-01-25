@@ -85,6 +85,10 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
             // Success: All FPUs have waveforms loaded. Loading finished.
             break;
         }
+#ifdef DEBUG
+        printf("omitting retries!\n");
+        break;
+#endif DEBUG
 
         // we have most probably a time-out and need to load some
         // waveforms again. To do that we strip FPUs from
@@ -99,11 +103,15 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
         // In this place, a down-counting iterator is used
         // so that erase() will not change the
         // index of the next processed item.
-        for (t_wtable::iterator it = cur_wtable.end();
+        for (t_wtable::iterator it = cur_wtable.end() - 1;
                 it != cur_wtable.begin();
                 it--)
         {
             int fpu_id = it->fpu_id;
+            printf("fpu id #%i is already at READY_FOWARD, erase it from waveform table\n",
+                   fpu_id);
+            assert(fpu_id >= 0);
+            assert(fpu_id < num_fpus);
 
             if (grid_state.FPU_state[fpu_id].state == FPST_READY_FORWARD)
             {

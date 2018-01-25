@@ -642,6 +642,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
     int fpu_busid = can_identifier & 0x7f;
 #ifdef DEBUG
+#define PRINT_BYTES    
 #ifdef PRINT_BYTES    
     int priority = can_identifier >> 7;
     printf("dispatching response: gateway_id=%i, bus_id=%i,can_identifier=%i,"
@@ -726,7 +727,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 #endif
         return;
     }
-#ifdef DEBUG3
+#ifdef DEBUG
     printf("rxFPU#%i[%i] ",fpu_id, data[1]);
     fflush(stdout);
 #endif
@@ -737,7 +738,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     
     pthread_mutex_lock(&grid_state_mutex);
     
-#ifdef DEBUG2    
+#ifdef DEBUG2
     clock_t t1 = clock();
     clock_t td = t1 - t0;
     if (td > 100)
@@ -814,7 +815,12 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     pthread_mutex_unlock(&grid_state_mutex);
 #ifdef DEBUG3
     printf("handle_request count_pending=%i\n", cnt);
+#endif
+
+#ifdef PRINT_BYTES    
+    printf(" (dispatch_response): OK\n");
 #endif    
+    
     
 
 

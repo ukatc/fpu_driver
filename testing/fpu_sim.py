@@ -55,8 +55,7 @@ class FPU:
         
         if first:
             self.nwave_entries = 0
-
-        self.wave_ready = bool(last)
+            self.wave_ready = False
             
         n = self.nwave_entries
 
