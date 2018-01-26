@@ -1,5 +1,8 @@
 import fpu_driver
 
+from fpu_driver import getGridStateSummary
+from fpu_driver import getGridStateSummary as gGSS
+
 NUM_FPUS = 10
 gateway_adr_list = [ fpu_driver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
@@ -26,16 +29,8 @@ gs = gd.getGridState()
 print("issuing findDatum:")
 gd.findDatum(gs)
 
-wt = { 0: [ ( 10, 20),
-           ( 15, 21),
-#           ( 20, 22),
-#           ( 30, 25),
-#           ( 50, 19)
-        ],
-      
-}
 
-wt2 = { 0: [ ( 10, 20),
+wt = { 0: [ ( 10, 20),
            ( 15, 21),
            ( 20, 22),
            ( 30, 25),
@@ -53,7 +48,7 @@ wt2 = { 0: [ ( 10, 20),
            ( 0, 25),
            ( 100, 20) ],
 }
-# gd.configMotion(wt, gs)
+gd.configMotion(wt, gs)
 
                        
 

@@ -19,6 +19,7 @@
 #include "../../include/T_GridState.h"
 #include "../../include/E_GridState.h"
 #include "../../include/GridDriver.h"
+#include "../../include/GridState.h"
 
 
 namespace   // Avoid cluttering the global namespace.
@@ -58,6 +59,7 @@ using boost::python::tuple;
 ///       return w.greet() + "! Please come soon!";
 ///   }
 ///
+
 
 class WrapFPUState : public t_fpu_state
 {
@@ -135,6 +137,12 @@ public:
         return count_vec;
     }
 };
+
+E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
+{
+    return getGridStateSummary(grid_state);
+}
+
 
 struct TooManyGatewaysException : std::exception
 {
@@ -376,15 +384,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
 {
     using namespace boost::python;
     
-///     class_<hello>("hello", init<std::string>())
-///     // Add a regular member function.
-///     .def("greet", &hello::greet)
-///     // Add invite() as a member of hello!
-///     .def("invite", invite)
-///     ;
-/// 
-///     // Also add invite() as a regular function to the module.
-///     def("invite", invite);
+     // include summary function
+     def("getGridStateSummary", wrapGetGridStateSummary);
 
     enum_<E_FPU_STATE>("E_FPU_STATE")
     .value("FPST_UNKNOWN", FPST_UNKNOWN             )

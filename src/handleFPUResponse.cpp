@@ -119,6 +119,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     {
     case CCMD_CONFIG_MOTION   :
         // clear time-out flag
+        printf("ConfigMotion handler fpu %i: removing pending entry\n", fpu_id);
+        printf("ConfigMotion handler fpu %i: response status = %i\n", fpu_id, response_status);
         remove_pending(fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
         {
@@ -135,6 +137,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             if (response_status == STBT_WAVE_READY)
             {
                 fpu.state = FPST_READY_FORWARD;
+                printf("ConfigMotion handler fpu %i: waveform ready\n", fpu_id);
             }
             else
             {

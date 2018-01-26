@@ -459,7 +459,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     // fpus are now loading data.
     // Wait for fpus loading to finish, or
     // to time-out.
-    state_summary = gateway.waitForState(TGT_READY_TO_MOVE,
+    /// state_summary = gateway.waitForState(TGT_READY_TO_MOVE,
+    state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
                                          grid_state);
 
     if (grid_state.driver_state != DS_CONNECTED)
