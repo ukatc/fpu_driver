@@ -110,27 +110,25 @@ when the internal state struct is used.
 ** DONE Fix CPU hogging
 ** DONE fix Python wrapper for grid_state
 ** TODO Fix encoding of beta step count in both driver and mock_controller
-** TODO fix message lengths in all version 1 CAN commands
-** TODO fix changed CAN command names
+** TODO fix changed CAN command names (setTicksPerSegment and setStepsPerFrame, also getCounterDeviation)
+** TODO fix message lengths in all version 1 CAN commands, and re-test
 ** TODO fix decoding of all CAN commands in mock_controller.py to make it clearer
 ** TODO Fix encoding of mock responses (use TX[n] = ... )
 ** TODO fix const correctness
-** TODO add PingFPU  command
-** TODO add resetFPU command
-** TODO Add eventfds for new commands and for driver shutdown
-** TODO Add time-outs for commands
+** DONE add PingFPU  command
+** DONE add resetFPU command
+** DONE Add eventfds for new commands and for driver shutdown
+** DONE Add time-outs for commands
 ** TODO revise expects_response field
-** TODO add response handlers for base commands
+** DONE add response handlers for base commands
 ** TODO add mock gateway code for base commands (version 1)
 ** TODO add Python wrappers for base commands
 ** TODO Add tentative CAN responses
-*** TODO config_motion
-*** TODO ping
-*** TODO searchDatum
-*** TODO leaveDatum
-*** TODO print frequency of epoll / cond_wait calls
-*** TODO solve argument passing of grid_state
-*** TODO print invalid responses
+*** DONE config_motion
+*** DONE ping
+*** DONE print frequency of epoll / cond_wait calls
+*** DONE solve argument passing of grid_state
+*** DONE print invalid responses
 ** TODO add separate reporting/logging of results
 ** TODO make API const-correct
 ** TODO make signatures const-correct
