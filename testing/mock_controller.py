@@ -136,21 +136,21 @@ def handle_configMotion(fpu_id, cmd):
     tx2_status = 0
     tx3_errflag = 0
 
-    raise "this is probably wrong because we need an offset of 3 bytes for the payload!"
-    first_entry = cmd[1] & 1
+    rx = cmd[3:]
+    first_entry = rx[1] & 1
     if first_entry:
         print("first_entry set!")
-    last_entry = (cmd[1] >> 1) & 1
+    last_entry = (rx[1] >> 1) & 1
     if last_entry:
         print("last_entry set!")
     
-    astep = ((cmd[3] &  0x3f) << 8) + cmd[2]
-    apause = (cmd[3] >> 6) & 1
-    aclockwise = (cmd[3] >> 7) & 1
+    astep = ((rx[3] &  0x3f) << 8) + rx[2]
+    apause = (rx[3] >> 6) & 1
+    aclockwise = (rx[3] >> 7) & 1
 
-    bstep = ((cmd[5] &  0x3f) << 8) + cmd[4]
-    bpause = (cmd[5] >> 6) & 1
-    bclockwise = (cmd[5] >> 7) & 1
+    bstep = ((rx[5] &  0x3f) << 8) + rx[4]
+    bpause = (rx[5] >> 6) & 1
+    bclockwise = (rx[5] >> 7) & 1
 
     print("FPU #%i command = " % fpu_id, cmd)
     try:

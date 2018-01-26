@@ -109,6 +109,9 @@ when the internal state struct is used.
 ** DONE compile -Wall
 ** DONE Fix CPU hogging
 ** DONE fix Python wrapper for grid_state
+** TODO fix message lengths in all version 1 CAN commands
+** TODO fix changed CAN command names
+** TODO fix decoding of all CAN commands in mock_controller.py to make it clearer
 ** TODO add PingFPU  command
 ** TODO add resetFPU command
 ** TODO Add eventfds for new commands and for driver shutdown

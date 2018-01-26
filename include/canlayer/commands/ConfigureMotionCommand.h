@@ -105,6 +105,8 @@ namespace canlayer
             bzero(&can_buffer.message, sizeof(can_buffer.message));
             can_buffer.message.identifier = htole64(can_identifier);
 
+            buf_len = 3;
+
 
             // CAN command code
             can_buffer.message.data[0] = cmd_code;
@@ -123,7 +125,7 @@ namespace canlayer
                                           | ((bpause ? 1 : 0) << 6)
                                           | ((bclockwise ? 1 : 0) << 7);
             
-            buf_len = 8;
+            buf_len += 8;
 
 
 #ifdef DEBUG

@@ -1,6 +1,6 @@
 import fpu_driver
 
-NUM_FPUS = 100
+NUM_FPUS = 10
 gateway_adr_list = [ fpu_driver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 
@@ -49,8 +49,8 @@ wt2 = { 0: [ ( 10, 20),
       
       2: [ ( 100, 21),
            (-100, 21),
-           ( 100, 22),
-           (-100, 25),
+           ( 0, 22),
+           ( 0, 25),
            ( 100, 20) ],
 }
 # gd.configMotion(wt, gs)
