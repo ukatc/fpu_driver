@@ -106,6 +106,7 @@ namespace canlayer
             // The protocol uses little-endian encoding here
             // (the byte order used in the CANOpen protocol).            
             can_buffer.message.identifier = htole64(can_identifier);
+            buf_len = 3;
 
 
             // CAN command code
@@ -115,7 +116,7 @@ namespace canlayer
                                            | ((_clockwise_first ?  1 : 0) << 1));
 #endif
 
-            buf_len = 8;
+            buf_len += 8;
             
         };
 
