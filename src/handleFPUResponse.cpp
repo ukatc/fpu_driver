@@ -84,18 +84,34 @@ void update_steps(int &alpha_steps, int &beta_steps, const t_response_buf& data)
     beta_steps = (data[6] << 8) | data[7];
 }
 
-// decodes step count as a 16-bit value
-// with an asymmetric range
-int unfold_stepcount(const uint16_t step_count)
+// Takes an unsiged 16-bit value.
+// Decodes step count as a 16-bit value
+// with an asymmetric range.
+int unfold_stepcount_alpha(const uint16_t step_count)
 {
     int val = static_cast<int>(step_count);
-    if (val > 55000)
+    if (val >= 55000)
     {
         val -= (1 << 16);
     }
     return val;
     
 }
+
+// Takes an unsiged 16-bit value.
+// Decodes step count as a signed 16-bit
+// value with an symmetric range.
+int unfold_stepcount_beta(const uint16_t step_count)
+{
+    int val = static_cast<int>(step_count);
+    if (val >= (1 << 15))
+    {
+        val -= (1 << 16);
+    }
+    return val;
+    
+}
+
 
 void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
                        const t_response_buf& data,
@@ -193,7 +209,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         if (response_errcode == 0)
         {
             const uint16_t steps_coded = (data[5] << 8) | data[4];
-            const int asteps = unfold_stepcount(steps_coded);
+            const int asteps = unfold_stepcount_alpha(steps_coded);
             fpu.alpha_steps = asteps;
         }
         fpu.last_updated = cur_time;
@@ -208,7 +224,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
-            const uint16_t steps_coded = (data[5] << 8) |  data[4];
+            const uint16_t steps_coded_beta = (data[5] << 8) |  data[4];
             const int bsteps = unfold_stepcount(steps_coded);
             fpu.beta_steps = bsteps;
         }

@@ -110,16 +110,28 @@ def encode_and_send(msg, socket, verbose=False):
     socket.sendall(confirmation)
 
 
-def fold_stepcount(val):
+def fold_stepcount_alpha(val):
     low_limit = - 10000
     vrange = 1 << 16
-    assert( (val >= low_limit) and (val <= (low_limit + vrange)))
+    assert( (val >= low_limit) and (val < (low_limit + vrange)))
     # convert to unsigned 16-bit number
             
     if val < 0:
         val += (1 << 16)
 
     return val
+
+def fold_stepcount_beta(val):
+    low_limit = - 0x8000
+    vrange = 1 << 16
+    assert( (val >= low_limit) and (val < (low_limit + vrange)))
+    # convert to unsigned 16-bit number
+            
+    if val < 0:
+        val += (1 << 16)
+
+    return val
+
 
 def handle_configMotion(fpu_id, cmd):
     busid = cmd[0]
@@ -208,7 +220,7 @@ def handle_GetX(fpu_id, cmd):
     tx2_status = 0
     tx3_errflag = 0
 
-    pos = fold_stepcount(FPUGrid[fpu_id].alpha_steps)
+    pos = fold_stepcount_alpha(FPUGrid[fpu_id].alpha_steps)
     tx4_count0 = pos & 0xff
     tx5_count1 = (pos >> 8) & 0xff
     # protocol changed here
@@ -337,7 +349,7 @@ def handle_GetY(fpu_id, cmd):
     tx2_status = 0
     tx3_errflag = 0
 
-    pos = fold_stepcount(FPUGrid[fpu_id].beta_steps)
+    pos = fold_stepcount_beta(FPUGrid[fpu_id].beta_steps)
     tx4_count0 = pos & 0xff
     tx5_count1 = (pos >> 8) & 0xff
     tx6_count2 = 0
