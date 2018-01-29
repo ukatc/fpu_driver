@@ -110,7 +110,7 @@ when the internal state struct is used.
 ** DONE Fix CPU hogging
 ** DONE fix Python wrapper for grid_state
 ** DONE clean up debug messages 
-** TODO Fix encoding of beta step count in both driver and mock_controller
+** DONE Fix encoding of beta step count in both driver and mock_controller
 ** TODO fix changed CAN command names (setTicksPerSegment and setStepsPerFrame, also getCounterDeviation)
 ** TODO fix message lengths in all version 1 CAN commands, and re-test
 ** TODO fix decoding of all CAN commands in mock_controller.py to make it clearer

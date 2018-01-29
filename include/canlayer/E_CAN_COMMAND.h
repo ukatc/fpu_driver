@@ -73,8 +73,8 @@ enum E_CAN_COMMAND
     CCMD_CHECK_INTEGRITY                  = 18, // report firmware CRC
     CCMD_FREE_ALPHA_LIMIT_BREACH          = 19, // untangle alpha arm
     CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    = 20, // re-enable limit switch
-    CCMD_SET_TIME_STEP                    = 21, // set movement time interval
-    CCMD_SET_STEPS_PER_FRAME              = 22, // set minimum step frequency
+    CCMD_SET_TICKS_PER_SEGMENT            = 21, // set movement time interval
+    CCMD_SET_STEPS_PER_SEGMENT            = 22, // set minimum step frequency
     CCMD_ENABLE_MOVE                      = 23, // leave aborted state
 
     NUM_CAN_COMMANDS = 24,
@@ -225,8 +225,8 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
         /* status inquiry */
     case CCMD_PING_FPU          :
 #if CAN_PROTOCOL_VERSION != 1
-    case CCMD_SET_TIME_STEP                 :
-    case CCMD_SET_STEPS_PER_FRAME             :
+    case CCMD_SET_TICKS_PER_SEGMENT                 :
+    case CCMD_SET_STEPS_PER_SEGMENT             :
 #endif        
     case CCMD_SET_USTEP         :
         priority = 0x05; break;
