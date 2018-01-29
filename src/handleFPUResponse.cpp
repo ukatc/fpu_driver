@@ -224,8 +224,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
-            const uint16_t steps_coded_beta = (data[5] << 8) |  data[4];
-            const int bsteps = unfold_stepcount(steps_coded);
+            const uint16_t steps_coded = (data[5] << 8) |  data[4];
+            const int bsteps = unfold_stepcount_beta(steps_coded);
             fpu.beta_steps = bsteps;
         }
         fpu.last_updated = cur_time;
@@ -248,8 +248,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         {
             const uint16_t asteps_coded = (data[5] << 8) |  data[4];
             const uint16_t bsteps_coded = (data[7] << 8) |  data[6];
-            const int asteps = unfold_stepcount(asteps_coded);
-            const int bsteps = unfold_stepcount(bsteps_coded);
+            const int asteps = unfold_stepcount_alpha(asteps_coded);
+            const int bsteps = unfold_stepcount_beta(bsteps_coded);
             
             fpu.alpha_steps = asteps;
             fpu.beta_steps = bsteps;
