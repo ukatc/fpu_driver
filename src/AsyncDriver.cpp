@@ -412,7 +412,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
                 unique_ptr<I_CAN_Command> cmd(can_command.release());
+#ifdef DEBUG2                
                 printf("sending (fpu_id=%i, step_index=%i ...\n", fpu_id, step_index);
+#endif                
                 gateway.sendCommand(fpu_id, cmd);
             }
         }
@@ -422,7 +424,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
              state.  This is needed to make sure we have later a clear
              state transition for finishing the load with the last
              flag set. */
+#ifdef DEBUG2
             printf("waiting for confirmation step 0\n");
+#endif            
           state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
                                                grid_state);
           bool do_retry = false;
@@ -454,7 +458,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         }
         step_index++;
     }
+#ifdef DEBUG2
     printf("ready sending! waiting....\n");
+#endif    
 
     // fpus are now loading data.
     // Wait for fpus loading to finish, or

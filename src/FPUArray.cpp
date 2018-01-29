@@ -129,9 +129,6 @@ FPUArray::~FPUArray()
 E_GridState FPUArray::getGridState(t_grid_state& out_state)
 {
 
-#ifdef DEBUG3
-    printf("copying gridstate");
-#endif
     pthread_mutex_lock(&grid_state_mutex);
     // we simply copy the internal state
     out_state = FPUGridState;
@@ -170,15 +167,10 @@ void FPUArray::incSending()
 {
     pthread_mutex_lock(&grid_state_mutex);
     FPUGridState.num_queued++;
-#ifdef DEBUG    
-    if ( (FPUGridState.num_queued == 0)
-         && (FPUGridState.count_pending == 0) )
-    {
-        pthread_cond_broadcast(&cond_state_change);
-        printf("X1: out-of-order increment!!");fflush(stdout);
-    }
-#endif    
+    assert(! ((FPUGridState.num_queued == 0)
+              && (FPUGridState.count_pending == 0) ));
     pthread_mutex_unlock(&grid_state_mutex);
+    
 #ifdef DEBUG3
     printf("num_queued++ -> %i\n", FPUGridState.num_queued);
 #endif    
@@ -641,7 +633,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 {
 
     int fpu_busid = can_identifier & 0x7f;
-#ifdef DEBUG
+#ifdef DEBUG2
 #define PRINT_BYTES    
 #ifdef PRINT_BYTES    
     int priority = can_identifier >> 7;
@@ -727,7 +719,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 #endif
         return;
     }
-#ifdef DEBUG
+#ifdef DEBUG2
     printf("rxFPU#%i[%i] ",fpu_id, data[1]);
     fflush(stdout);
 #endif

@@ -535,7 +535,7 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
         // send remaining bytes of previous message
         status = sbuffer[gateway_id].send_pending(SocketID[gateway_id]);
 #ifdef DEBUG
-        printf("p"); fflush(stdout);
+        printf("(sp)"); fflush(stdout);
 #endif
     }
     else
@@ -1063,12 +1063,11 @@ CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_C
     assert(fpu_id < num_fpus);
     const int gateway_id = address_map[fpu_id].gateway_id;
     
-#ifdef DEBUG
     if (! new_command)
     {
         printf("nullpointer passed!\n");
+        assert(0);
     }
-#endif
     
     incSending();
     return commandQueue.enqueue(gateway_id, new_command);

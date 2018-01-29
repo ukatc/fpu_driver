@@ -128,7 +128,7 @@ namespace canlayer
             buf_len += 8;
 
 
-#ifdef DEBUG
+#ifdef DEBUG2
             printf("ConfigureMotion for FPU canid #%i: "
                    "(asteps=%i, apause=%i, acw=%i, bsteps=%i, bpause=%i, bcw=%i)\n[",
                    fpu_id, asteps, apause, aclockwise,

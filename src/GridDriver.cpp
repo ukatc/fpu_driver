@@ -86,9 +86,9 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
             break;
         }
 #ifdef DEBUG
-        printf("omitting retries!\n");
+        printf("GridDriver::configMotion(): omitting retries!\n");
         break;
-#endif DEBUG
+#endif 
 
         // we have most probably a time-out and need to load some
         // waveforms again. To do that we strip FPUs from

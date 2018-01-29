@@ -44,7 +44,6 @@ namespace canlayer
   void logErrorStatus(int fpu_id, timespec time_stamp, int err_code)
 {
   char * err_msg = "(no error)";
-#if 0    
   switch (err_code)
     {
     case 0:
@@ -67,17 +66,14 @@ namespace canlayer
     case ER_M2LIMIT:      err_msg = "obsolete error code received";      break;
       
     }
-#endif  
 #ifdef DEBUG
   // FIXME: In production code, the logging should be taken out of
   // the time-critical path so that even a large amount of log messages
   // will not affect the responsiveness of the driver.
-    printf("%s : %li / %09li\n", "ok", time_stamp.tv_sec, time_stamp.tv_nsec);
-    fflush(stdout);
   
-//    printf("[%lu.%lu]: FPU #%04i %s\n",
-//         time_stamp.tv_sec, time_stamp.tv_nsec,
-//         fpu_id, err_msg);
+  printf("[%lu.%lu]: FPU #%04i : error response msg = %s\n",
+         time_stamp.tv_sec, time_stamp.tv_nsec,
+         fpu_id, err_msg);
 #endif
 }
 
@@ -119,8 +115,10 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     {
     case CCMD_CONFIG_MOTION   :
         // clear time-out flag
+#ifdef DEBUG2        
         printf("ConfigMotion handler fpu %i: removing pending entry\n", fpu_id);
         printf("ConfigMotion handler fpu %i: response status = %i\n", fpu_id, response_status);
+#endif        
         remove_pending(fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
         {
@@ -137,7 +135,9 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             if (response_status == STBT_WAVE_READY)
             {
                 fpu.state = FPST_READY_FORWARD;
+#ifdef DEBUG2                
                 printf("ConfigMotion handler fpu %i: waveform ready\n", fpu_id);
+#endif
             }
             else
             {
