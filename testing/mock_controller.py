@@ -301,7 +301,7 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
         TX[3] = errflag = ER_COLLIDE
     else:
         # send confirmation and spawn findDatum method call
-        TX[1] = cmdid = command_id 
+        TX[1] = command_id 
         TX[2] = status = 0
         TX[3] = errflag = 0
 
@@ -422,38 +422,33 @@ def handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
     
     return None
 
-def handle_invalidCommand(fpu_id, cmd):
-    
-    bus_adr = cmd[0]
-    canid = cmd[1] + (cmd[2] << 8)
-    fpu_adr_bus = canid & 0x7f # this is a one-based index
-    rx_priority = (canid >> 7)
-    command_id = cmd[3]
+def handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, RX):
 
-    tx_bus_adr = bus_adr
     tx_prio = 0x02
     tx_canid = (tx_prio << 7) | fpu_adr_bus
-    tx0_fpu_adr_bus = fpu_adr_bus
-    tx1_cmdid = command_id
-    tx2_status = 0
-    tx3_errflag = 0xff
-    tx4_errcode = ER_INVALID
 
-    tx5_dummy = 0
-    tx6_dummy = 0
-    tx7_dummy = 0
+    ## gateway header
+    TH = [ 0 ] * 3
     
-    return [ tx_bus_adr,
-             (tx_canid & 0xff),
-             ((tx_canid >> 8) & 0xff),
-             tx0_fpu_adr_bus,
-             tx1_cmdid,
-             tx2_status,
-             tx3_errflag,
-             tx4_errcode,
-             tx5_dummy,
-             tx6_dummy,
-             tx7_dummy ]
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+    
+
+    command_id = RX[0]
+    
+    # response message packet
+    TX = [0] * 8
+    TX[0] = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = tx_status = 0
+    TX[3] = errflag = 0xff
+    TX[4] = errcode = ER_INVALID
+    TX[5] = dummy1 = 0    
+    TX[6] = dummy2 = 0
+    TX[7] = dummy3 = 0
+    
+    return TH + TX 
 
 
 
@@ -523,7 +518,7 @@ def command_handler(cmd, socket, verbose=0):
         elif command_id == CCMD_GET_ERROR_BETA                   :
             pass
         else:
-            resp = handle_invalidCommand(fpu_adr_bus, cmd)
+            resp = handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     else:
         if command_id == CCMD_LOCK_UNIT                        :
             pass
@@ -546,7 +541,7 @@ def command_handler(cmd, socket, verbose=0):
         elif command_id == CCMD_ENABLE_MOVE                      :
             pass        
         else:
-            resp = handle_invalidCommand(fpu_adr_bus, cmd)
+            resp = handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
     if resp != None:
         encode_and_send(resp, socket, verbose=verbose)
