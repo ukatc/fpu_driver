@@ -134,16 +134,16 @@ def fold_stepcount_beta(val):
 
 
 def handle_configMotion(fpu_id, cmd):
-    busid = cmd[0]
+    bus_adr = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
-    fpu_busid = canid & 0x7f # this is a one-based index
-    priority = (canid >> 7)
+    fpu_adr_bus = canid & 0x7f # this is a one-based index
+    rx_priority = (canid >> 7)
     command_id = cmd[3]
 
-    tx_busid = busid
+    tx_bus_adr = bus_adr
     tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_busid
-    tx0_fpu_busid = fpu_busid
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    tx0_fpu_adr_bus = fpu_adr_bus
     tx1_cmdid = command_id
     tx2_status = 0
     tx3_errflag = 0
@@ -188,10 +188,10 @@ def handle_configMotion(fpu_id, cmd):
     tx7_dummy = 0
 
     if first_entry or last_entry:
-        confirmation = [ tx_busid,
+        confirmation = [ tx_bus_adr,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
-             tx0_fpu_busid,
+             tx0_fpu_adr_bus,
              tx1_cmdid,
              tx2_status,
              tx3_errflag,
@@ -206,16 +206,16 @@ def handle_configMotion(fpu_id, cmd):
 
 
 def handle_GetX(fpu_id, cmd):
-    busid = cmd[0]
+    bus_adr = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
-    fpu_busid = canid & 0x7f # this is a one-based index
-    priority = (canid >> 7)
+    fpu_adr_bus = canid & 0x7f # this is a one-based index
+    rx_priority = (canid >> 7)
     command_id = cmd[3]
 
-    tx_busid = busid
+    tx_bus_adr = bus_adr
     tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_busid
-    tx0_fpu_busid = fpu_busid
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    tx0_fpu_adr_bus = fpu_adr_bus
     tx1_cmdid = command_id
     tx2_status = 0
     tx3_errflag = 0
@@ -228,10 +228,10 @@ def handle_GetX(fpu_id, cmd):
 
     tx7_dummy = 0
     
-    return [ tx_busid,
+    return [ tx_bus_adr,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
-             tx0_fpu_busid,
+             tx0_fpu_adr_bus,
              tx1_cmdid,
              tx2_status,
              tx3_errflag,
@@ -248,16 +248,16 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
         print("CAN command format error, length must be 8");
         return []
     
-    busid = cmd[0]
+    bus_adr = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
-    fpu_busid = canid & 0x7f # this is a one-based index
-    priority = (canid >> 7)
+    fpu_adr_bus = canid & 0x7f # this is a one-based index
+    rx_priority = (canid >> 7)
     command_id = cmd[3]
 
-    tx_busid = busid
+    tx_bus_adr = bus_adr
     tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_busid
-    tx0_fpu_busid = fpu_busid
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    tx0_fpu_adr_bus = fpu_adr_bus
     
     tx4_dummy0 = 0
     tx5_dummy1 = 0
@@ -276,16 +276,16 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
 
         def findDatum_func(fpu_id, cmd, socket, verbose=False):
 
-            busid = cmd[0]
+            bus_adr = cmd[0]
             canid = cmd[1] + (cmd[2] << 8)
-            fpu_busid = canid & 0x7f # this is a one-based index
-            priority = (canid >> 7)
+            fpu_adr_bus = canid & 0x7f # this is a one-based index
+            rx_priority = (canid >> 7)
             command_id = cmd[3]
             
-            tx_busid = busid
+            tx_bus_adr = bus_adr
             tx_prio = 0x02
-            tx_canid = (tx_prio << 7) | fpu_busid
-            tx0_fpu_busid = fpu_busid
+            tx_canid = (tx_prio << 7) | fpu_adr_bus
+            tx0_fpu_adr_bus = fpu_adr_bus
             
             tx4_dummy0 = 0
             tx5_dummy1 = 0
@@ -300,10 +300,10 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
     
             tx1_cmdid = CMSG_FINISHED_DATUM
     
-            finish_message =  [ tx_busid,
+            finish_message =  [ tx_bus_adr,
                                 (tx_canid & 0xff),
                                 ((tx_canid >> 8) & 0xff),
-                                tx0_fpu_busid,
+                                tx0_fpu_adr_bus,
                                 tx1_cmdid,
                                 tx2_status,
                                 tx3_errflag,
@@ -319,10 +319,10 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
     
     ## send confirmation message 
     #print("FPU %i: sending confirmation to findDatum command" % fpu_id);
-    conf_msg = [ tx_busid,
+    conf_msg = [ tx_bus_adr,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
-             tx0_fpu_busid,
+             tx0_fpu_adr_bus,
              tx1_cmdid,
              tx2_status,
              tx3_errflag,
@@ -335,16 +335,16 @@ def handle_findDatum(fpu_id, cmd, socket, verbose=False):
 
 
 def handle_GetY(fpu_id, cmd):
-    busid = cmd[0]
+    bus_adr = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
-    fpu_busid = canid & 0x7f # this is a one-based index
-    priority = (canid >> 7)
+    fpu_adr_bus = canid & 0x7f # this is a one-based index
+    rx_priority = (canid >> 7)
     command_id = cmd[3]
 
-    tx_busid = busid
+    tx_bus_adr = bus_adr
     tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_busid
-    tx0_fpu_busid = fpu_busid
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    tx0_fpu_adr_bus = fpu_adr_bus
     tx1_cmdid = command_id
     tx2_status = 0
     tx3_errflag = 0
@@ -356,10 +356,10 @@ def handle_GetY(fpu_id, cmd):
 
     tx7_dummy = 0
     
-    return [ tx_busid,
+    return [ tx_bus_adr,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
-             tx0_fpu_busid,
+             tx0_fpu_adr_bus,
              tx1_cmdid,
              tx2_status,
              tx3_errflag,
@@ -368,21 +368,21 @@ def handle_GetY(fpu_id, cmd):
              tx6_count2,
              tx7_dummy ]
 
-def handle_PingFPU(fpu_id, fpu_busid, busid, RX):
+def handle_PingFPU(fpu_id, fpu_adr_bus, bus_adr, RX):
     command_id = RX[0]
 
     # CAN header for gateway
     tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_busid
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
     
     TH = [ 0 ] * 3
-    TH[0] = busid
+    TH[0] = bus_adr
     TH[1] = (tx_canid & 0xff)
     TH[2] = ((tx_canid >> 8) & 0xff)
     
     TX = [ 0 ] * 8
     
-    TX[0] = fpu_busid
+    TX[0] = fpu_adr_bus
     TX[1] = command_id
     TX[2] = status = 0
     TX[3] = errflag = 0
@@ -399,62 +399,25 @@ def handle_PingFPU(fpu_id, fpu_busid, busid, RX):
     return TH + TX
 
 
-def handle_resetFPU_old(fpu_id, cmd):
-    busid = cmd[0]
-    canid = cmd[1] + (cmd[2] << 8)
-    fpu_busid = canid & 0x7f # this is a one-based index
-    priority = (canid >> 7)
-    command_id = cmd[3]
-
-    FPUGrid[fpu_id].resetFPU(fpu_id, sleep);
-
-    tx_busid = busid
-    tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_busid
-
-
-    
-    tx0_fpu_busid = fpu_busid
-    tx1_cmdid = command_id
-    tx2_status = 0
-    tx3_errflag = 0
-
-    tx4_count0 = 0
-    tx5_count1 = 0
-    
-    tx6_count2 = 0
-    tx7_count3 = 0
-    
-    return [ tx_busid,
-             (tx_canid & 0xff),
-             ((tx_canid >> 8) & 0xff),
-             tx0_fpu_busid,
-             tx1_cmdid,
-             tx2_status,
-             tx3_errflag,
-             tx4_count0,
-             tx5_count1,
-             tx6_count2,
-             tx7_count3 ]
 
 def handle_resetFPU(fpu_id, cmd, socket, verbose=False):
 
     def reset_func(fpu_id, cmd, socket, verbose=False):
-        busid = cmd[0]
+        bus_adr = cmd[0]
         canid = cmd[1] + (cmd[2] << 8)
-        fpu_busid = canid & 0x7f # this is a one-based index
-        priority = (canid >> 7)
+        fpu_adr_bus = canid & 0x7f # this is a one-based index
+        rx_priority = (canid >> 7)
         command_id = cmd[3]
 
         FPUGrid[fpu_id].resetFPU(fpu_id, sleep);
 
-        tx_busid = busid
+        tx_bus_adr = bus_adr
         tx_prio = 0x02
-        tx_canid = (tx_prio << 7) | fpu_busid
+        tx_canid = (tx_prio << 7) | fpu_adr_bus
 
 
     
-        tx0_fpu_busid = fpu_busid
+        tx0_fpu_adr_bus = fpu_adr_bus
         tx1_cmdid = command_id
         tx2_status = 0
         tx3_errflag = 0
@@ -465,10 +428,10 @@ def handle_resetFPU(fpu_id, cmd, socket, verbose=False):
         tx6_count2 = 0
         tx7_count3 = 0
 
-        conf_msg = [ tx_busid,
+        conf_msg = [ tx_bus_adr,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
-             tx0_fpu_busid,
+             tx0_fpu_adr_bus,
              tx1_cmdid,
              tx2_status,
              tx3_errflag,
@@ -488,16 +451,16 @@ def handle_resetFPU(fpu_id, cmd, socket, verbose=False):
 
 def handle_invalidCommand(fpu_id, cmd):
     
-    busid = cmd[0]
+    bus_adr = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
-    fpu_busid = canid & 0x7f # this is a one-based index
-    priority = (canid >> 7)
+    fpu_adr_bus = canid & 0x7f # this is a one-based index
+    rx_priority = (canid >> 7)
     command_id = cmd[3]
 
-    tx_busid = busid
+    tx_bus_adr = bus_adr
     tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_busid
-    tx0_fpu_busid = fpu_busid
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    tx0_fpu_adr_bus = fpu_adr_bus
     tx1_cmdid = command_id
     tx2_status = 0
     tx3_errflag = 0xff
@@ -507,10 +470,10 @@ def handle_invalidCommand(fpu_id, cmd):
     tx6_dummy = 0
     tx7_dummy = 0
     
-    return [ tx_busid,
+    return [ tx_bus_adr,
              (tx_canid & 0xff),
              ((tx_canid >> 8) & 0xff),
-             tx0_fpu_busid,
+             tx0_fpu_adr_bus,
              tx1_cmdid,
              tx2_status,
              tx3_errflag,
@@ -529,17 +492,17 @@ def command_handler(cmd, socket, verbose=0):
     if verbose:
         print("command decoded bytes are:", cmd)
     gateway_id = gateway_map[socket.getsockname()]
-    busid = cmd[0]
+    bus_adr = cmd[0]
     canid = cmd[1] + (cmd[2] << 8)
-    priority = (canid >> 7)
-    fpu_busid = canid & 0x7f # this is a one-based index
+    rx_priority = (canid >> 7)
+    fpu_adr_bus = canid & 0x7f # this is a one-based index
     command_id = cmd[3]
-    busnum = busid + gateway_id * BUSES_PER_GATEWAY
-    fpu_id = (fpu_busid-1) + busnum * FPUS_PER_BUS
+    bus_global_id = bus_adr + gateway_id * BUSES_PER_GATEWAY
+    fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
 
     if verbose:
-        print("CAN command [%i] to gw %i, bus %i, fpu # %i (priority %i), command id=%i"
-          % (gCountTotalCommands, gateway_id, busid, fpu_busid, priority, command_id))
+        print("CAN command [%i] to gw %i, bus %i, fpu # %i (rx_priority %i), command id=%i"
+          % (gCountTotalCommands, gateway_id, bus_adr, fpu_adr_bus, rx_priority, command_id))
     
         print("CAN command #%i to FPU %i" % (command_id, fpu_id))
 
@@ -547,7 +510,7 @@ def command_handler(cmd, socket, verbose=0):
 
     if command_id == CCMD_PING_FPU                         :
         # resp = handle_PingFPU(fpu_id, cmd)
-        resp = handle_PingFPU(fpu_id, fpu_busid, busid, cmd[3:])
+        resp = handle_PingFPU(fpu_id, fpu_adr_bus, bus_adr, cmd[3:])
         
     elif command_id == CCMD_RESET_FPU                        :
         resp = handle_resetFPU(fpu_id, cmd, socket, verbose=verbose)
@@ -586,7 +549,7 @@ def command_handler(cmd, socket, verbose=0):
         elif command_id == CCMD_GET_ERROR_BETA                   :
             pass
         else:
-            resp = handle_invalidCommand(fpu_busid, cmd)
+            resp = handle_invalidCommand(fpu_adr_bus, cmd)
     else:
         if command_id == CCMD_LOCK_UNIT                        :
             pass
@@ -609,7 +572,7 @@ def command_handler(cmd, socket, verbose=0):
         elif command_id == CCMD_ENABLE_MOVE                      :
             pass        
         else:
-            resp = handle_invalidCommand(fpu_busid, cmd)
+            resp = handle_invalidCommand(fpu_adr_bus, cmd)
 
     if resp != None:
         encode_and_send(resp, socket, verbose=verbose)
