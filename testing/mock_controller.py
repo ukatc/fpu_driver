@@ -240,96 +240,87 @@ def handle_GetX(fpu_id, cmd):
              tx6_count2,
              tx7_dummy ]
 
-def handle_findDatum(fpu_id, cmd, socket, verbose=False):
+def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
         
     print("starting findDatum for FPU %i" % fpu_id)
 
-    if len(cmd) < 8:
+    if len(RX) < 8:
         print("CAN command format error, length must be 8");
         return []
-    
-    bus_adr = cmd[0]
-    canid = cmd[1] + (cmd[2] << 8)
-    fpu_adr_bus = canid & 0x7f # this is a one-based index
-    rx_priority = (canid >> 7)
-    command_id = cmd[3]
 
-    tx_bus_adr = bus_adr
+    ## gateway header
+    
     tx_prio = 0x02
     tx_canid = (tx_prio << 7) | fpu_adr_bus
-    tx0_fpu_adr_bus = fpu_adr_bus
     
-    tx4_dummy0 = 0
-    tx5_dummy1 = 0
-    tx6_dummy2 = 0
-    tx7_dummy3 = 0
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
 
+    TX = [0] * 8
+    TX[0] = fpu_adr_bus
+    
+    TX[4] = dummy0 = 0
+    TX[5] = dummy1 = 0
+    TX[6] = dummy2 = 0
+    TX[7] = dummy3 = 0
+
+    command_id = RX[0]
+    
     if FPUGrid[fpu_id].is_collided:
-        tx1_cmdid = command_id
-        tx2_status = 0xff
-        tx3_errflag = ER_COLLIDE
+        # only send an error message
+        TX[1] = command_id
+        TX[2] = status = 0xff
+        TX[3] = errflag = ER_COLLIDE
     else:
-        tx1_cmdid = command_id 
-        tx2_status = 0
-        tx3_errflag = 0
+        # send confirmation and spawn findDatum method call
+        TX[1] = cmdid = command_id 
+        TX[2] = status = 0
+        TX[3] = errflag = 0
 
 
-        def findDatum_func(fpu_id, cmd, socket, verbose=False):
+        def findDatum_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
-            bus_adr = cmd[0]
-            canid = cmd[1] + (cmd[2] << 8)
-            fpu_adr_bus = canid & 0x7f # this is a one-based index
-            rx_priority = (canid >> 7)
-            command_id = cmd[3]
-            
-            tx_bus_adr = bus_adr
             tx_prio = 0x02
             tx_canid = (tx_prio << 7) | fpu_adr_bus
-            tx0_fpu_adr_bus = fpu_adr_bus
             
-            tx4_dummy0 = 0
-            tx5_dummy1 = 0
-            tx6_dummy2 = 0
-            tx7_dummy3 = 0
+            TH = [ 0 ] * 3
+            TH[0] = bus_adr
+            TH[1] = (tx_canid & 0xff)
+            TH[2] = ((tx_canid >> 8) & 0xff)
+
+            command_id = RX[0]
+            
+            
+            TX = [0] * 8
+            TX[0] = fpu_adr_bus
+            TX[1] = CMSG_FINISHED_DATUM
+            TX[2] = status = 0
+            TX[3] = errflag = 0
+            TX[4] = dummy0 = 0
+            TX[5] = dummy1 = 0
+            TX[6] = dummy2 = 0
+            TX[7] = dummy3 = 0
 
             
+            finish_message =  TH + TX
 
             # simulate findDatum FPU operation
             FPUGrid[fpu_id].findDatum(sleep)
-
-    
-            tx1_cmdid = CMSG_FINISHED_DATUM
-    
-            finish_message =  [ tx_bus_adr,
-                                (tx_canid & 0xff),
-                                ((tx_canid >> 8) & 0xff),
-                                tx0_fpu_adr_bus,
-                                tx1_cmdid,
-                                tx2_status,
-                                tx3_errflag,
-                                tx4_dummy0,
-                                tx5_dummy1,
-                                tx6_dummy2,
-                                tx7_dummy3 ]
+            print("FPU %i: findDatum command finished" % fpu_id);
+        
             
             #print("FPU %i: findDatum command finished" % fpu_id);
             encode_and_send(finish_message, socket, verbose=verbose)
 
-        spawn_later(1, findDatum_func, fpu_id, cmd, socket, verbose=verbose)
+        # "spawn_later" inserts a timed event into the aynchronous event loop
+        # - similar to a thread but not running in parallel.
+        spawn_later(1, findDatum_func, fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=verbose)
     
     ## send confirmation message 
     #print("FPU %i: sending confirmation to findDatum command" % fpu_id);
-    conf_msg = [ tx_bus_adr,
-             (tx_canid & 0xff),
-             ((tx_canid >> 8) & 0xff),
-             tx0_fpu_adr_bus,
-             tx1_cmdid,
-             tx2_status,
-             tx3_errflag,
-             tx4_dummy0,
-             tx5_dummy1,
-             tx6_dummy2,
-             tx7_dummy3 ]
+    conf_msg = TH + TX
 
     return conf_msg
 
@@ -508,7 +499,7 @@ def command_handler(cmd, socket, verbose=0):
         
     elif command_id == CCMD_FIND_DATUM                       :
         # we pass the socket here to send an interim confirmation
-        resp = handle_findDatum(fpu_id, cmd, socket, verbose=verbose)
+        resp = handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
         
     elif command_id == CCMD_CONFIG_MOTION  :
         resp = handle_configMotion(fpu_id, cmd)        
