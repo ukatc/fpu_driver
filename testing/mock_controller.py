@@ -400,50 +400,40 @@ def handle_PingFPU(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 
 
-def handle_resetFPU(fpu_id, cmd, socket, verbose=False):
+def handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
-    def reset_func(fpu_id, cmd, socket, verbose=False):
-        bus_adr = cmd[0]
-        canid = cmd[1] + (cmd[2] << 8)
-        fpu_adr_bus = canid & 0x7f # this is a one-based index
-        rx_priority = (canid >> 7)
-        command_id = cmd[3]
+    def reset_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
+        command_id = RX[0]
 
         FPUGrid[fpu_id].resetFPU(fpu_id, sleep);
 
-        tx_bus_adr = bus_adr
+        ## gateway header
         tx_prio = 0x02
         tx_canid = (tx_prio << 7) | fpu_adr_bus
-
-
     
-        tx0_fpu_adr_bus = fpu_adr_bus
-        tx1_cmdid = command_id
-        tx2_status = 0
-        tx3_errflag = 0
-        
-        tx4_count0 = 0
-        tx5_count1 = 0
-    
-        tx6_count2 = 0
-        tx7_count3 = 0
+        TH = [ 0 ] * 3
+        TH[0] = bus_adr
+        TH[1] = (tx_canid & 0xff)
+        TH[2] = ((tx_canid >> 8) & 0xff)
 
-        conf_msg = [ tx_bus_adr,
-             (tx_canid & 0xff),
-             ((tx_canid >> 8) & 0xff),
-             tx0_fpu_adr_bus,
-             tx1_cmdid,
-             tx2_status,
-             tx3_errflag,
-             tx4_count0,
-             tx5_count1,
-             tx6_count2,
-             tx7_count3 ]
+
+        # response message packet
+        TX = [0] * 8
+        TX[0] = fpu_adr_bus
+        TX[1] = command_id
+        TX[2] = tx_status = 0
+        TX[3] = errflag = 0        
+        TX[4] = count0 = 0
+        TX[5] = count1 = 0    
+        TX[6] = count2 = 0
+        TX[7] = count3 = 0
+
+        conf_msg = TH + TX 
 
         print("fpu #%i: sending reset confirmation" % fpu_id)
         encode_and_send(conf_msg, socket, verbose=verbose)
 
-    spawn(reset_func, fpu_id, cmd, socket, verbose=verbose)
+    spawn(reset_func, fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=verbose)
         
     print("returning from reset message")
     
@@ -493,13 +483,14 @@ def command_handler(cmd, socket, verbose=0):
         print("command decoded bytes are:", cmd)
     gateway_id = gateway_map[socket.getsockname()]
     bus_adr = cmd[0]
-    canid = cmd[1] + (cmd[2] << 8)
-    rx_priority = (canid >> 7)
-    fpu_adr_bus = canid & 0x7f # this is a one-based index
+    rx_canid = cmd[1] + (cmd[2] << 8)
+    rx_priority = (rx_canid >> 7)
+    fpu_adr_bus = rx_canid & 0x7f # this is a one-based index
     command_id = cmd[3]
     bus_global_id = bus_adr + gateway_id * BUSES_PER_GATEWAY
     fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
 
+    rx_bytes = cmd[3:]
     if verbose:
         print("CAN command [%i] to gw %i, bus %i, fpu # %i (rx_priority %i), command id=%i"
           % (gCountTotalCommands, gateway_id, bus_adr, fpu_adr_bus, rx_priority, command_id))
@@ -510,10 +501,10 @@ def command_handler(cmd, socket, verbose=0):
 
     if command_id == CCMD_PING_FPU                         :
         # resp = handle_PingFPU(fpu_id, cmd)
-        resp = handle_PingFPU(fpu_id, fpu_adr_bus, bus_adr, cmd[3:])
+        resp = handle_PingFPU(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
         
     elif command_id == CCMD_RESET_FPU                        :
-        resp = handle_resetFPU(fpu_id, cmd, socket, verbose=verbose)
+        resp = handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
         
     elif command_id == CCMD_FIND_DATUM                       :
         # we pass the socket here to send an interim confirmation
