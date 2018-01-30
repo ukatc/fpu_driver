@@ -63,7 +63,7 @@ void CommandQueue::setNumGateways(int ngws)
 }
 
 
-CommandQueue::t_command_mask CommandQueue::checkForCommand()
+CommandQueue::t_command_mask CommandQueue::checkForCommand() const
 {
     t_command_mask rmask = 0;
 #ifdef DEBUG3

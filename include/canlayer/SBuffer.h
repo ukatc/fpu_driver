@@ -78,7 +78,7 @@ public:
 
     // number of bytes which still wait for being sent,
     // from the last command.
-    int numUnsentBytes();
+    int numUnsentBytes() const;
 
     // reads data from a socket (which presumable has been
     // indicated to have new data available), unwraps and

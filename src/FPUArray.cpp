@@ -126,7 +126,7 @@ FPUArray::~FPUArray()
 // likely returns much more information than needed.
 // FIXME: replace internal type with slimmed down information
 // which is actually relevant for callers.
-E_GridState FPUArray::getGridState(t_grid_state& out_state)
+E_GridState FPUArray::getGridState(t_grid_state& out_state) const
 {
 
     pthread_mutex_lock(&grid_state_mutex);
@@ -142,7 +142,7 @@ E_GridState FPUArray::getGridState(t_grid_state& out_state)
 // timestamp.
 bool check_all_fpus_updated(int num_fpus,
                             t_grid_state& old_grid_state,
-                            t_grid_state& grid_state)
+                            const t_grid_state& grid_state) 
 {
     bool all_updated = true;
     for(int i = 0; i < num_fpus; i++)
@@ -176,7 +176,7 @@ void FPUArray::incSending()
 #endif    
 }
 
-int  FPUArray::countSending()
+int  FPUArray::countSending() const
 {
     int rv;
     pthread_mutex_lock(&grid_state_mutex);
@@ -206,7 +206,7 @@ void FPUArray::decSending()
 
 
 
-E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_state)
+E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_state) const
 {
 
     E_GridState sum_state = GS_UNKNOWN;
@@ -326,7 +326,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
 // and returns whether any state changed occured that warrants a
 // return from waitForState()
 bool FPUArray::inTargetState(E_GridState sum_state,
-                             E_WaitTarget tstate)
+                             E_WaitTarget tstate) const
 {
     // if there is any unreported error
     // (such as a collision or a connection failure)
@@ -377,7 +377,7 @@ bool FPUArray::inTargetState(E_GridState sum_state,
 }
 
 
-bool FPUArray::isLocked(int fpu_id)
+bool FPUArray::isLocked(int fpu_id) const
 {
     bool is_locked = false;
     pthread_mutex_lock(&grid_state_mutex);
@@ -589,7 +589,7 @@ void FPUArray::setDriverState(E_DriverState const dstate)
 }
 
 
-E_DriverState FPUArray::getDriverState()
+E_DriverState FPUArray::getDriverState() const
 {
     E_DriverState retval;
 
@@ -600,7 +600,7 @@ E_DriverState FPUArray::getDriverState()
 }
 
 
-E_GridState FPUArray::getStateSummary_unprotected()
+E_GridState FPUArray::getStateSummary_unprotected() const
 {
     // get the summary state of the grid member variable.
     // (This relies on that all FPU updates
@@ -610,7 +610,7 @@ E_GridState FPUArray::getStateSummary_unprotected()
 
 }
 
-E_GridState FPUArray::getStateSummary()
+E_GridState FPUArray::getStateSummary() const
 {
     E_GridState sum_state;
     pthread_mutex_lock(&grid_state_mutex);

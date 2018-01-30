@@ -23,6 +23,13 @@
 
 #include "canlayer/AsyncDriver.h"
 
+#if (__cplusplus < 201103L)
+#error "Currently, this code requires C++11 support."
+/* The requirement can certainly be loosened if needed. The most
+   important C++11 feature is std::unique_ptr. */
+
+#endif
+
 namespace mpifps
 {
 
@@ -42,6 +49,20 @@ public:
     ~GridDriver()
     {
     }
+
+    // prohibit copying of the class - this would lead to resource leaks
+    // and / or deadlocks
+    // no copy constructor
+    GridDriver(const GridDriver& other) = delete;
+    // no assignment operator
+    GridDriver& operator=(const GridDriver& other) = delete;
+#if (__cplusplus >= 201103L)
+    // no move constructor
+    GridDriver(GridDriver&& other) = delete;
+    // no move assignment operator
+    GridDriver& operator=(GridDriver&& other) = delete;
+#endif    
+    
 
     E_DriverErrCode initializeGrid(t_grid_state& grid_state);
 
@@ -69,7 +90,7 @@ public:
 
     E_DriverErrCode unlockFPU(t_grid_state& grid_state);
 
-    int getNumFPUs();
+    int getNumFPUs() const;
 
 private:
 

@@ -247,7 +247,7 @@ SBuffer::E_SocketStatus SBuffer::send_pending(int sockfd)
     return ST_OK;
 }
 
-int SBuffer::numUnsentBytes()
+int SBuffer::numUnsentBytes() const
 {
     return unsent_len;
 }

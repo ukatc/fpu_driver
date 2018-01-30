@@ -71,7 +71,7 @@ public:
 
     // returns a bitmask indicating which gateway
     // has pending commands
-    t_command_mask checkForCommand();
+    t_command_mask checkForCommand() const;
 
     // waits until at least one command is available,
     // and returns bitmask indicating which
@@ -109,7 +109,7 @@ public:
    
 private:
     int ngateways;
-    pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+    mutable pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
     // condition variables which is signaled on state changes
     pthread_cond_t cond_queue_append; // is initialized with monotonic clock option
 

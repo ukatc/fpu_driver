@@ -72,10 +72,10 @@ public:
     // this method retrieves the current grid state for all FPUs
     // (including collision states etc). It does not wait for
     // completion of commands, and can be called concurrently..
-    E_GridState getGridState(t_grid_state& out_state);
+    E_GridState getGridState(t_grid_state& out_state) const;
 
     // returns summary state of FPU grid
-    E_GridState getStateSummary();
+    E_GridState getStateSummary() const;
 
 
     // sets and messages state changes in driver,
@@ -83,7 +83,7 @@ public:
     void  setDriverState(E_DriverState const dstate);
 
     // gets state of the driver
-    E_DriverState getDriverState();
+    E_DriverState getDriverState() const;
 
     // This method waits for a certain state (actually,
     // a bitmask of states)
@@ -96,12 +96,12 @@ public:
     // the I/O threads
     // because they must not be blocked.
 
-    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);
+    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state) const;
 
 
     // queries whether an FPU is locked.
     // (FIXME: this is unused - delete it?)
-    bool isLocked(int fpu_id);
+    bool isLocked(int fpu_id) const;
     
     // sets pending command for one FPU.
     void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val, TimeOutList& timeout_list);
@@ -141,7 +141,7 @@ public:
     void decSending();
 
     // get number of commands which are being sent.
-    int  countSending();
+    int  countSending() const;
 
 private:
 
@@ -159,7 +159,7 @@ private:
 
     // returns summary state of FPU grid, without
     // lock protection.
-    E_GridState getStateSummary_unprotected();
+    E_GridState getStateSummary_unprotected() const;
 
 
     // This internal function returns true if the
@@ -168,18 +168,18 @@ private:
     // the internal grid state needs to
     // be locked by the grid_state_mutex
     bool inTargetState(E_GridState sum_state,
-                       E_WaitTarget tstate);
+                       E_WaitTarget tstate) const;
 
     int num_fpus;
 
-    std::atomic<int> num_trace_clients;
+    mutable std::atomic<int> num_trace_clients;
 
     // structures which describe the current state of the whole grid
     t_grid_state FPUGridState;
     // this mutex protects the FPU state array structure
-    pthread_mutex_t grid_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+    mutable pthread_mutex_t grid_state_mutex = PTHREAD_MUTEX_INITIALIZER;
     // condition variables which is signaled on state changes
-    pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER;
+    mutable pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER;
 
 };
 

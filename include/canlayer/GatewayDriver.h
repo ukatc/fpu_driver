@@ -84,15 +84,15 @@ public:
 
     // get the current state of the FPU grid, which
     // is stored in the reference parameter
-    E_GridState getGridState(t_grid_state& out_state);
+    E_GridState getGridState(t_grid_state& out_state) const;
 
     // get the current state of the driver (this is a convenience
     // function, the state is contained in the grid state).
-    E_DriverState getDriverState();
+    E_DriverState getDriverState() const;
 
     // get both the summed up state of the FPU grid,
     // and a detailed status for each FPU.
-    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state);
+    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state) const;
 
 
 
@@ -116,10 +116,10 @@ public:
     CommandQueue::E_QueueState broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command>& new_command);
 
     // returns gateway ID for an FPU
-    int getGatewayIdByFPUID(int fpu_id);
+    int getGatewayIdByFPUID(int fpu_id) const;
 
     // returns whether an FPU is currently marked as locked.
-    bool isLocked(int fpu_id);
+    bool isLocked(int fpu_id) const;
 
 
     
@@ -143,7 +143,7 @@ private:
     void incSending();
 
     // get number of unsent commands
-    int getNumUnsentCommands();
+    int getNumUnsentCommands() const;
 
 
     int num_gateways = 0;

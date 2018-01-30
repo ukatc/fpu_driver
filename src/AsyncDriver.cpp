@@ -1009,13 +1009,13 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(t_grid_state& grid_state,
 }
 
 
-E_GridState AsyncDriver::getGridState(t_grid_state& out_state)
+E_GridState AsyncDriver::getGridState(t_grid_state& out_state) const
 {
     return gateway.getGridState(out_state);
 }
 
 E_GridState AsyncDriver::waitForState(E_WaitTarget target,
-                                      t_grid_state& out_detailed_state)
+                                      t_grid_state& out_detailed_state) const
 {
     return gateway.waitForState(target, out_detailed_state);
 }

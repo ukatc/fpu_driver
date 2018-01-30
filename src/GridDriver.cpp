@@ -212,7 +212,7 @@ E_DriverErrCode GridDriver::getPositions(t_grid_state& grid_state)
     return status;
 }
 
-int GridDriver::getNumFPUs()
+int GridDriver::getNumFPUs() const
 {
     return num_fpus;
 }

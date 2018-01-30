@@ -155,7 +155,7 @@ E_DriverErrCode GatewayDriver::deInitialize()
 }
 
 
-bool GatewayDriver::isLocked(int fpu_id)
+bool GatewayDriver::isLocked(int fpu_id) const
 {
     return fpuArray.isLocked(fpu_id);
 }
@@ -584,7 +584,7 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
 // returns number of commands which are not yet sent
 // in a thread-safe way. This is needed for waiting
 // until all commands are sent.
-int GatewayDriver::getNumUnsentCommands()
+int GatewayDriver::getNumUnsentCommands() const
 {
     // TODO: Check for potential race conditions if a
     // command is being sent and is processed very
@@ -1037,13 +1037,13 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buff
 }
 
 
-E_GridState GatewayDriver::getGridState(t_grid_state& out_state)
+E_GridState GatewayDriver::getGridState(t_grid_state& out_state) const
 {
     return fpuArray.getGridState(out_state);
 }
 
 // get the current state of the driver
-E_DriverState GatewayDriver::getDriverState()
+E_DriverState GatewayDriver::getDriverState() const
 {
     t_grid_state state;
     getGridState(state);
@@ -1051,7 +1051,7 @@ E_DriverState GatewayDriver::getDriverState()
 }
 
 
-E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state)
+E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state) const
 {
     return fpuArray.waitForState(target, out_detailed_state);
 }
@@ -1082,7 +1082,7 @@ CommandQueue::E_QueueState GatewayDriver::broadcastCommand(const int gateway_id,
 }
 
 
-int GatewayDriver::getGatewayIdByFPUID(const int fpu_id)
+int GatewayDriver::getGatewayIdByFPUID(const int fpu_id) const
 {
     return address_map[fpu_id].gateway_id;
 }
