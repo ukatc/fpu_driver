@@ -205,40 +205,68 @@ def handle_configMotion(fpu_id, cmd):
         return None
 
 
-def handle_GetX(fpu_id, cmd):
-    bus_adr = cmd[0]
-    canid = cmd[1] + (cmd[2] << 8)
-    fpu_adr_bus = canid & 0x7f # this is a one-based index
-    rx_priority = (canid >> 7)
-    command_id = cmd[3]
+def handle_GetX(fpu_id, fpu_adr_bus, bus_adr, RX):
 
-    tx_bus_adr = bus_adr
     tx_prio = 0x02
     tx_canid = (tx_prio << 7) | fpu_adr_bus
-    tx0_fpu_adr_bus = fpu_adr_bus
-    tx1_cmdid = command_id
-    tx2_status = 0
-    tx3_errflag = 0
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [0] * 8
+    TX[0] = fpu_adr_bus
+
+    command_id = RX[0]
+
+    TX[0] = tx0_fpu_adr_bus = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = status = 0
+    TX[3] = errflag = 0
 
     pos = fold_stepcount_alpha(FPUGrid[fpu_id].alpha_steps)
-    tx4_count0 = pos & 0xff
-    tx5_count1 = (pos >> 8) & 0xff
+    TX[4] = count0 = pos & 0xff
+    TX[5] = count1 = (pos >> 8) & 0xff
     # protocol changed here
-    tx6_count2 = 0
+    TX[6] = _count2 = 0
 
-    tx7_dummy = 0
+    TX[7] = dummy = 0
     
-    return [ tx_bus_adr,
-             (tx_canid & 0xff),
-             ((tx_canid >> 8) & 0xff),
-             tx0_fpu_adr_bus,
-             tx1_cmdid,
-             tx2_status,
-             tx3_errflag,
-             tx4_count0,
-             tx5_count1,
-             tx6_count2,
-             tx7_dummy ]
+    return TH + TX 
+
+
+def handle_GetY(fpu_id, fpu_adr_bus, bus_adr, RX):
+
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [0] * 8
+    TX[0] = fpu_adr_bus
+
+    command_id = RX[0]
+
+    TX[0] = tx0_fpu_adr_bus = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = status = 0
+    TX[3] = errflag = 0
+
+    pos = fold_stepcount_beta(FPUGrid[fpu_id].beta_steps)
+    TX[4] = count0 = pos & 0xff
+    TX[5] = count1 = (pos >> 8) & 0xff
+    # protocol changed here
+    TX[6] = _count2 = 0
+
+    TX[7] = dummy = 0
+    
+    return TH + TX 
+
+
 
 def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
         
@@ -324,40 +352,6 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
     return conf_msg
 
-
-def handle_GetY(fpu_id, cmd):
-    bus_adr = cmd[0]
-    canid = cmd[1] + (cmd[2] << 8)
-    fpu_adr_bus = canid & 0x7f # this is a one-based index
-    rx_priority = (canid >> 7)
-    command_id = cmd[3]
-
-    tx_bus_adr = bus_adr
-    tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_adr_bus
-    tx0_fpu_adr_bus = fpu_adr_bus
-    tx1_cmdid = command_id
-    tx2_status = 0
-    tx3_errflag = 0
-
-    pos = fold_stepcount_beta(FPUGrid[fpu_id].beta_steps)
-    tx4_count0 = pos & 0xff
-    tx5_count1 = (pos >> 8) & 0xff
-    tx6_count2 = 0
-
-    tx7_dummy = 0
-    
-    return [ tx_bus_adr,
-             (tx_canid & 0xff),
-             ((tx_canid >> 8) & 0xff),
-             tx0_fpu_adr_bus,
-             tx1_cmdid,
-             tx2_status,
-             tx3_errflag,
-             tx4_count0,
-             tx5_count1,
-             tx6_count2,
-             tx7_dummy ]
 
 def handle_PingFPU(fpu_id, fpu_adr_bus, bus_adr, RX):
     command_id = RX[0]
@@ -523,9 +517,9 @@ def command_handler(cmd, socket, verbose=0):
         pass
     elif CAN_PROTOCOL_VERSION == 1:
         if command_id == CCMD_GET_STEPS_ALPHA:
-            resp = handle_GetX(fpu_id, cmd)
+            resp = handle_GetX(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
         elif command_id == CCMD_GET_STEPS_BETA:
-            resp = handle_GetY(fpu_id, cmd)
+            resp = handle_GetY(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
         elif command_id == CCMD_GET_ERROR_ALPHA                  :
             pass
         elif command_id == CCMD_GET_ERROR_BETA                   :
