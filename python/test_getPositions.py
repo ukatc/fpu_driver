@@ -1,12 +1,10 @@
 import fpu_driver
+from fpu_commands import *
 
 NUM_FPUS = 1000
 gateway_adr_list = [ fpu_driver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 
-
-def list_positions(gs):
-    return [ (gs.FPU[i].alpha_steps, gs.FPU[i].beta_steps) for i in range(NUM_FPUS)]
 
 gd = fpu_driver.GridDriver(NUM_FPUS)
 

@@ -368,40 +368,35 @@ def handle_GetY(fpu_id, cmd):
              tx6_count2,
              tx7_dummy ]
 
-def handle_PingFPU(fpu_id, cmd):
-    busid = cmd[0]
-    canid = cmd[1] + (cmd[2] << 8)
-    fpu_busid = canid & 0x7f # this is a one-based index
-    priority = (canid >> 7)
-    command_id = cmd[3]
+def handle_PingFPU(fpu_id, fpu_busid, busid, RX):
+    command_id = RX[0]
 
-    tx_busid = busid
+    # CAN header for gateway
     tx_prio = 0x02
     tx_canid = (tx_prio << 7) | fpu_busid
-    tx0_fpu_busid = fpu_busid
-    tx1_cmdid = command_id
-    tx2_status = 0
-    tx3_errflag = 0
+    
+    TH = [ 0 ] * 3
+    TH[0] = busid
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+    
+    TX = [ 0 ] * 8
+    
+    TX[0] = fpu_busid
+    TX[1] = command_id
+    TX[2] = status = 0
+    TX[3] = errflag = 0
 
-    pos_alpha = fold_stepcount(FPUGrid[fpu_id].alpha_steps)
-    tx4_count0 = pos_alpha & 0xff
-    tx5_count1 = (pos_alpha >> 8) & 0xff
+    pos_alpha = fold_stepcount_alpha(FPUGrid[fpu_id].alpha_steps)
+    TX[4] = count0 = pos_alpha & 0xff
+    TX[5] = count1 = (pos_alpha >> 8) & 0xff
     
-    pos_beta = fold_stepcount(FPUGrid[fpu_id].beta_steps)
-    tx6_count2 = pos_beta & 0xff
-    tx7_count3 = (pos_beta >> 8) & 0xff
+    pos_beta = fold_stepcount_beta(FPUGrid[fpu_id].beta_steps)
+    TX[6] = count2 = pos_beta & 0xff
+    TX[7] = count3 = (pos_beta >> 8) & 0xff
+
     
-    return [ tx_busid,
-             (tx_canid & 0xff),
-             ((tx_canid >> 8) & 0xff),
-             tx0_fpu_busid,
-             tx1_cmdid,
-             tx2_status,
-             tx3_errflag,
-             tx4_count0,
-             tx5_count1,
-             tx6_count2,
-             tx7_count3 ]
+    return TH + TX
 
 
 def handle_resetFPU_old(fpu_id, cmd):
@@ -551,7 +546,8 @@ def command_handler(cmd, socket, verbose=0):
 
 
     if command_id == CCMD_PING_FPU                         :
-        resp = handle_PingFPU(fpu_id, cmd)
+        # resp = handle_PingFPU(fpu_id, cmd)
+        resp = handle_PingFPU(fpu_id, fpu_busid, busid, cmd[3:])
         
     elif command_id == CCMD_RESET_FPU                        :
         resp = handle_resetFPU(fpu_id, cmd, socket, verbose=verbose)

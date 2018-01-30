@@ -20,7 +20,7 @@ import array
 
 import codec
 
-import mock_controller
+import mock_controller as mock_controller
 from mock_controller import command_handler
 
 DEBUG=int(os.environ.get("DEBUG","0"))
