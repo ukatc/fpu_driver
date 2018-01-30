@@ -133,38 +133,34 @@ def fold_stepcount_beta(val):
     return val
 
 
-def handle_configMotion(fpu_id, cmd):
-    bus_adr = cmd[0]
-    canid = cmd[1] + (cmd[2] << 8)
-    fpu_adr_bus = canid & 0x7f # this is a one-based index
-    rx_priority = (canid >> 7)
-    command_id = cmd[3]
+def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
 
-    tx_bus_adr = bus_adr
     tx_prio = 0x02
     tx_canid = (tx_prio << 7) | fpu_adr_bus
-    tx0_fpu_adr_bus = fpu_adr_bus
-    tx1_cmdid = command_id
+    
+
+
+    command_id = RX[0]
     tx2_status = 0
     tx3_errflag = 0
 
-    rx = cmd[3:]
-    first_entry = rx[1] & 1
+    first_entry = RX[1] & 1
     if first_entry:
         print("first_entry set!")
-    last_entry = (rx[1] >> 1) & 1
+    last_entry = (RX[1] >> 1) & 1
     if last_entry:
         print("last_entry set!")
     
-    astep = ((rx[3] &  0x3f) << 8) + rx[2]
-    apause = (rx[3] >> 6) & 1
-    aclockwise = (rx[3] >> 7) & 1
+    astep = ((RX[3] &  0x3f) << 8) + RX[2]
+    apause = (RX[3] >> 6) & 1
+    aclockwise = (RX[3] >> 7) & 1
 
-    bstep = ((rx[5] &  0x3f) << 8) + rx[4]
-    bpause = (rx[5] >> 6) & 1
-    bclockwise = (rx[5] >> 7) & 1
+    bstep = ((RX[5] &  0x3f) << 8) + RX[4]
+    bpause = (RX[5] >> 6) & 1
+    bclockwise = (RX[5] >> 7) & 1
 
-    print("FPU #%i command = " % fpu_id, cmd)
+    print("FPU #%i command =%i , rx=%s" % (fpu_id, command_id, RX))
+    
     try:
         FPUGrid[fpu_id].addStep(first_entry, last_entry,
                                 astep, apause, aclockwise,
@@ -182,23 +178,25 @@ def handle_configMotion(fpu_id, cmd):
         tx2_status = 0xff
         tx3_errflag = ER_INVALID
 
-    tx4_dummy = 0
-    tx5_dummy = 0
-    tx6_dummy = 0
-    tx7_dummy = 0
 
-    if first_entry or last_entry:
-        confirmation = [ tx_bus_adr,
-             (tx_canid & 0xff),
-             ((tx_canid >> 8) & 0xff),
-             tx0_fpu_adr_bus,
-             tx1_cmdid,
-             tx2_status,
-             tx3_errflag,
-             tx4_dummy,
-             tx5_dummy,
-             tx6_dummy ,
-             tx7_dummy ]
+    if first_entry or last_entry or (tx3_errflag != 0):
+        TH = [ 0 ] * 3
+        TH[0] = bus_adr
+        TH[1] = (tx_canid & 0xff)
+        TH[2] = ((tx_canid >> 8) & 0xff)
+        
+        TX = [0] * 8
+        TX[0] = fpu_adr_bus
+        TX[1] = command_id
+        TX[2] = tx2_status 
+        TX[3] = tx3_errflag
+        
+        TX[4] = dummy1 = 0
+        TX[5] = dummy2 = 0
+        TX[6] = dummy3 = 0
+        TX[7] = dummy4 = 0
+        
+        confirmation = TH + TX 
         return confirmation
     else:
         # no confirmation
@@ -496,7 +494,7 @@ def command_handler(cmd, socket, verbose=0):
         resp = handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
         
     elif command_id == CCMD_CONFIG_MOTION  :
-        resp = handle_configMotion(fpu_id, cmd)        
+        resp = handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)        
     elif command_id == CCMD_EXECUTE_MOTION :
         pass
     elif command_id == CCMD_ABORT_MOTION   :
