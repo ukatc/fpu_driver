@@ -561,7 +561,13 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     while ( (num_moving > 0)
             && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        state_summary = gateway.waitForState(TGT_MOVEMENT_FINISHED,
+#ifdef DEBUG2        
+        printf("AsyncDriver::executeMotion, waiting (num_moving=%i)\n", num_moving);
+#endif        
+        
+        //state_summary = gateway.waitForState(TGT_MOVEMENT_FINISHED,
+        //                                     grid_state);
+        state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
                                              grid_state);
         
         // we include the "ready" counts too because it will

@@ -113,15 +113,18 @@ class FPU:
                 alpha_sign = -1
             else:
                 alpha_sign = 1
-            newalpha = self.alpha_steps + alpha_sign * self.steps[n,IDXA]
+            delta_alpha = alpha_sign * self.steps[n,IDXA]
+            newalpha = self.alpha_steps + delta_alpha
             if self.clockwise[n, IDXB]:
                 beta_sign = -1
             else:
                 beta_sign = 1
-            newbeta = self.beta_steps + beta_sign * self.steps[n,IDXB]
+            delta_beta = beta_sign * self.steps[n,IDXB]
+            newbeta = self.beta_steps + delta_beta
             
-            print("step %i: moving FPU %i  to (%i, %i)" % (
-                n, self.fpu_id, newalpha, newbeta))
+            print("step %i: moving FPU %i by (%i,%i) to (%i, %i)" % (
+                n, self.fpu_id, delta_alpha, delta_beta, newalpha, newbeta))
+            
             frame_time = 0.25
             sleep(frame_time)
             if self.abort_wave:
