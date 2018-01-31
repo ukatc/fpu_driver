@@ -25,8 +25,6 @@ class FPU:
         self.fpu_id = fpu_id
         self.alpha_steps = fpu_id - 50
         self.beta_steps = fpu_id * 10 - 50
-        self.moving = False
-        self.wave_ready = False
         self.nwave_entries = 0
         self.steps = np.zeros((256, 2), dtype=np.int)
         self.pause = np.zeros((256, 2), dtype=np.bool)
@@ -34,6 +32,10 @@ class FPU:
         self.is_collided = False
         self.alpha_limit_breach = False
         self.at_datum = False
+        self.wave_ready = False
+        self.move_forward = True
+        self.running_wave = False
+        self.abort_wave = False
         
 
     def resetFPU(self, fpu_id, sleep):
@@ -56,6 +58,9 @@ class FPU:
         if first:
             self.nwave_entries = 0
             self.wave_ready = False
+            self.move_forward = True
+            # clear abort status flag
+            self.abort_wave = False 
             
         n = self.nwave_entries
 
@@ -90,6 +95,50 @@ class FPU:
         self.beta_steps = 0
         self.at_datum = True
 
+    def executeMotion(self, sleep):
+        if self.running_wave :
+            raise RuntimeError("FPU is already moving")
+        
+        if not (self.wave_ready):
+            raise RuntimeError("wavetable not ready")
+
+        self.running_wave = True
+        
+        for k in range(self.nwave_entries):
+            if self.move_forward:
+                n = k
+            else:
+                n = self.nwave_entries - k - 1
+            if self.clockwise[n, IDXA]:
+                alpha_sign = -1
+            else:
+                alpha_sign = 1
+            newalpha = self.alpha_steps + alpha_sign * self.steps[n,IDXA]
+            if self.clockwise[n, IDXB]:
+                beta_sign = -1
+            else:
+                beta_sign = 1
+            newbeta = self.beta_steps + beta_sign * self.steps[n,IDXB]
+            
+            print("step %i: moving FPU #i  to (%i, %i)" % (
+                n, self.fpu_id, newalpha, newbeta))
+            frame_time = 0.25
+            sleep(frame_time)
+            if self.abort_wave:
+                break
+            self.alpha_steps = newalpha
+            self.beta_steps = newbeta
+
+        if self.abort_wave:
+            print("FPU %i: MOVEMENT ABORTED at (%i, %i)" % (self.fpu_id,
+                                                            newalpha, newbeta))
+        else:
+            print("FPU %i: movement finished at (%i, %i)" % (self.fpu_id,
+                                                             newalpha, newbeta))
+        self.running_wave = False
+            
+            
+            
     
         
         
