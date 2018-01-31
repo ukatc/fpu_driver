@@ -118,8 +118,14 @@ class WrapGridState : public t_grid_state
 public:
     std::vector<WrapFPUState>getStateVec()
     {
+        int count_fpus = 0;
+        for(int k=0; k < NUM_FPU_STATES; k++)
+        {
+            count_fpus += Counts[k];
+        }
+        assert(count_fpus <= MAX_NUM_POSITIONERS);
         std::vector<WrapFPUState> state_vec;
-        for (int i=0; i < MAX_NUM_POSITIONERS; i++)
+        for (int i=0; i < count_fpus; i++)
         {
             WrapFPUState fpu_state(FPU_state[i]);
                 state_vec.push_back(fpu_state);
