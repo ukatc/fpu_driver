@@ -499,6 +499,22 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         }
     }
 
+    /* check all FPUs in READY_* state have valid waveforms
+       This check intends to make sure that even in protocol version 1,
+       waveforms are not used when they have been involved
+       in collision or abort. */
+    for (int i=0; i < num_fpus; i++)
+    {
+        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
+        if (((fpu_status == FPST_READY_FORWARD)
+            || (fpu_status == FPST_READY_BACKWARD))
+            && ( ! (grid_state.FPU_state[i].waveform_valid
+                    && grid_state.FPU_state[i].waveform_ready)))
+        {
+            return DE_INVALID_WAVEFORM;
+        }
+    }
+
 
     // send broadcast command to each gateway to start movement of all
     // FPUs.

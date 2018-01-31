@@ -43,7 +43,7 @@ namespace canlayer
 // logs error status in CAN response
   void logErrorStatus(int fpu_id, timespec time_stamp, int err_code)
 {
-  char * err_msg = "(no error)";
+  const char * err_msg = "(no error)";
   switch (err_code)
     {
     case 0:
@@ -78,11 +78,12 @@ namespace canlayer
 }
 
 
-void update_steps(int &alpha_steps, int &beta_steps, const t_response_buf& data)
-{
-    alpha_steps = (data[4] << 8) | data[5];
-    beta_steps = (data[6] << 8) | data[7];
-}
+//void update_steps(int &alpha_steps, int &beta_steps, const t_response_buf& data)
+//{
+//    alpha_steps = (data[4] << 8) | data[5];
+//    beta_steps = (data[6] << 8) | data[7];
+//}
+//
 
 // Takes an unsiged 16-bit value.
 // Decodes step count as a 16-bit value
@@ -113,6 +114,14 @@ int unfold_stepcount_beta(const uint16_t step_count)
 }
 
 
+void update_status_flags(t_fpu_state& fpu, unsigned int status_mask)
+{
+    fpu.waveform_ready = status_mask & STBT_WAVE_READY;
+    fpu.at_alpha_limit = status_mask & STBT_M1LIMIT;
+    fpu.waveform_reversed = status_mask & STBT_REVERSE_WAVE;
+    
+}
+
 void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
                        const t_response_buf& data,
                        const int blen, TimeOutList& timeout_list,
@@ -120,6 +129,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 {
     E_CAN_COMMAND cmd_id = static_cast<E_CAN_COMMAND>(data[1]);
     uint8_t response_status = data[2];
+    update_status_flags(fpu, response_status);
+    
     E_MOC_ERRCODE response_errcode = data[3] ? static_cast<E_MOC_ERRCODE>(data[4]) : ER_OK;
     timespec cur_time;
 
@@ -148,9 +159,11 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         }
         else
         {
-            if (response_status == STBT_WAVE_READY)
+            if (response_status & STBT_WAVE_READY)
             {
                 fpu.state = FPST_READY_FORWARD;
+                fpu.waveform_valid = true;
+                fpu.waveform_ready = true;
 #ifdef DEBUG2                
                 printf("ConfigMotion handler fpu %i: waveform ready\n", fpu_id);
 #endif
@@ -174,13 +187,69 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.state = FPST_MOVING;
             // status byte should show RUNNING_WAVE, too
         }
+        else
+        {            
+            // clear timeout status
+            printf("FPU #%i: executeMotion command got response errcode %i\n",
+                   fpu_id, response_errcode);
+            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode,
+                           timeout_list, count_pending);
+
+            if ((response_errcode == ER_WAVENRDY)
+                || (response_errcode == ER_PARAM))
+            {
+                if ((fpu.state == FPST_READY_FORWARD)
+                    || (fpu.state == FPST_READY_BACKWARD))
+                {
+                    fpu.state = FPST_RESTING;
+                }
+                fpu.waveform_valid = false;
+            }
+            else if (response_status & STBT_ABORT_WAVE)
+            {
+                fpu.state = FPST_ABORTED;
+                fpu.waveform_valid = false;
+            }
+            else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
+            {
+                fpu.state = FPST_OBSTACLE_ERROR;
+                fpu.waveform_valid = false;
+                fpu.at_alpha_limit = true;
+            }
+            else if (response_errcode == ER_COLLIDE)
+            {
+                fpu.alpha_datum_switch_active = true;
+                fpu.state = FPST_OBSTACLE_ERROR;
+                fpu.waveform_valid = false;
+            
+            }
+
+        }
         fpu.last_updated = cur_time;
         break;
 
     case CMSG_FINISHED_MOTION:
         // clear time-out flag
         remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
-        if (response_errcode == 0)
+        if (response_status & STBT_ABORT_WAVE)
+        {
+            fpu.state = FPST_ABORTED;
+            fpu.waveform_valid = false;
+        }
+        else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
+        {
+            fpu.at_alpha_limit = true;
+            fpu.state = FPST_OBSTACLE_ERROR;
+            fpu.waveform_valid = false;
+            
+        }
+        else if (response_errcode == ER_COLLIDE)
+        {
+            fpu.state = FPST_OBSTACLE_ERROR;
+            fpu.waveform_valid = false;
+            
+        }
+        else if (response_errcode == 0) 
         {
             // FIXME: Update step counter in protocol version 2
             // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
@@ -292,11 +361,30 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         // we have to wait for the final response.
         fpu.last_updated = cur_time;
         break;
+        
     case CMSG_FINISHED_DATUM :  
         // clear time-out flag
         //printf("finished: datum search for FPU %i \n", fpu_id);
         remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
-        if (response_errcode != 0)
+
+        // FIXME: we probably need to handle the case of an
+        // abortMotion message here, too.  But this isn't handled in
+        // the version 1 protocol.
+        if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
+        {
+            fpu.alpha_datum_switch_active = true;
+            fpu.state = FPST_OBSTACLE_ERROR;
+            fpu.waveform_valid = false;
+            
+        }
+        else if (response_errcode == ER_COLLIDE)
+        {
+            fpu.alpha_datum_switch_active = true;
+            fpu.state = FPST_OBSTACLE_ERROR;
+            fpu.waveform_valid = false;
+            
+        }
+        else if (response_errcode != 0)
         {
             if (fpu.state == FPST_DATUM_SEARCH)
             {
@@ -305,6 +393,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         }
         else
         {
+            // response_errcode was 0 and no bad status flags were set
 
             fpu.was_zeroed = true;
             fpu.alpha_steps = 0;
@@ -314,6 +403,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         
         fpu.last_updated = cur_time;
         break;
+        
     case CMSG_WARN_COLLISION_BETA:
         
         if (fpu.state == FPST_MOVING)

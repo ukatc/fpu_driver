@@ -121,6 +121,10 @@ enum E_DriverErrCode
     // maximum retry count was exceeded for command
     DE_MAX_RETRIES_EXCEEDED = 10,
 
+    // we tried to move FPUs but some addressed FPUs
+    // still have invalid waveforms.
+    DE_INVALID_WAVEFORM = 11,
+
     DE_ASSERTION_FAILED=99,
 
 } ;
