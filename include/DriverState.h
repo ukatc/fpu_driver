@@ -125,6 +125,9 @@ enum E_DriverErrCode
     // still have invalid waveforms.
     DE_INVALID_WAVEFORM = 11,
 
+    // a motion command was issued but no FPUs are allowed to move
+    DE_NO_MOVABLE_FPUS = 12,
+
     DE_ASSERTION_FAILED=99,
 
 } ;

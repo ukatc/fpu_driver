@@ -194,7 +194,7 @@ const timespec TimeOutList::minKey()
 {
     timespec min_val = MAX_TIMESPEC;
 
-#ifdef DEBUG    
+#ifdef DEBUG_MK
     clock_t t0 = clock();
 #endif
 
@@ -246,7 +246,8 @@ const timespec TimeOutList::minKey()
         }
     }
 
-#ifdef DEBUG    
+#pragma message "TimeOutList::minKey(): fix complexity of minimum search"
+#ifdef DEBUG_MK
     clock_t t1 = clock();
     clock_t td = t1 - t0;
     if (td > 100)

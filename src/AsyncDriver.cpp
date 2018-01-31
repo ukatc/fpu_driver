@@ -524,6 +524,11 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
     int num_moving = (grid_state.Counts[FPST_READY_FORWARD]
                       + grid_state.Counts[FPST_READY_BACKWARD]);
 
+    if (num_moving == 0)
+    {
+        return DE_NO_MOVABLE_FPUS;
+    }
+
     // acquire real-time priority so that consecutive broadcasts to
     // the different gateways are really sent in the same few
     // milliseconds.  (A lag of more than 10 - 20 milliseconds, for

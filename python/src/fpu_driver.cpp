@@ -502,6 +502,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_DRIVER_STILL_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
     .value("DE_ASSERTION_FAILED",DE_ASSERTION_FAILED)
     .value("DE_INVALID_WAVEFORM", DE_INVALID_WAVEFORM)
+    .value("DE_NO_MOVABLE_FPUS", DE_NO_MOVABLE_FPUS)
     .export_values();
     
     enum_<E_GridState>("E_GridState")
