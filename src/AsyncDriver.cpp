@@ -27,6 +27,7 @@
 #include "canlayer/commands/ConfigureMotionCommand.h"
 #include "canlayer/commands/EnableBetaCollisionProtectionCommand.h"
 #include "canlayer/commands/ExecuteMotionCommand.h"
+#include "canlayer/commands/ReverseMotionCommand.h"
 #include "canlayer/commands/FindDatumCommand.h"
 #include "canlayer/commands/FreeBetaCollisionCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
@@ -748,7 +749,8 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
 E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-    // first, get current state of the grid
+
+    // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -756,7 +758,95 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+    // check no FPUs have ongoing collisions or are moving
+    for (int i=0; i < num_fpus; i++)
+    {
+        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
+        if ((fpu_status == FPST_ABORTED)
+            || (fpu_status == FPST_OBSTACLE_ERROR))
+        {
+            return DE_UNRESOLVED_COLLISION;
+        }
+    }
+
+    for (int i=0; i < num_fpus; i++)
+    {
+        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
+        if (fpu_status == FPST_MOVING)
+        {
+            return DE_STILL_BUSY;
+        }
+    }
+    
+    /* check some FPUs in READY_* or RESTING state have valid waveforms
+       This check intends to make sure that even in protocol version 1,
+       waveforms are not used when they have been involved
+       in collision or abort. */
+    int count_movable = 0;
+    for (int i=0; i < num_fpus; i++)
+    {
+        t_fpu_state fpu = grid_state.FPU_state[i];
+        if (((fpu.state == FPST_READY_FORWARD)
+            || (fpu.state == FPST_READY_BACKWARD)
+            || (fpu.state == FPST_RESTING))
+            && fpu.waveform_valid)
+        {
+            count_movable++;
+        }
+    }
+    if (count_movable == 0)
+    {
+        return DE_NO_MOVABLE_FPUS;
+    }
+
+
+    // All fpus which are in RESTING or READY_FORWARD state get a reverseMotion message.
+
+    int cnt_pending = 0;
+    unique_ptr<ReverseMotionCommand> can_command;
+    for (int i=0; i < num_fpus; i++)
+    {
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        // we exclude moving FPUs, but include FPUs which are
+        // searching datum. (FIXME: double-check that).
+        if (((fpu_state.state == FPST_READY_FORWARD)
+            || (fpu_state.state == FPST_RESTING))
+            && fpu_state.waveform_valid)
+        {
+
+            // We use a non-broadcast instance. The advantage of
+            // this is that he CAN protocol is able to reliably
+            // detect whether this command was received - for
+            // a broadcast command, this is not absolutely sure.
+            bool broadcast = false;
+            can_command = gateway.provideInstance<ReverseMotionCommand>();
+            
+            can_command->parametrize(i, broadcast);
+            unique_ptr<I_CAN_Command> cmd(can_command.release());
+            gateway.sendCommand(i, cmd);
+            cnt_pending++;
+            
+        }
+    }
+
+    // wait until all generated messages have been responded to
+    // or have timed out.
+    while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state);
+
+        cnt_pending = (grid_state.count_pending
+                       + grid_state.num_queued);
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
     return DE_OK;
+    
 }
 
 E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,

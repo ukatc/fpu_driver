@@ -116,9 +116,9 @@ int unfold_stepcount_beta(const uint16_t step_count)
 
 void update_status_flags(t_fpu_state& fpu, unsigned int status_mask)
 {
-    fpu.waveform_ready = status_mask & STBT_WAVE_READY;
-    fpu.at_alpha_limit = status_mask & STBT_M1LIMIT;
-    fpu.waveform_reversed = status_mask & STBT_REVERSE_WAVE;
+    fpu.waveform_ready = (status_mask & STBT_WAVE_READY) != 0;
+    fpu.at_alpha_limit = (status_mask & STBT_M1LIMIT) != 0;
+    fpu.waveform_reversed = (status_mask & STBT_REVERSE_WAVE) != 0;
     
 }
 
@@ -332,6 +332,22 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         
         break;
 
+    case CCMD_REVERSE_MOTION        :
+        // clear time-out flag
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);   
+        fpu.last_updated = cur_time;
+
+        if ((response_errcode == 0)
+            && fpu.waveform_valid
+            && ( (fpu.state == FPST_RESTING) || (fpu.state == FPST_READY_FORWARD)))
+        {
+            fpu.waveform_reversed = true;
+            fpu.state = FPST_READY_BACKWARD;
+        }
+
+        
+        break;
+        
     case CCMD_RESET_FPU       :  
         // clear time-out flag
         remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);

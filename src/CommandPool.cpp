@@ -27,6 +27,7 @@
 #include "canlayer/commands/ConfigureMotionCommand.h"
 #include "canlayer/commands/EnableBetaCollisionProtectionCommand.h"
 #include "canlayer/commands/ExecuteMotionCommand.h"
+#include "canlayer/commands/ReverseMotionCommand.h"
 #include "canlayer/commands/FindDatumCommand.h"
 #include "canlayer/commands/FreeBetaCollisionCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
@@ -137,6 +138,11 @@ E_DriverErrCode CommandPool::initialize()
                     
                 case CCMD_EXECUTE_MOTION        :
                     ptr.reset(new ExecuteMotionCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+
+                case CCMD_REVERSE_MOTION        :
+                    ptr.reset(new ReverseMotionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
                     

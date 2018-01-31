@@ -36,6 +36,7 @@ class FPU:
         self.move_forward = True
         self.running_wave = False
         self.abort_wave = False
+        self.wave_valid = False
         
 
     def resetFPU(self, fpu_id, sleep):
@@ -46,6 +47,14 @@ class FPU:
         sleep(dtime_sec)
         self.initialize(fpu_id)
         print("resetting FPU #%i... ready" % fpu_id)
+
+
+    def reverseMotion(self, fpu_id):
+        print("reversing wavetable of FPU #%i..." % fpu_id)
+        if not (self.wave_valid):
+            raise RuntimeError("wavetable not valid")
+        self.move_forward = False
+        self.wave_ready = True
         
         
 
@@ -58,6 +67,7 @@ class FPU:
         if first:
             self.nwave_entries = 0
             self.wave_ready = False
+            self.wave_valid = False
             self.move_forward = True
             # clear abort status flag
             self.abort_wave = False 
@@ -79,6 +89,7 @@ class FPU:
         self.nwave_entries  += 1
         if last:
             self.wave_ready = True
+            self.wave_valid = True
             n = self.nwave_entries
             print("fpu #%i: wavetable ready, n=%i, content=%s" % (
                 
@@ -103,6 +114,11 @@ class FPU:
             raise RuntimeError("wavetable not ready")
 
         self.running_wave = True
+
+        if self.move_forward:
+            wt_sign = 1
+        else:
+            wt_sign = -1
         
         for k in range(self.nwave_entries):
             if self.move_forward:
@@ -113,13 +129,13 @@ class FPU:
                 alpha_sign = -1
             else:
                 alpha_sign = 1
-            delta_alpha = alpha_sign * self.steps[n,IDXA]
+            delta_alpha = wt_sign * alpha_sign * self.steps[n,IDXA]
             newalpha = self.alpha_steps + delta_alpha
             if self.clockwise[n, IDXB]:
                 beta_sign = -1
             else:
                 beta_sign = 1
-            delta_beta = beta_sign * self.steps[n,IDXB]
+            delta_beta = wt_sign * beta_sign * self.steps[n,IDXB]
             newbeta = self.beta_steps + delta_beta
             
             print("step %i: moving FPU %i by (%i,%i) to (%i, %i)" % (
@@ -139,6 +155,7 @@ class FPU:
             print("FPU %i: movement finished at (%i, %i)" % (self.fpu_id,
                                                              newalpha, newbeta))
         self.running_wave = False
+        self.wave_ready = False
             
             
             

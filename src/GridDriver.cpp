@@ -180,7 +180,16 @@ E_DriverErrCode GridDriver::repeatMotion(t_grid_state& grid_state)
 
 E_DriverErrCode GridDriver::reverseMotion(t_grid_state& grid_state)
 {
-    return DE_OK;
+    E_DriverErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    estatus = reverseMotionAsync(grid_state, state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
 }
 
 E_DriverErrCode GridDriver::abortMotion(t_grid_state& grid_state)
