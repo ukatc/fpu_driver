@@ -7,6 +7,8 @@ synthesizes a response.
 """
 
 from __future__ import print_function
+import os
+
 import codec
 from fpu_sim import FPU
 
@@ -101,7 +103,10 @@ STBT_M1LIMIT         = 1 << 5   #  M1 Limit breached
 STBT_M2LIMIT         = 1 << 6   #  no longer used
 STBT_REVERSE_WAVE    = 1 << 7   #  waveform to be run in reverse
 
-NUM_FPUS = 15 * 67
+if os.environ.has_key("NUM_FPUS"):
+    NUM_FPUS=int(os.environ.get("NUM_FPUS"))
+else:
+    NUM_FPUS = 15 * 67
 
 FPUGrid = [FPU(i) for i in range(NUM_FPUS) ]
 
@@ -497,6 +502,8 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
     TH[0] = bus_adr
     TH[1] = (tx_canid & 0xff)
     TH[2] = ((tx_canid >> 8) & 0xff)
+    
+    command_id = RX[0]
 
     TX = [0] * 8
     TX[0] = fpu_adr_bus
@@ -507,7 +514,6 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
     TX[6] = dummy1 = 0
     TX[7] = dummy2 = 0
 
-    command_id = RX[0]
     
     if FPUGrid[fpu_id].is_collided:
         # collision active, only send an error message
@@ -515,9 +521,10 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
         TX[4] = errcode = ER_COLLIDE
     elif not FPUGrid[fpu_id].wave_ready:
         # wavetable is not ready
+        print("FPU #", fpu_id, ": wave table is not ready, sending response code", ER_WAVENRDY)
         TX[3] = errflag = 0xff
         TX[4] = errcode =  ER_WAVENRDY
-    elif FPUGrid[fpu_id].moving:
+    elif FPUGrid[fpu_id].running_wave:
         # FPU already moving
         TX[3] = errflag = 0xff
         TX[4] = errcode = ER_INVALID        
@@ -542,7 +549,6 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
             
 
             
-            finish_message =  TH + TX
 
             # simulate findDatum FPU operation
             FPUGrid[fpu_id].executeMotion(sleep)
@@ -572,6 +578,7 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
             TX[7] = dummy3 = 0
             
             #print("FPU %i: findDatum command finished" % fpu_id);
+            finish_message =  TH + TX
             encode_and_send(finish_message, socket, verbose=verbose)
 
         # "spawn" inserts a event into the aynchronous event loop
@@ -580,9 +587,9 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
     
     ## send confirmation message 
     #print("FPU %i: sending confirmation to findDatum command" % fpu_id);
-    conf_msg = TH + TX
+    confirmation_message = TH + TX
 
-    return conf_msg
+    return confirmation_message
 
 def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbose=0):
     if command_id == CCMD_PING_FPU                         :
@@ -599,7 +606,7 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbo
     elif command_id == CCMD_CONFIG_MOTION  :
         resp = handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)        
     elif command_id == CCMD_EXECUTE_MOTION :
-        resp = handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)        
+        resp = handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)        
     elif command_id == CCMD_ABORT_MOTION   :
         pass        
     elif command_id == CCMD_READ_REGISTER                    :
@@ -671,6 +678,7 @@ def command_handler(cmd, socket, verbose=0):
     bus_global_id = bus_adr + gateway_id * BUSES_PER_GATEWAY
 
     if rx_canid != 0:
+        # non-broadcast message
         rx_priority = (rx_canid >> 7)
         fpu_adr_bus = rx_canid & 0x7f # this is a one-based index
         fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
@@ -685,12 +693,15 @@ def command_handler(cmd, socket, verbose=0):
 
             fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbose=verbose)
     else:
+        # broadcast message
         if verbose:
             print("CAN BROADCAST command [%i] to gw %i, bus %i, command id=%i"
                   % (gCountTotalCommands, gateway_id, bus_adr, command_id))
 
-            for fpu_adr_bus in range(FPUS_PER_BUS):
+            rx_bytes = cmd[3:]
+            for fpu_adr_bus in range(1, FPUS_PER_BUS+1):
                 fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
+                assert(fpu_id >= 0)
                 if fpu_id <= NUM_FPUS:
 
                     print("Spawning CAN command #%i to FPU %i" % (command_id, fpu_id))

@@ -714,7 +714,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
     if ((fpu_id > num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
     {
-#ifdef DEBUG
+#ifdef DEBUG2
         printf("fpu_id too large (%i), ignored\n", fpu_id);
 #endif
         return;

@@ -120,7 +120,7 @@ class FPU:
                 beta_sign = 1
             newbeta = self.beta_steps + beta_sign * self.steps[n,IDXB]
             
-            print("step %i: moving FPU #i  to (%i, %i)" % (
+            print("step %i: moving FPU %i  to (%i, %i)" % (
                 n, self.fpu_id, newalpha, newbeta))
             frame_time = 0.25
             sleep(frame_time)
