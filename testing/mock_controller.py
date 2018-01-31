@@ -92,14 +92,14 @@ ER_PARAM            = 0x10        #  parameter out of range
 
 
 # status flags
-STBT_MSGRCV          = 0   #  message received over CANBUS
-STBT_WAVE_READY      = 1   #  waveform good and ready for execution
-STBT_EXECUTE_WAVE    = 2   #  internal start flag to start executing waveform
-STBT_RUNNING_WAVE    = 3   #  FPU is running the waveform
-STBT_ABORT_WAVE      = 4   #  abort waveform
-STBT_M1LIMIT         = 5   #  M1 Limit breached 
-STBT_M2LIMIT         = 6   #  no longer used
-STBT_REVERSE_WAVE    = 7   #  waveform to be run in reverse
+STBT_MSGRCV          = 0        #  message received over CANBUS
+STBT_WAVE_READY      = 1 << 1   #  waveform good and ready for execution
+STBT_EXECUTE_WAVE    = 1 << 2   #  internal start flag to start executing waveform
+STBT_RUNNING_WAVE    = 1 << 3   #  FPU is running the waveform
+STBT_ABORT_WAVE      = 1 << 4   #  abort waveform
+STBT_M1LIMIT         = 1 << 5   #  M1 Limit breached 
+STBT_M2LIMIT         = 1 << 6   #  no longer used
+STBT_REVERSE_WAVE    = 1 << 7   #  waveform to be run in reverse
 
 NUM_FPUS = 15 * 67
 
@@ -136,19 +136,19 @@ def fold_stepcount_beta(val):
 def getStatus(FPU):
     status = 0
     if FPU.wave_ready:
-        status |= (1 << STBT_WAVE_READY)
+        status |=  STBT_WAVE_READY
         
     if FPU.running_wave:
-        status |= (1 << STBT_RUNNING_WAVE)
+        status |= STBT_RUNNING_WAVE
 
     if FPU.abort_wave:
-        status |= (1 << STBT_ABORT_WAVE)
+        status |= STBT_ABORT_WAVE
 
     if not FPU.move_forward:
-        status |= (1 << STBT_REVERSE_WAVE)
+        status |= STBT_REVERSE_WAVE
         
     if FPU.alpha_limit_breach:
-        status |= (1 << STBT_M1LIMIT)
+        status |=  STBT_M1LIMIT
         
     return status
         
@@ -160,7 +160,6 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 
     command_id = RX[0]
-    tx2_status = 0
     tx3_errflag = 0
 
     first_entry = RX[1] & 1
@@ -303,6 +302,7 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
     TX = [0] * 8
     TX[0] = fpu_adr_bus
     
+    command_id = RX[0]
     TX[1] = command_id
     TX[2] = getStatus(FPUGrid[fpu_id])
     
@@ -310,7 +310,6 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
     TX[6] = dummy1 = 0
     TX[7] = dummy2 = 0
 
-    command_id = RX[0]
     
     if FPUGrid[fpu_id].is_collided:
         # only send an error message
@@ -343,7 +342,7 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
             TX = [0] * 8
             TX[0] = fpu_adr_bus
             TX[1] = CMSG_FINISHED_DATUM
-            TX[2] = getStatus(FPUGrid[fpu_id])
+            TX[2] = status = getStatus(FPUGrid[fpu_id])
 
             if FPUGrid[fpu_id].is_collided:
                 # only send an error message
@@ -524,7 +523,7 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
         TX[4] = errcode = ER_INVALID        
     else:
         # all OK, send confirmation and spawn executeMotion method call
-        TX[2] = TX[2] | (1 << STBT_RUNNING_WAVE)
+        TX[2] = TX[2] | STBT_RUNNING_WAVE
         TX[3] = errflag = 0
 
 
@@ -678,7 +677,7 @@ def command_handler(cmd, socket, verbose=0):
         
         rx_bytes = cmd[3:]
         if verbose:
-            print("CAN command [%i] to gw %i, bus %i, fpu # %i (rx_priority %i), command id=%i"
+            print("CAN command [count %i] to gw %i, bus %i, fpu # %i (rx_priority %i), command id=%i"
                   % (gCountTotalCommands, gateway_id, bus_adr, fpu_adr_bus, rx_priority, command_id))
             
             print("CAN command #%i to FPU %i" % (command_id, fpu_id))

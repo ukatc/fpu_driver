@@ -129,13 +129,13 @@ enum E_MOC_ERRCODE
 enum E_FPU_STATUS_BITS
 {
     STBT_MSGRCV          = 0   , // message received over CANBUS
-    STBT_WAVE_READY      = 1   , // waveform good and ready for execution
-    STBT_EXECUTE_WAVE    = 2   , // internal start flag to start executing waveform
-    STBT_RUNNING_WAVE    = 3   , // FPU is running the waveform
-    STBT_ABORT_WAVE      = 4   , // abort waveform
-    STBT_M1LIMIT         = 5   , // M1 Limit breached 
-    STBT_M2LIMIT         = 6   , // no longer used
-    STBT_REVERSE_WAVE    = 7   , // waveform to be run in reverse
+    STBT_WAVE_READY      = (1 << 1)   , // waveform good and ready for execution
+    STBT_EXECUTE_WAVE    = (1 << 2)   , // internal start flag to start executing waveform
+    STBT_RUNNING_WAVE    = (1 << 3)   , // FPU is running the waveform
+    STBT_ABORT_WAVE      = (1 << 4)   , // abort waveform
+    STBT_M1LIMIT         = (1 << 5)   , // M1 Limit breached 
+    STBT_M2LIMIT         = (1 << 6)   , // no longer used
+    STBT_REVERSE_WAVE    = (1 << 7)   , // waveform to be run in reverse
 };
 
 #endif

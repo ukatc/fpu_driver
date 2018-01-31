@@ -52,7 +52,7 @@ class FPU:
     def addStep(self, first, last,
                 asteps, apause, aclockwise,
                 bsteps, bpause, bclockwise):
-        if self.moving:
+        if self.running_wave:
             raise RuntimeError("FPU is moving")
         
         if first:
