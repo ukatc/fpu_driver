@@ -144,7 +144,7 @@ def getStatus(FPU):
     if FPU.abort_wave:
         status |= (1 << STBT_ABORT_WAVE)
 
-    if FPU.reverse_wave:
+    if not FPU.move_forward:
         status |= (1 << STBT_REVERSE_WAVE)
         
     if FPU.alpha_limit_breach:
@@ -514,7 +514,7 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
         # collision active, only send an error message
         TX[3] = errflag = 0xff
         TX[4] = errcode = ER_COLLIDE
-    elif (! FPUGrid[fpu_id].wave_ready)
+    elif not FPUGrid[fpu_id].wave_ready:
         # wavetable is not ready
         TX[3] = errflag = 0xff
         TX[4] = errcode =  ER_WAVENRDY
@@ -585,7 +585,7 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
 
     return conf_msg
 
-def fpu_handler(fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbose=0):
+def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbose=0):
     if command_id == CCMD_PING_FPU                         :
         # resp = handle_pingFPU(fpu_id, cmd)
         resp = handle_pingFPU(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
@@ -684,7 +684,7 @@ def command_handler(cmd, socket, verbose=0):
             print("CAN command #%i to FPU %i" % (command_id, fpu_id))
 
 
-            fpu_handler(fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbose=verbose)
+            fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbose=verbose)
     else:
         if verbose:
             print("CAN BROADCAST command [%i] to gw %i, bus %i, command id=%i"
@@ -695,7 +695,7 @@ def command_handler(cmd, socket, verbose=0):
                 if fpu_id <= NUM_FPUS:
 
                     print("Spawning CAN command #%i to FPU %i" % (command_id, fpu_id))
-                    spawn(fpu_handler, fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
+                    spawn(fpu_handler, command_id, fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
             
 
 
