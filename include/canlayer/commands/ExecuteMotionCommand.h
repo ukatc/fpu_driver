@@ -118,8 +118,11 @@ namespace canlayer
         {
             timespec const toval =
                 {
-                    /* .tv_sec = */ 0,
-                    /* .tv_nsec = */ 300000000 };
+                    /* currently, the time-out is for the whole
+                       movement, not only the confirmation.  That's a
+                       bit simple but will work mostly. */
+                    /* .tv_sec = */ 40,
+                    /* .tv_nsec = */ 0 };
             
             return toval;
         };

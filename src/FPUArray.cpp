@@ -357,7 +357,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         }
         else
         {
-#ifdef DEBUG2            
+#ifdef DEBUG2           2 
             printf("WFS: q=%i / p= %i\n", FPUGridState.num_queued, FPUGridState.count_pending);
 #endif
             if (max_wait_time == 0)
@@ -371,6 +371,10 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
                                            &grid_state_mutex, &abs_wait_time);
                 if (rv == ETIMEDOUT)
                 {
+#ifdef DEBUG2            
+                    printf("WFS: timeout exit, nq=%i, cp=%i\n",
+                           FPUGridState.num_queued, FPUGridState.count_pending);
+#endif
                     cancelled = true;
                     // grab current state
                     reference_state = FPUGridState;
@@ -385,7 +389,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
             }
         }
        
-    }-
+    }
     pthread_mutex_unlock(&grid_state_mutex);
     if (target == TGT_ANY_CHANGE)
     {
@@ -422,6 +426,12 @@ bool FPUArray::inTargetState(E_GridState sum_state,
         return true;
     }
 
+
+    /* The next wait conditionals are some meta
+       targets which do not depend only on the grid state,
+       but also on the driver state. That's a bit hacky
+       and should be streamlined somehow.
+    */
     if (tstate == TGT_ANY_CHANGE)
     {
         return true;
@@ -436,12 +446,19 @@ bool FPUArray::inTargetState(E_GridState sum_state,
         && (FPUGridState.count_pending == 0)
         && (FPUGridState.num_queued == 0))
     {
-#ifdef DEBUG2
-        printf("inTargetState: returning true,  tstate=%i, NO_MORE_PENDING=%i,"
-               " count_pending=%, num_queued=%i\n",
-               tstate, (tstate & TGT_NO_MORE_PENDING) != 0,
-               FPUGridState.count_pending, FPUGridState.num_queued);
-#endif        
+        return true;
+    }
+
+
+    if ((tstate & TGT_NO_MORE_MOVING)
+        && (FPUGridState.count_pending == 0)
+        && (FPUGridState.num_queued == 0)
+        && (FPUGridState.Counts[FPST_DATUM_SEARCH] == 0)
+        && (FPUGridState.Counts[FPST_READY_FORWARD] == 0)
+        && (FPUGridState.Counts[FPST_READY_BACKWARD] == 0)
+        && (FPUGridState.Counts[FPST_MOVING] == 0))
+        
+    {
         return true;
     }
 
@@ -1030,6 +1047,9 @@ void remove_pending(t_fpu_state& fpu, int fpu_id,
 
     count_pending--;
     assert(fpu.num_active_timeouts >= 0);
+#ifdef DEBUG2
+    printf("fpu #%i:  remove_pending: new pending count is %i\n", fpu_id, count_pending);
+#endif
 
 }
 

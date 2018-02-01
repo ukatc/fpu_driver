@@ -51,9 +51,10 @@ enum E_GridState
     // the following are pseudo-states which are used
     // as wait targets but are no actual grid states
     GS_NOPENDING      = (1 << 14), // no commands are left marked as pending
-    GS_TIMEOUT        = (1 << 15), // a new time-out occurred
+    GS_NOMOVING       = (1 << 15), // FPUS are in datum search, moving, or ready to move
+    GS_TIMEOUT        = (1 << 16), // a new time-out occurred
 
-    GS_ALL_UPDATED   = (1 << 16), // all fpus have been updated
+    GS_ALL_UPDATED   = (1 << 17), // all fpus have been updated
 
 } ;
 
@@ -97,6 +98,10 @@ enum E_WaitTarget
     // Target for info-requesting commands that don't change
     // the state of the FPUs
     TGT_NO_MORE_PENDING = GS_NOPENDING,
+
+    // target for finish of movement commands
+    // (findDatum and executeMotion) and pending commands.
+    TGT_NO_MORE_MOVING = GS_NOMOVING,
 
     TGT_TIMEOUT = GS_TIMEOUT, // return on timeout
 

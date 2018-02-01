@@ -305,8 +305,10 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
         double max_wait_time = 0.0;
         bool cancelled = false;
 
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
-                                                          | TGT_TIMEOUT),
+//        state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
+//                                                          | TGT_TIMEOUT),
+//                                             grid_state, max_wait_time, cancelled);
+        state_summary = gateway.waitForState(TGT_NO_MORE_MOVING,
                                              grid_state, max_wait_time, cancelled);
 
         num_moving = (grid_state.Counts[FPST_DATUM_SEARCH]
@@ -593,12 +595,20 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
     if ( (num_moving > 0) 
          && (grid_state.driver_state == DS_CONNECTED))
     {
-#ifdef DEBUG
+#ifdef DEBUG2
+        printf("AsyncDriver::waitExecuteMotion: moving=%i, rfw=%i, rbw=%i, pend=%i, nqed=%i\n",
+               grid_state.Counts[FPST_MOVING],
+               grid_state.Counts[FPST_READY_FORWARD],
+               grid_state.Counts[FPST_READY_BACKWARD],
+               grid_state.count_pending,
+               grid_state.num_queued);
         printf("AsyncDriver::waitExecuteMotion, waiting (num_moving=%i)\n", num_moving);
 #endif        
         
 
-        state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
+        // this waits for finishing all pending messages,
+        // all movement commands and leaving the READY_* states.
+        state_summary = gateway.waitForState(TGT_NO_MORE_MOVING,
                                              grid_state, max_wait_time, cancelled);
         
         // we include the "ready" counts too because it will
@@ -612,7 +622,7 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
     finished = (! cancelled) && (num_moving == 0);
 
-#ifdef DEBUG
+#ifdef DEBUG2
     printf("AsyncDriver::waitExecuteMotion return, finished =%i, cancelled = %i, num_moving = %i\n",
                finished, cancelled, num_moving);
 #endif        

@@ -193,7 +193,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         else
         {            
             // clear timeout status
-#ifdef DEBUG2            
+#ifdef DEBUG2
             printf("FPU #%i: executeMotion command got response errcode %i\n",
                    fpu_id, response_errcode);
 #endif            
