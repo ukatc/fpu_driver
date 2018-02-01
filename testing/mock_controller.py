@@ -734,21 +734,21 @@ def command_handler(cmd, socket, verbose=0):
             print("CAN command #%i to FPU %i" % (command_id, fpu_id))
 
 
-            fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbose=verbose)
+        fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbose=verbose)
     else:
         # broadcast message
         if verbose:
             print("CAN BROADCAST command [%i] to gw %i, bus %i, command id=%i"
                   % (gCountTotalCommands, gateway_id, bus_adr, command_id))
 
-            rx_bytes = cmd[3:]
-            for fpu_adr_bus in range(1, FPUS_PER_BUS+1):
-                fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
-                assert(fpu_id >= 0)
-                if fpu_id <= NUM_FPUS:
+        rx_bytes = cmd[3:]
+        for fpu_adr_bus in range(1, FPUS_PER_BUS+1):
+            fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
+            assert(fpu_id >= 0)
+            if fpu_id <= NUM_FPUS:
 
-                    print("Spawning CAN command #%i to FPU %i" % (command_id, fpu_id))
-                    spawn(fpu_handler, command_id, fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
+                print("Spawning CAN command #%i to FPU %i" % (command_id, fpu_id))
+                spawn(fpu_handler, command_id, fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
             
 
 

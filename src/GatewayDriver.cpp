@@ -93,13 +93,20 @@ E_DriverErrCode GatewayDriver::initialize()
     E_DriverErrCode status;
     
     fpuArray.setDriverState(DS_UNINITIALIZED);
+    status = fpuArray.initialize();
+
+    if (status != DE_OK)
+    {
+        return status;
+    }
+    
     status = command_pool.initialize();
 
     if (status != DE_OK)
     {
         return status;
     }
-
+    
     status = commandQueue.initialize();
 
     if (status != DE_OK)
@@ -141,6 +148,13 @@ E_DriverErrCode GatewayDriver::deInitialize()
     }
 
     status = commandQueue.deInitialize();
+
+    if (status != DE_OK)
+    {
+        return status;
+    }
+
+    status = fpuArray.deInitialize();
 
     if (status != DE_OK)
     {
@@ -1051,9 +1065,9 @@ E_DriverState GatewayDriver::getDriverState() const
 }
 
 
-E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state) const
+E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state, double max_wait_time, bool &cancelled) const
 {
-    return fpuArray.waitForState(target, out_detailed_state);
+    return fpuArray.waitForState(target, out_detailed_state, max_wait_time, cancelled);
 }
 
 

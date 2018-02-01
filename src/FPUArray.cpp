@@ -21,14 +21,16 @@
 
 
 #include <pthread.h>
-//#include <unistd.h> // sleep
+#include <math.h>
+#include <errno.h>
+#include <time.h>
 
 #include <cassert>
 
-#include "canlayer/time_utils.h"
 
 #include "GridState.h"
-
+#include "canlayer/time_utils.h"
+#include "canlayer/sync_utils.h"
 #include "canlayer/FPUArray.h" 
 #include "canlayer/handleFPUResponse.h"
 #include "canlayer/handleTimeout.h"
@@ -116,6 +118,41 @@ FPUArray::~FPUArray()
     // destroy grid state mutex
     pthread_mutex_destroy(&grid_state_mutex);
 }
+
+
+E_DriverErrCode FPUArray::initialize()
+{
+
+    // Initialize cond_state_change condition variable with monotonic
+    // clock option. (Otherwise, system clock adjustments could cause
+    // bugs).
+    if (condition_init_monotonic(cond_state_change) != 0)
+    {
+        return DE_ASSERTION_FAILED;
+    }
+
+    return DE_OK;
+}
+
+E_DriverErrCode FPUArray::deInitialize()
+{
+    
+#pragma message "fix up hang on destruction of condition variable"
+    /* when the Python process ends, the destructr is called and this
+       condition variable is destroyed. However this causes the Python
+       control thread to hang.
+
+       The issue appeared after moving the deinitalization here (it
+       was automatic before). However this is the proper place
+       because we cannot use RAII and exceptions, so we need
+       initializer / deinitializer methods.
+    */
+    pthread_cond_destroy(&cond_state_change);
+
+    return DE_OK;
+}
+
+
 
 // this function returns a thread-safe copy of the current state of
 // the FPU grid.  The important aspect is that the returned value is
@@ -206,10 +243,26 @@ void FPUArray::decSending()
 
 
 
-E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_state) const
+E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_state,
+                                   double max_wait_time, bool &cancelled) const
 {
 
     E_GridState sum_state = GS_UNKNOWN;
+    if (max_wait_time < 0)
+    {
+        max_wait_time = 0.0;
+    }
+    struct timespec ts_wait_time;
+    ts_wait_time.tv_sec = int(floor(max_wait_time));
+    const double scale_nanosec = 1e9;
+    ts_wait_time.tv_nsec = int(floor(scale_nanosec * (max_wait_time - floor(max_wait_time))));    
+    struct timespec cur_time;
+    get_monotonic_time(cur_time);
+    // get normalized absolute time
+    const struct timespec abs_wait_time = time_add(cur_time, ts_wait_time);
+    cancelled = false;
+    
+    
     // if we want to get signaled on any minor changes,
     // we increment a special counter to trigger
     // additional event notifications.
@@ -269,9 +322,12 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
 
         const bool target_reached = inTargetState(sum_state, target);
 
+        const bool driver_unconnected = FPUGridState.driver_state != DS_CONNECTED;
+
         const bool end_wait = (target_reached
                                || new_timeout_triggered
-                               || all_updated);
+                               || all_updated
+                               || driver_unconnected);
 
 
         if (end_wait)
@@ -300,12 +356,33 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         {
 #ifdef DEBUG2            
             printf("WFS: q=%i / p= %i\n", FPUGridState.num_queued, FPUGridState.count_pending);
-#endif            
-            pthread_cond_wait(&cond_state_change,
-                              &grid_state_mutex);
+#endif
+            if (max_wait_time == 0)
+            {
+                int rv = pthread_cond_wait(&cond_state_change,
+                                           &grid_state_mutex);
+                assert(rv == 0);
+            } else
+            {
+                int rv = pthread_cond_timedwait(&cond_state_change,
+                                           &grid_state_mutex, &abs_wait_time);
+                if (rv == ETIMEDOUT)
+                {
+                    cancelled = true;
+                    // grab current state
+                    reference_state = FPUGridState;
+                    got_value = true;
+                    break; // exit while loop
+                }
+                else
+                {
+                    // all other errors are bugs
+                    assert(rv == 0);
+                }
+            }
         }
        
-    }
+    }-
     pthread_mutex_unlock(&grid_state_mutex);
     if (target == TGT_ANY_CHANGE)
     {

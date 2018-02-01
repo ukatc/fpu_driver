@@ -126,7 +126,7 @@ class AsyncDriver
     E_GridState getGridState(t_grid_state& out_state) const;
 
     E_GridState waitForState(E_WaitTarget target,
-                             t_grid_state& out_detailed_state) const;
+                             t_grid_state& out_detailed_state, double max_wait_time, bool &cancelled) const;
 
 
     private:

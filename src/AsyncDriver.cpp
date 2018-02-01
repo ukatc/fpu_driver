@@ -212,8 +212,10 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
 
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
+        double max_wait_time = 0.0;
+        bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state);
+                                             grid_state, max_wait_time, cancelled);
 
         cnt_pending = (grid_state.count_pending + grid_state.num_queued);
     }
@@ -300,9 +302,12 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
         // TGT_NO_MORE_PENDING has a safety advantage in a multi-FPU
         // grid because it will return early on collisions, without
         // waiting for the operation to complete.
+        double max_wait_time = 0.0;
+        bool cancelled = false;
+
         state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
                                                           | TGT_TIMEOUT),
-                                             grid_state);
+                                             grid_state, max_wait_time, cancelled);
 
         num_moving = (grid_state.Counts[FPST_DATUM_SEARCH]
                       + grid_state.count_pending
@@ -421,39 +426,41 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         }
         if ((step_index == 0) && (num_steps > 1))
         {
-          /* Wait and check that all FPUs are registered in LOADING
-             state.  This is needed to make sure we have later a clear
-             state transition for finishing the load with the last
-             flag set. */
+            /* Wait and check that all FPUs are registered in LOADING
+               state.  This is needed to make sure we have later a clear
+               state transition for finishing the load with the last
+               flag set. */
 #ifdef DEBUG2
             printf("waiting for confirmation step 0\n");
-#endif            
-          state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
-                                               grid_state);
-          bool do_retry = false;
-          //int num_loading =  waveforms.size();
-          for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+#endif
+            double max_wait_time = 0.0;
+            bool cancelled = false;
+            state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
+                                                 grid_state, max_wait_time, cancelled);
+            bool do_retry = false;
+            //int num_loading =  waveforms.size();
+            for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
             {
-              int fpu_id = waveforms[fpu_index].fpu_id;
-              t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
-              // we retry if an FPU which we tried to configure and is
-              // not locked did not change to FPST_LOADING state.
-              if ((fpu_state.state != FPST_LOADING)
-                  && (fpu_state.state != FPST_LOCKED))
+                int fpu_id = waveforms[fpu_index].fpu_id;
+                t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
+                // we retry if an FPU which we tried to configure and is
+                // not locked did not change to FPST_LOADING state.
+                if ((fpu_state.state != FPST_LOADING)
+                    && (fpu_state.state != FPST_LOCKED))
                 {
-                  if (retry_downcount <= 0)
+                    if (retry_downcount <= 0)
                     {
-                      return DE_MAX_RETRIES_EXCEEDED;
+                        return DE_MAX_RETRIES_EXCEEDED;
                     }
-                  do_retry = true;
-                  printf("state not confirmed for FPU #%i, retry!\n", fpu_id);
+                    do_retry = true;
+                    printf("state not confirmed for FPU #%i, retry!\n", fpu_id);
                 }
             }
-          if (do_retry)
+            if (do_retry)
             {
-              // we start again with loading the first step
-              retry_downcount--;
-              continue;
+                // we start again with loading the first step
+                retry_downcount--;
+                continue;
             }
             
         }
@@ -467,8 +474,10 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     // Wait for fpus loading to finish, or
     // to time-out.
     /// state_summary = gateway.waitForState(TGT_READY_TO_MOVE,
+    double max_wait_time = 0.0;
+    bool cancelled = false;
     state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
-                                         grid_state);
+                                         grid_state, max_wait_time, cancelled);
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -573,8 +582,11 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         
         //state_summary = gateway.waitForState(TGT_MOVEMENT_FINISHED,
         //                                     grid_state);
+        
+        double max_wait_time = 0.0;
+        bool cancelled = false;
         state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
-                                             grid_state);
+                                             grid_state, max_wait_time, cancelled);
         
         // we include the "ready" counts too because it will
         // take a moment to pick up the command.
@@ -648,9 +660,10 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // and filter out whether we are actually ready.
         
         ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
-        //sleep(1);
+        double max_wait_time = 0.0;
+        bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state);
+                                             grid_state, max_wait_time, cancelled);
 
         // get fresh count of pending fpus.
         // The reason we add the unsent command is that
@@ -701,8 +714,11 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // we need to wait for any response event,
         // and filter out whether we are actually ready.
         //state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        
+        double max_wait_time = 0.0;
+        bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state);
+                                             grid_state, max_wait_time, cancelled);
 
         // get fresh count of pending fpus.
         // The reason we add the unsent command is that
@@ -833,8 +849,10 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
     // or have timed out.
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
+        double max_wait_time = 0.0;
+        bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state);
+                                             grid_state, max_wait_time, cancelled);
 
         cnt_pending = (grid_state.count_pending
                        + grid_state.num_queued);
@@ -889,8 +907,10 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
     while ( (num_moving > 0)
             && ((grid_state.driver_state == DS_CONNECTED)))
     {
+        double max_wait_time = 0.0;
+        bool cancelled = false;
         state_summary = gateway.waitForState(TGT_MOVEMENT_FINISHED,
-                                             grid_state);
+                                             grid_state, max_wait_time, cancelled);
         
         num_moving = (grid_state.Counts[FPST_MOVING]
                       + grid_state.count_pending
@@ -981,17 +1001,20 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
     // or have timed out.
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
+        double max_wait_time = 0.0;
+        bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state);
+                                             grid_state, max_wait_time, cancelled);
 
+        if (grid_state.driver_state != DS_CONNECTED)
+        {
+            return DE_NO_CONNECTION;
+        }
+        
         cnt_pending = (grid_state.count_pending
                        + grid_state.num_queued);
     }
 
-    if (grid_state.driver_state != DS_CONNECTED)
-    {
-        return DE_NO_CONNECTION;
-    }
 
     return DE_OK;
 
@@ -1047,8 +1070,10 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
 
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
+        double max_wait_time = 0.0;
+        bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state);
+                                             grid_state, max_wait_time, cancelled);
 
         cnt_pending = (grid_state.count_pending
                        + grid_state.num_queued);
@@ -1110,8 +1135,10 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(t_grid_state& grid_state,
 
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
+        double max_wait_time = 0.0;
+        bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state);
+                                             grid_state, max_wait_time, cancelled);
 
         cnt_pending = (grid_state.count_pending
                        + grid_state.num_queued);
@@ -1132,9 +1159,9 @@ E_GridState AsyncDriver::getGridState(t_grid_state& out_state) const
 }
 
 E_GridState AsyncDriver::waitForState(E_WaitTarget target,
-                                      t_grid_state& out_detailed_state) const
+                                      t_grid_state& out_detailed_state, double max_wait_time, bool &cancelled) const
 {
-    return gateway.waitForState(target, out_detailed_state);
+    return gateway.waitForState(target, out_detailed_state, max_wait_time, cancelled);
 }
 
 

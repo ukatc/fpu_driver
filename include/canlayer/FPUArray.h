@@ -69,6 +69,12 @@ public:
 
     ~FPUArray();
 
+    // initialize internal structures
+    E_DriverErrCode initialize();
+
+    // deinitialize internal structures
+    E_DriverErrCode deInitialize();
+    
     // this method retrieves the current grid state for all FPUs
     // (including collision states etc). It does not wait for
     // completion of commands, and can be called concurrently..
@@ -95,8 +101,15 @@ public:
     // by value. Important, it must  never called by
     // the I/O threads
     // because they must not be blocked.
+    //
+    // Optionally, a maximum wait time can be passed after which the
+    // method will always return.  If the waiting operation was
+    // cancelled due to exceeding that maximum time, the reference
+    // paremeter cancelled is set to true, otherwise to false.  A
+    // maximum time of zero means no time limit - the caller has to
+    // make sure that the condition waited for can be met.
 
-    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state) const;
+    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state, double max_wait_time, bool &cancelled) const;
 
 
     // queries whether an FPU is locked.
@@ -177,9 +190,9 @@ private:
     // structures which describe the current state of the whole grid
     t_grid_state FPUGridState;
     // this mutex protects the FPU state array structure
-    mutable pthread_mutex_t grid_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+    mutable pthread_mutex_t grid_state_mutex = PTHREAD_MUTEX_INITIALIZER; 
     // condition variables which is signaled on state changes
-    mutable pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER;
+    mutable pthread_cond_t cond_state_change; // is initialized with monotonic clock option
 
 };
 

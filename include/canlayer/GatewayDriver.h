@@ -92,7 +92,8 @@ public:
 
     // get both the summed up state of the FPU grid,
     // and a detailed status for each FPU.
-    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state) const;
+    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state,
+                             double max_wait_time, bool &cancelled) const;
 
 
 

@@ -129,6 +129,7 @@ when the internal state struct is used.
 ** DONE make signatures const-correct
 ** DONE make API const-correct
 ** TODO Add state filtering to command precondition check
+** TODO Wrap error returns into Python Exceptions
 ** TODO revise expects_response field
 ** TODO add mock gateway code for base commands (version 1)
 ** TODO add Python wrappers for base commands
