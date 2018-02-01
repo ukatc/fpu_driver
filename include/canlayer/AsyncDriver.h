@@ -113,7 +113,7 @@ class AsyncDriver
 
     E_DriverErrCode reverseMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode abortMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode abortMotionAsync(pthread_mutex_t & command_mutex, t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode lockFPUAsync(t_grid_state& grid_state, E_GridState& state_summary);
 

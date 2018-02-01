@@ -896,7 +896,8 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
     
 }
 
-E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
+E_DriverErrCode AsyncDriver::abortMotionAsync(pthread_mutex_t & command_mutex,
+                                              t_grid_state& grid_state,
         E_GridState& state_summary)
 {
 
@@ -907,7 +908,7 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
     if (grid_state.driver_state != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;
-    } // 
+    } 
 
 
     // acquire real-time priority so that consecutive broadcasts to
@@ -916,20 +917,29 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
     // example caused by low memory conditions and swapping, could
     // otherwise lead to collisions.)
     if (USE_REALTIME_SCHEDULING)
-      {
+    {
         set_rt_priority(CONTROL_PRIORITY);
-      }
-    gateway.abortMotion(grid_state, state_summary);
+    }
     
+    // this sends the abortMotion command directly.  It is implemented
+    // as a gateway method so that lower layers have access to the
+    // command when needed.
+    gateway.abortMotion(grid_state, state_summary);
+
+    // lock command mutex during waiting time for completion.
+    pthread_mutex_lock(&command_mutex);
+
+
     // Give up real-time priority (this is important when the caller
     // thread later enters, for example, an endless loop).
     if (USE_REALTIME_SCHEDULING)
-      {
+    {
         unset_rt_priority();
-      }
-
+    }
+    
     // Wait until all movements are cancelled.
     int num_moving = ( grid_state.Counts[FPST_MOVING]
+                       + grid_state.Counts[FPST_DATUM_SEARCH]
                        + grid_state.count_pending
                        + grid_state.num_queued);
     
@@ -938,13 +948,16 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(t_grid_state& grid_state,
     {
         double max_wait_time = 0.0;
         bool cancelled = false;
-        state_summary = gateway.waitForState(TGT_MOVEMENT_FINISHED,
+        state_summary = gateway.waitForState(TGT_NO_MORE_MOVING,
                                              grid_state, max_wait_time, cancelled);
         
         num_moving = (grid_state.Counts[FPST_MOVING]
+                      + grid_state.Counts[FPST_DATUM_SEARCH]
                       + grid_state.count_pending
                       + grid_state.num_queued);
-    } 
+    }
+    
+    pthread_mutex_unlock(&command_mutex);
 
     if (grid_state.driver_state != DS_CONNECTED)
     {

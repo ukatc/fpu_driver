@@ -235,7 +235,13 @@ E_DriverErrCode GridDriver::reverseMotion(t_grid_state& grid_state)
 
 E_DriverErrCode GridDriver::abortMotion(t_grid_state& grid_state)
 {
-    return DE_OK;
+    E_GridState state_summary;
+    E_DriverErrCode estatus = DE_OK;
+
+    // the implementation locks the command creation mutex in the waiting time.
+    estatus =  abortMotionAsync(command_creation_mutex, grid_state, state_summary);
+
+    return estatus;
 }
 
 

@@ -106,6 +106,9 @@ class FPU:
         self.beta_steps = 0
         self.at_datum = True
 
+    def abortMotion(self, sleep):
+        self.abort_wave = True        
+        
     def executeMotion(self, sleep):
         if self.running_wave :
             raise RuntimeError("FPU is already moving")
@@ -121,6 +124,11 @@ class FPU:
             wt_sign = -1
         
         for k in range(self.nwave_entries):
+            
+            if self.abort_wave:
+                # flag was set from abortMotion command
+                break
+            
             if self.move_forward:
                 n = k
             else:
