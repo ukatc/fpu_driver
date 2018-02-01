@@ -136,6 +136,8 @@ E_DriverErrCode FPUArray::initialize()
 
 E_DriverErrCode FPUArray::deInitialize()
 {
+
+#if FPUARRAY_USE_MONOTONIC_CLOCK    
     
 #pragma message "fix up hang on destruction of condition variable"
     /* when the Python process ends, the destructr is called and this
@@ -148,7 +150,8 @@ E_DriverErrCode FPUArray::deInitialize()
        initializer / deinitializer methods.
     */
     pthread_cond_destroy(&cond_state_change);
-
+#endif
+    
     return DE_OK;
 }
 

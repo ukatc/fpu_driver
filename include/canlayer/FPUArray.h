@@ -35,6 +35,14 @@
 #include "TimeOutList.h"
 #include "I_CAN_Command.h"
 
+/* Switches on use of monotonic clock for timed waits
+   on grid state changes. This is advisable to avoid
+   nasty bugs on changes of system time, but currently
+   causes problems when de-initialising the condition
+   variable. The clocks used for epoll() are not 
+   affected. */
+#define FPUARRAY_USE_MONOTONIC_CLOCK 0
+
 namespace mpifps
 {
 
@@ -192,8 +200,11 @@ private:
     // this mutex protects the FPU state array structure
     mutable pthread_mutex_t grid_state_mutex = PTHREAD_MUTEX_INITIALIZER; 
     // condition variables which is signaled on state changes
+#if FPUARRAY_USE_MONOTONIC_CLOCK    
     mutable pthread_cond_t cond_state_change; // is initialized with monotonic clock option
-
+#else
+    mutable pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER; 
+#endif
 };
 
 
