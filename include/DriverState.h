@@ -128,6 +128,10 @@ enum E_DriverErrCode
     // a motion command was issued but no FPUs are allowed to move
     DE_NO_MOVABLE_FPUS = 12,
 
+    // The user waited for a command completion using a time-out
+    // value, and the state has not been reached yet
+    DE_COMMAND_TIMEOUT = 13,
+
     DE_ASSERTION_FAILED=99,
 
 } ;

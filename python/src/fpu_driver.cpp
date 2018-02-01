@@ -357,9 +357,18 @@ class WrapGridDriver : public GridDriver
             return startExecuteMotion(grid_state);
         }
 
-    E_DriverErrCode wrap_waitExecuteMotion(WrapGridState& grid_state, double max_wait_time, bool &finished)
+    E_DriverErrCode wrap_waitExecuteMotion(WrapGridState& grid_state, double max_wait_time)
         {
-            return waitExecuteMotion(grid_state, max_wait_time, finished);
+            E_DriverErrCode estatus;
+            bool finished = false;
+            
+            estatus =  waitExecuteMotion(grid_state, max_wait_time, finished);
+            if ((! finished) && (estatus == DE_OK))
+            {
+                estatus = DE_COMMAND_TIMEOUT;
+            }
+
+            return estatus;
         }
 
     E_DriverErrCode wrap_repeatMotion(WrapGridState& grid_state)
@@ -513,6 +522,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_ASSERTION_FAILED",DE_ASSERTION_FAILED)
     .value("DE_INVALID_WAVEFORM", DE_INVALID_WAVEFORM)
     .value("DE_NO_MOVABLE_FPUS", DE_NO_MOVABLE_FPUS)
+    .value("DE_COMMAND_TIMEOUT", DE_COMMAND_TIMEOUT)
     .export_values();
     
     enum_<E_GridState>("E_GridState")
