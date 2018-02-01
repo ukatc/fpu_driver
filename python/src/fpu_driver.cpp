@@ -352,6 +352,16 @@ class WrapGridDriver : public GridDriver
             return executeMotion(grid_state);
         }
 
+    E_DriverErrCode wrap_startExecuteMotion(WrapGridState& grid_state)
+        {
+            return startExecuteMotion(grid_state);
+        }
+
+    E_DriverErrCode wrap_waitExecuteMotion(WrapGridState& grid_state, double max_wait_time, bool &finished)
+        {
+            return waitExecuteMotion(grid_state, max_wait_time, finished);
+        }
+
     E_DriverErrCode wrap_repeatMotion(WrapGridState& grid_state)
         {
             return repeatMotion(grid_state);
@@ -592,6 +602,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
         // call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
     .def("configMotion", &WrapGridDriver::configMotionWithDict)
     .def("executeMotion", &WrapGridDriver::wrap_executeMotion)
+    .def("startExecuteMotion", &WrapGridDriver::wrap_startExecuteMotion)
+    .def("waitExecuteMotion", &WrapGridDriver::wrap_waitExecuteMotion)
     .def("getGridState", &WrapGridDriver::wrap_getGridState)
     .def("getPositions", &WrapGridDriver::wrap_getPositions)
     .def("repeatMotion", &WrapGridDriver::wrap_repeatMotion)

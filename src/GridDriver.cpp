@@ -159,6 +159,33 @@ E_DriverErrCode GridDriver::pingFPUs(t_grid_state& grid_state)
     return estatus;
 }
 
+
+E_DriverErrCode GridDriver::startExecuteMotion(t_grid_state& grid_state)
+{
+    E_DriverErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    estatus = startExecuteMotionAsync(grid_state, state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+    
+    return estatus;
+}
+    
+E_DriverErrCode GridDriver::waitExecuteMotion(t_grid_state& grid_state,
+                                              double max_wait_time, bool &finished)
+{
+    E_DriverErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    estatus = waitExecuteMotionAsync(grid_state,
+                                     state_summary,
+                                     max_wait_time, finished);
+    return estatus;
+}
+
 E_DriverErrCode GridDriver::executeMotion(t_grid_state& grid_state)
 {
     E_DriverErrCode estatus = DE_OK;
@@ -166,9 +193,23 @@ E_DriverErrCode GridDriver::executeMotion(t_grid_state& grid_state)
 
     pthread_mutex_lock(&command_creation_mutex);
 
-    estatus = executeMotionAsync(grid_state, state_summary);
+    estatus = startExecuteMotionAsync(grid_state, state_summary);
 
     pthread_mutex_unlock(&command_creation_mutex);
+
+    if (estatus == DE_OK)
+    {
+        bool finished = false;
+        while (!finished)
+        {
+            // note it is important to pass the current gridstate
+            // to detect CAN timeouts
+            double wait_time_sec = 0.5;
+            estatus = waitExecuteMotionAsync(grid_state,
+                                             state_summary,
+                                             wait_time_sec, finished);
+        }
+    }
 
     return estatus;
 }

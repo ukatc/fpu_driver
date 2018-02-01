@@ -487,7 +487,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     return DE_OK;
 }
 
-E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
+E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
     // first, get current state of the grid
@@ -572,19 +572,32 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
         unset_rt_priority();
     }
 
-    // Wait until movement is finished.
-    while ( (num_moving > 0)
-            && ((grid_state.driver_state == DS_CONNECTED)))
+    return DE_OK;
+
+}
+
+E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
+                                               E_GridState& state_summary,
+                                               double max_wait_time, bool &finished)
+{
+   // Get number of FPUs which are moving or will move
+    
+    int num_moving = (grid_state.Counts[FPST_MOVING]
+                      + grid_state.Counts[FPST_READY_FORWARD]
+                      + grid_state.Counts[FPST_READY_BACKWARD]
+                      + grid_state.count_pending
+                      + grid_state.num_queued);
+    
+    bool cancelled = false;
+    
+    if ( (num_moving > 0) 
+         && (grid_state.driver_state == DS_CONNECTED))
     {
-#ifdef DEBUG2        
-        printf("AsyncDriver::executeMotion, waiting (num_moving=%i)\n", num_moving);
+#ifdef DEBUG
+        printf("AsyncDriver::waitExecuteMotion, waiting (num_moving=%i)\n", num_moving);
 #endif        
         
-        //state_summary = gateway.waitForState(TGT_MOVEMENT_FINISHED,
-        //                                     grid_state);
-        
-        double max_wait_time = 0.0;
-        bool cancelled = false;
+
         state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
                                              grid_state, max_wait_time, cancelled);
         
@@ -597,6 +610,12 @@ E_DriverErrCode AsyncDriver::executeMotionAsync(t_grid_state& grid_state,
                       + grid_state.num_queued);
     }
 
+    finished = (! cancelled) && (num_moving == 0);
+
+#ifdef DEBUG
+    printf("AsyncDriver::waitExecuteMotion return, finished =%i, cancelled = %i, num_moving = %i\n",
+               finished, cancelled, num_moving);
+#endif        
     if (grid_state.driver_state != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;

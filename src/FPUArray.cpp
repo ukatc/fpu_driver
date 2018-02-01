@@ -379,7 +379,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
                 }
                 else
                 {
-                    // all other errors are bugs
+                    // all other values fail assertion
                     assert(rv == 0);
                 }
             }

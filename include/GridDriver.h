@@ -78,6 +78,11 @@ public:
 
     E_DriverErrCode executeMotion(t_grid_state& grid_state);
 
+    E_DriverErrCode startExecuteMotion(t_grid_state& grid_state);
+    
+    E_DriverErrCode waitExecuteMotion(t_grid_state& grid_state, double max_wait_time, bool &finished);
+
+
     E_DriverErrCode getPositions(t_grid_state& grid_state);
 
     E_DriverErrCode repeatMotion(t_grid_state& grid_state);

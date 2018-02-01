@@ -102,7 +102,9 @@ class AsyncDriver
     
     E_DriverErrCode configMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, const t_wtable& waveforms);
 
-    E_DriverErrCode executeMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    
+    E_DriverErrCode waitExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, double max_wait_time, bool &finished);
     
     E_DriverErrCode getPositionsAsync(t_grid_state& grid_state,
                                                E_GridState& state_summary);
