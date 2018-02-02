@@ -101,10 +101,21 @@ class FPU:
         dtime_mu = 1
         dtime_sigma = 2
         dtime_sec = min(max(random.gauss(dtime_mu, dtime_sigma), 0), 15)
-        sleep(dtime_sec)
-        self.alpha_steps = 0
-        self.beta_steps = 0
-        self.at_datum = True
+        wait_interval = 0.1
+        while dtime_sec > 0:
+            sleep_time = min(dtime_sec, wait_interval)
+            sleep(sleep_time)
+            dtime_sec -= sleep_time
+            
+            if self.abort_wave:
+                print("ABORTING DATUM SEARCH FOR FPU", self.fpu_id);
+                break
+
+        if not self.abort_wave:
+            self.alpha_steps = 0
+            self.beta_steps = 0
+            self.at_datum = True
+            
 
     def abortMotion(self, sleep):
         self.abort_wave = True        

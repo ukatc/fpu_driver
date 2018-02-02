@@ -4,6 +4,8 @@ import time
 import signal
 
 import fpu_driver
+import fpu_commands as cmds
+
 
 DEFAULT_GATEWAY_ADRESS_LIST = [ fpu_driver.GatewayAddress("127.0.0.1", p)
                                 for p in [4700, 4701, 4702] ]
@@ -62,8 +64,45 @@ class GridDriver:
     def getGridState(self):
         return self._gd.getGridState()
 
-    def findDatum(self, gs):
+    def findDatumB(self, gs):
+        """Moves all FPUs to datum position. 
+
+        This is a blocking variand of the findDatum command,
+        it is not interruptible by Control-C."""
+        
         return self._gd.findDatum(gs)
+
+    def findDatum(self, gs):
+        """Moves all FPUs to datum position. 
+
+        If the program receives a SIGNINT, or Control-C is pressed, an
+        abortMotion command is sent, aborting the search.
+
+        """
+        rv = self._gd.startFindDatum(gs)
+        if rv != fpu_driver.E_DriverErrCode.DE_OK:
+            raise RuntimeError("can't search Datum, driver error code = %r" % rv)
+        print("wait a little..")
+        time.sleep(0.1)
+        time_interval = 0.1
+        is_ready = False
+        was_aborted = False
+        with SignalHandler() as sh:
+            while not is_ready:
+                rv = self._gd.waitFindDatum(gs, time_interval)
+                if sh.interrupted:
+                    print("STOPPING FPUs.")
+                    self.abortMotion(gs)
+                    was_aborted = True
+                    break
+                is_ready = (rv != fpu_driver.E_DriverErrCode.DE_COMMAND_TIMEOUT)
+
+        if was_aborted:
+            self.pingFPUs(gs)
+            print("findDatumw as aborted by SIGINT, movement stopped")
+        else:
+            print("findDatum finished.")
+        return rv
 
     def pingFPUs(self, gs):
         return self._gd.pingFPUs(gs)
@@ -75,22 +114,28 @@ class GridDriver:
         return self._gd.getPositions(gs)
 
     def configMotion(self, wavetable, gs):
+        """ 
+        Configures movement by sending a waveform table to a group of FPUs.
+        Call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
+
+        """
         return self._gd.configMotion(wavetable, gs)
 
     def executeMotion(self, gs):
         rv = self._gd.startExecuteMotion(gs)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
-            raise rv
+            print("rv=",rv)
+            raise RuntimeError("FPUs not ready to move, driver error code = %r" % rv)
         print("wait a little..")
-        time.sleep(0.5)
-        time_interval = 0.25
+        time.sleep(0.1)
+        time_interval = 0.1
         is_ready = False
+        was_aborted = False
         with SignalHandler() as sh:
             while not is_ready:
-                print("python: waiting...")
                 rv = self._gd.waitExecuteMotion(gs, time_interval)
                 if sh.interrupted:
-                    print("STOPPING FPUs!")
+                    print("STOPPING FPUs.")
                     self.abortMotion(gs)
                     break
                 is_ready = (rv != fpu_driver.E_DriverErrCode.DE_COMMAND_TIMEOUT)
@@ -99,7 +144,13 @@ class GridDriver:
             # execute a ping to update positions
             # (this is only needed for protocol version 1)
             self.pingFPUs(gs)
-            
+
+        if not was_aborted:
+            print("executeMotion finished")
+        else:
+            self.pingFPUs(gs)
+            print("executeMotion stopped")
+        
         return rv
 
     def abortMotion(self, gs):

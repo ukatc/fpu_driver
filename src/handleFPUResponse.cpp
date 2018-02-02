@@ -164,16 +164,10 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
                 fpu.state = FPST_READY_FORWARD;
                 fpu.waveform_valid = true;
                 fpu.waveform_ready = true;
-#ifdef DEBUG
-                printf("ConfigMotion handler fpu %i: waveform ready\n", fpu_id);
-#endif
             }
             else
             {
                 fpu.state = FPST_LOADING;
-#ifdef DEBUG
-                printf("ConfigMotion handler fpu %i: still loading waveform\n", fpu_id);
-#endif
             }
         }
         

@@ -29,6 +29,24 @@ namespace mpifps
 
 E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state)
 {
+
+    E_DriverErrCode estatus = startFindDatum(grid_state);
+    
+    if (estatus != DE_OK)
+    {
+        return estatus;
+    }
+
+    bool finished = false;
+    double max_wait_time = 0; // waits until the CAN timeout is hit
+    
+    estatus = waitFindDatum(grid_state, max_wait_time, finished);
+
+    return estatus;
+}
+
+E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state)
+{
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
     int num_avaliable_retries = DEFAULT_NUM_RETRIES;
@@ -38,19 +56,30 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state)
     while (num_avaliable_retries > 0)
     {
         // writes grid_state into member variable
-        estatus = autoFindDatumAsync(grid_state, state_summary);
+        estatus = startAutoFindDatumAsync(grid_state, state_summary);
 
-        break; // insert retry code later
+        break; // FIXME: insert retry code
         
-//         if (estatus != DE_OK)
-//         {
-//             break;
-//         }
-// 
         num_avaliable_retries--;
     }
 
     pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+
+E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state, double max_wait_time, bool &finished)
+{
+    E_DriverErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    finished = false;
+    estatus = waitAutoFindDatumAsync(grid_state, state_summary, max_wait_time, finished);
+
+    if ((! finished) && (estatus == DE_OK))
+    {
+        estatus = DE_COMMAND_TIMEOUT;
+    }
 
     return estatus;
 }
@@ -85,10 +114,9 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
             // Success: All FPUs have waveforms loaded. Loading finished.
             break;
         }
-#ifdef DEBUG
-        printf("GridDriver::configMotion(): omitting retries!\n");
-        break;
-#endif 
+#pragma message "FIXME: insert retry code here"
+        
+        break; // the command should retry a few times when running in the instrument
 
         // we have most probably a time-out and need to load some
         // waveforms again. To do that we strip FPUs from

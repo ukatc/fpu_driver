@@ -346,6 +346,27 @@ class WrapGridDriver : public GridDriver
             return findDatum(grid_state);
         }
 
+    E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state)
+        {
+            return startFindDatum(grid_state);
+        }
+    
+    E_DriverErrCode wrap_waitFindDatum(WrapGridState& grid_state, double max_wait_time)
+        {
+            E_DriverErrCode estatus;
+            bool finished = false;
+            
+            estatus =  waitFindDatum(grid_state, max_wait_time, finished);
+
+            if ((! finished) && (estatus == DE_OK))
+            {
+                estatus = DE_COMMAND_TIMEOUT;
+            }
+
+            return estatus;
+            
+        }
+
 
     E_DriverErrCode wrap_executeMotion(WrapGridState& grid_state)
         {
@@ -609,7 +630,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("pingFPUs", &WrapGridDriver::wrap_pingFPUs)
     .def("getPositions", &WrapGridDriver::wrap_getPositions)
     .def("findDatum", &WrapGridDriver::wrap_findDatum)
-        // call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
+    .def("startFindDatum", &WrapGridDriver::wrap_startFindDatum)
+    .def("waitFindDatum", &WrapGridDriver::wrap_waitFindDatum)
     .def("configMotion", &WrapGridDriver::configMotionWithDict)
     .def("executeMotion", &WrapGridDriver::wrap_executeMotion)
     .def("startExecuteMotion", &WrapGridDriver::wrap_startExecuteMotion)

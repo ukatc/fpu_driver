@@ -238,7 +238,6 @@ void FPUArray::decSending()
          && (FPUGridState.count_pending == 0) )
     {
         pthread_cond_broadcast(&cond_state_change);
-        printf("¡1");fflush(stdout);
     }
     pthread_mutex_unlock(&grid_state_mutex);
     
@@ -508,8 +507,6 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
     // if tracing is active, signal state change
     if (num_trace_clients > 0)
     {
-        printf("T"); fflush(stdout);
-        printf("¡2");fflush(stdout);
         pthread_cond_broadcast(&cond_state_change);
     }
 
@@ -678,7 +675,6 @@ void FPUArray::setDriverState(E_DriverState const dstate)
     
     if (old_state != dstate)
     {
-        printf("¡5");fflush(stdout);
         pthread_cond_broadcast(&cond_state_change);
     }
     pthread_mutex_unlock(&grid_state_mutex);

@@ -91,9 +91,6 @@ E_DriverErrCode AsyncDriver::deInitializeDriver()
 
 E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_address gateway_addresses[])
 {
-#ifdef DEBUG
-    printf("driver state before connect: %i", gateway.getDriverState());
-#endif
     switch (gateway.getDriverState())
     {
     case DS_UNINITIALIZED:
@@ -116,9 +113,6 @@ E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_addres
         num_gateways = ngateways;
     }
 
-#ifdef DEBUG
-    printf("driver state after connect: %i", gateway.getDriverState());
-#endif
     return err_code;
 }
 
@@ -229,7 +223,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
 
 }
 
-E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
+E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
     
@@ -256,7 +250,7 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
     // All fpus which are allowed to move, are moved automatically
     // until they hit the datum switch.
 
-    int num_moving = 0;
+//    int num_moving = 0;
     unique_ptr<FindDatumCommand> can_command;
     for (int i=0; i < num_fpus; i++)
     {
@@ -284,61 +278,67 @@ E_DriverErrCode AsyncDriver::autoFindDatumAsync(t_grid_state& grid_state,
 #endif
             unique_ptr<I_CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
-            num_moving++;
+//            num_moving++;
             
         }
     }
 
-    // FIXME: The "asynchronously sending commands" part and the
-    // "waiting for completion" part might need to be split into two
-    // twin methods, so that the final ESO driver can execute
-    // asynchronously.
-
-    printf("AutoFindDatumAsync()::waiting for datum search to finish...\n");
-    while ( (num_moving > 0) && (grid_state.driver_state == DS_CONNECTED))
-    {
-        // for this target, it is necessary to check num_queued
-        // because this might not yet be updated on return. Not using
-        // TGT_NO_MORE_PENDING has a safety advantage in a multi-FPU
-        // grid because it will return early on collisions, without
-        // waiting for the operation to complete.
-        double max_wait_time = 0.0;
-        bool cancelled = false;
-
-//        state_summary = gateway.waitForState(E_WaitTarget(TGT_AT_DATUM
-//                                                          | TGT_TIMEOUT),
-//                                             grid_state, max_wait_time, cancelled);
-        state_summary = gateway.waitForState(TGT_NO_MORE_MOVING,
-                                             grid_state, max_wait_time, cancelled);
-
-        num_moving = (grid_state.Counts[FPST_DATUM_SEARCH]
-                      + grid_state.count_pending
-                      + grid_state.num_queued);
-#ifdef DEBUG2        
-        printf("Counts[DATUM_SEARCH]=%i, count_pending=%i, num_queued=%i, num_moving = %i\n, %s\n",
-               grid_state.Counts[FPST_DATUM_SEARCH],
-               grid_state.count_pending, grid_state.num_queued,
-               num_moving, (num_moving > 0) ? "retry" : "finished");
-#endif        
-
-        if (state_summary == GS_COLLISION)
-        {
-            printf("collision detected, aborting datum search");
-            return DE_NEW_COLLISION;
-        }
-    }
-
-
-    
-    if (grid_state.driver_state != DS_CONNECTED)
-    {
-        return DE_NO_CONNECTION;
-    }
 
     return DE_OK;
 
 }
 
+E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
+                                                    E_GridState& state_summary,
+                                                    double max_wait_time, bool &finished)
+{
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+
+    
+    bool cancelled = false;
+    
+
+    state_summary = gateway.waitForState(TGT_NO_MORE_MOVING,
+                                         grid_state, max_wait_time, cancelled);
+
+    int num_moving = (grid_state.Counts[FPST_DATUM_SEARCH]
+                  + grid_state.count_pending
+                  + grid_state.num_queued);
+#ifdef DEBUG2
+    printf("Counts[DATUM_SEARCH]=%i, count_pending=%i, num_queued=%i, num_moving = %i\n, %s\n",
+           grid_state.Counts[FPST_DATUM_SEARCH],
+           grid_state.count_pending, grid_state.num_queued,
+           num_moving, (num_moving > 0) ? "retry" : "finished");
+#endif        
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    if (state_summary == GS_COLLISION)
+    {
+        printf("collision detected, aborting datum search");
+        return DE_NEW_COLLISION;
+    }
+    
+    finished = (num_moving == 0) && (! cancelled);
+
+    if (finished)
+    {
+        return DE_OK;
+    }
+    else
+    {
+        return DE_COMMAND_TIMEOUT;
+    }
+    
+
+}
 
 
 
