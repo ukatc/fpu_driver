@@ -132,6 +132,12 @@ enum E_DriverErrCode
     // value, and the state has not been reached yet
     DE_COMMAND_TIMEOUT = 13,
 
+    // movement was aborted
+    DE_ABORTED_STATE = 14,
+
+    // some addressed FPUs are locked
+    DE_FPUS_LOCKED = 15,
+
     DE_ASSERTION_FAILED=99,
 
 } ;

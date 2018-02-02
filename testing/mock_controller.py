@@ -512,6 +512,91 @@ def handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX 
 
 
+
+##############################
+# the following two callback objects are passed as bound methods
+# to the FPUs executeMotion method so that FPUs can signal
+# collisions or limit switch breaks
+
+class LimitCallback:
+    def __init__(self, fpu_adr_bus, bus_adr, socket, verbose=False):
+        self.socket = socket
+        self.fpu_adr_bus = fpu_adr_bus
+        self.bus_adr = bus_adr
+        self.verbose=verbose
+        
+    def call(fpu):
+
+        fpu_id = fpu.fpu_id
+
+        tx_prio = 0x01
+        tx_canid = (tx_prio << 7) | self.fpu_adr_bus
+        
+        TH = [ 0 ] * 3
+        TH[0] = self.bus_adr
+        TH[1] = (tx_canid & 0xff)
+        TH[2] = ((tx_canid >> 8) & 0xff)
+        
+        TX = [0] * 8
+        TX[0] = fpu_adr_bus
+        TX[1] = CMSG_WARN_LIMIT_ALPHA
+        TX[2] = status = getStatus(fpu)
+        
+
+        TX[3] = errflag = 0xff
+        #TX[4] = errcode = ER_COLLIDE
+        TX[4] = errcode = ER_M1LIMIT
+            
+        TX[5] = dummy1 = 0
+        TX[6] = dummy2 = 0
+        TX[7] = dummy3 = 0
+
+        if self.verbose:
+            print("FPU %i: sending limit switch break message" % fpu_id)
+        limit_message =  TH + TX
+        encode_and_send(limit_message, self.socket, verbose=verbose)
+
+class CollisionCallback:
+    def __init__(self, fpu_adr_bus, bus_adr, socket, verbose=False):
+        self.socket = socket
+        self.fpu_adr_bus = fpu_adr_bus
+        self.bus_adr = bus_adr
+        self.verbose = verbose
+        
+    def call(fpu):
+
+        fpu_id = fpu.fpu_id
+
+        tx_prio = 0x01
+        tx_canid = (tx_prio << 7) | self.fpu_adr_bus
+        
+        TH = [ 0 ] * 3
+        TH[0] = self.bus_adr
+        TH[1] = (tx_canid & 0xff)
+        TH[2] = ((tx_canid >> 8) & 0xff)
+        
+        TX = [0] * 8
+        TX[0] = fpu_adr_bus
+        TX[1] = CMSG_WARN_COLLISION_BETA
+        TX[2] = status = getStatus(fpu)
+        
+
+        TX[3] = errflag = 0xff
+        TX[4] = errcode = ER_COLLIDE
+            
+        TX[5] = dummy1 = 0
+        TX[6] = dummy2 = 0
+        TX[7] = dummy3 = 0
+
+        if self.verbose:
+            print("FPU %i: sending collision detection message" % fpu_id)
+        
+        limit_message =  TH + TX
+        encode_and_send(limit_message, self.socket, verbose=verbose)
+
+        
+##############################
+
 def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
         
     print("starting executeMotion for FPU %i" % fpu_id)
@@ -581,9 +666,12 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
             
 
             
-
+            # instantiate callbacks
+            limit_callback = LimitCallback(fpu_adr_bus, bus_adr, socket)
+            collision_callback = CollisionCallback(fpu_adr_bus, bus_adr, socket)
+            
             # simulate findDatum FPU operation
-            FPUGrid[fpu_id].executeMotion(sleep)
+            FPUGrid[fpu_id].executeMotion(sleep, limit_callback.call, collision_callback.call)
             print("FPU %i: executeMotion command finished" % fpu_id);
 
             

@@ -16,6 +16,12 @@ MAX_WAVE_ENTRIES = 256
 IDXA = 0
 IDXB = 1
 
+MAX_ALPHA = 41000
+MIN_ALPHA = -1000
+
+MAX_BETA = 30000
+MIN_BETA = -30000
+
 class FPU:
     
     def __init__(self, fpu_id):
@@ -120,7 +126,7 @@ class FPU:
     def abortMotion(self, sleep):
         self.abort_wave = True        
         
-    def executeMotion(self, sleep):
+    def executeMotion(self, sleep, limit_callback, collision_callback):
         if self.running_wave :
             raise RuntimeError("FPU is already moving")
         
@@ -164,12 +170,37 @@ class FPU:
             sleep(frame_time)
             if self.abort_wave:
                 break
-            self.alpha_steps = newalpha
-            self.beta_steps = newbeta
+            
+            if newalpha < MIN_ALPHA:
+                self.alpha_steps = MIN_ALPHA
+                self.alpha_limit_breach = True
+                limit_callback(self)
+                break
+            elif newalpha > MAX_ALPHA:
+                self.alpha_steps = MAX_ALPHA
+                self.alpha_limit_breach = True
+                limit_callback(self)
+                break
+            else:
+                self.alpha_steps = newalpha
+                
+            if newbeta < MIN_BETA:
+                self.beta_steps = MIN_BETA
+                collision_callback(self)
+                break
+            elif newbeta > MAX_BETA:
+                self.beta_steps = MAX_BETA
+                collision_callback(self)
+                break
+            else:
+                self.beta_steps = newbeta
 
         if self.abort_wave:
             print("FPU %i: MOVEMENT ABORTED at (%i, %i)" % (self.fpu_id,
                                                             newalpha, newbeta))
+        elif self.alpha_limit_breach:
+            print("FPU %i: limit switch breach, movement cancelled at (%i, %i)" % (self.fpu_id,
+                                                                                   self.alpha_steps, self.beta_steps))
         else:
             print("FPU %i: movement finished at (%i, %i)" % (self.fpu_id,
                                                              newalpha, newbeta))

@@ -420,6 +420,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
         
     case CMSG_WARN_COLLISION_BETA:
+        printf("FPU # %i: beta callosion message received \n", fpu_id);
         
         if (fpu.state == FPST_MOVING)
         {
@@ -444,6 +445,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
         
     case CMSG_WARN_LIMIT_ALPHA:
+        printf("FPU # %i: alpha limit breach message received \n", fpu_id);
         if (fpu.state == FPST_MOVING)
         {
             // clear time-out flag

@@ -239,10 +239,13 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     for (int i=0; i < num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
-        if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_OBSTACLE_ERROR))
+        if (fpu_status == FPST_OBSTACLE_ERROR)
         {
             return DE_UNRESOLVED_COLLISION;
+        }
+        if (fpu_status == FPST_ABORTED)
+        {
+            return DE_ABORTED_STATE;
         }
     }
 
@@ -504,11 +507,16 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
     for (int i=0; i < num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
-        if ((fpu_status == FPST_ABORTED)
-            || (fpu_status == FPST_OBSTACLE_ERROR))
+        
+        if (fpu_status == FPST_OBSTACLE_ERROR)
         {
             return DE_UNRESOLVED_COLLISION;
         }
+        if (fpu_status == FPST_ABORTED)
+        {
+            return DE_ABORTED_STATE;
+        }
+
     }
 
     /* check all FPUs in READY_* state have valid waveforms
