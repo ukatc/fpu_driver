@@ -183,6 +183,22 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
             fpu.state = FPST_MOVING;
             // status byte should show RUNNING_WAVE, too
+            
+            // As an edge case, if the confirmation arrives extremely
+            // large, then it is possible that the command has already
+            // been removed by a time-out handler. In that case,
+            // re-add it as pending to avoid a stuck state.
+            if (((fpu.pending_command_set >> CCMD_EXECUTE_MOTION) & 1) == 0)
+            {
+#ifdef DEBUG
+            printf("FPU #%i: WARNING: executeMotion was removed from pending set (%0x), added again\n",
+                   fpu_id, fpu.pending_command_set);
+#endif            
+                const timespec new_timeout = {40, 0};
+                add_pending(fpu, fpu_id, CCMD_EXECUTE_MOTION,
+                            new_timeout,
+                            timeout_list, count_pending);
+            }
         }
         else
         {            
@@ -364,8 +380,12 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // As an edge case, it is possible that the command has
             // already been removed by a time-out handler. In that
             // case, re-add it as pending to avoid a stuck state.
-            if (! (fpu.pending_command_set & (1 << CCMD_FIND_DATUM)))
+            if (((fpu.pending_command_set >> CCMD_FIND_DATUM) & 1) == 0)
             {
+#ifdef DEBUG
+                printf("FPU #%i: WARNING: findDatum was removed from pending set, added again\n",
+                       fpu_id);
+#endif            
                 const timespec new_timeout = {40, 0};
                 add_pending(fpu, fpu_id, CCMD_FIND_DATUM,
                             new_timeout,
