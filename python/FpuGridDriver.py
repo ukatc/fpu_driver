@@ -4,10 +4,11 @@ import time
 import signal
 
 import fpu_driver
+from fpu_driver import GatewayAddress
 import fpu_commands as cmds
 
 
-DEFAULT_GATEWAY_ADRESS_LIST = [ fpu_driver.GatewayAddress("127.0.0.1", p)
+DEFAULT_GATEWAY_ADRESS_LIST = [ GatewayAddress("127.0.0.1", p)
                                 for p in [4700, 4701, 4702] ]
 
 
@@ -100,6 +101,7 @@ class GridDriver:
         if was_aborted:
             self.pingFPUs(gs)
             print("findDatumw as aborted by SIGINT, movement stopped")
+            raise RuntimeError("findDatum was aborted by SIGINT")
         else:
             print("findDatum finished.")
         return rv
@@ -121,6 +123,10 @@ class GridDriver:
         """
         return self._gd.configMotion(wavetable, gs)
 
+    def executeMotionB(self, gs):
+        return self._gd.executeMotion(gs)
+    
+
     def executeMotion(self, gs):
         rv = self._gd.startExecuteMotion(gs)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
@@ -137,6 +143,7 @@ class GridDriver:
                 if sh.interrupted:
                     print("STOPPING FPUs.")
                     self.abortMotion(gs)
+                    was_aborted = True
                     break
                 is_ready = (rv != fpu_driver.E_DriverErrCode.DE_COMMAND_TIMEOUT)
 
@@ -149,9 +156,12 @@ class GridDriver:
             print("executeMotion finished")
         else:
             self.pingFPUs(gs)
-            print("executeMotion stopped")
+            raise RuntimeError("executeMotion was aborted by SIGINT")
         
         return rv
 
     def abortMotion(self, gs):
         return self._gd.abortMotion(gs)
+
+    def reverseMotion(self, gs):
+        return self._gd.reverseMotion(gs)

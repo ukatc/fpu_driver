@@ -36,30 +36,6 @@ using boost::python::dict;
 using boost::python::tuple;
 
 
-///   
-///   // A friendly class.
-///   class hello
-///   {
-///   public:
-///       hello(const std::string& country)
-///       {
-///           this->country = country;
-///       }
-///       std::string greet() const
-///       {
-///           return "Hello from " + country;
-///       }
-///   private:
-///       std::string country;
-///   };
-///   
-///   // A function taking a hello object as an argument.
-///   std::string invite(const hello& w)
-///   {
-///       return w.greet() + "! Please come soon!";
-///   }
-///
-
 
 class WrapFPUState : public t_fpu_state
 {
@@ -152,12 +128,12 @@ E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
 
 struct TooManyGatewaysException : std::exception
 {
-  char const* what() const throw() { return "Number of gateways exceeded driver limit"; }
+  char const* what() const throw() { return "Number of EtherCAN gateways exceed driver limit"; }
 };
 
 struct TooFewGatewaysException : std::exception
 {
-  char const* what() const throw() { return "Need to configure at least one gateway"; }
+  char const* what() const throw() { return "Need to configure at least one EtherCAN gateway"; }
 };
 
 struct TooFewFPUsException : std::exception
@@ -169,6 +145,195 @@ struct TooFewStepsException : std::exception
 {
   char const* what() const throw() { return "Waveform entry needs to contain at least one step."; }
 };
+
+struct DriverNotInitializedException
+ : std::exception
+
+
+{
+  char const* what() const throw() { return "GridDriver was not initialized properly, possibly due to system error."; }
+};
+
+void translate(DriverNotInitializedException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct DriverAlreadyInitializedException : std::exception
+{
+  char const* what() const throw() { return "GridDriver was already initialized properly."; }
+};
+
+void translate(DriverAlreadyInitializedException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+
+struct NoConnectionException : std::exception
+{
+  char const* what() const throw() { return "The Fibre Positioner Unit Driver is not connected to a gateway."; }
+};
+
+void translate(NoConnectionException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+
+struct DriverStillBusyException : std::exception
+{
+  char const* what() const throw() { return "The FPU driver is still busy working on a previosu command"; }
+};
+
+void translate(DriverStillBusyException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct NewCollisionException : std::exception
+{
+  char const* what() const throw() { return "A collision was detected, movement for this FPU aborted."; }
+};
+
+void translate(NewCollisionException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct UnresolvedCollisionException : std::exception
+{
+  char const* what() const throw() { return "A previous collision needs to be resolved first"; }
+};
+
+void translate(UnresolvedCollisionException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct FpuNotInitializedException : std::exception
+{
+  char const* what() const throw() { return "A fibre positioner unit (FPU) was not initialized as required"; }
+};
+
+void translate(FpuNotInitializedException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct DriverAlreadyConnectedException : std::exception
+{
+  char const* what() const throw() { return "Driver was already connected, would need to disconenct() first."; }
+};
+
+void translate(DriverAlreadyConnectedException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct DriverStillConnectedException : std::exception
+{
+  char const* what() const throw() { return "FPU driver is still connected"; }
+};
+
+void translate(DriverStillConnectedException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct MaxRetriesExceededException : std::exception
+{
+  char const* what() const throw() { return "A command could not be launched in spite of several retries"; }
+};
+
+void translate(MaxRetriesExceededException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+
+struct InvalidWaveformException : std::exception
+{
+  char const* what() const throw() { return "The passed waveform is invalid."; }
+};
+
+void translate(InvalidWaveformException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct NoMovableFPUsException : std::exception
+{
+  char const* what() const throw() { return "No FPUs are currently movable."; }
+};
+
+void translate(NoMovableFPUsException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct CommandTimeOutException : std::exception
+{
+  char const* what() const throw() { return "Response to a CAN command surpassed maximum waiting time."
+          "This can be caused by a broken connection or networking problems."; }
+};
+
+
+struct AbortedStateException : std::exception
+{
+  char const* what() const throw() { return "There are FPUs in aborted state - use the "
+          "resetFPUs method to reset state."; }
+};
+
+void translate(AbortedStateException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct FPUsLockedException : std::exception
+{
+  char const* what() const throw() { return "Some addressed FPUs are in locked state, they need to be unlocked first."; }
+};
+
+void translate(FPUsLockedException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+
+struct AssertionFailedException : std::exception
+{
+  char const* what() const throw() { return "The driver has an internal logic error, "
+          "and cannot continue to operate."; }
+};
+
+void translate(AssertionFailedException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+
+void translate(CommandTimeOutException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
 
 void translate(TooManyGatewaysException const& e)
 {
@@ -194,6 +359,63 @@ void translate(TooFewStepsException const& e)
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
+void checkDriverError(E_DriverErrCode ecode)
+{
+    switch(ecode)
+    {
+    case DE_OK: break;
+
+    case DE_DRIVER_NOT_INITIALIZED:
+        throw DriverNotInitializedException(); break;         
+        
+    case DE_DRIVER_ALREADY_INITIALIZED:
+        throw DriverAlreadyInitializedException(); break;
+        
+    case DE_NO_CONNECTION :
+        throw NoConnectionException(); break;
+        
+    case DE_STILL_BUSY:
+        throw DriverStillBusyException(); break;
+        
+    case DE_NEW_COLLISION :
+        throw NewCollisionException(); break;
+        
+    case DE_UNRESOLVED_COLLISION :
+        throw UnresolvedCollisionException(); break;
+        
+    case DE_FPU_NOT_INITIALIZED:
+        throw FpuNotInitializedException(); break;
+        
+    case DE_DRIVER_ALREADY_CONNECTED :
+        throw DriverAlreadyConnectedException(); break;
+        
+    case DE_DRIVER_STILL_CONNECTED:
+        throw DriverStillConnectedException(); break;
+        
+    case DE_MAX_RETRIES_EXCEEDED :
+        throw MaxRetriesExceededException(); break;
+        
+    case DE_INVALID_WAVEFORM :
+        throw InvalidWaveformException(); break;
+        
+    case DE_NO_MOVABLE_FPUS :
+        throw NoMovableFPUsException(); break;
+        
+    case DE_COMMAND_TIMEOUT :
+        throw CommandTimeOutException(); break;
+        
+    case DE_ABORTED_STATE :
+        throw AbortedStateException(); break;
+        
+    case DE_FPUS_LOCKED :
+        throw FPUsLockedException(); break;
+
+    case DE_ASSERTION_FAILED:
+        throw AssertionFailedException(); break;
+
+            
+    }
+}
 
 class WrapGatewayAddress : public t_gateway_address
     {
@@ -261,7 +483,9 @@ class WrapGridDriver : public GridDriver
                 address_array[i] = static_cast<t_gateway_address>(
                     address_entry);
             }
-            return connect(actual_num_gw, address_array);            
+            E_DriverErrCode ecode = connect(actual_num_gw, address_array);
+            checkDriverError(ecode);
+            return ecode;
             
         };
 
@@ -307,7 +531,10 @@ class WrapGridDriver : public GridDriver
                 wform.steps = steps;
                 wtable.push_back(wform);
             }
-            return configMotion(wtable, grid_state);
+            E_DriverErrCode ecode = configMotion(wtable, grid_state);
+            checkDriverError(ecode);
+            return ecode;
+
         };
 
     WrapGridState wrap_getGridState()
@@ -319,17 +546,24 @@ class WrapGridDriver : public GridDriver
 
     E_DriverErrCode wrap_initializeGrid(WrapGridState& grid_state)
         {
-            return initializeGrid(grid_state);
+            E_DriverErrCode ecode = initializeGrid(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
     E_DriverErrCode wrap_resetFPUs(WrapGridState& grid_state)
         {
-            return resetFPUs(grid_state);
+            E_DriverErrCode ecode = resetFPUs(grid_state);
+            checkDriverError(ecode);
+            return ecode;
+
         }
 
     E_DriverErrCode wrap_pingFPUs(WrapGridState& grid_state)
         {
-            return pingFPUs(grid_state);
+            E_DriverErrCode ecode = pingFPUs(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
 
@@ -338,17 +572,23 @@ class WrapGridDriver : public GridDriver
 
     E_DriverErrCode wrap_getPositions(WrapGridState& grid_state)
         {
-            return getPositions(grid_state);
+            E_DriverErrCode ecode = getPositions(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
     E_DriverErrCode wrap_findDatum(WrapGridState& grid_state)
         {
-            return findDatum(grid_state);
+            E_DriverErrCode ecode = findDatum(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
     E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state)
         {
-            return startFindDatum(grid_state);
+            E_DriverErrCode ecode = startFindDatum(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
     
     E_DriverErrCode wrap_waitFindDatum(WrapGridState& grid_state, double max_wait_time)
@@ -358,11 +598,14 @@ class WrapGridDriver : public GridDriver
             
             estatus =  waitFindDatum(grid_state, max_wait_time, finished);
 
-            if ((! finished) && (estatus == DE_OK))
+            if (((! finished) && (estatus == DE_OK))
+                || (estatus == DE_COMMAND_TIMEOUT))
             {
                 estatus = DE_COMMAND_TIMEOUT;
+                return estatus;
             }
 
+            checkDriverError(estatus);
             return estatus;
             
         }
@@ -370,12 +613,16 @@ class WrapGridDriver : public GridDriver
 
     E_DriverErrCode wrap_executeMotion(WrapGridState& grid_state)
         {
-            return executeMotion(grid_state);
+            E_DriverErrCode ecode =executeMotion(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
     E_DriverErrCode wrap_startExecuteMotion(WrapGridState& grid_state)
         {
-            return startExecuteMotion(grid_state);
+            E_DriverErrCode ecode =startExecuteMotion(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
     E_DriverErrCode wrap_waitExecuteMotion(WrapGridState& grid_state, double max_wait_time)
@@ -384,37 +631,50 @@ class WrapGridDriver : public GridDriver
             bool finished = false;
             
             estatus =  waitExecuteMotion(grid_state, max_wait_time, finished);
-            if ((! finished) && (estatus == DE_OK))
+            if (((! finished) && (estatus == DE_OK))
+                || (estatus == DE_COMMAND_TIMEOUT))
             {
                 estatus = DE_COMMAND_TIMEOUT;
+                return estatus;
             }
 
+            checkDriverError(estatus);
             return estatus;
         }
 
     E_DriverErrCode wrap_repeatMotion(WrapGridState& grid_state)
         {
-            return repeatMotion(grid_state);
+            E_DriverErrCode ecode =repeatMotion(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
     E_DriverErrCode wrap_reverseMotion(WrapGridState& grid_state)
         {
-            return reverseMotion(grid_state);
+            E_DriverErrCode ecode =reverseMotion(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
     E_DriverErrCode wrap_abortMotion(WrapGridState& grid_state)
         {
-            return abortMotion(grid_state);
+            E_DriverErrCode ecode =abortMotion(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
     E_DriverErrCode wrap_lockFPU(WrapGridState& grid_state)
         {
-            return lockFPU(grid_state);
+            E_DriverErrCode ecode =lockFPU(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
     E_DriverErrCode wrap_unlockFPU(WrapGridState& grid_state)
         {
-            return unlockFPU(grid_state);
+            E_DriverErrCode ecode =unlockFPU(grid_state);
+            checkDriverError(ecode);
+            return ecode;
         }
 
 

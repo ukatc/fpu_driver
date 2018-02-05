@@ -1,14 +1,14 @@
-import fpu_driver
+import FpuGridDriver
 
 from fpu_commands import *
 
 NUM_FPUS = 10
-gateway_adr_list = [ fpu_driver.GatewayAddress("127.0.0.1", p)
+gateway_adr_list = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 
 
     
-gd = fpu_driver.GridDriver(NUM_FPUS)
+gd = FpuGridDriver.GridDriver(NUM_FPUS)
 
 print("initializing driver: ", gd.initializeDriver())
 
@@ -28,12 +28,22 @@ gd.findDatum(gs)
 
 wt = { 0: [ ( 10, 20),
            ( 15, 21),
+           ( 15, 21),
+           ( 15, 21),
+           ( 15, 21),
+           ( 15, 21),
+           ( 15, 21),
            ( 20, 22),
            ( 30, 25),
            ( 30, 25),
            ( 50, 19) ],
       
       1: [ (-11, 21),
+           ( 15, 21),
+           ( 15, 21),
+           ( 15, 21),
+           ( 15, 21),
+           ( 15, 21),
            (-11, 25),
            (-11, 30),
            (-11, 30),
@@ -41,6 +51,11 @@ wt = { 0: [ ( 10, 20),
            ( -9, 25) ],
       
       2: [ ( 200, 21),
+           ( 15, 21),
+           ( 15, 21),
+           ( 15, 21),
+           ( 15, 21),
+           ( 15, 21),
            ( 200, 21),
            ( 200, 22),
            ( 200, 25),
