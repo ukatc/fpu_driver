@@ -488,7 +488,7 @@ void GatewayDriver::updatePendingCommand(int fpu_id,
 
         timespec wait_period = can_command->getTimeOut();
         timespec deadline = time_add(send_time, wait_period);
-
+        
         fpuArray.setPendingCommand(fpu_id,
                                    can_command->getInstanceCommandCode(),
                                    deadline, timeOutList);
@@ -521,7 +521,7 @@ void GatewayDriver::updatePendingSets(unique_ptr<I_CAN_Command> &active_can_comm
     {
         // set pending command for all FPUs on the same
         // gateway (will ignore if state is locked).
-        for (int i; i < num_fpus; i++)
+        for (int i=0; i < num_fpus; i++)
         {
             if (address_map[i].gateway_id
                 == gateway_id)
