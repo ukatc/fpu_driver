@@ -23,17 +23,19 @@
 
 #include "DriverConstants.h"
 #include "canlayer/CommandPool.h"
+// alphabetically sorted below
 #include "canlayer/commands/AbortMotionCommand.h"
 #include "canlayer/commands/ConfigureMotionCommand.h"
 #include "canlayer/commands/EnableBetaCollisionProtectionCommand.h"
 #include "canlayer/commands/ExecuteMotionCommand.h"
-#include "canlayer/commands/ReverseMotionCommand.h"
 #include "canlayer/commands/FindDatumCommand.h"
 #include "canlayer/commands/FreeBetaCollisionCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/PingFPUCommand.h"
+#include "canlayer/commands/RepeatMotionCommand.h"
 #include "canlayer/commands/ResetFPUCommand.h"
+#include "canlayer/commands/ReverseMotionCommand.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -143,6 +145,11 @@ E_DriverErrCode CommandPool::initialize()
 
                 case CCMD_REVERSE_MOTION        :
                     ptr.reset(new ReverseMotionCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+                    
+                case CCMD_REPEAT_MOTION        :
+                    ptr.reset(new RepeatMotionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
                     

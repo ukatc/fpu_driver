@@ -165,3 +165,6 @@ class GridDriver:
 
     def reverseMotion(self, gs):
         return self._gd.reverseMotion(gs)
+
+    def repeatMotion(self, gs):
+        return self._gd.repeatMotion(gs)

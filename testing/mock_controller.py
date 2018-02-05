@@ -712,6 +712,43 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
     return confirmation_message
 
 
+def handle_repeatMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
+    command_id = RX[0]
+
+    # CAN header for gateway
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [ 0 ] * 8
+    
+    TX[0] = fpu_adr_bus
+    TX[1] = command_id
+
+
+    if not FPUGrid[fpu_id].wave_valid:
+        # wavetable is not ready
+        print("FPU #", fpu_id, ": wave table is not valid, sending response code", ER_INVALID)
+        TX[3] = errflag = 0xff
+        TX[4] = errcode =  ER_INVALIDY
+    else:
+        try:
+            FPUGrid[fpu_id].repeatMotion(fpu_id)
+            TX[3] = errflag = 0
+            
+        except RunTimeError:
+            TX[3] = errflag = 0xff
+            TX[4] = errcode = ER_INVALID
+            
+    TX[2] = getStatus(FPUGrid[fpu_id])
+    
+    return TH + TX
+
+
 def handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
     command_id = RX[0]
 
@@ -772,7 +809,7 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbo
     elif command_id == CCMD_RESET_STEPCOUNTER                :
         pass
     elif command_id == CCMD_REPEAT_MOTION                    :
-        pass
+        resp = handle_repeatMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     elif command_id == CCMD_REVERSE_MOTION                   :
         resp = handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     elif command_id == CCMD_ENABLE_BETA_COLLISION_PROTECTION :

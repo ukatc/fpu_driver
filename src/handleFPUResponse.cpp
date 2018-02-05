@@ -342,6 +342,22 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         
         break;
 
+    case CCMD_REPEAT_MOTION        :
+        // clear time-out flag
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);   
+        fpu.last_updated = cur_time;
+
+        if ((response_errcode == 0)
+            && fpu.waveform_valid
+            && ( (fpu.state == FPST_RESTING) || (fpu.state == FPST_READY_BACKWARD)))
+        {
+            fpu.waveform_reversed = true;
+            fpu.state = FPST_READY_FORWARD;
+        }
+
+        
+        break;
+
     case CCMD_REVERSE_MOTION        :
         // clear time-out flag
         remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);   
@@ -357,6 +373,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 
         
         break;
+
         
     case CCMD_RESET_FPU       :  
         // clear time-out flag

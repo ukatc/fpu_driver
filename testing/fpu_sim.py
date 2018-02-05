@@ -54,7 +54,15 @@ class FPU:
         self.initialize(fpu_id)
         print("resetting FPU #%i... ready" % fpu_id)
 
-
+        
+    def repeatMotion(self, fpu_id):
+        print("repeating wavetable of FPU #%i..." % fpu_id)
+        if not (self.wave_valid):
+            raise RuntimeError("wavetable not valid")
+        self.move_forward = True
+        self.wave_ready = True
+        
+        
     def reverseMotion(self, fpu_id):
         print("reversing wavetable of FPU #%i..." % fpu_id)
         if not (self.wave_valid):
