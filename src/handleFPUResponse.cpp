@@ -440,7 +440,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
         
     case CMSG_WARN_COLLISION_BETA:
-        printf("FPU # %i: beta callosion message received \n", fpu_id);
+        printf("FPU # %i: beta collision message received \n", fpu_id);
         
         if (fpu.state == FPST_MOVING)
         {
@@ -458,6 +458,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.beta_collision = true;
+        fpu.waveform_valid = false;
         // FIXME: Update step counter in protocol version 2
         //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
         
@@ -481,6 +482,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.at_alpha_limit = true;
+        fpu.waveform_valid = false;
         
         fpu.last_updated = cur_time;
         break;

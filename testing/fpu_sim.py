@@ -186,9 +186,11 @@ class FPU:
                 
             if newbeta < MIN_BETA:
                 self.beta_steps = MIN_BETA
+                self.is_collided = True
                 collision_callback(self)
                 break
             elif newbeta > MAX_BETA:
+                self.is_collided = True
                 self.beta_steps = MAX_BETA
                 collision_callback(self)
                 break
@@ -201,6 +203,9 @@ class FPU:
         elif self.alpha_limit_breach:
             print("FPU %i: limit switch breach, movement cancelled at (%i, %i)" % (self.fpu_id,
                                                                                    self.alpha_steps, self.beta_steps))
+        elif self.is_collided:
+            print("FPU %i: beta_collision, movement cancelled at (%i, %i)" % (self.fpu_id,
+                                                                              self.alpha_steps, self.beta_steps))
         else:
             print("FPU %i: movement finished at (%i, %i)" % (self.fpu_id,
                                                              newalpha, newbeta))
