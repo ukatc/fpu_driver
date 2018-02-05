@@ -545,7 +545,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_NO_MOVABLE_FPUS", DE_NO_MOVABLE_FPUS)
     .value("DE_COMMAND_TIMEOUT", DE_COMMAND_TIMEOUT)
     .value("DE_ABORTED_STATE", DE_ABORTED_STATE)
-    .valie("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
+    .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
     .export_values();
     
     enum_<E_GridState>("E_GridState")
@@ -597,6 +597,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("waveform_valid", &WrapFPUState::waveform_valid)
     .def_readonly("waveform_ready", &WrapFPUState::waveform_ready)
     .def_readonly("waveform_reversed", &WrapFPUState::waveform_reversed)
+    .def_readonly("pending_command_set", &WrapFPUState::pending_command_set)
     ;
 
 

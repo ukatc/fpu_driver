@@ -525,7 +525,7 @@ class LimitCallback:
         self.bus_adr = bus_adr
         self.verbose=verbose
         
-    def call(fpu):
+    def call(self, fpu):
 
         fpu_id = fpu.fpu_id
 
@@ -538,7 +538,7 @@ class LimitCallback:
         TH[2] = ((tx_canid >> 8) & 0xff)
         
         TX = [0] * 8
-        TX[0] = fpu_adr_bus
+        TX[0] = self.fpu_adr_bus
         TX[1] = CMSG_WARN_LIMIT_ALPHA
         TX[2] = status = getStatus(fpu)
         
@@ -554,7 +554,7 @@ class LimitCallback:
         if self.verbose:
             print("FPU %i: sending limit switch break message" % fpu_id)
         limit_message =  TH + TX
-        encode_and_send(limit_message, self.socket, verbose=verbose)
+        encode_and_send(limit_message, self.socket, verbose=self.verbose)
 
 class CollisionCallback:
     def __init__(self, fpu_adr_bus, bus_adr, socket, verbose=False):
@@ -563,7 +563,7 @@ class CollisionCallback:
         self.bus_adr = bus_adr
         self.verbose = verbose
         
-    def call(fpu):
+    def call(self, fpu):
 
         fpu_id = fpu.fpu_id
 
@@ -576,7 +576,7 @@ class CollisionCallback:
         TH[2] = ((tx_canid >> 8) & 0xff)
         
         TX = [0] * 8
-        TX[0] = fpu_adr_bus
+        TX[0] = self.fpu_adr_bus
         TX[1] = CMSG_WARN_COLLISION_BETA
         TX[2] = status = getStatus(fpu)
         
@@ -592,7 +592,7 @@ class CollisionCallback:
             print("FPU %i: sending collision detection message" % fpu_id)
         
         limit_message =  TH + TX
-        encode_and_send(limit_message, self.socket, verbose=verbose)
+        encode_and_send(limit_message, self.socket, verbose=self.verbose)
 
         
 ##############################
