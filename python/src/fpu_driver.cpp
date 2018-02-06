@@ -11,6 +11,7 @@
 #include <boost/python/dict.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#include <boost/python/operators.hpp>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -34,6 +35,39 @@ using boost::python::extract;
 using boost::python::list;
 using boost::python::dict;
 using boost::python::tuple;
+
+
+std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
+{
+    switch(s)
+    {
+        case FPST_UNKNOWN: out << "'UNKNOWN'"; break;
+        case FPST_UNINITIALIZED: out << "'UNINITIALIZED'"; break;
+        case FPST_LOCKED: out << "'LOCKED'"; break;
+        case FPST_DATUM_SEARCH: out << "'DATUM_SEARCH'"; break;
+        case FPST_AT_DATUM: out << "'AT_DATUM'"; break;
+        case FPST_LOADING: out << "'LOADING'"; break;
+        case FPST_READY_FORWARD: out << "'READY_FORWARD'"; break;
+        case FPST_READY_BACKWARD: out << "'READY_BACKWARD'"; break;
+        case FPST_MOVING: out << "'MOVING'"; break;
+        case FPST_RESTING: out << "'RESTING'"; break;
+        case FPST_ABORTED: out << "'ABORTED'"; break;
+        case FPST_OBSTACLE_ERROR: out << "'OBSTACLE_ERROR'"; break;
+    }
+    return out;
+}
+
+std::ostringstream& operator<<(std::ostringstream &out, const E_DriverState &s)
+{
+    switch(s)
+    {
+    case DS_UNINITIALIZED: out << "'DS_UNINITIALIZED'"; break;
+    case DS_UNCONNECTED: out << "'DS_UNCONNECTED'"; break;
+    case DS_CONNECTED: out << "'DS_CONNECTED'"; break;
+    case DS_ASSERTION_FAILED: out << "'DS_ASSERTION_FAILED'"; break;
+    }
+    return out;
+}
 
 
 
@@ -89,6 +123,50 @@ class WrapFPUState : public t_fpu_state
         return (*this) == a;
     }
 
+    static std::string to_repr(const WrapFPUState &fpu)
+        {
+            std::ostringstream s;
+            /* The following formatting breaks the chain of method
+               calls at some points, and starts a new statement, for
+               example when left-shifting fpu.state.  The reason for
+               this is that doing not so will break the overloading of
+               operator<<() for the enumeration types.  Do not change
+               this without extensive testing.  This is probably a bug
+               in the streams standard library.
+            */
+
+            s << "{ 'last_updated' : " << s.precision(10) << (1.0 * fpu.last_updated.tv_sec
+                                           + 1.0e-9 * fpu.last_updated.tv_nsec)
+              << " 'pending_command_set' : " << fpu.pending_command_set
+              << " 'pending_command_set' : " << fpu.pending_command_set      
+              << " 'state' : ";
+              s << fpu.state
+              << " 'last_command' : " << fpu.last_command             
+              << " 'last_status' : " << fpu.last_status              
+              << " 'alpha_steps' : " << fpu.alpha_steps                              
+              << " 'beta_steps' : " << fpu.beta_steps               
+              << " 'alpha_deviation' : " << fpu.alpha_deviation          
+              << " 'beta_deviation' : " << fpu.beta_deviation           
+              << " 'timeout_count' : " << fpu.timeout_count                            
+              << " 'direction_alpha' : " << fpu.direction_alpha          
+              << " 'direction_beta' : " << fpu.direction_beta           
+              << " 'num_waveforms' : " << fpu.num_waveforms            
+              << " 'num_active_timeouts' : " << fpu.num_active_timeouts      
+              << " 'sequence_number' : " << fpu.sequence_number          
+              << " 'was_zeroed' : " << fpu.was_zeroed               
+              << " 'is_locked' : " << fpu.is_locked                
+              << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active
+              << " 'beta_datum_switch_active' : " << fpu.beta_datum_switch_active 
+              << " 'at_alpha_limit' : " << fpu.at_alpha_limit           
+              << " 'beta_collision' : " << fpu.beta_collision           
+              << " 'waveform_valid' : " << fpu.waveform_valid           
+              << " 'waveform_ready' : " << fpu.waveform_ready           
+              << " 'waveform_reversed' : " << fpu.waveform_reversed
+              << " }";
+            return s.str();
+        }
+
+
 };
 
 class WrapGridState : public t_grid_state
@@ -120,6 +198,55 @@ public:
         }
         return count_vec;
     }
+
+    static std::string to_string(const WrapGridState &gs)
+        {
+            std::ostringstream s;
+            // Please observe the comment to WrapFPUState::to_repr,
+            // this applies here as well.
+            s << "count_pending=" << gs.count_pending << ", "
+              << "num_queued=" << gs.num_queued << ", "
+              << "count_timeout=" << gs.count_timeout << ", "
+              << "driver_state=";
+            s << gs.driver_state << ", "
+              << "Counts= [ ";
+            for(int i=0; i < NUM_FPU_STATES; i++)
+            {
+                s << gs.Counts[i];
+                if (i < (NUM_FPU_STATES -1))
+                {
+                    s <<", ";
+                }                
+            }
+            s << " ]" << ", FPU[]=..." ;
+            return s.str();
+        }
+
+    static std::string to_repr(const WrapGridState &gs)
+        {
+            std::ostringstream s;
+            // Please observe the comment to WrapFPUState::to_repr,
+            // this applies here as well.
+            s << "{ 'count_pending' :" << gs.count_pending << ", "
+              << "'num_queued' :" << gs.num_queued << ", "
+              << "'count_timeout' :" << gs.count_timeout << ", "
+              << "'driver_state' :";
+            s << gs.driver_state << ", "
+              << "'Counts' : { ";
+            for(int i=0; i < NUM_FPU_STATES; i++)
+            {
+                s << static_cast<E_FPU_STATE>(i)
+                  << " : " 
+                  << gs.Counts[i];
+                if (i < (NUM_FPU_STATES -1))
+                {
+                    s <<", ";
+                }                
+            }
+            s << " ]" << ", FPU[]=..." ;
+            return s.str();
+        }
+
 };
 
 E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
@@ -869,6 +996,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("waveform_ready", &WrapFPUState::waveform_ready)
     .def_readonly("waveform_reversed", &WrapFPUState::waveform_reversed)
     .def_readonly("pending_command_set", &WrapFPUState::pending_command_set)
+        .def("__repr__", &WrapFPUState::to_repr)
     ;
 
 
@@ -887,7 +1015,9 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("count_timeout", &WrapGridState::count_timeout)
     .def_readonly("count_pending", &WrapGridState::count_pending)
     .def_readonly("driver_state", &WrapGridState::driver_state)
-    ;
+    .def("__str__", &WrapGridState::to_string)
+    .def("__repr__", &WrapGridState::to_repr)
+        ;
 
     class_<WrapGatewayAddress>("GatewayAddress", init<const char*, int>())
         .def_readwrite("ip", &WrapGatewayAddress::ip)
