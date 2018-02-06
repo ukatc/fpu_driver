@@ -115,6 +115,9 @@ class GridDriver:
     def getPositions(self, gs):
         return self._gd.getPositions(gs)
 
+    def getCounterDeviation(self, gs):
+        return self._gd.getCounterDeviation(gs)
+
     def configMotion(self, wavetable, gs):
         """ 
         Configures movement by sending a waveform table to a group of FPUs.

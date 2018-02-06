@@ -113,6 +113,20 @@ int unfold_stepcount_beta(const uint16_t step_count)
     
 }
 
+// Converts the response value for a datum search
+// deviation into an integer. This is valid for both
+// the alpha and the beta arm.
+int unfold_steps_deviation(const uint16_t step_count)
+{
+    int val = static_cast<int>(step_count);
+    if (val >= (1 << 15))
+    {
+        val -= (1 << 16);
+    }
+    return val;
+    
+}
+
 
 void update_status_flags(t_fpu_state& fpu, unsigned int status_mask)
 {
@@ -311,6 +325,38 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             const uint16_t steps_coded = (data[5] << 8) |  data[4];
             const int bsteps = unfold_stepcount_beta(steps_coded);
             fpu.beta_steps = bsteps;
+        }
+        fpu.last_updated = cur_time;
+        if (fpu.state == FPST_UNKNOWN)
+        {
+            fpu.state = FPST_UNINITIALIZED;
+        }
+        break;
+
+    case CCMD_GET_ERROR_ALPHA  :  
+        // clear time-out flag
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        if (response_errcode == 0)
+        {
+            const uint16_t steps_coded = (data[5] << 8) |  data[4];
+            const int bsteps = unfold_steps_deviation(steps_coded);
+            fpu.alpha_deviation = bsteps;
+        }
+        fpu.last_updated = cur_time;
+        if (fpu.state == FPST_UNKNOWN)
+        {
+            fpu.state = FPST_UNINITIALIZED;
+        }
+        break;
+        
+    case CCMD_GET_ERROR_BETA  :  
+        // clear time-out flag
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        if (response_errcode == 0)
+        {
+            const uint16_t steps_coded = (data[5] << 8) |  data[4];
+            const int bsteps = unfold_steps_deviation(steps_coded);
+            fpu.beta_deviation = bsteps;
         }
         fpu.last_updated = cur_time;
         if (fpu.state == FPST_UNKNOWN)

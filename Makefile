@@ -28,6 +28,9 @@ _DEPS = DriverState.h E_GridState.h FPUState.h GridDriver.h		\
 	canlayer/commands/FindDatumCommand.h				\
 	canlayer/commands/FreeBetaCollisionCommand.h			\
 	canlayer/commands/GetStepsAlphaCommand.h			\
+	canlayer/commands/GetErrorAlphaCommand.h			\
+	canlayer/commands/GetStepsBetaCommand.h			 	\
+	canlayer/commands/GetErrorBetaCommand.h				\
 	canlayer/commands/PingFPUCommand.h				\
 	canlayer/commands/ResetFPUCommand.h				\
 	canlayer/commands/RepeatMotionCommand.h				\

@@ -95,6 +95,8 @@ typedef struct __attribute__((packed)) t_fpu_state
     // reported by FPU responses
     int alpha_steps;
     int beta_steps;
+    int alpha_deviation;
+    int beta_deviation;
     // number of minor time-outs which have
     // been observed for the last command.
     uint16_t timeout_count;

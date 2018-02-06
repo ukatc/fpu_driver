@@ -109,7 +109,10 @@ class AsyncDriver
     
     E_DriverErrCode getPositionsAsync(t_grid_state& grid_state,
                                                E_GridState& state_summary);
-    
+
+    E_DriverErrCode getCounterDeviationAsync(t_grid_state& grid_state,
+                                              E_GridState& state_summary);
+
     E_DriverErrCode repeatMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode reverseMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);

@@ -64,6 +64,8 @@ class WrapFPUState : public t_fpu_state
         last_status               = fpu_state.last_status;
         alpha_steps               = fpu_state.alpha_steps;                  
         beta_steps                = fpu_state.beta_steps;                   
+        alpha_deviation           = fpu_state.alpha_deviation;                  
+        beta_deviation            = fpu_state.beta_deviation;                   
         timeout_count             = fpu_state.timeout_count;                
         direction_alpha           = fpu_state.direction_alpha;              
         direction_beta            = fpu_state.direction_beta;               
@@ -577,6 +579,13 @@ class WrapGridDriver : public GridDriver
             return ecode;
         }
 
+    E_DriverErrCode wrap_getCounterDeviation(WrapGridState& grid_state)
+        {
+            E_DriverErrCode ecode = getCounterDeviation(grid_state);
+            checkDriverError(ecode);
+            return ecode;
+        }
+
     E_DriverErrCode wrap_findDatum(WrapGridState& grid_state)
         {
             E_DriverErrCode ecode = findDatum(grid_state);
@@ -842,6 +851,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("last_status", &WrapFPUState::last_status)
     .def_readonly("alpha_steps", &WrapFPUState::alpha_steps)
     .def_readonly("beta_steps", &WrapFPUState::beta_steps)
+    .def_readonly("alpha_deviation", &WrapFPUState::alpha_deviation)
+    .def_readonly("beta_deviation", &WrapFPUState::beta_deviation)
     .def_readonly("timeout_count", &WrapFPUState::timeout_count)
     .def_readonly("num_active_timeouts", &WrapFPUState::num_active_timeouts)
     .def_readonly("sequence_number", &WrapFPUState::sequence_number)
@@ -892,6 +903,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("resetFPUs", &WrapGridDriver::wrap_resetFPUs)
     .def("pingFPUs", &WrapGridDriver::wrap_pingFPUs)
     .def("getPositions", &WrapGridDriver::wrap_getPositions)
+    .def("getCounterDeviation", &WrapGridDriver::wrap_getCounterDeviation)
     .def("findDatum", &WrapGridDriver::wrap_findDatum)
     .def("startFindDatum", &WrapGridDriver::wrap_startFindDatum)
     .def("waitFindDatum", &WrapGridDriver::wrap_waitFindDatum)
@@ -900,7 +912,6 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("startExecuteMotion", &WrapGridDriver::wrap_startExecuteMotion)
     .def("waitExecuteMotion", &WrapGridDriver::wrap_waitExecuteMotion)
     .def("getGridState", &WrapGridDriver::wrap_getGridState)
-    .def("getPositions", &WrapGridDriver::wrap_getPositions)
     .def("repeatMotion", &WrapGridDriver::wrap_repeatMotion)
     .def("reverseMotion", &WrapGridDriver::wrap_reverseMotion)
     .def("abortMotion", &WrapGridDriver::wrap_abortMotion)

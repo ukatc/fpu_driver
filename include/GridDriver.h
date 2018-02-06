@@ -89,6 +89,8 @@ public:
 
     E_DriverErrCode getPositions(t_grid_state& grid_state);
 
+    E_DriverErrCode getCounterDeviation(t_grid_state& grid_state);
+
     E_DriverErrCode repeatMotion(t_grid_state& grid_state);
 
     E_DriverErrCode reverseMotion(t_grid_state& grid_state);

@@ -138,6 +138,18 @@ def fold_stepcount_beta(val):
     return val
 
 
+def fold_stepcount_deviation(val):
+    low_limit = - 0x8000
+    vrange = 1 << 16
+    assert( (val >= low_limit) and (val < (low_limit + vrange)))
+    # convert to unsigned 16-bit number
+            
+    if val < 0:
+        val += (1 << 16)
+
+    return val
+
+
 def getStatus(FPU):
     status = 0
     if FPU.wave_ready:
@@ -284,6 +296,66 @@ def handle_GetY(fpu_id, fpu_adr_bus, bus_adr, RX):
     
     return TH + TX 
 
+
+def handle_GetErrorAlpha(fpu_id, fpu_adr_bus, bus_adr, RX):
+
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [0] * 8
+    TX[0] = fpu_adr_bus
+
+    command_id = RX[0]
+
+    TX[0] = tx0_fpu_adr_bus = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id]) 
+    TX[3] = errflag = 0
+
+    pos = fold_stepcount_deviation(FPUGrid[fpu_id].alpha_deviation)
+    TX[4] = count0 = pos & 0xff
+    TX[5] = count1 = (pos >> 8) & 0xff
+    # protocol changed here
+    TX[6] = _count2 = 0
+
+    TX[7] = dummy = 0
+    
+    return TH + TX 
+
+def handle_GetErrorBeta(fpu_id, fpu_adr_bus, bus_adr, RX):
+
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [0] * 8
+    TX[0] = fpu_adr_bus
+
+    command_id = RX[0]
+
+    TX[0] = tx0_fpu_adr_bus = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id]) 
+    TX[3] = errflag = 0
+
+    pos = fold_stepcount_deviation(FPUGrid[fpu_id].beta_deviation)
+    TX[4] = count0 = pos & 0xff
+    TX[5] = count1 = (pos >> 8) & 0xff
+    # protocol changed here
+    TX[6] = _count2 = 0
+
+    TX[7] = dummy = 0
+    
+    return TH + TX 
 
 
 def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
@@ -799,34 +871,48 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbo
         resp = handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
         
     elif command_id == CCMD_CONFIG_MOTION  :
-        resp = handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)        
+        resp = handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+        
     elif command_id == CCMD_EXECUTE_MOTION :
-        resp = handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)        
+        resp = handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
+        
     elif command_id == CCMD_ABORT_MOTION   :
         resp = handle_abortMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+
     elif command_id == CCMD_READ_REGISTER                    :
         pass
+
     elif command_id == CCMD_RESET_STEPCOUNTER                :
         pass
+
     elif command_id == CCMD_REPEAT_MOTION                    :
         resp = handle_repeatMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+
     elif command_id == CCMD_REVERSE_MOTION                   :
         resp = handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+
     elif command_id == CCMD_ENABLE_BETA_COLLISION_PROTECTION :
         pass
+
     elif command_id == CCMD_FREE_BETA_COLLISION              :
         pass
+
     elif command_id == CCMD_SET_USTEP                        :
         pass
+    
     elif CAN_PROTOCOL_VERSION == 1:
         if command_id == CCMD_GET_STEPS_ALPHA:
             resp = handle_GetX(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+            
         elif command_id == CCMD_GET_STEPS_BETA:
             resp = handle_GetY(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+            
         elif command_id == CCMD_GET_ERROR_ALPHA                  :
-            pass
+            resp = handle_GetErrorAlpha(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+            
         elif command_id == CCMD_GET_ERROR_BETA                   :
-            pass
+            resp = handle_GetErrorBeta(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+            
         else:
             resp = handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     else:

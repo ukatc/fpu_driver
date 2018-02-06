@@ -31,6 +31,8 @@ class FPU:
         self.fpu_id = fpu_id
         self.alpha_steps = fpu_id - 50
         self.beta_steps = fpu_id * 10 - 50
+        self.alpha_deviation = 0
+        self.beta_deviation = 0
         self.nwave_entries = 0
         self.steps = np.zeros((256, 2), dtype=np.int)
         self.pause = np.zeros((256, 2), dtype=np.bool)
@@ -73,6 +75,7 @@ class FPU:
         
 
     def addStep(self, first, last,
+
                 asteps, apause, aclockwise,
                 bsteps, bpause, bclockwise):
         if self.running_wave:
@@ -112,20 +115,27 @@ class FPU:
         
         
     def findDatum(self, sleep):
-        dtime_mu = 1
-        dtime_sigma = 2
-        dtime_sec = min(max(random.gauss(dtime_mu, dtime_sigma), 0), 15)
-        wait_interval = 0.1
-        while dtime_sec > 0:
-            sleep_time = min(dtime_sec, wait_interval)
+        datum_op_duration_mu = 1
+        datum_op_duration_sigma = 2
+        datum_op_duration_sec = min(max(random.gauss(datum_op_duration_mu, datum_op_duration_sigma), 0), 15)
+        wait_interval_sec = 0.1
+        while datum_op_duration_sec > 0:
+            sleep_time = min(datum_op_duration_sec, wait_interval_sec)
             sleep(sleep_time)
-            dtime_sec -= sleep_time
+            datum_op_duration_sec -= sleep_time
             
             if self.abort_wave:
                 print("ABORTING DATUM SEARCH FOR FPU", self.fpu_id);
                 break
 
         if not self.abort_wave:
+            def random_deviation():                
+                deviation_mu = 0
+                deviation_sigma = 10
+                return min(max(random.gauss(deviation_mu, deviation_sigma), -15), 15)
+            
+            self.alpha_deviation = int(random_deviation())
+            self.beta_deviation = int(random_deviation())
             self.alpha_steps = 0
             self.beta_steps = 0
             self.at_datum = True

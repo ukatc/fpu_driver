@@ -17,6 +17,12 @@
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
+#include <cassert>
+#include <unistd.h>
+
+#ifdef DEBUG
+#include <stdio.h>
+#endif
 
 #include "canlayer/AsyncDriver.h"
 #include "canlayer/GatewayDriver.h"
@@ -31,6 +37,8 @@
 #include "canlayer/commands/ExecuteMotionCommand.h"
 #include "canlayer/commands/FindDatumCommand.h"
 #include "canlayer/commands/FreeBetaCollisionCommand.h"
+#include "canlayer/commands/GetErrorAlphaCommand.h"
+#include "canlayer/commands/GetErrorBetaCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/PingFPUCommand.h"
@@ -39,12 +47,6 @@
 #include "canlayer/commands/ReverseMotionCommand.h"
 #include "canlayer/commands/ReverseMotionCommand.h"
 
-#include <cassert>
-#include <unistd.h>
-
-#ifdef DEBUG
-#include <stdio.h>
-#endif
 
 namespace mpifps
 {
@@ -678,9 +680,6 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 }
 
 
-
-
-
 E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
                                                E_GridState& state_summary)
 {
@@ -741,10 +740,6 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // the Tx thread might not have had opportunity
         // to send all the commands.
         num_pending = (grid_state.count_pending + grid_state.num_queued);
-#ifdef DEBUG3
-//        printf("$"); fflush(stdout);
-        printf("getPositions(alpha) num_pending=%i\n", num_pending);
-#endif
         
 
     }
@@ -798,9 +793,6 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         num_pending = (grid_state.count_pending
                       + grid_state.num_queued);
 
-#ifdef DEBUG3
-        printf("getPositions(beta) num_pending=%i\n", num_pending);
-#endif
     }
 
     if (grid_state.driver_state != DS_CONNECTED)
@@ -809,11 +801,133 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
     }
 
     
+    return DE_OK;
+
+}
+
+
+
+E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
+                                               E_GridState& state_summary)
+{
+    
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;
     }
 
+
+
+    unique_ptr<GetErrorAlphaCommand> can_command1;
+    for (int i=0; i < num_fpus; i++)
+    {
+        // we exclude locked FPUs
+        if (! gateway.isLocked(i) )
+        {
+            can_command1 = gateway.provideInstance<GetErrorAlphaCommand>();
+            assert(can_command1);
+            bool broadcast = false;
+            can_command1->parametrize(i, broadcast);
+            // send the command (the actual sending happens
+            // in the TX thread in the background).
+            CommandQueue::E_QueueState qstate;
+            unique_ptr<I_CAN_Command> cmd1(can_command1.release());
+            qstate = gateway.sendCommand(i, cmd1);
+            assert(qstate == CommandQueue::QS_OK);
+            
+        }
+    }
+
+    // We do not expect the locked FPUs to respond.
+    // FIXME: This needs to be documented and checked
+    // with the firmware protocol.
+    int num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
+
+    // fpus are now responding in parallel. 
+    //
+    // As long as any fpus need to respond, wait for
+    // them to finish.
+    while ( (num_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        // as we do not effect any change on the grid,
+        // we need to wait for any response event,
+        // and filter out whether we are actually ready.
+        
+        ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        double max_wait_time = 0.0;
+        bool cancelled = false;
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state, max_wait_time, cancelled);
+
+        // get fresh count of pending fpus.
+        // The reason we add the unsent command is that
+        // the Tx thread might not have had opportunity
+        // to send all the commands.
+        num_pending = (grid_state.count_pending + grid_state.num_queued);
+        
+
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    unique_ptr<GetErrorBetaCommand> can_command2;
+    for (int i=0; i < num_fpus; i++)
+    {
+        // we exclude locked FPUs
+        if (! gateway.isLocked(i) )
+        {
+            can_command2 = gateway.provideInstance<GetErrorBetaCommand>();
+            assert(can_command2);
+            bool broadcast = false;
+            can_command2->parametrize(i, broadcast);
+            // send the command (the actual sending happens
+            // in the TX thread in the background).
+            CommandQueue::E_QueueState qstate;
+            unique_ptr<I_CAN_Command> cmd2(can_command2.release());
+            qstate = gateway.sendCommand(i, cmd2);
+            assert(qstate == CommandQueue::QS_OK);
+        }
+    }
+    
+    num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
+
+    // fpus are now responding in parallel. 
+    //
+    // As long as any fpus need to respond, wait for
+    // them to finish.
+    while ( (num_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        // as we do not effect any change on the grid,
+        // we need to wait for any response event,
+        // and filter out whether we are actually ready.
+        //state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        
+        double max_wait_time = 0.0;
+        bool cancelled = false;
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state, max_wait_time, cancelled);
+
+        // get fresh count of pending fpus.
+        // The reason we add the unsent command is that
+        // the Tx thread might not have had opportunity
+        // to send all the commands.
+        num_pending = (grid_state.count_pending
+                      + grid_state.num_queued);
+
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    
     return DE_OK;
 
 }

@@ -30,6 +30,8 @@
 #include "canlayer/commands/ExecuteMotionCommand.h"
 #include "canlayer/commands/FindDatumCommand.h"
 #include "canlayer/commands/FreeBetaCollisionCommand.h"
+#include "canlayer/commands/GetErrorAlphaCommand.h"
+#include "canlayer/commands/GetErrorBetaCommand.h"
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/PingFPUCommand.h"
@@ -175,6 +177,26 @@ E_DriverErrCode CommandPool::initialize()
                     
                 case CCMD_GET_STEPS_BETA        :
                     ptr.reset(new GetStepsBetaCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+
+                case CCMD_GET_ERROR_ALPHA        :
+                    ptr.reset(new GetErrorAlphaCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+                    
+                case CCMD_GET_ERROR_BETA        :
+                    ptr.reset(new GetErrorBetaCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+                    
+                case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
+                    ptr.reset(new EnableBetaCollisionProtectionCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+                    
+                case CCMD_FREE_BETA_COLLISION    :
+                    ptr.reset(new FreeBetaCollisionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
 
