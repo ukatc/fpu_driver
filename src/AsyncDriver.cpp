@@ -384,12 +384,21 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     for (int i=0; i < num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
-        if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_OBSTACLE_ERROR))
+        if (fpu_status == FPST_OBSTACLE_ERROR)
         {
             return DE_UNRESOLVED_COLLISION;
         }
-
+#if (CAN_PROTOCOL_VERSION > 1)
+        // This isn't enforced in protocol version 1,
+        // because we do not have an enableMove command.
+        // In protocol version 2, the user has to issue
+        // enableMove first.
+        if (fpu_status == FPST_ABORTED)
+        {
+            return DE_ABORTED_STATE;
+        }
+#endif        
+        
         if (!grid_state.FPU_state[i].was_zeroed)
         {
             return DE_DRIVER_NOT_INITIALIZED;
@@ -1380,8 +1389,9 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
     return DE_OK;
 }
 
-E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(t_grid_state& grid_state,
-                                           E_GridState& state_summary)
+E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
+                                                    t_grid_state& grid_state,
+                                                    E_GridState& state_summary)
 {
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
@@ -1396,8 +1406,8 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(t_grid_state& grid_state,
     for (int i=0; i < num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
-        // we exclude moving FPUs, but include FPUs which are
-        // searching datum. (FIXME: double-check that).
+        // we exclude moving FPUs and FPUs which are
+        // searching datum.
         if ( (fpu_state.state == FPST_MOVING)
              && (fpu_state.state == FPST_DATUM_SEARCH))
         {
@@ -1415,16 +1425,13 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(t_grid_state& grid_state,
 
 
     unique_ptr<FreeBetaCollisionCommand> can_command;
-    for (int i=0; i < num_fpus; i++)
-    {
-        bool broadcast = false;
-        can_command = gateway.provideInstance<FreeBetaCollisionCommand>();
-        can_command->parametrize(i, broadcast);
-        unique_ptr<I_CAN_Command> cmd(can_command.release());
-        gateway.sendCommand(i, cmd);
-    }
+    can_command = gateway.provideInstance<FreeBetaCollisionCommand>();
+    can_command->parametrize(fpu_id, request_dir);
+    unique_ptr<I_CAN_Command> cmd(can_command.release());
+    gateway.sendCommand(fpu_id, cmd);
     
-    int cnt_pending = num_fpus;
+    
+    int cnt_pending = 1;
 
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {

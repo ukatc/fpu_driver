@@ -515,6 +515,59 @@ def handle_abortMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX
 
 
+def handle_freeBetaCollision(fpu_id, fpu_adr_bus, bus_adr, RX):
+    command_id = RX[0]
+
+    # CAN header for gateway
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    direction = RX[1]
+    assert( (direction == 0) or (direction == 1))
+    FPUGrid[fpu_id].freeBetaCollision(direction)
+    
+    TX = [ 0 ] * 8
+    
+    TX[0] = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id])
+    TX[3] = errflag = 0
+
+
+    
+    return TH + TX
+
+
+def handle_enableBetaCollisionProtection(fpu_id, fpu_adr_bus, bus_adr, RX):
+    command_id = RX[0]
+
+    # CAN header for gateway
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+    
+    FPUGrid[fpu_id].enableBetaCollisionProtection()
+    
+    TX = [ 0 ] * 8
+    
+    TX[0] = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id])
+    TX[3] = errflag = 0
+
+
+    
+    return TH + TX
+
 
 def handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
@@ -892,10 +945,10 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbo
         resp = handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
     elif command_id == CCMD_ENABLE_BETA_COLLISION_PROTECTION :
-        pass
+        resp = handle_enableBetaCollisionProtection(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
     elif command_id == CCMD_FREE_BETA_COLLISION              :
-        pass
+        resp = handle_freeBetaCollision(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
     elif command_id == CCMD_SET_USTEP                        :
         pass

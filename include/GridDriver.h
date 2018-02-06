@@ -21,6 +21,7 @@
 #ifndef GRID_DRIVER_H
 #define GRID_DRIVER_H
 
+#include "DriverConstants.h"
 #include "canlayer/AsyncDriver.h"
 
 #if (__cplusplus < 201103L)
@@ -97,6 +98,11 @@ public:
 
     E_DriverErrCode abortMotion(t_grid_state& grid_state);
 
+    E_DriverErrCode freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_dir,
+                                      t_grid_state& grid_state);
+
+    E_DriverErrCode enableBetaCollisionProtection(t_grid_state& grid_state);
+        
     E_DriverErrCode lockFPU(t_grid_state& grid_state);
 
     E_DriverErrCode unlockFPU(t_grid_state& grid_state);

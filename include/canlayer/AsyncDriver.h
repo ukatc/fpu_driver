@@ -23,6 +23,7 @@
 
 
 #include "GatewayDriver.h"
+#include "../DriverConstants.h"
 
 namespace mpifps
 {
@@ -126,7 +127,8 @@ class AsyncDriver
     E_DriverErrCode enableBetaCollisionProtectionAsync(t_grid_state& grid_state,
                                                        E_GridState& state_summary);
 
-    E_DriverErrCode freeBetaCollisionAsync(t_grid_state& grid_state,
+    E_DriverErrCode freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
+                                           t_grid_state& grid_state,
                                            E_GridState& state_summary);
 
     E_GridState getGridState(t_grid_state& out_state) const;

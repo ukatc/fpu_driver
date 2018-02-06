@@ -696,9 +696,6 @@ class WrapGridDriver : public GridDriver
         }
 
 
-
-
-
     E_DriverErrCode wrap_getPositions(WrapGridState& grid_state)
         {
             E_DriverErrCode ecode = getPositions(grid_state);
@@ -795,6 +792,21 @@ class WrapGridDriver : public GridDriver
     E_DriverErrCode wrap_abortMotion(WrapGridState& grid_state)
         {
             E_DriverErrCode ecode =abortMotion(grid_state);
+            checkDriverError(ecode);
+            return ecode;
+        }
+
+    E_DriverErrCode wrap_freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_direction,
+                                           WrapGridState& grid_state)
+        {
+            E_DriverErrCode ecode = freeBetaCollision(fpu_id, request_direction, grid_state);
+            checkDriverError(ecode);
+            return ecode;
+        }
+
+    E_DriverErrCode wrap_enableBetaCollisionProtection(WrapGridState& grid_state)
+        {
+            E_DriverErrCode ecode = enableBetaCollisionProtection(grid_state);
             checkDriverError(ecode);
             return ecode;
         }
@@ -960,8 +972,13 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("GS_ABORTED", GS_ABORTED         )
     .export_values();
 
+    // direction of a movement request from the user
+    enum_<E_REQUEST_DIRECTION>("E_REQUEST_DIRECTION")
+        .value("REQD_ANTI_CLOCKWISE"  , REQD_ANTI_CLOCKWISE  )
+        .value("REQD_CLOCKWISE"       , REQD_CLOCKWISE       )
+        .export_values();
 
-
+    // direction of the current or last actually recorded movement of each FPU
     enum_<E_MOVEMENT_DIRECTION>("E_MOVEMENT_DIRECTION")
         .value("DIRST_UNKNOWN"         , DIRST_UNKNOWN         )
         .value("DIRST_ANTI_CLOCKWISE"  , DIRST_ANTI_CLOCKWISE  )
@@ -1045,6 +1062,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("repeatMotion", &WrapGridDriver::wrap_repeatMotion)
     .def("reverseMotion", &WrapGridDriver::wrap_reverseMotion)
     .def("abortMotion", &WrapGridDriver::wrap_abortMotion)
+    .def("freeBetaCollision", &WrapGridDriver::wrap_freeBetaCollision)
+    .def("enableBetaCollisionProtection", &WrapGridDriver::wrap_enableBetaCollisionProtection)
     .def("lockFPU", &WrapGridDriver::lockFPU)
     .def("unlockFPU", &WrapGridDriver::unlockFPU)
     .def_readonly("NumFPUs", &WrapGridDriver::getNumFPUs)

@@ -282,6 +282,37 @@ E_DriverErrCode GridDriver::abortMotion(t_grid_state& grid_state)
 }
 
 
+E_DriverErrCode GridDriver::freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_dir,
+                                              t_grid_state& grid_state)
+{
+    E_DriverErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    estatus = freeBetaCollisionAsync(fpu_id, request_dir, grid_state, state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+
+E_DriverErrCode GridDriver::enableBetaCollisionProtection(t_grid_state& grid_state)
+{
+    E_DriverErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    estatus = enableBetaCollisionProtectionAsync(grid_state, state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+
+
+
 E_DriverErrCode GridDriver::lockFPU(t_grid_state& grid_state)
 {
     return DE_OK;

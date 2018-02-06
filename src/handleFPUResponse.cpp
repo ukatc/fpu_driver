@@ -198,6 +198,10 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.state = FPST_MOVING;
             // status byte should show RUNNING_WAVE, too
             
+            // in protocol version 1, we do not know the last movement direction
+            fpu.direction_alpha = DIRST_UNKNOWN;
+            fpu.direction_beta = DIRST_UNKNOWN;
+            
             // As an edge case, if the confirmation arrives extremely
             // large, then it is possible that the command has already
             // been removed by a time-out handler. In that case,
@@ -283,6 +287,10 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // FIXME: Update step counter in protocol version 2
             // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
             fpu.state = FPST_RESTING;
+            
+            // in protocol version 1, we do not know the last movement direction
+            fpu.direction_alpha = DIRST_UNKNOWN;
+            fpu.direction_beta = DIRST_UNKNOWN;
         }
         fpu.last_updated = cur_time;
         break;
@@ -429,6 +437,10 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.state = FPST_UNINITIALIZED;
         }
         fpu.last_updated = cur_time;
+        
+        // in protocol version 1, we do not know the last movement direction
+        fpu.direction_alpha = DIRST_UNKNOWN;
+        fpu.direction_beta = DIRST_UNKNOWN;
         break;
         
     case CCMD_FIND_DATUM :
@@ -439,6 +451,9 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         {
             // datum search was successfully started
             fpu.state = FPST_DATUM_SEARCH;
+            // in protocol version 1, we do not know the last movement direction
+            fpu.direction_alpha = DIRST_UNKNOWN;
+            fpu.direction_beta = DIRST_UNKNOWN;
 
             // As an edge case, it is possible that the command has
             // already been removed by a time-out handler. In that
@@ -496,6 +511,9 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.was_zeroed = true;
             fpu.alpha_steps = 0;
             fpu.beta_steps = 0;
+            // in protocol version 1, we do not know the last movement direction
+            fpu.direction_alpha = DIRST_UNKNOWN;
+            fpu.direction_beta = DIRST_UNKNOWN;
             fpu.state = FPST_AT_DATUM;
         }
         
@@ -569,6 +587,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         
     case CCMD_FREE_BETA_COLLISION:
         fpu.state = FPST_OBSTACLE_ERROR;
+        fpu.waveform_valid = false;
+        
         // FIXME: Update step counter in protocol version 2
         //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
         

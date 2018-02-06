@@ -22,6 +22,12 @@ MIN_ALPHA = -1000
 MAX_BETA = 30000
 MIN_BETA = -30000
 
+# E_REQUEST_DIRECTION
+
+REQD_ANTI_CLOCKWISE = 0
+REQD_CLOCKWISE      = 1
+
+
 class FPU:
     
     def __init__(self, fpu_id):
@@ -45,7 +51,7 @@ class FPU:
         self.running_wave = False
         self.abort_wave = False
         self.wave_valid = False
-        
+        self.collision_protection_active = True        
 
     def resetFPU(self, fpu_id, sleep):
         print("resetting FPU #%i..." % fpu_id)
@@ -142,7 +148,37 @@ class FPU:
             
 
     def abortMotion(self, sleep):
-        self.abort_wave = True        
+        self.abort_wave = True
+
+
+    def freeBetaCollision(self, direction):
+        UNTANGLE_STEPS = 10
+        
+        self.collision_protection_active = False
+
+        old_beta_steps = self.beta_steps
+        
+        if direction == REQD_CLOCKWISE:
+            self.beta_steps -= UNTANGLE_STEPS
+        else:
+            self.beta_steps += UNTANGLE_STEPS
+
+        print("freeBetaCollsion: moving FPU # %i from (%i,%i) to (%i, %i)" % (
+            self.fpu_id, self.alpha_steps, old_beta_steps,
+            self.alpha_steps, self.beta_steps))
+        
+        if (self.beta_steps >= MAX_BETA) or (self.beta_steps =< MIN_BETA):
+            self.is_collided = True
+            print("FPU #%i: collision ongoing" % self.fpu_id)
+        else:
+            self.is_collided = False
+            print("FPU #%i: collision resolved" % self.fpu_id)
+
+
+    def enableBetaCollisionProtection(self):
+        self.collision_protection_active = True
+            
+
         
     def executeMotion(self, sleep, limit_callback, collision_callback):
         if self.running_wave :
@@ -202,12 +238,12 @@ class FPU:
             else:
                 self.alpha_steps = newalpha
                 
-            if newbeta < MIN_BETA:
+            if (newbeta < MIN_BETA) and self.collision_protection_active :
                 self.beta_steps = MIN_BETA
                 self.is_collided = True
                 collision_callback(self)
                 break
-            elif newbeta > MAX_BETA:
+            elif (newbeta > MAX_BETA) and self.collision_protection_active:
                 self.is_collided = True
                 self.beta_steps = MAX_BETA
                 collision_callback(self)

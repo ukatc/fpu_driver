@@ -128,18 +128,19 @@ when the internal state struct is used.
 *** DONE replace hand-rolled time function with system standard funcs
 ** DONE make signatures const-correct
 ** DONE make API const-correct
-** TODO split findDatum into start and wait functions
-** TODO Wrap error returns into Python Exceptions
-** TODO Add state filtering to command precondition check
-** TODO revise expects_response field
-** TODO add mock gateway code for base commands (version 1)
-** TODO add Python wrappers for base commands
-** TODO Add tentative CAN responses
+** DONE split findDatum into start and wait functions
+** DONE Wrap error returns into Python Exceptions
+** DONE revise expects_response field
+** DONE add Python wrappers for base commands
+** DONE Add tentative CAN responses
 *** DONE config_motion
 *** DONE ping
 *** DONE print frequency of epoll / cond_wait calls
 *** DONE solve argument passing of grid_state
 *** DONE print invalid responses
+** TODO fix recording of movement direction
+** TODO Add state filtering to command precondition check
+** TODO add mock gateway code for base commands (version 1)
 ** TODO add separate reporting/logging of results
 ** TODO split SBuffer in independent read buffer and write buffer ?
 ** TODO revise initializations of socket and threads

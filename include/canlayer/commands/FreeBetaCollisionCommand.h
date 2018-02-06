@@ -25,6 +25,7 @@
 #include <string.h>
 #include <cassert>
 #include "../I_CAN_Command.h"
+#include "../../DriverConstants.h"
 
 namespace mpifps {
 
@@ -41,7 +42,10 @@ namespace canlayer
             return CCMD_FREE_BETA_COLLISION;
         };
 
-        FreeBetaCollisionCommand(){};
+        FreeBetaCollisionCommand()
+        {
+            request_direction = REQD_ANTI_CLOCKWISE;
+        };
 
         E_CAN_COMMAND getInstanceCommandCode()
         {
@@ -49,10 +53,10 @@ namespace canlayer
         };
 
 
-        void parametrize(int f_id, bool broadcast)
+        void parametrize(int f_id, E_REQUEST_DIRECTION request_dir)
         {
             fpu_id = f_id;
-            bcast = broadcast;
+            request_direction = request_dir;
         };
 
         void SerializeToBuffer(const uint8_t busid,
@@ -76,13 +80,9 @@ namespace canlayer
             // 6 the CAN id of the FPU.
             const E_CAN_COMMAND cmd_code = getCommandCode();
 
-            uint16_t can_identifier = 0;
-
-            if (! bcast)
-            {
-                can_identifier = (getMessagePriority(cmd_code)
-                                  << 7) | fpu_canid;
-            }
+            uint16_t can_identifier = (getMessagePriority(cmd_code)
+                                       << 7) | fpu_canid;
+            
                                    
             // The protocol uses little-endian encoding here
             // (the byte order used in the CANOpen protocol).            
@@ -92,6 +92,7 @@ namespace canlayer
 
             // CAN command code
             can_buffer.message.data[0] = cmd_code;
+            can_buffer.message.data[1] = request_direction;
 
             buf_len += 8;
             
@@ -125,12 +126,12 @@ namespace canlayer
 
       bool doBroadcast()
       {
-        return bcast;
+        return false;
       }
 
     private:
         uint16_t fpu_id;
-        bool bcast;
+        E_REQUEST_DIRECTION request_direction;
         
         
     };

@@ -142,13 +142,6 @@ enum E_FPU_STATUS_BITS
 
  
 
-// this is a one-bit parameter to several commands
-enum E_REQUEST_DIRECTION
-{
-    REQD_ANTI_CLOCKWISE = 0,
-    REQD_CLOCKWISE      = 1,
-};
-
 // this uses the unsigned specifier because
 // the representation of signed bitfields is
 // implementation-defined
@@ -202,14 +195,14 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
         /* error recovery */
     case CCMD_RESET_FPU         :
     case CCMD_RESET_STEPCOUNTER :
+    case CCMD_ENABLE_BETA_COLLISION_PROTECTION   :
+    case CCMD_FREE_BETA_COLLISION      : 
 #if CAN_PROTOCOL_VERSION == 1
     case CCMD_GET_STEPS_ALPHA   :
     case CCMD_GET_STEPS_BETA    :
     case CCMD_GET_ERROR_ALPHA   :
     case CCMD_GET_ERROR_BETA    :
 #else        
-    case CCMD_ENABLE_BETA_COLLISION_PROTECTION   :
-    case CCMD_FREE_BETA_COLLISION      : 
     case CCMD_FREE_ALPHA_LIMIT_BREACH       :
     case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
     case CCMD_LOCK_UNIT         :

@@ -140,8 +140,14 @@ enum E_DriverErrCode
 
     DE_ASSERTION_FAILED=99,
 
-} ;
+};
 
+// this is a one-bit parameter to several commands
+enum E_REQUEST_DIRECTION
+{
+    REQD_ANTI_CLOCKWISE = 0,
+    REQD_CLOCKWISE      = 1,
+};
 
 
 }

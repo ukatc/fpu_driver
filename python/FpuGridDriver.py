@@ -4,7 +4,9 @@ import time
 import signal
 
 import fpu_driver
-from fpu_driver import GatewayAddress
+
+from fpu_driver import GatewayAddress,  REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
+
 import fpu_commands as cmds
 
 
@@ -165,6 +167,12 @@ class GridDriver:
 
     def abortMotion(self, gs):
         return self._gd.abortMotion(gs)
+
+    def freeBetaCollision(self, fpu_id, direction,  gs):
+        return self._gd.freeBetaCollision(fpu_id, direction, gs)
+    
+    def enableBetaCollisionProtection(self, gs):
+        return self._gd.enableBetaCollisionProtection(gs)
 
     def reverseMotion(self, gs):
         return self._gd.reverseMotion(gs)
