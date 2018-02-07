@@ -211,7 +211,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
 
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state, max_wait_time, cancelled);
@@ -298,7 +298,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 
 E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
                                                     E_GridState& state_summary,
-                                                    double max_wait_time, bool &finished)
+                                                    double &max_wait_time, bool &finished)
 {
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -468,7 +468,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 #ifdef DEBUG2
             printf("waiting for confirmation step 0\n");
 #endif
-            double max_wait_time = 0.0;
+            double max_wait_time = -1;
             bool cancelled = false;
             state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
                                                  grid_state, max_wait_time, cancelled);
@@ -509,7 +509,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     // Wait for fpus loading to finish, or
     // to time-out.
     /// state_summary = gateway.waitForState(TGT_READY_TO_MOVE,
-    double max_wait_time = 0.0;
+    double max_wait_time = -1;
     bool cancelled = false;
     state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
                                          grid_state, max_wait_time, cancelled);
@@ -618,7 +618,7 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
 
 E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
                                                E_GridState& state_summary,
-                                               double max_wait_time, bool &finished)
+                                               double &max_wait_time, bool &finished)
 {
    // Get number of FPUs which are moving or will move
     
@@ -739,7 +739,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // and filter out whether we are actually ready.
         
         ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state, max_wait_time, cancelled);
@@ -790,7 +790,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         // and filter out whether we are actually ready.
         //state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
         
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state, max_wait_time, cancelled);
@@ -866,7 +866,7 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
         // and filter out whether we are actually ready.
         
         ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state, max_wait_time, cancelled);
@@ -917,7 +917,7 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
         // and filter out whether we are actually ready.
         //state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
         
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state, max_wait_time, cancelled);
@@ -1029,7 +1029,7 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
     // or have timed out.
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state, max_wait_time, cancelled);
@@ -1135,7 +1135,7 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
     // or have timed out.
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state, max_wait_time, cancelled);
@@ -1206,7 +1206,7 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(pthread_mutex_t & command_mutex,
     while ( (num_moving > 0)
             && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(TGT_NO_MORE_MOVING,
                                              grid_state, max_wait_time, cancelled);
@@ -1303,7 +1303,7 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
     // or have timed out.
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state, max_wait_time, cancelled);
@@ -1372,7 +1372,7 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
 
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state, max_wait_time, cancelled);
@@ -1435,7 +1435,7 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
 
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
-        double max_wait_time = 0.0;
+        double max_wait_time = -1;
         bool cancelled = false;
         state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
                                              grid_state, max_wait_time, cancelled);
@@ -1459,7 +1459,7 @@ E_GridState AsyncDriver::getGridState(t_grid_state& out_state) const
 }
 
 E_GridState AsyncDriver::waitForState(E_WaitTarget target,
-                                      t_grid_state& out_detailed_state, double max_wait_time, bool &cancelled) const
+                                      t_grid_state& out_detailed_state, double &max_wait_time, bool &cancelled) const
 {
     return gateway.waitForState(target, out_detailed_state, max_wait_time, cancelled);
 }

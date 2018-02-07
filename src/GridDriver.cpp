@@ -68,7 +68,7 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state)
     return estatus;
 }
 
-E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state, double max_wait_time, bool &finished)
+E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state, double &max_wait_time, bool &finished)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -203,7 +203,7 @@ E_DriverErrCode GridDriver::startExecuteMotion(t_grid_state& grid_state)
 }
     
 E_DriverErrCode GridDriver::waitExecuteMotion(t_grid_state& grid_state,
-                                              double max_wait_time, bool &finished)
+                                              double &max_wait_time, bool &finished)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;

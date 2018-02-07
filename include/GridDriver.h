@@ -77,7 +77,7 @@ public:
     E_DriverErrCode startFindDatum(t_grid_state& grid_state);
     
     E_DriverErrCode waitFindDatum(t_grid_state& grid_state,
-                                  double max_wait_time, bool &finished);
+                                  double &max_wait_time, bool &finished);
 
     E_DriverErrCode configMotion(const t_wtable& waveforms, t_grid_state& grid_state);
 
@@ -85,7 +85,7 @@ public:
 
     E_DriverErrCode startExecuteMotion(t_grid_state& grid_state);
     
-    E_DriverErrCode waitExecuteMotion(t_grid_state& grid_state, double max_wait_time, bool &finished);
+    E_DriverErrCode waitExecuteMotion(t_grid_state& grid_state, double &max_wait_time, bool &finished);
 
 
     E_DriverErrCode getPositions(t_grid_state& grid_state);

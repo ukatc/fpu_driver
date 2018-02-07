@@ -138,9 +138,13 @@ when the internal state struct is used.
 *** DONE print frequency of epoll / cond_wait calls
 *** DONE solve argument passing of grid_state
 *** DONE print invalid responses
-** TODO fix recording of movement direction
+** DONE fix recording of movement direction
+** DONE add mock gateway code for base commands (version 1)
+** TODO fix unnecessary compile warnings
+** TODO check FIXMEs for resolved stuff
+** TODO remove dead code
+** TODO format code nicely using astyle
 ** TODO Add state filtering to command precondition check
-** TODO add mock gateway code for base commands (version 1)
 ** TODO add separate reporting/logging of results
 ** TODO split SBuffer in independent read buffer and write buffer ?
 ** TODO revise initializations of socket and threads

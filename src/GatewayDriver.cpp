@@ -1065,7 +1065,8 @@ E_DriverState GatewayDriver::getDriverState() const
 }
 
 
-E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state, double max_wait_time, bool &cancelled) const
+E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state,
+                                        double &max_wait_time, bool &cancelled) const
 {
     return fpuArray.waitForState(target, out_detailed_state, max_wait_time, cancelled);
 }

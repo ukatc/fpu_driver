@@ -117,7 +117,8 @@ public:
     // maximum time of zero means no time limit - the caller has to
     // make sure that the condition waited for can be met.
 
-    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state, double max_wait_time, bool &cancelled) const;
+    E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state,
+                             double &max_wait_time, bool &cancelled) const;
 
 
     // queries whether an FPU is locked.

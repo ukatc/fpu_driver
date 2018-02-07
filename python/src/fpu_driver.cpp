@@ -728,7 +728,8 @@ class WrapGridDriver : public GridDriver
         {
             E_DriverErrCode estatus;
             bool finished = false;
-            
+
+            // FIXME: should return remaining wait time in tuple
             estatus =  waitFindDatum(grid_state, max_wait_time, finished);
 
             if (((! finished) && (estatus == DE_OK))
@@ -763,6 +764,7 @@ class WrapGridDriver : public GridDriver
             E_DriverErrCode estatus;
             bool finished = false;
             
+            // FIXME: should return remaining wait time in tuple
             estatus =  waitExecuteMotion(grid_state, max_wait_time, finished);
             if (((! finished) && (estatus == DE_OK))
                 || (estatus == DE_COMMAND_TIMEOUT))

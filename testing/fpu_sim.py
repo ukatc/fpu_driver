@@ -167,7 +167,7 @@ class FPU:
             self.fpu_id, self.alpha_steps, old_beta_steps,
             self.alpha_steps, self.beta_steps))
         
-        if (self.beta_steps >= MAX_BETA) or (self.beta_steps =< MIN_BETA):
+        if (self.beta_steps >= MAX_BETA) or (self.beta_steps <= MIN_BETA):
             self.is_collided = True
             print("FPU #%i: collision ongoing" % self.fpu_id)
         else:
