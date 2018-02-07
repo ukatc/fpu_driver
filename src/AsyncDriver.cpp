@@ -183,8 +183,8 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
     for (int i=0; i < num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
-        // we exclude moving FPUs, but include FPUs which are
-        // searching datum. (FIXME: double-check that).
+        // we exclude moving FPUs snf FPUs which are
+        // searching datum.
         if ( (fpu_state.state == FPST_MOVING)
              && (fpu_state.state == FPST_DATUM_SEARCH))
         {
@@ -1115,8 +1115,6 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
     for (int i=0; i < num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
-        // we exclude moving FPUs, but include FPUs which are
-        // searching datum. (FIXME: double-check that).
         if (((fpu_state.state == FPST_READY_FORWARD)
             || (fpu_state.state == FPST_RESTING))
             && fpu_state.waveform_valid)
@@ -1286,7 +1284,7 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         // we exclude moving FPUs, but include FPUs which are
-        // searching datum. (FIXME: double-check that).
+        // searching datum. 
         if (fpu_state.state != FPST_MOVING)
         {
 
@@ -1346,8 +1344,8 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
     for (int i=0; i < num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
-        // we exclude moving FPUs, but include FPUs which are
-        // searching datum. (FIXME: double-check that).
+        // we exclude moving FPUs and FPUs which are
+        // searching datum. 
         if ( (fpu_state.state == FPST_MOVING)
              && (fpu_state.state == FPST_DATUM_SEARCH))
         {

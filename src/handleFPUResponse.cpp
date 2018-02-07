@@ -67,9 +67,10 @@ namespace canlayer
       
     }
 #ifdef DEBUG
-  // FIXME: In production code, the logging should be taken out of
-  // the time-critical path so that even a large amount of log messages
-  // will not affect the responsiveness of the driver.
+  // FIXME: In production code, logging of FPU error responses should
+  // be taken out of the time-critical path so that even a large
+  // amount of log messages will not affect the responsiveness of the
+  // driver.
   
   printf("[%lu.%lu]: FPU #%04i : error response msg = %s\n",
          time_stamp.tv_sec, time_stamp.tv_nsec,
@@ -480,9 +481,6 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         //printf("finished: datum search for FPU %i \n", fpu_id);
         remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
 
-        // FIXME: we probably need to handle the case of an
-        // abortMotion message here, too.  But this isn't handled in
-        // the version 1 protocol.
         if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
         {
             fpu.alpha_datum_switch_active = true;

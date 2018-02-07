@@ -140,7 +140,7 @@ when the internal state struct is used.
 *** DONE print invalid responses
 ** DONE fix recording of movement direction
 ** DONE add mock gateway code for base commands (version 1)
-** TODO fix unnecessary compile warnings
+** DONE fix unnecessary compile warnings
 ** TODO check FIXMEs for resolved stuff
 ** TODO remove dead code
 ** TODO format code nicely using astyle

@@ -58,7 +58,11 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state)
         // writes grid_state into member variable
         estatus = startAutoFindDatumAsync(grid_state, state_summary);
 
-        break; // FIXME: insert retry code
+        break; 
+        
+#if (CAN_PROTOCOL_VERSION > 1)        
+#pragma message "FIXME: insert retry code here"
+#endif        
         
         num_avaliable_retries--;
     }
@@ -132,7 +136,8 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
 
         // In this place, a down-counting iterator is used
         // so that erase() will not change the
-        // index of the next processed item.
+        // index of the next processed item. (Looks shadowy but works
+        // as defined).
         for (t_wtable::iterator it = cur_wtable.end() - 1;
                 it != cur_wtable.begin();
                 it--)

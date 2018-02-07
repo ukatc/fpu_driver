@@ -158,13 +158,10 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 
         bool was_empty = fifos[gateway_id].empty();
 
-        // FIXME: According to std::deque docs, this can throw a
-        // bad_alloc exception if the system is very low on
-        // memory. Because this entails the risk of losing control
-        // about very expensive hardware, this does not seems acceptable
-        // for delivery.  Best fix is possibly to replace std::dequeue
-        // with a fixed-size ringbuffer. Should be done by jnix
-        // before March 2018.
+        // FIXME: According to std::deque documentation, this can
+        // throw a bad_alloc exception if the system is low on memory.
+        // Best fix is possibly to replace std::dequeue with a
+        // fixed-size ringbuffer. Should be done for version 2.
 #if CAN_PROTOCOL_VERSION > 1        
 #pragma message "FIXME: make CommandQueue::enqueue() exception-safe"
 #endif        

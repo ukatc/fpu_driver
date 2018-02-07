@@ -122,8 +122,8 @@ E_DriverErrCode CommandPool::initialize()
                 assert(false);
             }
  
-            // FIXME: This can thow bad_alloc if the
-            // system is very low on memory.
+            // This can throw bad_alloc during initialization
+            // if the system is very low on memory.
             pool[i].reserve(capacity);
             unique_ptr<I_CAN_Command> ptr;
             for (int c = 0; c < capacity; c++)
@@ -241,9 +241,9 @@ E_DriverErrCode CommandPool::deInitialize()
         for (int i = 1; i < NUM_CAN_COMMANDS; i++)
         {
  
-            // FIXME: This can thow bad_alloc if the
-            // system is very low on memory.
             pool[i].clear();
+            // FIXME: std::vector<>::shrink_to_fit can thow bad_alloc if the
+            // system is low on memory. This should be caught.
             pool[i].shrink_to_fit();
             
         }

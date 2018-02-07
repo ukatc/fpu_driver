@@ -27,8 +27,14 @@
 #include "canlayer/SBuffer.h"
 
 
-// FIXME: reading and writing data is for now technically
-// unrelated, and should probably splitted into two classes.
+// FIXME: reading and writing data is technically unrelated, and
+// should probably splitted into two classes.
+
+// An important opportunity for speeding up loading of the waveform
+// tables is to aggregate data and to send it in bulk commands.  This
+// is more efficient than to send many small packets over the sockets
+// in different syscalls. Needs check whether this is relevant for
+// performance.
 
 namespace mpifps
 {

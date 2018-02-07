@@ -164,8 +164,9 @@ E_DriverErrCode FPUArray::deInitialize()
 //
 // This first implementation simply copies the internal state, which
 // likely returns much more information than needed.
-// FIXME: replace internal type with slimmed down information
-// which is actually relevant for callers.
+//
+// FIXME: if relevant, replace internal type with slimmed down
+// information which is actually relevant for callers.
 E_GridState FPUArray::getGridState(t_grid_state& out_state) const
 {
 
@@ -433,8 +434,6 @@ bool FPUArray::inTargetState(E_GridState sum_state,
     // if there is any unreported error
     // (such as a collision or a connection failure)
     // return true regardless of specific query.
-    // FIXME: That will need some refinement for
-    // error recovery (noving out of collisions etc).
 
     // check if the driver is working and connected -
     // if not, the state cannot change.
@@ -584,16 +583,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
     {
         TimeOutList::t_toentry toentry;
         // get absolute timeout value
-        //
-        // FIXME: the naming is a bit confusing here.  we simply
-        // define a later time to derive a value which indicates a
-        // negative result (no timeout key found).
         
-///        const timespec MAX_TIMEOUT = { /* .tv_sec = */ 10,
-///                                       /* .tv_nsec = */ 0};
-///
-///        timespec max_tmout = time_add(cur_time, MAX_TIMEOUT);
-///        
         next_key = tout_list.getNextTimeOut();
 
         assert(next_key.tv_sec > 0);

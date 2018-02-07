@@ -340,9 +340,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
 
-    // we create only one thread for reading and writing.
-    // FIXME: set error and driver state on success of
-    // connection.
+    // we create only one thread for reading and one for writing.
     exit_threads = false;
     num_gateways = ngateways;
 
@@ -473,9 +471,6 @@ void GatewayDriver::updatePendingCommand(int fpu_id,
                                          std::unique_ptr<I_CAN_Command>& can_command)
 {
 
-  /* FIXME: (Review) Should a response depend on the current state of
-     an FPU?  Probably not, because we do not know the current state
-     with certainty. */
   
     if (can_command->expectsResponse())
     {
@@ -1130,8 +1125,9 @@ E_DriverErrCode GatewayDriver::abortMotion(t_grid_state& grid_state,
     
     // Send broadcast command to each gateway to abort movement of all
     // FPUs.
-    // FIXME: In protocol version 2, this needs to be changed to
-    // use the gateway SYNC message.
+#if (CAN_PROTOCOL_VERSION > 1 )
+     #pragma message "FIXME: In protocol version 2, this needs to be changed to use the gateway SYNC message."
+#endif        
     unique_ptr<AbortMotionCommand> can_command;
     
     for (int i=0; i < num_gateways; i++)
