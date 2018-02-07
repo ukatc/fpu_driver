@@ -543,9 +543,6 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
     {
         // send remaining bytes of previous message
         status = sbuffer[gateway_id].send_pending(SocketID[gateway_id]);
-#ifdef DEBUG
-        printf("(sp)"); fflush(stdout);
-#endif
     }
     else
     {
@@ -565,12 +562,6 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
             int fpu_id = active_can_command->getFPU_ID();
             const uint16_t busid = address_map[fpu_id].bus_id;
             const uint8_t fpu_canid = address_map[fpu_id].can_id;
-#ifdef DEBUG3
-            printf("txFPU#%i[%i] ", fpu_id, active_can_command->getInstanceCommandCode());
-            fflush(stdout);
-//            printf("command pars: fpu_id=%i, GW = %i, busid = %i, "
-//                   " fpu_canid = %i\n", fpu_id, gateway_id, busid, fpu_canid);
-#endif
             // serialize data
             active_can_command->SerializeToBuffer(busid,
                                                   fpu_canid,
@@ -619,9 +610,6 @@ void* GatewayDriver::threadTxFun()
 
     nfds_t num_fds = NUM_TX_DESCRIPTORS;
     
-#ifdef DEBUG3
-    printf("TX : num_gateways = %i\n", num_gateways);
-#endif
     for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
     {
         pfd[gateway_id].fd = SocketID[gateway_id];
@@ -686,16 +674,6 @@ void* GatewayDriver::threadTxFun()
                 pfd[gateway_id].events = 0;
             }
         }
-#ifdef DEBUG_POLL
-        if (cmd_mask == 0)
-        {
-            printf("Q"); fflush(stdout);
-        }
-        printf("E%s", exit_threads.load(std::memory_order_acquire)
-               ? "1" : "0");
-        fflush(stdout);
-        
-#endif
 
 
         // this waits for a short time for sending data
@@ -731,12 +709,6 @@ void* GatewayDriver::threadTxFun()
 
                 }
             }
-#ifdef DEBUG2
-            if (retval == 0)
-            {
-                printf("T"); fflush(stdout);
-            }
-#endif
         }
         while (retry);
 
@@ -857,9 +829,6 @@ void* GatewayDriver::threadRxFun()
     //assert(poll_timeout_ms > 0);
 
     nfds_t num_fds = num_gateways + 1;
-#ifdef DEBUG3
-    printf("RX : num_gateways = %i\n", num_gateways);
-#endif
 
     for (int i=0; i < num_gateways; i++)
     {
@@ -893,42 +862,21 @@ void* GatewayDriver::threadRxFun()
 
         timespec next_timeout = timeOutList.getNextTimeOut();
         
-#ifdef DEBUG2
-        print_time("RX next time-out from list:  ", next_timeout);
-#endif
 
         timespec max_rx_tmout = time_add(cur_time, MAX_RX_TIMEOUT);
-#ifdef DEBUG2
-        print_time("RX next time-out maximum:    ", max_rx_tmout);
-#endif
         if (time_smaller(max_rx_tmout, next_timeout))
         {
             next_timeout = max_rx_tmout;
         }
 
-#ifdef DEBUG2
-        print_time("RX capped next:              ", next_timeout);
-#endif        
 
         timespec max_wait = time_to_wait(cur_time, next_timeout);
-#ifdef DEBUG2
-        print_time("RX max_wait for socket read:", max_wait);
-        print_time("RX cur_time before read poll:", cur_time);
-#endif
 
         bool retry = false;
         do
         {
             retry = false;
-#ifdef DEBUG2
-            print_time("rx timeout = ", max_wait);
-#endif
-// bug is seemingly NOT caused by signal_set
-//            retval =  ppoll(pfd, num_fds, &max_wait, NULL);
             retval =  ppoll(pfd, num_fds, &max_wait, &signal_set);
-#ifdef DEBUG2
-        print_curtime("cur_time after RX poll: ");
-#endif
             if (retval < 0)
             {
                 int errcode = errno;
@@ -961,9 +909,6 @@ void* GatewayDriver::threadRxFun()
         {
             // a time-out was hit - go through the list of FPUs
             // and mark each FPU which has timed out.
-#ifdef DEBUG2
-            printf("[TO]"); fflush(stdout);
-#endif
             get_monotonic_time(cur_time);
 
             fpuArray.processTimeouts(cur_time, timeOutList);
@@ -983,7 +928,7 @@ void* GatewayDriver::threadRxFun()
                         // a error happened when reading the socket,
                         // or the connection was closed
 #ifdef DEBUG
-                        printf("RX error: sbuffer socket status = %i, exiting\n",
+                        printf("RX thread fatal error: sbuffer socket status = %i, exiting\n",
                               status);
 #endif
                         exitFlag = true;

@@ -322,12 +322,6 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
     int num_moving = (grid_state.Counts[FPST_DATUM_SEARCH]
                   + grid_state.count_pending
                   + grid_state.num_queued);
-#ifdef DEBUG2
-    printf("Counts[DATUM_SEARCH]=%i, count_pending=%i, num_queued=%i, num_moving = %i\n, %s\n",
-           grid_state.Counts[FPST_DATUM_SEARCH],
-           grid_state.count_pending, grid_state.num_queued,
-           num_moving, (num_moving > 0) ? "retry" : "finished");
-#endif        
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -459,9 +453,6 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
                 unique_ptr<I_CAN_Command> cmd(can_command.release());
-#ifdef DEBUG2                
-                printf("sending (fpu_id=%i, step_index=%i ...\n", fpu_id, step_index);
-#endif                
                 gateway.sendCommand(fpu_id, cmd);
             }
         }
@@ -471,9 +462,6 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                state.  This is needed to make sure we have later a clear
                state transition for finishing the load with the last
                flag set. */
-#ifdef DEBUG2
-            printf("waiting for confirmation step 0\n");
-#endif
             double max_wait_time = -1;
             bool cancelled = false;
             state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
@@ -507,9 +495,6 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         }
         step_index++;
     }
-#ifdef DEBUG2
-    printf("ready sending! waiting....\n");
-#endif    
 
     // fpus are now loading data.
     // Wait for fpus loading to finish, or
@@ -639,15 +624,6 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
     if ( (num_moving > 0) 
          && (grid_state.driver_state == DS_CONNECTED))
     {
-#ifdef DEBUG2
-        printf("AsyncDriver::waitExecuteMotion: moving=%i, rfw=%i, rbw=%i, pend=%i, nqed=%i\n",
-               grid_state.Counts[FPST_MOVING],
-               grid_state.Counts[FPST_READY_FORWARD],
-               grid_state.Counts[FPST_READY_BACKWARD],
-               grid_state.count_pending,
-               grid_state.num_queued);
-        printf("AsyncDriver::waitExecuteMotion, waiting (num_moving=%i)\n", num_moving);
-#endif        
         
 
         // this waits for finishing all pending messages,
@@ -666,10 +642,6 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
     finished = (! cancelled) && (num_moving == 0);
 
-#ifdef DEBUG2
-    printf("AsyncDriver::waitExecuteMotion return, finished =%i, cancelled = %i, num_moving = %i\n",
-               finished, cancelled, num_moving);
-#endif        
     if (grid_state.driver_state != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;

@@ -212,9 +212,6 @@ void FPUArray::incSending()
               && (FPUGridState.count_pending == 0) ));
     pthread_mutex_unlock(&grid_state_mutex);
     
-#ifdef DEBUG3
-    printf("num_queued++ -> %i\n", FPUGridState.num_queued);
-#endif    
 }
 
 int  FPUArray::countSending() const
@@ -232,9 +229,6 @@ void FPUArray::decSending()
 {
     pthread_mutex_lock(&grid_state_mutex);
     FPUGridState.num_queued--;
-#ifdef DEBUG3
-    printf("num_queued-- -> %i\n", FPUGridState.num_queued);
-#endif    
     if ( (FPUGridState.num_queued == 0)
          && (FPUGridState.count_pending == 0) )
     {
@@ -282,24 +276,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         // more specific target.
         num_trace_clients++;
     }
-#ifdef DEBUG2
-    if (num_trace_clients > 0)
-    {
-        printf("waitForState(): tracing any change\n");
-    }
-#endif    
-#ifdef DEBUG2
-    clock_t t0 = clock();
-#endif    
     pthread_mutex_lock(&grid_state_mutex);
-#ifdef DEBUG2    
-    clock_t t1 = clock();
-    clock_t td = t1 - t0;
-    if (td > 100)
-    {
-        printf("waitForState(): took %li us to get lock\n", td);
-    }
-#endif    
 
     const unsigned long count_timeouts = reference_state.count_timeout;
 
@@ -316,10 +293,6 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         const bool new_timeout_triggered = ( (target & TGT_TIMEOUT) &&
             (count_timeouts != FPUGridState.count_timeout));
 
-#ifdef DEBUG2
-        printf("WFS: count_timeouts=%lu, FPUGridState.count_timeout=%lu, new TO=%i\n",
-               count_timeouts, FPUGridState.count_timeout, new_timeout_triggered);
-#endif
 
         // If all FPUs have been updated, that might be
         // enough.
@@ -348,23 +321,10 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
             // locking.
             reference_state = FPUGridState;
             got_value = true;
-#ifdef DEBUG2
-            int n = num_trace_clients;
-            printf("W[%i/%i,x,%i] ", FPUGridState.num_queued,
-                   FPUGridState.count_pending,
-                   n);
-            printf("waitForState(): leaving with inTargetState=%i (sum_state=%i, "
-                   "wait target = %i), new_timeout=%i, all_updated=%i\n",
-                   target_reached, sum_state, target,
-                   new_timeout_triggered, all_updated);
-#endif            
             break;
         }
         else
         {
-#ifdef DEBUG2           
-            printf("WFS: q=%i / p= %i\n", FPUGridState.num_queued, FPUGridState.count_pending);
-#endif
             if (max_wait_time < 0)
             {
                 int rv = pthread_cond_wait(&cond_state_change,
@@ -376,10 +336,6 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
                                            &grid_state_mutex, &abs_wait_time);
                 if (rv == ETIMEDOUT)
                 {
-#ifdef DEBUG2            
-                    printf("WFS: timeout exit, nq=%i, cp=%i\n",
-                           FPUGridState.num_queued, FPUGridState.count_pending);
-#endif
                     cancelled = true;
                     // grab current state
                     reference_state = FPUGridState;
@@ -588,11 +544,6 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
 
         assert(next_key.tv_sec > 0);
         
-#ifdef DEBUG2
-        printf("processTimeouts(): cur time: %li/%li, next timeout: %li/%li\n",
-               cur_time.tv_sec, cur_time.tv_nsec,
-               next_key.tv_sec, next_key.tv_nsec);
-#endif
         if (time_smaller(cur_time, next_key))
         {
             break;
@@ -610,11 +561,6 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
             
         int fpu_id = toentry.id;
         
-#ifdef DEBUG2
-        printf("processTimeouts(): popped from list fpu#%i, timeout: %li/%li\n",
-               fpu_id,
-               next_key.tv_sec, next_key.tv_nsec);
-#endif
 
         t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
 
@@ -634,23 +580,12 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
             state_count_changed = true;
         }
         
-#ifdef DEBUG2
-        printf("inserting next timeout for FPU #%i: %li/%li\n",
-               fpu_id,
-               next_timeout.tv_sec, next_timeout.tv_nsec);
-#endif
         // re-insert smallest time-out of remaining pending commands
         tout_list.insertTimeOut(fpu_id, next_timeout);
         
 
     }
     
-#ifdef DEBUG2
-    timespec dbg_next_key = tout_list.getNextTimeOut();
-    printf("resulting next timeout (after expiring): %li/%li\n",
-           dbg_next_key.tv_sec, dbg_next_key.tv_nsec);
-    assert(time_smaller(cur_time, dbg_next_key));
-#endif    
 
 
     // signal any waiting control threads if
@@ -661,9 +596,6 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
          && ((num_trace_clients > 0)))
        || state_count_changed )
     {
-#ifdef DEBUG2        
-        printf("¡4");fflush(stdout);
-#endif        
         pthread_cond_broadcast(&cond_state_change);
     }
     pthread_mutex_unlock(&grid_state_mutex);
@@ -735,6 +667,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 {
 
     int fpu_busid = can_identifier & 0x7f;
+    
 #ifdef DEBUG2
 #define PRINT_BYTES    
 #ifdef PRINT_BYTES    
@@ -804,7 +737,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     if (data[0] != fpu_busid)
     {
 #ifdef DEBUG
-            printf("RX invalid message: payload fpu_busid (%i) does"
+            printf("RX invalid message for protocol 1: payload fpu_busid (%i) does"
                    " not match fpu_busid from canid (%i) - ignored.\n",
                    data[0], fpu_busid);
 #endif
@@ -821,25 +754,10 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 #endif
         return;
     }
-#ifdef DEBUG2
-    printf("rxFPU#%i[%i] ",fpu_id, data[1]);
-    fflush(stdout);
-#endif
 
-#ifdef DEBUG2
-    clock_t t0 = clock();
-#endif
     
     pthread_mutex_lock(&grid_state_mutex);
     
-#ifdef DEBUG2
-    clock_t t1 = clock();
-    clock_t td = t1 - t0;
-    if (td > 100)
-    {
-        printf("dispatchResponse(): took %li us to get lock\n", td);
-    }
-#endif    
     {
 
         // get canid of FPU (additional ids might be used
@@ -868,18 +786,6 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         FPUGridState.Counts[oldstate.state]--;
         FPUGridState.Counts[newstate.state]++;
 
-#ifdef DEBUG3
-        printf("count_pending= %i\n", FPUGridState.count_pending);
-        printf("state %i -> %i\n", oldstate.state, newstate.state);
-        printf("gridstate.Counts[] = [");
-        for (int i=0; i < NUM_FPU_STATES; i++)
-        {
-            printf("%i%s", FPUGridState.Counts[i],
-                   (i < (NUM_FPU_STATES -1)) ? ", " : "" );
-        }
-        printf("]\n"); fflush(stdout);
-#endif        
-
         // The state of the grid can change when *all* FPUs have left
         // an old state, or *at least one* has entered a new state.
         bool state_transition = ((oldstate.state != newstate.state)
@@ -893,23 +799,10 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
              || (num_trace_clients > 0) )
         {
             pthread_cond_broadcast(&cond_state_change);
-#ifdef DEBUG2
-            int n = num_trace_clients;
-            printf("![%i/%i,%i,%i]", FPUGridState.num_queued,
-                   FPUGridState.count_pending,
-                   state_transition ? 1 :0,
-                   n);fflush(stdout);
-#endif            
         }
 
     } // end of locked block
-#ifdef DEBUG2
-    int cnt =  FPUGridState.num_queued + FPUGridState.count_pending;
-#endif    
     pthread_mutex_unlock(&grid_state_mutex);
-#ifdef DEBUG3
-    printf("handle_request count_pending=%i\n", cnt);
-#endif
 
 #ifdef PRINT_BYTES    
     printf(" (dispatch_response): OK\n");

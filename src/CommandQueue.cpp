@@ -66,9 +66,6 @@ void CommandQueue::setNumGateways(int ngws)
 CommandQueue::t_command_mask CommandQueue::checkForCommand() const
 {
     t_command_mask rmask = 0;
-#ifdef DEBUG3
-    printf("CommandQueue: checking for new commands (ngw=%i)..", ngateways);
-#endif
     pthread_mutex_lock(&queue_mutex);
     for (int i=0; i < ngateways; i++)
     {
@@ -79,9 +76,6 @@ CommandQueue::t_command_mask CommandQueue::checkForCommand() const
     }
     pthread_mutex_unlock(&queue_mutex);
 
-#ifdef DEBUG3
-    printf("rmask = %i\n", rmask);
-#endif
 
     return rmask;
 
@@ -145,13 +139,6 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
     {
         return QS_MISSING_INSTANCE;
     }
-#ifdef DEBUG3
-
-    printf("CQ: sending command: %i to FPU # %i", 
-           new_command->getInstanceCommandCode(),
-           new_command->getFPU_ID());
-    fflush(stdout);
-#endif
 
     {
         pthread_mutex_lock(&queue_mutex);
@@ -198,12 +185,6 @@ unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
 
         pthread_mutex_unlock(&queue_mutex);
     }
-#ifdef DEBUG3
-    printf("dequeuing command: %i to FPU # %i",
-           rval->getInstanceCommandCode(),
-           rval->getFPU_ID());
-    fflush(stdout);
-#endif
     return rval;
 }
 

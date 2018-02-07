@@ -54,9 +54,9 @@ wt = { 0: [ ( 10, 20),
 print("configuring wavetable")
 gd.configMotion(wt, gs)
 
-#gd.reverseMotion(gs)
-#print("issuing executeMotion!")
-#gd.executeMotion(gs)
+gd.reverseMotion(gs)
+print("issuing executeMotion!")
+gd.executeMotion(gs)
 
                        
 
