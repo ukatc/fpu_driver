@@ -41,18 +41,42 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
 {
     switch(s)
     {
-        case FPST_UNKNOWN: out << "'UNKNOWN'"; break;
-        case FPST_UNINITIALIZED: out << "'UNINITIALIZED'"; break;
-        case FPST_LOCKED: out << "'LOCKED'"; break;
-        case FPST_DATUM_SEARCH: out << "'DATUM_SEARCH'"; break;
-        case FPST_AT_DATUM: out << "'AT_DATUM'"; break;
-        case FPST_LOADING: out << "'LOADING'"; break;
-        case FPST_READY_FORWARD: out << "'READY_FORWARD'"; break;
-        case FPST_READY_BACKWARD: out << "'READY_BACKWARD'"; break;
-        case FPST_MOVING: out << "'MOVING'"; break;
-        case FPST_RESTING: out << "'RESTING'"; break;
-        case FPST_ABORTED: out << "'ABORTED'"; break;
-        case FPST_OBSTACLE_ERROR: out << "'OBSTACLE_ERROR'"; break;
+    case FPST_UNKNOWN:
+        out << "'UNKNOWN'";
+        break;
+    case FPST_UNINITIALIZED:
+        out << "'UNINITIALIZED'";
+        break;
+    case FPST_LOCKED:
+        out << "'LOCKED'";
+        break;
+    case FPST_DATUM_SEARCH:
+        out << "'DATUM_SEARCH'";
+        break;
+    case FPST_AT_DATUM:
+        out << "'AT_DATUM'";
+        break;
+    case FPST_LOADING:
+        out << "'LOADING'";
+        break;
+    case FPST_READY_FORWARD:
+        out << "'READY_FORWARD'";
+        break;
+    case FPST_READY_BACKWARD:
+        out << "'READY_BACKWARD'";
+        break;
+    case FPST_MOVING:
+        out << "'MOVING'";
+        break;
+    case FPST_RESTING:
+        out << "'RESTING'";
+        break;
+    case FPST_ABORTED:
+        out << "'ABORTED'";
+        break;
+    case FPST_OBSTACLE_ERROR:
+        out << "'OBSTACLE_ERROR'";
+        break;
     }
     return out;
 }
@@ -61,10 +85,18 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_DriverState &s)
 {
     switch(s)
     {
-    case DS_UNINITIALIZED: out << "'DS_UNINITIALIZED'"; break;
-    case DS_UNCONNECTED: out << "'DS_UNCONNECTED'"; break;
-    case DS_CONNECTED: out << "'DS_CONNECTED'"; break;
-    case DS_ASSERTION_FAILED: out << "'DS_ASSERTION_FAILED'"; break;
+    case DS_UNINITIALIZED:
+        out << "'DS_UNINITIALIZED'";
+        break;
+    case DS_UNCONNECTED:
+        out << "'DS_UNCONNECTED'";
+        break;
+    case DS_CONNECTED:
+        out << "'DS_CONNECTED'";
+        break;
+    case DS_ASSERTION_FAILED:
+        out << "'DS_ASSERTION_FAILED'";
+        break;
     }
     return out;
 }
@@ -74,7 +106,7 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_DriverState &s)
 class WrapFPUState : public t_fpu_state
 {
 
-    public:
+public:
 
     bool was_zeroed;
     bool is_locked;
@@ -83,88 +115,88 @@ class WrapFPUState : public t_fpu_state
     bool at_alpha_limit;
     bool beta_collision;
     bool waveform_valid;
-    bool waveform_ready; 
-    bool waveform_reversed; 
+    bool waveform_ready;
+    bool waveform_reversed;
 
-    WrapFPUState(){}
+    WrapFPUState() {}
 
     WrapFPUState(const t_fpu_state& fpu_state)
     {
         memcpy(cmd_timeouts,fpu_state.cmd_timeouts, sizeof(cmd_timeouts));
-        last_updated              = fpu_state.last_updated;                 
-        pending_command_set       = fpu_state.pending_command_set;          
-        state                     = fpu_state.state;                        
+        last_updated              = fpu_state.last_updated;
+        pending_command_set       = fpu_state.pending_command_set;
+        state                     = fpu_state.state;
         last_command              = fpu_state.last_command;
         last_status               = fpu_state.last_status;
-        alpha_steps               = fpu_state.alpha_steps;                  
-        beta_steps                = fpu_state.beta_steps;                   
-        alpha_deviation           = fpu_state.alpha_deviation;                  
-        beta_deviation            = fpu_state.beta_deviation;                   
-        timeout_count             = fpu_state.timeout_count;                
-        direction_alpha           = fpu_state.direction_alpha;              
-        direction_beta            = fpu_state.direction_beta;               
-        num_waveforms             = fpu_state.num_waveforms;                
-        num_active_timeouts       = fpu_state.num_active_timeouts;          
-        sequence_number           = fpu_state.sequence_number;              
-        was_zeroed                = fpu_state.was_zeroed;                   
-        is_locked                 = fpu_state.is_locked;                    
-        alpha_datum_switch_active = fpu_state.alpha_datum_switch_active;    
-        beta_datum_switch_active  = fpu_state.beta_datum_switch_active;     
-        at_alpha_limit            = fpu_state.at_alpha_limit;               
-        beta_collision            = fpu_state.beta_collision;               
-        waveform_valid            = fpu_state.waveform_valid;               
-        waveform_ready            = fpu_state.waveform_ready;               
-        waveform_reversed         = fpu_state.waveform_reversed;            
-        
+        alpha_steps               = fpu_state.alpha_steps;
+        beta_steps                = fpu_state.beta_steps;
+        alpha_deviation           = fpu_state.alpha_deviation;
+        beta_deviation            = fpu_state.beta_deviation;
+        timeout_count             = fpu_state.timeout_count;
+        direction_alpha           = fpu_state.direction_alpha;
+        direction_beta            = fpu_state.direction_beta;
+        num_waveforms             = fpu_state.num_waveforms;
+        num_active_timeouts       = fpu_state.num_active_timeouts;
+        sequence_number           = fpu_state.sequence_number;
+        was_zeroed                = fpu_state.was_zeroed;
+        is_locked                 = fpu_state.is_locked;
+        alpha_datum_switch_active = fpu_state.alpha_datum_switch_active;
+        beta_datum_switch_active  = fpu_state.beta_datum_switch_active;
+        at_alpha_limit            = fpu_state.at_alpha_limit;
+        beta_collision            = fpu_state.beta_collision;
+        waveform_valid            = fpu_state.waveform_valid;
+        waveform_ready            = fpu_state.waveform_ready;
+        waveform_reversed         = fpu_state.waveform_reversed;
+
     }
-    
+
     bool operator==(const  WrapFPUState &a) const
     {
         return (*this) == a;
     }
 
     static std::string to_repr(const WrapFPUState &fpu)
-        {
-            std::ostringstream s;
-            /* The following formatting breaks the chain of method
-               calls at some points, and starts a new statement, for
-               example when left-shifting fpu.state.  The reason for
-               this is that doing not so will break the overloading of
-               operator<<() for the enumeration types.  Do not change
-               this without extensive testing.  This is probably a bug
-               in the streams standard library.
-            */
+    {
+        std::ostringstream s;
+        /* The following formatting breaks the chain of method
+           calls at some points, and starts a new statement, for
+           example when left-shifting fpu.state.  The reason for
+           this is that doing not so will break the overloading of
+           operator<<() for the enumeration types.  Do not change
+           this without extensive testing.  This is probably a bug
+           in the streams standard library.
+        */
 
-            s << "{ 'last_updated' : " << s.precision(10) << (1.0 * fpu.last_updated.tv_sec
-                                           + 1.0e-9 * fpu.last_updated.tv_nsec)
-              << " 'pending_command_set' : " << fpu.pending_command_set
-              << " 'pending_command_set' : " << fpu.pending_command_set      
-              << " 'state' : ";
-              s << fpu.state
-              << " 'last_command' : " << fpu.last_command             
-              << " 'last_status' : " << fpu.last_status              
-              << " 'alpha_steps' : " << fpu.alpha_steps                              
-              << " 'beta_steps' : " << fpu.beta_steps               
-              << " 'alpha_deviation' : " << fpu.alpha_deviation          
-              << " 'beta_deviation' : " << fpu.beta_deviation           
-              << " 'timeout_count' : " << fpu.timeout_count                            
-              << " 'direction_alpha' : " << fpu.direction_alpha          
-              << " 'direction_beta' : " << fpu.direction_beta           
-              << " 'num_waveforms' : " << fpu.num_waveforms            
-              << " 'num_active_timeouts' : " << fpu.num_active_timeouts      
-              << " 'sequence_number' : " << fpu.sequence_number          
-              << " 'was_zeroed' : " << fpu.was_zeroed               
-              << " 'is_locked' : " << fpu.is_locked                
-              << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active
-              << " 'beta_datum_switch_active' : " << fpu.beta_datum_switch_active 
-              << " 'at_alpha_limit' : " << fpu.at_alpha_limit           
-              << " 'beta_collision' : " << fpu.beta_collision           
-              << " 'waveform_valid' : " << fpu.waveform_valid           
-              << " 'waveform_ready' : " << fpu.waveform_ready           
-              << " 'waveform_reversed' : " << fpu.waveform_reversed
-              << " }";
-            return s.str();
-        }
+        s << "{ 'last_updated' : " << s.precision(10) << (1.0 * fpu.last_updated.tv_sec
+                + 1.0e-9 * fpu.last_updated.tv_nsec)
+          << " 'pending_command_set' : " << fpu.pending_command_set
+          << " 'pending_command_set' : " << fpu.pending_command_set
+          << " 'state' : ";
+        s << fpu.state
+          << " 'last_command' : " << fpu.last_command
+          << " 'last_status' : " << fpu.last_status
+          << " 'alpha_steps' : " << fpu.alpha_steps
+          << " 'beta_steps' : " << fpu.beta_steps
+          << " 'alpha_deviation' : " << fpu.alpha_deviation
+          << " 'beta_deviation' : " << fpu.beta_deviation
+          << " 'timeout_count' : " << fpu.timeout_count
+          << " 'direction_alpha' : " << fpu.direction_alpha
+          << " 'direction_beta' : " << fpu.direction_beta
+          << " 'num_waveforms' : " << fpu.num_waveforms
+          << " 'num_active_timeouts' : " << fpu.num_active_timeouts
+          << " 'sequence_number' : " << fpu.sequence_number
+          << " 'was_zeroed' : " << fpu.was_zeroed
+          << " 'is_locked' : " << fpu.is_locked
+          << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active
+          << " 'beta_datum_switch_active' : " << fpu.beta_datum_switch_active
+          << " 'at_alpha_limit' : " << fpu.at_alpha_limit
+          << " 'beta_collision' : " << fpu.beta_collision
+          << " 'waveform_valid' : " << fpu.waveform_valid
+          << " 'waveform_ready' : " << fpu.waveform_ready
+          << " 'waveform_reversed' : " << fpu.waveform_reversed
+          << " }";
+        return s.str();
+    }
 
 
 };
@@ -184,7 +216,7 @@ public:
         for (int i=0; i < count_fpus; i++)
         {
             WrapFPUState fpu_state(FPU_state[i]);
-                state_vec.push_back(fpu_state);
+            state_vec.push_back(fpu_state);
         }
         return state_vec;
     }
@@ -200,52 +232,52 @@ public:
     }
 
     static std::string to_string(const WrapGridState &gs)
+    {
+        std::ostringstream s;
+        // Please observe the comment to WrapFPUState::to_repr,
+        // this applies here as well.
+        s << "count_pending=" << gs.count_pending << ", "
+          << "num_queued=" << gs.num_queued << ", "
+          << "count_timeout=" << gs.count_timeout << ", "
+          << "driver_state=";
+        s << gs.driver_state << ", "
+          << "Counts= [ ";
+        for(int i=0; i < NUM_FPU_STATES; i++)
         {
-            std::ostringstream s;
-            // Please observe the comment to WrapFPUState::to_repr,
-            // this applies here as well.
-            s << "count_pending=" << gs.count_pending << ", "
-              << "num_queued=" << gs.num_queued << ", "
-              << "count_timeout=" << gs.count_timeout << ", "
-              << "driver_state=";
-            s << gs.driver_state << ", "
-              << "Counts= [ ";
-            for(int i=0; i < NUM_FPU_STATES; i++)
+            s << gs.Counts[i];
+            if (i < (NUM_FPU_STATES -1))
             {
-                s << gs.Counts[i];
-                if (i < (NUM_FPU_STATES -1))
-                {
-                    s <<", ";
-                }                
+                s <<", ";
             }
-            s << " ]" << ", FPU[]=..." ;
-            return s.str();
         }
+        s << " ]" << ", FPU[]=..." ;
+        return s.str();
+    }
 
     static std::string to_repr(const WrapGridState &gs)
+    {
+        std::ostringstream s;
+        // Please observe the comment to WrapFPUState::to_repr,
+        // this applies here as well.
+        s << "{ 'count_pending' :" << gs.count_pending << ", "
+          << "'num_queued' :" << gs.num_queued << ", "
+          << "'count_timeout' :" << gs.count_timeout << ", "
+          << "'driver_state' :";
+        s << gs.driver_state << ", "
+          << "'Counts' : { ";
+        for(int i=0; i < NUM_FPU_STATES; i++)
         {
-            std::ostringstream s;
-            // Please observe the comment to WrapFPUState::to_repr,
-            // this applies here as well.
-            s << "{ 'count_pending' :" << gs.count_pending << ", "
-              << "'num_queued' :" << gs.num_queued << ", "
-              << "'count_timeout' :" << gs.count_timeout << ", "
-              << "'driver_state' :";
-            s << gs.driver_state << ", "
-              << "'Counts' : { ";
-            for(int i=0; i < NUM_FPU_STATES; i++)
+            s << static_cast<E_FPU_STATE>(i)
+              << " : "
+              << gs.Counts[i];
+            if (i < (NUM_FPU_STATES -1))
             {
-                s << static_cast<E_FPU_STATE>(i)
-                  << " : " 
-                  << gs.Counts[i];
-                if (i < (NUM_FPU_STATES -1))
-                {
-                    s <<", ";
-                }                
+                s <<", ";
             }
-            s << " ]" << ", FPU[]=..." ;
-            return s.str();
         }
+        s << " ]" << ", FPU[]=..." ;
+        return s.str();
+    }
 
 };
 
@@ -257,30 +289,45 @@ E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
 
 struct TooManyGatewaysException : std::exception
 {
-  char const* what() const throw() { return "Number of EtherCAN gateways exceed driver limit"; }
+    char const* what() const throw()
+    {
+        return "Number of EtherCAN gateways exceed driver limit";
+    }
 };
 
 struct TooFewGatewaysException : std::exception
 {
-  char const* what() const throw() { return "Need to configure at least one EtherCAN gateway"; }
+    char const* what() const throw()
+    {
+        return "Need to configure at least one EtherCAN gateway";
+    }
 };
 
 struct TooFewFPUsException : std::exception
 {
-  char const* what() const throw() { return "Waveform table needs to address at least one FPU."; }
+    char const* what() const throw()
+    {
+        return "Waveform table needs to address at least one FPU.";
+    }
 };
 
 struct TooFewStepsException : std::exception
 {
-  char const* what() const throw() { return "Waveform entry needs to contain at least one step."; }
+    char const* what() const throw()
+    {
+        return "Waveform entry needs to contain at least one step.";
+    }
 };
 
 struct DriverNotInitializedException
- : std::exception
+    : std::exception
 
 
 {
-  char const* what() const throw() { return "GridDriver was not initialized properly, possibly due to system error."; }
+    char const* what() const throw()
+    {
+        return "GridDriver was not initialized properly, possibly due to system error.";
+    }
 };
 
 void translate(DriverNotInitializedException const& e)
@@ -291,7 +338,10 @@ void translate(DriverNotInitializedException const& e)
 
 struct DriverAlreadyInitializedException : std::exception
 {
-  char const* what() const throw() { return "GridDriver was already initialized properly."; }
+    char const* what() const throw()
+    {
+        return "GridDriver was already initialized properly.";
+    }
 };
 
 void translate(DriverAlreadyInitializedException const& e)
@@ -303,7 +353,10 @@ void translate(DriverAlreadyInitializedException const& e)
 
 struct NoConnectionException : std::exception
 {
-  char const* what() const throw() { return "The Fibre Positioner Unit Driver is not connected to a gateway."; }
+    char const* what() const throw()
+    {
+        return "The Fibre Positioner Unit Driver is not connected to a gateway.";
+    }
 };
 
 void translate(NoConnectionException const& e)
@@ -315,7 +368,10 @@ void translate(NoConnectionException const& e)
 
 struct DriverStillBusyException : std::exception
 {
-  char const* what() const throw() { return "The FPU driver is still busy working on a previosu command"; }
+    char const* what() const throw()
+    {
+        return "The FPU driver is still busy working on a previosu command";
+    }
 };
 
 void translate(DriverStillBusyException const& e)
@@ -326,7 +382,10 @@ void translate(DriverStillBusyException const& e)
 
 struct NewCollisionException : std::exception
 {
-  char const* what() const throw() { return "A collision was detected, movement for this FPU aborted."; }
+    char const* what() const throw()
+    {
+        return "A collision was detected, movement for this FPU aborted.";
+    }
 };
 
 void translate(NewCollisionException const& e)
@@ -337,7 +396,10 @@ void translate(NewCollisionException const& e)
 
 struct UnresolvedCollisionException : std::exception
 {
-  char const* what() const throw() { return "A previous collision needs to be resolved first"; }
+    char const* what() const throw()
+    {
+        return "A previous collision needs to be resolved first";
+    }
 };
 
 void translate(UnresolvedCollisionException const& e)
@@ -348,7 +410,10 @@ void translate(UnresolvedCollisionException const& e)
 
 struct FpuNotInitializedException : std::exception
 {
-  char const* what() const throw() { return "A fibre positioner unit (FPU) was not initialized as required"; }
+    char const* what() const throw()
+    {
+        return "A fibre positioner unit (FPU) was not initialized as required";
+    }
 };
 
 void translate(FpuNotInitializedException const& e)
@@ -359,7 +424,10 @@ void translate(FpuNotInitializedException const& e)
 
 struct DriverAlreadyConnectedException : std::exception
 {
-  char const* what() const throw() { return "Driver was already connected, would need to disconenct() first."; }
+    char const* what() const throw()
+    {
+        return "Driver was already connected, would need to disconenct() first.";
+    }
 };
 
 void translate(DriverAlreadyConnectedException const& e)
@@ -370,7 +438,10 @@ void translate(DriverAlreadyConnectedException const& e)
 
 struct DriverStillConnectedException : std::exception
 {
-  char const* what() const throw() { return "FPU driver is still connected"; }
+    char const* what() const throw()
+    {
+        return "FPU driver is still connected";
+    }
 };
 
 void translate(DriverStillConnectedException const& e)
@@ -381,7 +452,10 @@ void translate(DriverStillConnectedException const& e)
 
 struct MaxRetriesExceededException : std::exception
 {
-  char const* what() const throw() { return "A command could not be launched in spite of several retries"; }
+    char const* what() const throw()
+    {
+        return "A command could not be launched in spite of several retries";
+    }
 };
 
 void translate(MaxRetriesExceededException const& e)
@@ -393,7 +467,10 @@ void translate(MaxRetriesExceededException const& e)
 
 struct InvalidWaveformException : std::exception
 {
-  char const* what() const throw() { return "The passed waveform is invalid."; }
+    char const* what() const throw()
+    {
+        return "The passed waveform is invalid.";
+    }
 };
 
 void translate(InvalidWaveformException const& e)
@@ -404,7 +481,10 @@ void translate(InvalidWaveformException const& e)
 
 struct NoMovableFPUsException : std::exception
 {
-  char const* what() const throw() { return "No FPUs are currently movable."; }
+    char const* what() const throw()
+    {
+        return "No FPUs are currently movable.";
+    }
 };
 
 void translate(NoMovableFPUsException const& e)
@@ -415,15 +495,21 @@ void translate(NoMovableFPUsException const& e)
 
 struct CommandTimeOutException : std::exception
 {
-  char const* what() const throw() { return "Response to a CAN command surpassed maximum waiting time."
-          "This can be caused by a broken connection or networking problems."; }
+    char const* what() const throw()
+    {
+        return "Response to a CAN command surpassed maximum waiting time."
+               "This can be caused by a broken connection or networking problems.";
+    }
 };
 
 
 struct AbortedStateException : std::exception
 {
-  char const* what() const throw() { return "There are FPUs in aborted state - use the "
-          "resetFPUs method to reset state."; }
+    char const* what() const throw()
+    {
+        return "There are FPUs in aborted state - use the "
+               "resetFPUs method to reset state.";
+    }
 };
 
 void translate(AbortedStateException const& e)
@@ -434,7 +520,10 @@ void translate(AbortedStateException const& e)
 
 struct FPUsLockedException : std::exception
 {
-  char const* what() const throw() { return "Some addressed FPUs are in locked state, they need to be unlocked first."; }
+    char const* what() const throw()
+    {
+        return "Some addressed FPUs are in locked state, they need to be unlocked first.";
+    }
 };
 
 void translate(FPUsLockedException const& e)
@@ -445,7 +534,10 @@ void translate(FPUsLockedException const& e)
 
 struct UnimplementedException : std::exception
 {
-  char const* what() const throw() { return "Command or operation not implemented for this protocol version"; }
+    char const* what() const throw()
+    {
+        return "Command or operation not implemented for this protocol version";
+    }
 };
 
 void translate(UnimplementedException const& e)
@@ -457,8 +549,11 @@ void translate(UnimplementedException const& e)
 
 struct AssertionFailedException : std::exception
 {
-  char const* what() const throw() { return "The driver has an internal logic error, "
-          "and cannot continue to operate."; }
+    char const* what() const throw()
+    {
+        return "The driver has an internal logic error, "
+               "and cannot continue to operate.";
+    }
 };
 
 void translate(AssertionFailedException const& e)
@@ -503,347 +598,365 @@ void checkDriverError(E_DriverErrCode ecode)
 {
     switch(ecode)
     {
-    case DE_OK: break;
+    case DE_OK:
+        break;
 
     case DE_DRIVER_NOT_INITIALIZED:
-        throw DriverNotInitializedException(); break;         
-        
+        throw DriverNotInitializedException();
+        break;
+
     case DE_DRIVER_ALREADY_INITIALIZED:
-        throw DriverAlreadyInitializedException(); break;
-        
+        throw DriverAlreadyInitializedException();
+        break;
+
     case DE_NO_CONNECTION :
-        throw NoConnectionException(); break;
-        
+        throw NoConnectionException();
+        break;
+
     case DE_STILL_BUSY:
-        throw DriverStillBusyException(); break;
-        
+        throw DriverStillBusyException();
+        break;
+
     case DE_NEW_COLLISION :
-        throw NewCollisionException(); break;
-        
+        throw NewCollisionException();
+        break;
+
     case DE_UNRESOLVED_COLLISION :
-        throw UnresolvedCollisionException(); break;
-        
+        throw UnresolvedCollisionException();
+        break;
+
     case DE_FPU_NOT_INITIALIZED:
-        throw FpuNotInitializedException(); break;
-        
+        throw FpuNotInitializedException();
+        break;
+
     case DE_DRIVER_ALREADY_CONNECTED :
-        throw DriverAlreadyConnectedException(); break;
-        
+        throw DriverAlreadyConnectedException();
+        break;
+
     case DE_DRIVER_STILL_CONNECTED:
-        throw DriverStillConnectedException(); break;
-        
+        throw DriverStillConnectedException();
+        break;
+
     case DE_MAX_RETRIES_EXCEEDED :
-        throw MaxRetriesExceededException(); break;
-        
+        throw MaxRetriesExceededException();
+        break;
+
     case DE_INVALID_WAVEFORM :
-        throw InvalidWaveformException(); break;
-        
+        throw InvalidWaveformException();
+        break;
+
     case DE_NO_MOVABLE_FPUS :
-        throw NoMovableFPUsException(); break;
-        
+        throw NoMovableFPUsException();
+        break;
+
     case DE_COMMAND_TIMEOUT :
-        throw CommandTimeOutException(); break;
-        
+        throw CommandTimeOutException();
+        break;
+
     case DE_ABORTED_STATE :
-        throw AbortedStateException(); break;
-        
+        throw AbortedStateException();
+        break;
+
     case DE_FPUS_LOCKED :
-        throw FPUsLockedException(); break;
+        throw FPUsLockedException();
+        break;
 
     case DE_UNIMPLEMENTED:
-        throw UnimplementedException(); break;
-        
-    case DE_ASSERTION_FAILED:
-        throw AssertionFailedException(); break;
+        throw UnimplementedException();
+        break;
 
-            
+    case DE_ASSERTION_FAILED:
+        throw AssertionFailedException();
+        break;
+
+
     }
 }
 
 class WrapGatewayAddress : public t_gateway_address
+{
+public:
+    WrapGatewayAddress()
     {
-        public:
-        WrapGatewayAddress()
-            {
-                ip = DEFAULT_GATEWAY_IP;
-                port = DEFAULT_GATEWAY_PORT;
-            };
-        WrapGatewayAddress(const std::string& new_ip, const int new_port)
-            {
-                _ip = new_ip;
-                ip = _ip.c_str();
-                port = new_port;
-            };
-        WrapGatewayAddress(const std::string& new_ip)
-            {
-                _ip = new_ip;
-                ip = _ip.c_str();
-                port = DEFAULT_GATEWAY_PORT;
-            };
-
-        bool operator==(const  t_gateway_address &a) const
-            {
-                return (*this) == a;
-            };
-        private:
-        std::string _ip;
-        
+        ip = DEFAULT_GATEWAY_IP;
+        port = DEFAULT_GATEWAY_PORT;
     };
+    WrapGatewayAddress(const std::string& new_ip, const int new_port)
+    {
+        _ip = new_ip;
+        ip = _ip.c_str();
+        port = new_port;
+    };
+    WrapGatewayAddress(const std::string& new_ip)
+    {
+        _ip = new_ip;
+        ip = _ip.c_str();
+        port = DEFAULT_GATEWAY_PORT;
+    };
+
+    bool operator==(const  t_gateway_address &a) const
+    {
+        return (*this) == a;
+    };
+private:
+    std::string _ip;
+
+};
 
 class WrapGridDriver : public GridDriver
 {
-    public:
-    
+public:
+
     WrapGridDriver(int nfpus) : GridDriver(nfpus)
-        {
-        };
+    {
+    };
 
-    
+
     E_DriverErrCode connectGateways(list& list_gateway_addresses)
-        {
-            const int actual_num_gw = len(list_gateway_addresses);
-            
-            int num_gateways = 0;
-            t_gateway_address address_array[MAX_NUM_GATEWAYS];
-            
-            if (actual_num_gw > MAX_NUM_GATEWAYS)
-            {
-                throw TooManyGatewaysException();
-            }
-            if (actual_num_gw == 0)
-            {
-                throw TooFewGatewaysException();
-            }
-            
-            for (int i=0; i < actual_num_gw; i++)
-            {
+    {
+        const int actual_num_gw = len(list_gateway_addresses);
 
-                // extract entry
-                WrapGatewayAddress address_entry =
-                    extract<WrapGatewayAddress>(
+        int num_gateways = 0;
+        t_gateway_address address_array[MAX_NUM_GATEWAYS];
+
+        if (actual_num_gw > MAX_NUM_GATEWAYS)
+        {
+            throw TooManyGatewaysException();
+        }
+        if (actual_num_gw == 0)
+        {
+            throw TooFewGatewaysException();
+        }
+
+        for (int i=0; i < actual_num_gw; i++)
+        {
+
+            // extract entry
+            WrapGatewayAddress address_entry =
+                extract<WrapGatewayAddress>(
                     list_gateway_addresses[i]);
-                // cast (slice) to internal parameter type
-                address_array[i] = static_cast<t_gateway_address>(
-                    address_entry);
-            }
-            E_DriverErrCode ecode = connect(actual_num_gw, address_array);
-            checkDriverError(ecode);
-            return ecode;
-            
-        };
+            // cast (slice) to internal parameter type
+            address_array[i] = static_cast<t_gateway_address>(
+                                   address_entry);
+        }
+        E_DriverErrCode ecode = connect(actual_num_gw, address_array);
+        checkDriverError(ecode);
+        return ecode;
+
+    };
 
     E_DriverErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state)
+    {
+        list fpu_id_list = dict_waveforms.keys();
+        const int nkeys = len(fpu_id_list);
+
+        if (nkeys == 0)
         {
-            list fpu_id_list = dict_waveforms.keys();
-            const int nkeys = len(fpu_id_list);
+            throw TooFewFPUsException();
+        }
 
-            if (nkeys == 0)
+        t_wtable wtable;
+        for(int i = 0; i < nkeys; i++)
+        {
+            object fpu_key = fpu_id_list[i];
+            int fpu_id = extract<int>(fpu_key);
+            list step_list = extract<list>(dict_waveforms[fpu_key]);
+            int num_steps = len(step_list);
+
+            if (num_steps == 0)
             {
-                throw TooFewFPUsException();
+                throw TooFewStepsException();
             }
 
-            t_wtable wtable;
-            for(int i = 0; i < nkeys; i++)
+            std::vector<t_step_pair> steps;
+
+            for(int j = 0; j < num_steps; j++)
             {
-                object fpu_key = fpu_id_list[i];
-                int fpu_id = extract<int>(fpu_key);
-                list step_list = extract<list>(dict_waveforms[fpu_key]);
-                int num_steps = len(step_list);
+                tuple tstep_pair = extract<tuple>(step_list[j]);
+                int16_t alpha_steps = extract<int>(tstep_pair[0]);
+                int16_t beta_steps = extract<int>(tstep_pair[1]);
 
-                if (num_steps == 0)
-                {
-                    throw TooFewStepsException();
-                }
-
-                std::vector<t_step_pair> steps;
-
-                for(int j = 0; j < num_steps; j++)
-                {
-                    tuple tstep_pair = extract<tuple>(step_list[j]);
-                    int16_t alpha_steps = extract<int>(tstep_pair[0]);                        
-                    int16_t beta_steps = extract<int>(tstep_pair[1]);
-                    
-                    t_step_pair step_pair;
-                    step_pair.alpha_steps = alpha_steps;
-                    step_pair.beta_steps = beta_steps;
-                    steps.push_back(step_pair);                    
-                }
-
-                t_waveform wform;
-                wform.fpu_id = fpu_id;
-                wform.steps = steps;
-                wtable.push_back(wform);
+                t_step_pair step_pair;
+                step_pair.alpha_steps = alpha_steps;
+                step_pair.beta_steps = beta_steps;
+                steps.push_back(step_pair);
             }
-            E_DriverErrCode ecode = configMotion(wtable, grid_state);
-            checkDriverError(ecode);
-            return ecode;
 
-        };
+            t_waveform wform;
+            wform.fpu_id = fpu_id;
+            wform.steps = steps;
+            wtable.push_back(wform);
+        }
+        E_DriverErrCode ecode = configMotion(wtable, grid_state);
+        checkDriverError(ecode);
+        return ecode;
+
+    };
 
     WrapGridState wrap_getGridState()
-        {
-            WrapGridState grid_state;
-            getGridState(grid_state);
-            return grid_state;
-        }
+    {
+        WrapGridState grid_state;
+        getGridState(grid_state);
+        return grid_state;
+    }
 
     E_DriverErrCode wrap_initializeGrid(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode = initializeGrid(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode = initializeGrid(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_resetFPUs(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode = resetFPUs(grid_state);
-            checkDriverError(ecode);
-            return ecode;
+    {
+        E_DriverErrCode ecode = resetFPUs(grid_state);
+        checkDriverError(ecode);
+        return ecode;
 
-        }
+    }
 
     E_DriverErrCode wrap_pingFPUs(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode = pingFPUs(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode = pingFPUs(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
 
     E_DriverErrCode wrap_getPositions(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode = getPositions(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode = getPositions(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_getCounterDeviation(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode = getCounterDeviation(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode = getCounterDeviation(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_findDatum(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode = findDatum(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode = findDatum(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode = startFindDatum(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
-    
+    {
+        E_DriverErrCode ecode = startFindDatum(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
+
     E_DriverErrCode wrap_waitFindDatum(WrapGridState& grid_state, double max_wait_time)
-        {
-            E_DriverErrCode estatus;
-            bool finished = false;
+    {
+        E_DriverErrCode estatus;
+        bool finished = false;
 
-            // FIXME: should return remaining wait time in tuple
-            estatus =  waitFindDatum(grid_state, max_wait_time, finished);
+        // FIXME: should return remaining wait time in tuple
+        estatus =  waitFindDatum(grid_state, max_wait_time, finished);
 
-            if (((! finished) && (estatus == DE_OK))
+        if (((! finished) && (estatus == DE_OK))
                 || (estatus == DE_COMMAND_TIMEOUT))
-            {
-                estatus = DE_COMMAND_TIMEOUT;
-                return estatus;
-            }
-
-            checkDriverError(estatus);
+        {
+            estatus = DE_COMMAND_TIMEOUT;
             return estatus;
-            
         }
+
+        checkDriverError(estatus);
+        return estatus;
+
+    }
 
 
     E_DriverErrCode wrap_executeMotion(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode =executeMotion(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode =executeMotion(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_startExecuteMotion(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode =startExecuteMotion(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode =startExecuteMotion(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_waitExecuteMotion(WrapGridState& grid_state, double max_wait_time)
-        {
-            E_DriverErrCode estatus;
-            bool finished = false;
-            
-            // FIXME: should return remaining wait time in tuple
-            estatus =  waitExecuteMotion(grid_state, max_wait_time, finished);
-            if (((! finished) && (estatus == DE_OK))
-                || (estatus == DE_COMMAND_TIMEOUT))
-            {
-                estatus = DE_COMMAND_TIMEOUT;
-                return estatus;
-            }
+    {
+        E_DriverErrCode estatus;
+        bool finished = false;
 
-            checkDriverError(estatus);
+        // FIXME: should return remaining wait time in tuple
+        estatus =  waitExecuteMotion(grid_state, max_wait_time, finished);
+        if (((! finished) && (estatus == DE_OK))
+                || (estatus == DE_COMMAND_TIMEOUT))
+        {
+            estatus = DE_COMMAND_TIMEOUT;
             return estatus;
         }
 
+        checkDriverError(estatus);
+        return estatus;
+    }
+
     E_DriverErrCode wrap_repeatMotion(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode =repeatMotion(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode =repeatMotion(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_reverseMotion(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode =reverseMotion(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode =reverseMotion(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_abortMotion(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode =abortMotion(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode =abortMotion(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_direction,
                                            WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode = freeBetaCollision(fpu_id, request_direction, grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode = freeBetaCollision(fpu_id, request_direction, grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_enableBetaCollisionProtection(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode = enableBetaCollisionProtection(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode = enableBetaCollisionProtection(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_lockFPU(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode =lockFPU(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode =lockFPU(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
     E_DriverErrCode wrap_unlockFPU(WrapGridState& grid_state)
-        {
-            E_DriverErrCode ecode =unlockFPU(grid_state);
-            checkDriverError(ecode);
-            return ecode;
-        }
+    {
+        E_DriverErrCode ecode =unlockFPU(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
 
 
-    
+
 };
 
 
@@ -853,31 +966,31 @@ class WrapGridDriver : public GridDriver
 BOOST_PYTHON_MODULE(fpu_driver)
 {
     using namespace boost::python;
-    
-     // include summary function
-     def("getGridStateSummary", wrapGetGridStateSummary);
+
+    // include summary function
+    def("getGridStateSummary", wrapGetGridStateSummary);
 
     enum_<E_FPU_STATE>("E_FPU_STATE")
-    .value("FPST_UNKNOWN", FPST_UNKNOWN             )
-    .value("FPST_UNINITIALIZED", FPST_UNINITIALIZED       )
-    .value("FPST_LOCKED", FPST_LOCKED              )
-    .value("FPST_DATUM_SEARCH", FPST_DATUM_SEARCH        )
-    .value("FPST_AT_DATUM", FPST_AT_DATUM         )
-    .value("FPST_LOADING", FPST_LOADING             )
-    .value("FPST_READY_FORWARD", FPST_READY_FORWARD       )
-    .value("FPST_READY_BACKWARD", FPST_READY_BACKWARD      )
-    .value("FPST_MOVING", FPST_MOVING              )
-    .value("FPST_RESTING", FPST_RESTING            )
-    .value("FPST_ABORTED", FPST_ABORTED             )
-    .value("FPST_OBSTACLE_ERROR", FPST_OBSTACLE_ERROR  )
+    .value("FPST_UNKNOWN", FPST_UNKNOWN)
+    .value("FPST_UNINITIALIZED", FPST_UNINITIALIZED)
+    .value("FPST_LOCKED", FPST_LOCKED)
+    .value("FPST_DATUM_SEARCH", FPST_DATUM_SEARCH)
+    .value("FPST_AT_DATUM", FPST_AT_DATUM)
+    .value("FPST_LOADING", FPST_LOADING)
+    .value("FPST_READY_FORWARD", FPST_READY_FORWARD)
+    .value("FPST_READY_BACKWARD", FPST_READY_BACKWARD)
+    .value("FPST_MOVING", FPST_MOVING)
+    .value("FPST_RESTING", FPST_RESTING)
+    .value("FPST_ABORTED", FPST_ABORTED)
+    .value("FPST_OBSTACLE_ERROR", FPST_OBSTACLE_ERROR)
     .export_values();
 
 
     enum_<E_DriverState>("E_DriverState")
-    .value("DS_UNINITIALIZED", DS_UNINITIALIZED       )
-    .value("DS_UNCONNECTED", DS_UNCONNECTED         )
-    .value("DS_CONNECTED", DS_CONNECTED           )
-    .value("DS_ASSERTION_FAILED", DS_ASSERTION_FAILED    )
+    .value("DS_UNINITIALIZED", DS_UNINITIALIZED)
+    .value("DS_UNCONNECTED", DS_UNCONNECTED)
+    .value("DS_CONNECTED", DS_CONNECTED)
+    .value("DS_ASSERTION_FAILED", DS_ASSERTION_FAILED)
     .export_values();
 
     /* The following codes are used in the last_status flag.  These
@@ -886,71 +999,71 @@ BOOST_PYTHON_MODULE(fpu_driver)
        be used by normal driver client code.
      */
     enum_<E_MOC_ERRCODE>("E_MOC_ERRCODE")
-    .value("_ER_OK"            ,ER_OK            )
-    .value("_ER_COLLIDE"       ,ER_COLLIDE       )
-    .value("_ER_INVALID"       ,ER_INVALID       )
-    .value("_ER_WAVENRDY"      ,ER_WAVENRDY      )
-    .value("_ER_WAVE2BIG"      ,ER_WAVE2BIG      )
-    .value("_ER_TIMING"        ,ER_TIMING        )
-    .value("_ER_M1LIMIT"       ,ER_M1LIMIT       )
-    .value("_ER_PARAM"         ,ER_PARAM         )
+    .value("_ER_OK",ER_OK)
+    .value("_ER_COLLIDE",ER_COLLIDE)
+    .value("_ER_INVALID",ER_INVALID)
+    .value("_ER_WAVENRDY",ER_WAVENRDY)
+    .value("_ER_WAVE2BIG",ER_WAVE2BIG)
+    .value("_ER_TIMING",ER_TIMING)
+    .value("_ER_M1LIMIT",ER_M1LIMIT)
+    .value("_ER_PARAM",ER_PARAM)
     .value("_ER_OK_UNCONFIRMED",ER_OK_UNCONFIRMED)
-    .value("_ER_TIMEDOUT"      ,ER_TIMEDOUT      )
+    .value("_ER_TIMEDOUT",ER_TIMEDOUT)
     .export_values();
 
 
     enum_<E_CAN_COMMAND>("E_CAN_COMMAND")
-        .value("CCMD_NO_COMMAND", CCMD_NO_COMMAND)                       
-        .value("CCMD_CONFIG_MOTION", CCMD_CONFIG_MOTION)                    
-        .value("CCMD_EXECUTE_MOTION", CCMD_EXECUTE_MOTION)                   
-        .value("CCMD_ABORT_MOTION", CCMD_ABORT_MOTION)                     
+    .value("CCMD_NO_COMMAND", CCMD_NO_COMMAND)
+    .value("CCMD_CONFIG_MOTION", CCMD_CONFIG_MOTION)
+    .value("CCMD_EXECUTE_MOTION", CCMD_EXECUTE_MOTION)
+    .value("CCMD_ABORT_MOTION", CCMD_ABORT_MOTION)
 #if    (CAN_PROTOCOL_VERSION == 1)
-        .value("CCMD_GET_STEPS_ALPHA", CCMD_GET_STEPS_ALPHA)                  
-        .value("CCMD_GET_STEPS_BETA", CCMD_GET_STEPS_BETA)                   
-        .value("CCMD_GET_ERROR_ALPHA", CCMD_GET_ERROR_ALPHA)                  
-        .value("CCMD_GET_ERROR_BETA", CCMD_GET_ERROR_BETA)                   
+    .value("CCMD_GET_STEPS_ALPHA", CCMD_GET_STEPS_ALPHA)
+    .value("CCMD_GET_STEPS_BETA", CCMD_GET_STEPS_BETA)
+    .value("CCMD_GET_ERROR_ALPHA", CCMD_GET_ERROR_ALPHA)
+    .value("CCMD_GET_ERROR_BETA", CCMD_GET_ERROR_BETA)
 #else
-        .value("CCMD_LOCK_UNIT", CCMD_LOCK_UNIT)                        
-        .value("CCMD_UNLOCK_UNIT", CCMD_UNLOCK_UNIT)                      
-        .value("CCMD_GET_COUNTER_DEVIATION", CCMD_GET_COUNTER_DEVIATION)            
-        .value("CCMD_GET_FIRMWARE_VERSION", CCMD_GET_FIRMWARE_VERSION)             
-        .value("CCMD_CHECK_INTEGRITY", CCMD_CHECK_INTEGRITY)                  
-        .value("CCMD_FREE_ALPHA_LIMIT_BREACH", CCMD_FREE_ALPHA_LIMIT_BREACH)          
-        .value("CCMD_ENABLE_ALPHA_LIMIT_PROTECTION", CCMD_ENABLE_ALPHA_LIMIT_PROTECTION)    
-        .value("CCMD_SET_TIME_STEP", CCMD_SET_TIME_STEP)                    
-        .value("CCMD_SET_STEPS_PER_FRAME", CCMD_SET_STEPS_PER_FRAME)              
-        .value("CCMD_ENABLE_MOVE", CCMD_ENABLE_MOVE)                      
+    .value("CCMD_LOCK_UNIT", CCMD_LOCK_UNIT)
+    .value("CCMD_UNLOCK_UNIT", CCMD_UNLOCK_UNIT)
+    .value("CCMD_GET_COUNTER_DEVIATION", CCMD_GET_COUNTER_DEVIATION)
+    .value("CCMD_GET_FIRMWARE_VERSION", CCMD_GET_FIRMWARE_VERSION)
+    .value("CCMD_CHECK_INTEGRITY", CCMD_CHECK_INTEGRITY)
+    .value("CCMD_FREE_ALPHA_LIMIT_BREACH", CCMD_FREE_ALPHA_LIMIT_BREACH)
+    .value("CCMD_ENABLE_ALPHA_LIMIT_PROTECTION", CCMD_ENABLE_ALPHA_LIMIT_PROTECTION)
+    .value("CCMD_SET_TIME_STEP", CCMD_SET_TIME_STEP)
+    .value("CCMD_SET_STEPS_PER_FRAME", CCMD_SET_STEPS_PER_FRAME)
+    .value("CCMD_ENABLE_MOVE", CCMD_ENABLE_MOVE)
 #endif
-        .value("CCMD_READ_REGISTER", CCMD_READ_REGISTER)                    
-        .value("CCMD_PING_FPU", CCMD_PING_FPU)                         
-        .value("CCMD_RESET_FPU", CCMD_RESET_FPU)                        
-        .value("CCMD_FIND_DATUM", CCMD_FIND_DATUM)                       
-        .value("CCMD_RESET_STEPCOUNTER", CCMD_RESET_STEPCOUNTER)                
-        .value("CCMD_REPEAT_MOTION", CCMD_REPEAT_MOTION)                    
-        .value("CCMD_REVERSE_MOTION", CCMD_REVERSE_MOTION)                   
-        .value("CCMD_ENABLE_BETA_COLLISION_PROTECTION", CCMD_ENABLE_BETA_COLLISION_PROTECTION) 
-        .value("CCMD_FREE_BETA_COLLISION", CCMD_FREE_BETA_COLLISION)              
-        .value("CCMD_SET_USTEP", CCMD_SET_USTEP)                        
-   
-   
-   
-#if    (CAN_PROTOCOL_VERSION == 1)       
-        .value("CMSG_FINISHED_MOTION", CMSG_FINISHED_MOTION)               
-        .value("CMSG_FINISHED_DATUM", CMSG_FINISHED_DATUM)                
-        .value("CMSG_WARN_COLLISION_BETA", CMSG_WARN_COLLISION_BETA)           
-        .value("CMSG_WARN_LIMIT_ALPHA", CMSG_WARN_LIMIT_ALPHA)              
+    .value("CCMD_READ_REGISTER", CCMD_READ_REGISTER)
+    .value("CCMD_PING_FPU", CCMD_PING_FPU)
+    .value("CCMD_RESET_FPU", CCMD_RESET_FPU)
+    .value("CCMD_FIND_DATUM", CCMD_FIND_DATUM)
+    .value("CCMD_RESET_STEPCOUNTER", CCMD_RESET_STEPCOUNTER)
+    .value("CCMD_REPEAT_MOTION", CCMD_REPEAT_MOTION)
+    .value("CCMD_REVERSE_MOTION", CCMD_REVERSE_MOTION)
+    .value("CCMD_ENABLE_BETA_COLLISION_PROTECTION", CCMD_ENABLE_BETA_COLLISION_PROTECTION)
+    .value("CCMD_FREE_BETA_COLLISION", CCMD_FREE_BETA_COLLISION)
+    .value("CCMD_SET_USTEP", CCMD_SET_USTEP)
+
+
+
+#if    (CAN_PROTOCOL_VERSION == 1)
+    .value("CMSG_FINISHED_MOTION", CMSG_FINISHED_MOTION)
+    .value("CMSG_FINISHED_DATUM", CMSG_FINISHED_DATUM)
+    .value("CMSG_WARN_COLLISION_BETA", CMSG_WARN_COLLISION_BETA)
+    .value("CMSG_WARN_LIMIT_ALPHA", CMSG_WARN_LIMIT_ALPHA)
 #else
-        .value("CMSG_FINISHED_MOTION", CMSG_FINISHED_MOTION)               
-        .value("CMSG_FINISHED_DATUM", CMSG_FINISHED_DATUM)                
-        .value("CMSG_WARN_COLLISION_BETA", CMSG_WARN_COLLISION_BETA)           
-        .value("CMSG_WARN_LIMIT_ALPHA", CMSG_WARN_LIMIT_ALPHA)              
-        .value("CMSG_WARN_TIMEOUT_DATUM", CMSG_WARN_TIMEOUT_DATUM)            
+    .value("CMSG_FINISHED_MOTION", CMSG_FINISHED_MOTION)
+    .value("CMSG_FINISHED_DATUM", CMSG_FINISHED_DATUM)
+    .value("CMSG_WARN_COLLISION_BETA", CMSG_WARN_COLLISION_BETA)
+    .value("CMSG_WARN_LIMIT_ALPHA", CMSG_WARN_LIMIT_ALPHA)
+    .value("CMSG_WARN_TIMEOUT_DATUM", CMSG_WARN_TIMEOUT_DATUM)
 #endif
-   
-        .value("NUM_CAN_COMMANDS", NUM_CAN_COMMANDS)                        
+
+    .value("NUM_CAN_COMMANDS", NUM_CAN_COMMANDS)
     .export_values();
-   
-    
+
+
     enum_<E_DriverErrCode>("E_DriverErrCode")
     .value("DE_OK",DE_OK)
     .value("DE_DRIVER_NOT_INITIALIZED",DE_DRIVER_NOT_INITIALIZED)
@@ -971,7 +1084,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
     .value("DE_UNIMPLEMENTED", DE_UNIMPLEMENTED)
     .export_values();
-    
+
     enum_<E_GridState>("E_GridState")
     .value("GS_UNKNOWN", GS_UNKNOWN         )
     .value("GS_UNINITIALIZED", GS_UNINITIALIZED   )
@@ -990,21 +1103,21 @@ BOOST_PYTHON_MODULE(fpu_driver)
 
     // direction of a movement request from the user
     enum_<E_REQUEST_DIRECTION>("E_REQUEST_DIRECTION")
-        .value("REQD_ANTI_CLOCKWISE"  , REQD_ANTI_CLOCKWISE  )
-        .value("REQD_CLOCKWISE"       , REQD_CLOCKWISE       )
-        .export_values();
+    .value("REQD_ANTI_CLOCKWISE", REQD_ANTI_CLOCKWISE  )
+    .value("REQD_CLOCKWISE", REQD_CLOCKWISE       )
+    .export_values();
 
     // direction of the current or last actually recorded movement of each FPU
     enum_<E_MOVEMENT_DIRECTION>("E_MOVEMENT_DIRECTION")
-        .value("DIRST_UNKNOWN"         , DIRST_UNKNOWN         )
-        .value("DIRST_ANTI_CLOCKWISE"  , DIRST_ANTI_CLOCKWISE  )
-        .value("DIRST_CLOCKWISE"       , DIRST_CLOCKWISE       )
-        // the following two might not be needed
-        .value("DIRST_RESTING_LAST_CW" , DIRST_RESTING_LAST_CW )
-        .value("DIRST_RESTING_LAST_ACW", DIRST_RESTING_LAST_ACW)
-        .export_values();
+    .value("DIRST_UNKNOWN", DIRST_UNKNOWN         )
+    .value("DIRST_ANTI_CLOCKWISE", DIRST_ANTI_CLOCKWISE  )
+    .value("DIRST_CLOCKWISE", DIRST_CLOCKWISE       )
+    // the following two might not be needed
+    .value("DIRST_RESTING_LAST_CW", DIRST_RESTING_LAST_CW )
+    .value("DIRST_RESTING_LAST_ACW", DIRST_RESTING_LAST_ACW)
+    .export_values();
 
-    
+
     class_<WrapFPUState>("FPUState")
     .def_readonly("state", &WrapFPUState::state)
     .def_readonly("last_command", &WrapFPUState::last_command)
@@ -1029,7 +1142,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("waveform_ready", &WrapFPUState::waveform_ready)
     .def_readonly("waveform_reversed", &WrapFPUState::waveform_reversed)
     .def_readonly("pending_command_set", &WrapFPUState::pending_command_set)
-        .def("__repr__", &WrapFPUState::to_repr)
+    .def("__repr__", &WrapFPUState::to_repr)
     ;
 
 
@@ -1040,7 +1153,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def(vector_indexing_suite<std::vector<long> >());
 
     class_<std::vector<WrapGatewayAddress> >("GatewayAddressVec")
-        .def(vector_indexing_suite<std::vector<WrapGatewayAddress> >());
+    .def(vector_indexing_suite<std::vector<WrapGatewayAddress> >());
 
     class_<WrapGridState>("GridState")
     .def_readonly("FPU", &WrapGridState::getStateVec)
@@ -1050,11 +1163,11 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("driver_state", &WrapGridState::driver_state)
     .def("__str__", &WrapGridState::to_string)
     .def("__repr__", &WrapGridState::to_repr)
-        ;
+    ;
 
     class_<WrapGatewayAddress>("GatewayAddress", init<const char*, int>())
-        .def_readwrite("ip", &WrapGatewayAddress::ip)
-        .def_readwrite("port", &WrapGatewayAddress::port);
+    .def_readwrite("ip", &WrapGatewayAddress::ip)
+    .def_readwrite("port", &WrapGatewayAddress::port);
 
     class_<WrapGridDriver, boost::noncopyable>("GridDriver", init<int>())
     .def("getNumFPUs", &WrapGridDriver::getNumFPUs)
