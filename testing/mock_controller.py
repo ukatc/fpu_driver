@@ -421,7 +421,7 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
             TX[1] = CMSG_FINISHED_DATUM
             TX[2] = status = getStatus(FPUGrid[fpu_id])
 
-            if FPUGrid[fpu_id].is_collided:
+            if FPUGrid[fpu_id].is_collided or FPUGrid[fpu_id].abort_wave:
                 # only send an error message
                 TX[3] = errflag = 0xff
                 TX[4] = errcode = ER_COLLIDE

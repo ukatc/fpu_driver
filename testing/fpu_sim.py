@@ -132,6 +132,7 @@ class FPU:
             
             if self.abort_wave:
                 print("ABORTING DATUM SEARCH FOR FPU", self.fpu_id);
+                self.at_datum = True
                 break
 
         if not self.abort_wave:
