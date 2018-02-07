@@ -38,7 +38,7 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state)
     }
 
     bool finished = false;
-    double max_wait_time = 0; // waits until the CAN timeout is hit
+    double max_wait_time = -1; // waits until the CAN timeout is hit
 
     estatus = waitFindDatum(grid_state, max_wait_time, finished);
 
