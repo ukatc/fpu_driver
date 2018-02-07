@@ -443,6 +443,17 @@ void translate(FPUsLockedException const& e)
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
+struct UnimplementedException : std::exception
+{
+  char const* what() const throw() { return "Command or operation not implemented for this protocol version"; }
+};
+
+void translate(UnimplementedException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
 
 struct AssertionFailedException : std::exception
 {
@@ -539,6 +550,9 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_FPUS_LOCKED :
         throw FPUsLockedException(); break;
 
+    case DE_UNIMPLEMENTED:
+        throw UnimplementedException(); break;
+        
     case DE_ASSERTION_FAILED:
         throw AssertionFailedException(); break;
 
@@ -941,7 +955,6 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_OK",DE_OK)
     .value("DE_DRIVER_NOT_INITIALIZED",DE_DRIVER_NOT_INITIALIZED)
     .value("DE_DRIVER_ALREADY_INITIALIZED",DE_DRIVER_ALREADY_INITIALIZED)
-    .value("DE_DRIVER_ALREADY_INITIALIZED",DE_DRIVER_ALREADY_INITIALIZED)
     .value("DE_NO_CONNECTION",DE_NO_CONNECTION)
     .value("DE_STILL_BUSY",DE_STILL_BUSY)
     .value("DE_MAX_RETRIES_EXCEEDED", DE_MAX_RETRIES_EXCEEDED)
@@ -956,6 +969,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_COMMAND_TIMEOUT", DE_COMMAND_TIMEOUT)
     .value("DE_ABORTED_STATE", DE_ABORTED_STATE)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
+    .value("DE_UNIMPLEMENTED", DE_UNIMPLEMENTED)
     .export_values();
     
     enum_<E_GridState>("E_GridState")

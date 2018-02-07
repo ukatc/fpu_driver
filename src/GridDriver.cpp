@@ -114,7 +114,9 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
             // Success: All FPUs have waveforms loaded. Loading finished.
             break;
         }
+#if (CAN_PROTOCOL_VERSION > 1)        
 #pragma message "FIXME: insert retry code here"
+#endif        
         
         break; // the command should retry a few times when running in the instrument
 
@@ -160,7 +162,9 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
 
 E_DriverErrCode GridDriver::initializeGrid(t_grid_state& grid_state)
 {
-    return DE_OK;
+    grid_state.driver_state = DS_ASSERTION_FAILED;
+
+    return DE_UNIMPLEMENTED;
 }
 
 E_DriverErrCode GridDriver::resetFPUs(t_grid_state& grid_state)
@@ -315,12 +319,16 @@ E_DriverErrCode GridDriver::enableBetaCollisionProtection(t_grid_state& grid_sta
 
 E_DriverErrCode GridDriver::lockFPU(t_grid_state& grid_state)
 {
-    return DE_OK;
+    grid_state.driver_state = DS_ASSERTION_FAILED;
+    return DE_UNIMPLEMENTED;
+
 }
 
 E_DriverErrCode GridDriver::unlockFPU(t_grid_state& grid_state)
 {
-    return DE_OK;
+    grid_state.driver_state = DS_ASSERTION_FAILED;
+
+    return DE_UNIMPLEMENTED;
 }
 
 

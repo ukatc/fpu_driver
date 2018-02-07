@@ -138,6 +138,9 @@ enum E_DriverErrCode
     // some addressed FPUs are locked
     DE_FPUS_LOCKED = 15,
 
+    // operation not implemented for this protocol version
+    DE_UNIMPLEMENTED=98,
+    
     DE_ASSERTION_FAILED=99,
 
 };

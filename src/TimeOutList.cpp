@@ -246,7 +246,10 @@ const timespec TimeOutList::minKey()
         }
     }
 
+#if (CAN_PROTOCOL_VERSION > 1)    
 #pragma message "TimeOutList::minKey(): fix complexity of minimum search"
+#endif
+    
 #ifdef DEBUG_MK
     clock_t t1 = clock();
     clock_t td = t1 - t0;

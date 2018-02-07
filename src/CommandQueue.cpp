@@ -165,7 +165,9 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
         // for delivery.  Best fix is possibly to replace std::dequeue
         // with a fixed-size ringbuffer. Should be done by jnix
         // before March 2018.
+#if CAN_PROTOCOL_VERSION > 1        
 #pragma message "FIXME: make CommandQueue::enqueue() exception-safe"
+#endif        
         fifos[gateway_id].push_back(std::move(new_command));
 
         // if we changed from an empty queue to a non-empty one,

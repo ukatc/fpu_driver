@@ -2,7 +2,7 @@ IDIR = ./include
 
 CC = "g++"
 
-CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -fPIC -DDEBUG -g
+CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g 
 
 ODIR = ./obj
 

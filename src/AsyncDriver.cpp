@@ -154,6 +154,10 @@ E_DriverErrCode AsyncDriver::disconnect()
 E_DriverErrCode AsyncDriver::initializeGridAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+
+    state_summary = GS_UNKNOWN;
+    grid_state.driver_state = DS_ASSERTION_FAILED;
+    
     if (gateway.getDriverState() != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;
@@ -273,7 +277,9 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
             // FIXME!!!: For production, we might better add a
             // security limit so that FPUs which are far off position
             // are not driven into the hard stop.
-#pragma message "avoid hitting a hard stop here"
+#if (CAN_PROTOCOL_VERSION > 1)            
+#pragma message "avoid hitting a hard stop here (if possible)"
+#endif            
 
             bool broadcast = false;
             can_command = gateway.provideInstance<FindDatumCommand>();
