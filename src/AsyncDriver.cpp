@@ -495,6 +495,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         }
         step_index++;
     }
+    
 
     // fpus are now loading data.
     // Wait for fpus loading to finish, or

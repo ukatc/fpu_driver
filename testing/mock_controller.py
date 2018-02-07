@@ -169,7 +169,7 @@ def getStatus(FPU):
         
     return status
         
-def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
+def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
 
     tx_prio = 0x02
     tx_canid = (tx_prio << 7) | fpu_adr_bus
@@ -180,10 +180,10 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
     tx3_errflag = 0
 
     first_entry = RX[1] & 1
-    if first_entry:
+    if first_entry and verbose:
         print("first_entry set!")
     last_entry = (RX[1] >> 1) & 1
-    if last_entry:
+    if last_entry and verbose:
         print("last_entry set!")
     
     astep = ((RX[3] &  0x3f) << 8) + RX[2]
@@ -194,7 +194,8 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
     bpause = (RX[5] >> 6) & 1
     bclockwise = (RX[5] >> 7) & 1
 
-    print("FPU #%i command =%i , rx=%s" % (fpu_id, command_id, RX))
+    if verbose:
+        print("FPU #%i command =%i , rx=%s" % (fpu_id, command_id, RX))
     
     try:
         FPUGrid[fpu_id].addStep(first_entry, last_entry,
@@ -246,11 +247,10 @@ def handle_GetX(fpu_id, fpu_adr_bus, bus_adr, RX):
     TH[2] = ((tx_canid >> 8) & 0xff)
 
     TX = [0] * 8
-    TX[0] = fpu_adr_bus
 
     command_id = RX[0]
 
-    TX[0] = tx0_fpu_adr_bus = fpu_adr_bus
+    TX[0] = fpu_adr_bus
     TX[1] = command_id
     TX[2] = getStatus(FPUGrid[fpu_id]) 
     TX[3] = errflag = 0

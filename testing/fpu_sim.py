@@ -83,7 +83,7 @@ class FPU:
     def addStep(self, first, last,
 
                 asteps, apause, aclockwise,
-                bsteps, bpause, bclockwise):
+                bsteps, bpause, bclockwise, verbose=0):
         if self.running_wave:
             raise RuntimeError("FPU is moving")
         
@@ -114,10 +114,12 @@ class FPU:
             self.wave_ready = True
             self.wave_valid = True
             n = self.nwave_entries
-            print("fpu #%i: wavetable ready, n=%i, content=%s" % (
-                
-                self.fpu_id, n, (self.steps[0:n], self.pause[0:n], self.clockwise[0:n])))
-            
+            if verbose:
+                print("fpu #%i: wavetable ready, n=%i, content=%s" % (
+                    
+                    self.fpu_id, n, (self.steps[0:n], self.pause[0:n], self.clockwise[0:n])))
+            else:
+                print("fpu #%i: wavetable ready (%i steps)" % (self.fpu_id, n))
         
         
     def findDatum(self, sleep):

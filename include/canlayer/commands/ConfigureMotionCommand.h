@@ -82,6 +82,8 @@ public:
                            t_CAN_buffer& can_buffer)
     {
 
+        // zero buffer to make sure no spurious DLEs are sent
+        bzero(&can_buffer.message, sizeof(can_buffer.message));
         // CAN bus id for that gateway to which message should go
         can_buffer.message.busid = busid;
 
@@ -102,9 +104,7 @@ public:
         // The protocol uses little-endian encoding here
         // (the byte order used in the CANOpen protocol).
         // zero buffer to make sure no spurious DLEs are sent
-        bzero(&can_buffer.message, sizeof(can_buffer.message));
         can_buffer.message.identifier = htole64(can_identifier);
-
         buf_len = 3;
 
 
@@ -150,8 +150,8 @@ public:
     {
         const struct timespec  toval =
         {
-            /* .tv_sec = */ 0,
-            /* .tv_nsec = */ 500000000
+            /* .tv_sec = */ 120,
+            /* .tv_nsec = */ 0
         };
 
         return toval;
