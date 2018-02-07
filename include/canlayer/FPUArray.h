@@ -39,7 +39,7 @@
    on grid state changes. This is advisable to avoid
    nasty bugs on changes of system time, but currently
    causes problems when de-initialising the condition
-   variable. The clocks used for epoll() are not 
+   variable. The clocks used for epoll() are not
    affected. */
 #define FPUARRAY_USE_MONOTONIC_CLOCK 0
 
@@ -82,7 +82,7 @@ public:
 
     // deinitialize internal structures
     E_DriverErrCode deInitialize();
-    
+
     // this method retrieves the current grid state for all FPUs
     // (including collision states etc). It does not wait for
     // completion of commands, and can be called concurrently..
@@ -124,7 +124,7 @@ public:
     // queries whether an FPU is locked.
     // (FIXME: this is unused - delete it?)
     bool isLocked(int fpu_id) const;
-    
+
     // sets pending command for one FPU.
     void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val, TimeOutList& timeout_list);
 
@@ -173,11 +173,11 @@ private:
 
 ///     // confirm response for one FPU, canceling the 'pending command'
 ///     // attributes.
-    
+
 ///    void handleFPUResponse(int fpu_id, t_fpu_state& fpu, const t_response_buf& data,
 ///                           const int blen);
 ///
-    
+
 
     // returns summary state of FPU grid, without
     // lock protection.
@@ -199,12 +199,12 @@ private:
     // structures which describe the current state of the whole grid
     t_grid_state FPUGridState;
     // this mutex protects the FPU state array structure
-    mutable pthread_mutex_t grid_state_mutex = PTHREAD_MUTEX_INITIALIZER; 
+    mutable pthread_mutex_t grid_state_mutex = PTHREAD_MUTEX_INITIALIZER;
     // condition variables which is signaled on state changes
-#if FPUARRAY_USE_MONOTONIC_CLOCK    
+#if FPUARRAY_USE_MONOTONIC_CLOCK
     mutable pthread_cond_t cond_state_change; // is initialized with monotonic clock option
 #else
-    mutable pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER; 
+    mutable pthread_cond_t cond_state_change = PTHREAD_COND_INITIALIZER;
 #endif
 };
 

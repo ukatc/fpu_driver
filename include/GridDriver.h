@@ -62,20 +62,20 @@ public:
     GridDriver(GridDriver&& other) = delete;
     // no move assignment operator
     GridDriver& operator=(GridDriver&& other) = delete;
-#endif    
-    
+#endif
+
 
     E_DriverErrCode initializeGrid(t_grid_state& grid_state);
 
     E_DriverErrCode resetFPUs(t_grid_state& grid_state);
-    
+
     E_DriverErrCode pingFPUs(t_grid_state& grid_state);
 
     // find datum with automatic firmware operation
     E_DriverErrCode findDatum(t_grid_state& grid_state);
 
     E_DriverErrCode startFindDatum(t_grid_state& grid_state);
-    
+
     E_DriverErrCode waitFindDatum(t_grid_state& grid_state,
                                   double &max_wait_time, bool &finished);
 
@@ -84,7 +84,7 @@ public:
     E_DriverErrCode executeMotion(t_grid_state& grid_state);
 
     E_DriverErrCode startExecuteMotion(t_grid_state& grid_state);
-    
+
     E_DriverErrCode waitExecuteMotion(t_grid_state& grid_state, double &max_wait_time, bool &finished);
 
 
@@ -102,7 +102,7 @@ public:
                                       t_grid_state& grid_state);
 
     E_DriverErrCode enableBetaCollisionProtection(t_grid_state& grid_state);
-        
+
     E_DriverErrCode lockFPU(t_grid_state& grid_state);
 
     E_DriverErrCode unlockFPU(t_grid_state& grid_state);

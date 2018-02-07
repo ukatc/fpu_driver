@@ -26,7 +26,7 @@
 namespace mpifps
 {
 
-    namespace canlayer
+namespace canlayer
 {
 
 // the following three  definitions are from Linux-4.3.6
@@ -69,7 +69,7 @@ static inline void set_normalized_timespec(struct timespec &new_val,
         new_val.tv_nsec = nano -1;
         return;
     }
-    
+
     long _tv_sec = tv_sec + tv_nsec / nano;
     long _tv_nsec = tv_nsec % nano;
     // NOTE: In the above modulo operation, correctness for negative
@@ -79,13 +79,13 @@ static inline void set_normalized_timespec(struct timespec &new_val,
 
     // carry over if nsec field has different sign from sec field
     long sign = (_tv_sec >= 0) ? 1 : -1;
-    
+
     if (_tv_nsec * sign < 0)
     {
         _tv_nsec += nano * sign;
         _tv_nsec -= (1 * sign);
     }
-    
+
     new_val.tv_sec = _tv_sec;
     new_val.tv_nsec = _tv_nsec;
 }

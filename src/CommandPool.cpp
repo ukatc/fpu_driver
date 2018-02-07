@@ -74,9 +74,9 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_EXECUTE_MOTION       :
             case CCMD_REPEAT_MOTION       :
             case CCMD_REVERSE_MOTION       :
-#if CAN_PROTOCOL_VERSION > 1                
+#if CAN_PROTOCOL_VERSION > 1
             case CCMD_CHECK_INTEGRITY       :
-#endif                
+#endif
             case CCMD_ABORT_MOTION       :
                 capacity = cap_broadcast;
                 break;
@@ -86,8 +86,8 @@ E_DriverErrCode CommandPool::initialize()
                 capacity = cap_wform;
                 break;
 
-            // individual commands
-#if CAN_PROTOCOL_VERSION == 1                
+                // individual commands
+#if CAN_PROTOCOL_VERSION == 1
             case CCMD_GET_ERROR_ALPHA :
             case CCMD_GET_ERROR_BETA :
             case CCMD_GET_STEPS_ALPHA:
@@ -102,7 +102,7 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_FREE_ALPHA_LIMIT_BREACH       :
             case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
             case CCMD_ENABLE_MOVE   :
-#endif                
+#endif
             case CCMD_RESET_FPU       :
             case CCMD_PING_FPU       :
             case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
@@ -113,7 +113,7 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_READ_REGISTER   :
                 capacity = cap_individual;
                 break;
-                
+
             default:
                 // logical error
 #ifdef DEBUG
@@ -121,7 +121,7 @@ E_DriverErrCode CommandPool::initialize()
 #endif
                 assert(false);
             }
- 
+
             // This can throw bad_alloc during initialization
             // if the system is very low on memory.
             pool[i].reserve(capacity);
@@ -139,7 +139,7 @@ E_DriverErrCode CommandPool::initialize()
                     ptr.reset(new ConfigureMotionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                    
+
                 case CCMD_EXECUTE_MOTION        :
                     ptr.reset(new ExecuteMotionCommand());
                     pool[i].push_back(std::move(ptr));
@@ -149,12 +149,12 @@ E_DriverErrCode CommandPool::initialize()
                     ptr.reset(new ReverseMotionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                    
+
                 case CCMD_REPEAT_MOTION        :
                     ptr.reset(new RepeatMotionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                    
+
                 case CCMD_ABORT_MOTION        :
                     ptr.reset(new AbortMotionCommand());
                     pool[i].push_back(std::move(ptr));
@@ -164,17 +164,17 @@ E_DriverErrCode CommandPool::initialize()
                     ptr.reset(new ResetFPUCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                    
+
                 case CCMD_FIND_DATUM        :
                     ptr.reset(new FindDatumCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                                        
+
                 case CCMD_GET_STEPS_ALPHA        :
                     ptr.reset(new GetStepsAlphaCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                    
+
                 case CCMD_GET_STEPS_BETA        :
                     ptr.reset(new GetStepsBetaCommand());
                     pool[i].push_back(std::move(ptr));
@@ -184,17 +184,17 @@ E_DriverErrCode CommandPool::initialize()
                     ptr.reset(new GetErrorAlphaCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                    
+
                 case CCMD_GET_ERROR_BETA        :
                     ptr.reset(new GetErrorBetaCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                    
+
                 case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
                     ptr.reset(new EnableBetaCollisionProtectionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                    
+
                 case CCMD_FREE_BETA_COLLISION    :
                     ptr.reset(new FreeBetaCollisionCommand());
                     pool[i].push_back(std::move(ptr));
@@ -202,7 +202,7 @@ E_DriverErrCode CommandPool::initialize()
 
                 default:
 #if (CAN_PROTOCOL_VERSION > 1)
-                    #pragma message "FIXME: add any missing constructors"
+#pragma message "FIXME: add any missing constructors"
                     assert(0);
 #else
                     assert(1);
@@ -240,12 +240,12 @@ E_DriverErrCode CommandPool::deInitialize()
         // actual command.
         for (int i = 1; i < NUM_CAN_COMMANDS; i++)
         {
- 
+
             pool[i].clear();
             // FIXME: std::vector<>::shrink_to_fit can thow bad_alloc if the
             // system is low on memory. This should be caught.
             pool[i].shrink_to_fit();
-            
+
         }
     }
     catch (std::bad_alloc& ba)

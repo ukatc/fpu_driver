@@ -41,42 +41,42 @@ namespace canlayer
 void handleTimeout(int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id)
 {
     timespec cur_time;
-    
+
     get_monotonic_time(cur_time);
-    
+
     switch (cmd_id)
     {
     case CCMD_CONFIG_MOTION   :
         break;
-        
+
     case CCMD_EXECUTE_MOTION  :
         fpu.state = FPST_RESTING;
         break;
-        
+
     case CCMD_ABORT_MOTION    :
         printf("CRITICAL ERROR: ABORT_MOTION timed out for FPU #%i!\n", fpu_id);
         break;
-        
-    case CCMD_RESET_FPU       :  
+
+    case CCMD_RESET_FPU       :
         fpu.state = FPST_UNKNOWN;
         break;
-        
+
     case CCMD_FIND_DATUM :
         fpu.state = FPST_UNINITIALIZED;
         printf("Error: findDatum timed out for FPU #%i\n", fpu_id);
         break;
-        
+
 
     case CCMD_ENABLE_BETA_COLLISION_PROTECTION:
         fpu.state = fpu.previous_state;
         break;
-        
+
     case CCMD_FREE_BETA_COLLISION:
         fpu.state = fpu.previous_state;
         break;
-        
+
     default:
-        // invalid command, ignore 
+        // invalid command, ignore
         // FIXME: log invalid responses
         break;
 

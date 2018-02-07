@@ -61,7 +61,7 @@ public:
     // de-initialize pool and return memory.
     // Most only be called when driver is shut down.
     E_DriverErrCode deInitialize();
-    
+
     // method which provides a new CAN command
     // instance for the given command type.
     // If the pool is temporarily empty, the

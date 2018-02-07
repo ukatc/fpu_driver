@@ -97,7 +97,7 @@ enum E_DriverErrCode
 
     // a collision occured, and the operation was aborted
     DE_NEW_COLLISION = 5,
-    
+
     // the user tried to start a movement
     // command while at least one FPU was in collided
     // or aborted state - the command
@@ -140,7 +140,7 @@ enum E_DriverErrCode
 
     // operation not implemented for this protocol version
     DE_UNIMPLEMENTED=98,
-    
+
     DE_ASSERTION_FAILED=99,
 
 };

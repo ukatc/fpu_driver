@@ -26,12 +26,12 @@
 
 namespace mpifps
 {
-    namespace canlayer
-    {
+namespace canlayer
+{
 
-        void handleTimeout(int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id);
+void handleTimeout(int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id);
 
-    }
+}
 }
 
 #endif

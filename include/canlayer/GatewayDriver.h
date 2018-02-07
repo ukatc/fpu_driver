@@ -54,16 +54,16 @@ public:
     // timeout for reading from command FIFO if nothing is
     // pending - 500 ms
     const struct timespec COMMAND_WAIT_TIME = { /* .tv_sec = */ 0,
-                                         /* .tv_nsec = */ 50000000
-                                       };
+              /* .tv_nsec = */ 50000000
+    };
     // timeout for polling write socket - 500 ms
     const struct timespec MAX_TX_TIMEOUT = { /* .tv_sec = */ 0,
-                                      /* .tv_nsec = */ 500000000
-                                    };
+              /* .tv_nsec = */ 500000000
+    };
 
     // default timeout for polling read socket - 500 msec
     const timespec MAX_RX_TIMEOUT = { /* .tv_sec = */ 10,
-                                      /* .tv_nsec = */ 500000000
+                                                      /* .tv_nsec = */ 500000000
                                     };
 
 
@@ -71,7 +71,7 @@ public:
     ~GatewayDriver();
 
     E_DriverErrCode initialize();
-    
+
     E_DriverErrCode deInitialize();
 
     E_DriverErrCode connect(const int ngateways, const t_gateway_address gateway_addresses[]);
@@ -108,7 +108,7 @@ public:
 
     void updatePendingSets(unique_ptr<I_CAN_Command> &active_can_command,
                            int gateway_id);
-    
+
 
     // send a CAN command to the gateway.
     // This method is thread-safe
@@ -123,7 +123,7 @@ public:
     bool isLocked(int fpu_id) const;
 
 
-    
+
 
     // Send an abortMotion broadcast command to all gateways.
     //
@@ -152,7 +152,7 @@ private:
     int SocketID[MAX_NUM_GATEWAYS];
     int DescriptorCommandEvent; // eventfd for new command
     int DescriptorCloseEvent;  // eventfd for closing connection
-    
+
     CommandQueue commandQueue;
 
 
@@ -203,7 +203,7 @@ private:
     CommandPool command_pool; // memory pool for unused command objects
 
 
-    
+
 
 };
 

@@ -53,7 +53,7 @@ timespec time_add(const timespec& time_a,
     {
         long a = time_a.tv_sec;
         long b = time_b.tv_sec;
-        
+
         assert( ( (b >= 0) && (a < (TIME_T_MAX - b)))
                 || ((b < 0) && ( a > (LONG_MIN - b))));
     }
@@ -97,7 +97,7 @@ timespec time_sub(const timespec& time_a,
     {
         long a = time_a.tv_sec;
         long b = time_b.tv_sec;
-        
+
         assert( ( (b >= 0) && (a > (LONG_MIN + b)))
                 || ((b < 0) && ( a < (TIME_T_MAX + b))));
     }
@@ -141,7 +141,8 @@ timespec time_to_wait(const timespec& cur_time,
                       const timespec& next_timeout)
 {
     const struct timespec zero_wait = {/* .tv_sec = */ 0,
-                                       /* .tv_nsec = */ 0};
+              /* .tv_nsec = */ 0
+    };
 
     // check whether next_timeout is already in the past.
     if (time_smaller_equal(next_timeout, cur_time))

@@ -26,7 +26,7 @@
 #include <sys/socket.h>
 #include <sys/eventfd.h>
 #include <sys/mman.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <sched.h> // sched_setscheduler()
 
 
@@ -53,7 +53,7 @@ GatewayDriver::GatewayDriver(int nfpus)
 
     assert(nfpus <= MAX_NUM_POSITIONERS);
     num_fpus = nfpus;
-    
+
     // number of commands which are being processed
     fpuArray.setDriverState(DS_UNINITIALIZED);
 
@@ -91,7 +91,7 @@ GatewayDriver::~GatewayDriver()
 E_DriverErrCode GatewayDriver::initialize()
 {
     E_DriverErrCode status;
-    
+
     fpuArray.setDriverState(DS_UNINITIALIZED);
     status = fpuArray.initialize();
 
@@ -99,14 +99,14 @@ E_DriverErrCode GatewayDriver::initialize()
     {
         return status;
     }
-    
+
     status = command_pool.initialize();
 
     if (status != DE_OK)
     {
         return status;
     }
-    
+
     status = commandQueue.initialize();
 
     if (status != DE_OK)
@@ -117,7 +117,7 @@ E_DriverErrCode GatewayDriver::initialize()
     fpuArray.setDriverState(DS_UNCONNECTED);
 
     return DE_OK;
-    
+
 
 }
 
@@ -134,12 +134,12 @@ E_DriverErrCode GatewayDriver::deInitialize()
 
     case DS_CONNECTED:
         return DE_DRIVER_STILL_CONNECTED;
-        
+
     case DS_UNINITIALIZED:
         return DE_DRIVER_NOT_INITIALIZED;
     }
-                                        
-    
+
+
     status = command_pool.deInitialize();
 
     if (status != DE_OK)
@@ -164,7 +164,7 @@ E_DriverErrCode GatewayDriver::deInitialize()
     fpuArray.setDriverState(DS_UNINITIALIZED);
 
     return DE_OK;
-    
+
 
 }
 
@@ -231,49 +231,49 @@ static void* threadRxEntryFun(void *arg)
 
 void set_rt_priority(int prio)
 {
-  if (USE_REALTIME_SCHEDULING)
+    if (USE_REALTIME_SCHEDULING)
     {
-    const pid_t pid = 0;
-    struct sched_param sparam;
-    sparam.sched_priority = prio;
-        
-    int rv = sched_setscheduler(pid, SCHED_FIFO, &sparam);
-    if (rv == 0)
-    {
-        
-        // allocate reserve pages and lock memory to avoid paging latency
-        const size_t MEM_RESERVE_BYTES = 1024 * 1024 * 5;
-        char mem_reserve[MEM_RESERVE_BYTES];
-        memset(mem_reserve, 1, sizeof(mem_reserve));
-        mlockall(MCL_FUTURE);
-        
+        const pid_t pid = 0;
+        struct sched_param sparam;
+        sparam.sched_priority = prio;
+
+        int rv = sched_setscheduler(pid, SCHED_FIFO, &sparam);
+        if (rv == 0)
+        {
+
+            // allocate reserve pages and lock memory to avoid paging latency
+            const size_t MEM_RESERVE_BYTES = 1024 * 1024 * 5;
+            char mem_reserve[MEM_RESERVE_BYTES];
+            memset(mem_reserve, 1, sizeof(mem_reserve));
+            mlockall(MCL_FUTURE);
+
 #ifdef DEBUG
-        printf("Info: real-time priority successfully set to %i\n", prio);
+            printf("Info: real-time priority successfully set to %i\n", prio);
 #endif
-    }
-    else
-    {
-        int errcode = errno;
-        
-        assert(errcode == EPERM);
+        }
+        else
+        {
+            int errcode = errno;
+
+            assert(errcode == EPERM);
 #ifdef DEBUG
-        printf("Warning: real-time scheduling not active, occasional large latencies are possible.\n");
+            printf("Warning: real-time scheduling not active, occasional large latencies are possible.\n");
 #endif
+        }
     }
-    }
-    
+
 }
 
 void unset_rt_priority()
 {
-  if (USE_REALTIME_SCHEDULING)
+    if (USE_REALTIME_SCHEDULING)
     {
-    const pid_t pid = 0;
-    struct sched_param sparam;
-    sparam.sched_priority = 0;
-        
-    int rv = sched_setscheduler(pid, SCHED_OTHER, &sparam);
-    assert(rv == 0);
+        const pid_t pid = 0;
+        struct sched_param sparam;
+        sparam.sched_priority = 0;
+
+        int rv = sched_setscheduler(pid, SCHED_OTHER, &sparam);
+        assert(rv == 0);
     }
 }
 
@@ -292,11 +292,11 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
         break; // OK
 
     case DS_UNINITIALIZED:
-        return DE_DRIVER_NOT_INITIALIZED;        
-        
+        return DE_DRIVER_NOT_INITIALIZED;
+
     case DS_CONNECTED:
         return DE_DRIVER_ALREADY_CONNECTED;
-        
+
     default:
     case DS_ASSERTION_FAILED:
         return DE_ASSERTION_FAILED;
@@ -308,14 +308,14 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     {
         return DE_ASSERTION_FAILED;
     }
-    
+
     DescriptorCloseEvent = eventfd(0, EFD_NONBLOCK);
 
     if (DescriptorCloseEvent < 0)
     {
         return DE_ASSERTION_FAILED;
     }
-    
+
     E_DriverErrCode rval = command_pool.initialize();
 
     if (rval != DE_OK)
@@ -324,7 +324,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     }
 
 
-    
+
     for (int i = 0; i < ngateways; i++)
     {
         const char* ip = gateway_addresses[i].ip;
@@ -352,18 +352,18 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     int err = pthread_create(&rx_thread, &attr, &threadRxEntryFun,
                              (void *) this);
-    
+
     if (err != 0)
     {
         printf("\ncan't create thread :[%s]",
-                              strerror(err));
+               strerror(err));
     }
 
     if (err == 0)
     {
 
         err = pthread_create(&tx_thread, &attr, &threadTxEntryFun,
-                         (void *) this);
+                             (void *) this);
         if (err != 0)
         {
             exit_threads.store(true, std::memory_order_release);
@@ -380,7 +380,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     unset_rt_priority();
 
-    
+
     return DE_OK;
 
 }
@@ -415,7 +415,7 @@ E_DriverErrCode GatewayDriver::disconnect()
         {
             shutdown(SocketID[i], SHUT_RDWR);
         }
-        
+
     }
     else
     {
@@ -451,16 +451,16 @@ E_DriverErrCode GatewayDriver::disconnect()
     }
 
     // close eventfds
-    
+
     assert(close(DescriptorCloseEvent) == 0);
     assert(close(DescriptorCommandEvent) == 0);
-    
+
     // we update the grid state - importantly,
     // this also signals callers of waitForState()
     // so they don't go into dead-lock.
     fpuArray.setDriverState(DS_UNCONNECTED);
 
-    
+
     return DE_OK;
 
 }
@@ -468,10 +468,10 @@ E_DriverErrCode GatewayDriver::disconnect()
 
 
 void GatewayDriver::updatePendingCommand(int fpu_id,
-                                         std::unique_ptr<I_CAN_Command>& can_command)
+        std::unique_ptr<I_CAN_Command>& can_command)
 {
 
-  
+
     if (can_command->expectsResponse())
     {
 
@@ -483,7 +483,7 @@ void GatewayDriver::updatePendingCommand(int fpu_id,
 
         timespec wait_period = can_command->getTimeOut();
         timespec deadline = time_add(send_time, wait_period);
-        
+
         fpuArray.setPendingCommand(fpu_id,
                                    can_command->getInstanceCommandCode(),
                                    deadline, timeOutList);
@@ -519,7 +519,7 @@ void GatewayDriver::updatePendingSets(unique_ptr<I_CAN_Command> &active_can_comm
         for (int i=0; i < num_fpus; i++)
         {
             if (address_map[i].gateway_id
-                == gateway_id)
+                    == gateway_id)
             {
                 updatePendingCommand(i,
                                      active_can_command);
@@ -548,7 +548,7 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
     {
         // we can send a new message. Safely pop the
         // pending command coming from the control thread
-        
+
         // Update number of commands being sent first
         // (this avoids a race condition when querying
         // the number of commands which are not sent).
@@ -571,7 +571,7 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
             updatePendingSets(active_can_command, gateway_id);
             // update number of queued commands
             fpuArray.decSending();
-            
+
             // byte-swizzle and send buffer
             status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
                       message_len, can_buffer.bytes);
@@ -593,7 +593,7 @@ int GatewayDriver::getNumUnsentCommands() const
 }
 
 
-void GatewayDriver::incSending()    
+void GatewayDriver::incSending()
 {
     fpuArray.incSending();
 }
@@ -609,7 +609,7 @@ void* GatewayDriver::threadTxFun()
     struct pollfd pfd[NUM_TX_DESCRIPTORS];
 
     nfds_t num_fds = NUM_TX_DESCRIPTORS;
-    
+
     for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
     {
         pfd[gateway_id].fd = SocketID[gateway_id];
@@ -637,7 +637,7 @@ void* GatewayDriver::threadTxFun()
 
 
     set_rt_priority(WRITER_PRIORITY);
-    
+
     while (true)
     {
 
@@ -799,7 +799,7 @@ void* GatewayDriver::threadTxFun()
 
     // clear event descriptor on commandQueue
     commandQueue.setEventDescriptor(-1);
-    
+
     return NULL;
 }
 
@@ -810,7 +810,7 @@ inline void print_time(char* label, struct timespec tm)
     fflush(stdout);
 }
 
-inline void print_curtime(char* label)    
+inline void print_curtime(char* label)
 {
     struct timespec tm;
     get_monotonic_time(tm);
@@ -840,14 +840,14 @@ void* GatewayDriver::threadRxFun()
     // add eventfd for closing connection
     pfd[num_gateways].fd = DescriptorCloseEvent;
     pfd[num_gateways].events = POLLIN;
-    
+
     /* Create mask to block SIGPIPE during calls to ppoll()*/
     sigset_t signal_set;
     sigemptyset(&signal_set);
     sigaddset(&signal_set, SIGPIPE);
 
     set_rt_priority(READER_PRIORITY);
-    
+
 
     while (true)
     {
@@ -856,12 +856,12 @@ void* GatewayDriver::threadRxFun()
         timespec cur_time;
 
         get_monotonic_time(cur_time);
-        
+
         // compute a bounded absolute time
 
 
         timespec next_timeout = timeOutList.getNextTimeOut();
-        
+
 
         timespec max_rx_tmout = time_add(cur_time, MAX_RX_TIMEOUT);
         if (time_smaller(max_rx_tmout, next_timeout))
@@ -929,7 +929,7 @@ void* GatewayDriver::threadRxFun()
                         // or the connection was closed
 #ifdef DEBUG
                         printf("RX thread fatal error: sbuffer socket status = %i, exiting\n",
-                              status);
+                               status);
 #endif
                         exitFlag = true;
                         break;
@@ -966,7 +966,7 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buff
     {
         // FIXME: logging of invalid messages
 #ifdef DEBUG
-            printf("RX invalid CAN message (empty)- ignoring.\n");
+        printf("RX invalid CAN message (empty)- ignoring.\n");
 #endif
     }
     else if (clen < 3)
@@ -1017,13 +1017,13 @@ CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_C
 
     assert(fpu_id < num_fpus);
     const int gateway_id = address_map[fpu_id].gateway_id;
-    
+
     if (! new_command)
     {
         printf("nullpointer passed!\n");
         assert(0);
     }
-    
+
     incSending();
     return commandQueue.enqueue(gateway_id, new_command);
 }
@@ -1067,14 +1067,14 @@ E_DriverErrCode GatewayDriver::abortMotion(t_grid_state& grid_state,
     // Flush all queued commands from queue to command pool,
     // so that abort message is sent without delay.
     commandQueue.flushToPool(command_pool);
-    
+
     // Send broadcast command to each gateway to abort movement of all
     // FPUs.
 #if (CAN_PROTOCOL_VERSION > 1 )
-     #pragma message "FIXME: In protocol version 2, this needs to be changed to use the gateway SYNC message."
-#endif        
+#pragma message "FIXME: In protocol version 2, this needs to be changed to use the gateway SYNC message."
+#endif
     unique_ptr<AbortMotionCommand> can_command;
-    
+
     for (int i=0; i < num_gateways; i++)
     {
         can_command = provideInstance<AbortMotionCommand>();
@@ -1083,8 +1083,8 @@ E_DriverErrCode GatewayDriver::abortMotion(t_grid_state& grid_state,
         unique_ptr<I_CAN_Command> cmd(can_command.release());
         broadcastCommand(i, cmd);
     }
-        
-    
+
+
     return DE_OK;
 }
 

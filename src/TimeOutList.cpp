@@ -51,8 +51,8 @@ namespace canlayer
 // be trivial to implement.
 
 const timespec TimeOutList::MAX_TIMESPEC = {/* .tv_sec = */ TIME_T_MAX,
-                                          /* .tv_nsec = */ 999999999
-};
+                                                            /* .tv_nsec = */ 999999999
+                                           };
 
 
 TimeOutList::TimeOutList()
@@ -100,11 +100,11 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
 
     const timespec old_val = TimeOutsByID[id];
     TimeOutsByID[id] = new_val;
-    
+
 #ifdef DEBUGT
     printf("insertTimeOut(): new timeout for FPU #%i = %li / %li\n",
            id, TimeOutsByID[id].tv_sec, TimeOutsByID[id].tv_nsec);
-#endif    
+#endif
 
     // update invariants
 
@@ -146,7 +146,7 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
             // we increment the count, if it was not
             // already included
             cached_minimum_multiplicity += 1;
-            
+
             if (id < minimum_index_lbound)
             {
                 minimum_index_lbound = id;
@@ -203,9 +203,9 @@ const timespec TimeOutList::minKey()
 
 #if 0
     if (cached_minimum_multiplicity > 0)
-#else        
+#else
     if (false)
-#endif        
+#endif
     {
         // cached value is still valid
         if (time_smaller(cached_minimum, min_val))
@@ -246,10 +246,10 @@ const timespec TimeOutList::minKey()
         }
     }
 
-#if (CAN_PROTOCOL_VERSION > 1)    
+#if (CAN_PROTOCOL_VERSION > 1)
 #pragma message "TimeOutList::minKey(): fix complexity of minimum search"
 #endif
-    
+
 #ifdef DEBUG_MK
     clock_t t1 = clock();
     clock_t td = t1 - t0;

@@ -142,7 +142,7 @@ when the internal state struct is used.
 ** DONE add mock gateway code for base commands (version 1)
 ** DONE fix unnecessary compile warnings
 ** DONE check FIXMEs for resolved stuff
-** TODO remove dead code
+** DONE remove dead code
 ** TODO format code nicely using astyle
 ** TODO Add state filtering to command precondition check
 ** TODO add separate reporting/logging of results

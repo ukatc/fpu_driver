@@ -33,7 +33,7 @@ namespace canlayer
 
 class AsyncDriver
 {
-    public:
+public:
 
     typedef struct
     {
@@ -49,29 +49,29 @@ class AsyncDriver
 
     typedef  std::vector<t_waveform> t_wtable;
 
-  /* Maximum number of retries to initialize configure
-     motion before the driver will give up. */  
-  const int MAX_CONFIG_MOTION_RETRIES = 5;
+    /* Maximum number of retries to initialize configure
+       motion before the driver will give up. */
+    const int MAX_CONFIG_MOTION_RETRIES = 5;
 
     AsyncDriver(int nfpus)
         : gateway(nfpus)
-        {
-            num_fpus = nfpus;
-            num_gateways = 0;
-        }
+    {
+        num_fpus = nfpus;
+        num_gateways = 0;
+    }
 
     ~AsyncDriver()
+    {
+        if ( gateway.getDriverState() != DS_UNCONNECTED)
         {
-            if ( gateway.getDriverState() != DS_UNCONNECTED)
-            {
-                disconnect();
-            }
-            if ( gateway.getDriverState() != DS_UNINITIALIZED)
-            {
-                deInitializeDriver();
-            }
-
+            disconnect();
         }
+        if ( gateway.getDriverState() != DS_UNINITIALIZED)
+        {
+            deInitializeDriver();
+        }
+
+    }
 
     // Initialize internal data structures, allocate memory etc.
     // (this can fail if the system is too low on memory).
@@ -98,21 +98,21 @@ class AsyncDriver
     E_DriverErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary);
-    
+
     E_DriverErrCode waitAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
                                            double &max_wait_time, bool &finished);
-    
+
     E_DriverErrCode configMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, const t_wtable& waveforms);
 
     E_DriverErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
-    
+
     E_DriverErrCode waitExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, double &max_wait_time, bool &finished);
-    
+
     E_DriverErrCode getPositionsAsync(t_grid_state& grid_state,
-                                               E_GridState& state_summary);
+                                      E_GridState& state_summary);
 
     E_DriverErrCode getCounterDeviationAsync(t_grid_state& grid_state,
-                                              E_GridState& state_summary);
+            E_GridState& state_summary);
 
     E_DriverErrCode repeatMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
@@ -125,7 +125,7 @@ class AsyncDriver
     E_DriverErrCode unlockFPUAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode enableBetaCollisionProtectionAsync(t_grid_state& grid_state,
-                                                       E_GridState& state_summary);
+            E_GridState& state_summary);
 
     E_DriverErrCode freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
                                            t_grid_state& grid_state,
@@ -137,7 +137,7 @@ class AsyncDriver
                              t_grid_state& out_detailed_state, double &max_wait_time, bool &cancelled) const;
 
 
-    private:
+private:
 
     int num_fpus;
     int num_gateways;

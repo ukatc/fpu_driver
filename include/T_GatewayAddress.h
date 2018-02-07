@@ -23,12 +23,12 @@
 
 namespace mpifps
 {
-    
-    typedef struct t_gateway_address
-    {
-        const char * ip;
-        uint16_t port;        
-    } t_gateway_address;
+
+typedef struct t_gateway_address
+{
+    const char * ip;
+    uint16_t port;
+} t_gateway_address;
 
 }
 

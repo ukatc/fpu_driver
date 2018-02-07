@@ -47,7 +47,7 @@ public:
         int id; // corresponding fpu id
     } t_toentry;
 
-    static const timespec MAX_TIMESPEC; 
+    static const timespec MAX_TIMESPEC;
 
     TimeOutList();
 

@@ -46,6 +46,6 @@ const int MAX_NUM_POSITIONERS = (MAX_NUM_GATEWAYS
                                  * canlayer::FPUS_PER_BUS);
 
 const bool USE_REALTIME_SCHEDULING = false;
-  
+
 }
 #endif

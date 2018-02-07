@@ -55,8 +55,28 @@ print("configuring wavetable")
 gd.configMotion(wt, gs)
 
 gd.reverseMotion(gs)
-print("issuing executeMotion!")
+print("issuing executeMotion! (this should fail)")
+try:
+    gd.executeMotion(gs)
+except RuntimeError:
+    print("exception caught..")
+
+print("trying to free collision...")
+gd.freeBetaCollision(1, REQD_ANTI_CLOCKWISE, gs)
+gd.freeBetaCollision(1, REQD_ANTI_CLOCKWISE, gs)
+
+gd.pingFPUs(gs)
+print("new positions:", list_positions(gs))
+print("enable protection...")
+gd.enableBetaCollisionProtection(gs)
+
+print("configuring wavetable again (old data is invalid)")
+gd.configMotion(wt, gs)
+print("issuing executeMotion! (this should work)")
+
 gd.executeMotion(gs)
+
+
 
                        
 

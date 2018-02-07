@@ -23,20 +23,20 @@
 namespace mpifps
 {
 
-    namespace canlayer
-    {
+namespace canlayer
+{
 
-        enum E_CANError
-        {
-            UNINITIALIZED             = 1,
-            MINOR_TIMEOUT             = 2,
-            MAJOR_TIMEOUT             = 3,
-            LOST_CONNECTION           = 4,
-            SOCKET_CLOSED             = 5,
+enum E_CANError
+{
+    UNINITIALIZED             = 1,
+    MINOR_TIMEOUT             = 2,
+    MAJOR_TIMEOUT             = 3,
+    LOST_CONNECTION           = 4,
+    SOCKET_CLOSED             = 5,
 
-        };
+};
 
-    }
+}
 
 }
 #endif

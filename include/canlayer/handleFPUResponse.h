@@ -29,10 +29,10 @@ namespace mpifps
 {
 namespace canlayer
 {
-    void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
-                           const t_response_buf& data,
-                           const int blen, TimeOutList& timeout_list,
-                           int &count_pending);
+void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
+                       const t_response_buf& data,
+                       const int blen, TimeOutList& timeout_list,
+                       int &count_pending);
 
 }
 }

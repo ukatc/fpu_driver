@@ -102,11 +102,11 @@ public:
     // needs to be sent, and all queued messages
     // should be discarded.
     void flushToPool(CommandPool& memory_pool);
- 
+
     int getNumQueuedCommands();
 
     void setEventDescriptor(int fd);
-   
+
 private:
     int ngateways;
     mutable pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;

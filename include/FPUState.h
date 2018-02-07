@@ -29,7 +29,7 @@ namespace mpifps
 using canlayer::E_CAN_COMMAND;
 using canlayer::E_MOC_ERRCODE;
 using canlayer::NUM_CAN_COMMANDS;
-    
+
 enum E_FPU_STATE
 {
     FPST_UNKNOWN                 = 0,
@@ -81,9 +81,9 @@ typedef struct __attribute__((packed)) t_fpu_state
     uint32_t pending_command_set;
 
     // current state of FPU
-    E_FPU_STATE state;    
+    E_FPU_STATE state;
     // previous state of FPU (used for time-out handling etc.)
-    E_FPU_STATE previous_state;    
+    E_FPU_STATE previous_state;
     // id of last command that was issued
     E_CAN_COMMAND last_command;
     // motion controller status response for last command
@@ -127,4 +127,4 @@ typedef struct __attribute__((packed)) t_fpu_state
 
 
 #endif
- 
+
