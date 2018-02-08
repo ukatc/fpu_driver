@@ -175,6 +175,12 @@ typedef struct t_fpu_status_flags
 // defines 4-bit priority value of CAN message
 inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
 {
+
+#if (CAN_PROTOCOL_VERSION == 1)
+    // protocol version 1 requires a priority of zero.
+    return 0;
+#endif
+    
     uint8_t priority = 0x0f;
     switch (cmd)
     {

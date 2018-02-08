@@ -85,13 +85,9 @@ public:
 
         if (! bcast)
         {
-#if 0	  
+            // priority is zero for protocl version 1
             can_identifier = (getMessagePriority(cmd_code)
                               << 7) | fpu_canid;
-#else
-            can_identifier = (0
-                              << 7) | fpu_canid;
-#endif
         }
 
         // The protocol uses little-endian encoding here
