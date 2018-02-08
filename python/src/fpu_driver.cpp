@@ -110,6 +110,7 @@ public:
 
     bool was_zeroed;
     bool is_locked;
+    bool ping_ok;
     bool alpha_datum_switch_active;
     bool beta_datum_switch_active;
     bool at_alpha_limit;
@@ -139,6 +140,7 @@ public:
         num_active_timeouts       = fpu_state.num_active_timeouts;
         sequence_number           = fpu_state.sequence_number;
         was_zeroed                = fpu_state.was_zeroed;
+        ping_ok                   = fpu_state.ping_ok;
         is_locked                 = fpu_state.is_locked;
         alpha_datum_switch_active = fpu_state.alpha_datum_switch_active;
         beta_datum_switch_active  = fpu_state.beta_datum_switch_active;
@@ -185,6 +187,7 @@ public:
           << " 'num_waveforms' : " << fpu.num_waveforms
           << " 'num_active_timeouts' : " << fpu.num_active_timeouts
           << " 'sequence_number' : " << fpu.sequence_number
+          << " 'ping_ok' : " << fpu.ping_ok
           << " 'was_zeroed' : " << fpu.was_zeroed
           << " 'is_locked' : " << fpu.is_locked
           << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active
@@ -242,15 +245,17 @@ public:
           << "driver_state=";
         s << gs.driver_state << ", "
           << "Counts= [ ";
+        int num_fpus = 0;
         for(int i=0; i < NUM_FPU_STATES; i++)
         {
             s << gs.Counts[i];
+            num_fpus += gs.Counts[i];
             if (i < (NUM_FPU_STATES -1))
             {
                 s <<", ";
             }
         }
-        s << " ]" << ", FPU[]=..." ;
+        s << " ]" << ", FPU[0 : " << num_fpus << "]=..." ;
         return s.str();
     }
 
@@ -265,17 +270,20 @@ public:
           << "'driver_state' :";
         s << gs.driver_state << ", "
           << "'Counts' : { ";
+        
+        int num_fpus = 0;
         for(int i=0; i < NUM_FPU_STATES; i++)
         {
             s << static_cast<E_FPU_STATE>(i)
               << " : "
               << gs.Counts[i];
+            num_fpus += gs.Counts[i];
             if (i < (NUM_FPU_STATES -1))
             {
                 s <<", ";
             }
         }
-        s << " ]" << ", FPU[]=..." ;
+        s << " ]" << ", FPU[0 : " << num_fpus << "]=..." ;
         return s.str();
     }
 
