@@ -751,9 +751,9 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     // fpu_busid uses a one-based index here, this is
     // deliberate and reflected in the array size.
     int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
-    if ((fpu_id > num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
+    if ((fpu_id >= num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
     {
-#ifdef DEBUG2
+#ifdef DEBUG
         printf("fpu_id too large (%i), ignored\n", fpu_id);
 #endif
         return;

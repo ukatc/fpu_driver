@@ -312,7 +312,18 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
             fpu.state = FPST_ABORTED;
             // remove executeMotion from pending commands
-            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+            switch(fpu.state)
+            {
+            case FPST_MOVING:
+                remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+                break;
+            case FPST_DATUM_SEARCH:
+                remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+                break;
+            default:
+                /* the other commands are not movements */
+                break;
+            }
         }
         remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
@@ -400,6 +411,11 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 
             fpu.alpha_steps = asteps;
             fpu.beta_steps = bsteps;
+            fpu.ping_ok = true;
+        }
+        else
+        {
+            fpu.ping_ok = false;
         }
 
 
@@ -494,20 +510,26 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.alpha_datum_switch_active = true;
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.waveform_valid = false;
-
+            fpu.was_zeroed = false;
         }
         else if (response_errcode == ER_COLLIDE)
         {
             fpu.alpha_datum_switch_active = true;
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.waveform_valid = false;
-
+            fpu.was_zeroed = false;                
+        }
+        else if (response_status & STBT_ABORT_WAVE)
+        {
+            fpu.state = FPST_ABORTED;
+            fpu.waveform_valid = false;
         }
         else if (response_errcode != 0)
         {
             if (fpu.state == FPST_DATUM_SEARCH)
             {
                 fpu.state = FPST_UNINITIALIZED;
+                fpu.was_zeroed = false;
             }
         }
         else
@@ -546,6 +568,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.beta_collision = true;
         fpu.waveform_valid = false;
+        fpu.was_zeroed = false;                
         // FIXME: Update step counter in protocol version 2
         //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
 
@@ -570,6 +593,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.at_alpha_limit = true;
         fpu.waveform_valid = false;
+        fpu.was_zeroed = false;                
 
         fpu.last_updated = cur_time;
         break;

@@ -109,6 +109,7 @@ typedef struct __attribute__((packed)) t_fpu_state
                                     finding datum.  This is required
                                     for any science observatons. */
     unsigned int is_locked: 1;  // FPU was locked by operator
+    unsigned int ping_ok: 1;  // last ping command was successful
     unsigned int alpha_datum_switch_active: 1; // alpha datum switch is on
     unsigned int beta_datum_switch_active: 1; // beta datum switch is on
     unsigned int at_alpha_limit: 1; // alpha arm has reached limit (detected by datum off)

@@ -46,6 +46,10 @@ void handleTimeout(int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id)
 
     switch (cmd_id)
     {
+    case CCMD_PING_FPU   :
+        fpu.ping_ok = false;
+        break;
+        
     case CCMD_CONFIG_MOTION   :
         break;
 
