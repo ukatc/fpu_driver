@@ -85,13 +85,19 @@ public:
 
         if (! bcast)
         {
+#if 0	  
             can_identifier = (getMessagePriority(cmd_code)
                               << 7) | fpu_canid;
+#else
+            can_identifier = (0
+                              << 7) | fpu_canid;
+#endif
         }
 
         // The protocol uses little-endian encoding here
         // (the byte order used in the CANOpen protocol).
-        can_buffer.message.identifier = htole64(can_identifier);
+        //can_buffer.message.identifier = htole64(can_identifier);
+        can_buffer.message.identifier = htole16(can_identifier);
         buf_len = 3;
 
 

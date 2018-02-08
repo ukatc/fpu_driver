@@ -23,6 +23,7 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <cassert>
+#include <stdio.h>
 
 #include "canlayer/SBuffer.h"
 
@@ -161,6 +162,14 @@ SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
         uint8_t src[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES])
 {
     int out_len = 0;
+#if DEBUG2
+    printf("command bytes (len=%i)= [", input_len);
+    for(int i=0; i < input_len; i++)
+    {
+      printf(" %02x", src[i]);
+    }
+     printf("]\n");
+#endif     
 
     encode_buffer(input_len, src, out_len, wbuf);
     out_offset = 0;

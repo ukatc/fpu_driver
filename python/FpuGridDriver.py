@@ -13,6 +13,8 @@ import fpu_commands as cmds
 DEFAULT_GATEWAY_ADRESS_LIST = [ GatewayAddress("127.0.0.1", p)
                                 for p in [4700, 4701, 4702] ]
 
+TEST_GATEWAY_ADRESS_LIST = [ GatewayAddress("192.168.0.10", 4700) ]
+
 
 DEFAULT_NUM_FPUS=1005
 
