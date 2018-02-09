@@ -143,7 +143,9 @@ when the internal state struct is used.
 ** DONE fix unnecessary compile warnings
 ** DONE check FIXMEs for resolved stuff
 ** DONE remove dead code
-** TODO format code nicely using astyle
+** DONE format code nicely using astyle
+** TODO Refactor duplicate code in command header encoding
+** TODO Implement ustep errors in mock-up and test handler
 ** TODO Add state filtering to command precondition check
 ** TODO add separate reporting/logging of results
 ** TODO split SBuffer in independent read buffer and write buffer ?
