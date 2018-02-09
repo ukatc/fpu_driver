@@ -106,8 +106,7 @@ class GridDriver:
             self.pingFPUs(gs)
             print("findDatumw as aborted by SIGINT, movement stopped")
             raise RuntimeError("findDatum was aborted by SIGINT")
-        else:
-            print("findDatum finished.")
+
         return rv
 
     def pingFPUs(self, gs):

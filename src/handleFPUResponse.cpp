@@ -172,6 +172,9 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     switch (cmd_id)
     {
     case CCMD_CONFIG_MOTION   :
+      printf("handle_ConfigMotion: fpu #%i, segment %i: status=%i, error=%i\n",
+	     fpu_id, fpu.num_waveform_segments,
+	     response_status, response_errcode);
         // clear time-out flag
         remove_pending(fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
@@ -187,7 +190,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         else
         {
 #if (CAN_PROTOCOL_VERSION == 1)
-            fpu.num_waveform_segments++;
+            fpu.num_waveform_segments = data[4];
             // FIXME: needs to be set from response for protocol version 2
 #endif
             
@@ -310,9 +313,12 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // FIXME: This should possibly generate an abortMotion
             // message for all FPUs, because other FPUs can crash into
             // the stopped one if they continue moving.
-            fpu.state = FPST_ABORTED;
+   	    printf("step timing error response received for FPU %i\n",
+		 fpu_id);
+	    fpu.state = FPST_ABORTED;
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
+	    fpu.step_timing_errcount++;
 
         }
         else if (response_errcode == 0)

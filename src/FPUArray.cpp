@@ -675,7 +675,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
     int fpu_busid = can_identifier & 0x7f;
 
-#ifdef DEBUG2
+#ifdef DEBUG
 #define PRINT_BYTES
 #ifdef PRINT_BYTES
     int priority = can_identifier >> 7;

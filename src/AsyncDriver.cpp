@@ -418,6 +418,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     int retry_downcount = 5;
     while (step_index < num_steps)
     {
+      const bool first_entry = (step_index == 0);
+      const bool last_entry = (step_index == (num_steps-1));
+		
         int num_loading =  waveforms.size();
         for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
         {
@@ -429,8 +432,6 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 can_command = gateway.provideInstance<ConfigureMotionCommand>();
 
                 const t_step_pair& step = waveforms[fpu_index].steps[step_index];
-                const bool first_entry = (step_index == 0);
-                const bool last_entry = (step_index == (num_steps-1));
 
                 // assert precondition of 14-bit step size
                 const int abs_alpha_steps = abs(step.alpha_steps);
@@ -458,12 +459,14 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 // in the TX thread in the background).
                 unique_ptr<I_CAN_Command> cmd(can_command.release());
                 gateway.sendCommand(fpu_id, cmd);
-#if (CAN_PROTOCOL_VERSION == 1)
-                configured_fpus[fpu_id] = true;
-#endif
             }
         }
-        if ((step_index == 0) && (num_steps > 1))
+#if (CAN_PROTOCOL_VERSION != 1)
+	/* Apparently, at least for firmware version 1, we cannot
+           send more than one configMotion command at a time,
+           or else CAN commands will get lost. */
+        if (first_entry || last_entry)
+#endif	  
         {
             /* Wait and check that all FPUs are registered in LOADING
                state.  This is needed to make sure we have later a clear
@@ -473,6 +476,10 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             bool cancelled = false;
             state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
                                                  grid_state, max_wait_time, cancelled);
+            if (grid_state.driver_state != DS_CONNECTED)
+            {
+                return DE_NO_CONNECTION;
+            }
             bool do_retry = false;
             //int num_loading =  waveforms.size();
             for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
@@ -481,20 +488,24 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
                 // we retry if an FPU which we tried to configure and is
                 // not locked did not change to FPST_LOADING state.
-                if ((fpu_state.state != FPST_LOADING)
-                        && (fpu_state.state != FPST_LOCKED))
+                if ((fpu_state.state != FPST_LOCKED)
+		    && ( (first_entry
+			  &&  (fpu_state.state != FPST_LOADING))
+			 || (last_entry
+			     &&  (fpu_state.state != FPST_READY_FORWARD))))
                 {
                     if (retry_downcount <= 0)
                     {
                         return DE_MAX_RETRIES_EXCEEDED;
                     }
                     do_retry = true;
-                    printf("state not confirmed for FPU #%i, retry!\n", fpu_id);
+                    printf("configMotion: state not confirmed for FPU #%i, retry from start!\n", fpu_id);
                 }
             }
             if (do_retry)
             {
                 // we start again with loading the first step
+                step_index = 0;
                 retry_downcount--;
                 continue;
             }
@@ -503,51 +514,6 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         step_index++;
     }
     
-
-    // fpus are now loading data.
-    // Wait for fpus loading to finish, or
-    // to time-out.
-    /// state_summary = gateway.waitForState(TGT_READY_TO_MOVE,
-    double max_wait_time = -1;
-    bool cancelled = false;
-
-#if (CAN_PROTOCOL_VERSION == 1)
-    // we can't just wait for all pending commands to be resolved,
-    // because in protocol version 1, every config message generates
-    // a reply, not just the last one. Consequently, we have to
-    // check that all FPUs in the set which we did talk to, have reached
-    // the desired state.
-    bool all_ready = false;
-    while (! all_ready)
-    {
-        state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
-                                             grid_state, max_wait_time, cancelled);
-        all_ready = true;
-        for(int i = 0; i < num_fpus; i++)
-        {
-            if (! configured_fpus[i])
-            {
-                continue;
-            }
-            all_ready = all_ready && (grid_state.FPU_state[i].state != FPST_LOADING);
-            
-            if (! all_ready)
-            {
-                break;
-            }
-        }
-                        
-    } 
-#else
-    printf("protocol 2!");
-    state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
-                                         grid_state, max_wait_time, cancelled);
-#endif
-
-    if (grid_state.driver_state != DS_CONNECTED)
-    {
-        return DE_NO_CONNECTION;
-    }
 
     return DE_OK;
 }
