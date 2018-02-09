@@ -118,6 +118,10 @@ public:
     bool waveform_valid;
     bool waveform_ready;
     bool waveform_reversed;
+    int num_waveform_segments;
+    int num_active_timeouts;
+    int sequence_number;
+    int movement_complete;
 
     WrapFPUState() {}
 
@@ -134,14 +138,16 @@ public:
         alpha_deviation           = fpu_state.alpha_deviation;
         beta_deviation            = fpu_state.beta_deviation;
         timeout_count             = fpu_state.timeout_count;
+        step_timing_errcount      = fpu_state.step_timing_errcount;
         direction_alpha           = fpu_state.direction_alpha;
         direction_beta            = fpu_state.direction_beta;
-        num_waveforms             = fpu_state.num_waveforms;
+        num_waveform_segments     = fpu_state.num_waveform_segments;
         num_active_timeouts       = fpu_state.num_active_timeouts;
         sequence_number           = fpu_state.sequence_number;
         was_zeroed                = fpu_state.was_zeroed;
         ping_ok                   = fpu_state.ping_ok;
         is_locked                 = fpu_state.is_locked;
+        movement_complete         = fpu_state.movement_complete;
         alpha_datum_switch_active = fpu_state.alpha_datum_switch_active;
         beta_datum_switch_active  = fpu_state.beta_datum_switch_active;
         at_alpha_limit            = fpu_state.at_alpha_limit;
@@ -182,12 +188,14 @@ public:
           << " 'alpha_deviation' : " << fpu.alpha_deviation
           << " 'beta_deviation' : " << fpu.beta_deviation
           << " 'timeout_count' : " << fpu.timeout_count
+          << " 'step_timing_errcount' : " << fpu.step_timing_errcount
           << " 'direction_alpha' : " << fpu.direction_alpha
           << " 'direction_beta' : " << fpu.direction_beta
-          << " 'num_waveforms' : " << fpu.num_waveforms
+          << " 'num_waveform_segments' : " << fpu.num_waveform_segments
           << " 'num_active_timeouts' : " << fpu.num_active_timeouts
           << " 'sequence_number' : " << fpu.sequence_number
           << " 'ping_ok' : " << fpu.ping_ok
+          << " 'movement_complete' : " << fpu.movement_complete
           << " 'was_zeroed' : " << fpu.was_zeroed
           << " 'is_locked' : " << fpu.is_locked
           << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active
@@ -315,7 +323,7 @@ struct TooFewFPUsException : std::exception
 {
     char const* what() const throw()
     {
-        return "Waveform table needs to address at least one FPU.";
+        return "DE_INVALID_WAVEFORM: Waveform table needs to address at least one FPU.";
     }
 };
 
@@ -323,7 +331,7 @@ struct TooFewStepsException : std::exception
 {
     char const* what() const throw()
     {
-        return "Waveform entry needs to contain at least one step.";
+        return "DE_INVALID_WAVEFORM: Waveform entry needs to contain at least one step.";
     }
 };
 
@@ -334,7 +342,8 @@ struct DriverNotInitializedException
 {
     char const* what() const throw()
     {
-        return "GridDriver was not initialized properly, possibly due to system error.";
+        return "DE_DRIVER_NOT_INITIALIZED: GridDriver was not initialized "
+            "properly, possibly due to system error or out-of-memory condition.";
     }
 };
 
@@ -348,7 +357,7 @@ struct DriverAlreadyInitializedException : std::exception
 {
     char const* what() const throw()
     {
-        return "GridDriver was already initialized properly.";
+        return "DE_DRIVER_ALREADY_INITIALIZED: GridDriver was already initialized properly.";
     }
 };
 
@@ -363,7 +372,7 @@ struct NoConnectionException : std::exception
 {
     char const* what() const throw()
     {
-        return "The Fibre Positioner Unit Driver is not connected to a gateway.";
+        return "DE_NO_CONNECTION: The FPU Driver is not connected to a gateway.";
     }
 };
 
@@ -378,7 +387,7 @@ struct DriverStillBusyException : std::exception
 {
     char const* what() const throw()
     {
-        return "The FPU driver is still busy working on a previosu command";
+        return "DE_STILL_BUSY: The FPU driver is still busy working on a previosu command";
     }
 };
 
@@ -392,7 +401,7 @@ struct NewCollisionException : std::exception
 {
     char const* what() const throw()
     {
-        return "A collision was detected, movement for this FPU aborted.";
+        return "DE_NEW_COLLISION: A collision was detected, movement for this FPU aborted.";
     }
 };
 
@@ -406,7 +415,7 @@ struct UnresolvedCollisionException : std::exception
 {
     char const* what() const throw()
     {
-        return "A previous collision needs to be resolved first";
+        return "DE_UNRESOLVED_COLLISION: A previous collision needs to be resolved first";
     }
 };
 
@@ -420,7 +429,8 @@ struct FpuNotInitializedException : std::exception
 {
     char const* what() const throw()
     {
-        return "A fibre positioner unit (FPU) was not initialized as required";
+        return "DE_FPU_NOT_INITIALIZED: A fibre positioner unit (FPU) was not initialized as"
+            " required, needs to do a datum search first";
     }
 };
 
@@ -434,7 +444,7 @@ struct DriverAlreadyConnectedException : std::exception
 {
     char const* what() const throw()
     {
-        return "Driver was already connected, would need to disconenct() first.";
+        return "DE_DRIVER_ALREADY_CONNECTED: Driver was already connected, would need to disconnect() first.";
     }
 };
 
@@ -448,7 +458,7 @@ struct DriverStillConnectedException : std::exception
 {
     char const* what() const throw()
     {
-        return "FPU driver is still connected";
+        return "DE_DRIVER_STILL_CONNECTED: FPU driver is still connected";
     }
 };
 
@@ -462,7 +472,7 @@ struct MaxRetriesExceededException : std::exception
 {
     char const* what() const throw()
     {
-        return "A command could not be launched in spite of several retries";
+        return "DE_MAX_RETRIES_EXCEEDED: A command could not be send in spite of several retries";
     }
 };
 
@@ -477,7 +487,7 @@ struct InvalidWaveformException : std::exception
 {
     char const* what() const throw()
     {
-        return "The passed waveform is invalid.";
+        return "DE_INVALID_WAVEFORM: The passed waveform is invalid.";
     }
 };
 
@@ -491,7 +501,7 @@ struct NoMovableFPUsException : std::exception
 {
     char const* what() const throw()
     {
-        return "No FPUs are currently movable.";
+        return "DE_NO_MOVABLE_FPUS: No FPUs are currently movable.";
     }
 };
 
@@ -505,8 +515,9 @@ struct CommandTimeOutException : std::exception
 {
     char const* what() const throw()
     {
-        return "Response to a CAN command surpassed maximum waiting time."
-               "This can be caused by a broken connection or networking problems.";
+        return "DE_COMMAND_TIMEOUT: Response to a CAN command surpassed the "
+            "configured maximum waiting time."
+            "This can be caused by a broken connection or networking problems.";
     }
 };
 
@@ -515,8 +526,9 @@ struct AbortedStateException : std::exception
 {
     char const* what() const throw()
     {
-        return "There are FPUs in aborted state - use the "
-               "resetFPUs method to reset state.";
+        return "DE_ABORTED_STATE: There are FPUs in aborted state,"
+            " because of an abortMotion command or a step timing error "
+            "- use the resetFPUs command to reset state.";
     }
 };
 
@@ -530,7 +542,7 @@ struct FPUsLockedException : std::exception
 {
     char const* what() const throw()
     {
-        return "Some addressed FPUs are in locked state, they need to be unlocked first.";
+        return "DE_FPUS_LOCKED: Some addressed FPUs are in locked state, they need to be unlocked first.";
     }
 };
 
@@ -540,11 +552,30 @@ void translate(FPUsLockedException const& e)
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
+
+struct StepTimingException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_STEP_TIMING_ERROR: An FPU's controller "
+            "generated a step timing error"
+            "during movement. Possibly, reduce microstepping level"
+            "to compute the step frequency in time.";
+    }
+};
+
+void translate(StepTimingException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+
 struct UnimplementedException : std::exception
 {
     char const* what() const throw()
     {
-        return "Command or operation not implemented for this protocol version";
+        return "DE_UNIMPLEMENTED: Command or operation not implemented for this protocol version";
     }
 };
 
@@ -559,8 +590,8 @@ struct AssertionFailedException : std::exception
 {
     char const* what() const throw()
     {
-        return "The driver has an internal logic error, "
-               "and cannot continue to operate.";
+        return "DE_ASSERTION_FAILED: The driver determined an internal logic error, "
+               "should probably be terminated.";
     }
 };
 
@@ -667,6 +698,10 @@ void checkDriverError(E_DriverErrCode ecode)
 
     case DE_FPUS_LOCKED :
         throw FPUsLockedException();
+        break;
+
+    case DE_STEP_TIMING_ERROR:
+        throw StepTimingException();
         break;
 
     case DE_UNIMPLEMENTED:
@@ -1090,6 +1125,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_COMMAND_TIMEOUT", DE_COMMAND_TIMEOUT)
     .value("DE_ABORTED_STATE", DE_ABORTED_STATE)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
+    .value("DE_STEP_TIMING_ERROR", DE_STEP_TIMING_ERROR)
     .value("DE_UNIMPLEMENTED", DE_UNIMPLEMENTED)
     .export_values();
 
@@ -1144,7 +1180,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("at_alpha_limit", &WrapFPUState::at_alpha_limit)
     .def_readonly("beta_collision", &WrapFPUState::beta_collision)
     .def_readonly("direction_alpha", &WrapFPUState::direction_alpha)
-    .def_readonly("num_waveforms", &WrapFPUState::num_waveforms)
+    .def_readonly("num_waveform_segments", &WrapFPUState::num_waveform_segments)
     .def_readonly("direction_beta", &WrapFPUState::direction_beta)
     .def_readonly("waveform_valid", &WrapFPUState::waveform_valid)
     .def_readonly("waveform_ready", &WrapFPUState::waveform_ready)

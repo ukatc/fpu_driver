@@ -138,6 +138,13 @@ enum E_DriverErrCode
     // some addressed FPUs are locked
     DE_FPUS_LOCKED = 15,
 
+    // at least one FPU ran into a step timing error, which means
+    // the FPU's motion controller was not able to compute
+    // the required step frequency quick enough for the
+    // configured microstepping level.
+
+    DE_STEP_TIMING_ERROR = 16,
+    
     // operation not implemented for this protocol version
     DE_UNIMPLEMENTED=98,
 

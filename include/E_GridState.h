@@ -86,7 +86,6 @@ enum E_WaitTarget
     TGT_READY_TO_MOVE = (GS_READY_FORWARD
                          | GS_READY_BACKWARD
                          | GS_AT_DATUM
-                         | GS_DATUM_SEARCH
                          | GS_UNINITIALIZED
                          | GS_COLLISION
                          | GS_ABORTED),

@@ -186,6 +186,11 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         }
         else
         {
+#if (CAN_PROTOCOL_VERSION == 1)
+            fpu.num_waveform_segments++;
+            // FIXME: needs to be set from response for protocol version 2
+#endif
+            
             if (response_status & STBT_WAVE_READY)
             {
                 fpu.state = FPST_READY_FORWARD;
@@ -209,6 +214,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // FIXME: Update step counter in protocol version 2
             // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
             fpu.state = FPST_MOVING;
+            fpu.movement_complete = false;;
             // status byte should show RUNNING_WAVE, too
 
             // in protocol version 1, we do not know the last movement direction
@@ -276,18 +282,36 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         if (response_status & STBT_ABORT_WAVE)
         {
             fpu.state = FPST_ABORTED;
+            fpu.movement_complete = false;
             fpu.waveform_valid = false;
         }
         else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
         {
             fpu.at_alpha_limit = true;
             fpu.state = FPST_OBSTACLE_ERROR;
+            fpu.movement_complete = false;
             fpu.waveform_valid = false;
 
         }
         else if (response_errcode == ER_COLLIDE)
         {
             fpu.state = FPST_OBSTACLE_ERROR;
+            fpu.movement_complete = false;
+            fpu.waveform_valid = false;
+
+        }
+        else if (response_errcode == ER_TIMING)
+        {
+            // we got a step timing error (meaning the interrupt
+            // handler running on the FPUs microcontroller could not
+            // compute the step frequency quick enough for the
+            // configured microstepping level).
+            //
+            // FIXME: This should possibly generate an abortMotion
+            // message for all FPUs, because other FPUs can crash into
+            // the stopped one if they continue moving.
+            fpu.state = FPST_ABORTED;
+            fpu.movement_complete = false;
             fpu.waveform_valid = false;
 
         }
@@ -296,6 +320,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // FIXME: Update step counter in protocol version 2
             // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
             fpu.state = FPST_RESTING;
+            fpu.movement_complete = true;
 
             // in protocol version 1, we do not know the last movement direction
             fpu.direction_alpha = DIRST_UNKNOWN;

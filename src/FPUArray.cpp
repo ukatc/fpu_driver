@@ -82,6 +82,7 @@ FPUArray::FPUArray(int nfpus)
         fpu_state.last_updated.tv_sec       = 0;
         fpu_state.last_updated.tv_nsec      = 0;
         fpu_state.timeout_count             = 0;
+        fpu_state.step_timing_errcount      = 0;
         fpu_state.last_command              = CCMD_NO_COMMAND;
         fpu_state.last_status               = ER_OK;
         fpu_state.sequence_number           = 0;
@@ -95,7 +96,9 @@ FPUArray::FPUArray(int nfpus)
         fpu_state.beta_collision            = false;
         fpu_state.direction_alpha           = DIRST_UNKNOWN;
         fpu_state.direction_beta            = DIRST_UNKNOWN;
-        fpu_state.num_waveforms             = 0;
+        fpu_state.num_waveform_segments     = 0;
+        fpu_state.ping_ok                   = false;
+        fpu_state.movement_complete         = false;
         fpu_state.waveform_valid            = false;
         fpu_state.waveform_ready            = false;
         fpu_state.waveform_reversed         = false;
@@ -754,7 +757,12 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     if ((fpu_id >= num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
     {
 #ifdef DEBUG
-        printf("fpu_id too large (%i), ignored\n", fpu_id);
+        static bool has_warned = false;
+        if (! has_warned)
+        {
+            printf("WARNING (once): fpu_id too large (%i), ignored\n", fpu_id);
+            has_warned = true;
+        }
 #endif
         return;
     }

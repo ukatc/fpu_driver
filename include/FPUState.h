@@ -97,26 +97,31 @@ typedef struct __attribute__((packed)) t_fpu_state
     int beta_steps;
     int alpha_deviation;
     int beta_deviation;
-    // number of minor time-outs which have
-    // been observed for the last command.
+    // Wrapping number of minor time-outs which have been observed.
     uint16_t timeout_count;
+    // Wrapping count of step timing errors observed for this FPU.
+    // These are caused by a problem in the FPU firmware which can
+    // occur at higher microstepping levels, if the time is not long
+    // enough for the microcontroller to compute the step frequency.
+    uint16_t step_timing_errcount;
     E_MOVEMENT_DIRECTION direction_alpha;
     E_MOVEMENT_DIRECTION direction_beta;
-    uint8_t num_waveforms;
     int8_t num_active_timeouts;
     uint8_t sequence_number; // number of last pending / received command
+    unsigned int num_waveform_segments: 9; /* number of loaded waveform segements */
     unsigned int was_zeroed: 1; /* steps are validly calibrated by
                                     finding datum.  This is required
                                     for any science observatons. */
     unsigned int is_locked: 1;  // FPU was locked by operator
     unsigned int ping_ok: 1;  // last ping command was successful
+    unsigned int movement_complete: 1;  // last movement command was completed successfully.
     unsigned int alpha_datum_switch_active: 1; // alpha datum switch is on
     unsigned int beta_datum_switch_active: 1; // beta datum switch is on
     unsigned int at_alpha_limit: 1; // alpha arm has reached limit (detected by datum off)
     unsigned int beta_collision: 1;
-    unsigned int waveform_valid: 1; /* waveform completely loaded and
-                                        not invalidated by collision
-                                        or abort message. */
+    unsigned int waveform_valid: 1; /* waveform completely loaded, can be reversed, and is not
+                                       invalidated by collision or abort message. */
+    
     unsigned int waveform_ready: 1; // FPU can execute waveform
     unsigned int waveform_reversed: 1; // false means anti-clockwise for positive step numbers
 

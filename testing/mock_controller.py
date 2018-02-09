@@ -213,7 +213,12 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
         tx4_errcode = ER_INVALID
 
 
-    if first_entry or last_entry or (tx3_errflag != 0):
+    if CAN_PROTOCOL_VERSION == 1:
+        send_confirmation = True
+    else:
+        send_confirmation = first_entry or last_entry or (tx3_errflag != 0)
+        
+    if send_confirmation:
         TH = [ 0 ] * 3
         TH[0] = bus_adr
         TH[1] = (tx_canid & 0xff)

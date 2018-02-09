@@ -410,6 +410,10 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     unique_ptr<ConfigureMotionCommand> can_command;
     // loop over number of steps in the table
     const int num_steps = waveforms[0].steps.size();
+#if (CAN_PROTOCOL_VERSION == 1)
+    bool configured_fpus[MAX_NUM_POSITIONERS];
+    memset(configured_fpus, 0, sizeof(configured_fpus));
+#endif
     int step_index = 0;
     int retry_downcount = 5;
     while (step_index < num_steps)
@@ -454,6 +458,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 // in the TX thread in the background).
                 unique_ptr<I_CAN_Command> cmd(can_command.release());
                 gateway.sendCommand(fpu_id, cmd);
+#if (CAN_PROTOCOL_VERSION == 1)
+                configured_fpus[fpu_id] = true;
+#endif
             }
         }
         if ((step_index == 0) && (num_steps > 1))
@@ -503,8 +510,39 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     /// state_summary = gateway.waitForState(TGT_READY_TO_MOVE,
     double max_wait_time = -1;
     bool cancelled = false;
+
+#if (CAN_PROTOCOL_VERSION == 1)
+    // we can't just wait for all pending commands to be resolved,
+    // because in protocol version 1, every config message generates
+    // a reply, not just the last one. Consequently, we have to
+    // check that all FPUs in the set which we did talk to, have reached
+    // the desired state.
+    bool all_ready = false;
+    while (! all_ready)
+    {
+        state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
+                                             grid_state, max_wait_time, cancelled);
+        all_ready = true;
+        for(int i = 0; i < num_fpus; i++)
+        {
+            if (! configured_fpus[i])
+            {
+                continue;
+            }
+            all_ready = all_ready && (grid_state.FPU_state[i].state != FPST_LOADING);
+            
+            if (! all_ready)
+            {
+                break;
+            }
+        }
+                        
+    } 
+#else
+    printf("protocol 2!");
     state_summary = gateway.waitForState(TGT_NO_MORE_PENDING,
                                          grid_state, max_wait_time, cancelled);
+#endif
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -614,6 +652,8 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 {
     // Get number of FPUs which are moving or will move
 
+    const t_grid_state previous_grid_state = grid_state;
+
     int num_moving = (grid_state.Counts[FPST_MOVING]
                       + grid_state.Counts[FPST_READY_FORWARD]
                       + grid_state.Counts[FPST_READY_BACKWARD]
@@ -651,12 +691,24 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
     for (int i=0; i < num_fpus; i++)
     {
-        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
+
+        const t_fpu_state& fpu = grid_state.FPU_state[i];
+        E_FPU_STATE fpu_status = fpu.state;
 
         if (fpu_status == FPST_OBSTACLE_ERROR)
         {
             return DE_NEW_COLLISION;
         }
+
+        // step timing errors cause an FPU to change to ABORTED
+        // state. To avoid confusion, a more specific error code is
+        // returned.
+        if (fpu.step_timing_errcount != previous_grid_state.FPU_state[i].step_timing_errcount)
+        {
+            return DE_STEP_TIMING_ERROR;
+        }
+
+        
         if (fpu_status == FPST_ABORTED)
         {
             return DE_ABORTED_STATE;
