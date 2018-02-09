@@ -489,7 +489,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 // we retry if an FPU which we tried to configure and is
                 // not locked did not change to FPST_LOADING state.
                 if ((fpu_state.state != FPST_LOCKED)
-		    && ( (first_entry
+		    && ( ((first_entry && (! last_entry))
 			  &&  (fpu_state.state != FPST_LOADING))
 			 || (last_entry
 			     &&  (fpu_state.state != FPST_READY_FORWARD))))
