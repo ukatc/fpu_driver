@@ -35,18 +35,15 @@ gd.findDatum(gs)
 print("findDatum finished")
 
 
-wt_ab = { 0: [ ( 100, 100),
-            ( 100, 100),
-            ( 100, 100),
-            ( 110, 100),
-            ( 105, 100),
-            ( 100, 100),
-            ( 100, 100) ],      
-}
 
-wt = { 0: [ ( -10, 10),
+wt = { 0: [ ( +10, 0),
  ],      
 }
+
+rwt = { 0: [ ( -10, 0),
+ ],      
+}
+
 print("issuing configMotion:")
 
 rv = gd.configMotion(wt, gs)
