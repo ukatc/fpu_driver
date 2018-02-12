@@ -121,13 +121,18 @@ class GridDriver:
     def getCounterDeviation(self, gs):
         return self._gd.getCounterDeviation(gs)
 
-    def configMotion(self, wavetable, gs):
+    def configMotion(self, wavetable, gs, check_protection=True):
         """ 
         Configures movement by sending a waveform table to a group of FPUs.
         Call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
 
+        When the 'protected' flag is set to False, bypass all 
+        hardware protection checks, which will allow to move a
+        collided or uncalibrated FPU (even if the movement might damage
+        the hardware).
+
         """
-        return self._gd.configMotion(wavetable, gs)
+        return self._gd.configMotion(wavetable, gs, check_protection)
 
     def executeMotionB(self, gs):
         return self._gd.executeMotion(gs)

@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import time
-import fpu_driver
+import FpuGridDriver
 
 from fpu_commands import *
 
@@ -12,7 +12,7 @@ gateway_adr_list = [ fpu_driver.GatewayAddress("127.0.0.1", p)
 
 
     
-gd = fpu_driver.GridDriver(NUM_FPUS)
+gd = FpuGridDriver.GridDriver(NUM_FPUS)
 
 print("initializing driver: ", gd.initializeDriver())
 

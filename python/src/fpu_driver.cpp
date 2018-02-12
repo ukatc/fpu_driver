@@ -497,6 +497,24 @@ void translate(InvalidWaveformException const& e)
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
+struct FPUsNotCalibratedException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_FPUS_NOT_CALIBRATED: FPUs are lacking calibration by "
+            "a findDatum operation. For engineering or recovery use, consider"
+            "to set the 'check_protection' keyword argument to False,"
+            "to disable hardware safety checks.";
+    }
+};
+
+void translate(FPUsNotCalibratedException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+
 struct NoMovableFPUsException : std::exception
 {
     char const* what() const throw()
@@ -684,6 +702,10 @@ void checkDriverError(E_DriverErrCode ecode)
         throw InvalidWaveformException();
         break;
 
+    case DE_FPUS_NOT_CALIBRATED:
+        throw FPUsNotCalibratedException();
+        break;
+        
     case DE_NO_MOVABLE_FPUS :
         throw NoMovableFPUsException();
         break;
@@ -788,7 +810,8 @@ public:
 
     };
 
-    E_DriverErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state)
+    E_DriverErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state,
+                                         bool check_protection)
     {
         list fpu_id_list = dict_waveforms.keys();
         const int nkeys = len(fpu_id_list);
@@ -830,7 +853,7 @@ public:
             wform.steps = steps;
             wtable.push_back(wform);
         }
-        E_DriverErrCode ecode = configMotion(wtable, grid_state);
+        E_DriverErrCode ecode = configMotion(wtable, grid_state, check_protection);
         checkDriverError(ecode);
         return ecode;
 
