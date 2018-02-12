@@ -43,7 +43,7 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 _OBJ =  GridDriver.o    AsyncDriver.o FPUArray.o GridState.o \
 	CommandPool.o   GatewayDriver.o  TimeOutList.o \
 	CommandQueue.o  time_utils.o  sync_utils.o SBuffer.o \
-	handleFPUResponse.o handleTimeout.o
+	handleFPUResponse.o handleTimeout.o FPUState.o
 
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))

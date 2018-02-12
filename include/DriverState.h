@@ -125,25 +125,28 @@ enum E_DriverErrCode
     // still have invalid waveforms.
     DE_INVALID_WAVEFORM = 11,
 
+    // the addressed FPUs were not yet calibrated by a datum search
+    DE_FPUS_NOT_CALIBRATED = 12,
+
     // a motion command was issued but no FPUs are allowed to move
-    DE_NO_MOVABLE_FPUS = 12,
+    DE_NO_MOVABLE_FPUS = 13,
 
     // The user waited for a command completion using a time-out
     // value, and the state has not been reached yet
-    DE_COMMAND_TIMEOUT = 13,
+    DE_COMMAND_TIMEOUT = 14,
 
     // movement was aborted
-    DE_ABORTED_STATE = 14,
+    DE_ABORTED_STATE = 15,
 
     // some addressed FPUs are locked
-    DE_FPUS_LOCKED = 15,
+    DE_FPUS_LOCKED = 16,
 
     // at least one FPU ran into a step timing error, which means
     // the FPU's motion controller was not able to compute
     // the required step frequency quick enough for the
     // configured microstepping level.
 
-    DE_STEP_TIMING_ERROR = 16,
+    DE_STEP_TIMING_ERROR = 17,
     
     // operation not implemented for this protocol version
     DE_UNIMPLEMENTED=98,

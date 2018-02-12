@@ -79,7 +79,7 @@ public:
     E_DriverErrCode waitFindDatum(t_grid_state& grid_state,
                                   double &max_wait_time, bool &finished);
 
-    E_DriverErrCode configMotion(const t_wtable& waveforms, t_grid_state& grid_state);
+    E_DriverErrCode configMotion(const t_wtable& waveforms, t_grid_state& grid_state, bool check_protection);
 
     E_DriverErrCode executeMotion(t_grid_state& grid_state);
 

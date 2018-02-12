@@ -129,6 +129,14 @@ typedef struct __attribute__((packed)) t_fpu_state
 
 } t_fpu_state;
 
+
+namespace canlayer
+{
+
+    void initialize_fpu(t_fpu_state &fpu);
+
+}
+
 }
 
 

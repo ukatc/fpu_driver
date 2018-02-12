@@ -22,7 +22,6 @@
 
 #include <cassert>
 
-//#include <pthread.h>
 
 #include "FPUState.h"
 #include "canlayer/handleFPUResponse.h"
@@ -486,11 +485,12 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 
 
     case CCMD_RESET_FPU       :
-        // clear time-out flag
+        // clear pending time-out
         remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
-            fpu.state = FPST_UNINITIALIZED;
+            initialize_fpu(fpu);
+            update_status_flags(fpu, response_status);
         }
         fpu.last_updated = cur_time;
 

@@ -90,8 +90,8 @@ E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state, double &max_
 
 
 
-
-E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state& grid_state)
+E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state& grid_state,
+                                         bool check_protection)
 
 {
     E_DriverErrCode estatus = DE_OK;
@@ -106,7 +106,7 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
 
     while (num_avaliable_retries > 0)
     {
-        estatus = configMotionAsync(grid_state, state_summary, cur_wtable);
+        estatus = configMotionAsync(grid_state, state_summary, cur_wtable, check_protection);
         if (estatus != DE_OK)
         {
             // if connection is lost or command invalid, quit.

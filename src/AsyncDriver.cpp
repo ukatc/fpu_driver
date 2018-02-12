@@ -367,8 +367,8 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 
 
 E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
-        E_GridState& state_summary,
-        const t_wtable& waveforms)
+                                               E_GridState& state_summary,
+                                               const t_wtable& waveforms, bool check_protection)
 {
 
     // first, get current state of the grid
@@ -379,29 +379,32 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
-    // check no FPUs have ongoing collisions
-    // and has been initialized
-    for (int i=0; i < num_fpus; i++)
+    // perform hardware protection checks unless
+    // explicitly disabled.
+    if (check_protection)
     {
-        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
-        if (fpu_status == FPST_OBSTACLE_ERROR)
+        // check no FPUs have ongoing collisions
+        // and has been initialized
+        for (int i=0; i < num_fpus; i++)
         {
-            return DE_UNRESOLVED_COLLISION;
-        }
-#if (CAN_PROTOCOL_VERSION > 1)
-        // This isn't enforced in protocol version 1,
-        // because we do not have an enableMove command.
-        // In protocol version 2, the user has to issue
-        // enableMove first.
-        if (fpu_status == FPST_ABORTED)
-        {
-            return DE_ABORTED_STATE;
-        }
-#endif
+            E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
+            if (fpu_status == FPST_OBSTACLE_ERROR)
+            {
+                return DE_UNRESOLVED_COLLISION;
+            }
+            // This isn't enforced in protocol version 1,
+            // because we do not have an enableMove command.
+            // In protocol version 2, the user has to issue
+            // enableMove first.
+            if (fpu_status == FPST_ABORTED)
+            {
+                return DE_ABORTED_STATE;
+            }
 
-        if (!grid_state.FPU_state[i].was_zeroed)
-        {
-            return DE_DRIVER_NOT_INITIALIZED;
+            if (!grid_state.FPU_state[i].was_zeroed)
+            {
+                return DE_FPUS_NOT_CALIBRATED;
+            }
         }
     }
 
