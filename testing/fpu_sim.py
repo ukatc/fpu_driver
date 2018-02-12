@@ -125,7 +125,8 @@ class FPU:
     def findDatum(self, sleep):
         datum_op_duration_mu = 1
         datum_op_duration_sigma = 2
-        datum_op_duration_sec = min(max(random.gauss(datum_op_duration_mu, datum_op_duration_sigma), 0), 15)
+        datum_op_duration_sec = min(max(random.gauss(datum_op_duration_mu, datum_op_duration_sigma), 0), 5)
+        #print("FPU #%i: findDatum will take %f sec" % (self.fpu_id, datum_op_duration_sec) )
         wait_interval_sec = 0.1
         while datum_op_duration_sec > 0:
             sleep_time = min(datum_op_duration_sec, wait_interval_sec)
