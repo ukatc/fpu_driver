@@ -143,7 +143,7 @@ public:
         // search is 35 seconds.
         const struct timespec  toval =
         {
-            /* .tv_sec = */ 20,
+            /* .tv_sec = */ 45,
             /* .tv_nsec = */ 0
         };
 
