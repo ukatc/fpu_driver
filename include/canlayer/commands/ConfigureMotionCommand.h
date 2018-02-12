@@ -115,13 +115,13 @@ public:
         can_buffer.message.data[1] = ( (fentry ? 1 : 0)
                                        | ((lentry ? 1 : 0) << 1));
         // alpha and beta steps
-        can_buffer.message.data[2] = 0xff & asteps;
-        can_buffer.message.data[3] = (0x3f & (asteps >> 8))
+        can_buffer.message.data[3] = 0xff & asteps;
+        can_buffer.message.data[2] = (0x3f & (asteps >> 8))
                                      | ((apause ? 1 : 0) << 6)
                                      | ((aclockwise ? 1 : 0) << 7);
 
-        can_buffer.message.data[4] = 0xff & bsteps;
-        can_buffer.message.data[5] = (0x3f & (bsteps >> 8))
+        can_buffer.message.data[5] = 0xff & bsteps;
+        can_buffer.message.data[4] = (0x3f & (bsteps >> 8))
                                      | ((bpause ? 1 : 0) << 6)
                                      | ((bclockwise ? 1 : 0) << 7);
 
