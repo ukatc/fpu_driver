@@ -42,7 +42,11 @@ public:
         return CCMD_RESET_FPU;
     };
 
-    ResetFPUCommand() {};
+    ResetFPUCommand()
+    {
+      fpu_id = 0;
+      bcast = false;
+    };
 
     E_CAN_COMMAND getInstanceCommandCode()
     {

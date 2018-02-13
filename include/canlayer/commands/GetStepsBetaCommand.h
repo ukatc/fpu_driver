@@ -137,7 +137,6 @@ public:
 
 private:
     uint16_t fpu_id;
-    long payload;
     bool bcast;
 
 

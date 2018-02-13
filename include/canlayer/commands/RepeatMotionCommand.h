@@ -42,7 +42,11 @@ public:
         return CCMD_REPEAT_MOTION;
     };
 
-    RepeatMotionCommand() {};
+    RepeatMotionCommand()
+    {
+      fpu_id = 0;
+      bcast = false;
+    };
 
     E_CAN_COMMAND getInstanceCommandCode()
     {

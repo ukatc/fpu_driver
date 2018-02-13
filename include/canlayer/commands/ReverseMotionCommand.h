@@ -42,7 +42,11 @@ public:
         return CCMD_REVERSE_MOTION;
     };
 
-    ReverseMotionCommand() {};
+    ReverseMotionCommand()
+    {
+      fpu_id = 0;
+      bcast = false;
+    };
 
     E_CAN_COMMAND getInstanceCommandCode()
     {

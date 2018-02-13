@@ -42,7 +42,11 @@ public:
         return CCMD_PING_FPU;
     };
 
-    PingFPUCommand() {};
+    PingFPUCommand()
+    {
+      fpu_id = 0;
+      bcast = false;
+    };
 
     E_CAN_COMMAND getInstanceCommandCode()
     {

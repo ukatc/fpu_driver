@@ -44,7 +44,18 @@ public:
         return CCMD_CONFIG_MOTION;
     };
 
-    ConfigureMotionCommand() {};
+    ConfigureMotionCommand()
+  {
+     fpu_id = 0;
+     asteps = 0;
+     bsteps = 0;
+     apause = false;
+     bpause = false;
+     aclockwise = false;
+     bclockwise = false;
+     fentry = false;
+     lentry = false;
+  };
 
     void parametrize(int f_id,
                      int16_t alpha_steps,
