@@ -171,9 +171,11 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     switch (cmd_id)
     {
     case CCMD_CONFIG_MOTION   :
+#ifdef DEBUG2      
       printf("handle_ConfigMotion: fpu #%i, segment %i: status=%i, error=%i\n",
 	     fpu_id, fpu.num_waveform_segments,
 	     response_status, response_errcode);
+#endif      
         // clear time-out flag
         remove_pending(fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
