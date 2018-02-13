@@ -1025,6 +1025,13 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         }
     }
 
+#if (CAN_PROTOCOL_VERSION == 1)
+    // in Protocol version 1, we need to send a ping
+    // because reverseMotion and repeatMotion do not
+    // get a response.
+    return pingFPUsAsync(grid_state, state_summary);
+#else
+
     // wait until all generated messages have been responded to
     // or have timed out.
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
@@ -1037,6 +1044,7 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         cnt_pending = (grid_state.count_pending
                        + grid_state.num_queued);
     }
+#endif
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -1129,6 +1137,14 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         }
     }
 
+#if (CAN_PROTOCOL_VERSION == 1)
+    // in Protocol version 1, we need to send a ping
+    // because reverseMotion and repeatMotion do not
+    // get a response.
+    return pingFPUsAsync(grid_state, state_summary);
+#else
+
+    
     // wait until all generated messages have been responded to
     // or have timed out.
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
@@ -1141,6 +1157,7 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         cnt_pending = (grid_state.count_pending
                        + grid_state.num_queued);
     }
+#endif
 
     if (grid_state.driver_state != DS_CONNECTED)
     {

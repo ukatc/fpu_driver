@@ -442,6 +442,25 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.alpha_steps = asteps;
             fpu.beta_steps = bsteps;
             fpu.ping_ok = true;
+	    
+#if (CAN_PROTOCOL_VERSION == 1)
+	    // In protocol version 1, we (mis)use a ping after
+	    // a repeatMotion to retrieve the FPU state
+	    // and switch to READY_* again.
+	    if ((fpu.waveform_valid)
+		&& (fpu.waveform_ready)
+		&& (fpu.state = FPST_RESTING))
+	    {
+	      if (fpu.waveform_reversed)
+	      {
+		fpu.state = FPST_READY_BACKWARD;
+	      }
+	      else
+	      {
+		fpu.state = FPST_READY_FORWARD;
+	      }
+	    }
+#endif
         }
         else
         {

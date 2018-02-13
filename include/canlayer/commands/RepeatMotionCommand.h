@@ -114,7 +114,11 @@ public:
     // the driver should wait for a response
     bool expectsResponse()
     {
+#if (CAN_PROTOCOL_VERSION > 1)
         return true;
+#else
+	return false;
+#endif
     };
 
     // time-out period for a response to the message
