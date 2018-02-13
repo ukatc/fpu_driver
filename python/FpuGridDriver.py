@@ -139,6 +139,8 @@ class GridDriver:
     
 
     def executeMotion(self, gs):
+        # wait a short moment to avoid spurious collision.
+        time.sleep(1.0)
         rv = self._gd.startExecuteMotion(gs)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
             print("rv=",rv)

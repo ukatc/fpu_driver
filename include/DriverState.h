@@ -147,6 +147,10 @@ enum E_DriverErrCode
     // configured microstepping level.
 
     DE_STEP_TIMING_ERROR = 17,
+
+    // An FPU id which was passed as a parameter is invalid
+    // because it is larger than the maximum number of FPUs.
+    DE_INVALID_FPU_ID = 18,
     
     // operation not implemented for this protocol version
     DE_UNIMPLEMENTED=98,

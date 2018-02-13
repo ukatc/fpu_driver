@@ -44,9 +44,11 @@ rv = gd.configMotion(wt_up, gs)
 
 print("configMotion finished with return value", rv)
 
-print("issuing executeMotion - press <Ctrl-C> to test abortMotion message.")
 
-#gd.executeMotion(gs)
+print("waiting 1 second")
+time.sleep(1)
+print("issuing executeMotion - press <Ctrl-C> to test abortMotion message.")
+gd.executeMotion(gs)
 
 
 

@@ -589,6 +589,21 @@ void translate(StepTimingException const& e)
 }
 
 
+struct InvalidFPUIdException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INVALID_FPU_ID: A passed FPU id is out of range.";
+    }
+};
+
+void translate(InvalidFPUIdException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+  
+
 struct UnimplementedException : std::exception
 {
     char const* what() const throw()
@@ -726,6 +741,11 @@ void checkDriverError(E_DriverErrCode ecode)
         throw StepTimingException();
         break;
 
+
+    case DE_INVALID_FPU_ID:
+        throw InvalidFPUIdException();
+        break;
+	
     case DE_UNIMPLEMENTED:
         throw UnimplementedException();
         break;

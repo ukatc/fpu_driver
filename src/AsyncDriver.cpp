@@ -428,6 +428,12 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
         {
             int fpu_id = waveforms[fpu_index].fpu_id;
+	    if (fpu_id >= num_fpus)
+	    {
+	      // the FPU id is out of range
+	      return DE_INVALID_FPU_ID;
+	    }
+	    
             t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
             if (fpu_state.state != FPST_LOCKED)
             {
@@ -1415,6 +1421,13 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
     {
         return DE_NO_CONNECTION;
     }
+
+    if (fpu_id >= num_fpus)
+    {
+	// the FPU id is out of range
+	return DE_INVALID_FPU_ID;
+    }
+
 
     // make sure no FPU is moving or finding datum
     bool recoveryok=true;
