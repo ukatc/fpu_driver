@@ -63,13 +63,120 @@ def list_states(gs, num_fpus=None):
     return [ gs.FPU[i].state for i in range(num_fpus)]
 
 
+# these values are for version 1 firmware and default
+# section duration
+STEPS_LOWER_LIMIT=125
+STEPS_UPPER_LIMIT=500
 
-def gen_wf(adegree, bdegree, asteps_per_deg=125, bsteps_per_deg=80):
+
+def step_list_slow(nsteps):
+    full_segments = int(math.floor(nsteps / STEPS_LOWER_LIMIT))
+    delta = STEPS_LOWER_LIMIT
+    # delta = nsteps // full_segments
+    delta_start = (nsteps - delta * full_segments) // 2
+    delta_end = nsteps - delta * full_segments - delta_start
+
+    if delta_start > 0:
+        slist = [ delta_start]
+    else:
+        slist = []
+    
+    slist.extend([ delta for k in range(full_segments) ])
+    if delta_end > 0:
+        slist.append(delta_end)
+
+    return slist
+
+def step_list_fast(nsteps, max_change=1.4):
+    rest_steps = nsteps
+    new_speed = STEPS_LOWER_LIMIT
+    steps_accelerate = []
+    steps_decelerate = []
+    
+    while rest_steps > new_speed:
+        steps_accelerate.append(new_speed)
+        rest_steps = rest_steps - new_speed
+        if rest_steps > new_speed:
+            steps_decelerate.append(new_speed)
+            rest_steps = rest_steps - new_speed
+
+        old_speed = new_speed
+        if int(new_speed * max_change) <= STEPS_UPPER_LIMIT:
+            new_speed = int(new_speed * max_change)
+        else:
+            new_speed = STEPS_UPPER_LIMIT
+            
+        if (new_speed > rest_steps) and (old_speed <= rest_steps):
+            new_speed = rest_steps
+            
+            
+    # we handle the remaining steps by padding sections
+    # with minimum speed to the start and end.
+    # (more elegant solutions are possible).
+    
+    while rest_steps > (2 * STEPS_LOWER_LIMIT):
+        steps_accelerate.insert(0, STEPS_LOWER_LIMIT)
+        steps_decelerate.insert(0, STEPS_LOWER_LIMIT)
+        rest_steps = rest_steps - 2 * STEPS_LOWER_LIMIT
+        
+    if rest_steps > STEPS_LOWER_LIMIT:
+        steps_accelerate.insert(0, STEPS_LOWER_LIMIT)
+        rest_steps = rest_steps -  STEPS_LOWER_LIMIT
+        
+    start_steps = rest_steps // 2
+    steps_accelerate.insert(0, start_steps)
+
+    steps_decelerate.reverse()
+    # insert rest at end of decelerating steps
+    end_steps = rest_steps - start_steps
+    steps_decelerate.append(end_steps)
+    
+    steps_accelerate.extend(steps_decelerate)
+    return steps_accelerate
+
+
+def step_list_pad(slist, target_len):
+    if len(slist) >= target_len:
+        return slist
+    ld = target_len - len(slist)
+
+    lhead = ld // 2
+    ltail = ld - lhead
+    slist = list(slist)
+    slist.reverse()
+    slist.extend([ 0] * lhead)
+    slist.reverse()
+    slist.extend([0] * ltail)
+    return slist
+
+
+def gen_wf(adegree, bdegree, asteps_per_deg=125, bsteps_per_deg=80,
+           mode='fast'):
+    """
+    Generate a waveform which moves the alpha arm by an angle of 
+    adegree and the beta arm by bdegree. asteps_per_deg and bsteps_er_deg
+    are approximate calibration factors. The mode parameter can be
+    'fast' to generate a movement which is as quick as possible, or 
+    'slow' to generate a movement with minimum speed.
+
+    No range checking of movements is done.
+    """
+    if not (mode in ['fast', 'slow']):
+            raise ValueError("mode needs to be one of 'slow', 'fast'")
+        
     asteps = adegree * asteps_per_deg
     bsteps = bdegree * bsteps_per_deg
-    max_steps = max(asteps, bsteps)
-    nsegments = int(math.ceil(max_steps / 100.0))
-    adelta = asteps / nsegments
-    bdelta = bsteps / nsegments
-    slist = [ (adelta, bdelta) for k in range(nsegments) ]
+
+    if mode == 'slow':
+        slist = [ (astep, 0) for astep in step_list_slow(asteps) ]
+        slist.extend([ (0, bstep) for bstep in step_list_slow(bsteps) ])
+    else:
+        alist = slist_fast(asteps)
+        blist = slist_fast(bsteps)
+        max_len = max(len(alist), len(blist))
+        alist = slist_pad(alist, max_len)
+        blist = slist_pad(blist, max_len)
+        
+        slist = [ (alist[k], blist[k]) for k in range(nsegments) ]
+        
     return { 0 : slist }
