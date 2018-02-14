@@ -446,7 +446,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.beta_steps = bsteps;
             fpu.ping_ok = true;
 	    
-#if (CAN_PROTOCOL_VERSION == 1)
+#if 0
 	    // In protocol version 1, we (mis)use a ping after
 	    // a repeatMotion to retrieve the FPU state
 	    // and switch to READY_* again.
