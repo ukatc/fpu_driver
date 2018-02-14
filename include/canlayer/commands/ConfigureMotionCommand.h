@@ -126,6 +126,8 @@ public:
         can_buffer.message.data[1] = ( (fentry ? 1 : 0)
                                        | ((lentry ? 1 : 0) << 1));
         // alpha and beta steps
+        // FIXME: tx2 and tx3, and tx4 and tx5 are swapped here
+        // to work around a small bug in the firmware.
         can_buffer.message.data[3] = 0xff & asteps;
         can_buffer.message.data[2] = (0x3f & (asteps >> 8))
                                      | ((apause ? 1 : 0) << 6)
