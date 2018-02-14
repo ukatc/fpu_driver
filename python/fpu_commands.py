@@ -157,12 +157,14 @@ def gen_wf(adegree, bdegree, asteps_per_deg=125, bsteps_per_deg=80,
     adegree and the beta arm by bdegree. asteps_per_deg and bsteps_er_deg
     are approximate calibration factors. The mode parameter can be
     'fast' to generate a movement which is as quick as possible, or 
-    'slow' to generate a movement with minimum speed.
+    'slow' to generate a movement with minimum speed, or
+    'slowpar' to generate a slow movement where alpha and beta
+    are moved in parallel.
 
     No range checking of movements is done.
     """
-    if not (mode in ['fast', 'slow']):
-            raise ValueError("mode needs to be one of 'slow', 'fast'")
+    if not (mode in ['fast', 'slow', 'slowpar']):
+            raise ValueError("mode needs to be one of 'slow', 'slowpar', 'fast'")
         
     asteps = adegree * asteps_per_deg
     bsteps = bdegree * bsteps_per_deg
@@ -170,13 +172,20 @@ def gen_wf(adegree, bdegree, asteps_per_deg=125, bsteps_per_deg=80,
     if mode == 'slow':
         slist = [ (astep, 0) for astep in step_list_slow(asteps) ]
         slist.extend([ (0, bstep) for bstep in step_list_slow(bsteps) ])
-    else:
-        alist = slist_fast(asteps)
-        blist = slist_fast(bsteps)
+    elif mode == 'slowpar':
+        alist = step_list_slow(asteps)
+        blist = step_list_slow(bsteps)
         max_len = max(len(alist), len(blist))
-        alist = slist_pad(alist, max_len)
-        blist = slist_pad(blist, max_len)
+        alist = step_list_pad(alist, max_len)
+        blist = step_list_pad(blist, max_len)
+        slist = [ (astep, bstep) for astep, bstep in zip(alist, blist) ]
+    else:
+        alist = step_list_fast(asteps)
+        blist = step_list_fast(bsteps)
+        max_len = max(len(alist), len(blist))
+        alist = step_list_pad(alist, max_len)
+        blist = step_list_pad(blist, max_len)
         
-        slist = [ (alist[k], blist[k]) for k in range(nsegments) ]
+        slist = [ (astep, bstep) for astep, bstep in zip(alist, blist) ]
         
     return { 0 : slist }
