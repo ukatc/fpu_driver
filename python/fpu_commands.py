@@ -187,5 +187,6 @@ def gen_wf(adegree, bdegree, asteps_per_deg=125, bsteps_per_deg=80,
         blist = step_list_pad(blist, max_len)
         
         slist = [ (astep, bstep) for astep, bstep in zip(alist, blist) ]
-        
+
+    assert(len(slist) <= 128)
     return { 0 : slist }

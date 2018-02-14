@@ -503,8 +503,8 @@ struct FPUsNotCalibratedException : std::exception
     {
         return "DE_FPUS_NOT_CALIBRATED: FPUs are lacking calibration by "
             "a findDatum operation. For engineering or recovery use, consider"
-            "to set the 'check_protection' keyword argument to False,"
-            "to disable hardware safety checks.";
+            " to set the 'check_protection' keyword argument to False,"
+            " to disable hardware safety checks.";
     }
 };
 

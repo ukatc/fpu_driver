@@ -87,7 +87,6 @@ class GridDriver:
         rv = self._gd.startFindDatum(gs)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
             raise RuntimeError("can't search Datum, driver error code = %r" % rv)
-        print("wait a little..")
         time.sleep(0.1)
         time_interval = 0.1
         is_ready = False
@@ -140,12 +139,11 @@ class GridDriver:
 
     def executeMotion(self, gs):
         # wait a short moment to avoid spurious collision.
-        time.sleep(1.0)
+        time.sleep(2.5)
         rv = self._gd.startExecuteMotion(gs)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
             print("rv=",rv)
             raise RuntimeError("FPUs not ready to move, driver error code = %r" % rv)
-        print("wait a little..")
         time.sleep(0.1)
         time_interval = 0.1
         is_ready = False
