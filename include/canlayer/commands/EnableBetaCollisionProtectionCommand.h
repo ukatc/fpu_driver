@@ -41,7 +41,11 @@ public:
         return CCMD_ENABLE_BETA_COLLISION_PROTECTION;
     };
 
-    EnableBetaCollisionProtectionCommand() {};
+    EnableBetaCollisionProtectionCommand()
+    {
+      fpu_id = false;
+      bcast = false;
+    };
 
     E_CAN_COMMAND getInstanceCommandCode()
     {

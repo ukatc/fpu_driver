@@ -44,7 +44,15 @@ public:
     };
 
 
-    FindDatumCommand() {};
+    FindDatumCommand()
+  {
+    fpu_id = 0;
+    bcast = false;
+#if (CAN_PROTOCOL_VERSION > 1)
+    _auto_datum = false;
+    _clockwise_first = false;
+#endif
+  };
 
     ~FindDatumCommand() {};
 

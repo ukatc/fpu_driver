@@ -1031,7 +1031,7 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         }
     }
 
-#if (CAN_PROTOCOL_VERSION == 1)
+#if 0
     // in Protocol version 1, we need to send a ping
     // because reverseMotion and repeatMotion do not
     // get a response.
@@ -1143,7 +1143,7 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         }
     }
 
-#if (CAN_PROTOCOL_VERSION == 1)
+#if 0 
     // in Protocol version 1, we need to send a ping
     // because reverseMotion and repeatMotion do not
     // get a response.

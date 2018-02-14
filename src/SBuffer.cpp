@@ -154,6 +154,7 @@ SBuffer::SBuffer()
     // zero out buffers - this is defensive
     memset(rbuf, 0, sizeof(rbuf));
     memset(wbuf, 0, sizeof(wbuf));
+    memset(command_buf, 0, sizeof(command_buf));
 }
 
 
@@ -270,7 +271,6 @@ int SBuffer::numUnsentBytes() const
 
 SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, I_ResponseHandler *rhandler)
 {
-    bool frame_complete = false;
     ssize_t rsize = 0;
 
     bool do_retry = false;
@@ -322,7 +322,7 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
 
     for (int i=0; i < rsize; i++)
     {
-        frame_complete = decode_and_append_byte(command_buf,  clen, sync, dle,  rbuf[i]);
+        bool frame_complete = decode_and_append_byte(command_buf,  clen, sync, dle,  rbuf[i]);
 
         if (frame_complete)
         {

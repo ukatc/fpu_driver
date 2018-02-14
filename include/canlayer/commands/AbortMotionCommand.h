@@ -43,7 +43,11 @@ public:
         return CCMD_ABORT_MOTION;
     };
 
-    AbortMotionCommand() {};
+    AbortMotionCommand()
+    {
+      fpu_id = 0;
+      bcast = false;
+    };
 
     E_CAN_COMMAND getInstanceCommandCode()
     {

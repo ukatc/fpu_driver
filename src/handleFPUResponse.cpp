@@ -42,7 +42,9 @@ namespace canlayer
 // logs error status in CAN response
 void logErrorStatus(int fpu_id, timespec time_stamp, int err_code)
 {
-    const char * err_msg = "(no error)";
+#ifdef DEBUG
+
+  const char * err_msg = "(no error)";
     switch (err_code)
     {
     case 0:
@@ -81,7 +83,6 @@ void logErrorStatus(int fpu_id, timespec time_stamp, int err_code)
         break;
 
     }
-#ifdef DEBUG
     // FIXME: In production code, logging of FPU error responses should
     // be taken out of the time-critical path so that even a large
     // amount of log messages will not affect the responsiveness of the
@@ -172,7 +173,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     {
     case CCMD_CONFIG_MOTION   :
 #ifdef DEBUG2      
-      printf("handle_ConfigMotion: fpu #%i, segment %i: status=%i, error=%i\n",
+      printf("handle_ConfigMotion: fpu #%i, segment %ui: status=%ui, error=%i\n",
 	     fpu_id, fpu.num_waveform_segments,
 	     response_status, response_errcode);
 #endif      
@@ -445,7 +446,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.beta_steps = bsteps;
             fpu.ping_ok = true;
 	    
-#if (CAN_PROTOCOL_VERSION == 1)
+#if 0
 	    // In protocol version 1, we (mis)use a ping after
 	    // a repeatMotion to retrieve the FPU state
 	    // and switch to READY_* again.

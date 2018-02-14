@@ -42,7 +42,11 @@ public:
         return CCMD_EXECUTE_MOTION;
     };
 
-    ExecuteMotionCommand() {};
+    ExecuteMotionCommand()
+    {
+      fpu_id = 0;
+      bcast = false;
+    };
 
     E_CAN_COMMAND getInstanceCommandCode()
     {
@@ -136,7 +140,6 @@ public:
 
 private:
     uint16_t fpu_id;
-    long payload;
     bool bcast;
 
 
