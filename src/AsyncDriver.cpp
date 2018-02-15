@@ -428,7 +428,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
         {
             int fpu_id = waveforms[fpu_index].fpu_id;
-	    if (fpu_id >= num_fpus)
+	    if ((fpu_id >= num_fpus) || (fpu_id < 0))
 	    {
 	      // the FPU id is out of range
 	      return DE_INVALID_FPU_ID;
@@ -1422,7 +1422,7 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
         return DE_NO_CONNECTION;
     }
 
-    if (fpu_id >= num_fpus)
+    if ((fpu_id >= num_fpus) || (fpu_id < 0))
     {
 	// the FPU id is out of range
 	return DE_INVALID_FPU_ID;
