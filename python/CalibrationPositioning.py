@@ -26,7 +26,7 @@ def dummy_metrology_func(alpha_steps, beta_steps):
     time.sleep(1)
     
 
-def measure_position(gd, grid_state, alpha, beta, metrology_func=dummy_metrology_func,
+def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
                      return_to_datum=True, deviation_list=[]):
     
     alpha0, beta0 = list_angles(grid_state)[0]
@@ -138,8 +138,8 @@ def initialize_FPU(args):
         gd.resetFPUs(grid_state)
         print("OK")
 
-    # Now, we issue a findDatum method. In order to know when and how this
-    # command finished, we pass the grid_state variable.
+    # Now, we issue a findDatum method. In order to know when and how
+    # this command finished, we pass the grid_state variable.
     print("issuing findDatum:")
     gd.findDatum(grid_state)
     print("findDatum finished")
@@ -150,7 +150,7 @@ def initialize_FPU(args):
     return gd, grid_state
 
 
-def loop_positions(args, gd, grid_state, metrology_func=dummy_metrology_func, deviation_list=[]):
+def loop_positions(args, gd, grid_state, metrology_func=None, deviation_list=[]):
                    
     for alpha in numpy.linspace(args.alpha_min, args.alpha_max, args.asteps):
         if args.datum_at == 'alpha_change':
@@ -163,7 +163,8 @@ def loop_positions(args, gd, grid_state, metrology_func=dummy_metrology_func, de
                 go_datum = True
                 
             print("measuring at ({},{}), datum={}".format(alpha, beta, go_datum))
-            measure_position(gd, grid_state, alpha, beta, return_to_datum=go_datum, deviation_list=deviation_list)
+            measure_position(gd, grid_state, alpha, beta, return_to_datum=go_datum,
+                             metrology_func=metrology_func, deviation_list=deviation_list)
         
             go_datum = False
 
