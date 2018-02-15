@@ -163,9 +163,7 @@ class GridDriver:
             # (this is only needed for protocol version 1)
             self.pingFPUs(gs)
 
-        if not was_aborted:
-            print("executeMotion finished")
-        else:
+        if was_aborted:
             self.pingFPUs(gs)
             raise RuntimeError("executeMotion was aborted by SIGINT")
         

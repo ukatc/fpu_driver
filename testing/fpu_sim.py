@@ -11,16 +11,16 @@ from __future__ import print_function
 import numpy as np
 import random
 
-MAX_WAVE_ENTRIES = 256
+MAX_WAVE_ENTRIES = 128
 
 IDXA = 0
 IDXB = 1
 
-MAX_ALPHA = 41000
-MIN_ALPHA = -1000
+MIN_ALPHA = -3800
+MAX_ALPHA = 45000
 
-MAX_BETA = 30000
-MIN_BETA = -30000
+MIN_BETA = -15000
+MAX_BETA = 15000
 
 # E_REQUEST_DIRECTION
 
