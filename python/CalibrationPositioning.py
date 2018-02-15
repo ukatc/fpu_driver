@@ -171,7 +171,7 @@ def loop_positions(args, gd, grid_state, metrology_func=None, deviation_list=[])
 
                 
 if __name__ == '__main__':
-    # parse argumentd
+    # parse arguments
     args = parse_args()
     
     # initialize FPU accordingly
