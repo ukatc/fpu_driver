@@ -1,3 +1,7 @@
 *.aux
 *.log
 /_minted-tutorial/
+*.dvi
+*.out
+*.toc
+*.pdf
