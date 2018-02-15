@@ -46,7 +46,8 @@ print("the starting position (in degrees) is:", list_angles(grid_state))
 
 for alpha, beta in [ (0, 0), (1, 0), (2, 0), (5, 0), (7.5, 0), (10, 0),
                      (12.5, 0),
-                     (15, 0), (30, 0), (45, 0), (60, 0), (90, 0),
+                     #(15, 0), (30, 0),
+                     (45, 0), (60, 0), (90, 0),
                      (135, 0), (150, 0), (175, 0), (180, 0),
                      (210, 0), (225, 0), (240, 0), (270, 0), (285, 0),
                      (300, 0), (315,0), (330, 0), (345, 0),
@@ -87,11 +88,11 @@ for alpha, beta in [ (0, 0), (1, 0), (2, 0), (5, 0), (7.5, 0), (10, 0),
         print("in motor step units, the new position is:", list_positions(grid_state))
 
         # wait a moment 
-        print("we wait one second..")
+        print("we wait 1 sec..")
         time.sleep(1)
 
 
-print("issuing final findDatum:")
+print("issuing findDatum:")
 gd.findDatum(grid_state)
         
 gd.getCounterDeviation(grid_state)

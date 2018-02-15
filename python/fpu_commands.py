@@ -67,6 +67,7 @@ def list_states(gs, num_fpus=None):
 # section duration
 STEPS_LOWER_LIMIT=125
 STEPS_UPPER_LIMIT=500
+#STEPS_UPPER_LIMIT=300
 
 
 def step_list_slow(nsteps):

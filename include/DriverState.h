@@ -98,59 +98,62 @@ enum E_DriverErrCode
     // a collision occured, and the operation was aborted
     DE_NEW_COLLISION = 5,
 
+    // an alpha limit breach occured, and the operation was aborted
+    DE_NEW_LIMIT_BREACH = 6,
+
     // the user tried to start a movement
     // command while at least one FPU was in collided
     // or aborted state - the command
     // was rejected because of that
-    DE_UNRESOLVED_COLLISION = 6,
+    DE_UNRESOLVED_COLLISION = 7,
 
     // an FPU has not been initialised, so
     // it cannot be moved accurately and safely.
-    DE_FPU_NOT_INITIALIZED = 7,
+    DE_FPU_NOT_INITIALIZED = 8,
 
     // driver is already initialized
-    DE_DRIVER_ALREADY_CONNECTED = 8,
+    DE_DRIVER_ALREADY_CONNECTED = 9,
 
     // driver is connected
-    DE_DRIVER_STILL_CONNECTED = 9,
+    DE_DRIVER_STILL_CONNECTED = 10,
 
     // An assumption about the driver state
     // is not met, the driver is switched off
     // and the problem logged.
 
     // maximum retry count was exceeded for command
-    DE_MAX_RETRIES_EXCEEDED = 10,
+    DE_MAX_RETRIES_EXCEEDED = 11,
 
     // we tried to move FPUs but some addressed FPUs
     // still have invalid waveforms.
-    DE_INVALID_WAVEFORM = 11,
+    DE_INVALID_WAVEFORM = 12,
 
     // the addressed FPUs were not yet calibrated by a datum search
-    DE_FPUS_NOT_CALIBRATED = 12,
+    DE_FPUS_NOT_CALIBRATED = 13,
 
     // a motion command was issued but no FPUs are allowed to move
-    DE_NO_MOVABLE_FPUS = 13,
+    DE_NO_MOVABLE_FPUS = 14,
 
     // The user waited for a command completion using a time-out
     // value, and the state has not been reached yet
-    DE_COMMAND_TIMEOUT = 14,
+    DE_COMMAND_TIMEOUT = 15,
 
     // movement was aborted
-    DE_ABORTED_STATE = 15,
+    DE_ABORTED_STATE = 16,
 
     // some addressed FPUs are locked
-    DE_FPUS_LOCKED = 16,
+    DE_FPUS_LOCKED = 17,
 
     // at least one FPU ran into a step timing error, which means
     // the FPU's motion controller was not able to compute
     // the required step frequency quick enough for the
     // configured microstepping level.
 
-    DE_STEP_TIMING_ERROR = 17,
+    DE_STEP_TIMING_ERROR = 18,
 
     // An FPU id which was passed as a parameter is invalid
     // because it is larger than the maximum number of FPUs.
-    DE_INVALID_FPU_ID = 18,
+    DE_INVALID_FPU_ID = 19,
     
     // operation not implemented for this protocol version
     DE_UNIMPLEMENTED=98,

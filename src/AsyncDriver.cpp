@@ -328,25 +328,33 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
-    if (state_summary == GS_COLLISION)
-    {
-        printf("collision detected, aborting datum search");
-        return DE_NEW_COLLISION;
-    }
-
     for (int i=0; i < num_fpus; i++)
     {
-        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
+        t_fpu_state fpu = grid_state.FPU_state[i];
+        E_FPU_STATE fpu_status = fpu.state;
 
         if (fpu_status == FPST_OBSTACLE_ERROR)
         {
-            return DE_NEW_COLLISION;
+	  if (fpu.beta_collision)
+	  {
+	      return DE_NEW_COLLISION;
+	  }
+	  else
+	  {
+  	      return DE_NEW_LIMIT_BREACH;
+	  }
         }
         if (fpu_status == FPST_ABORTED)
         {
             return DE_ABORTED_STATE;
         }
 
+    }
+
+    if (state_summary == GS_COLLISION)
+    {
+        printf("collision detected, aborting datum search");
+        return DE_NEW_COLLISION;
     }
 
 
@@ -672,7 +680,14 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
         if (fpu_status == FPST_OBSTACLE_ERROR)
         {
-            return DE_NEW_COLLISION;
+	  if (fpu.beta_collision)
+	  {
+	      return DE_NEW_COLLISION;
+	  }
+	  else
+	  {
+  	      return DE_NEW_LIMIT_BREACH;
+	  }
         }
 
         // step timing errors cause an FPU to change to ABORTED

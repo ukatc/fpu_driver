@@ -411,11 +411,26 @@ void translate(NewCollisionException const& e)
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
+
+struct NewLimitBreachException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_NEW_LIMIT_BREACH: An alpha limit breach was detected, movement for this FPU aborted.";
+    }
+};
+
+void translate(NewLimitBreachException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
 struct UnresolvedCollisionException : std::exception
 {
     char const* what() const throw()
     {
-        return "DE_UNRESOLVED_COLLISION: A previous collision needs to be resolved first";
+        return "DE_UNRESOLVED_COLLISION: A previous collision, limit breach, or abort message needs to be resolved first";
     }
 };
 
@@ -691,6 +706,10 @@ void checkDriverError(E_DriverErrCode ecode)
 
     case DE_NEW_COLLISION :
         throw NewCollisionException();
+        break;
+
+    case DE_NEW_LIMIT_BREACH :
+        throw NewLimitBreachException();
         break;
 
     case DE_UNRESOLVED_COLLISION :
@@ -1158,6 +1177,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_STILL_BUSY",DE_STILL_BUSY)
     .value("DE_MAX_RETRIES_EXCEEDED", DE_MAX_RETRIES_EXCEEDED)
     .value("DE_UNRESOLVED_COLLISION",DE_UNRESOLVED_COLLISION)
+    .value("DE_NEW_COLLISION", DE_NEW_COLLISION)
+    .value("DE_NEW_LIMIT_BREACH", DE_NEW_LIMIT_BREACH)
     .value("DE_DRIVER_NOT_INITIALIZED",DE_DRIVER_NOT_INITIALIZED)
     .value("DE_FPU_NOT_INITIALIZED",DE_FPU_NOT_INITIALIZED)
     .value("DE_DRIVER_ALREADY_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
@@ -1169,6 +1190,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_ABORTED_STATE", DE_ABORTED_STATE)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
     .value("DE_STEP_TIMING_ERROR", DE_STEP_TIMING_ERROR)
+    .value("DE_INVALID_FPU_ID", DE_INVALID_FPU_ID)
     .value("DE_UNIMPLEMENTED", DE_UNIMPLEMENTED)
     .export_values();
 
