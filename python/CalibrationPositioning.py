@@ -92,9 +92,9 @@ def parse_args():
     
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=0.0,
                         help='minimum alpha value  (default: %(default)s)')
-    parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=320.0,
+    parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=270.0,
                         help='maximum alpha value  (default: %(default)s)')
-    parser.add_argument('--beta_min', metavar='BETA_MIN', type=float, default=-180.0,
+    parser.add_argument('--beta_min', metavar='BETA_MIN', type=float, default=0.0,
                         help='minimum beta value  (default: %(default)s)')
     parser.add_argument('--beta_max', metavar='BETA_MAX', type=float, default=180.0,
                         help='maximum beta value  (default: %(default)s)')
