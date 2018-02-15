@@ -90,9 +90,9 @@ def parse_args():
     parser.add_argument('--gateway_address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
     
-    parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=-10.0,
+    parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=0.0,
                         help='minimum alpha value  (default: %(default)s)')
-    parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=360.0,
+    parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=320.0,
                         help='maximum alpha value  (default: %(default)s)')
     parser.add_argument('--beta_min', metavar='BETA_MIN', type=float, default=-180.0,
                         help='minimum beta value  (default: %(default)s)')
@@ -104,8 +104,8 @@ def parse_args():
     parser.add_argument('bsteps', metavar='BSTEPS', type=int, default=10,
                         help='number of beta steps  (default: %(default)s)')
     
-    parser.add_argument('--datum_at', metavar='DATUM_AT', type=str, default="alpha_change",
-                        choices=['alpha_change', 'beta_change'],
+    parser.add_argument('--datum_at', metavar='DATUM_AT', type=str, default="start",
+                        choices=['alpha_change', 'beta_change', 'start'],
                         help='go to datum at change of alpha / beta coordinate (default: %(default)r)')
     
     args = parser.parse_args()
