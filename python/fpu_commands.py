@@ -122,14 +122,18 @@ def step_list_fast(nsteps, max_change=1.4):
     if rest_steps > STEPS_LOWER_LIMIT:
         steps_accelerate.insert(0, STEPS_LOWER_LIMIT)
         rest_steps = rest_steps -  STEPS_LOWER_LIMIT
-        
-    start_steps = rest_steps // 2
-    steps_accelerate.insert(0, start_steps)
 
-    steps_decelerate.reverse()
-    # insert rest at end of decelerating steps
-    end_steps = rest_steps - start_steps
-    steps_decelerate.append(end_steps)
+    if len(steps_accelerate) > 0:
+        start_steps = rest_steps // 2
+        steps_accelerate.insert(0, start_steps)
+
+        steps_decelerate.reverse()
+        # insert rest at end of decelerating steps
+        end_steps = rest_steps - start_steps
+        steps_decelerate.append(end_steps)
+    else:
+        steps_accelerate.insert(0, rest_steps)
+        
     
     steps_accelerate.extend(steps_decelerate)
     return steps_accelerate
@@ -166,19 +170,24 @@ def gen_wf(adegree, bdegree, asteps_per_deg=125, bsteps_per_deg=80,
     if not (mode in ['fast', 'slow', 'slowpar']):
             raise ValueError("mode needs to be one of 'slow', 'slowpar', 'fast'")
         
-    asteps = adegree * asteps_per_deg
-    bsteps = bdegree * bsteps_per_deg
+    asteps = int(adegree * asteps_per_deg)
+    bsteps = int(bdegree * bsteps_per_deg)
+    asign = int(math.copysign(1.0, asteps))
+    bsign = int(math.copysign(1.0, bsteps))
+    asteps *= asign
+    bsteps *= bsign
 
     if mode == 'slow':
-        slist = [ (astep, 0) for astep in step_list_slow(asteps) ]
-        slist.extend([ (0, bstep) for bstep in step_list_slow(bsteps) ])
+        slist = [ (astep * asign, 0) for astep in step_list_slow(asteps) ]
+        slist.extend([ (0, bstep * bsign) for bstep in step_list_slow(bsteps) ])
     elif mode == 'slowpar':
         alist = step_list_slow(asteps)
         blist = step_list_slow(bsteps)
         max_len = max(len(alist), len(blist))
         alist = step_list_pad(alist, max_len)
         blist = step_list_pad(blist, max_len)
-        slist = [ (astep, bstep) for astep, bstep in zip(alist, blist) ]
+        slist = [ (astep * asign, bstep * bsign)
+                  for astep, bstep in zip(alist, blist) ]
     else:
         alist = step_list_fast(asteps)
         blist = step_list_fast(bsteps)
@@ -186,7 +195,10 @@ def gen_wf(adegree, bdegree, asteps_per_deg=125, bsteps_per_deg=80,
         alist = step_list_pad(alist, max_len)
         blist = step_list_pad(blist, max_len)
         
-        slist = [ (astep, bstep) for astep, bstep in zip(alist, blist) ]
+        slist = [ (astep * asign, bstep * bsign)
+                  for astep, bstep in zip(alist, blist) ]
 
+    if len(slist) == 0:
+        slist = [ (0, 0) ]
     assert(len(slist) <= 128)
     return { 0 : slist }

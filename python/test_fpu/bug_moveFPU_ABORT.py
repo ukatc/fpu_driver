@@ -43,98 +43,57 @@ print("the starting position (in degrees) is:", list_angles(grid_state))
 # degree, and the beta arm by +45 degree. Positive angles always mean
 # "counterclockwise" (when viewed from above).
 
-alpha_move = 45
-beta_move = 15
 
-# the following function generates a waveform for one FPU
-waveform = gen_wf(alpha_move, beta_move)
+for alpha, beta in [ (0, 0), (1, 0), (2, 0), (5, 0), (7.5, 0), (10, 0),
+                     (12.5, 0),
+                     (15, 0), (30, 0), (45, 0), (60, 0), (90, 0),
+                     (135, 0), (150, 0), (175, 0), (180, 0),
+                     (210, 0), (225, 0), (240, 0), (270, 0), (285, 0),
+                     (300, 0), (315,0), (330, 0), (345, 0),
+                     
+                     (0, 1), (0, 2), (0, 5), (0, 7.5), (0, 10),
+                     (0, 15), (0, 30), (0, 45), (0, 60), (0, 90),
+                     (0, 135), (0, 150), (0, 175), (0, 180),
+                     
+                     (0, -1), (0, -2), (0, -5), (0, -7.5), (0, -10),
+                     (0, -15), (0, -30), (0, -45), (0, -60), (0, -90),
+                     (0, -135), (0, -150), (0, -175), (0, -180),
+                     ]:
+    
 
-# configure this movement waveform, by
-# uploading it to the FPU
-gd.configMotion(waveform, grid_state)
+    for sign in [1, -1]:
+        alpha_move = sign * alpha
+        beta_move = sign * beta
+        # the following function generates a waveform for one FPU
+        waveform = gen_wf(alpha_move, beta_move)
 
-# start the movement!
-print("starting movement by (45,15) degree")
-gd.executeMotion(grid_state)
+        # configure this movement waveform, by
+        # uploading it to the FPU
+        gd.configMotion(waveform, grid_state)
 
-# display the new position, using our grid_state
-# information
-print("the new position (in degrees) is:", list_angles(grid_state))
+        # wait a moment
+        time.sleep(2)
+        
+        # start the movement!
+        print("starting movement by"
+              +" ({:5.1f},{:5.1f}) degree".format(alpha_move, beta_move))
+        gd.executeMotion(grid_state)
 
-# we can print the motor steps as well
-print("in motor step units, the new position is:", list_positions(grid_state))
+        # display the new position, using our grid_state
+        # information
+        print("the new position (in degrees) is:", list_angles(grid_state))
+                  
+        # we can print the motor steps as well
+        print("in motor step units, the new position is:", list_positions(grid_state))
 
-# wait a moment to enjoy that great success
-print("we wait three seconds..")
-time.sleep(3)
-
-# configure to repeat the movement
-gd.repeatMotion(grid_state)
-# start the movement!
-print("starting another movement by (45,15) degree")
-gd.executeMotion(grid_state)
-
-# display the new position
-print("the second position (in degrees) is:", list_angles(grid_state))
-
-print("in motor step units, the new position is:", list_positions(grid_state))
-
-# wait a moment
-print("we wait two seconds..")
-time.sleep(2)
-
-
-# now, we move from (90, 30) to (60, 0) degree
-alpha_move = -30
-beta_move = -30
-
-waveform2 = gen_wf(alpha_move, beta_move)
-
-# configure this waveform
-gd.configMotion(waveform2, grid_state)
-
-# start the movement!
-print("starting movement by (-30,-30) degree to (60, 0)")
-gd.executeMotion(grid_state)
-print("the third position (in degrees) is:", list_angles(grid_state))
-
-print("reversing movement by (+30,+30) degree to (90, 30)")
-
-gd.reverseMotion(grid_state)
-gd.executeMotion(grid_state)
-
-# display the new position
-print("the fourth, reversed position (in degrees) is now:",
-      list_angles(grid_state))
-
-# wait a short moment
-print("we wait one second..")
-time.sleep(1)
+        # wait a moment 
+        print("we wait one second..")
+        time.sleep(1)
 
 
-##############################
-# now, we move from (90, 30) to (5, 5) degree
-alpha_move = -85
-beta_move = -25
-
-waveform4 = gen_wf(alpha_move, beta_move)
-
-# configure this waveform
-gd.configMotion(waveform4, grid_state)
-
-# start the movement!
-print("starting movement by (-90,-30) degree to (5, 5)")
-gd.executeMotion(grid_state)
-
-print("the final position (in degrees) is now:",
-      list_angles(grid_state))
-
-##############################
-
-# now, we issue findDatum again, and look for the counter deviation
-print("issuing findDatum:")
+print("issuing final findDatum:")
 gd.findDatum(grid_state)
-
+        
 gd.getCounterDeviation(grid_state)
 
 # we get the state for FPU 0 (the only one)
@@ -143,6 +102,9 @@ print("the counter deviation for FPU 0 is "
       "(dev_alpha, dev_beta) = ({}, {}) steps".format(
           fpu_state.alpha_deviation,
           fpu_state.beta_deviation))
+        
+print("ready.")
+                  
 
       
 
