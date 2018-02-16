@@ -8,8 +8,8 @@
 
 \begin{document}
 
-\title{FPU driver Python library Tutorial}
-\subtitle{For driver version 0.5.0}
+\title{Tutorial for the MOONS FPU grid driver Python library
+  module} \subtitle{For driver version 0.5.0}
 
 \author{Johannes Nix}
 
@@ -35,7 +35,7 @@ probably helpful to consult the tutorial for Python 2.7 at
 \url{https://docs.python.org/2.7/tutorial/}.  Both the current version
 of the driver as well as this document use Python 2.7, which has some
 differences to Python 3. However this introduction does so in a way
-that differences to Python 3 are minimized.
+that differences to Python 3 are minimised.
 
 Also, in order to retrieve the current version of the library,
 the user needs to have a minimum knowledge of the git version
@@ -103,7 +103,7 @@ a specific communication protocol.  The current version of the driver
 (version 0.5.0) uses communication protocol version 1, which has some
 restrictions in functionality. For example, some edge cases cannot be
 checked, some operations might take longer, and some errors are not
-recognized and cannot be easily worked around. The main significant
+recognised and cannot be easily worked around. The main significant
 difference which is visible to the users of the FPU driver module is
 that cases in which the alpha arm of the FPU hits the limit switch
 need to be manually recovered from. This is explained in
@@ -192,7 +192,7 @@ configurations:
 \subsection{Grid driver object}
 
 In line 6, the used number of FPUs is set to one, and in line 7, the
-FPU grid driver is initialized with that value. The returned object,
+FPU grid driver is initialised with that value. The returned object,
 which is referenced by the Python variable \texttt{gd}, is always
 required to access the FPUs.
 
@@ -205,7 +205,7 @@ normal function calls, they usually have parameters. More concretely,
 two methods are used to set up the driver:
 
 \begin{description}
-\item[\texttt{initializeDriver()}] initializes the driver object so
+\item[\texttt{initializeDriver()}] initialises the driver object so
   that it can be used. This method needs to be called always at
   beginning.
 
@@ -220,7 +220,7 @@ case of serious errors, the methods raise exceptions, as is the style
 in Python.
 
 the Python program does not need to explicitly disconnect
-and de-initialize the driver, this happens automatically
+and de-initialise the driver, this happens automatically
 when the program terminates\footnote{However if required, there
 are methods which do that, too!}.
 
@@ -288,27 +288,581 @@ data, and displaying information about the FPU state:
 
 \end{description}
 
+\subsection{Interactive inspection of the FPU state}
+
+\label{sec:fpustate}
+The grid state variable holds a large amount of detail information
+about the current state of FPUs. This is by design, because
+upper layers of the software need to be able to deal with
+errors such as collisions, and correct them.
+
+When trying to diagnose and understand errors, it is often helpful to
+access this state information in an interactive way.
+We can do this based on the property that Python can
+run any commands which appear in a script equally well
+when entered interactively. Also, the Python interpreter
+can be started with the ``-i'' (interactive) option which
+causes that after an error, or after all commands
+in a script have been executed, the interpreter waits
+for command line arguments.
+
+For example, let's assume that the script above is shortened to the
+first 36 lines and stored to a file named
+\texttt{short\_script.py}. We then might run the following interactive
+session (where the lines starting with ``\texttt{\$}'' and
+``\texttt{>>>}'' are interactive input, and everything else is
+output):
+
+
+
+\begin{minted}{python}
+
+  
+$ python -i short_script.py
+initializing driver:  DE_OK
+connecting grid: DE_OK
+getting grid state:
+issuing findDatum:
+findDatum finished
+the starting position (in degrees) is: [(0.0, 0.0)]
+>>> grid_state.FPU[0]
+{ 'last_updated' : 61547082.491 'pending_command_set' : 0
+  'pending_command_set' : 0 'state' : 'READY_FORWARD'
+  'last_command' : 1 'last_status' : 0 'alpha_steps' : 0
+  'beta_steps' : 0 'alpha_deviation' : 0 'beta_deviation' : 0
+  'timeout_count' : 0 'step_timing_errcount' : 0
+  'direction_alpha' : 0 'direction_beta' : 0
+  'num_waveform_segments' : 0 'num_active_timeouts' : 0
+  'sequence_number' : 0 'ping_ok' : 0 'movement_complete' : 0
+  'was_zeroed' : 1 'is_locked' : 0 'alpha_datum_switch_active' : 0
+  'beta_datum_switch_active' : 0 'at_alpha_limit' : 0
+  'beta_collision' : 0 'waveform_valid' : 1 'waveform_ready' : 1
+  'waveform_reversed' : 0 }
+>>> list_angles(grid_state)
+[(0.0, 0.0)]
+>>> gd.executeMotion(grid_state)
+fpu_driver.E_DriverErrCode.DE_OK
+>>> grid_state.FPU[0]
+{ 'last_updated' : 61547154.98 'pending_command_set' : 0
+  'pending_command_set' : 0 'state' : 'RESTING'
+  'last_command' : 7 'last_status' : 0 'alpha_steps' : 5625
+  'beta_steps' : 1200 'alpha_deviation' : 0 'beta_deviation' : 0
+  'timeout_count' : 0 'step_timing_errcount' : 0
+  'direction_alpha' : 0 'direction_beta' : 0
+  'num_waveform_segments' : 0 'num_active_timeouts' : 0
+  'sequence_number' : 0 'ping_ok' : 1 'movement_complete' : 1
+  'was_zeroed' : 1 'is_locked' : 0 'alpha_datum_switch_active' : 0
+  'beta_datum_switch_active' : 0 'at_alpha_limit' : 0
+  'beta_collision' : 0 'waveform_valid' : 1 'waveform_ready' : 0
+  'waveform_reversed' : 0 }
+>>> list_angles(grid_state)
+[(45.0, 15.0)]
+>>>
+\end{minted}
+
+In this listing, \verb+grid_state.FPU[0]+ displays the state of
+FPU 0 (which is the only one we have because \texttt{NUM\_FPUS} was
+set to 1).
+
+Just to pin-point two of the more important bits of information, the
+fields ``alpha\_steps'' and ``beta\_steps'' contain the current step
+counts of an FPU, and the fields 'alpha\_datum\_switch\_active' and
+'beta\_datum\_switch\_active' contain the current position of the
+datum switches. The field \texttt{state} contains the current state of
+the FPU. One can see that after issuing the \texttt{executeMotion}
+command, the state of the FPU changes from \texttt{READY\_FORWARD} to
+\texttt{RESTING}. Actually, the output of the \texttt{list\_angles()}
+utility function is just a scaled version of the ``alpha\_steps'' and
+``beta\_steps'' fields.
+
+
 
 
 \section{Common tasks}
 
+The following sections describe several common tasks
+and which commands can be used to achieve them.
+
+
 \subsection{Checking the connection}
+
+At some points, it is of interest what the state of
+the connection to the CAN gateway and the FPUs is.
+This can be achieved by the following commands:
+\begin{minted}{python}
+grid_state = gd.getGridState()
+grid_state.driver_state  
+\end{minted}
+
+The return value is the connection state of the driver, which is
+\texttt{DS\_CONNECTED} of the connection is live.  In the case that the
+connection fails, it is still possible to retrieve state information
+on the FPUs, but it cannot be refreshed any more until the connection
+is re-established using the \texttt{connect()} method of the driver
+object.
+
+Of course, it is possible that the connection between driver
+and EtherCAN gateway works, but that the FPU does not
+respond. This can be checked by the commands:
+
+\begin{minted}{python}
+  gd.pingFPUs(grid_state)
+  grid_state.FPU[0].ping_ok
+\end{minted}
+
+In the case that the FPU responds, the returned value is
+\texttt{True}.  If the FPU does not respond, the
+value of the \verb+ping_ok+ is \texttt{False}.
+
+
+
 \subsection{Getting the current position}
+
+We already saw how to use the \texttt{pingFPUs()} method
+of the driver object. This method automatically
+retrieves the current step counters of the FPU.
+there are two utility functions which display them:
+
+\begin{minted}{python}
+  list_positions(grid_state)
+\end{minted}
+
+shows the values of the alpha and beta step counters.
+Often, it is interesting to know the value scaled
+to an approximate angle. The scaled values
+are displayed by the command
+
+\begin{minted}{python}
+  list_angles(grid_state)
+\end{minted}
+
+
+One can wonder how this angle is calibrated and
+what is the relative position to the datum
+position. The answer is, these values are
+not calibrated - \texttt{list\_angles()}
+shows only an approximately scaled value.
+Also, the displayed values are only relative
+to the datum position, which is defined to
+have the step counter values (0,0). If
+the datum position was not searched
+at least once before, both values are meaningless.
+
+
+
+
 \subsection{Moving the FPU to the datum position}
+
+Because the FPU's step counters need to be zeroed
+before any accurate positioning is possible, a
+sensible operation early after powering on
+the FPU is to move the FPUs to the datum position.
+This is done by the command
+
+\begin{minted}{python}
+  gd.findDatum(grid_state)
+\end{minted}
+
+It is also highly recommend to move the FPUs to the datum position
+before powering off. Doing this avoids to have the FPU in an ambiguous
+state which might easily lead to hardware damage.
+
 \subsection{Moving the FPU}
+
+To move the FPU in a controlled way,
+four steps are necessary:
+
+\begin{enumerate}
+\item Moving the FPU to the datum position, as explained above.
+
+\item Generating a valid movement waveform table. For a single FPU,
+  this is basically a list which defines for a number of short time
+  segments how many steps the FPU stepper motors should move, and in
+  which direction.
+
+\item Sending the waveform to the FPU
+\item Starting the movement
+  
+\end{enumerate}
+
+There are two options for defining the waveform. The simpler one is to
+automatically generate a waveform where we merely pass two values
+which define how much the alpha and beta arms should move.
+
 \subsubsection{Moving by an angle}
-\subsubsection{Defining a waveform table}
+
+\begin{minted}[linenos]{python}
+alpha_move = 45
+beta_move = 15
+
+# Generate the required waveform for one FPU
+waveform = gen_wf(alpha_move, beta_move)
+
+# upload the waveform to the FPU
+gd.configMotion(waveform, grid_state)
+
+# start the movement
+print("starting movement by (45,15) degree")
+gd.executeMotion(grid_state)
+\end{minted}
+
+The above listing shows how to generate a waveform which moves the FPU
+by a certain (alpha,beta) angle difference.
+
+Lines 1 and 2 define variables with the angles we want to move. In
+line 5, a new waveform table called \texttt{waveform} is generated
+using the \texttt{gen\_wf()} utility function.  By default, this
+function generates the quickest valid movement by the angles
+requested.
+
+In line 8, the \texttt{configMotion()} method is used to send the
+waveform to the FPU. As usual, the \texttt{grid\_state} variable is
+passed, and the resulting state of the FPU is returned in this
+variable.
+
+Finally, in line 12, the method \texttt{executeMotion()} is called,
+which starts the movement of the FPU (or, if we have more than one
+FPU, the movement of all of them). In the normal case, this command
+blocks and returns when the FPUs have finished moving.  In the case
+that there is an error, for example a collision, a Python exception
+will be raised.
+
+
+
+\subsubsection{Manually defining a waveform table}
+
+\paragraph{Waveform syntax}
+
+In the example above, the waveform was generated by the
+\texttt{gen\_wf()} utility function.  For normal movements, this is a
+good option, and the actual value of the step counters can always be
+retrieved using the \texttt{list\_positions()} utility
+function. Sometimes, a much closer control of the FPU movements might
+be required. This can be done with a code fragment like this:
+
+\begin{minted}[linenos]{python}
+wtable = { 0: [ ( 10, -20),
+           ( 125, -125),
+           ( 140, -140),
+           ( 130, -125),
+           ( 125, -50) ],
+}
+gd.configMotion(wtable, grid_state)
+\end{minted}
+
+Here, the Python variable wtable is assigned with
+a waveform. The required format for a waveform
+is \emph{a dictionary with a list of 2-tuples
+  with the alpha and beta step counts}. Because
+that sounds a bit complex, let's dissect this
+structure into its components:
+
+\begin{itemize}
+  
+\item At the top layer, we have a Python dictionary.  The key of each
+  dictionary entry, and integer, is the numerical ID of the FPU we are
+  addressing.  Because we only have one FPU, and the numbering starts
+  with zero, the key is simply zero.
+
+\item The corresponding value for the key zero is a Python list, as
+  indicated by the brackets and a comma-separated sequence. The
+  sequence is a list with exactly one entry for each time-slice of the
+  movement operation\footnote{With the current default values,
+  each time slice has a fixed duration of 250 milliseconds}.
+
+\item Each list entry is a tuple with two elements, both of which are
+  numbers. The first element is the number of alpha steps, and the
+  second element is the number of beta steps.
+
+  A positive number means that the FPU should move counter-clockwise
+  (when viewed from above), and a negative number means it should move
+  clock-wise (when viewed from above). If the value is zero, then the
+  FPU will rest.
+
+\end{itemize}
+
+Now, we can decipher the above structure into ``in the first time
+slice of the movement, the alpha arm should move ten steps
+counter-clockwise, and the beta arm should move twenty steps
+clockwise,'' and so on.
+
+\paragraph{Waveform validity rules}
+
+When you define waveforms, they have to conform to a
+number of rules and conditions to make sure that the
+FPU can execute them. Without attempting to give an
+exhaustive list of these rules, the most important
+ones are currently as follows:
+
+\begin{enumerate}
+
+\item All step numbers need to be integer values.
+  
+\item Except the first and the last non-zero entry,
+  all step numbers in a waveform need to have
+  an absolute value which is at least a minimum value of
+  125.
+
+\item No step number value should have an absolute value larger than
+  the maximum limit of 500.
+
+\item The number of waveform entries can only be 128\footnote{In
+  version 2 of the firmware communication protocol, this limit is
+  raised to a value of 256}.
+
+\item Between consecutive step number values, the larger number can
+  only be at most 40\% larger than the smaller number. The start and
+  the end of the waveform, which are smaller than the minimum value of
+  125, are exempt from this rule.
+
+\item If a waveform has only two entries, it is not allowed that the
+  first and the second entry are both below the minimum value.
+  
+\end{enumerate}
+
+
 
 \subsection{Aborting a movement}
 
-\subsection{Repeating a movement}
+In the case that one wants to abort a \texttt{findDatum()} or a
+\texttt{executeMotion()} operation, one can press
+\verb+<Control-c>+. This terminates the movement in about 0.1
+seconds. \footnote{This generates a \texttt{SIGINT} signal which is
+  during the operation of both commands caught be the Python
+  interpreter. The Python interpreter then sends an
+  \texttt{abortMotion()} command to the driver object, which results
+  in an \texttt{ABORT\_MOTION} CAN message.}
+
+If it is necessary to abort a movement from Python -- for example,
+from another Python thread -- this can be done using the
+\texttt{abortMotion()} method of the grid driver object.  Like all
+driver object methods, this method is thread-safe.
+
+For other driver methods, a \verb+<Control-c>+ normally aborts the
+current Python script when the method returns.\footnote{In some cases,
+  it can happen that the Python program is stuck on a failed socket
+  connection. Terminating such a connection can take considerable time
+  because sockets are handled by the Linux kernel and by default, the
+  kernel tries extremely hard to keep and re-animate an unreliable
+  connection, even if the physical link is temporarily broken. To
+  terminate such a hung program, it can be suspended using
+  \texttt{<Control-z>} and then terminated using the UNIX
+  \texttt{kill} shell command, or using
+  \texttt{<Control-\textbackslash>}, which generates a
+  \texttt{SIGQUIT} signal.}
+
+
 \subsection{Reversing a movement}
+Often, an FPU has been moved away from the datum position, and it is
+desired to move it back to the datum position.  This can be done using
+the following method:
+
+\begin{minted}{python}
+gd.reverseMotion(grid_state)
+\end{minted}
+
+Reversing the waveform requires that there is, firstly, a current
+waveform configured, and, secondly, that this waveform remains valid.
+After any normal, successful movement, a waveform remains valid for
+repetition or reversal. After any collision, limit switch breach, or
+abortion of a movement, the waveform becomes invalid. Generally
+spoken, a waveform becomes invalid when either, the movement it
+describes was interrupted and not completed, or when the step counters
+become invalid (for example due to a collision).
+
+
+\subsection{Repeating a movement}
+
+Sometimes, a waveform for moving in a certain direction has been
+configured, and this movement just needs to be repeated.  To do this,
+use the following code:
+
+\begin{minted}{python}
+gd.repeatMotion(grid_state)
+\end{minted}
+
 
 \section{Recovery from collisions and limit breaches}
 \label{sec:recovery}
 
+Because the FPUs are controlled individually, and the CAN-level driver
+has no concept of their geometric configuration, it cannot take care
+to move them so that collisions are avoided.  Instead, the hardware
+needs to handle collisions in a way that no damage results and
+communicate such situations back to the higher layers of the software.
+
+The following section explains how this is achieved.
+
 \subsection{What happens when a collision or limit switch breach occurs}
-\subsection{Limitations of firmware version 1}
+
+Situations in which the movement of the hardware is obstructed
+are either collisions between FPUs or limit switch breaches
+of the alpha arm. Limit switch breaches are detected
+when the alpha arm detects a transition where the
+limit switch is on and goes off. All other cases are
+considered collisions, which is detected by electrical
+circuits which protect the beta arm. This includes
+movements where the beta arm is moved out of its
+allowed range.
+
+When a collision or limit switch breach occurs, the FPU electronic
+hardware stops any movement, and sends a message to the driver. On
+receiving such a message, the driver registers the state of the FPU in
+the internal \texttt{grid\_state} structure. This is reflected in the
+status flags of the FPU, which were discussed above in section
+\ref{sec:fpustate} on page \pageref{sec:fpustate}.  The \texttt{state}
+field of the FPU is set to the value \texttt{OBSTACLE\_ERROR}, and the
+flags \texttt{beta\_collision} and \texttt{at\_alpha\_limit} are set
+accordingly.
+
+If any movement operation or \texttt{findDatum()} command is going on,
+this command returns with the updated state information on the
+collision, and without further waiting for the movement to complete.
+When the driver call returns to the Python wrapper, the error is
+checked for and transformed into a Python exception.
+
+It is also possible that a collision occurs while an FPU is \emph{not}
+moving and the driver not executing a command.  In this case, the
+internal \texttt{grid\_state} structure is changed, too. When the user
+tries to launch a new command, the changed state is detected, and if
+the command is not valid in collided state, the called method also
+raises an exception.\footnote{Because movement methods return on the
+  first collision, but in a multi-FPU grid additional collisions can
+  occur after that, when controlling multiple FPUs it is a good idea
+  to retrieve an updated grid state structure after handling any
+  collision.}
+
+The following recipe excludes the task of determining in which
+direction FPUs should be moved after a collision.  In the general
+case, this can be a complex question. The \texttt{grid\_state}
+structure to provide a host of information for making this decision.
+
+\subsection{Resolution of a beta arm collision}
+
+In case of a collision of a beta arm, there are two
+methods for resolving this. The following snippet
+shows how to use them:
+
+\begin{minted}[linenos]{python}
+  from FpuGridDriver import REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE
+  fpu_id = 0
+  gd.freeBetaCollision(fpu_id, REQD_CLOCKWISE, grid_state)
+  # required for firmware version 1
+  gd.pingFPUs(grid_state)
+  gd.enableBetaCollisionProtection(grid_state)
+\end{minted}
+
+The effect of these methods is as follows:
+
+In line 1, the symbols \texttt{REQD\_CLOCKWISE} and
+\texttt{REQD\_ANTI\_CLOCKWISE} are imported.
+Then, the parameter \texttt{fpu\_id} is set to the
+numerical ID of the FPU. Then, calling the method
+\texttt{freeBetaCollision()} moves the collided FPU
+into the direction passed in the second parameter
+- clockwise, or anti-clockwise. When using the protocol
+version 1, it is then necessary to retrieve an update
+for position and state of the FPU using the \texttt{pingFPUs()}
+command.
+
+This might need to be repeated a few times, and verified using visual
+inspection, or camera pictures. When the collision is resolved, the
+FPU can be switched to the normal state using the
+\texttt{enableBetaCollisionProtection()} command.  After this, the FPU
+can be moved normally. Because any previously configured waveforms
+become invalid, a new movement needs to be configured using
+\texttt{configMotion()} at this point.
+
+\subsection{Resolution of an alpha limit switch breach}
+
+For firmware and CAN protocol  version 2, limit switch
+breaches can be handled in an analogous way as the
+beta arm collisions. For CAN protocol version 1,
+is option is not available. Instead, the following
+steps are required:
+
+\begin{minted}[linenos]{python}
+  # Determine and write down the last movement of the FPU before
+  # running into the limit switch. Let's assume
+  # the alpha arm was moved with a positive sign.
+
+  # reset the FPU to allow for movements
+  gd.resetFPUs(grid_state)
+
+  # move the FPU into the opposite direction
+  waveform = gen_wf(-5, 0)
+  gd.configMotion(waveform, grid_state, check_protection=False)
+  gd.executeMotion(grid_state)
+  # A second limit switch breach exception happens here!
+
+  # reset the FPU again, to clear the second breach
+  gd.resetFPUs(grid_state)
+  gd.configMotion(waveform, grid_state, check_protection=False)
+  gd.executeMotion(grid_state)
+
+  gd.findDatum(grid_state)
+  
+\end{minted}
+  
+
+What these operations do is basically to clear the breach state, and
+to manually move the FPU.  The flag \texttt{check\_protection=False}
+in line 10 is required because normally, the software does not accept
+a movement of an FPU which was not zeroed by a datum operation.
+
+However, in this state, we \emph{must not} use a datum operation,
+therefore it is necessary to override this software protection.
+
+After this, the FPU can be moved, but because it crosses
+the limit switch a second time, another limit switch
+message is generated, and the FPU needs to be moved
+manually for a second time.
+
+\textbf{It is very important that, when resolving such a limit switch
+  breach, the FPU is not moved into the same direction as it was
+  moving before.  Otherwise, the FPU would run into the hard stop, and
+  there is no hardware or software protection which could prevent
+  damage in this case}.
+
+
+\subsection{Limitations of CAN protocol version 1}
+
+The following are the main limitations and functional
+differences for protocol version 1:
+
+\begin{itemize}
+\item There is no automatic recovery method for alpha
+  limit switch breaches. Limit switch breaches need
+  to be recovered manually, and it must be carefully
+  observed to move the FPU in the correct direction,
+  on order to prevent the risk of damage. Espacially,
+  a datum search must not be used after an alpha limit switch
+  breach.
+
+\item The current position and direction of movement of the FPUs is
+  not tracked during ongoing movements, and the driver cannot record
+  the last movement direction. This has the effect that the user needs
+  to verify manually in which direction the FPU was moving before
+  resolving a collision or limit switch breach.
+
+\item In protocol version 2, transitions and allowed commands are
+  checked much stricter than in protocol 1.  This results in a
+  somewhat reduced flexibility, however the stricter checking also
+  allows to make stronger assumptions about the current state, and to
+  perform automatic recovery of multiple collided FPUs.
+  
+\item In some cases, protocol 1 is not able to
+  detect lost messages, so that state information
+  might be stale.\footnote{For the case of the \texttt{executeMotion()}
+  command, a state update is performed automatically
+  if no error has occurred.}
+
+  
+\item Uploading waveforms might take a longer time, especially if the
+  waveform has a large number of steps.
+  
+\end{itemize}
+
 
 \section{Reference}
 \subsection{Commands}
