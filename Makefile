@@ -48,7 +48,8 @@ _OBJ =  GridDriver.o    AsyncDriver.o FPUArray.o GridState.o \
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-
+tutorial:	doc/tutorial.tex
+	cd doc; pdflatex --shell-escape tutorial.tex
 
 $(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS)
 	$(CC) $(CXXFLAGS) -c -o $@ $< 
@@ -65,4 +66,5 @@ pyext: lib/libfpudriver.a python/src/fpu_driver.cpp $(DEPS)
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
+
 
