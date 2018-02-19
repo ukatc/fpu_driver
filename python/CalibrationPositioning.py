@@ -117,9 +117,6 @@ def initialize_FPU(args):
     
     gd = FpuGridDriver.GridDriver(NUM_FPUS)
 
-    print("initializing driver: ", gd.initializeDriver())
-
-
     if args.mockup:
         gateway_address = [ GatewayAddress("127.0.0.1", 4700)  ]
     else:

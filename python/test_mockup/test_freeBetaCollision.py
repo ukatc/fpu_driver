@@ -12,8 +12,6 @@ gateway_adr_list = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
     
 gd = FpuGridDriver.GridDriver(NUM_FPUS)
 
-print("initializing driver: ", gd.initializeDriver())
-
 
 print("connecting grid:", gd.connect(gateway_adr_list))
 

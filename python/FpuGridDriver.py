@@ -5,7 +5,7 @@ import signal
 
 import fpu_driver
 
-from fpu_driver import __version__, GatewayAddress,  REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
+from fpu_driver import __version__, CAN_PROTOCOL_VERSION, GatewayAddress,  REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
 
 import fpu_commands as cmds
 
@@ -59,9 +59,6 @@ class SignalHandler(object):
 class GridDriver:
     def __init__(self, nfpus=DEFAULT_NUM_FPUS):
         self._gd = fpu_driver.GridDriver(nfpus)
-
-    def initializeDriver(self):
-        return self._gd.initializeDriver()
 
     def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST):
         return self._gd.connect(address_list)

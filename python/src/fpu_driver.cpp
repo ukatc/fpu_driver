@@ -813,6 +813,9 @@ public:
 
     WrapGridDriver(int nfpus) : GridDriver(nfpus)
     {
+
+        E_DriverErrCode ecode = initializeDriver();
+        checkDriverError(ecode);        
     };
 
 
@@ -1073,7 +1076,9 @@ BOOST_PYTHON_MODULE(fpu_driver)
     using namespace boost::python;
 
     scope().attr("__version__") = (strlen(VERSION) > 0) ?  (((const char*)VERSION) + 1) : "";
-    
+
+    scope().attr("CAN_PROTOCOL_VERSION") = CAN_PROTOCOL_VERSION;
+
     // include summary function
     def("getGridStateSummary", wrapGetGridStateSummary);
 
@@ -1285,7 +1290,6 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("getNumFPUs", &WrapGridDriver::getNumFPUs)
     .def("connect", &WrapGridDriver::connectGateways)
     .def("disconnect", &WrapGridDriver::disconnect)
-    .def("initializeDriver", &WrapGridDriver::initializeDriver)
     .def("deInitializeDriver", &WrapGridDriver::deInitializeDriver)
     .def("initializeGrid", &WrapGridDriver::wrap_initializeGrid)
     .def("resetFPUs", &WrapGridDriver::wrap_resetFPUs)

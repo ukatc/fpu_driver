@@ -9,8 +9,6 @@ NUM_FPUS = 1
 
 gd = FpuGridDriver.GridDriver(NUM_FPUS)
 
-print("initializing driver: ", gd.initializeDriver())
-
 
 print("connecting grid:", gd.connect(address_list=TEST_GATEWAY_ADRESS_LIST))
 
