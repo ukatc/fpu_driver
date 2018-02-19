@@ -137,6 +137,7 @@ public:
     E_GridState waitForState(E_WaitTarget target,
                              t_grid_state& out_detailed_state, double &max_wait_time, bool &cancelled) const;
 
+    E_DriverErrCode validateWaveforms(const t_wtable& waveforms) const;
 
 private:
 

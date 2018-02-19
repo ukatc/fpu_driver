@@ -372,7 +372,88 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 
 }
 
+E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms) const
+{
+    
+        const int num_loading =  waveforms.size();
+        const unsigned int num_steps = waveforms[0].steps.size();
+        
+        for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+        {
+            const int fpu_id = waveforms[fpu_index].fpu_id;
+	    if ((fpu_id >= num_fpus) || (fpu_id < 0))
+	    {
+	      // the FPU id is out of range
+	      return DE_INVALID_FPU_ID;
+	    }
 
+            // require same number of steps for all FPUs
+            if (waveforms[0].steps.size() != num_steps)
+            {
+                return DE_INVALID_WAVEFORM;
+            }
+	    
+
+            for(int arm=0; arm < 2; arm++)
+            {
+                int xa_last = 0;
+                int x_last_sign = 0;
+                
+                for (unsigned int sidx=0; sidx<num_steps; sidx++)
+                {
+                    const int MIN_STEPS=125;
+                    const int MAX_STEPS=500;
+                    const double MAX_INCREASE = 0.4;
+                
+                    const t_step_pair& step = waveforms[fpu_index].steps[sidx];
+
+                    const int xs = (arm == 0) ?
+                        step.alpha_steps : step.beta_steps;
+
+                    const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
+                    const int xa = abs(xs);
+
+                    printf("channel=%i, step=%i, xs=%i, xa=%i", arm, sidx, xs, xa);
+                    
+                    if (xa > MAX_STEPS)
+                    {
+                        return DE_INVALID_WAVEFORM;
+                    }
+
+                    
+
+                    int xa_small = std::min(xa_last, xa);
+                    int xa_large = std::max(xa_last, xa);
+                    printf("xa_small=%i, xa_large=%i, xa_small*max_increase=%i\n",
+                           xa_small, xa_large, int(xa_small * (1.0+MAX_INCREASE)));
+
+                    bool valid_acc = (
+                        // 1) movement into the same direction
+                        ((x_sign == x_last_sign)
+                         //   1a) and started/stopped to move in last section
+                         && (( (xa_small < MIN_STEPS)
+                               && (xa_large == MIN_STEPS))
+                         // or, 1b) not larger than the allowed relative increase
+                             || (xa_large <= int(xa_small * (1.0+MAX_INCREASE)))))
+                        // or, a change of direction, and one step
+                        // number zero and the other at max MIN_STEPS
+                        || ((xa_small == 0)
+                            && (xa_large <= MIN_STEPS)));
+                    
+                    if (!valid_acc)
+                    {
+                        printf("channel=%i, step=%i, x_sign=%i, x_last_sign=%i, xa_small=%i, xa_large=%i\n",
+                               arm, sidx, x_sign, x_last_sign, xa_small, xa_large);
+                        return DE_INVALID_WAVEFORM;                        
+                    }
+
+                    xa_last = xa;
+                    x_last_sign = x_sign;
+                }
+            }            
+        }
+        return DE_OK;
+}
 
 E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                                                E_GridState& state_summary,
@@ -413,6 +494,12 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             {
                 return DE_FPUS_NOT_CALIBRATED;
             }
+        }
+
+        const E_DriverErrCode vwecode = validateWaveforms(waveforms);
+        if (vwecode != DE_OK)
+        {
+            return vwecode;
         }
     }
 
