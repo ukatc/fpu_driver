@@ -5,7 +5,7 @@ import signal
 
 import fpu_driver
 
-from fpu_driver import GatewayAddress,  REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
+from fpu_driver import __version__, GatewayAddress,  REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
 
 import fpu_commands as cmds
 

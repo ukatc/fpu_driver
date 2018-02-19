@@ -2,6 +2,8 @@ IDIR = ./include
 
 CC = "g++"
 
+GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
+
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g 
 
 ODIR = ./obj
@@ -48,10 +50,16 @@ _OBJ =  GridDriver.o    AsyncDriver.o FPUArray.o GridState.o \
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
+
+.PHONY: force clean
+
+git_version: force
+	echo '$(GIT_VERSION)' | cmp -s - $@ || echo '$(GIT_VERSION)' > $@
+
 tutorial:	doc/tutorial.tex
 	cd doc; pdflatex --shell-escape tutorial.tex
 
-$(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS)
+$(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS) 
 	$(CC) $(CXXFLAGS) -c -o $@ $< 
 
 lib/libfpudriver.a: $(OBJ)
@@ -59,12 +67,11 @@ lib/libfpudriver.a: $(OBJ)
 
 driver: lib/libfpudriver.a
 
-pyext: lib/libfpudriver.a python/src/fpu_driver.cpp $(DEPS)
-	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/fpu_driver.so python/src/fpu_driver.cpp -L./lib  -lfpudriver -lboost_python -g
+pyext: lib/libfpudriver.a python/src/fpu_driver.cpp $(DEPS) git_version
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/fpu_driver.so python/src/fpu_driver.cpp -L./lib  -lfpudriver -lboost_python -g -DVERSION=\"$(GIT_VERSION)\"
 
-.PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ doc/*.{aux,dvi,log,out,toc,pdf}
 
 

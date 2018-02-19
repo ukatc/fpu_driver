@@ -1072,9 +1072,12 @@ BOOST_PYTHON_MODULE(fpu_driver)
 {
     using namespace boost::python;
 
+    scope().attr("__version__") = (strlen(VERSION) > 0) ?  (((const char*)VERSION) + 1) : "";
+    
     // include summary function
     def("getGridStateSummary", wrapGetGridStateSummary);
 
+    
     enum_<E_FPU_STATE>("E_FPU_STATE")
     .value("FPST_UNKNOWN", FPST_UNKNOWN)
     .value("FPST_UNINITIALIZED", FPST_UNINITIALIZED)

@@ -5,6 +5,7 @@ NUM_FPUS = 1000
 gateway_adr_list = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 
+print("module version is:", FpuGridDriver.__version__)
 
 gd = FpuGridDriver.GridDriver(NUM_FPUS)
 
