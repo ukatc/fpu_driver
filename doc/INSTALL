@@ -115,15 +115,16 @@ python2 mock_gateway.py
 
 
 This test code opens three socket connections on localhost and will
-display received messages and commands. It will not run with the full
-speed of the hardware but should match the hardware protocol
-faithfully.
+display received messages and commands. It will not necessarily
+run with the same speed as the hardware but should match the
+hardware protocol faithfully.
 
 [In future,] Use the command line option "--help" to check for additional features,
 such as simulating communication failures etc.
 
 In another terminal window, you can run the tests:
-python2 -i test1.py.
+python2 -i test_mock/test_findDatum.py
+and so on.
 
 
 
