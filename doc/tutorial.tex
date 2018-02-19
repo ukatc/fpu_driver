@@ -4,7 +4,7 @@
 
 \usepackage{minted}
 \usepackage{hyperref}
-
+\usepackage{graphicx}
 
 \begin{document}
 
@@ -123,12 +123,14 @@ import FpuGridDriver
 from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST
 from fpu_commands import *
 
+# print the driver version, just to check
+print("The FPU driver version is:", FpuGridDriver.__version__,
+      ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
+
 NUM_FPUS = 1
 gd = FpuGridDriver.GridDriver(NUM_FPUS)
 
-print("initializing driver: ", gd.initializeDriver())
 print("connecting grid:", gd.connect(address_list=TEST_GATEWAY_ADRESS_LIST))
-
 
 print("getting grid state:")
 grid_state = gd.getGridState()
@@ -191,7 +193,7 @@ configurations:
 
 \subsection{Grid driver object}
 
-In line 6, the used number of FPUs is set to one, and in line 7, the
+In line 10, the used number of FPUs is set to one, and in line 11, the
 FPU grid driver is initialised with that value. The returned object,
 which is referenced by the Python variable \texttt{gd}, is always
 required to access the FPUs.
@@ -205,10 +207,6 @@ normal function calls, they usually have parameters. More concretely,
 two methods are used to set up the driver:
 
 \begin{description}
-\item[\texttt{initializeDriver()}] initialises the driver object so
-  that it can be used. This method needs to be called always at
-  beginning.
-
 \item[\texttt{connect()}] connects the driver to one or more EtherCAN
   gateways and starts listening to messages from the FPUs. The
   parameter defines to \emph{which} gateways the driver listens to.
@@ -239,7 +237,7 @@ invocation of a method, the old grid state is passed as a parameter,
 and its new value is returned in the same variable.
 
 To retrieve a current grid state information, the method
-``getGridState()'' is used, as is done in line 14. In our listing, the
+``getGridState()'' is used, as is done in line 16. In our listing, the
 grid state variable is assigned to the variable \texttt{grid\_state}.
 The \texttt{getGridState()} function always returns immediately, as it
 just takes a snapshot. Because \texttt{grid\_state} is used so
@@ -258,13 +256,13 @@ the FPUs:
 
 \item[\texttt{configMotion()}] is a method which sends a table with movement
   operations, also called waveform table, to the FPU. In the listing,
-  this is done in line 35. The movement table is stored in the
-  variable \texttt{waveform}, which is defined in line 32.
+  this is done in line 37. The movement table is stored in the
+  variable \texttt{waveform}, which is defined in line 34.
 
-\item[\texttt{executeMotion()}] is the command which starts the movement of the
-  FPU. This command returns when the movement is complete and the FPUs
-  have stopped to move. In case of an error, the command generates a
-  Python exception.
+\item[\texttt{executeMotion()}] in line 41 is the command which starts
+  the movement of the FPU. This command returns when the movement is
+  complete and the FPUs have stopped to move. In case of an error, the
+  command generates a Python exception.
 
 \end{description}
 
@@ -360,7 +358,7 @@ fpu_driver.E_DriverErrCode.DE_OK
 >>>
 \end{minted}
 
-In this listing, \verb+grid_state.FPU[0]+ displays the state of
+In this listing, \verb+grid_state.FPU[0]+ displays the state parameters of
 FPU 0 (which is the only one we have because \texttt{NUM\_FPUS} was
 set to 1).
 
@@ -374,6 +372,61 @@ command, the state of the FPU changes from \texttt{READY\_FORWARD} to
 \texttt{RESTING}. Actually, the output of the \texttt{list\_angles()}
 utility function is just a scaled version of the ``alpha\_steps'' and
 ``beta\_steps'' fields.
+
+\subsection{FPU states}
+The state of an FPU is summarized in a enumeration value, which is
+stored in the attribute \texttt{state}. For example, the state of FPU 0
+can be retrieved by
+
+\begin{minted}{python}
+
+>>> grid_state.FPU[0].state
+\end{minted}
+
+Generally, each FPU is always in one of the following states,
+which allow different operations:
+
+\begin{description}
+\item[UNKNOWN ] The state of the FPU is not known, the driver needs to
+  be connected to the EtherCAN gateway first and retrieve the state.
+  
+\item[UNINITIALIZED ] The FPU has been pinged successfully, but it was
+  so far not zeroed to the datum position, so no movements are
+  possible.
+\item[LOCKED ] The FPU was locked, which inhibits movement of this
+  FPU.\footnote{This is a facility provided by protocol version 2}
+\item[DATUM\_SEARCH ] The FPU is currently searching for the datum
+  position.
+\item[AT\_DATUM      ] The FPU has reached the datum position.
+\item[LOADING ] The FPU is currently configuring a new movement waveform.
+\item[READY\_FORWARD ] The FPU is ready to move in the forward
+  direction of the waveform table.
+\item[READY\_BACKWARD] The FPU is ready to move backwards along the
+  waveform table.
+\item[MOVING        ] The FPU is currently moving.
+\item[RESTING       ] The FPU has finished its movement.
+\item[ABORTED ] The movement was aborted, either by an internal error,
+  or by an explicit abortMotion command.
+\item[OBSTACLE\_ERROR] The FPU has either detected a collision of the
+  beta arm, or the alpha arm has hit the limit switch. In both cases, the
+  movement was aborted. 
+\end{description}
+
+\begin{figure}
+
+  \includegraphics[width=0.8\textwidth]{FPU-state.png}
+  \caption{Allowed state transitions of FPU, and the associated commands}
+  \label{fig:states}
+\end{figure}
+
+Figure~\ref{fig:states} on page~\pageref{fig:states} shows, as a
+reference, the states of the FPU and commands which are allowed in
+protocol version 2. In protocol version 1, only a subset of the
+commands shown is available\footnote{ Especially, there is no
+  \texttt{enableMove} command, and the commands
+  \texttt{freeAlphaLimitBreach} and
+  \texttt{enableAlphaLimitProtection} are missing - to leave the
+  associated states, the command \texttt{resetFPUs} needs to be used}.
 
 
 
@@ -857,6 +910,8 @@ differences for protocol version 1:
   command, a state update is performed automatically
   if no error has occurred.}
 
+\item It is not possible to lock or unlock FPUs, or otherwise to
+  exclude FPUs from movement commands.
   
 \item Uploading waveforms might take a longer time, especially if the
   waveform has a large number of steps.
