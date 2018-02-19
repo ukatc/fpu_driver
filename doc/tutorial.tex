@@ -204,7 +204,7 @@ The driver objects allows to issue method calls. The method names
 always start with a dot after the name of the driver object.  So,
 \texttt{gd.abc()} would call method ``abc'' of the driver object. Like
 normal function calls, they usually have parameters. More concretely,
-two methods are used to set up the driver:
+one such method is used to set up the driver:
 
 \begin{description}
 \item[\texttt{connect()}] connects the driver to one or more EtherCAN
@@ -215,12 +215,10 @@ two methods are used to set up the driver:
 
 As can be seen in the example, the methods have return values.  In
 case of serious errors, the methods raise exceptions, as is the style
-in Python.
-
-the Python program does not need to explicitly disconnect
+in Python. The Python program does not need to explicitly disconnect
 and de-initialise the driver, this happens automatically
-when the program terminates\footnote{However if required, there
-are methods which do that, too!}.
+when the program terminates\footnote{However if required, you can uses
+  \texttt{gd.disconnect()} and \texttt{del gd}, which deletes the driver object.}.
 
 
 
@@ -1008,7 +1006,7 @@ default \verb+/usr/local/include+) to the path configured in the environment
 variable \verb+CPLUS_INCLUDE_PATH+, so that gcc can find them when building
 the module.
 
-\subsubsection{Installing gevent module}
+\subsubsection{Installing the python-gevent module}
 
 The Python mock-up gateway uses the gevent
 library which is used to serve parallel requests
