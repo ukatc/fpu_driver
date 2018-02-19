@@ -924,5 +924,166 @@ differences for protocol version 1:
 \subsection{Errors}
 \subsection{State Machine}
 
+\appendix
+
+\section{Dependency requirements and installation}
+
+
+
+\subsection{Prerequisites}
+
+\begin{enumerate}
+  \item For the C++ driver and static library
+
+    
+\begin{itemize}
+\item gcc-4.9 (essentially, with support for C++11)
+\item Linux-2.6 or newer (requiring support for eventfd)
+\item glibc-2.3.2 (epoll support)
+\end{itemize}
+
+These should be available on all current Linux systems.
+
+\item For the test code and Python bindings
+
+\begin{itemize}
+\item Python-2.7
+\item boost-1-66 , which can be downloaded from \url{http://www.boost.org/users/download/}
+\end{itemize}
+\end{enumerate}
+
+
+Note that Python might need to be called with the command name
+\texttt{python2} on newer systems.
+
+\subsection{Installation of FPU driver module}
+
+\subsubsection{Installing boost libraries}
+
+Recent Boost libraries are required to build the Python module, which
+is needed in the verification system (but not in the final ICS
+software).
+
+Please keep in mind that any installed different version of boost
+libraries is very likely an essential part of your Linux system, so do
+NOT uninstall older versions from your system!
+
+\begin{itemize}
+\item for security, verify boost package signature using gnupg
+
+\item unpack boost package:
+  
+  \begin{minted}{bash}
+    $ tar xzf boost_1_66_0.tar.gz
+  \end{minted}    
+
+\item build package:
+
+  \begin{minted}{bash}
+    $ cd boost_1_66_0/
+    $ ./bootstrap.sh
+    $ ./b2
+  \end{minted}    
+
+\item install package into /usr/local directory:
+
+  \begin{minted}{bash}
+    $ su
+    # ./b2 install
+  \end{minted}    
+\end{itemize}
+
+To make the boost libraries accessible when the
+final program is run, you need to add the
+command
+
+\begin{verbatim}
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+\end{verbatim}
+
+to your shell configuration (usually, \verb+$HOME/.bashrc+).
+
+Also, you should add the directory with the boost header files (by
+default \verb+/usr/local/include+) to the path configured in the environment
+variable \verb+CPLUS_INCLUDE_PATH+, so that gcc can find them when building
+the module.
+
+\subsubsection{Installing gevent module}
+
+The Python mock-up gateway uses the gevent
+library which is used to serve parallel requests
+using asynchronous code. In difference to
+Python3's asyncio, it is available both in
+Pyhon2 and Python3.
+
+Install it as follows:
+
+  \begin{minted}{bash}
+    # pip install gevent
+  \end{minted}    
+
+(This command seems to be need to be run as root in order to install
+  under \texttt{/usr/local}).
+
+
+
+\subsubsection{Building the C++ driver library}
+
+The FPU driver is a static library which becomes included in the
+Python module.  Build the FPU driver library as follows:
+
+  \begin{minted}{bash}
+    $ cd fpu_driver
+    $ make driver
+  \end{minted}    
+
+This places the static library libfpudriver.a into
+the subdirectory "/lib".
+
+\subsubsection{Building the python module}
+
+Run
+
+  \begin{minted}{bash}
+    $ make pyext
+  \end{minted}    
+
+This builds the binary extension module \verb+fpu_driver.so+
+and places it into the subdirectory \verb+/python+.
+In the same subdirectory, there are some test
+scripts which can be used to test the module.
+
+
+\section{Running the test gateway} 
+
+In the sub-directory /testing, the package contains a mock-up test
+gateway which responds to messages as specified by the hardware
+protocol. To run it, change into a new terminal window and
+issue
+
+  \begin{minted}{bash}
+    $ cd testing
+    $ python2 mock_gateway.py
+  \end{minted}    
+
+
+This test code opens three socket connections on localhost and will
+display received messages and commands. It will not necessarily
+run with the same speed as the hardware but should match the
+hardware protocol faithfully.
+
+[In future,] Use the command line option "--help" to check for additional features,
+such as simulating communication failures etc.
+
+In another terminal window, you can run the tests:
+  \begin{minted}{bash}
+    $ python2 -i test_mock/test_findDatum.py
+  \end{minted}    
+and so on.
+
+
+
+
+
 
 \end{document}

@@ -93,7 +93,7 @@ BUILDING THE PYTHON MODULE
 
 Run
 
-# make pyextension
+# make pyext
 
 This builds the binary extension module fpu_driver.so
 and places it into the subdirectory /python.
