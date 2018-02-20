@@ -28,9 +28,9 @@ that he or she can perform basic verification tasks.
 
 \subsection{Required knowledge}
 
-It is assumed that the reader has basic knowledge of either Python or
-a similar object-oriented language, like Java or c\#.  In the case
-that using Python and scripts is completely new to the reader, it is
+It is assumed that the reader has basic knowledge of Python, or,
+alternatively, a similar object-oriented language, like Java or C\#.
+In the case that using Python and scripts is new to the reader, it is
 probably helpful to consult the tutorial for Python 2.7 at
 \url{https://docs.python.org/2.7/tutorial/}.  Both the current version
 of the driver as well as this document use Python 2.7, which has some
@@ -648,11 +648,12 @@ ones are currently as follows:
 \begin{enumerate}
 
 \item All step numbers need to be integer values.
+
+\item The first entry should have the value zero.
   
-\item Except the first and the last non-zero entry,
-  all step numbers in a waveform need to have
-  an absolute value which is at least a minimum value of
-  125.
+\item Except the the last non-zero entry, all step numbers in a
+  waveform need to have an absolute value which has at least a minimum
+  value of 125.
 
 \item No step number value should have an absolute value larger than
   the maximum limit of 500.
@@ -666,8 +667,6 @@ ones are currently as follows:
   the end of the waveform, which are smaller than the minimum value of
   125, are exempt from this rule.
 
-\item If a waveform has only two entries, it is not allowed that the
-  first and the second entry are both below the minimum value.
   
 \end{enumerate}
 
