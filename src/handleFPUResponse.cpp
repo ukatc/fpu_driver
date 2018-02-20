@@ -290,21 +290,6 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
         }
-        else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
-        {
-            fpu.at_alpha_limit = true;
-            fpu.state = FPST_OBSTACLE_ERROR;
-            fpu.movement_complete = false;
-            fpu.waveform_valid = false;
-
-        }
-        else if (response_errcode == ER_COLLIDE)
-        {
-            fpu.state = FPST_OBSTACLE_ERROR;
-            fpu.movement_complete = false;
-            fpu.waveform_valid = false;
-
-        }
         else if (response_errcode == ER_TIMING)
         {
             // we got a step timing error (meaning the interrupt
@@ -321,6 +306,21 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
 	    fpu.step_timing_errcount++;
+
+        }
+        else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
+        {
+            fpu.at_alpha_limit = true;
+            fpu.state = FPST_OBSTACLE_ERROR;
+            fpu.movement_complete = false;
+            fpu.waveform_valid = false;
+
+        }
+        else if (response_errcode == ER_COLLIDE)
+        {
+            fpu.state = FPST_OBSTACLE_ERROR;
+            fpu.movement_complete = false;
+            fpu.waveform_valid = false;
 
         }
         else if (response_errcode == 0)
