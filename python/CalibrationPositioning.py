@@ -58,8 +58,9 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
         else:
             waveform = gen_wf(-alpha, -beta)
             gd.configMotion(waveform, grid_state)
-            
 
+        print("issuing findDatum()")
+        gd.findDatum(grid_state)
         gd.getCounterDeviation(grid_state)
 
         # we get the state for FPU 0 (the only one)
@@ -92,13 +93,16 @@ def parse_args():
     
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=0.0,
                         help='minimum alpha value  (default: %(default)s)')
-    parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=270.0,
+    parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=360.0,
                         help='maximum alpha value  (default: %(default)s)')
-    parser.add_argument('--beta_min', metavar='BETA_MIN', type=float, default=0.0,
+    parser.add_argument('--beta_min', metavar='BETA_MIN', type=float, default=-180.0,
                         help='minimum beta value  (default: %(default)s)')
-    parser.add_argument('--beta_max', metavar='BETA_MAX', type=float, default=180.0,
+    parser.add_argument('--beta_max', metavar='BETA_MAX', type=float, default=130.0,
                         help='maximum beta value  (default: %(default)s)')
-    
+
+    parser.add_argument('--chill_time', metavar='CHILL_TIME', type=float, default=1,
+                        help='chill time for alpha arm  (default: %(default)s)')
+
     parser.add_argument('asteps', metavar='ASTEPS', type=int, default=10,
                         help='number of alpha steps  (default: %(default)s)')
     parser.add_argument('bsteps', metavar='BSTEPS', type=int, default=10,
@@ -106,7 +110,7 @@ def parse_args():
     
     parser.add_argument('--datum_at', metavar='DATUM_AT', type=str, default="start",
                         choices=['alpha_change', 'beta_change', 'start'],
-                        help='go to datum at change of alpha / beta coordinate (default: %(default)r)')
+                        help="go to datum at change of alpha / beta coordinate ('alpha_change', 'beta_change', 'start' default: %(default)r)")
     
     args = parser.parse_args()
     return args
@@ -168,7 +172,14 @@ def loop_positions(args, gd, grid_state, metrology_func=None, deviation_list=[])
         
             go_datum = False
 
-
+        if args.chill_time > 10:
+            print("waiting %f seconds for fpu to cool off" % args.chill_time)
+        time.sleep(args.chill_time)
+            
+    # last call at (0,0), and always return to datum
+    measure_position(gd, grid_state, 0, 0, return_to_datum=True,
+                     metrology_func=metrology_func, deviation_list=deviation_list)
+    
                 
 if __name__ == '__main__':
     # parse arguments
