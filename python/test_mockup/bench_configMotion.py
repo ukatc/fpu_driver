@@ -25,7 +25,7 @@ gd.findDatum(gs)
 
 num_steps = 256
 
-steps = [ (200, 100) for i in range(num_steps)]
+steps = [ (125, 125) for i in range(num_steps)]
 
 wave_table = { fpu : steps for fpu in range(NUM_FPUS) }
 

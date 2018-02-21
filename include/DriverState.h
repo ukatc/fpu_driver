@@ -126,34 +126,53 @@ enum E_DriverErrCode
 
     // we tried to move FPUs but some addressed FPUs
     // still have invalid waveforms.
-    DE_INVALID_WAVEFORM = 12,
+    // waveform has to many steps
+    DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS = 12,
+    
+    // number of sections different for different FPUS
+    DE_INVALID_WAVEFORM_RAGGED = 13,
+    
+    // start of waveform is invalid (must not start with zero)
+    DE_INVALID_WAVEFORM_START = 14,
+    
+    // step number in section is too high
+    DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE = 15,
+    
+    // the change in step count per section is incorrect
+    DE_INVALID_WAVEFORM_CHANGE = 16,
+    
+    // the tail of the waveform is incorrect
+    DE_INVALID_WAVEFORM_TAIL = 17,
+
+    // Waveform is not configured / not ready for movement
+    DE_WAVEFORM_NOT_READY = 18,
 
     // the addressed FPUs were not yet calibrated by a datum search
-    DE_FPUS_NOT_CALIBRATED = 13,
+    DE_FPUS_NOT_CALIBRATED = 19,
 
     // a motion command was issued but no FPUs are allowed to move
-    DE_NO_MOVABLE_FPUS = 14,
+    DE_NO_MOVABLE_FPUS = 20,
 
     // The user waited for a command completion using a time-out
     // value, and the state has not been reached yet
-    DE_COMMAND_TIMEOUT = 15,
+    DE_COMMAND_TIMEOUT = 21,
 
     // movement was aborted
-    DE_ABORTED_STATE = 16,
+    DE_ABORTED_STATE = 22,
 
     // some addressed FPUs are locked
-    DE_FPUS_LOCKED = 17,
+    DE_FPUS_LOCKED = 23,
 
     // at least one FPU ran into a step timing error, which means
     // the FPU's motion controller was not able to compute
     // the required step frequency quick enough for the
     // configured microstepping level.
 
-    DE_STEP_TIMING_ERROR = 18,
+    DE_STEP_TIMING_ERROR = 24,
 
     // An FPU id which was passed as a parameter is invalid
     // because it is larger than the maximum number of FPUs.
-    DE_INVALID_FPU_ID = 19,
+    DE_INVALID_FPU_ID = 25,
     
     // operation not implemented for this protocol version
     DE_UNIMPLEMENTED=98,

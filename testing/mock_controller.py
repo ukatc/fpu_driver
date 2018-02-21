@@ -191,18 +191,26 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
     if BUG_WORKAROUND:
         astep = ((RX[2] &  0x3f) << 8) + RX[3]
         apause = (RX[2] >> 6) & 1
+        if apause:
+            astep = 0
         aclockwise = (RX[2] >> 7) & 1
 
         bstep = ((RX[4] &  0x3f) << 8) + RX[5]
         bpause = (RX[4] >> 6) & 1
+        if bpause:
+            bstep=0
         bclockwise = (RX[4] >> 7) & 1
     else:
         astep = ((RX[3] &  0x3f) << 8) + RX[2]
         apause = (RX[3] >> 6) & 1
+        if apause:
+            astep = 0
         aclockwise = (RX[3] >> 7) & 1
 
         bstep = ((RX[5] &  0x3f) << 8) + RX[4]
         bpause = (RX[5] >> 6) & 1
+        if bpause:
+            bstep=0
         bclockwise = (RX[5] >> 7) & 1
         
         

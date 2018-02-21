@@ -377,78 +377,122 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms) const
     
         const int num_loading =  waveforms.size();
         const unsigned int num_steps = waveforms[0].steps.size();
+
+        const int MAX_NUM_SECTIONS=128;
         
+        if (num_steps > MAX_NUM_SECTIONS)
+            {
+                printf("too many steps in waveform\n");
+                return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
+            }
+
         for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
         {
             const int fpu_id = waveforms[fpu_index].fpu_id;
 	    if ((fpu_id >= num_fpus) || (fpu_id < 0))
 	    {
-	      // the FPU id is out of range
-	      return DE_INVALID_FPU_ID;
+                // the FPU id is out of range
+                printf("FPU ID is out of range\n");
+                return DE_INVALID_FPU_ID;
 	    }
 
             // require same number of steps for all FPUs
             if (waveforms[0].steps.size() != num_steps)
             {
-                return DE_INVALID_WAVEFORM;
+                return DE_INVALID_WAVEFORM_RAGGED;
             }
 	    
 
-            for(int arm=0; arm < 2; arm++)
+            const int idx_first = 0;
+            const t_step_pair& step0 = waveforms[fpu_index].steps[idx_first];
+
+            if ((step0.alpha_steps == 0) && (step0.beta_steps == 0))
             {
+                // first section needs to have a non-zero entry
+                printf("waveform invalid for FPU %i: both starting steps counts for both arms zero\n", fpu_id);
+                return DE_INVALID_WAVEFORM_START;
+            }
+
+            for(int chan_idx=0; chan_idx < 2; chan_idx++)
+            {
+                const int MIN_STEPS=125;
+                const int MAX_STEPS=500;
+                
                 int xa_last = 0;
                 int x_last_sign = 0;
                 
                 for (unsigned int sidx=0; sidx<num_steps; sidx++)
                 {
-                    const int MIN_STEPS=125;
-                    const int MAX_STEPS=500;
                     const double MAX_INCREASE = 0.4;
+                    const double MAX_FACTOR = 1.0 + MAX_INCREASE;
                 
                     const t_step_pair& step = waveforms[fpu_index].steps[sidx];
 
-                    const int xs = (arm == 0) ?
+                    const int xs = (chan_idx == 0) ?
                         step.alpha_steps : step.beta_steps;
 
                     const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
                     const int xa = abs(xs);
 
-                    printf("channel=%i, step=%i, xs=%i, xa=%i", arm, sidx, xs, xa);
+                    //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i", fpu_id, chan_idx, sidx, xs, xa);
                     
                     if (xa > MAX_STEPS)
                     {
-                        return DE_INVALID_WAVEFORM;
+                        printf("fpu %i, %s arm, movement interval %i: step count exceeds maximum\n",
+                               fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                        return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
                     }
 
                     
 
                     int xa_small = std::min(xa_last, xa);
                     int xa_large = std::max(xa_last, xa);
-                    printf("xa_small=%i, xa_large=%i, xa_small*max_increase=%i\n",
-                           xa_small, xa_large, int(xa_small * (1.0+MAX_INCREASE)));
+                    //printf(", xa_small=%i, xa_large=%i, xa_small*max_factor=%i\n",
+                    //       xa_small, xa_large, int(xa_small * MAX_FACTOR));
 
                     bool valid_acc = (
                         // 1) movement into the same direction
                         ((x_sign == x_last_sign)
-                         //   1a) and started/stopped to move in last section
-                         && (( (xa_small < MIN_STEPS)
-                               && (xa_large == MIN_STEPS))
-                         // or, 1b) not larger than the allowed relative increase
-                             || (xa_large <= int(xa_small * (1.0+MAX_INCREASE)))))
-                        // or, a change of direction, and one step
-                        // number zero and the other at max MIN_STEPS
+                         //   1a) and currently *stopping* to move 
+                         && (( (xa < MIN_STEPS)
+                               && (xa_last == MIN_STEPS))
+                             // or, 1b) at least MIN_STEPS and not larger
+                             // than the allowed relative increase
+                             || ( (xa_small >= MIN_STEPS)
+                                  && (xa_large <= int(xa_small * MAX_FACTOR)))))
+                        // or, has stopped to move (and only in this case,
+                        // the step count can be smaller than MIN_STEPS)
+                        || ( (xa == 0)
+                             && (xa_last < MIN_STEPS))
+                        // or, with or without a change of direction,
+                        // one step number zero and the other at
+                        // MIN_STEPS - at start or end of a movement
                         || ((xa_small == 0)
-                            && (xa_large <= MIN_STEPS)));
+                            && (xa_large == MIN_STEPS))
+                        // or, a pause in movement (however not
+                        // allowed for both channels at start of
+                        // waveform)
+                        || ((xa_small == 0)
+                            && (xa_large == 0)));
                     
                     if (!valid_acc)
                     {
-                        printf("channel=%i, step=%i, x_sign=%i, x_last_sign=%i, xa_small=%i, xa_large=%i\n",
-                               arm, sidx, x_sign, x_last_sign, xa_small, xa_large);
-                        return DE_INVALID_WAVEFORM;                        
+                        //printf("fpu_id=%i, channel=%i, step=%i, x_sign=%i, x_last_sign=%i, xa_small=%i, xa_large=%i\n",
+                        //       fpu_id, chan_idx, sidx, x_sign, x_last_sign, xa_small, xa_large);
+                        printf("fpu %i, %s arm, movement interval %i: invalid step count change\n",
+                               fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                        return DE_INVALID_WAVEFORM_CHANGE;                        
                     }
 
                     xa_last = xa;
                     x_last_sign = x_sign;
+                }
+                if (xa_last > MIN_STEPS)
+                {
+                    // last step count must be minimum or smaller
+                    printf("fpu %i, %s arm, movement interval %i: last step count too large\n",
+                           fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
+                    return DE_INVALID_WAVEFORM_TAIL;                        
                 }
             }            
         }
@@ -514,6 +558,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 #endif
     int step_index = 0;
     int retry_downcount = 5;
+    const int MIN_STEPCOUNT=125;
     while (step_index < num_steps)
     {
       const bool first_entry = (step_index == 0);
@@ -540,20 +585,22 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 // assert precondition of 14-bit step size
                 const int abs_alpha_steps = abs(step.alpha_steps);
                 const bool alpha_pause = abs_alpha_steps == 0;
+                const int alpha_scount = alpha_pause ? MIN_STEPCOUNT : abs_alpha_steps;
                 const bool alpha_clockwise = (step.alpha_steps < 0);
 
                 const int abs_beta_steps = abs(step.beta_steps);
                 const bool beta_pause = abs_beta_steps == 0;
+                const int beta_scount = beta_pause ? MIN_STEPCOUNT : abs_beta_steps;
                 const bool beta_clockwise = (step.beta_steps < 0);
 
                 assert( (abs_alpha_steps >> 14) == 0);
                 assert( (abs_beta_steps >> 14) == 0);
 
                 can_command->parametrize(fpu_id,
-                                         abs_alpha_steps,
+                                         alpha_scount,
                                          alpha_pause,
                                          alpha_clockwise,
-                                         abs_beta_steps,
+                                         beta_scount,
                                          beta_pause,
                                          beta_clockwise,
                                          first_entry,
@@ -661,7 +708,7 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
                 && ( ! (grid_state.FPU_state[i].waveform_valid
                         && grid_state.FPU_state[i].waveform_ready)))
         {
-            return DE_INVALID_WAVEFORM;
+            return DE_WAVEFORM_NOT_READY;
         }
     }
 

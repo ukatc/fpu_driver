@@ -76,7 +76,7 @@ def step_list_slow(nsteps):
     # delta = nsteps // full_segments
     delta_end  = nsteps - delta * full_segments
 
-    slist = [ 0 ]
+    slist = [ ]
     
     slist.extend([ delta for k in range(full_segments) ])
     if delta_end > 0:
@@ -87,7 +87,7 @@ def step_list_slow(nsteps):
 def step_list_fast(nsteps, max_change=1.2):
     rest_steps = nsteps
     new_speed = STEPS_LOWER_LIMIT
-    steps_accelerate = [ 0 ]
+    steps_accelerate = []
     steps_decelerate = []
     
     while rest_steps > new_speed:
@@ -120,13 +120,9 @@ def step_list_fast(nsteps, max_change=1.2):
         steps_accelerate.insert(0, STEPS_LOWER_LIMIT)
         rest_steps = rest_steps -  STEPS_LOWER_LIMIT
 
-    if len(steps_accelerate) > 0:
-        steps_decelerate.reverse()
-        steps_decelerate.append(rest_steps)
-    else:
-        steps_accelerate.insert(0, rest_steps)
-        
-    
+    steps_decelerate.reverse()
+    steps_decelerate.append(rest_steps)
+
     steps_accelerate.extend(steps_decelerate)
     return steps_accelerate
 

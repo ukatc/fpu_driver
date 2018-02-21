@@ -498,19 +498,105 @@ void translate(MaxRetriesExceededException const& e)
 }
 
 
-struct InvalidWaveformException : std::exception
+struct InvalidWaveformTooManySectionsException : std::exception
 {
     char const* what() const throw()
     {
-        return "DE_INVALID_WAVEFORM: The passed waveform is invalid.";
+        return "DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS: The passed waveform has too many sections.";
     }
 };
 
-void translate(InvalidWaveformException const& e)
+void translate(InvalidWaveformTooManySectionsException const& e)
 {
     // Use the Python 'C' API to set up an exception object
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
+
+
+struct InvalidWaveformRaggedException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INVALID_WAVEFORM_RAGGED: The passed waveform has different number of sections for different FPUs.";
+    }
+};
+
+void translate(InvalidWaveformRaggedException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct InvalidWaveformStartException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INVALID_WAVEFORM_START: The begin of the passed waveform is invalid.";
+    }
+};
+
+void translate(InvalidWaveformStartException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct InvalidWaveformStepCountTooLargeException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INVALID_WAVEFORM_STEP_COUNT_TOO_LARGE: The passed waveform has a section with too many steps.";
+    }
+};
+
+void translate(InvalidWaveformStepCountTooLargeException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct InvalidWaveformChangeException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INVALID_WAVEFORM_CHANGE: The passed waveform has an invalid change in step counts / speed between adjacent sections";
+    }
+};
+
+void translate(InvalidWaveformChangeException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct InvalidWaveformTailException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INVALID_WAVEFORM_TAIL: The passed waveform has an invalid tail section.";
+    }
+};
+
+void translate(InvalidWaveformTailException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct WaveformNotReadyException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_WAVEFORM_NOT_READY: The FPU has no valid waveform configured for a movement.";
+    }
+};
+
+void translate(WaveformNotReadyException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
 
 struct FPUsNotCalibratedException : std::exception
 {
@@ -732,8 +818,32 @@ void checkDriverError(E_DriverErrCode ecode)
         throw MaxRetriesExceededException();
         break;
 
-    case DE_INVALID_WAVEFORM :
-        throw InvalidWaveformException();
+    case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS :
+        throw InvalidWaveformTooManySectionsException();
+        break;
+
+    case DE_INVALID_WAVEFORM_RAGGED :
+        throw InvalidWaveformRaggedException();
+        break;
+
+    case DE_INVALID_WAVEFORM_START :
+        throw InvalidWaveformStartException();
+        break;
+
+    case DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE :
+        throw InvalidWaveformStepCountTooLargeException();
+        break;
+
+    case DE_INVALID_WAVEFORM_CHANGE :
+        throw InvalidWaveformChangeException();
+        break;
+
+    case DE_INVALID_WAVEFORM_TAIL :
+        throw InvalidWaveformTailException();
+        break;
+
+    case DE_WAVEFORM_NOT_READY :
+        throw WaveformNotReadyException();
         break;
 
     case DE_FPUS_NOT_CALIBRATED:
@@ -1192,7 +1302,13 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_DRIVER_ALREADY_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
     .value("DE_DRIVER_STILL_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
     .value("DE_ASSERTION_FAILED",DE_ASSERTION_FAILED)
-    .value("DE_INVALID_WAVEFORM", DE_INVALID_WAVEFORM)
+    .value("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS", DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS)
+    .value("DE_INVALID_WAVEFORM_RAGGED", DE_INVALID_WAVEFORM_RAGGED)
+    .value("DE_INVALID_WAVEFORM_START", DE_INVALID_WAVEFORM_START)
+    .value("DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE", DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE)
+    .value("DE_INVALID_WAVEFORM_CHANGE", DE_INVALID_WAVEFORM_CHANGE)
+    .value("DE_INVALID_WAVEFORM_TAIL", DE_INVALID_WAVEFORM_TAIL)
+    .value("DE_WAVEFORM_NOT_READY", DE_WAVEFORM_NOT_READY)
     .value("DE_NO_MOVABLE_FPUS", DE_NO_MOVABLE_FPUS)
     .value("DE_COMMAND_TIMEOUT", DE_COMMAND_TIMEOUT)
     .value("DE_ABORTED_STATE", DE_ABORTED_STATE)

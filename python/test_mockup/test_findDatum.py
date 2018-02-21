@@ -25,10 +25,6 @@ gd.findDatum(gs)
 
 print("set positions after:", list_positions(gs))
 
-#print("getting positions:")
-#gd.getPositions(gs)
-#
-#print("reported positions after:", list_positions(gs))
 
 
 

@@ -592,11 +592,12 @@ function. Sometimes, a much closer control of the FPU movements might
 be required. This can be done with a code fragment like this:
 
 \begin{minted}[linenos]{python}
-wtable = { 0: [ ( 10, -20),
-           ( 125, -125),
+wtable = { 0: [ ( 125, -125),
            ( 140, -140),
            ( 130, -125),
-           ( 125, -50) ],
+           ( 125, -50),
+           ( 10, -20),
+           ],
 }
 gd.configMotion(wtable, grid_state)
 \end{minted}
@@ -639,33 +640,45 @@ clockwise,'' and so on.
 
 \paragraph{Waveform validity rules}
 
-When you define waveforms, they have to conform to a
-number of rules and conditions to make sure that the
-FPU can execute them. Without attempting to give an
-exhaustive list of these rules, the most important
-ones are currently as follows:
+When you define waveforms, they have to conform to a number of rules
+and conditions to make sure that the FPU can actually execute
+them. These rules are currently as follows:
 
 \begin{enumerate}
 
 \item All step numbers need to be integer values.
 
-\item The first entry should have the value zero.
+\item The first entry needs to have the minimum step count at least
+  for one of the two arms.  For protocol version 1, this minimum is fixed to a
+  step count of 125\footnote{For protocol version 2, the minimum value
+    depends on the duration of a waveform segment which is 250
+    milliseconds by default but can be set to another value when
+    initializing the driver.}.
   
 \item Except the the last non-zero entry, all step numbers in a
-  waveform need to have an absolute value which has at least a minimum
-  value of 125.
+  waveform need to have an absolute value which has at least the
+  minimum value of 125, and at most the maximum value of 500.
 
-\item No step number value should have an absolute value larger than
-  the maximum limit of 500.
+\item A waveform can include several movement parts for each arm. A
+  movement part is a sequence of step counts which are non-zero and
+  have the same direction. The last entry of a movement part in one
+  direction can have a step count between zero and the minimum step
+  count. It must not be larger than the minimum step count.
 
-\item The number of waveform entries can only be 128\footnote{In
+\item When changing the movement direction, the absolute number of
+  steps before the change needs to be between zero and the minimum
+  step count, followed by a wavetable segment with a step count of
+  zero, followed by the minimum step count with the opposite sign.
+
+\item The total number of waveform entries can only be 128\footnote{In
   version 2 of the firmware communication protocol, this limit is
   raised to a value of 256}.
 
-\item Between consecutive step number values, the larger number can
-  only be at most 40\% larger than the smaller number. The start and
-  the end of the waveform, which are smaller than the minimum value of
-  125, are exempt from this rule.
+\item Between consecutive step number values, the absolute value of
+  the larger number can only be at most 40\% larger than the absolute
+  value of the smaller number. Also, a change from zero to the minimum
+  value, or from a value not larger than the minimum value to zero is
+  allowed.
 
   
 \end{enumerate}
