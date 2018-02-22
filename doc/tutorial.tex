@@ -5,6 +5,9 @@
 \usepackage{minted}
 \usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{cmbright}
+\usepackage[T1]{fontenc}
 
 \begin{document}
 
@@ -30,25 +33,27 @@ that he or she can perform basic verification tasks.
 
 It is assumed that the reader has basic knowledge of Python, or,
 alternatively, a similar object-oriented language, like Java or C\#.
-In the case that using Python and scripts is new to the reader, it is
+In the case that using Python scripts is new to the reader, it is
 probably helpful to consult the tutorial for Python 2.7 at
 \url{https://docs.python.org/2.7/tutorial/}.  Both the current version
-of the driver as well as this document use Python 2.7, which has some
-differences to Python 3. However this introduction does so in a way
-that differences to Python 3 are minimised.
+of the driver as well as this document use Python 2.7. Python 2 has
+some differences to Python 3. However this description will proceed in
+a way that differences to Python 3 are minimised.
 
-Also, in order to retrieve the current version of the library,
-the user needs to have a minimum knowledge of the git version
-control system. This is explained, for example, in \url{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}.
+Also, in order to retrieve the current version of the library, the
+user needs to have a minimum knowledge of the git version control
+system. This is explained, for example, in
+``\href{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}{getting
+  a git repository}''.
 
-\subsection{Setting up the library module}
+\section{Setting up the library module}
 
-\subsubsection{Getting the source code}
+\subsection{Getting the source code}
 
 To set up the library module, it is first
 necessary to retrieve a current copy of its source code.
 On the moons-pc01 workstation, this can be done using the
-command \mint{bash}|git clone /home/jnix/fpu_driver|.
+command \mint{bash}|git clone /home/jnix/fpu_driver|
 This creates a new directory with the name \texttt{fpu\_driver}
 and populates it with the source code.
 
@@ -62,14 +67,35 @@ the command
 After entering the password for user \texttt{carl}, the
 source code is copied into the new folder \texttt{fpu\_driver}.
 
-\subsubsection{Refreshing the source code}
+\subsection{Refreshing the source code}
 To refresh the source code, change the
 working directory to \texttt{fpu\_driver},
 and issue the command
 
 \mint{bash}|git pull|
 
-\subsubsection{Building the library module}
+
+\subsection{Building specific revisions}
+In the default case, the library is build from
+the master branch of the git repository.
+The master branch contains the most current
+working version.
+In some cases, it might be required to
+use a specific revision of the library.
+Assuming that we need, as an example,
+to build version v0.5.2 of the library,
+checking out this revision is done with the
+command
+
+\mint{bash}|git checkout v0.5.2|
+
+After this, one can proceed with building the library as normal. To
+switch back to the master branch, issue the command
+
+\mint{bash}|git checkout master|
+
+
+\subsection{Building the library module}
 
 To build the Python library module,
 change the working directory to \texttt{fpu\_driver},
@@ -80,15 +106,17 @@ installed. For the MOONS workstation, this is always the case. To
 install these dependencies on other computers, follow the detailed
 instructions in the file ``\texttt{doc/INSTALL}''.
 
-\subsubsection{Environment configuration}
+\subsection{Environment configuration}
 
 For the Python module to work, the directory \texttt{/user/local/lib}
 needs to be added to the environment variable
 \texttt{LD\_LIBRARY\_PATH}.  Assuming a standard setup, this can be
 done by adding the following line to the file \texttt{.bashrc} in the
-home directory:
+user-specific home directory:
 
-\texttt{export LD\_LIBRARY\_PATH=\$LD\_LIBRARY\_PATH:/usr/local/lib}.
+\begin{minted}{bash}
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+\end{minted}
 
 All the examples presented here assume that the current working
 directory is \texttt{fpu\_driver/python}. If this is not the case,
@@ -99,15 +127,30 @@ environment variable.
 \subsection{Communication protocol versions}
 
 The FPU driver sends commands to the fibre positioner units, which use
-a specific communication protocol.  The current version of the driver
-(version 0.5.0) uses communication protocol version 1, which has some
-restrictions in functionality. For example, some edge cases cannot be
-checked, some operations might take longer, and some errors are not
-recognised and cannot be easily worked around. The main significant
-difference which is visible to the users of the FPU driver module is
-that cases in which the alpha arm of the FPU hits the limit switch
-need to be manually recovered from. This is explained in
-section\ref{sec:recovery} on page \pageref{sec:recovery}.
+a specific communication protocol. This protocol needs to match the
+FPUs firmware and its capabilities. The current version of the driver
+(version 0.5.0) uses ``communication protocol version 1'', which has
+some restrictions in functionality. For example, some edge cases
+cannot be checked, some operations might take longer, and some errors
+are not recognised or cannot as easily worked around.
+
+There are two significant difference which are visible to the users of
+the FPU driver module. Both need careful consideration.
+
+The first is that is that cases in which the alpha arm of the FPU hits
+the limit switch need to be manually recovered from. This is explained
+in section~\ref{sec:recovery} on page \pageref{sec:recovery}.
+
+Second, the \texttt{findDatum()} command mandatory requires that,
+before starting the datum search, \textbf{the beta arm is in a
+  counter-clockwise position relative to the datum switch}. If the
+the step counters have valid values, it needs to be in a positive
+range of valid step counts from the datum switch, or at count zero. If
+the beta arm has a position corresponding to the negative range (that
+is, clock-wise from the datum position), it needs to be manually moved
+first.  This applies also when the step counters in the meantime have
+been reset by a \texttt{resetFPU()} command or by powering off the
+FPU.
 
 
 \section{A minimal example}
@@ -121,8 +164,8 @@ step by step.
 from __future__ import print_function
 import FpuGridDriver
 from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST
-from fpu_commands import *
-
+from fpu_commands import list_positions, list_angles, \
+       list_deviations, list_states, gen_wf
 # print the driver version, just to check
 print("The FPU driver version is:", FpuGridDriver.__version__,
       ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
@@ -177,15 +220,16 @@ configurations:
   configured to work as in Python 3.
   
 \item ``\texttt{import FpuGridDriver}'' in line 2 loads the driver
-  object.
+  library module. (If this import command fails, check that both
+  \verb+LD_LIBRARY_PATH+ and \verb+PYTHONPATH+ have the right values.)
 
 \item The line ``\texttt{from FpuGridDriver import
   TEST\_GATEWAY\_ADRESS\_LIST}'' loads a default address which refers to
   the EtherCAN gateway which is used. This address will be different
   when one wants to select a different gateway.
 
-\item The line ``\texttt{from fpu\_commands import *}'' imports a few
-  utility commands which help to display positions and to generate
+\item The line ``\texttt{from fpu\_commands import \ldots}'' imports a
+  few utility commands which help to display positions and to generate
   movement waveforms.
 
  
@@ -200,47 +244,47 @@ required to access the FPUs.
 
 \subsection{Driver methods}
 
-The driver objects allows to issue method calls. The method names
-always start with a dot after the name of the driver object.  So,
-\texttt{gd.abc()} would call method ``abc'' of the driver object. Like
-normal function calls, they usually have parameters. More concretely,
-one such method is used to set up the driver:
+The driver object allows to invoke method calls which control the FPU
+hardware. The method names always start with a dot after the name of
+the driver object.  So, \texttt{gd.abc()} would call method ``abc'' of
+the driver object. Like normal function calls, they usually have
+parameters.
 
-\begin{description}
-\item[\texttt{connect()}] connects the driver to one or more EtherCAN
-  gateways and starts listening to messages from the FPUs. The
-  parameter defines to \emph{which} gateways the driver listens to.
-
-\end{description}
+In this case, the method \texttt{connect()} connects the driver to one
+or more EtherCAN gateways and starts listening to messages from the
+FPUs. The parameter defines to \emph{which} gateways the driver
+listens to.
 
 As can be seen in the example, the methods have return values.  In
-case of serious errors, the methods raise exceptions, as is the style
-in Python. The Python program does not need to explicitly disconnect
-and de-initialise the driver, this happens automatically
-when the program terminates\footnote{However if required, you can uses
-  \texttt{gd.disconnect()} and \texttt{del gd}, which deletes the driver object.}.
+case of serious errors, the methods raise a Python exception. The
+Python program does not need to explicitly disconnect and
+de-initialise the driver, this happens automatically when the program
+terminates\footnote{However if required, you can use the statements
+  \texttt{gd.disconnect()} and \texttt{del gd}, which disconnects and
+  deletes the driver object.}.
 
 
 
 \subsection{Grid state variable}
 
-Almost all commands to the driver return a snapshot of the current
-state of the used FPU (or, if there are several, of all of them). That
-snapshot is passed in the variable \texttt{grid\_state}. This variable
-contains all the information a user might need about the state of the
-FPUs - their current positions, which commands they will accept,
-whether there are any collisions, whether the step counters have been
-zeroed, whether a limit switch was hit, and so on. With each
-invocation of a method, the old grid state is passed as a parameter,
-and its new value is returned in the same variable.
+Almost all commands to the driver receive and return a snapshot of the
+current state of the used FPU (or, if there are several, of all of
+them). That snapshot is passed in a variable called
+\texttt{grid\_state}. This variable contains all the information a
+user might need about the state of the FPUs - their current positions,
+which commands they will accept, whether there are any collisions,
+whether the step counters have been zeroed, whether a limit switch was
+hit, and so on. With each invocation of a method, the old grid state
+is passed as a reference parameter, and its new value is returned in
+the same variable.
 
 To retrieve a current grid state information, the method
 ``getGridState()'' is used, as is done in line 16. In our listing, the
 grid state variable is assigned to the variable \texttt{grid\_state}.
 The \texttt{getGridState()} function always returns immediately, as it
 just takes a snapshot. Because \texttt{grid\_state} is used so
-frequently, a short-hand which many other programs use is the name
-\texttt{gs}.
+frequently, a short-hand which many of the example scripts use is the
+name \texttt{gs}.
 
 \subsection{Moving the FPU around}
 
@@ -275,12 +319,12 @@ data, and displaying information about the FPU state:
   alpha and beta angles, in degree units.
 
 \item[\texttt{gen\_wf()}] is a function which takes an (alpha,beta)
-  value pair, and generates a valid waveform which can be send to the
-  FPU.  The waveform which is passed is a regular Python data
-  structure and can be displayed and manipulated like any other Python
-  object.  The user only needs to be careful that it contains valid
-  movement data when it is passed to the \texttt{configMotion()}
-  method!
+  pair of angle values, scaled in degrees, and generates a valid
+  waveform which can be send to the FPU.  The waveform which is passed
+  is a regular Python data structure and can be displayed and
+  manipulated like any other Python object.  The user only needs to
+  tale care that it contains valid movement data when it is passed to
+  the \texttt{configMotion()} method!
 
 \end{description}
 
@@ -288,19 +332,19 @@ data, and displaying information about the FPU state:
 
 \label{sec:fpustate}
 The grid state variable holds a large amount of detail information
-about the current state of FPUs. This is by design, because
-upper layers of the software need to be able to deal with
-errors such as collisions, and correct them.
+about the current state of FPUs. This is by design, because upper
+layers of the software need to be able to deal with errors such as
+collisions, and correct them. However, only a part of this information
+is required by the verification system.
 
 When trying to diagnose and understand errors, it is often helpful to
-access this state information in an interactive way.
-We can do this based on the property that Python can
-run any commands which appear in a script equally well
-when entered interactively. Also, the Python interpreter
-can be started with the ``-i'' (interactive) option which
-causes that after an error, or after all commands
-in a script have been executed, the interpreter waits
-for command line arguments.
+access this state information in an interactive way.  To do this, we
+can make use of the ability that Python can run any commands which
+appear in a script equally well when entered interactively. Also, the
+Python interpreter can be started with the ``-i'' (interactive) option
+which has the effect that after an exception, or after all commands in
+a script have been executed, the interpreter waits for command line
+arguments.
 
 For example, let's assume that the script above is shortened to the
 first 36 lines and stored to a file named
@@ -372,7 +416,7 @@ utility function is just a scaled version of the ``alpha\_steps'' and
 ``beta\_steps'' fields.
 
 \subsection{FPU states}
-The state of an FPU is summarized in a enumeration value, which is
+The state of an FPU is summarised in a enumeration value, which is
 stored in the attribute \texttt{state}. For example, the state of FPU 0
 can be retrieved by
 
@@ -381,50 +425,72 @@ can be retrieved by
 >>> grid_state.FPU[0].state
 \end{minted}
 
-Generally, each FPU is always in one of the following states,
-which allow different operations:
 
-\begin{description}
-\item[UNKNOWN ] The state of the FPU is not known, the driver needs to
-  be connected to the EtherCAN gateway first and retrieve the state.
-  
-\item[UNINITIALIZED ] The FPU has been pinged successfully, but it was
+\begin{table}
+  \begin{centering}
+\begin{tabular}{|l|p{0.6\textwidth}|}
+  \hline
+  \textbf{State name} & \textbf{Description} \\
+  \hline 
+UNKNOWN & The state of the FPU is not known, the driver needs to
+be connected to the EtherCAN gateway first and retrieve the state.\\
+\hline
+UNINITIALIZED & The FPU has been pinged successfully, but it was
   so far not zeroed to the datum position, so no movements are
-  possible.
-\item[LOCKED ] The FPU was locked, which inhibits movement of this
-  FPU.\footnote{This is a facility provided by protocol version 2}
-\item[DATUM\_SEARCH ] The FPU is currently searching for the datum
-  position.
-\item[AT\_DATUM      ] The FPU has reached the datum position.
-\item[LOADING ] The FPU is currently configuring a new movement waveform.
-\item[READY\_FORWARD ] The FPU is ready to move in the forward
-  direction of the waveform table.
-\item[READY\_BACKWARD] The FPU is ready to move backwards along the
-  waveform table.
-\item[MOVING        ] The FPU is currently moving.
-\item[RESTING       ] The FPU has finished its movement.
-\item[ABORTED ] The movement was aborted, either by an internal error,
-  or by an explicit abortMotion command.
-\item[OBSTACLE\_ERROR] The FPU has either detected a collision of the
+  possible.\\
+\hline
+LOCKED & The FPU was locked, which inhibits movement of this
+  FPU.\footnote{This is a facility provided by protocol version 2}\\
+\hline
+DATUM\_SEARCH & The FPU is currently searching for the datum
+position.\\
+\hline
+AT\_DATUM      & The FPU has reached the datum position.\\
+\hline
+LOADING & The FPU is currently configuring a new movement waveform.\\
+\hline
+READY\_FORWARD & The FPU is ready to move in the forward
+  direction of the waveform table.\\
+\hline
+READY\_BACKWARD& The FPU is ready to move backwards along the
+  waveform table.\\
+\hline
+MOVING        & The FPU is currently moving.\\
+\hline
+RESTING       & The FPU has finished its movement.\\
+\hline
+ABORTED & The movement was aborted, either by an internal error,
+  or by an explicit abortMotion command.\\
+\hline
+OBSTACLE\_ERROR& The FPU has either detected a collision of the
   beta arm, or the alpha arm has hit the limit switch. In both cases, the
-  movement was aborted. 
-\end{description}
+  movement was aborted. \\
+\hline
+\end{tabular}
+\end{centering}
+\caption{List of FPU states and their definitions}
+\label{tab:fpustates}
+\end{table}
+
+
+Generally, each FPU is always in one of 12 different states.Each state
+allows different commands, and commands can change the FPU state.
+Some of the states are visited during any normal operation of the FPU,
+and some are reached as a result of errors.  Table~\ref{tab:fpustates}
+on page~\pageref{tab:fpustates} lists the different states.
 
 \begin{figure}
 
-  \includegraphics[width=0.8\textwidth]{FPU-state.png}
-  \caption{Allowed state transitions of FPU, and the associated commands}
+  \includegraphics[width=1\textwidth]{FPU-state1.pdf}
+  \caption{Allowed state transitions of FPU (CAN protocol version1),
+    and the associated driver commands}
   \label{fig:states}
 \end{figure}
 
+
 Figure~\ref{fig:states} on page~\pageref{fig:states} shows, as a
 reference, the states of the FPU and commands which are allowed in
-protocol version 2. In protocol version 1, only a subset of the
-commands shown is available\footnote{ Especially, there is no
-  \texttt{enableMove} command, and the commands
-  \texttt{freeAlphaLimitBreach} and
-  \texttt{enableAlphaLimitProtection} are missing - to leave the
-  associated states, the command \texttt{resetFPUs} needs to be used}.
+protocol version 1.
 
 
 
@@ -517,6 +583,19 @@ This is done by the command
 It is also highly recommend to move the FPUs to the datum position
 before powering off. Doing this avoids to have the FPU in an ambiguous
 state which might easily lead to hardware damage.
+
+\textbf{Important:} As an important limitation to the CAN protocol
+version 1, the \texttt{findDatum()} command mandatory requires that,
+before starting the datum search, \textbf{the beta arm is in a
+  counter-clockwise position relative to the datum switch}. If the
+the step counters have valid values, the beta arm needs to be in a
+positive range of valid step counts from the datum switch, or at count
+zero. If the beta arm has a position corresponding to the negative
+range (that is, clock-wise from the datum position), it needs to be
+manually moved first.  This applies also when the step counters in the
+meantime have been reset by a \texttt{resetFPU()} command or by
+powering off the FPU.
+
 
 \subsection{Moving the FPU}
 
@@ -667,7 +746,7 @@ them. These rules are currently as follows:
 
 \item When changing the movement direction, the absolute number of
   steps before the change needs to be between zero and the minimum
-  step count, followed by a wavetable segment with a step count of
+  step count, followed by a wave table segment with a step count of
   zero, followed by the minimum step count with the opposite sign.
 
 \item The total number of waveform entries can only be 128\footnote{In
@@ -898,7 +977,7 @@ differences for protocol version 1:
   limit switch breaches. Limit switch breaches need
   to be recovered manually, and it must be carefully
   observed to move the FPU in the correct direction,
-  on order to prevent the risk of damage. Espacially,
+  on order to prevent the risk of damage. Especially,
   a datum search must not be used after an alpha limit switch
   breach.
 
@@ -927,6 +1006,72 @@ differences for protocol version 1:
   waveform has a large number of steps.
   
 \end{itemize}
+
+\section{Outline on management of multiple FPUs}
+
+This section attempts to give a broad overview on how a grid with 1000
+FPUs can be managed by higher levels of the instrument software.
+
+The driver software can effortlessly send and receive commands to up
+to 1005 FPUs. The only requirement is that the Python module is
+initialised with that number of FPUs, and the corresponding number of
+EtherCAN gateways is connected. When the \texttt{grid\_state} variable
+is retrieved, it contains the states of \emph{all} FPUs in the
+\verb+grid_state.FPU[]+ sequence. So, in order to know what the
+state of FPU number 900 is, we simply have to query \verb+grid_state.FPU[900]+.
+
+To make managing that number of FPUs easier, there exist a few
+additional functions. One feature is that \texttt{grid\_state}
+variable has a member named \texttt{Counts}, which summarises the
+state of all FPUs. As discussed in section~\ref{sec:fpustate} on
+page~\pageref{sec:fpustate}, each FPU has a field with the name
+\texttt{state}, which is a enumeration value describing its state. If
+the enumeration values are converted to integer indices using
+\texttt{int()}, the \texttt{Counts} field contains for each index the
+number of FPUs which are in the state defined by that index. For
+convenience, \texttt{str(grid\_state)} shows \texttt{Count} as a
+dictionary with the state names as keys, and the count numbers as
+values.
+
+In addition, there is a function with the name
+\texttt{getGridStateSummary(grid\_state)} which maps the different states of the
+FPUs to a single value. The idea is simply to define an ordering of
+all state enumeration values, for example
+\begin{quote}
+\begin{verbatim}
+  UNINITIALIZED < OBSTACLE_ERROR < ABORTED < DATUM_SEARCH
+         < AT_DATUM < READY_FORWARD < MOVING < RESTING
+\end{verbatim}
+\end{quote}
+
+The return value of the function delivers the \emph{smallest} value in
+which at least one FPU is.  That means, if a single FPU is in state
+\texttt{UNINITIALZED}, and all other FPUs are in state
+\texttt{READY\_FORWARD}, the function would describe the state of the
+grid as \texttt{GS\_UNINITIALIZED}. This allows to get quickly an overview
+which operations can be done consistently.
+
+All driver methods are thread-safe, so they can be used in a GUI
+environment, for example.
+
+In addition, it is possible to inquire the state of the grid and of
+course the known positions of all FPUs while movements are happening,
+using the \texttt{getGridState()} member function of the grid driver
+object. Currently, commands are only processed one at a time - this
+restriction does not have purely technical reasons, but simply makes
+management less messy. The exception from this is the
+\texttt{abortMotion()} method, which can be sent at any time, from any
+thread.
+
+Finally, there exists a driver method, \texttt{waitForState()} which
+waits either for a time-out to happen, or for a specific state of the
+grid to be reached. It always returns the updated grid state.
+
+This makes it easy to perform group operations, while providing full
+information on the detailed state of things in cases when, for
+example, FPUs have a collision and need to be disentangled guided by
+geometric information and a high-level resolution strategy.
+
 
 
 \section{Reference}
@@ -959,6 +1104,10 @@ These should be available on all current Linux systems.
 \begin{itemize}
 \item Python-2.7
 \item boost-1-66 , which can be downloaded from \url{http://www.boost.org/users/download/}
+\item git-2.1 (not mandatory\footnote{Git is used to automatically add a version
+  string to the python module. If needed, it can be substituted in the
+  makefile, by replacing the definition \texttt{GIT\_VERSION} by a
+  suitable constant value.})
 \end{itemize}
 \end{enumerate}
 
