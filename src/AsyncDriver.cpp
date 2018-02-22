@@ -372,13 +372,14 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 
 }
 
-E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms) const
+E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
+                                               const int MIN_STEPS, const int MAX_STEPS,
+                                               const unsigned int MAX_NUM_SECTIONS, const double MAX_INCREASE) const
 {
     
         const int num_loading =  waveforms.size();
         const unsigned int num_steps = waveforms[0].steps.size();
 
-        const int MAX_NUM_SECTIONS=128;
         
         if (num_steps > MAX_NUM_SECTIONS)
             {
@@ -415,15 +416,11 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms) const
 
             for(int chan_idx=0; chan_idx < 2; chan_idx++)
             {
-                const int MIN_STEPS=125;
-                const int MAX_STEPS=500;
-                
                 int xa_last = 0;
                 int x_last_sign = 0;
                 
                 for (unsigned int sidx=0; sidx<num_steps; sidx++)
                 {
-                    const double MAX_INCREASE = 0.4;
                     const double MAX_FACTOR = 1.0 + MAX_INCREASE;
                 
                     const t_step_pair& step = waveforms[fpu_index].steps[sidx];
@@ -540,7 +537,11 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             }
         }
 
-        const E_DriverErrCode vwecode = validateWaveforms(waveforms);
+        const E_DriverErrCode vwecode = validateWaveforms(waveforms,
+                                                          ConfigureMotionCommand::MIN_STEPCOUNT,
+                                                          ConfigureMotionCommand::MAX_STEPCOUNT,
+                                                          ConfigureMotionCommand::MAX_NUM_SECTIONS,
+                                                          ConfigureMotionCommand::MAX_REL_INCREASE);
         if (vwecode != DE_OK)
         {
             return vwecode;
@@ -558,7 +559,6 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 #endif
     int step_index = 0;
     int retry_downcount = 5;
-    const int MIN_STEPCOUNT=125;
     while (step_index < num_steps)
     {
       const bool first_entry = (step_index == 0);
@@ -582,27 +582,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
                 const t_step_pair& step = waveforms[fpu_index].steps[step_index];
 
-                // assert precondition of 14-bit step size
-                const int abs_alpha_steps = abs(step.alpha_steps);
-                const bool alpha_pause = abs_alpha_steps == 0;
-                const int alpha_scount = alpha_pause ? MIN_STEPCOUNT : abs_alpha_steps;
-                const bool alpha_clockwise = (step.alpha_steps < 0);
-
-                const int abs_beta_steps = abs(step.beta_steps);
-                const bool beta_pause = abs_beta_steps == 0;
-                const int beta_scount = beta_pause ? MIN_STEPCOUNT : abs_beta_steps;
-                const bool beta_clockwise = (step.beta_steps < 0);
-
-                assert( (abs_alpha_steps >> 14) == 0);
-                assert( (abs_beta_steps >> 14) == 0);
-
                 can_command->parametrize(fpu_id,
-                                         alpha_scount,
-                                         alpha_pause,
-                                         alpha_clockwise,
-                                         beta_scount,
-                                         beta_pause,
-                                         beta_clockwise,
+                                         step.alpha_steps,
+                                         step.beta_steps,
                                          first_entry,
                                          last_entry);
 

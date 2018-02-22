@@ -39,6 +39,11 @@ class ConfigureMotionCommand : public I_CAN_Command
 
 public:
 
+    static const int MIN_STEPCOUNT=125;
+    static const int MAX_STEPCOUNT=500;
+    static const unsigned int MAX_NUM_SECTIONS=128;
+    static constexpr double MAX_REL_INCREASE = 0.4;
+
     static E_CAN_COMMAND getCommandCode()
     {
         return CCMD_CONFIG_MOTION;
@@ -59,20 +64,39 @@ public:
 
     void parametrize(int f_id,
                      int16_t alpha_steps,
-                     bool alpha_pause,
-                     bool alpha_clockwise,
                      int16_t beta_steps,
-                     bool beta_pause,
-                     bool beta_clockwise,
                      bool first_entry, bool last_entry)
     {
         fpu_id = f_id;
-        asteps = alpha_steps;
+
+
+        // assert precondition of 14-bit step size
+        const int abs_alpha_steps = abs(alpha_steps);
+        const int abs_beta_steps = abs(beta_steps);
+        
+        assert( (abs_alpha_steps >> 14) == 0);
+        assert( (abs_beta_steps >> 14) == 0);
+        
+        const bool alpha_pause = (abs_alpha_steps == 0);
+        const int alpha_scount = (alpha_pause
+                                  ? MIN_STEPCOUNT
+                                  : abs_alpha_steps);
+        
+        const bool alpha_clockwise = (alpha_steps < 0);        
+        const bool beta_pause = (abs_beta_steps == 0);
+        const int beta_scount = (beta_pause
+                                 ? MIN_STEPCOUNT
+                                 : abs_beta_steps);
+        
+        const bool beta_clockwise = (beta_steps < 0);
+        
+        
+        asteps = alpha_scount;
+        bsteps = beta_scount;
         apause = alpha_pause;
         aclockwise = alpha_clockwise;
         bpause = beta_pause;
-        bclockwise = beta_clockwise;
-        bsteps = beta_steps;
+        bclockwise = beta_clockwise;        
         fentry = first_entry;
         lentry = last_entry;
     };
@@ -155,7 +179,11 @@ public:
     bool expectsResponse()
     {
         // send response if this is the first or last entry
+#if (CAN_PROTOCOL_VERSION == 1)
+        return true;
+#else
         return (fentry || lentry);
+#endif
     };
 
     // time-out period for a response to the message
