@@ -24,6 +24,9 @@ def dummy_metrology_func(alpha_steps, beta_steps):
           " alpha={}, beta={} steps".format(alpha_steps,beta_steps))
     ## insert actual measurement stuff here
     time.sleep(1)
+
+def printtime():
+    print(time.strftime("%a, %d %b %Y %H:%M:%S +0000 (%Z)", time.gmtime()))
     
 
 def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
@@ -32,15 +35,19 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
     alpha0, beta0 = list_angles(grid_state)[0]
     alpha_move = alpha - alpha0
     beta_move = beta - beta0
-    
-    # generate waveform
-    waveform = gen_wf(alpha_move, beta_move)
 
-    # configure waveform, by uploading it to the FPU
-    gd.configMotion(waveform, grid_state)
+    if (alpha_move != 0) or (beta_move != 0):
+        # generate waveform
+        waveform = gen_wf(alpha_move, beta_move)
 
-    print("moving to ({},{})".format(alpha, beta))
-    gd.executeMotion(grid_state)
+        # configure waveform, by uploading it to the FPU
+        gd.configMotion(waveform, grid_state)
+
+        printtime()
+        print("now moving to ({},{})".format(alpha, beta))
+        gd.executeMotion(grid_state)
+    else:
+        print("not moving (null movement discarded)")
 
     # display the new position
     print("measuring at position:", list_angles(grid_state)[0])
@@ -52,13 +59,24 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
 
 
     if return_to_datum:
+        printtime()
+        print("now moving to ({},{})".format(0, 0))
         if (alpha0 == 0) and (beta0 == 0):
-            gd.reverseMotion(grid_state)
-            gd.executeMotion(grid_state)
+            if (alpha_move != 0) or (beta_move != 0):
+                gd.reverseMotion(grid_state)
+                gd.executeMotion(grid_state)
+            else:
+                print("not moving (null movement discarded)")
         else:
-            waveform = gen_wf(-alpha, -beta)
-            gd.configMotion(waveform, grid_state)
+            if (alpha != 0) or (beta != 0):
+                waveform = gen_wf(-alpha, -beta)
+                gd.configMotion(waveform, grid_state)
+                gd.executeMotion(grid_state)
+            else:
+                print("not moving (null movement discarded)")
 
+        printtime()
+        print("position:", list_angles(grid_state), "steps=", list_positions(grid_state))
         print("issuing findDatum()")
         gd.findDatum(grid_state)
         gd.getCounterDeviation(grid_state)
@@ -189,11 +207,21 @@ if __name__ == '__main__':
 
     # loop over configured positions, calling metrology_func for
     # each position
-    loop_positions(args, gd, grid_state, metrology_func=dummy_metrology_func,
-                   deviation_list=deviations)
+    try:
+        loop_positions(args, gd, grid_state, metrology_func=dummy_metrology_func,
+                       deviation_list=deviations)
+    except:
+        print("############# Exception caught ###################")
+        printtime()
+        gd.pingFPUs(grid_state)
+        print("grid state:", grid_state)
+        print("FPU state:", grid_state.FPU[0])
+        print("positions:", list_angles(grid_state))
+        raise
     
     print("counter deviations:", deviations)
 
+    printtime()
     print("ready.")
                     
 

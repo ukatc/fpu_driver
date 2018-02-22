@@ -119,7 +119,7 @@ class FPU:
                     
                     self.fpu_id, n, (self.steps[0:n], self.pause[0:n], self.clockwise[0:n])))
             else:
-                print("fpu #%i: wavetable ready (%i steps)" % (self.fpu_id, n))
+                print("fpu #%i: wavetable ready (%i sections)" % (self.fpu_id, n))
         
         
     def findDatum(self, sleep):
@@ -197,9 +197,10 @@ class FPU:
             wt_sign = 1
         else:
             wt_sign = -1
-        
+
+        section = -1
         for k in range(self.nwave_entries):
-            
+            section = k
             if self.abort_wave:
                 # flag was set from abortMotion command
                 break
@@ -221,7 +222,7 @@ class FPU:
             delta_beta = wt_sign * beta_sign * self.steps[n,IDXB]
             newbeta = self.beta_steps + delta_beta
             
-            print("step %i: moving FPU %i by (%i,%i) to (%i, %i)" % (
+            print("section %i: moving FPU %i by (%i,%i) to (%i, %i)" % (
                 n, self.fpu_id, delta_alpha, delta_beta, newalpha, newbeta))
             
             frame_time = 0.25
@@ -256,16 +257,16 @@ class FPU:
                 self.beta_steps = newbeta
 
         if self.abort_wave:
-            print("FPU %i: MOVEMENT ABORTED at (%i, %i)" % (self.fpu_id,
+            print("FPU %i, section %i: MOVEMENT ABORTED at (%i, %i)" % (self.fpu_id, section,
                                                             newalpha, newbeta))
         elif self.alpha_limit_breach:
-            print("FPU %i: limit switch breach, movement cancelled at (%i, %i)" % (self.fpu_id,
+            print("FPU %i, section %i: limit switch breach, movement cancelled at (%i, %i)" % (self.fpu_id, section,
                                                                                    self.alpha_steps, self.beta_steps))
         elif self.is_collided:
-            print("FPU %i: beta_collision, movement cancelled at (%i, %i)" % (self.fpu_id,
+            print("FPU %i, section %i: beta_collision, movement cancelled at (%i, %i)" % (self.fpu_id, section,
                                                                               self.alpha_steps, self.beta_steps))
         else:
-            print("FPU %i: movement finished at (%i, %i)" % (self.fpu_id,
+            print("FPU %i, section %i: movement finished at (%i, %i)" % (self.fpu_id, section,
                                                              newalpha, newbeta))
         self.running_wave = False
         self.wave_ready = False
