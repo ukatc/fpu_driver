@@ -2,12 +2,13 @@ from __future__ import print_function
 
 import time
 import FpuGridDriver
+from FpuGridDriver import REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
 
 from fpu_commands import *
 
 NUM_FPUS = 1000
 
-gateway_adr_list = [ fpu_driver.GatewayAddress("127.0.0.1", p)
+gateway_adr_list = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 
 
@@ -23,9 +24,9 @@ gs = gd.getGridState()
 print("issuing findDatum:")
 gd.findDatum(gs)
 
-num_steps = 256
+num_sections = 128
 
-steps = [ (125, 125) for i in range(num_steps)]
+steps = [ (125, 125) for i in range(num_sections)]
 
 wave_table = { fpu : steps for fpu in range(NUM_FPUS) }
 

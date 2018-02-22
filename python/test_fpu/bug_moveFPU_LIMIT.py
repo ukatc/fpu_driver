@@ -3,7 +3,7 @@ import time
 
 
 import FpuGridDriver
-
+from FpuGridDriver import REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
 from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST
 
 from fpu_commands import *

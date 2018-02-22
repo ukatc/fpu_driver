@@ -1,4 +1,5 @@
 from FpuGridDriver import GridDriver
+from FpuGridDriver import REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
 
 
 from fpu_commands import *

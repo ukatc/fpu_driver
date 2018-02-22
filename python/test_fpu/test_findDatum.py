@@ -1,6 +1,7 @@
 import FpuGridDriver
 
 from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST
+from FpuGridDriver import REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
 
 from fpu_commands import *
 
