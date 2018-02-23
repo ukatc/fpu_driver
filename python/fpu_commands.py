@@ -32,9 +32,12 @@ def list_angles(gs, asteps_per_deg=125, bsteps_per_deg=80, num_fpus=None):
        and the fourth argument is the number of FPUs shown."""
     if num_fpus == None:
         num_fpus = len(gs.FPU)
+
+    nan = float('NaN')
+    tvalid = lambda fpu : 1.0 if fpu.was_zeroed else nan
     # the following line uses Python3 float division
-    return [ (gs.FPU[i].alpha_steps / asteps_per_deg,
-              gs.FPU[i].beta_steps / bsteps_per_deg) for i in range(num_fpus)]
+    return [ (gs.FPU[i].alpha_steps / asteps_per_deg * tvalid(gs.FPU[i]),
+              gs.FPU[i].beta_steps / bsteps_per_deg * tvalid(gs.FPU[i])) for i in range(num_fpus)]
 
 
 def fpu_ang(gs, asteps_per_deg=125, bsteps_per_deg=80,):
@@ -155,6 +158,12 @@ def gen_wf(adegree, bdegree, asteps_per_deg=125, bsteps_per_deg=80,
 
     No range checking of movements is done.
     """
+    # check that we don't have a null-movement
+    assert((adegree != 0) or (bdegree != 0) )
+    # assert we don't deal with NaNs
+    assert( (adegree == adegree) and (bdegree == bdegree))
+    # (if the above code confuses you, read https://en.wikipedia.org/wiki/NaN
+    # and https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html )
     if not (mode in ['fast', 'slow', 'slowpar']):
             raise ValueError("mode needs to be one of 'slow', 'slowpar', 'fast'")
         

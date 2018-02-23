@@ -12,7 +12,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 0.5.0}
+  module} \subtitle{For driver version 0.5.0 (document version \texttt{\input{../git_version}})}
 
 \author{Johannes Nix}
 
@@ -134,12 +134,12 @@ some restrictions in functionality. For example, some edge cases
 cannot be checked, some operations might take longer, and some errors
 are not recognised or cannot as easily worked around.
 
-There are two significant difference which are visible to the users of
-the FPU driver module. Both need careful consideration.
+There are two significant differences which are visible to the users
+of the FPU driver module. Both need careful consideration.
 
 The first is that is that cases in which the alpha arm of the FPU hits
 the limit switch need to be manually recovered from. This is explained
-in section~\ref{sec:recovery} on page \pageref{sec:recovery}.
+in section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 
 Second, the \texttt{findDatum()} command mandatory requires that,
 before starting the datum search, \textbf{the beta arm is in a
@@ -149,12 +149,12 @@ range of valid step counts from the datum switch, or at count zero. If
 the beta arm has a position corresponding to the negative range (that
 is, clock-wise from the datum position), it needs to be manually moved
 first.  This applies also when the step counters in the meantime have
-been reset by a \texttt{resetFPU()} command or by powering off the
+been invalidated by a \texttt{resetFPU()} command or by powering off the
 FPU.
 
 
 \section{A minimal example}
-
+\label{sec:minimalexample}
 The following listing shows a minimal example of the
 driver usage, and explains the underlying concepts
 step by step.
@@ -283,18 +283,18 @@ To retrieve a current grid state information, the method
 grid state variable is assigned to the variable \texttt{grid\_state}.
 The \texttt{getGridState()} function always returns immediately, as it
 just takes a snapshot. Because \texttt{grid\_state} is used so
-frequently, a short-hand which many of the example scripts use is the
-name \texttt{gs}.
+frequently, a short-hand name which many of the example scripts use is
+the name \texttt{gs}.
 
 \subsection{Moving the FPU around}
 
-The program then proceeds to use three methods to move
+The example script then proceeds to use three methods to move
 the FPUs:
 
 \begin{description}
-\item[\texttt{findDatum()}] moves the FPU to the datum position. After this,
-  the internal step counters are set to zero, both for the alpha and
-  for the beta arm.
+\item[\texttt{findDatum()}] in line 20 moves the FPU to the datum
+  position. After this, the internal step counters are set to zero,
+  both for the alpha and for the beta arm.
 
 \item[\texttt{configMotion()}] is a method which sends a table with movement
   operations, also called waveform table, to the FPU. In the listing,
@@ -346,12 +346,12 @@ which has the effect that after an exception, or after all commands in
 a script have been executed, the interpreter waits for command line
 arguments.
 
-For example, let's assume that the script above is shortened to the
-first 36 lines and stored to a file named
-\texttt{short\_script.py}. We then might run the following interactive
-session (where the lines starting with ``\texttt{\$}'' and
-``\texttt{>>>}'' are interactive input, and everything else is
-output):
+For example, let's assume that the script on
+page~\pageref{sec:minimalexample} is shortened to the first 36 lines
+and stored to a file named \texttt{short\_script.py}. We then might
+run the following interactive session (where the lines starting with
+``\texttt{\$}'' and ``\verb+>>>+'' are interactive input, and
+everything else is output):
 
 
 
@@ -413,7 +413,10 @@ the FPU. One can see that after issuing the \texttt{executeMotion}
 command, the state of the FPU changes from \texttt{READY\_FORWARD} to
 \texttt{RESTING}. Actually, the output of the \texttt{list\_angles()}
 utility function is just a scaled version of the ``alpha\_steps'' and
-``beta\_steps'' fields.
+``beta\_steps'' fields. The flag \texttt{was\_zeroed} is set to
+\texttt{True} when the datum position was reached at least once since
+the driver was started, and no collisions, limit switch breaches, or
+abortMotion commands have happened since.
 
 \subsection{FPU states}
 The state of an FPU is summarised in a enumeration value, which is
@@ -512,7 +515,7 @@ grid_state.driver_state
 \end{minted}
 
 The return value is the connection state of the driver, which is
-\texttt{DS\_CONNECTED} of the connection is live.  In the case that the
+\texttt{DS\_CONNECTED} if the connection is live.  In the case that the
 connection fails, it is still possible to retrieve state information
 on the FPUs, but it cannot be refreshed any more until the connection
 is re-established using the \texttt{connect()} method of the driver
@@ -528,8 +531,8 @@ respond. This can be checked by the commands:
 \end{minted}
 
 In the case that the FPU responds, the returned value is
-\texttt{True}.  If the FPU does not respond, the
-value of the \verb+ping_ok+ is \texttt{False}.
+\texttt{True}.  If the FPU does not respond, the value of the
+\verb+ping_ok+ becomes \texttt{False}.
 
 
 
@@ -554,16 +557,14 @@ are displayed by the command
 \end{minted}
 
 
-One can wonder how this angle is calibrated and
-what is the relative position to the datum
-position. The answer is, these values are
-not calibrated - \texttt{list\_angles()}
-shows only an approximately scaled value.
-Also, the displayed values are only relative
-to the datum position, which is defined to
-have the step counter values (0,0). If
-the datum position was not searched
-at least once before, both values are meaningless.
+One can wonder how this angle is calibrated and what is the relative
+position to the datum position. The answer is, these values are not
+calibrated - \texttt{list\_angles()} shows only an approximately
+scaled value.  Also, the displayed values are only relative to the
+datum position, which is defined to have the step counter values
+(0,0). If the datum position was not searched at least once before,
+both values are meaningless, and \texttt{list\_angles()} returns a
+pair of NaN values.
 
 
 
@@ -587,20 +588,22 @@ state which might easily lead to hardware damage.
 \textbf{Important:} As an important limitation to the CAN protocol
 version 1, the \texttt{findDatum()} command mandatory requires that,
 before starting the datum search, \textbf{the beta arm is in a
-  counter-clockwise position relative to the datum switch}. If the
-the step counters have valid values, the beta arm needs to be in a
+  counter-clockwise position relative to the datum switch}. If the the
+step counters have valid values, the beta arm needs to be in a
 positive range of valid step counts from the datum switch, or at count
 zero. If the beta arm has a position corresponding to the negative
 range (that is, clock-wise from the datum position), it needs to be
 manually moved first.  This applies also when the step counters in the
 meantime have been reset by a \texttt{resetFPU()} command or by
-powering off the FPU.
+powering off the FPU. You can check whether the step counters are
+valid by testing the boolean flag \verb+grid_state.FPU[0].was_zeroed+,
+as explained in section~\ref{sec:fpustate} on
+page~\pageref{sec:fpustate}.
 
 
 \subsection{Moving the FPU}
 
-To move the FPU in a controlled way,
-four steps are necessary:
+To move the FPU in a precise and safe way, four steps are necessary:
 
 \begin{enumerate}
 \item Moving the FPU to the datum position, as explained above.
@@ -616,8 +619,9 @@ four steps are necessary:
 \end{enumerate}
 
 There are two options for defining the waveform. The simpler one is to
-automatically generate a waveform where we merely pass two values
-which define how much the alpha and beta arms should move.
+automatically generate a protocol-conforming waveform where we merely
+pass two values which define how much the alpha and beta arms should
+move.
 
 \subsubsection{Moving by an angle}
 
@@ -637,7 +641,8 @@ gd.executeMotion(grid_state)
 \end{minted}
 
 The above listing shows how to generate a waveform which moves the FPU
-by a certain (alpha,beta) angle difference.
+by a certain (alpha,beta) angle difference. Note that for CAN protocol
+version 1, at least one of alpha and beta must not be zero.
 
 Lines 1 and 2 define variables with the angles we want to move. In
 line 5, a new waveform table called \texttt{waveform} is generated
@@ -674,7 +679,7 @@ be required. This can be done with a code fragment like this:
 wtable = { 0: [ ( 125, -125),
            ( 140, -140),
            ( 130, -125),
-           ( 125, -50),
+           ( 125, -125),
            ( 10, -20),
            ],
 }
@@ -713,8 +718,8 @@ structure into its components:
 \end{itemize}
 
 Now, we can decipher the above structure into ``in the first time
-slice of the movement, the alpha arm should move ten steps
-counter-clockwise, and the beta arm should move twenty steps
+slice of the movement, the alpha arm should move 125 steps
+counter-clockwise, and the beta arm should move 125 steps
 clockwise,'' and so on.
 
 \paragraph{Waveform validity rules}
@@ -736,7 +741,8 @@ them. These rules are currently as follows:
   
 \item Except the the last non-zero entry, all step numbers in a
   waveform need to have an absolute value which has at least the
-  minimum value of 125, and at most the maximum value of 500.
+  minimum value of 125, and at most the maximum value of 500. Also,
+  sequences of zeroes are allowed.
 
 \item A waveform can include several movement parts for each arm. A
   movement part is a sequence of step counts which are non-zero and
@@ -749,9 +755,9 @@ them. These rules are currently as follows:
   step count, followed by a wave table segment with a step count of
   zero, followed by the minimum step count with the opposite sign.
 
-\item The total number of waveform entries can only be 128\footnote{In
-  version 2 of the firmware communication protocol, this limit is
-  raised to a value of 256}.
+\item The total number of waveform entries can only be 128 (for
+  protocol version 1\footnote{In version 2 of the firmware
+    communication protocol, this limit is raised to a value of 256}).
 
 \item Between consecutive step number values, the absolute value of
   the larger number can only be at most 40\% larger than the absolute
@@ -769,9 +775,9 @@ them. These rules are currently as follows:
 In the case that one wants to abort a \texttt{findDatum()} or a
 \texttt{executeMotion()} operation, one can press
 \verb+<Control-c>+. This terminates the movement in about 0.1
-seconds. \footnote{This generates a \texttt{SIGINT} signal which is
-  during the operation of both commands caught be the Python
-  interpreter. The Python interpreter then sends an
+seconds. \footnote{Under the hood, this generates a \texttt{SIGINT}
+  signal which is during the operation of both commands caught be the
+  Python interpreter. The Python interpreter then sends an
   \texttt{abortMotion()} command to the driver object, which results
   in an \texttt{ABORT\_MOTION} CAN message.}
 
@@ -788,8 +794,8 @@ current Python script when the method returns.\footnote{In some cases,
   kernel tries extremely hard to keep and re-animate an unreliable
   connection, even if the physical link is temporarily broken. To
   terminate such a hung program, it can be suspended using
-  \texttt{<Control-z>} and then terminated using the UNIX
-  \texttt{kill} shell command, or using
+  \texttt{<Control-z>} (which sends a SIGSTOP signal) and then
+  terminated using the UNIX \texttt{kill} shell command, or using
   \texttt{<Control-\textbackslash>}, which generates a
   \texttt{SIGQUIT} signal.}
 
@@ -810,7 +816,8 @@ repetition or reversal. After any collision, limit switch breach, or
 abortion of a movement, the waveform becomes invalid. Generally
 spoken, a waveform becomes invalid when either, the movement it
 describes was interrupted and not completed, or when the step counters
-become invalid (for example due to a collision).
+become invalid (for example due to a collision when the FPU is
+resting).
 
 
 \subsection{Repeating a movement}
@@ -828,10 +835,11 @@ gd.repeatMotion(grid_state)
 \label{sec:recovery}
 
 Because the FPUs are controlled individually, and the CAN-level driver
-has no concept of their geometric configuration, it cannot take care
-to move them so that collisions are avoided.  Instead, the hardware
-needs to handle collisions in a way that no damage results and
-communicate such situations back to the higher layers of the software.
+has absolutely no concept of their geometric configuration, it cannot
+take care to move them so that collisions are avoided.  Instead, the
+hardware needs to handle collisions in a way that no damage results
+and communicate such situations back to the higher layers of the
+software.
 
 The following section explains how this is achieved.
 
@@ -853,15 +861,16 @@ receiving such a message, the driver registers the state of the FPU in
 the internal \texttt{grid\_state} structure. This is reflected in the
 status flags of the FPU, which were discussed above in section
 \ref{sec:fpustate} on page \pageref{sec:fpustate}.  The \texttt{state}
-field of the FPU is set to the value \texttt{OBSTACLE\_ERROR}, and the
+field of the FPU is set to the value \texttt{OBSTACLE\_ERROR}, the
 flags \texttt{beta\_collision} and \texttt{at\_alpha\_limit} are set
-accordingly.
+accordingly, and the flag \texttt{was\_zeroed} is cleared.
 
 If any movement operation or \texttt{findDatum()} command is going on,
 this command returns with the updated state information on the
 collision, and without further waiting for the movement to complete.
 When the driver call returns to the Python wrapper, the error is
-checked for and transformed into a Python exception.
+checked for and transformed into a Python exception. If the exception
+is not caught, this terminates the Python script.
 
 It is also possible that a collision occurs while an FPU is \emph{not}
 moving and the driver not executing a command.  In this case, the
@@ -877,13 +886,14 @@ raises an exception.\footnote{Because movement methods return on the
 The following recipe excludes the task of determining in which
 direction FPUs should be moved after a collision.  In the general
 case, this can be a complex question. The \texttt{grid\_state}
-structure to provide a host of information for making this decision.
+structure is designed to provide a host of information for making this
+decision.
 
 \subsection{Resolution of a beta arm collision}
 
-In case of a collision of a beta arm, there are two
-methods for resolving this. The following snippet
-shows how to use them:
+In case of a collision of a beta arm, there are two special member
+functions of the grid driver object for resolving this. The following
+snippet shows how to use them:
 
 \begin{minted}[linenos]{python}
   from FpuGridDriver import REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE
@@ -894,17 +904,16 @@ shows how to use them:
   gd.enableBetaCollisionProtection(grid_state)
 \end{minted}
 
-The effect of these methods is as follows:
+The effect of these lines is as follows:
 
 In line 1, the symbols \texttt{REQD\_CLOCKWISE} and
-\texttt{REQD\_ANTI\_CLOCKWISE} are imported.
-Then, the parameter \texttt{fpu\_id} is set to the
-numerical ID of the FPU. Then, calling the method
-\texttt{freeBetaCollision()} moves the collided FPU
-into the direction passed in the second parameter
-- clockwise, or anti-clockwise. When using the protocol
-version 1, it is then necessary to retrieve an update
-for position and state of the FPU using the \texttt{pingFPUs()}
+\texttt{REQD\_ANTI\_CLOCKWISE} are imported.  Then, the parameter
+\texttt{fpu\_id} is set to the numerical ID of the FPU, which is zero
+for a single-FPU grid. Then, calling the method
+\texttt{freeBetaCollision()} moves the collided FPU into the direction
+passed in the second parameter - clockwise, or anti-clockwise. When
+using the protocol version 1, it is then necessary to retrieve an
+update for position and state of the FPU using the \texttt{pingFPUs()}
 command.
 
 This might need to be repeated a few times, and verified using visual
@@ -913,7 +922,8 @@ FPU can be switched to the normal state using the
 \texttt{enableBetaCollisionProtection()} command.  After this, the FPU
 can be moved normally. Because any previously configured waveforms
 become invalid, a new movement needs to be configured using
-\texttt{configMotion()} at this point.
+\texttt{configMotion()} at this point. To make movements precise, a
+new datum search is required as well.
 
 \subsection{Resolution of an alpha limit switch breach}
 
@@ -950,7 +960,9 @@ steps are required:
 What these operations do is basically to clear the breach state, and
 to manually move the FPU.  The flag \texttt{check\_protection=False}
 in line 10 is required because normally, the software does not accept
-a movement of an FPU which was not zeroed by a datum operation.
+a movement of an FPU which was not zeroed by a datum operation,
+and both the limit switch breach and the reset command clear the
+\texttt{was\_zeroed} flag.
 
 However, in this state, we \emph{must not} use a datum operation,
 therefore it is necessary to override this software protection.
@@ -981,6 +993,10 @@ differences for protocol version 1:
   a datum search must not be used after an alpha limit switch
   breach.
 
+\item The \texttt{findDatum()} method is only allowed if the beta arm
+  is at the datum position or in counter-clockwise direction of the
+  datum switch.
+
 \item The current position and direction of movement of the FPUs is
   not tracked during ongoing movements, and the driver cannot record
   the last movement direction. This has the effect that the user needs
@@ -990,8 +1006,9 @@ differences for protocol version 1:
 \item In protocol version 2, transitions and allowed commands are
   checked much stricter than in protocol 1.  This results in a
   somewhat reduced flexibility, however the stricter checking also
-  allows to make stronger assumptions about the current state, and to
-  perform automatic recovery of multiple collided FPUs.
+  allows to make stronger assumptions about the current state, and
+  makes it possible to perform automatic recovery of multiple collided
+  FPUs.
   
 \item In some cases, protocol 1 is not able to
   detect lost messages, so that state information
@@ -1013,12 +1030,13 @@ This section attempts to give a broad overview on how a grid with 1000
 FPUs can be managed by higher levels of the instrument software.
 
 The driver software can effortlessly send and receive commands to up
-to 1005 FPUs. The only requirement is that the Python module is
+to 1005 FPUs. The only requirement is that the grid driver object is
 initialised with that number of FPUs, and the corresponding number of
 EtherCAN gateways is connected. When the \texttt{grid\_state} variable
 is retrieved, it contains the states of \emph{all} FPUs in the
-\verb+grid_state.FPU[]+ sequence. So, in order to know what the
-state of FPU number 900 is, we simply have to query \verb+grid_state.FPU[900]+.
+\verb+grid_state.FPU[]+ sequence. So, in order to know what the state
+of FPU number 900 is, we simply have to query
+\verb+grid_state.FPU[900]+.
 
 To make managing that number of FPUs easier, there exist a few
 additional functions. One feature is that \texttt{grid\_state}
@@ -1031,7 +1049,11 @@ the enumeration values are converted to integer indices using
 number of FPUs which are in the state defined by that index. For
 convenience, \texttt{str(grid\_state)} shows \texttt{Count} as a
 dictionary with the state names as keys, and the count numbers as
-values.
+values. So, the expression
+\begin{minted}{python}
+  grid_state.Counts[int(FpuGridDriver.FPST_RESTING)]
+\end{minted}
+returns the number of FPUs in \texttt{RESTING} state.
 
 In addition, there is a function with the name
 \texttt{getGridStateSummary(grid\_state)} which maps the different states of the
@@ -1125,7 +1147,7 @@ software).
 
 Please keep in mind that any installed different version of boost
 libraries is very likely an essential part of your Linux system, so do
-NOT uninstall older versions from your system!
+\textbf{not} uninstall older versions from your system!
 
 \begin{itemize}
 \item for security, verify boost package signature using gnupg
