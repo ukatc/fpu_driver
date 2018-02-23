@@ -244,11 +244,11 @@ required to access the FPUs.
 
 \subsection{Driver methods}
 
-The driver object allows to invoke method calls which control the FPU
-hardware. The method names always start with a dot after the name of
-the driver object.  So, \texttt{gd.abc()} would call method ``abc'' of
-the driver object. Like normal function calls, they usually have
-parameters.
+The driver object allows to invoke method calls (methods are also
+often called member functions) which control the FPU hardware. The
+method names always start with a dot after the name of the driver
+object.  So, \texttt{gd.abc()} would call method ``abc'' of the driver
+object. Like normal function calls, they usually have parameters.
 
 In this case, the method \texttt{connect()} connects the driver to one
 or more EtherCAN gateways and starts listening to messages from the
@@ -339,12 +339,15 @@ is required by the verification system.
 
 When trying to diagnose and understand errors, it is often helpful to
 access this state information in an interactive way.  To do this, we
-can make use of the ability that Python can run any commands which
+can make use of the capability that Python can run any commands which
 appear in a script equally well when entered interactively. Also, the
 Python interpreter can be started with the ``-i'' (interactive) option
 which has the effect that after an exception, or after all commands in
-a script have been executed, the interpreter waits for command line
-arguments.
+a script have been executed, the interpreter opens a command line or
+``read-eval-print-loop'' in which commands can be entered and executed
+in the interactive mode. Every time when a typed-in expression or
+function call returns a value, the value is printed out before the
+command prompt appears again.
 
 For example, let's assume that the script on
 page~\pageref{sec:minimalexample} is shortened to the first 36 lines
