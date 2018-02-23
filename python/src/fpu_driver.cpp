@@ -705,6 +705,37 @@ void translate(InvalidFPUIdException const& e)
 }
 
 
+struct InvalidParValueException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INVALID_PAR_VALUE: The passed parameter value is invalid.";
+    }
+};
+
+void translate(InvalidParValueException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct InvalidFPUStateException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INVALID_FPU_STATE: Command not allowed for present FPU state.";
+    }
+};
+
+void translate(InvalidFPUStateException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+
+
+
 struct UnimplementedException : std::exception
 {
     char const* what() const throw()
@@ -873,6 +904,14 @@ void checkDriverError(E_DriverErrCode ecode)
 
     case DE_INVALID_FPU_ID:
         throw InvalidFPUIdException();
+        break;
+
+    case DE_INVALID_FPU_STATE:
+        throw InvalidFPUStateException();
+        break;
+
+    case DE_INVALID_PAR_VALUE:
+        throw InvalidParValueException();
         break;
 
     case DE_UNIMPLEMENTED:
@@ -1151,6 +1190,13 @@ public:
         return ecode;
     }
 
+    E_DriverErrCode wrap_setUStepLevel(int ustep_level, WrapGridState& grid_state)
+    {
+        E_DriverErrCode ecode = setUStepLevel(ustep_level, grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
+
     E_DriverErrCode wrap_enableBetaCollisionProtection(WrapGridState& grid_state)
     {
         E_DriverErrCode ecode = enableBetaCollisionProtection(grid_state);
@@ -1266,7 +1312,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("CCMD_REVERSE_MOTION", CCMD_REVERSE_MOTION)
     .value("CCMD_ENABLE_BETA_COLLISION_PROTECTION", CCMD_ENABLE_BETA_COLLISION_PROTECTION)
     .value("CCMD_FREE_BETA_COLLISION", CCMD_FREE_BETA_COLLISION)
-    .value("CCMD_SET_USTEP", CCMD_SET_USTEP)
+    .value("CCMD_SET_USTEP_LEVEL", CCMD_SET_USTEP_LEVEL)
 
 
 
@@ -1315,6 +1361,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
     .value("DE_STEP_TIMING_ERROR", DE_STEP_TIMING_ERROR)
     .value("DE_INVALID_FPU_ID", DE_INVALID_FPU_ID)
+    .value("DE_INVALID_FPU_STATE", DE_INVALID_FPU_STATE)
+    .value("DE_INVALID_PAR_VALUE", DE_INVALID_PAR_VALUE)
     .value("DE_UNIMPLEMENTED", DE_UNIMPLEMENTED)
     .export_values();
 
@@ -1424,6 +1472,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("reverseMotion", &WrapGridDriver::wrap_reverseMotion)
     .def("abortMotion", &WrapGridDriver::wrap_abortMotion)
     .def("freeBetaCollision", &WrapGridDriver::wrap_freeBetaCollision)
+    .def("setUStepLevel", &WrapGridDriver::wrap_setUStepLevel)
     .def("enableBetaCollisionProtection", &WrapGridDriver::wrap_enableBetaCollisionProtection)
     .def("lockFPU", &WrapGridDriver::lockFPU)
     .def("unlockFPU", &WrapGridDriver::unlockFPU)

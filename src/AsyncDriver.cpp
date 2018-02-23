@@ -45,7 +45,7 @@
 #include "canlayer/commands/RepeatMotionCommand.h"
 #include "canlayer/commands/ResetFPUCommand.h"
 #include "canlayer/commands/ReverseMotionCommand.h"
-#include "canlayer/commands/ReverseMotionCommand.h"
+#include "canlayer/commands/SetUStepLevelCommand.h"
 
 
 namespace mpifps
@@ -1639,6 +1639,86 @@ E_GridState AsyncDriver::waitForState(E_WaitTarget target,
                                       t_grid_state& out_detailed_state, double &max_wait_time, bool &cancelled) const
 {
     return gateway.waitForState(target, out_detailed_state, max_wait_time, cancelled);
+}
+
+
+
+E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
+                                                t_grid_state& grid_state,
+                                                E_GridState& state_summary)
+{
+    // first, get current state and time-out count of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    switch (ustep_level)
+    {
+    case 1:
+    case 2:
+    case 4:
+    case 8:
+        break;
+    default:
+        // value is not allowed
+        return DE_INVALID_PAR_VALUE;
+    }
+
+
+    for (int i=0; i < num_fpus; i++)
+    {
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        // we exclude moving FPUs and FPUs which are
+        // searching datum.
+        if ( fpu_state.state != FPST_UNINITIALIZED)
+        {
+            // FPU state does not allows command
+            return DE_INVALID_FPU_STATE;
+        }
+    }
+
+
+    int cnt_pending = 0;
+    unique_ptr<SetUStepLevelCommand> can_command;
+    for (int i=0; i < num_fpus; i++)
+    {
+        // We use a non-broadcast instance. The advantage of
+        // this is that the CAN protocol is able to reliably
+        // detect whether this command was received - for
+        // a broadcast command, this is not absolutely sure.
+        bool broadcast = false;
+        can_command = gateway.provideInstance<SetUStepLevelCommand>();
+
+        can_command->parametrize(i, broadcast, ustep_level);
+        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        gateway.sendCommand(i, cmd);
+        cnt_pending++;
+    }
+
+    // wait until all generated commands have been responded to
+    // or have timed out.
+    while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        double max_wait_time = -1;
+        bool cancelled = false;
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state, max_wait_time, cancelled);
+
+        if (grid_state.driver_state != DS_CONNECTED)
+        {
+            return DE_NO_CONNECTION;
+        }
+
+        cnt_pending = (grid_state.count_pending
+                       + grid_state.num_queued);
+    }
+
+
+    return DE_OK;
+
 }
 
 

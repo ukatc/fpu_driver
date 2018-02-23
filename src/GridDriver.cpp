@@ -361,6 +361,19 @@ E_DriverErrCode GridDriver::getCounterDeviation(t_grid_state& grid_state)
     return status;
 }
 
+E_DriverErrCode GridDriver::setUStepLevel(int ustep_level, t_grid_state& grid_state)
+{
+    E_GridState state_summary;
+    E_DriverErrCode status;
+
+    pthread_mutex_lock(&command_creation_mutex);
+    status = setUStepLevelAsync(ustep_level, grid_state, state_summary);
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return status;    
+}
+
+
 int GridDriver::getNumFPUs() const
 {
     return num_fpus;

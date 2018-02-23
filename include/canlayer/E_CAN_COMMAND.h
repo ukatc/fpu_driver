@@ -58,7 +58,7 @@ enum E_CAN_COMMAND
     CCMD_REVERSE_MOTION                   = 12, // invert last waveform
     CCMD_ENABLE_BETA_COLLISION_PROTECTION = 13, // "ENABLE_COLLIDE"
     CCMD_FREE_BETA_COLLISION              = 14, // "FREE_COLLIDE"
-    CCMD_SET_USTEP                        = 15, // set motor micro-stepping (1,2,4,8 supported)
+    CCMD_SET_USTEP_LEVEL                  = 15, // set stepper motorf232 micro-stepping level (1,2,4,8 supported)
 
 #if (CAN_PROTOCOL_VERSION == 1)
     // the next two are combined in version 2
@@ -87,16 +87,16 @@ enum E_CAN_COMMAND
 #if  (CAN_PROTOCOL_VERSION == 1)
     /* code 101 unused */
     /* code 102 unused */
-    CMSG_FINISHED_MOTION               = 103, // executeMotion finished
-    CMSG_FINISHED_DATUM                = 104, // findDatum finished
-    CMSG_WARN_COLLISION_BETA           = 105, // collision at beta arm
-    CMSG_WARN_LIMIT_ALPHA              = 106, // limit switch at alpha arm
+    CMSG_FINISHED_MOTION     = 103, // executeMotion finished
+    CMSG_FINISHED_DATUM      = 104, // findDatum finished
+    CMSG_WARN_COLLISION_BETA = 105, // collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA    = 106, // limit switch at alpha arm
 #else
-    CMSG_FINISHED_MOTION               = 23, // executeMotion finished
-    CMSG_FINISHED_DATUM                = 24, // findDatum finished
-    CMSG_WARN_COLLISION_BETA           = 25, // collision at beta arm
-    CMSG_WARN_LIMIT_ALPHA              = 26, // limit switch at alpha arm
-    CMSG_WARN_TIMEOUT_DATUM            = 27, // datum search time out
+    CMSG_FINISHED_MOTION     = 23, // executeMotion finished
+    CMSG_FINISHED_DATUM      = 24, // findDatum finished
+    CMSG_WARN_COLLISION_BETA = 25, // collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA    = 26, // limit switch at alpha arm
+    CMSG_WARN_TIMEOUT_DATUM  = 27, // datum search time out
 #endif
 
 };
@@ -107,19 +107,19 @@ enum E_CAN_COMMAND
    or only used internally */
 enum E_MOC_ERRCODE
 {
-    ER_OK               = 0x00,         // no error
-    ER_STALLX           = 0x01,         // x motor stall (obsolete)
-    ER_STALLY           = 0x02,         // y motor stall (obsolete)
-    ER_COLLIDE          = 0x03,         // FPU collision detected
-    ER_INVALID          = 0x04,         // received command not valid
-    ER_WAVENRDY         = 0x05,         // waveform not ready
-    ER_WAVE2BIG         = 0x06,         // waveform exceeds memory allocation
-    ER_TIMING           = 0x07,         // step timing error (interrupt race condition)
-    ER_M1LIMIT          = 0x08,         // M1 Limit switch breached
-    ER_M2LIMIT          = 0x09,         // no longer used
-    ER_PARAM            = 0x10,         // parameter out of range
-    ER_OK_UNCONFIRMED   = 0x11,         // command will not be confirmed if OK
-    ER_TIMEDOUT         = 0x12,         // command hit time-out
+    ER_OK             = 0x00,   // no error
+    ER_STALLX         = 0x01,   // x motor stall (obsolete)
+    ER_STALLY         = 0x02,   // y motor stall (obsolete)
+    ER_COLLIDE        = 0x03,   // FPU collision detected
+    ER_INVALID        = 0x04,   // received command not valid
+    ER_WAVENRDY       = 0x05,   // waveform not ready
+    ER_WAVE2BIG       = 0x06,   // waveform exceeds memory allocation
+    ER_TIMING         = 0x07,   // step timing error (interrupt race condition)
+    ER_M1LIMIT        = 0x08,   // M1 Limit switch breached
+    ER_M2LIMIT        = 0x09,   // no longer used
+    ER_PARAM          = 0x10,   // parameter out of range
+    ER_OK_UNCONFIRMED = 0x11,   // command will not be confirmed if OK
+    ER_TIMEDOUT       = 0x12,   // command hit time-out
 };
 
 
@@ -128,14 +128,14 @@ enum E_MOC_ERRCODE
 
 enum E_FPU_STATUS_BITS
 {
-    STBT_MSGRCV          = 1,           // message received over CANBUS
-    STBT_WAVE_READY      = (1 << 1),    // waveform good and ready for execution
-    STBT_EXECUTE_WAVE    = (1 << 2),    // internal start flag to start executing waveform
-    STBT_RUNNING_WAVE    = (1 << 3),    // FPU is running the waveform
-    STBT_ABORT_WAVE      = (1 << 4),    // abort waveform
-    STBT_M1LIMIT         = (1 << 5),    // M1 Limit breached
-    STBT_M2LIMIT         = (1 << 6),    // no longer used
-    STBT_REVERSE_WAVE    = (1 << 7),    // waveform to be run in reverse
+    STBT_MSGRCV       = 1,      // message received over CANBUS
+    STBT_WAVE_READY   = (1 << 1), // waveform good and ready for execution
+    STBT_EXECUTE_WAVE = (1 << 2), // internal start flag to start executing waveform
+    STBT_RUNNING_WAVE = (1 << 3), // FPU is running the waveform
+    STBT_ABORT_WAVE   = (1 << 4), // abort waveform
+    STBT_M1LIMIT      = (1 << 5), // M1 Limit breached
+    STBT_M2LIMIT      = (1 << 6), // no longer used
+    STBT_REVERSE_WAVE = (1 << 7), // waveform to be run in reverse
 };
 
 #endif
@@ -190,51 +190,51 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
        FPU warning messages and command responses. */
 
     /* used for emergency stop, usually broadcast */
-    case CCMD_ABORT_MOTION      :
+    case CCMD_ABORT_MOTION                       :
     /* movement commands, usually broadcast */
-    case CCMD_EXECUTE_MOTION    :
-    case CCMD_FIND_DATUM        :
+    case CCMD_EXECUTE_MOTION                     :
+    case CCMD_FIND_DATUM                         :
         priority = 0x02;
         break;
 
     /* motion configuration */
-    case CCMD_CONFIG_MOTION     :
+    case CCMD_CONFIG_MOTION                      :
     /* error recovery */
-    case CCMD_RESET_FPU         :
-    case CCMD_RESET_STEPCOUNTER :
+    case CCMD_RESET_FPU                          :
+    case CCMD_RESET_STEPCOUNTER                  :
     case CCMD_ENABLE_BETA_COLLISION_PROTECTION   :
-    case CCMD_FREE_BETA_COLLISION      :
+    case CCMD_FREE_BETA_COLLISION                :
 #if CAN_PROTOCOL_VERSION == 1
-    case CCMD_GET_STEPS_ALPHA   :
-    case CCMD_GET_STEPS_BETA    :
-    case CCMD_GET_ERROR_ALPHA   :
-    case CCMD_GET_ERROR_BETA    :
+    case CCMD_GET_STEPS_ALPHA                    :
+    case CCMD_GET_STEPS_BETA                     :
+    case CCMD_GET_ERROR_ALPHA                    :
+    case CCMD_GET_ERROR_BETA                     :
 #else
-    case CCMD_FREE_ALPHA_LIMIT_BREACH       :
-    case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
-    case CCMD_LOCK_UNIT         :
-    case CCMD_UNLOCK_UNIT       :
-    case CCMD_CHECK_INTEGRITY   :
-    case CCMD_GET_FIRMWARE_VERSION          :
-    case CCMD_ENABLE_MOVE       :
+    case CCMD_FREE_ALPHA_LIMIT_BREACH            :
+    case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION      :
+    case CCMD_LOCK_UNIT                          :
+    case CCMD_UNLOCK_UNIT                        :
+    case CCMD_CHECK_INTEGRITY                    :
+    case CCMD_GET_FIRMWARE_VERSION               :
+    case CCMD_ENABLE_MOVE                        :
 #endif
-    case CCMD_REPEAT_MOTION     :
-    case CCMD_REVERSE_MOTION    :
+    case CCMD_REPEAT_MOTION                      :
+    case CCMD_REVERSE_MOTION                     :
         priority = 0x03;
         break;
 
     /* status inquiry */
-    case CCMD_PING_FPU          :
+    case CCMD_PING_FPU                           :
 #if CAN_PROTOCOL_VERSION != 1
-    case CCMD_SET_TICKS_PER_SEGMENT                 :
-    case CCMD_SET_STEPS_PER_SEGMENT             :
+    case CCMD_SET_TICKS_PER_SEGMENT              :
+    case CCMD_SET_STEPS_PER_SEGMENT              :
 #endif
-    case CCMD_SET_USTEP         :
+    case CCMD_SET_USTEP_LEVEL                    :
         priority = 0x05;
         break;
 
     // invalid cases
-    case CCMD_NO_COMMAND        :
+    case CCMD_NO_COMMAND                         :
     default:
         assert(false);
 

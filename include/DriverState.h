@@ -174,6 +174,12 @@ enum E_DriverErrCode
     // because it is larger than the maximum number of FPUs.
     DE_INVALID_FPU_ID = 25,
 
+    // passed parameter value is invalid
+    DE_INVALID_PAR_VALUE = 26,
+
+    // command not allowed for present FPU state
+    DE_INVALID_FPU_STATE = 27,
+
     // operation not implemented for this protocol version
     DE_UNIMPLEMENTED=98,
 

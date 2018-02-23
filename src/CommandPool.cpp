@@ -38,6 +38,7 @@
 #include "canlayer/commands/RepeatMotionCommand.h"
 #include "canlayer/commands/ResetFPUCommand.h"
 #include "canlayer/commands/ReverseMotionCommand.h"
+#include "canlayer/commands/SetUStepLevelCommand.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -107,7 +108,7 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_PING_FPU       :
             case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
             case CCMD_FREE_BETA_COLLISION    :
-            case CCMD_SET_USTEP :
+            case CCMD_SET_USTEP_LEVEL :
             case CCMD_FIND_DATUM :
             case CCMD_RESET_STEPCOUNTER :
             case CCMD_READ_REGISTER   :
@@ -197,6 +198,11 @@ E_DriverErrCode CommandPool::initialize()
 
                 case CCMD_FREE_BETA_COLLISION    :
                     ptr.reset(new FreeBetaCollisionCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+
+                case CCMD_SET_USTEP_LEVEL :
+                    ptr.reset(new SetUStepLevelCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
 
