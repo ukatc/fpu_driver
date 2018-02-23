@@ -244,6 +244,13 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+    E_DriverErrCode ecode = pingFPUsAsync(grid_state, state_summary);
+
+    if (ecode != DE_OK)
+    {
+        return ecode;
+    }
+
     // check no FPUs have ongoing collisions
     for (int i=0; i < num_fpus; i++)
     {
@@ -258,6 +265,17 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         }
     }
 
+    // check that beta arms are in allowed half-plane
+    for (int i=0; i < num_fpus; i++)
+    {
+        const int BETA_STEPS_PER_DEGREE = 80; // this is only approximate
+        const int BETA_DATUM_LIMIT = -5 * BETA_STEPS_PER_DEGREE;
+        int beta_steps = grid_state.FPU_state[i].beta_steps;
+        if (beta_steps < BETA_DATUM_LIMIT)
+        {
+            return DE_UNIMPLEMENTED;
+        }        
+    }
 
     // All fpus which are allowed to move, are moved automatically
     // until they hit the datum switch.
