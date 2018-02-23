@@ -43,8 +43,8 @@ public:
 
     EnableBetaCollisionProtectionCommand()
     {
-      fpu_id = false;
-      bcast = false;
+        fpu_id = false;
+        bcast = false;
     };
 
     E_CAN_COMMAND getInstanceCommandCode()
@@ -113,10 +113,10 @@ public:
     // the driver should wait for a response
     bool expectsResponse()
     {
-#if (CAN_PROTOCOL_VERSION == 1)      
+#if (CAN_PROTOCOL_VERSION == 1)
         return false;
 #else
-	return true;
+        return true;
 #endif
     };
 

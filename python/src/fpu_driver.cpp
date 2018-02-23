@@ -278,7 +278,7 @@ public:
           << "'driver_state' :";
         s << gs.driver_state << ", "
           << "'Counts' : { ";
-        
+
         int num_fpus = 0;
         for(int i=0; i < NUM_FPU_STATES; i++)
         {
@@ -343,7 +343,7 @@ struct DriverNotInitializedException
     char const* what() const throw()
     {
         return "DE_DRIVER_NOT_INITIALIZED: GridDriver was not initialized "
-            "properly, possibly due to system error or out-of-memory condition.";
+               "properly, possibly due to system error or out-of-memory condition.";
     }
 };
 
@@ -445,7 +445,7 @@ struct FpuNotInitializedException : std::exception
     char const* what() const throw()
     {
         return "DE_FPU_NOT_INITIALIZED: A fibre positioner unit (FPU) was not initialized as"
-            " required, needs to do a datum search first";
+               " required, needs to do a datum search first";
     }
 };
 
@@ -603,9 +603,9 @@ struct FPUsNotCalibratedException : std::exception
     char const* what() const throw()
     {
         return "DE_FPUS_NOT_CALIBRATED: FPUs are lacking calibration by "
-            "a findDatum operation. For engineering or recovery use, consider"
-            " to set the 'check_protection' keyword argument to False,"
-            " to disable hardware safety checks.";
+               "a findDatum operation. For engineering or recovery use, consider"
+               " to set the 'check_protection' keyword argument to False,"
+               " to disable hardware safety checks.";
     }
 };
 
@@ -635,8 +635,8 @@ struct CommandTimeOutException : std::exception
     char const* what() const throw()
     {
         return "DE_COMMAND_TIMEOUT: Response to a CAN command surpassed the "
-            "configured maximum waiting time."
-            "This can be caused by a broken connection or networking problems.";
+               "configured maximum waiting time."
+               "This can be caused by a broken connection or networking problems.";
     }
 };
 
@@ -646,8 +646,8 @@ struct AbortedStateException : std::exception
     char const* what() const throw()
     {
         return "DE_ABORTED_STATE: There are FPUs in aborted state,"
-            " because of an abortMotion command or a step timing error "
-            "- use the resetFPUs command to reset state.";
+               " because of an abortMotion command or a step timing error "
+               "- use the resetFPUs command to reset state.";
     }
 };
 
@@ -677,9 +677,9 @@ struct StepTimingException : std::exception
     char const* what() const throw()
     {
         return "DE_STEP_TIMING_ERROR: An FPU's controller "
-            "generated a step timing error"
-            "during movement. Possibly, reduce microstepping level"
-            "to compute the step frequency in time.";
+               "generated a step timing error"
+               "during movement. Possibly, reduce microstepping level"
+               "to compute the step frequency in time.";
     }
 };
 
@@ -703,7 +703,7 @@ void translate(InvalidFPUIdException const& e)
     // Use the Python 'C' API to set up an exception object
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
-  
+
 
 struct UnimplementedException : std::exception
 {
@@ -849,7 +849,7 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_FPUS_NOT_CALIBRATED:
         throw FPUsNotCalibratedException();
         break;
-        
+
     case DE_NO_MOVABLE_FPUS :
         throw NoMovableFPUsException();
         break;
@@ -874,7 +874,7 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_INVALID_FPU_ID:
         throw InvalidFPUIdException();
         break;
-	
+
     case DE_UNIMPLEMENTED:
         throw UnimplementedException();
         break;
@@ -925,7 +925,7 @@ public:
     {
 
         E_DriverErrCode ecode = initializeDriver();
-        checkDriverError(ecode);        
+        checkDriverError(ecode);
     };
 
 
@@ -1192,7 +1192,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     // include summary function
     def("getGridStateSummary", wrapGetGridStateSummary);
 
-    
+
     enum_<E_FPU_STATE>("E_FPU_STATE")
     .value("FPST_UNKNOWN", FPST_UNKNOWN)
     .value("FPST_UNINITIALIZED", FPST_UNINITIALIZED)

@@ -128,7 +128,7 @@ enum E_MOC_ERRCODE
 
 enum E_FPU_STATUS_BITS
 {
-    STBT_MSGRCV          = 1       ,    // message received over CANBUS
+    STBT_MSGRCV          = 1,           // message received over CANBUS
     STBT_WAVE_READY      = (1 << 1),    // waveform good and ready for execution
     STBT_EXECUTE_WAVE    = (1 << 2),    // internal start flag to start executing waveform
     STBT_RUNNING_WAVE    = (1 << 3),    // FPU is running the waveform
@@ -180,7 +180,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     // protocol version 1 requires a priority of zero.
     return 0;
 #endif
-    
+
     uint8_t priority = 0x0f;
     switch (cmd)
     {

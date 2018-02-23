@@ -91,7 +91,7 @@ E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state, double &max_
 
 
 E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state& grid_state,
-                                         bool check_protection)
+        bool check_protection)
 
 {
     E_DriverErrCode estatus = DE_OK;
