@@ -14,6 +14,26 @@ import math
 from fpu_driver import getGridStateSummary as gGSS
 
 
+AlphaGearRatio 	= 2050.175633 # actual gear ratio
+BetaGearRatio 	= 1517.662482 # actual gear ratio
+
+
+# There are 20 steps per revolution on the non-geared side, so:
+StepsPerRevolution = 20.0
+DegreePerRevolution = 360.0
+
+# Note that these numbers must not be confounded with actual calibrated values!
+
+StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
+StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
+
+MIN_ALPHA = ALPHA_MIN_DEGREE * StepsPerDegreeAlpha
+MAX_ALPHA = ALPHA_MAX_DEGREE * StepsPerDegreeAlpha
+
+MIN_BETA = BETA_MIN_DEGREE * StepsPerDegreeBeta 
+MAX_BETA = BETA_MAX_DEGREE * StepsPerDegreeBeta 
+
+
 def list_positions(gs, num_fpus=None):
     """Show positions for each FPU in the grid. The optional second argument
        is the number of FPUs shown."""
@@ -145,7 +165,7 @@ def step_list_pad(slist, target_len):
     return slist
 
 
-def gen_wf(adegree, bdegree, asteps_per_deg=125, bsteps_per_deg=80,
+def gen_wf(adegree, bdegree, asteps_per_deg=StepsPerDegreeAlpha, bsteps_per_deg=StepsPerDegreeBeta,
            mode='fast'):
     """
     Generate a waveform which moves the alpha arm by an angle of 

@@ -16,11 +16,37 @@ MAX_WAVE_ENTRIES = 128
 IDXA = 0
 IDXB = 1
 
-MIN_ALPHA = -3750
-MAX_ALPHA = 45000
+# These are parameters from the instrument control system
+# They do NOT match the origin of the FPU step counter
 
-MIN_BETA = -14400
-MAX_BETA = 12000
+# INS_POS_LOW1      = -180.000  # Lower travel limit of positioner alpha arm (deg)
+# INS_POS_HIGH1     =  180.000  # Upper travel limit of positioner alpha arm (deg)
+# INS_POS_LOW2      = -180.000  # Lower travel limit of positioner beta arm (deg)
+# INS_POS_HIGH2     =  150.000  # Upper travel limit of positioner beta arm (deg)
+
+ALPHA_MIN_DEGREE = 0
+ALPHA_MAX_DEGREE = 360
+BETA_MIN_DEGREE = -180
+BETA_MAX_DEGREE = 130
+
+AlphaGearRatio 	= 2050.175633 # actual gear ratio
+BetaGearRatio 	= 1517.662482 # actual gear ratio
+
+
+# There are 20 steps per revolution on the non-geared side, so:
+StepsPerRevolution = 20.0
+DegreePerRevolution = 360.0
+
+# Note that these numbers must not be confounded with actual calibrated values!
+
+StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
+StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
+
+MIN_ALPHA = ALPHA_MIN_DEGREE * StepsPerDegreeAlpha
+MAX_ALPHA = ALPHA_MAX_DEGREE * StepsPerDegreeAlpha
+
+MIN_BETA = BETA_MIN_DEGREE * StepsPerDegreeBeta 
+MAX_BETA = BETA_MAX_DEGREE * StepsPerDegreeBeta 
 
 # E_REQUEST_DIRECTION
 
