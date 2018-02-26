@@ -292,12 +292,6 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
                 || (fpu_state.state != FPST_RESTING))
 
         {
-            // FIXME!!!: For production, we might better add a
-            // security limit so that FPUs which are far off position
-            // are not driven into the hard stop.
-#if (CAN_PROTOCOL_VERSION > 1)
-#pragma message "avoid hitting a hard stop here (if possible)"
-#endif
 
             bool broadcast = false;
             can_command = gateway.provideInstance<FindDatumCommand>();
