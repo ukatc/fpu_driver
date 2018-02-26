@@ -313,6 +313,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     if (DescriptorCloseEvent < 0)
     {
+        close(DescriptorCommandEvent);
         return DE_ASSERTION_FAILED;
     }
 
@@ -320,6 +321,8 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     if (rval != DE_OK)
     {
+        close(DescriptorCommandEvent);
+        close(DescriptorCloseEvent);
         return rval;
     }
 
@@ -330,8 +333,19 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
         const char* ip = gateway_addresses[i].ip;
         uint16_t port = gateway_addresses[i].port;
 
-        SocketID[i] = make_socket(ip, port);
-
+        int sock_fd = make_socket(ip, port);
+        if (sock_fd < 0)
+        {
+            for(int k = i-1; k >= 0; k--)
+            {
+                close(SocketID[k]);
+            }
+            command_pool.deInitialize();
+            close(DescriptorCommandEvent);
+            close(DescriptorCloseEvent);
+            return DE_NO_CONNECTION;
+        }
+        SocketID[i] = sock_fd;
     }
 
     pthread_attr_t attr;
@@ -346,10 +360,9 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     // if possible, set real-time scheduling policy to keep latency low
 
-
-
     set_rt_priority(CONTROL_PRIORITY);
 
+    E_DriverErrCode ecode = DE_OK;
     int err = pthread_create(&rx_thread, &attr, &threadRxEntryFun,
                              (void *) this);
 
@@ -357,6 +370,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     {
         printf("\ncan't create thread :[%s]",
                strerror(err));
+        ecode = DE_ASSERTION_FAILED;
     }
 
     if (err == 0)
@@ -366,6 +380,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
                              (void *) this);
         if (err != 0)
         {
+            ecode = DE_ASSERTION_FAILED;
             exit_threads.store(true, std::memory_order_release);
             printf("\ncan't create thread :[%s]",
                    strerror(err));
@@ -375,13 +390,26 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     pthread_attr_destroy(&attr);
 
 
-    commandQueue.setNumGateways(ngateways);
-    fpuArray.setDriverState(DS_CONNECTED);
+    if (ecode != DE_OK)
+    {
+        for(int k = ngateways; k >= 0; k--)
+        {
+            close(SocketID[k]);
+        }
+        command_pool.deInitialize();
+        close(DescriptorCommandEvent);
+        close(DescriptorCloseEvent);
+    }
+    else
+    {
+        commandQueue.setNumGateways(ngateways);
+        fpuArray.setDriverState(DS_CONNECTED);
+    }
 
     unset_rt_priority();
 
 
-    return DE_OK;
+    return ecode;
 
 }
 
