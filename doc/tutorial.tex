@@ -22,11 +22,42 @@
 
 
 \section{Introduction}
+\subsection{Related documents}
+
+\begin{tabular}{|ll|}
+  \hline
+\verb+[1] VLT-TRE-MON-14620-1018+, &  FPU Verification Requirements \\
+\verb+[2] VLT-TRE-MON-14620-3017+, & MOONS Fibre Positioner Verification Software Design \\
+\hline
+\end{tabular}
+
+
 \subsection{Topic and goals}
-This tutorial describes how to use the Python bindings for the MOONS
-fibre positioner unit (FPU) driver. Its goal is to enable the reader
-to control the FPU in the verification system using python scripts, so
-that he or she can perform basic verification tasks.
+This document describes the Python programming interface for the MOONS
+Fibre Positioner Unit CAN level driver module.
+
+The CAN level driver allows to control and move Fibre Positioner Units
+(FPU) in the MOONS FPU grid by a software interface. This programming
+interface is implemented in C++. It is designed to be used in several
+different contexts: Primarily, for simultaneously controlling more
+than 1000 FPUs in the final MOONS astronomic instrument. Important
+secondary uses are verifying and calibrating the elements of the
+positioning system, developing and testing of algorithms for complex
+higher layers of the instrument control system, and engineering and
+development of related systems and verification software such as image
+analysis.
+
+Using the final verification software will not require the users to
+know how to program Python.  However, several parts of the
+verification software system and the instrument control software are
+entirely or initially developed in Python.  The driver library
+documented here has the function to make the functionality of the CAN
+level C++ driver accessible from Python. As such, the goal is to
+provide engineers with a toolbox which can be used to manipulate and
+test the FPUs as easily as possible. The underlying hardware protocol
+will only be exposed as much as necessary to understand the possible
+states of the hardware.
+
 
 
 \subsection{Required knowledge}
@@ -44,7 +75,7 @@ Also, in order to retrieve the current version of the library, the
 user needs to have a minimum knowledge of the git version control
 system. This is explained, for example, in
 ``\href{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}{getting
-  a git repository}''.
+  a git repository}\footnote{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}''.
 
 \section{Setting up the library module}
 
