@@ -32,7 +32,7 @@
 \end{tabular}
 
 
-\subsection{Topic and goals}
+\subsection{Purpose of this document}
 This document describes the Python programming interface for the MOONS
 Fibre Positioner Unit CAN level driver module.
 
@@ -50,13 +50,13 @@ analysis.
 Using the final verification software will not require the users to
 know how to program Python.  However, several parts of the
 verification software system and the instrument control software are
-entirely or initially developed in Python.  The driver library
-documented here has the function to make the functionality of the CAN
-level C++ driver accessible from Python. As such, the goal is to
-provide engineers with a toolbox which can be used to manipulate and
-test the FPUs as easily as possible. The underlying hardware protocol
-will only be exposed as much as necessary to understand the possible
-states of the hardware.
+entirely or initially developed and tested in Python.  The driver
+library documented here has the function to make the functionality of
+the CAN level C++ driver accessible from Python. As such, the goal of
+this document is to describe a toolbox which can be used to manipulate
+and test the FPUs as easily as possible. The underlying hardware
+protocol will only be exposed as much as necessary to understand the
+possible states of the hardware.
 
 
 
