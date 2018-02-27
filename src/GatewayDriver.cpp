@@ -302,32 +302,39 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
         return DE_ASSERTION_FAILED;
     }
 
+    E_DriverErrCode ecode = DE_OK;
+    int num_initialized_sockets= 0; // this is needed for error cleanup
+
     // create two eventfds to signal changes while waiting for I/O
     DescriptorCommandEvent = eventfd(0, EFD_NONBLOCK);
     if (DescriptorCommandEvent < 0)
     {
-        return DE_ASSERTION_FAILED;
+        ecode = DE_ASSERTION_FAILED;
+        // we use goto here to avoid code duplication.
+        goto error_exit;
     }
 
     DescriptorCloseEvent = eventfd(0, EFD_NONBLOCK);
 
     if (DescriptorCloseEvent < 0)
     {
-        close(DescriptorCommandEvent);
-        return DE_ASSERTION_FAILED;
+        ecode= DE_ASSERTION_FAILED;
+        goto close_CommandEventDescriptor;
     }
 
-    E_DriverErrCode rval = command_pool.initialize();
-
-    if (rval != DE_OK)
+    // initialize command pool
     {
-        close(DescriptorCommandEvent);
-        close(DescriptorCloseEvent);
-        return rval;
+        E_DriverErrCode rval = command_pool.initialize();
+
+        if (rval != DE_OK)
+        {
+            ecode = rval;
+            goto close_CloseEventDescriptor;
+        }
     }
 
 
-
+    // open sockets
     for (int i = 0; i < ngateways; i++)
     {
         const char* ip = gateway_addresses[i].ip;
@@ -336,70 +343,89 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
         int sock_fd = make_socket(ip, port);
         if (sock_fd < 0)
         {
-            for(int k = i-1; k >= 0; k--)
-            {
-                close(SocketID[k]);
-            }
-            command_pool.deInitialize();
-            close(DescriptorCommandEvent);
-            close(DescriptorCloseEvent);
-            return DE_NO_CONNECTION;
+            ecode = DE_NO_CONNECTION;
+            goto close_sockets;
         }
         SocketID[i] = sock_fd;
+        num_initialized_sockets++;
     }
 
-    pthread_attr_t attr;
-    /* Initialize and set thread joinable attribute */
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-
-    // we create only one thread for reading and one for writing.
-    exit_threads = false;
-    num_gateways = ngateways;
-
-    // if possible, set real-time scheduling policy to keep latency low
+    // If configured, try to set real-time process scheduling policy
+    // to keep latency low. This is optional.
 
     set_rt_priority(CONTROL_PRIORITY);
 
-    E_DriverErrCode ecode = DE_OK;
-    int err = pthread_create(&rx_thread, &attr, &threadRxEntryFun,
-                             (void *) this);
 
-    if (err != 0)
+    // new block for locals
     {
-        printf("\ncan't create thread :[%s]",
-               strerror(err));
-        ecode = DE_ASSERTION_FAILED;
-    }
+        // finally, create threads
+        pthread_attr_t attr;
+        /* Initialize and set thread joinable attribute */
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-    if (err == 0)
-    {
 
-        err = pthread_create(&tx_thread, &attr, &threadTxEntryFun,
-                             (void *) this);
+        // we create one thread for reading and one for writing.
+        exit_threads = false; // assure flag is cleared
+        num_gateways = ngateways; /* this becomes fixed for the threads */
+
+        // At this point, all constant shared data and synchronization
+        // objects should be in place.
+    
+        int err = pthread_create(&rx_thread, &attr, &threadRxEntryFun,
+                                 (void *) this);
+
         if (err != 0)
         {
+            printf("\ncan't create thread :[%s]", strerror(err));
             ecode = DE_ASSERTION_FAILED;
-            exit_threads.store(true, std::memory_order_release);
-            printf("\ncan't create thread :[%s]",
-                   strerror(err));
+            // no goto here, this is intentional, we need
+            // to deallocate attr.
         }
+        else
+        {
+
+            err = pthread_create(&tx_thread, &attr, &threadTxEntryFun,
+                                 (void *) this);
+            if (err != 0)
+            {
+                ecode = DE_ASSERTION_FAILED;
+                printf("\ncan't create thread :[%s]", strerror(err));
+            
+                // set flag to stop first thread            
+                exit_threads.store(true, std::memory_order_release);
+                // also signal termination via eventfd, to inform epoll()
+                uint64_t val = 2;
+                write(DescriptorCloseEvent, &val, sizeof(val));
+
+                // wait for rx thread to terminate
+                pthread_join(rx_thread, NULL);
+
+            }
+        }
+
+        pthread_attr_destroy(&attr);
+
     }
-
-    pthread_attr_destroy(&attr);
-
 
     if (ecode != DE_OK)
     {
-        for(int k = ngateways; k >= 0; k--)
+
+    close_sockets:
+        for(int k = (num_initialized_sockets -1); k >= 0; k--)
         {
+            shutdown(SocketID[k], SHUT_RDWR);
             close(SocketID[k]);
         }
         command_pool.deInitialize();
-        close(DescriptorCommandEvent);
+    close_CloseEventDescriptor:
         close(DescriptorCloseEvent);
-    }
+    close_CommandEventDescriptor:
+        close(DescriptorCommandEvent);
+
+    error_exit:
+        ;/* nothing to be done */
+    } 
     else
     {
         commandQueue.setNumGateways(ngateways);
