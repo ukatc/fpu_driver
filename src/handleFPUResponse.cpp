@@ -683,6 +683,13 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         fpu.last_updated = cur_time;
         break;
 
+    case CCMD_SET_USTEP_LEVEL:
+        fpu.ping_ok = true;
+
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        fpu.last_updated = cur_time;
+        break;
+
     case CCMD_NO_COMMAND      :
     default:
         // invalid command, ignore

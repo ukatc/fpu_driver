@@ -676,10 +676,10 @@ struct StepTimingException : std::exception
 {
     char const* what() const throw()
     {
-        return "DE_STEP_TIMING_ERROR: An FPU's controller "
-               "generated a step timing error"
-               "during movement. Possibly, reduce microstepping level"
-               "to compute the step frequency in time.";
+        return "DE_STEP_TIMING_ERROR: An FPU's controller"
+               " generated a step timing error"
+               " during movement. Possibly, reduce the microstepping level"
+               " to compute the step frequency in time.";
     }
 };
 

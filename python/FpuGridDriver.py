@@ -63,6 +63,9 @@ class GridDriver:
     def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST):
         return self._gd.connect(address_list)
 
+    def setUStepLevel(self, ustep_level,  gs):
+        return self._gd.setUStepLevel(ustep_level, gs)
+    
     def getGridState(self):
         return self._gd.getGridState()
 
@@ -145,23 +148,30 @@ class GridDriver:
         time_interval = 0.1
         is_ready = False
         was_aborted = False
-        with SignalHandler() as sh:
-            while not is_ready:
-                rv = self._gd.waitExecuteMotion(gs, time_interval)
-                if sh.interrupted:
-                    print("STOPPING FPUs.")
-                    self.abortMotion(gs)
-                    was_aborted = True
-                    break
-                is_ready = (rv != fpu_driver.E_DriverErrCode.DE_COMMAND_TIMEOUT)
+        refresh_state = False
+        try:
+            with SignalHandler() as sh:
+                while not is_ready:
+                    rv = self._gd.waitExecuteMotion(gs, time_interval)
+                    if sh.interrupted:
+                        print("STOPPING FPUs.")
+                        self.abortMotion(gs)
+                        was_aborted = True
+                        break
+                    is_ready = (rv != fpu_driver.E_DriverErrCode.DE_COMMAND_TIMEOUT)
+        except RuntimeError as rtex:
+            errtype = str(rtex).split(":")[0].strip()
+            if errtype in [ "DE_STEP_TIMING_ERROR", "DE_NEW_COLLISION", "DE_NEW_LIMIT_BREACH"] :
+                refresh_state = True
+            raise
+            
 
-        if rv == fpu_driver.E_DriverErrCode.DE_OK:
+        if (rv == fpu_driver.E_DriverErrCode.DE_OK) or was_aborted or refresh_state:
             # execute a ping to update positions
             # (this is only needed for protocol version 1)
             self.pingFPUs(gs)
-
+                            
         if was_aborted:
-            self.pingFPUs(gs)
             raise RuntimeError("executeMotion was aborted by SIGINT")
         
         return rv

@@ -38,7 +38,7 @@ CCMD_REPEAT_MOTION                    = 11 # re-use last waveform
 CCMD_REVERSE_MOTION                   = 12 # invert last waveform
 CCMD_ENABLE_BETA_COLLISION_PROTECTION = 13 # "ENABLE_COLLIDE"
 CCMD_FREE_BETA_COLLISION              = 14 # "FREE_COLLIDE"
-CCMD_SET_USTEP                        = 15 # set motor micro-stepping (1,2,4,8 supported)
+CCMD_SET_USTEP_LEVEL                  = 15 # set motor micro-stepping (1,2,4,8 supported)
 
 if CAN_PROTOCOL_VERSION == 1:
     # In version 2, two are covered by the ping command, which also
@@ -594,6 +594,40 @@ def handle_enableBetaCollisionProtection(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX
 
 
+def handle_setUStepLevel(fpu_id, fpu_adr_bus, bus_adr, RX):
+    command_id = RX[0]
+
+    # CAN header for gateway
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    ustep_level = RX[1]
+    if ustep_level in [1,2,4,8]:
+        FPUGrid[fpu_id].setUStepLevel(ustep_level)
+        errflag = 0
+        ecode = 0
+    else:
+        erflag = 0xff
+        ecode = ER_PARAM
+    
+    TX = [ 0 ] * 8
+    
+    TX[0] = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id])
+    TX[3] = errflag
+    TX[4] = ecode
+
+
+    
+    return TH + TX
+
+
 def handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
     def reset_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
@@ -837,6 +871,10 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
             elif status & STBT_M1LIMIT:
                 TX[3] = errflag = 0xff
                 TX[4] = errcode = ER_M1LIMIT
+            if FPUGrid[fpu_id].step_timing_fault:
+                # send error message
+                TX[3] = errflag = 0xff
+                TX[4] = errcode = ER_TIMING
             else:
                 # in version 1, other cases do not have
                 # status flag information
@@ -975,9 +1013,9 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbo
     elif command_id == CCMD_FREE_BETA_COLLISION              :
         resp = handle_freeBetaCollision(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
-    elif command_id == CCMD_SET_USTEP                        :
-        pass
-    
+    elif command_id == CCMD_SET_USTEP_LEVEL                  :
+        resp = handle_setUStepLevel(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+
     elif CAN_PROTOCOL_VERSION == 1:
         if command_id == CCMD_GET_STEPS_ALPHA:
             resp = handle_GetX(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)

@@ -77,7 +77,9 @@ class FPU:
         self.running_wave = False
         self.abort_wave = False
         self.wave_valid = False
-        self.collision_protection_active = True        
+        self.collision_protection_active = True
+        self.ustep_level = 1
+        self.step_timing_fault = False
 
     def resetFPU(self, fpu_id, sleep):
         print("resetting FPU #%i..." % fpu_id)
@@ -95,7 +97,10 @@ class FPU:
             raise RuntimeError("wavetable not valid")
         self.move_forward = True
         self.wave_ready = True
-        
+
+    def setUStepLevel(self, ustep_level):
+        print("setting UStepLevel=", ustep_level)
+        self.ustep_level = ustep_level
         
     def reverseMotion(self, fpu_id):
         print("reversing wavetable of FPU #%i..." % fpu_id)
@@ -218,7 +223,8 @@ class FPU:
             raise RuntimeError("wavetable not ready")
 
         self.running_wave = True
-
+        self.step_timing_fault = False
+        
         if self.move_forward:
             wt_sign = 1
         else:
@@ -255,6 +261,11 @@ class FPU:
             sleep(frame_time)
             if self.abort_wave:
                 break
+
+            if self.ustep_level == 8:
+                if random.uniform(0, 100) < 50:
+                    self.step_timing_fault = True
+                    break
             
             if newalpha < MIN_ALPHA:
                 self.alpha_steps = MIN_ALPHA
@@ -291,6 +302,9 @@ class FPU:
         elif self.is_collided:
             print("FPU %i, section %i: beta_collision, movement cancelled at (%i, %i)" % (self.fpu_id, section,
                                                                               self.alpha_steps, self.beta_steps))
+        elif self.step_timing_fault:
+            print("FPU %i, section %i: step timing error, movement cancelled at (%i, %i)" % (self.fpu_id, section,
+                                                                                self.alpha_steps, self.beta_steps))
         else:
             print("FPU %i, section %i: movement finished at (%i, %i)" % (self.fpu_id, section,
                                                              newalpha, newbeta))

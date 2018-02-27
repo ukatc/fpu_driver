@@ -17,6 +17,12 @@ print("connecting grid:", gd.connect(gateway_adr_list))
 print("getting grid state:")
 gs = gd.getGridState()
 
+gd.pingFPUs(gs)
+
+ustep_level = 2
+print("setting ustep level to", ustep_level)
+gd.setUStepLevel(ustep_level, gs)
+
 print("issuing findDatum:")
 gd.findDatum(gs)
 
