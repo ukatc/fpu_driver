@@ -247,6 +247,10 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // clear timeout status
             remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode,
                            timeout_list, count_pending);
+#ifdef DEBUG
+            printf("FPU # %i: executeMotion command got error response,"
+                   " removed from pending list.\n", fpu_id);
+#endif
 
             if ((response_errcode == ER_WAVENRDY)
                     || (response_errcode == ER_PARAM))

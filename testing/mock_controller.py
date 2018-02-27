@@ -790,7 +790,7 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
         # wavetable is not ready
         print("FPU #", fpu_id, ": wave table is not valid, sending response code", ER_INVALID)
         TX[3] = errflag = 0xff
-        TX[4] = errcode =  ER_INVALIDY
+        TX[4] = errcode =  ER_INVALID
     elif FPUGrid[fpu_id].running_wave:
         # FPU already moving
         TX[3] = errflag = 0xff
@@ -1063,7 +1063,7 @@ def command_handler(cmd, socket, verbose=0):
             assert(fpu_id >= 0)
             if fpu_id < NUM_FPUS:
 
-                print("Spawning CAN command #%i to FPU %i" % (command_id, fpu_id))
+                #print("Spawning CAN command #%i to FPU %i" % (command_id, fpu_id))
                 spawn(fpu_handler, command_id, fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
             
 

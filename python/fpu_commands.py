@@ -27,6 +27,11 @@ DegreePerRevolution = 360.0
 StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
 StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
 
+ALPHA_MIN_DEGREE = 0
+ALPHA_MAX_DEGREE = 360
+BETA_MIN_DEGREE = -180
+BETA_MAX_DEGREE = 130
+
 MIN_ALPHA = ALPHA_MIN_DEGREE * StepsPerDegreeAlpha
 MAX_ALPHA = ALPHA_MAX_DEGREE * StepsPerDegreeAlpha
 

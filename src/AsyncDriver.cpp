@@ -268,8 +268,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     // check that beta arms are in allowed half-plane
     for (int i=0; i < num_fpus; i++)
     {
-        const int BETA_STEPS_PER_DEGREE = StepsPerDegreeBeta; // this is the design value
-        const int BETA_DATUM_LIMIT = -5 * BETA_STEPS_PER_DEGREE;
+        const int BETA_DATUM_LIMIT = -5 * STEPS_PER_DEGREE_BETA;
         int beta_steps = grid_state.FPU_state[i].beta_steps;
         if (beta_steps < BETA_DATUM_LIMIT)
         {

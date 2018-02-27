@@ -56,21 +56,21 @@ const bool USE_REALTIME_SCHEDULING = false;
  * 
  */
 
-const double AlphaGearRatio 	= 2050.175633;// actual gear ratio
-const double BetaGearRatio 	= 1517.662482;// actual gear ratio
+const double ALPHA_GEAR_RATIO 	= 2050.175633;// actual gear ratio
+const double BETA_GEAR_RATIO 	= 1517.662482;// actual gear ratio
 
 /* 
  * There are 20 steps per revolution on the non-geared side, so:
  * 
  */
-const double StepsPerRevolution = 20.0;
-const double DegreePerRevolution = 360.0;
+const double STEPS_PER_REVOLUTION = 20.0;
+const double DEGREE_PER_REVOLUTION = 360.0;
 
 /*
  * Note that these numbers must not be confounded with actual calibrated values!
  */
-const double StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution;
-const double StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution;
+const double STEPS_PER_DEGREE_ALPHA = (STEPS_PER_REVOLUTION * ALPHA_GEAR_RATIO) / DEGREE_PER_REVOLUTION;
+const double STEPS_PER_DEGREE_BETA = (STEPS_PER_REVOLUTION * BETA_GEAR_RATIO) / DEGREE_PER_REVOLUTION;
 
 
 }
