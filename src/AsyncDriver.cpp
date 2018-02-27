@@ -1637,8 +1637,8 @@ E_GridState AsyncDriver::waitForState(E_WaitTarget target,
 
 
 E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
-                                                t_grid_state& grid_state,
-                                                E_GridState& state_summary)
+        t_grid_state& grid_state,
+        E_GridState& state_summary)
 {
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);

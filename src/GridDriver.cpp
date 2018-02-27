@@ -370,7 +370,7 @@ E_DriverErrCode GridDriver::setUStepLevel(int ustep_level, t_grid_state& grid_st
     status = setUStepLevelAsync(ustep_level, grid_state, state_summary);
     pthread_mutex_unlock(&command_creation_mutex);
 
-    return status;    
+    return status;
 }
 
 

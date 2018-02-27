@@ -371,7 +371,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
         // At this point, all constant shared data and synchronization
         // objects should be in place.
-    
+
         int err = pthread_create(&rx_thread, &attr, &threadRxEntryFun,
                                  (void *) this);
 
@@ -391,8 +391,8 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
             {
                 ecode = DE_ASSERTION_FAILED;
                 printf("\ncan't create thread :[%s]", strerror(err));
-            
-                // set flag to stop first thread            
+
+                // set flag to stop first thread
                 exit_threads.store(true, std::memory_order_release);
                 // also signal termination via eventfd, to inform epoll()
                 uint64_t val = 2;
@@ -411,21 +411,21 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     if (ecode != DE_OK)
     {
 
-    close_sockets:
+close_sockets:
         for(int k = (num_initialized_sockets -1); k >= 0; k--)
         {
             shutdown(SocketID[k], SHUT_RDWR);
             close(SocketID[k]);
         }
         command_pool.deInitialize();
-    close_CloseEventDescriptor:
+close_CloseEventDescriptor:
         close(DescriptorCloseEvent);
-    close_CommandEventDescriptor:
+close_CommandEventDescriptor:
         close(DescriptorCommandEvent);
 
-    error_exit:
+error_exit:
         ;/* nothing to be done */
-    } 
+    }
     else
     {
         commandQueue.setNumGateways(ngateways);
