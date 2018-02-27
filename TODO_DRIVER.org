@@ -144,6 +144,13 @@ when the internal state struct is used.
 ** DONE check FIXMEs for resolved stuff
 ** DONE remove dead code
 ** DONE format code nicely using astyle
+** TODO Fix multiplexing of broadcast commands (currently, they are only sent to bus 0)
+   One CAN command for each bus needs to be generated,
+   not only for each gateway.
+   This affects both the serialization code in send_buffer,
+   the generation of broadcast commands in the gateway method,
+   and the update of pending commands which needs to filter
+   by busid.
 ** TODO Refactor duplicate code in command header encoding
 ** TODO Implement ustep errors in mock-up and test handler
 ** TODO Add state filtering to command precondition check
