@@ -141,18 +141,22 @@ instructions in the file ``\texttt{doc/INSTALL}''.
 
 For the Python module to work, the directory \texttt{/user/local/lib}
 needs to be added to the environment variable
-\texttt{LD\_LIBRARY\_PATH}. Assuming a standard setup, this can be
-done by adding the following line to the file \texttt{.bashrc} in the
+\texttt{LD\_LIBRARY\_PATH}.
+
+Also, it is probably useful to add the \textty{python} directory and
+the current directory to the environment variable \texttt{PYTHONPATH},
+so that the driver module can be found independently from the current
+working directory.  Assuming a standard setup, this can be done by
+adding the following lines to the file \texttt{.bashrc} in the
 user-specific home directory:
 
 \begin{minted}{bash}
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+  export PYTHONPATH=$PYTHONPATH:$HOME/fpu_driver/python:.
 \end{minted}
 
-All the examples presented here assume that the current working
-directory is \texttt{fpu\_driver/python}. If this is not the case,
-this directory needs to be added to the \texttt{PYTHONPATH}
-environment variable.
+
+
 
 
 \subsection{Communication protocol versions}
@@ -1269,6 +1273,29 @@ and places it into the subdirectory \verb+/python+.
 In the same subdirectory, there are some test
 scripts which can be used to test the module.
 
+\subsubsection{Generating the documentation}
+
+An up-to-date version of this document for the
+latest driver will be provided in the Livelink
+system.
+
+The documentation source is managed along with the driver sources.  To
+generate the documentation for a specific version of the driver,
+\LaTeX{} including the minted package and the
+Python pygments software needs to be installed.
+
+From the folder \texttt{fpu\_driver}, run the
+command
+
+\begin{minted}{bash}
+  make tutorial
+\end{minted}
+
+To generate the documentation\footnote{If the document is generated
+  from scratch, it is necessary to repeat this command three times to
+  update the list of contents.} The generated document has the path
+name \texttt{doc/tutorial.pdf}.
+
 
 \section{Running the test gateway} 
 
@@ -1284,9 +1311,9 @@ issue
 
 
 This test code opens three socket connections on localhost and will
-display received messages and commands. It will not necessarily
-run with the same speed as the hardware but should match the
-hardware protocol faithfully.
+display received messages and commands. It will not necessarily run
+with the same speed as the hardware but should match the hardware
+protocol specification faithfully.
 
 [In future,] Use the command line option "--help" to check for additional features,
 such as simulating communication failures etc.
