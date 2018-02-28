@@ -416,7 +416,8 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
 
 
         const int idx_first = 0;
-        const t_step_pair& step0 = waveforms[fpu_index].steps[idx_first];
+        const t_waveform& wform = waveforms[fpu_index];
+        const t_step_pair& step0 = wform.steps[idx_first];
 
         if ((step0.alpha_steps == 0) && (step0.beta_steps == 0))
         {
@@ -434,13 +435,20 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
             {
                 const double MAX_FACTOR = 1.0 + MAX_INCREASE;
 
-                const t_step_pair& step = waveforms[fpu_index].steps[sidx];
+                const t_step_pair& step = wform.steps[sidx];
 
                 const int xs = (chan_idx == 0) ?
                                step.alpha_steps : step.beta_steps;
 
                 const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
                 const int xa = abs(xs);
+
+                // absolute value of step count of next entry, or zero if at end
+                const int xa_next = ( (sidx == (num_steps -1))
+                                      ? 0
+                                      :  abs(((chan_idx == 0)
+                                              ? wform.steps[sidx+1].alpha_steps
+                                              : wform.steps[sidx+1].beta_steps)));
 
                 //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i", fpu_id, chan_idx, sidx, xs, xa);
 
@@ -472,6 +480,11 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
                                      // the step count can be smaller than MIN_STEPS)
                                      || ( (xa == 0)
                                           && (xa_last < MIN_STEPS))
+                                     // or, a single entry with a small number of steps,
+                                     // followed by a pause or end of the table
+                                     || ( (xa <= MIN_STEPS)
+                                          && (xa_last == 0)
+                                          && (xa_next == 0))
                                      // or, with or without a change of direction,
                                      // one step number zero and the other at
                                      // MIN_STEPS - at start or end of a movement
