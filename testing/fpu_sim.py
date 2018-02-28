@@ -29,6 +29,12 @@ ALPHA_MAX_DEGREE = 360
 BETA_MIN_DEGREE = -180
 BETA_MAX_DEGREE = 130
 
+
+ALPHA_LIMIT_MIN_DEGREE = ALPHA_MIN_DEGREE -5
+ALPHA_LIMIT_MAX_DEGREE = ALPHA_MAX_DEGREE + 5
+BETA_LIMIT_MIN_DEGREE  = BETA_MIN_DEGREE - 5
+BETA_LIMIT_MAX_DEGREE  = BETA_MAX_DEGREE + 5
+
 AlphaGearRatio 	= 2050.175633 # actual gear ratio
 BetaGearRatio 	= 1517.662482 # actual gear ratio
 
@@ -42,11 +48,11 @@ DegreePerRevolution = 360.0
 StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
 StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
 
-MIN_ALPHA = int(ALPHA_MIN_DEGREE * StepsPerDegreeAlpha)
-MAX_ALPHA = int(ALPHA_MAX_DEGREE * StepsPerDegreeAlpha)
+MIN_ALPHA = int(ALPHA_LIMIT_MIN_DEGREE * StepsPerDegreeAlpha)
+MAX_ALPHA = int(ALPHA_LIMIT_MAX_DEGREE * StepsPerDegreeAlpha)
 
-MIN_BETA = int(BETA_MIN_DEGREE * StepsPerDegreeBeta)
-MAX_BETA = int(BETA_MAX_DEGREE * StepsPerDegreeBeta)
+MIN_BETA = int(BETA_LIMIT_MIN_DEGREE * StepsPerDegreeBeta)
+MAX_BETA = int(BETA_LIMIT_MAX_DEGREE * StepsPerDegreeBeta)
 
 # E_REQUEST_DIRECTION
 

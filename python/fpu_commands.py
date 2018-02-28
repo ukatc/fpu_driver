@@ -51,7 +51,9 @@ def fpu_steps(gs):
     return list_positions(gs)[0]
 
 
-def list_angles(gs, asteps_per_deg=125, bsteps_per_deg=80, num_fpus=None):
+def list_angles(gs,
+                asteps_per_deg=StepsPerDegreeAlpha,
+                bsteps_per_deg=StepsPerDegreeBeta, num_fpus=None):
     """Show approximate angular positions for each FPU in the grid. 
        The optional second and third argument are the scaling factors,
        and the fourth argument is the number of FPUs shown."""
@@ -95,7 +97,6 @@ def list_states(gs, num_fpus=None):
 # section duration
 STEPS_LOWER_LIMIT=125
 STEPS_UPPER_LIMIT=500
-#STEPS_UPPER_LIMIT=300
 
 
 def step_list_slow(nsteps):
