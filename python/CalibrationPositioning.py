@@ -7,6 +7,7 @@ positions and calls a measurement function at each position.
 import time
 import argparse
 import numpy
+import random
 
 import FpuGridDriver
 from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST, GatewayAddress
@@ -34,7 +35,7 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
 
     #gd.pingFPUs(grid_state)
     alpha0, beta0 = list_angles(grid_state)[0]
-    print("current pos: ({},{})".format(alpha0, beta0))
+    print("starting pos: ({:6.2f}, {:6.2f})".format(alpha0, beta0))
     alpha_move = alpha - alpha0
     beta_move = beta - beta0
 
@@ -43,17 +44,19 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
         waveform = gen_wf(alpha_move, beta_move)
 
         # configure waveform, by uploading it to the FPU
+        print("wf.out=", waveform)
         gd.configMotion(waveform, grid_state)
 
         printtime()
-        print("now moving to ({},{})".format(alpha, beta))
+        print("now moving to ({:6.2f}, {:6.2f})".format(alpha, beta))
         gd.executeMotion(grid_state)
     else:
         print("not moving (null movement discarded)")
 
     # display the new position
     #gd.pingFPUs(grid_state)
-    print("measuring at position:", list_angles(grid_state)[0])
+    a, b = list_angles(grid_state)[0]
+    print("reached position: ({:6.2f}, {:6.2f})".format(a,b) )
 
     alpha_steps = grid_state.FPU[0].alpha_steps
     beta_steps = grid_state.FPU[0].beta_steps
@@ -73,6 +76,7 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
         else:
             if (alpha != 0) or (beta != 0):
                 waveform = gen_wf(-alpha, -beta)
+                print("wf.back=", waveform)
                 gd.configMotion(waveform, grid_state)
                 gd.executeMotion(grid_state)
             else:
@@ -130,19 +134,19 @@ def parse_args():
                         help='number of beta steps  (default: %(default)s)')
     
     parser.add_argument('--pattern', metavar='PATTERN', type=str, default="abcircle",
-                        choices=['abcircle', 'whitenoise', 'bluenoise', 'polargrid'],
+                        choices=['abcircle', 'abc', 'whitenoise', 'wn', 'bluenoise', 'bn', 'polargrid', 'grid'],
                         help="""Pattern of movement. Available patterns are:
 
-                        'abcircle' : Calibration pattern as described in VLT-TRE-MON-14620-3007, 
+                        'abcircle', 'abc' : Calibration pattern as described in VLT-TRE-MON-14620-3007, 
                                      section 5.1.6.
-                        'polargrid': alpha and beta coordinates are stepped through in a grid 
+                        'polargrid', 'grid': alpha and beta coordinates are stepped through in a grid 
                                      pattern, with the alpha angle moving after each beta angle
                                      was reached for one alpha position.
 
-                        'whitenoise' : In this pattern, a new (alpha, beta) pair of angles 
+                        'whitenoise', 'wn' : In this pattern, a new (alpha, beta) pair of angles 
                                      between the minimum and maximum values is drawn
                                      independently for each step.
-                        'bluenoise' : In this pattern, new angles are drawn for each step so
+                        'bluenoise', 'bn' : In this pattern, new angles are drawn for each step so
                                       that the distribution of distance follows a triangular PDF.
 
                         default: %(default)r)""")
@@ -204,8 +208,67 @@ def grid_positions(args):
 
             yield (alpha, beta, go_datum)        
             go_datum = False
+
+def abcircle_positions(args):
+
+    # track alpha circle
+    beta = min(180, args.beta_max)
+    if args.datum_at == 'alpha_change':
+        go_datum = True
+    else:
+        go_datum = False
+        
+    for alpha in numpy.linspace(args.alpha_min, args.alpha_max, args.asteps):
+        yield (alpha, beta, go_datum)        
+
+    # track beta circle
+    alpha = max(min(0.0, args.alpha_max), args.alpha_min)
+    if args.datum_at == 'beta_change':
+        go_datum = True
+    else:
+        go_datum = False
+        
+    for beta in numpy.linspace(args.beta_min, args.beta_max, args.bsteps):
+        yield (alpha, beta, go_datum)        
+            
+def whitenoise_positions(args):
+    for j in range(args.asteps):
+        alpha = random.uniform(args.alpha_min, args.alpha_max)
+        if args.datum_at == 'alpha_change':
+            go_datum = True
+        else:
+            go_datum = False
+
+        for j in range(args.bsteps):
+            beta = random.uniform(args.beta_min, args.beta_max)
+            if args.datum_at == 'beta_change':
+                go_datum = True
+
+            yield (alpha, beta, go_datum)
+            go_datum = False
             
 
+def bluenoise_positions(args):
+    last_alpha = 0
+    last_beta = 0
+    for j in range(args.asteps):
+        alpha = random.triangular(args.alpha_min, args.alpha_max, last_alpha)
+        if args.datum_at == 'alpha_change':
+            go_datum = True
+        else:
+            go_datum = False
+
+        for j in range(args.bsteps):
+            beta = random.triangular(args.beta_min, args.beta_max, last_beta)
+            if args.datum_at == 'beta_change':
+                go_datum = True
+
+            yield (alpha, beta, go_datum)
+            last_alpha = alpha
+            last_beta = beta
+            go_datum = False
+
+            
 def iterate_positions(args, seq, gd, grid_state, metrology_func=None, deviation_list=[]):
                    
     for alpha, beta, go_datum in seq:
@@ -229,8 +292,14 @@ def rungrid(args):
     deviations = []
 
     # select position pattern
-    if args.pattern == 'polargrid':
+    if args.pattern in [ 'polargrid', 'grid']:
         poslist = grid_positions(args)
+    elif args.pattern in [ 'abcircle', 'abc']:
+        poslist = abcircle_positions(args)
+    elif args.pattern in [ 'whitenoise', 'wn']:
+        poslist = whitenoise_positions(args)
+    elif args.pattern in [ 'bluenoise', 'bn']:
+        poslist = bluenoise_positions(args)
     else:
         raise ValueError("pattern not implemented")
 
