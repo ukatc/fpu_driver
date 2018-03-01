@@ -37,7 +37,7 @@ def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
         waveform = gen_wf(alpha_move, beta_move)
 
         # configure waveform, by uploading it to the FPU
-        print("%s : waveform=%r =" %(label, waveform))
+        print("%s : waveform=%r" %(label, waveform))
         for steplist in waveform.values():
             if steplist == [ (0, 0) ]:
                 null_movement = True
@@ -46,7 +46,8 @@ def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
     if not null_movement:
         gd.configMotion(waveform, grid_state)
         printtime()
-        print("{}: now moving to ({:6.2f}, {:6.2f})".format(label, alpha_move, beta_move))
+        a, b = list_angles(grid_state)[0]
+        print("{}: now moving to ({:6.2f}, {:6.2f})".format(label, a + alpha_move, b + beta_move))
         gd.executeMotion(grid_state)
     else:
         print("{}: not moving (null movement discarded)".format(label))
