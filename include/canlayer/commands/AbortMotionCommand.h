@@ -66,6 +66,7 @@ public:
                            int& buf_len,
                            t_CAN_buffer& can_buffer)
     {
+
         // zero buffer to make sure no spurious DLEs are sent
         bzero(&can_buffer.message, sizeof(can_buffer.message));
         // CAN bus id for that gateway to which message should go

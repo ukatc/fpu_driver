@@ -62,6 +62,10 @@ GatewayDriver::GatewayDriver(int nfpus)
     memset(fpu_id_by_adr, 0, sizeof(fpu_id_by_adr));
     // assing default mapping and reverse mapping to
     // logical FPU ids.
+    // Important: the reverse mapping needs to be defined
+    // for all FPUs which can in theory respond to
+    // a broadcast, because the FPUids are registered
+    // using reverse lookup.
     for (int fpuid=0; fpuid < MAX_NUM_POSITIONERS; fpuid++)
     {
 
@@ -559,7 +563,7 @@ void GatewayDriver::updatePendingCommand(int fpu_id,
 // processed before the pending bit is set which is confusing.
 
 void GatewayDriver::updatePendingSets(unique_ptr<I_CAN_Command> &active_can_command,
-                                      int gateway_id)
+                                      int gateway_id, int busid)
 {
     if (! active_can_command->doBroadcast())
     {
@@ -569,14 +573,13 @@ void GatewayDriver::updatePendingSets(unique_ptr<I_CAN_Command> &active_can_comm
     else
     {
         // set pending command for all FPUs on the same
-        // gateway (will ignore if state is locked).
-        for (int i=0; i < num_fpus; i++)
+        // (gateway, busid) address (will ignore if state is locked).
+        for (int bus_adr=1; bus_adr < (1 + FPUS_PER_BUS); bus_adr++)
         {
-            if (address_map[i].gateway_id
-                    == gateway_id)
+            const int fpu_id = fpu_id_by_adr[gateway_id][busid][bus_adr];
+            if ((fpu_id < num_fpus) && (fpu_id >= 0))
             {
-                updatePendingCommand(i,
-                                     active_can_command);
+                updatePendingCommand(fpu_id, active_can_command);
             }
         }
     }
@@ -622,7 +625,7 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
                                                   message_len,
                                                   can_buffer);
 
-            updatePendingSets(active_can_command, gateway_id);
+            updatePendingSets(active_can_command, gateway_id, busid);
             // update number of queued commands
             fpuArray.decSending();
 
@@ -1066,11 +1069,12 @@ E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_d
 }
 
 
-CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_CAN_Command>& new_command)
+CommandQueue::E_QueueState GatewayDriver::sendCommand(const int fpu_id, unique_ptr<I_CAN_Command>& new_command)
 {
 
     assert(fpu_id < num_fpus);
     const int gateway_id = address_map[fpu_id].gateway_id;
+    assert(gateway_id < MAX_NUM_GATEWAYS);
 
     if (! new_command)
     {
@@ -1082,20 +1086,18 @@ CommandQueue::E_QueueState GatewayDriver::sendCommand(int fpu_id, unique_ptr<I_C
     return commandQueue.enqueue(gateway_id, new_command);
 }
 
-CommandQueue::E_QueueState GatewayDriver::broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command>& new_command)
-{
-
-    assert(gateway_id < MAX_NUM_GATEWAYS);
-    incSending();
-    return commandQueue.enqueue(gateway_id, new_command);
-}
-
 
 int GatewayDriver::getGatewayIdByFPUID(const int fpu_id) const
 {
     return address_map[fpu_id].gateway_id;
 }
 
+
+int GatewayDriver::getBroadcastID(const int gateway_id, const int busid)
+{
+    // get the id of fpu number one for this bus on this gateway.
+    return fpu_id_by_adr[gateway_id][busid][1];
+}
 
 
 // This command is implemented on the gateway driver level so that the
@@ -1124,22 +1126,11 @@ E_DriverErrCode GatewayDriver::abortMotion(t_grid_state& grid_state,
 
     // Send broadcast command to each gateway to abort movement of all
     // FPUs.
-#if (CAN_PROTOCOL_VERSION > 1 )
-#pragma message "FIXME: In protocol version 2, this needs to be changed to use the gateway SYNC message."
-#endif
-    unique_ptr<AbortMotionCommand> can_command;
 
-    for (int i=0; i < num_gateways; i++)
-    {
-        can_command = provideInstance<AbortMotionCommand>();
-        const bool do_broadcast = true;
-        can_command->parametrize(i, do_broadcast);
-        unique_ptr<I_CAN_Command> cmd(can_command.release());
-        broadcastCommand(i, cmd);
-    }
+    E_DriverErrCode ecode =  broadcastMessage<AbortMotionCommand>();
 
+    return ecode;
 
-    return DE_OK;
 }
 
 

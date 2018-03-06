@@ -107,14 +107,15 @@ public:
     }
 
     void updatePendingSets(unique_ptr<I_CAN_Command> &active_can_command,
-                           int gateway_id);
+                           int gateway_id, int busid);
 
 
     // send a CAN command to the gateway.
     // This method is thread-safe
-    CommandQueue::E_QueueState sendCommand(int fpu_id, unique_ptr<I_CAN_Command>& new_command);
+    CommandQueue::E_QueueState sendCommand(const int fpu_id, unique_ptr<I_CAN_Command>& new_command);
 
-    CommandQueue::E_QueueState broadcastCommand(const int gateway_id, unique_ptr<I_CAN_Command>& new_command);
+    // returns id which needs to be set as fpu id for broadcast command
+    int getBroadcastID(const int gateway_id, const int busid);
 
     // returns gateway ID for an FPU
     int getGatewayIdByFPUID(int fpu_id) const;
@@ -132,6 +133,39 @@ public:
     // many collisions happen in a short time span.).
     E_DriverErrCode abortMotion(t_grid_state& grid_state,
                                 E_GridState& state_summary);
+
+
+
+#if (CAN_PROTOCOL_VERSION > 1 )
+#pragma message "FIXME: In protocol version 2, this needs to be changed to use the gateway SYNC message."
+#endif
+
+    template<typename T> E_DriverErrCode broadcastMessage()
+    {
+        unique_ptr<T> can_command;
+
+        for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
+        {
+            for(int busid=0; busid < BUSES_PER_GATEWAY; busid++)
+            {
+                can_command = provideInstance<T>();
+
+                if (can_command == nullptr)
+                {
+                    return DE_ASSERTION_FAILED;
+                }
+                const bool do_broadcast = true;
+                // broadcast_id is an fpu id which makes sure
+                // the message goes to the requested bus.
+                const int broadcast_id = getBroadcastID(gateway_id, busid);
+                can_command->parametrize(broadcast_id, do_broadcast);
+                unique_ptr<I_CAN_Command> cmd(can_command.release());
+                sendCommand(broadcast_id, cmd);
+            }
+        }
+        return DE_OK;
+    }
+
 
     // the following two methods are actually internal -
     // they need to be visible in a non-member function.
@@ -192,7 +226,7 @@ private:
     FPUArray::t_bus_address_map  address_map;
 
     // reverse map of addresses to FPU id.
-    FPUArray::t_address_map fpu_id_by_adr; // address map from fpu id to can bus addresses
+    FPUArray::t_address_map fpu_id_by_adr; // address map from can bus addresses to fpu id
 
     int num_fpus;
 

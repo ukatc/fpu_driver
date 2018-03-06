@@ -747,16 +747,17 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
     // gateway SYNC message to make sure that FPUs move with minimum
     // lag in respect to each other.
 
+    E_DriverErrCode ecode = DE_OK;
     if (num_moving > 0)
     {
-        for (int i=0; i < num_gateways; i++)
-        {
-            can_command = gateway.provideInstance<ExecuteMotionCommand>();
-            const bool do_broadcast = true;
-            can_command->parametrize(i, do_broadcast);
-            unique_ptr<I_CAN_Command> cmd(can_command.release());
-            gateway.broadcastCommand(i, cmd);
-        }
+        // we need to send one command to each bus on each
+        // gateway. The CAN bus then forwards this to all FPUs on the
+        // same CAN bus. However in all other places, we address by
+        // FPU id. To keep the driver-internal accounting simple, we
+        // get and use a specific FPU id to which the command is sent.
+
+        ecode = gateway.broadcastMessage<ExecuteMotionCommand>();
+
     }
     // Give up real-time priority (this is important when the caller
     // thread later enters, for example, an endless loop).
@@ -765,7 +766,7 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
         unset_rt_priority();
     }
 
-    return DE_OK;
+    return ecode;
 
 }
 
