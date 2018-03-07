@@ -147,10 +147,10 @@ when the internal state struct is used.
 ** DONE revise initializations of socket and threads
 ** DONE Implement ustep errors in mock-up and test handler
 ** DONE Bugfix broadast command for more than one bus
+** TODO Lift waveform restriction for zero movement (DEFINE)
 ** TODO stress tests with multiple FPUs
 ** TODO translate thorpy driver to python2
 ** TODO Integrate path analysis script into MOONS shared library
-** TODO Lift waveform restriction for zero movement (macro)
 ** TODO Update tutorial on allowed waveforms
 ** TODO expand tutorial with reference part
 ** TODO add separate reporting/logging of results
