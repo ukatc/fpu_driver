@@ -527,20 +527,6 @@ void translate(InvalidWaveformRaggedException const& e)
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
-struct InvalidWaveformStartException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_WAVEFORM_START: The begin of the passed waveform is invalid.";
-    }
-};
-
-void translate(InvalidWaveformStartException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
 struct InvalidWaveformStepCountTooLargeException : std::exception
 {
     char const* what() const throw()
@@ -824,10 +810,6 @@ void checkDriverError(E_DriverErrCode ecode)
 
     case DE_INVALID_WAVEFORM_RAGGED :
         throw InvalidWaveformRaggedException();
-        break;
-
-    case DE_INVALID_WAVEFORM_START :
-        throw InvalidWaveformStartException();
         break;
 
     case DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE :
@@ -1304,7 +1286,6 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_ASSERTION_FAILED",DE_ASSERTION_FAILED)
     .value("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS", DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS)
     .value("DE_INVALID_WAVEFORM_RAGGED", DE_INVALID_WAVEFORM_RAGGED)
-    .value("DE_INVALID_WAVEFORM_START", DE_INVALID_WAVEFORM_START)
     .value("DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE", DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE)
     .value("DE_INVALID_WAVEFORM_CHANGE", DE_INVALID_WAVEFORM_CHANGE)
     .value("DE_INVALID_WAVEFORM_TAIL", DE_INVALID_WAVEFORM_TAIL)
