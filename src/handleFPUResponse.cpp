@@ -511,12 +511,27 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 
 
     case CCMD_RESET_FPU       :
-        // clear pending time-out
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        // clear pending time-out for reset command
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);        
         if (response_errcode == 0)
         {
             initialize_fpu(fpu);
             update_status_flags(fpu, response_status);
+
+            if (fpu.pending_command_set != 0)
+            {
+                // remove *all* other pending commands
+                for(int cmd_code; cmd_code < NUM_CAN_COMMANDS; cmd_code++)
+                {
+                    if (((fpu.pending_command_set >> cmd_code) & 1) == 1)
+                    {
+                        const E_CAN_COMMAND can_cmd = static_cast<E_CAN_COMMAND>(cmd_code);
+                        remove_pending(fpu, fpu_id,  can_cmd, response_errcode,
+                                       timeout_list, count_pending);        
+                    }
+
+                }
+            }
         }
         fpu.last_updated = cur_time;
 
