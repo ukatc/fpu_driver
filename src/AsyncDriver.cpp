@@ -415,16 +415,7 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
         }
 
 
-        const int idx_first = 0;
         const t_waveform& wform = waveforms[fpu_index];
-        const t_step_pair& step0 = wform.steps[idx_first];
-
-        if ((step0.alpha_steps == 0) && (step0.beta_steps == 0))
-        {
-            // first section needs to have a non-zero entry
-            printf("waveform invalid for FPU %i: both starting steps counts for both arms zero\n", fpu_id);
-            return DE_INVALID_WAVEFORM_START;
-        }
 
         for(int chan_idx=0; chan_idx < 2; chan_idx++)
         {

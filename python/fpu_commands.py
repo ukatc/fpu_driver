@@ -184,8 +184,6 @@ def gen_wf(adegree, bdegree, asteps_per_deg=StepsPerDegreeAlpha, bsteps_per_deg=
 
     No range checking of movements is done.
     """
-    # check that we don't have a null-movement
-    assert((adegree != 0) or (bdegree != 0) )
     # assert we don't deal with NaNs
     assert( (adegree == adegree) and (bdegree == bdegree))
     # (if the above code confuses you, read https://en.wikipedia.org/wiki/NaN

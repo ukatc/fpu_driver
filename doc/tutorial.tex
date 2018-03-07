@@ -12,7 +12,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 0.5.0 (document version \texttt{\input{../git_version}})}
+  module} \subtitle{For driver version 0.4.2 (document version \texttt{\input{../git_version}})}
 
 \author{Johannes Nix}
 
@@ -771,32 +771,33 @@ them. These rules are currently as follows:
 
 \item All step numbers need to be integer values.
 
-\item The first entry needs to have the minimum step count at least
-  for one of the two arms.  For protocol version 1, this minimum is fixed to a
-  step count of 125\footnote{For protocol version 2, the minimum value
-    depends on the duration of a waveform segment which is 250
-    milliseconds by default but can be set to another value when
-    initializing the driver.}.
+\item The maximum number of entries in a waveform table is 128 for the
+  CAN protocol version 1.\footnote{In version 2 of the firmware
+    communication protocol, this limit is raised to a value of 256}
   
-\item Except the the last non-zero entry, all step numbers in a
-  waveform need to have an absolute value which has at least the
-  minimum value of 125, and at most the maximum value of 500. Also,
-  sequences of zeroes are allowed.
+\item A waveform for one FPU can include several movement parts for
+  each arm. A movement part is a sequence of step counts which are
+  non-zero and have the same direction.  A waveform can contain an
+  arbitrary number of movement sequences with non-zero entries.
 
-\item A waveform can include several movement parts for each arm. A
-  movement part is a sequence of step counts which are non-zero and
-  have the same direction. The last entry of a movement part in one
-  direction can have a step count between zero and the minimum step
-  count. It must not be larger than the minimum step count.
+\item The first entry in any movement sequence needs to have the
+  minimum step count at least for one of the two arms.  For protocol
+  version 1, this minimum is fixed to a step count of 125. (Minimum
+  and maximum value will be configurable in the protocol 2 firmware.)
+
+\item The last entry of a movement part in one direction can have a
+  step count between zero and the minimum step count. It must not be
+  larger than the minimum step count.
+  
+\item Except the the last non-zero entry in a movement part, all step
+  numbers in a waveform need to have an absolute value which has at
+  least the minimum value of 125, and at most the maximum value of
+  500. Also, arbitrary sequences of zeroes are allowed.
 
 \item When changing the movement direction, the absolute number of
   steps before the change needs to be between zero and the minimum
   step count, followed by a wave table segment with a step count of
   zero, followed by the minimum step count with the opposite sign.
-
-\item The total number of waveform entries can only be 128 (for
-  protocol version 1\footnote{In version 2 of the firmware
-    communication protocol, this limit is raised to a value of 256}).
 
 \item Between consecutive step number values, the absolute value of
   the larger number can only be at most 40\% larger than the absolute
