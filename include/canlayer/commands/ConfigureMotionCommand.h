@@ -50,17 +50,17 @@ public:
     };
 
     ConfigureMotionCommand()
-  {
-     fpu_id = 0;
-     asteps = 0;
-     bsteps = 0;
-     apause = false;
-     bpause = false;
-     aclockwise = false;
-     bclockwise = false;
-     fentry = false;
-     lentry = false;
-  };
+    {
+        fpu_id = 0;
+        asteps = 0;
+        bsteps = 0;
+        apause = false;
+        bpause = false;
+        aclockwise = false;
+        bclockwise = false;
+        fentry = false;
+        lentry = false;
+    };
 
     void parametrize(int f_id,
                      int16_t alpha_steps,
@@ -73,30 +73,30 @@ public:
         // assert precondition of 14-bit step size
         const int abs_alpha_steps = abs(alpha_steps);
         const int abs_beta_steps = abs(beta_steps);
-        
+
         assert( (abs_alpha_steps >> 14) == 0);
         assert( (abs_beta_steps >> 14) == 0);
-        
+
         const bool alpha_pause = (abs_alpha_steps == 0);
         const int alpha_scount = (alpha_pause
                                   ? MIN_STEPCOUNT
                                   : abs_alpha_steps);
-        
-        const bool alpha_clockwise = (alpha_steps < 0);        
+
+        const bool alpha_clockwise = (alpha_steps < 0);
         const bool beta_pause = (abs_beta_steps == 0);
         const int beta_scount = (beta_pause
                                  ? MIN_STEPCOUNT
                                  : abs_beta_steps);
-        
+
         const bool beta_clockwise = (beta_steps < 0);
-        
-        
+
+
         asteps = alpha_scount;
         bsteps = beta_scount;
         apause = alpha_pause;
         aclockwise = alpha_clockwise;
         bpause = beta_pause;
-        bclockwise = beta_clockwise;        
+        bclockwise = beta_clockwise;
         fentry = first_entry;
         lentry = last_entry;
     };

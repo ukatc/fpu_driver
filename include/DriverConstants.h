@@ -47,5 +47,31 @@ const int MAX_NUM_POSITIONERS = (MAX_NUM_GATEWAYS
 
 const bool USE_REALTIME_SCHEDULING = false;
 
+
+/* Design scaling of stepper motors.
+ * From David Atkinson:
+ *
+ * These are the actual gear ratios that I use in my IDL positional repeatability code.
+ * I was given these numbers by David Montgomery:
+ *
+ */
+
+const double ALPHA_GEAR_RATIO 	= 2050.175633;// actual gear ratio
+const double BETA_GEAR_RATIO 	= 1517.662482;// actual gear ratio
+
+/*
+ * There are 20 steps per revolution on the non-geared side, so:
+ *
+ */
+const double STEPS_PER_REVOLUTION = 20.0;
+const double DEGREE_PER_REVOLUTION = 360.0;
+
+/*
+ * Note that these numbers must not be confounded with actual calibrated values!
+ */
+const double STEPS_PER_DEGREE_ALPHA = (STEPS_PER_REVOLUTION * ALPHA_GEAR_RATIO) / DEGREE_PER_REVOLUTION;
+const double STEPS_PER_DEGREE_BETA = (STEPS_PER_REVOLUTION * BETA_GEAR_RATIO) / DEGREE_PER_REVOLUTION;
+
+
 }
 #endif

@@ -27,9 +27,9 @@ print("findDatum finished")
 
 
 
-steps_up = [ (0, 100) for i in range(125) ]
+steps_up = [ (0, 125) for i in range(125) ]
 
-steps_down = [ (0, -100) for i in range(125) ]
+steps_down = [ (0, -125) for i in range(125) ]
 
 wt_up = { 0: steps_up, }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from __future__ import print_function
+from __future__ import print_function, division
 """This module drives one FPU to a fine-grained sequence of 
 positions and calls a measurement function at each position.
 """
@@ -7,6 +7,7 @@ positions and calls a measurement function at each position.
 import time
 import argparse
 import numpy
+import random
 
 import FpuGridDriver
 from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST, GatewayAddress
@@ -28,29 +29,46 @@ def dummy_metrology_func(alpha_steps, beta_steps):
 def printtime():
     print(time.strftime("%a, %d %b %Y %H:%M:%S +0000 (%Z)", time.gmtime()))
     
-
-def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
-                     return_to_datum=True, deviation_list=[]):
+def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
+    null_movement = (alpha_move == 0) and (beta_move == 0)
     
-    alpha0, beta0 = list_angles(grid_state)[0]
-    alpha_move = alpha - alpha0
-    beta_move = beta - beta0
-
-    if (alpha_move != 0) or (beta_move != 0):
+    if not null_movement:
         # generate waveform
         waveform = gen_wf(alpha_move, beta_move)
 
         # configure waveform, by uploading it to the FPU
+        print("%s : waveform=%r" %(label, waveform))
+        for steplist in waveform.values():
+            if steplist == [ (0, 0) ]:
+                null_movement = True
+                break
+            
+    if not null_movement:
         gd.configMotion(waveform, grid_state)
-
         printtime()
-        print("now moving to ({},{})".format(alpha, beta))
+        a, b = list_angles(grid_state)[0]
+        print("{}: now moving to ({:6.2f}, {:6.2f})".format(label, a + alpha_move, b + beta_move))
         gd.executeMotion(grid_state)
     else:
-        print("not moving (null movement discarded)")
-
+        print("{}: not moving (null movement discarded)".format(label))
     # display the new position
-    print("measuring at position:", list_angles(grid_state)[0])
+    gd.pingFPUs(grid_state)
+    a, b = list_angles(grid_state)[0]
+    print("{}: reached position: ({:6.2f}, {:6.2f})".format(label, a,b) )
+
+    return (not null_movement)
+    
+def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
+                     return_to_datum=True, deviation_list=[]):
+
+    #gd.pingFPUs(grid_state)
+    alpha0, beta0 = list_angles(grid_state)[0]
+    print("starting pos: ({:6.2f}, {:6.2f})".format(alpha0, beta0))
+    alpha_move = alpha - alpha0
+    beta_move = beta - beta0
+
+    was_moved = move_fpu(gd, grid_state, alpha_move, beta_move, "out" )
+ 
 
     alpha_steps = grid_state.FPU[0].alpha_steps
     beta_steps = grid_state.FPU[0].beta_steps
@@ -60,20 +78,15 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
 
     if return_to_datum:
         printtime()
-        print("now moving to ({},{})".format(0, 0))
         if (alpha0 == 0) and (beta0 == 0):
-            if (alpha_move != 0) or (beta_move != 0):
+            if was_moved:
+                print("now moving back to ({},{})".format(0, 0))
                 gd.reverseMotion(grid_state)
                 gd.executeMotion(grid_state)
             else:
-                print("not moving (null movement discarded)")
+                print("not moving back (null movement discarded)")
         else:
-            if (alpha != 0) or (beta != 0):
-                waveform = gen_wf(-alpha, -beta)
-                gd.configMotion(waveform, grid_state)
-                gd.executeMotion(grid_state)
-            else:
-                print("not moving (null movement discarded)")
+            move_fpu(gd, grid_state, -alpha, -beta, "return" )
 
         printtime()
         print("position:", list_angles(grid_state), "steps=", list_positions(grid_state))
@@ -126,6 +139,24 @@ def parse_args():
     parser.add_argument('bsteps', metavar='BSTEPS', type=int, default=10,
                         help='number of beta steps  (default: %(default)s)')
     
+    parser.add_argument('--pattern', metavar='PATTERN', type=str, default="abcircle",
+                        choices=['abcircle', 'abc', 'whitenoise', 'wn', 'bluenoise', 'bn', 'polargrid', 'grid'],
+                        help="""Pattern of movement. Available patterns are:
+
+                        'abcircle', 'abc' : Calibration pattern as described in VLT-TRE-MON-14620-3007, 
+                                     section 5.1.6.
+                        'polargrid', 'grid': alpha and beta coordinates are stepped through in a grid 
+                                     pattern, with the alpha angle moving after each beta angle
+                                     was reached for one alpha position.
+
+                        'whitenoise', 'wn' : In this pattern, a new (alpha, beta) pair of angles 
+                                     between the minimum and maximum values is drawn
+                                     independently for each step.
+                        'bluenoise', 'bn' : In this pattern, new angles are drawn for each step so
+                                      that the distribution of distance follows a triangular PDF.
+
+                        default: %(default)r)""")
+    
     parser.add_argument('--datum_at', metavar='DATUM_AT', type=str, default="start",
                         choices=['alpha_change', 'beta_change', 'start'],
                         help="go to datum at change of alpha / beta coordinate ('alpha_change', 'beta_change', 'start' default: %(default)r)")
@@ -169,7 +200,7 @@ def initialize_FPU(args):
     return gd, grid_state
 
 
-def loop_positions(args, gd, grid_state, metrology_func=None, deviation_list=[]):
+def grid_positions(args):
                    
     for alpha in numpy.linspace(args.alpha_min, args.alpha_max, args.asteps):
         if args.datum_at == 'alpha_change':
@@ -180,13 +211,77 @@ def loop_positions(args, gd, grid_state, metrology_func=None, deviation_list=[])
         for beta in numpy.linspace(args.beta_min, args.beta_max, args.bsteps):
             if args.datum_at == 'beta_change':
                 go_datum = True
-                
-            print("measuring at ({},{}), datum={}".format(alpha, beta, go_datum))
-            measure_position(gd, grid_state, alpha, beta, return_to_datum=go_datum,
-                             metrology_func=metrology_func, deviation_list=deviation_list)
-        
+
+            yield (alpha, beta, go_datum)        
             go_datum = False
 
+def abcircle_positions(args):
+
+    # track alpha circle
+    beta = min(180, args.beta_max)
+    if args.datum_at == 'alpha_change':
+        go_datum = True
+    else:
+        go_datum = False
+        
+    for alpha in numpy.linspace(args.alpha_min, args.alpha_max, args.asteps):
+        yield (alpha, beta, go_datum)        
+
+    # track beta circle
+    alpha = max(min(0.0, args.alpha_max), args.alpha_min)
+    if args.datum_at == 'beta_change':
+        go_datum = True
+    else:
+        go_datum = False
+        
+    for beta in numpy.linspace(args.beta_min, args.beta_max, args.bsteps):
+        yield (alpha, beta, go_datum)        
+            
+def whitenoise_positions(args):
+    for j in range(args.asteps):
+        alpha = random.uniform(args.alpha_min, args.alpha_max)
+        if args.datum_at == 'alpha_change':
+            go_datum = True
+        else:
+            go_datum = False
+
+        for j in range(args.bsteps):
+            beta = random.uniform(args.beta_min, args.beta_max)
+            if args.datum_at == 'beta_change':
+                go_datum = True
+
+            yield (alpha, beta, go_datum)
+            go_datum = False
+            
+
+def bluenoise_positions(args):
+    last_alpha = 0
+    last_beta = 0
+    for j in range(args.asteps):
+        alpha = random.triangular(args.alpha_min, args.alpha_max, last_alpha)
+        if args.datum_at == 'alpha_change':
+            go_datum = True
+        else:
+            go_datum = False
+
+        for j in range(args.bsteps):
+            beta = random.triangular(args.beta_min, args.beta_max, last_beta)
+            if args.datum_at == 'beta_change':
+                go_datum = True
+
+            yield (alpha, beta, go_datum)
+            last_alpha = alpha
+            last_beta = beta
+            go_datum = False
+
+            
+def iterate_positions(args, seq, gd, grid_state, metrology_func=None, deviation_list=[]):
+                   
+    for alpha, beta, go_datum in seq:
+        print("measuring at ({},{}), datum={}".format(alpha, beta, go_datum))
+        measure_position(gd, grid_state, alpha, beta, return_to_datum=go_datum,
+                         metrology_func=metrology_func, deviation_list=deviation_list)
+        
         if args.chill_time > 10:
             print("waiting %f seconds for fpu to cool off" % args.chill_time)
         time.sleep(args.chill_time)
@@ -195,20 +290,29 @@ def loop_positions(args, gd, grid_state, metrology_func=None, deviation_list=[])
     measure_position(gd, grid_state, 0, 0, return_to_datum=True,
                      metrology_func=metrology_func, deviation_list=deviation_list)
     
-                
-if __name__ == '__main__':
-    # parse arguments
-    args = parse_args()
-    
+
+def rungrid(args):
     # initialize FPU accordingly
     gd, grid_state = initialize_FPU(args)
 
     deviations = []
 
+    # select position pattern
+    if args.pattern in [ 'polargrid', 'grid']:
+        poslist = grid_positions(args)
+    elif args.pattern in [ 'abcircle', 'abc']:
+        poslist = abcircle_positions(args)
+    elif args.pattern in [ 'whitenoise', 'wn']:
+        poslist = whitenoise_positions(args)
+    elif args.pattern in [ 'bluenoise', 'bn']:
+        poslist = bluenoise_positions(args)
+    else:
+        raise ValueError("pattern not implemented")
+
     # loop over configured positions, calling metrology_func for
     # each position
     try:
-        loop_positions(args, gd, grid_state, metrology_func=dummy_metrology_func,
+        iterate_positions(args, poslist, gd, grid_state, metrology_func=dummy_metrology_func,
                        deviation_list=deviations)
     except:
         print("############# Exception caught ###################")
@@ -223,6 +327,13 @@ if __name__ == '__main__':
 
     printtime()
     print("ready.")
+    
+    
+if __name__ == '__main__':
+    # parse arguments
+    args = parse_args()
+    rungrid(args)
+    
                     
 
               

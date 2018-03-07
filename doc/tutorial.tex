@@ -22,11 +22,42 @@
 
 
 \section{Introduction}
-\subsection{Topic and goals}
-This tutorial describes how to use the Python bindings for the MOONS
-fibre positioner unit (FPU) driver. Its goal is to enable the reader
-to control the FPU in the verification system using python scripts, so
-that he or she can perform basic verification tasks.
+\subsection{Related documents}
+
+\begin{tabular}{|ll|}
+  \hline
+\verb+[1] VLT-TRE-MON-14620-1018+, &  FPU Verification Requirements \\
+\verb+[2] VLT-TRE-MON-14620-3017+, & MOONS Fibre Positioner Verification Software Design \\
+\hline
+\end{tabular}
+
+
+\subsection{Purpose of this document}
+This document describes the Python programming interface for the MOONS
+Fibre Positioner Unit CAN level driver module.
+
+The CAN level driver allows to control and move Fibre Positioner Units
+(FPU) in the MOONS FPU grid by a software interface. This programming
+interface is implemented in C++. It is designed to be used in several
+different contexts: Primarily, for simultaneously controlling more
+than 1000 FPUs in the final MOONS astronomic instrument. Important
+secondary uses are verifying and calibrating the elements of the
+positioning system, developing and testing of algorithms for complex
+higher layers of the instrument control system, and engineering and
+development of related systems and verification software such as image
+analysis.
+
+Using the final verification software will not require the users to
+know how to program Python.  However, several parts of the
+verification software system and the instrument control software are
+entirely or initially developed and tested in Python.  The driver
+library documented here has the function to make the functionality of
+the CAN level C++ driver accessible from Python. As such, the goal of
+this document is to describe a toolbox which can be used to manipulate
+and test the FPUs as easily as possible. The underlying hardware
+protocol will only be exposed as much as necessary to understand the
+possible states of the hardware.
+
 
 
 \subsection{Required knowledge}
@@ -44,7 +75,7 @@ Also, in order to retrieve the current version of the library, the
 user needs to have a minimum knowledge of the git version control
 system. This is explained, for example, in
 ``\href{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}{getting
-  a git repository}''.
+  a git repository}\footnote{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}''.
 
 \section{Setting up the library module}
 
@@ -110,18 +141,22 @@ instructions in the file ``\texttt{doc/INSTALL}''.
 
 For the Python module to work, the directory \texttt{/user/local/lib}
 needs to be added to the environment variable
-\texttt{LD\_LIBRARY\_PATH}.  Assuming a standard setup, this can be
-done by adding the following line to the file \texttt{.bashrc} in the
+\texttt{LD\_LIBRARY\_PATH}.
+
+Also, it is probably useful to add the \texttt{python} directory and
+the current directory to the environment variable \texttt{PYTHONPATH},
+so that the driver module can be found independently from the current
+working directory.  Assuming a standard setup, this can be done by
+adding the following lines to the file \texttt{.bashrc} in the
 user-specific home directory:
 
 \begin{minted}{bash}
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+  export PYTHONPATH=$PYTHONPATH:$HOME/fpu_driver/python:.
 \end{minted}
 
-All the examples presented here assume that the current working
-directory is \texttt{fpu\_driver/python}. If this is not the case,
-this directory needs to be added to the \texttt{PYTHONPATH}
-environment variable.
+
+
 
 
 \subsection{Communication protocol versions}
@@ -244,11 +279,11 @@ required to access the FPUs.
 
 \subsection{Driver methods}
 
-The driver object allows to invoke method calls which control the FPU
-hardware. The method names always start with a dot after the name of
-the driver object.  So, \texttt{gd.abc()} would call method ``abc'' of
-the driver object. Like normal function calls, they usually have
-parameters.
+The driver object allows to invoke method calls (methods are also
+often called member functions) which control the FPU hardware. The
+method names always start with a dot after the name of the driver
+object.  So, \texttt{gd.abc()} would call method ``abc'' of the driver
+object. Like normal function calls, they usually have parameters.
 
 In this case, the method \texttt{connect()} connects the driver to one
 or more EtherCAN gateways and starts listening to messages from the
@@ -339,12 +374,16 @@ is required by the verification system.
 
 When trying to diagnose and understand errors, it is often helpful to
 access this state information in an interactive way.  To do this, we
-can make use of the ability that Python can run any commands which
+can make use of the capability that Python can run any commands which
 appear in a script equally well when entered interactively. Also, the
 Python interpreter can be started with the ``-i'' (interactive) option
 which has the effect that after an exception, or after all commands in
-a script have been executed, the interpreter waits for command line
-arguments.
+a script have been executed, the interpreter opens a command line or
+``read-eval-print-loop''
+in which commands can be entered and executed
+in the interactive mode. Every time when a typed-in expression or
+function call returns a value, the value is printed out before the
+command prompt appears again.
 
 For example, let's assume that the script on
 page~\pageref{sec:minimalexample} is shortened to the first 36 lines
@@ -1201,11 +1240,12 @@ Pyhon2 and Python3.
 Install it as follows:
 
   \begin{minted}{bash}
-    # pip install gevent
+    # pip install --user gevent
   \end{minted}    
 
-(This command seems to be need to be run as root in order to install
-  under \texttt{/usr/local}).
+(This command seems to be need to be run as root, and without the
+  \texttt{--user} option, in order to install under
+  \texttt{/usr/local}).
 
 
 
@@ -1235,6 +1275,29 @@ and places it into the subdirectory \verb+/python+.
 In the same subdirectory, there are some test
 scripts which can be used to test the module.
 
+\subsubsection{Generating the documentation}
+
+An up-to-date version of this document for the
+latest driver will be provided in the Livelink
+system.
+
+The documentation source is managed along with the driver sources.  To
+generate the documentation for a specific version of the driver,
+\LaTeX{} including the minted package and the
+Python pygments software needs to be installed.
+
+From the folder \texttt{fpu\_driver}, run the
+command
+
+\begin{minted}{bash}
+  make tutorial
+\end{minted}
+
+To generate the documentation\footnote{If the document is generated
+  from scratch, it is necessary to repeat this command three times to
+  update the list of contents.} The generated document has the path
+name \texttt{doc/tutorial.pdf}.
+
 
 \section{Running the test gateway} 
 
@@ -1250,9 +1313,9 @@ issue
 
 
 This test code opens three socket connections on localhost and will
-display received messages and commands. It will not necessarily
-run with the same speed as the hardware but should match the
-hardware protocol faithfully.
+display received messages and commands. It will not necessarily run
+with the same speed as the hardware but should match the hardware
+protocol specification faithfully.
 
 [In future,] Use the command line option "--help" to check for additional features,
 such as simulating communication failures etc.

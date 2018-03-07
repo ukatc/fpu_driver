@@ -12,20 +12,20 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME MoveDatumOnCommand.h
+// NAME SetUStepLevelCommand.h
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
-//////////////////////////////////////////////////////////////////////////
-//////
+////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MOVE_DATUM_COMMAND_H
-#define MOVE_DATUM_COMMAND_H
+#ifndef SET_USTEP_LEVEL_COMMAND_H
+#define SET_USTEP_LEVEL_COMMAND_H
 
 #include <string.h>
 #include <cassert>
 #include "../I_CAN_Command.h"
+#include "../../DriverConstants.h"
 
 namespace mpifps
 {
@@ -33,28 +33,22 @@ namespace mpifps
 namespace canlayer
 {
 
-class FindDatumCommand : public I_CAN_Command
+class SetUStepLevelCommand : public I_CAN_Command
 {
 
 public:
 
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_FIND_DATUM;
+        return CCMD_SET_USTEP_LEVEL;
     };
 
-
-    FindDatumCommand()
+    SetUStepLevelCommand()
     {
         fpu_id = 0;
-        bcast = false;
-#if (CAN_PROTOCOL_VERSION > 1)
-        _auto_datum = false;
-        _clockwise_first = false;
-#endif
+        ustep_level=1;
+        broadcast = false;
     };
-
-    ~FindDatumCommand() {};
 
     E_CAN_COMMAND getInstanceCommandCode()
     {
@@ -62,22 +56,22 @@ public:
     };
 
 
-#if (CAN_PROTOCOL_VERSION == 1)
-    void parametrize(int f_id, bool broadcast)
+    void parametrize(int f_id, bool bcast, uint8_t ustep)
     {
         fpu_id = f_id;
-        bcast = broadcast;
+        broadcast = bcast;
+        switch(ustep)
+        {
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+            break;
+        default:
+            assert(0);
+        }
+        ustep_level = ustep;
     };
-#else
-    void parametrize(int f_id, bool broadcast, bool auto_datum, bool clockwise_first)
-    {
-        fpu_id = f_id;
-        bcast = broadcast;
-        _auto_datum = auto_datum;
-        _clockwise_first = clockwise_first;
-    };
-#endif
-
 
     void SerializeToBuffer(const uint8_t busid,
                            const uint8_t fpu_canid,
@@ -93,10 +87,6 @@ public:
         // we use bit 7 to 10 for the command code,
         // and bit 0 to 6 for the FPU bus id.
         assert(fpu_canid <= FPUS_PER_BUS);
-        if (! bcast)
-        {
-            assert(fpu_canid > 0);
-        }
 
 
         // the CAN identifier is either all zeros (for a broadcast
@@ -104,14 +94,9 @@ public:
         // 6 the CAN id of the FPU.
         const E_CAN_COMMAND cmd_code = getCommandCode();
 
-        uint16_t can_identifier = 0;
+        uint16_t can_identifier = (getMessagePriority(cmd_code)
+                                   << 7) | fpu_canid;
 
-        if (! bcast)
-        {
-            // priority evaluates to zero for protocol version 1
-            can_identifier = (getMessagePriority(cmd_code)
-                              << 7) | fpu_canid;
-        }
 
         // The protocol uses little-endian encoding here
         // (the byte order used in the CANOpen protocol).
@@ -121,14 +106,12 @@ public:
 
         // CAN command code
         can_buffer.message.data[0] = cmd_code;
-#if (CAN_PROTOCOL_VERSION > 1)
-        can_buffer.message.data[2] = ( ( _auto_datum ? 1 : 0)
-                                       | ((_clockwise_first ?  1 : 0) << 1));
-#endif
+        can_buffer.message.data[1] = ustep_level;
 
         buf_len += 8;
 
     };
+
 
 
     // FPU id to which message is sent
@@ -147,11 +130,9 @@ public:
     // time-out period for a response to the message
     timespec getTimeOut()
     {
-        // Largest possible waiting time for a working datum
-        // search is 35 seconds.
-        const struct timespec  toval =
+        timespec const toval =
         {
-            /* .tv_sec = */ 60,
+            /* .tv_sec = */ 10,
             /* .tv_nsec = */ 0
         };
 
@@ -160,16 +141,13 @@ public:
 
     bool doBroadcast()
     {
-        return bcast;
+        return false;
     }
 
 private:
     uint16_t fpu_id;
-#if (CAN_PROTOCOL_VERSION > 1)
-    bool _auto_datum;
-    bool _clockwise_first;
-#endif
-    bool bcast;
+    bool broadcast;
+    uint8_t ustep_level;
 
 
 };

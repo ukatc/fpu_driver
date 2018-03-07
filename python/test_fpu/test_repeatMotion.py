@@ -27,9 +27,9 @@ print("findDatum finished")
 
 
 
-steps_up = [ (100, 0) for i in range(125) ]
+steps_up = [ (125, 0) for i in range(125) ]
 
-steps_down = [ (-100, 0) for i in range(125) ]
+steps_down = [ (-125, 0) for i in range(125) ]
 
 wt_up = { 0: steps_up, }
 
@@ -58,21 +58,21 @@ gd.executeMotion(gs)
 print("positions:", list_positions(gs))
 
 
-#gd.reverseMotion(gs)
-#print("issuing 4th executeMotion")
-#gd.executeMotion(gs)
-#print("positions:", list_positions(gs))
-#
-#gd.reverseMotion(gs)
-#print("issuing 5th executeMotion")
-#gd.executeMotion(gs)
-#print("positions:", list_positions(gs))
-#
-#gd.reverseMotion(gs)
-#print("issuing 6th executeMotion")
-#gd.executeMotion(gs)
-#print("positions (should be back to origin):", list_positions(gs))
-#
+gd.reverseMotion(gs)
+print("issuing 4th executeMotion")
+gd.executeMotion(gs)
+print("positions:", list_positions(gs))
+
+gd.reverseMotion(gs)
+print("issuing 5th executeMotion")
+gd.executeMotion(gs)
+print("positions:", list_positions(gs))
+
+gd.reverseMotion(gs)
+print("issuing 6th executeMotion")
+gd.executeMotion(gs)
+print("positions (should be back to origin):", list_positions(gs))
+
 
 
 

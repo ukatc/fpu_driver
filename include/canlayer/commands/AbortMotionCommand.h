@@ -45,8 +45,8 @@ public:
 
     AbortMotionCommand()
     {
-      fpu_id = 0;
-      bcast = false;
+        fpu_id = 0;
+        bcast = false;
     };
 
     E_CAN_COMMAND getInstanceCommandCode()

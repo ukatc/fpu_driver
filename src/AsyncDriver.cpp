@@ -45,7 +45,7 @@
 #include "canlayer/commands/RepeatMotionCommand.h"
 #include "canlayer/commands/ResetFPUCommand.h"
 #include "canlayer/commands/ReverseMotionCommand.h"
-#include "canlayer/commands/ReverseMotionCommand.h"
+#include "canlayer/commands/SetUStepLevelCommand.h"
 
 
 namespace mpifps
@@ -244,6 +244,13 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+    E_DriverErrCode ecode = pingFPUsAsync(grid_state, state_summary);
+
+    if (ecode != DE_OK)
+    {
+        return ecode;
+    }
+
     // check no FPUs have ongoing collisions
     for (int i=0; i < num_fpus; i++)
     {
@@ -258,6 +265,16 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         }
     }
 
+    // check that beta arms are in allowed half-plane
+    for (int i=0; i < num_fpus; i++)
+    {
+        const int BETA_DATUM_LIMIT = -5 * STEPS_PER_DEGREE_BETA;
+        int beta_steps = grid_state.FPU_state[i].beta_steps;
+        if (beta_steps < BETA_DATUM_LIMIT)
+        {
+            return DE_UNIMPLEMENTED;
+        }
+    }
 
     // All fpus which are allowed to move, are moved automatically
     // until they hit the datum switch.
@@ -274,12 +291,6 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
                 || (fpu_state.state != FPST_RESTING))
 
         {
-            // FIXME!!!: For production, we might better add a
-            // security limit so that FPUs which are far off position
-            // are not driven into the hard stop.
-#if (CAN_PROTOCOL_VERSION > 1)
-#pragma message "avoid hitting a hard stop here (if possible)"
-#endif
 
             bool broadcast = false;
             can_command = gateway.provideInstance<FindDatumCommand>();
@@ -335,14 +346,14 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 
         if (fpu_status == FPST_OBSTACLE_ERROR)
         {
-	  if (fpu.beta_collision)
-	  {
-	      return DE_NEW_COLLISION;
-	  }
-	  else
-	  {
-  	      return DE_NEW_LIMIT_BREACH;
-	  }
+            if (fpu.beta_collision)
+            {
+                return DE_NEW_COLLISION;
+            }
+            else
+            {
+                return DE_NEW_LIMIT_BREACH;
+            }
         }
         if (fpu_status == FPST_ABORTED)
         {
@@ -373,122 +384,136 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 }
 
 E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
-                                               const int MIN_STEPS, const int MAX_STEPS,
-                                               const unsigned int MAX_NUM_SECTIONS, const double MAX_INCREASE) const
+        const int MIN_STEPS, const int MAX_STEPS,
+        const unsigned int MAX_NUM_SECTIONS, const double MAX_INCREASE) const
 {
-    
-        const int num_loading =  waveforms.size();
-        const unsigned int num_steps = waveforms[0].steps.size();
 
-        
-        if (num_steps > MAX_NUM_SECTIONS)
-            {
-                printf("too many steps in waveform\n");
-                return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
-            }
+    const int num_loading =  waveforms.size();
+    const unsigned int num_steps = waveforms[0].steps.size();
 
-        for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+
+    if (num_steps > MAX_NUM_SECTIONS)
+    {
+        printf("too many steps in waveform\n");
+        return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
+    }
+
+    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    {
+        const int fpu_id = waveforms[fpu_index].fpu_id;
+        if ((fpu_id >= num_fpus) || (fpu_id < 0))
         {
-            const int fpu_id = waveforms[fpu_index].fpu_id;
-	    if ((fpu_id >= num_fpus) || (fpu_id < 0))
-	    {
-                // the FPU id is out of range
-                printf("FPU ID is out of range\n");
-                return DE_INVALID_FPU_ID;
-	    }
-
-            // require same number of steps for all FPUs
-            if (waveforms[0].steps.size() != num_steps)
-            {
-                return DE_INVALID_WAVEFORM_RAGGED;
-            }
-	    
-
-            for(int chan_idx=0; chan_idx < 2; chan_idx++)
-            {
-                int xa_last = 0;
-                int x_last_sign = 0;
-                
-                for (unsigned int sidx=0; sidx<num_steps; sidx++)
-                {
-                    const double MAX_FACTOR = 1.0 + MAX_INCREASE;
-                
-                    const t_step_pair& step = waveforms[fpu_index].steps[sidx];
-
-                    const int xs = (chan_idx == 0) ?
-                        step.alpha_steps : step.beta_steps;
-
-                    const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
-                    const int xa = abs(xs);
-
-                    //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i", fpu_id, chan_idx, sidx, xs, xa);
-                    
-                    if (xa > MAX_STEPS)
-                    {
-                        printf("fpu %i, %s arm, movement interval %i: step count exceeds maximum\n",
-                               fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
-                        return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
-                    }
-
-                    
-
-                    int xa_small = std::min(xa_last, xa);
-                    int xa_large = std::max(xa_last, xa);
-                    //printf(", xa_small=%i, xa_large=%i, xa_small*max_factor=%i\n",
-                    //       xa_small, xa_large, int(xa_small * MAX_FACTOR));
-
-                    bool valid_acc = (
-                        // 1) movement into the same direction
-                        ((x_sign == x_last_sign)
-                         //   1a) and currently *stopping* to move 
-                         && (( (xa < MIN_STEPS)
-                               && (xa_last == MIN_STEPS))
-                             // or, 1b) at least MIN_STEPS and not larger
-                             // than the allowed relative increase
-                             || ( (xa_small >= MIN_STEPS)
-                                  && (xa_large <= int(xa_small * MAX_FACTOR)))))
-                        // or, has stopped to move (and only in this case,
-                        // the step count can be smaller than MIN_STEPS)
-                        || ( (xa == 0)
-                             && (xa_last < MIN_STEPS))
-                        // or, with or without a change of direction,
-                        // one step number zero and the other at
-                        // MIN_STEPS - at start or end of a movement
-                        || ((xa_small == 0)
-                            && (xa_large == MIN_STEPS))
-                        // or, a pause in movement (however not
-                        // allowed for both channels at start of
-                        // waveform)
-                        || ((xa_small == 0)
-                            && (xa_large == 0)));
-                    
-                    if (!valid_acc)
-                    {
-                        //printf("fpu_id=%i, channel=%i, step=%i, x_sign=%i, x_last_sign=%i, xa_small=%i, xa_large=%i\n",
-                        //       fpu_id, chan_idx, sidx, x_sign, x_last_sign, xa_small, xa_large);
-                        printf("fpu %i, %s arm, movement interval %i: invalid step count change\n",
-                               fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
-                        return DE_INVALID_WAVEFORM_CHANGE;                        
-                    }
-
-                    xa_last = xa;
-                    x_last_sign = x_sign;
-                }
-                if (xa_last > MIN_STEPS)
-                {
-                    // last step count must be minimum or smaller
-                    printf("fpu %i, %s arm, movement interval %i: last step count too large\n",
-                           fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
-                    return DE_INVALID_WAVEFORM_TAIL;                        
-                }
-            }            
+            // the FPU id is out of range
+            printf("FPU ID is out of range\n");
+            return DE_INVALID_FPU_ID;
         }
-        return DE_OK;
+
+        // require same number of steps for all FPUs
+        if (waveforms[0].steps.size() != num_steps)
+        {
+            return DE_INVALID_WAVEFORM_RAGGED;
+        }
+
+
+        const t_waveform& wform = waveforms[fpu_index];
+
+        for(int chan_idx=0; chan_idx < 2; chan_idx++)
+        {
+            int xa_last = 0;
+            int x_last_sign = 0;
+
+            for (unsigned int sidx=0; sidx<num_steps; sidx++)
+            {
+                const double MAX_FACTOR = 1.0 + MAX_INCREASE;
+
+                const t_step_pair& step = wform.steps[sidx];
+
+                const int xs = (chan_idx == 0) ?
+                               step.alpha_steps : step.beta_steps;
+
+                const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
+                const int xa = abs(xs);
+
+                // absolute value of step count of next entry, or zero if at end
+                const int xa_next = ( (sidx == (num_steps -1))
+                                      ? 0
+                                      :  abs(((chan_idx == 0)
+                                              ? wform.steps[sidx+1].alpha_steps
+                                              : wform.steps[sidx+1].beta_steps)));
+
+                //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i", fpu_id, chan_idx, sidx, xs, xa);
+
+                if (xa > MAX_STEPS)
+                {
+                    printf("fpu %i, %s arm, movement interval %i: step count exceeds maximum\n",
+                           fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
+                }
+
+
+
+                int xa_small = std::min(xa_last, xa);
+                int xa_large = std::max(xa_last, xa);
+                //printf(", xa_small=%i, xa_large=%i, xa_small*max_factor=%i\n",
+                //       xa_small, xa_large, int(xa_small * MAX_FACTOR));
+
+                bool valid_acc = (
+                                     // 1) movement into the same direction
+                                     ((x_sign == x_last_sign)
+                                      //   1a) and currently *stopping* to move
+                                      && (( (xa < MIN_STEPS)
+                                            && (xa_last == MIN_STEPS))
+                                          // or, 1b) at least MIN_STEPS and not larger
+                                          // than the allowed relative increase
+                                          || ( (xa_small >= MIN_STEPS)
+                                               && (xa_large <= int(xa_small * MAX_FACTOR)))))
+                                     // or, has stopped to move (and only in this case,
+                                     // the step count can be smaller than MIN_STEPS)
+                                     || ( (xa == 0)
+                                          && (xa_last < MIN_STEPS))
+                                     // or, a single entry with a small number of steps,
+                                     // followed by a pause or end of the table
+                                     || ( (xa <= MIN_STEPS)
+                                          && (xa_last == 0)
+                                          && (xa_next == 0))
+                                     // or, with or without a change of direction,
+                                     // one step number zero and the other at
+                                     // MIN_STEPS - at start or end of a movement
+                                     || ((xa_small == 0)
+                                         && (xa_large == MIN_STEPS))
+                                     // or, a pause in movement (however not
+                                     // allowed for both channels at start of
+                                     // waveform)
+                                     || ((xa_small == 0)
+                                         && (xa_large == 0)));
+
+                if (!valid_acc)
+                {
+                    //printf("fpu_id=%i, channel=%i, step=%i, x_sign=%i, x_last_sign=%i, xa_small=%i, xa_large=%i\n",
+                    //       fpu_id, chan_idx, sidx, x_sign, x_last_sign, xa_small, xa_large);
+                    printf("fpu %i, %s arm, movement interval %i: invalid step count change\n",
+                           fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    return DE_INVALID_WAVEFORM_CHANGE;
+                }
+
+                xa_last = xa;
+                x_last_sign = x_sign;
+            }
+            if (xa_last > MIN_STEPS)
+            {
+                // last step count must be minimum or smaller
+                printf("fpu %i, %s arm, movement interval %i: last step count too large\n",
+                       fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
+                return DE_INVALID_WAVEFORM_TAIL;
+            }
+        }
+    }
+    return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
-                                               E_GridState& state_summary,
-                                               const t_wtable& waveforms, bool check_protection)
+        E_GridState& state_summary,
+        const t_wtable& waveforms, bool check_protection)
 {
 
     // first, get current state of the grid
@@ -528,10 +553,10 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         }
 
         const E_DriverErrCode vwecode = validateWaveforms(waveforms,
-                                                          ConfigureMotionCommand::MIN_STEPCOUNT,
-                                                          ConfigureMotionCommand::MAX_STEPCOUNT,
-                                                          ConfigureMotionCommand::MAX_NUM_SECTIONS,
-                                                          ConfigureMotionCommand::MAX_REL_INCREASE);
+                                        ConfigureMotionCommand::MIN_STEPCOUNT,
+                                        ConfigureMotionCommand::MAX_STEPCOUNT,
+                                        ConfigureMotionCommand::MAX_NUM_SECTIONS,
+                                        ConfigureMotionCommand::MAX_REL_INCREASE);
         if (vwecode != DE_OK)
         {
             return vwecode;
@@ -551,19 +576,19 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     int retry_downcount = 5;
     while (step_index < num_steps)
     {
-      const bool first_entry = (step_index == 0);
-      const bool last_entry = (step_index == (num_steps-1));
-		
+        const bool first_entry = (step_index == 0);
+        const bool last_entry = (step_index == (num_steps-1));
+
         int num_loading =  waveforms.size();
         for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
         {
             int fpu_id = waveforms[fpu_index].fpu_id;
-	    if ((fpu_id >= num_fpus) || (fpu_id < 0))
-	    {
-	      // the FPU id is out of range
-	      return DE_INVALID_FPU_ID;
-	    }
-	    
+            if ((fpu_id >= num_fpus) || (fpu_id < 0))
+            {
+                // the FPU id is out of range
+                return DE_INVALID_FPU_ID;
+            }
+
             t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
             if (fpu_state.state != FPST_LOCKED)
             {
@@ -585,11 +610,11 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             }
         }
 #if (CAN_PROTOCOL_VERSION != 1)
-	/* Apparently, at least for firmware version 1, we cannot
-           send more than one configMotion command at a time,
-           or else CAN commands will get lost. */
+        /* Apparently, at least for firmware version 1, we cannot
+               send more than one configMotion command at a time,
+               or else CAN commands will get lost. */
         if (first_entry || last_entry)
-#endif	  
+#endif
         {
             /* Wait and check that all FPUs are registered in LOADING
                state.  This is needed to make sure we have later a clear
@@ -612,10 +637,10 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 // we retry if an FPU which we tried to configure and is
                 // not locked did not change to FPST_LOADING state.
                 if ((fpu_state.state != FPST_LOCKED)
-		    && ( ((first_entry && (! last_entry))
-			  &&  (fpu_state.state != FPST_LOADING))
-			 || (last_entry
-			     &&  (fpu_state.state != FPST_READY_FORWARD))))
+                        && ( ((first_entry && (! last_entry))
+                              &&  (fpu_state.state != FPST_LOADING))
+                             || (last_entry
+                                 &&  (fpu_state.state != FPST_READY_FORWARD))))
                 {
                     if (retry_downcount <= 0)
                     {
@@ -636,7 +661,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         }
         step_index++;
     }
-    
+
 
     return DE_OK;
 }
@@ -786,14 +811,14 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
         if (fpu_status == FPST_OBSTACLE_ERROR)
         {
-	  if (fpu.beta_collision)
-	  {
-	      return DE_NEW_COLLISION;
-	  }
-	  else
-	  {
-  	      return DE_NEW_LIMIT_BREACH;
-	  }
+            if (fpu.beta_collision)
+            {
+                return DE_NEW_COLLISION;
+            }
+            else
+            {
+                return DE_NEW_LIMIT_BREACH;
+            }
         }
 
         // step timing errors cause an FPU to change to ABORTED
@@ -804,7 +829,7 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
             return DE_STEP_TIMING_ERROR;
         }
 
-        
+
         if (fpu_status == FPST_ABORTED)
         {
             return DE_ABORTED_STATE;
@@ -1264,14 +1289,14 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         }
     }
 
-#if 0 
+#if 0
     // in Protocol version 1, we need to send a ping
     // because reverseMotion and repeatMotion do not
     // get a response.
     return pingFPUsAsync(grid_state, state_summary);
 #else
 
-    
+
     // wait until all generated messages have been responded to
     // or have timed out.
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
@@ -1545,8 +1570,8 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
 
     if ((fpu_id >= num_fpus) || (fpu_id < 0))
     {
-	// the FPU id is out of range
-	return DE_INVALID_FPU_ID;
+        // the FPU id is out of range
+        return DE_INVALID_FPU_ID;
     }
 
 
@@ -1611,6 +1636,86 @@ E_GridState AsyncDriver::waitForState(E_WaitTarget target,
                                       t_grid_state& out_detailed_state, double &max_wait_time, bool &cancelled) const
 {
     return gateway.waitForState(target, out_detailed_state, max_wait_time, cancelled);
+}
+
+
+
+E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
+        t_grid_state& grid_state,
+        E_GridState& state_summary)
+{
+    // first, get current state and time-out count of the grid
+    state_summary = gateway.getGridState(grid_state);
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        return DE_NO_CONNECTION;
+    }
+
+    switch (ustep_level)
+    {
+    case 1:
+    case 2:
+    case 4:
+    case 8:
+        break;
+    default:
+        // value is not allowed
+        return DE_INVALID_PAR_VALUE;
+    }
+
+
+    for (int i=0; i < num_fpus; i++)
+    {
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        // we exclude moving FPUs and FPUs which are
+        // searching datum.
+        if ( fpu_state.state != FPST_UNINITIALIZED)
+        {
+            // FPU state does not allows command
+            return DE_INVALID_FPU_STATE;
+        }
+    }
+
+
+    int cnt_pending = 0;
+    unique_ptr<SetUStepLevelCommand> can_command;
+    for (int i=0; i < num_fpus; i++)
+    {
+        // We use a non-broadcast instance. The advantage of
+        // this is that the CAN protocol is able to reliably
+        // detect whether this command was received - for
+        // a broadcast command, this is not absolutely sure.
+        bool broadcast = false;
+        can_command = gateway.provideInstance<SetUStepLevelCommand>();
+
+        can_command->parametrize(i, broadcast, ustep_level);
+        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        gateway.sendCommand(i, cmd);
+        cnt_pending++;
+    }
+
+    // wait until all generated commands have been responded to
+    // or have timed out.
+    while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        double max_wait_time = -1;
+        bool cancelled = false;
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state, max_wait_time, cancelled);
+
+        if (grid_state.driver_state != DS_CONNECTED)
+        {
+            return DE_NO_CONNECTION;
+        }
+
+        cnt_pending = (grid_state.count_pending
+                       + grid_state.num_queued);
+    }
+
+
+    return DE_OK;
+
 }
 
 

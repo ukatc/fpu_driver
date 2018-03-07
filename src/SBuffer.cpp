@@ -167,10 +167,10 @@ SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
     printf("command bytes (len=%i)= [", input_len);
     for(int i=0; i < input_len; i++)
     {
-      printf(" %02x", src[i]);
+        printf(" %02x", src[i]);
     }
-     printf("]\n");
-#endif     
+    printf("]\n");
+#endif
 
     encode_buffer(input_len, src, out_len, wbuf);
     out_offset = 0;

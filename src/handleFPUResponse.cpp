@@ -44,7 +44,7 @@ void logErrorStatus(int fpu_id, timespec time_stamp, int err_code)
 {
 #ifdef DEBUG
 
-  const char * err_msg = "(no error)";
+    const char * err_msg = "(no error)";
     switch (err_code)
     {
     case 0:
@@ -172,11 +172,11 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     switch (cmd_id)
     {
     case CCMD_CONFIG_MOTION   :
-#ifdef DEBUG2      
-      printf("handle_ConfigMotion: fpu #%i, segment %ui: status=%ui, error=%i\n",
-	     fpu_id, fpu.num_waveform_segments,
-	     response_status, response_errcode);
-#endif      
+#ifdef DEBUG2
+        printf("handle_ConfigMotion: fpu #%i, segment %ui: status=%ui, error=%i\n",
+               fpu_id, fpu.num_waveform_segments,
+               response_status, response_errcode);
+#endif
         // clear time-out flag
         remove_pending(fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
@@ -195,7 +195,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.num_waveform_segments = data[4];
             // FIXME: needs to be set from response for protocol version 2
 #endif
-            
+
             if (response_status & STBT_WAVE_READY)
             {
                 fpu.state = FPST_READY_FORWARD;
@@ -247,6 +247,10 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // clear timeout status
             remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode,
                            timeout_list, count_pending);
+#ifdef DEBUG
+            printf("FPU # %i: executeMotion command got error response,"
+                   " removed from pending list.\n", fpu_id);
+#endif
 
             if ((response_errcode == ER_WAVENRDY)
                     || (response_errcode == ER_PARAM))
@@ -300,12 +304,12 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // FIXME: This should possibly generate an abortMotion
             // message for all FPUs, because other FPUs can crash into
             // the stopped one if they continue moving.
-   	    printf("step timing error response received for FPU %i\n",
-		 fpu_id);
-	    fpu.state = FPST_ABORTED;
+            printf("step timing error response received for FPU %i\n",
+                   fpu_id);
+            fpu.state = FPST_ABORTED;
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
-	    fpu.step_timing_errcount++;
+            fpu.step_timing_errcount++;
 
         }
         else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
@@ -445,24 +449,24 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.alpha_steps = asteps;
             fpu.beta_steps = bsteps;
             fpu.ping_ok = true;
-	    
+
 #if 0
-	    // In protocol version 1, we (mis)use a ping after
-	    // a repeatMotion to retrieve the FPU state
-	    // and switch to READY_* again.
-	    if ((fpu.waveform_valid)
-		&& (fpu.waveform_ready)
-		&& (fpu.state = FPST_RESTING))
-	    {
-	      if (fpu.waveform_reversed)
-	      {
-		fpu.state = FPST_READY_BACKWARD;
-	      }
-	      else
-	      {
-		fpu.state = FPST_READY_FORWARD;
-	      }
-	    }
+            // In protocol version 1, we (mis)use a ping after
+            // a repeatMotion to retrieve the FPU state
+            // and switch to READY_* again.
+            if ((fpu.waveform_valid)
+                    && (fpu.waveform_ready)
+                    && (fpu.state = FPST_RESTING))
+            {
+                if (fpu.waveform_reversed)
+                {
+                    fpu.state = FPST_READY_BACKWARD;
+                }
+                else
+                {
+                    fpu.state = FPST_READY_FORWARD;
+                }
+            }
 #endif
         }
         else
@@ -570,7 +574,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.alpha_datum_switch_active = true;
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.waveform_valid = false;
-            fpu.was_zeroed = false;                
+            fpu.was_zeroed = false;
         }
         else if (response_status & STBT_ABORT_WAVE)
         {
@@ -621,7 +625,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.beta_collision = true;
         fpu.waveform_valid = false;
-        fpu.was_zeroed = false;                
+        fpu.was_zeroed = false;
         // FIXME: Update step counter in protocol version 2
         //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
 
@@ -646,7 +650,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.at_alpha_limit = true;
         fpu.waveform_valid = false;
-        fpu.was_zeroed = false;                
+        fpu.was_zeroed = false;
 
         fpu.last_updated = cur_time;
         break;
@@ -674,6 +678,13 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 
         // FIXME: Update step counter in protocol version 2
         //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
+
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        fpu.last_updated = cur_time;
+        break;
+
+    case CCMD_SET_USTEP_LEVEL:
+        fpu.ping_ok = true;
 
         remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;

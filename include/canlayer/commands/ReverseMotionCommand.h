@@ -44,8 +44,8 @@ public:
 
     ReverseMotionCommand()
     {
-      fpu_id = 0;
-      bcast = false;
+        fpu_id = 0;
+        bcast = false;
     };
 
     E_CAN_COMMAND getInstanceCommandCode()
@@ -121,7 +121,7 @@ public:
 #if (CAN_PROTOCOL_VERSION > 1)
         return true;
 #else
-	return false;
+        return false;
 #endif
     };
 

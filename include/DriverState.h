@@ -128,7 +128,7 @@ enum E_DriverErrCode
     // still have invalid waveforms.
     // waveform has to many steps
     DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS = 12,
-    
+
     // number of sections different for different FPUS
     DE_INVALID_WAVEFORM_RAGGED = 13,
     
@@ -170,7 +170,13 @@ enum E_DriverErrCode
     // An FPU id which was passed as a parameter is invalid
     // because it is larger than the maximum number of FPUs.
     DE_INVALID_FPU_ID = 24,
-    
+
+    // passed parameter value is invalid
+    DE_INVALID_PAR_VALUE = 25,
+
+    // command not allowed for present FPU state
+    DE_INVALID_FPU_STATE = 26,
+
     // operation not implemented for this protocol version
     DE_UNIMPLEMENTED=98,
 

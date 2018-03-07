@@ -278,7 +278,7 @@ public:
           << "'driver_state' :";
         s << gs.driver_state << ", "
           << "'Counts' : { ";
-        
+
         int num_fpus = 0;
         for(int i=0; i < NUM_FPU_STATES; i++)
         {
@@ -343,7 +343,7 @@ struct DriverNotInitializedException
     char const* what() const throw()
     {
         return "DE_DRIVER_NOT_INITIALIZED: GridDriver was not initialized "
-            "properly, possibly due to system error or out-of-memory condition.";
+               "properly, possibly due to system error or out-of-memory condition.";
     }
 };
 
@@ -445,7 +445,7 @@ struct FpuNotInitializedException : std::exception
     char const* what() const throw()
     {
         return "DE_FPU_NOT_INITIALIZED: A fibre positioner unit (FPU) was not initialized as"
-            " required, needs to do a datum search first";
+               " required, needs to do a datum search first";
     }
 };
 
@@ -589,9 +589,9 @@ struct FPUsNotCalibratedException : std::exception
     char const* what() const throw()
     {
         return "DE_FPUS_NOT_CALIBRATED: FPUs are lacking calibration by "
-            "a findDatum operation. For engineering or recovery use, consider"
-            " to set the 'check_protection' keyword argument to False,"
-            " to disable hardware safety checks.";
+               "a findDatum operation. For engineering or recovery use, consider"
+               " to set the 'check_protection' keyword argument to False,"
+               " to disable hardware safety checks.";
     }
 };
 
@@ -621,8 +621,8 @@ struct CommandTimeOutException : std::exception
     char const* what() const throw()
     {
         return "DE_COMMAND_TIMEOUT: Response to a CAN command surpassed the "
-            "configured maximum waiting time."
-            "This can be caused by a broken connection or networking problems.";
+               "configured maximum waiting time."
+               "This can be caused by a broken connection or networking problems.";
     }
 };
 
@@ -632,8 +632,8 @@ struct AbortedStateException : std::exception
     char const* what() const throw()
     {
         return "DE_ABORTED_STATE: There are FPUs in aborted state,"
-            " because of an abortMotion command or a step timing error "
-            "- use the resetFPUs command to reset state.";
+               " because of an abortMotion command or a step timing error "
+               "- use the resetFPUs command to reset state.";
     }
 };
 
@@ -662,10 +662,10 @@ struct StepTimingException : std::exception
 {
     char const* what() const throw()
     {
-        return "DE_STEP_TIMING_ERROR: An FPU's controller "
-            "generated a step timing error"
-            "during movement. Possibly, reduce microstepping level"
-            "to compute the step frequency in time.";
+        return "DE_STEP_TIMING_ERROR: An FPU's controller"
+               " generated a step timing error"
+               " during movement. Possibly, reduce the microstepping level"
+               " to compute the step frequency in time.";
     }
 };
 
@@ -689,7 +689,38 @@ void translate(InvalidFPUIdException const& e)
     // Use the Python 'C' API to set up an exception object
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
-  
+
+
+struct InvalidParValueException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INVALID_PAR_VALUE: The passed parameter value is invalid.";
+    }
+};
+
+void translate(InvalidParValueException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+struct InvalidFPUStateException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INVALID_FPU_STATE: Command not allowed for present FPU state.";
+    }
+};
+
+void translate(InvalidFPUStateException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+
+
 
 struct UnimplementedException : std::exception
 {
@@ -831,7 +862,7 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_FPUS_NOT_CALIBRATED:
         throw FPUsNotCalibratedException();
         break;
-        
+
     case DE_NO_MOVABLE_FPUS :
         throw NoMovableFPUsException();
         break;
@@ -856,7 +887,15 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_INVALID_FPU_ID:
         throw InvalidFPUIdException();
         break;
-	
+
+    case DE_INVALID_FPU_STATE:
+        throw InvalidFPUStateException();
+        break;
+
+    case DE_INVALID_PAR_VALUE:
+        throw InvalidParValueException();
+        break;
+
     case DE_UNIMPLEMENTED:
         throw UnimplementedException();
         break;
@@ -907,7 +946,7 @@ public:
     {
 
         E_DriverErrCode ecode = initializeDriver();
-        checkDriverError(ecode);        
+        checkDriverError(ecode);
     };
 
 
@@ -1133,6 +1172,13 @@ public:
         return ecode;
     }
 
+    E_DriverErrCode wrap_setUStepLevel(int ustep_level, WrapGridState& grid_state)
+    {
+        E_DriverErrCode ecode = setUStepLevel(ustep_level, grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
+
     E_DriverErrCode wrap_enableBetaCollisionProtection(WrapGridState& grid_state)
     {
         E_DriverErrCode ecode = enableBetaCollisionProtection(grid_state);
@@ -1174,7 +1220,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     // include summary function
     def("getGridStateSummary", wrapGetGridStateSummary);
 
-    
+
     enum_<E_FPU_STATE>("E_FPU_STATE")
     .value("FPST_UNKNOWN", FPST_UNKNOWN)
     .value("FPST_UNINITIALIZED", FPST_UNINITIALIZED)
@@ -1248,7 +1294,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("CCMD_REVERSE_MOTION", CCMD_REVERSE_MOTION)
     .value("CCMD_ENABLE_BETA_COLLISION_PROTECTION", CCMD_ENABLE_BETA_COLLISION_PROTECTION)
     .value("CCMD_FREE_BETA_COLLISION", CCMD_FREE_BETA_COLLISION)
-    .value("CCMD_SET_USTEP", CCMD_SET_USTEP)
+    .value("CCMD_SET_USTEP_LEVEL", CCMD_SET_USTEP_LEVEL)
 
 
 
@@ -1296,6 +1342,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
     .value("DE_STEP_TIMING_ERROR", DE_STEP_TIMING_ERROR)
     .value("DE_INVALID_FPU_ID", DE_INVALID_FPU_ID)
+    .value("DE_INVALID_FPU_STATE", DE_INVALID_FPU_STATE)
+    .value("DE_INVALID_PAR_VALUE", DE_INVALID_PAR_VALUE)
     .value("DE_UNIMPLEMENTED", DE_UNIMPLEMENTED)
     .export_values();
 
@@ -1405,6 +1453,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("reverseMotion", &WrapGridDriver::wrap_reverseMotion)
     .def("abortMotion", &WrapGridDriver::wrap_abortMotion)
     .def("freeBetaCollision", &WrapGridDriver::wrap_freeBetaCollision)
+    .def("setUStepLevel", &WrapGridDriver::wrap_setUStepLevel)
     .def("enableBetaCollisionProtection", &WrapGridDriver::wrap_enableBetaCollisionProtection)
     .def("lockFPU", &WrapGridDriver::lockFPU)
     .def("unlockFPU", &WrapGridDriver::unlockFPU)

@@ -14,6 +14,31 @@ import math
 from fpu_driver import getGridStateSummary as gGSS
 
 
+AlphaGearRatio 	= 2050.175633 # actual gear ratio
+BetaGearRatio 	= 1517.662482 # actual gear ratio
+
+
+# There are 20 steps per revolution on the non-geared side, so:
+StepsPerRevolution = 20.0
+DegreePerRevolution = 360.0
+
+# Note that these numbers must not be confounded with actual calibrated values!
+
+StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
+StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
+
+ALPHA_MIN_DEGREE = 0
+ALPHA_MAX_DEGREE = 360
+BETA_MIN_DEGREE = -180
+BETA_MAX_DEGREE = 130
+
+MIN_ALPHA = ALPHA_MIN_DEGREE * StepsPerDegreeAlpha
+MAX_ALPHA = ALPHA_MAX_DEGREE * StepsPerDegreeAlpha
+
+MIN_BETA = BETA_MIN_DEGREE * StepsPerDegreeBeta 
+MAX_BETA = BETA_MAX_DEGREE * StepsPerDegreeBeta 
+
+
 def list_positions(gs, num_fpus=None):
     """Show positions for each FPU in the grid. The optional second argument
        is the number of FPUs shown."""
@@ -26,7 +51,9 @@ def fpu_steps(gs):
     return list_positions(gs)[0]
 
 
-def list_angles(gs, asteps_per_deg=125, bsteps_per_deg=80, num_fpus=None):
+def list_angles(gs,
+                asteps_per_deg=StepsPerDegreeAlpha,
+                bsteps_per_deg=StepsPerDegreeBeta, num_fpus=None):
     """Show approximate angular positions for each FPU in the grid. 
        The optional second and third argument are the scaling factors,
        and the fourth argument is the number of FPUs shown."""
@@ -70,7 +97,6 @@ def list_states(gs, num_fpus=None):
 # section duration
 STEPS_LOWER_LIMIT=125
 STEPS_UPPER_LIMIT=500
-#STEPS_UPPER_LIMIT=300
 
 
 def step_list_slow(nsteps):
@@ -145,7 +171,7 @@ def step_list_pad(slist, target_len):
     return slist
 
 
-def gen_wf(adegree, bdegree, asteps_per_deg=125, bsteps_per_deg=80,
+def gen_wf(adegree, bdegree, asteps_per_deg=StepsPerDegreeAlpha, bsteps_per_deg=StepsPerDegreeBeta,
            mode='fast'):
     """
     Generate a waveform which moves the alpha arm by an angle of 

@@ -121,7 +121,7 @@ typedef struct __attribute__((packed)) t_fpu_state
     unsigned int beta_collision: 1;
     unsigned int waveform_valid: 1; /* waveform completely loaded, can be reversed, and is not
                                        invalidated by collision or abort message. */
-    
+
     unsigned int waveform_ready: 1; // FPU can execute waveform
     unsigned int waveform_reversed: 1; // false means anti-clockwise for positive step numbers
 
@@ -133,7 +133,7 @@ typedef struct __attribute__((packed)) t_fpu_state
 namespace canlayer
 {
 
-    void initialize_fpu(t_fpu_state &fpu);
+void initialize_fpu(t_fpu_state &fpu);
 
 }
 

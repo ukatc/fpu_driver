@@ -16,11 +16,43 @@ MAX_WAVE_ENTRIES = 128
 IDXA = 0
 IDXB = 1
 
-MIN_ALPHA = -3750
-MAX_ALPHA = 45000
+# These are parameters from the instrument control system
+# They do NOT match the origin of the FPU step counter
 
-MIN_BETA = -14400
-MAX_BETA = 12000
+# INS_POS_LOW1      = -180.000  # Lower travel limit of positioner alpha arm (deg)
+# INS_POS_HIGH1     =  180.000  # Upper travel limit of positioner alpha arm (deg)
+# INS_POS_LOW2      = -180.000  # Lower travel limit of positioner beta arm (deg)
+# INS_POS_HIGH2     =  150.000  # Upper travel limit of positioner beta arm (deg)
+
+ALPHA_MIN_DEGREE = 0
+ALPHA_MAX_DEGREE = 360
+BETA_MIN_DEGREE = -180
+BETA_MAX_DEGREE = 130
+
+
+ALPHA_LIMIT_MIN_DEGREE = ALPHA_MIN_DEGREE -5
+ALPHA_LIMIT_MAX_DEGREE = ALPHA_MAX_DEGREE + 5
+BETA_LIMIT_MIN_DEGREE  = BETA_MIN_DEGREE - 5
+BETA_LIMIT_MAX_DEGREE  = BETA_MAX_DEGREE + 5
+
+AlphaGearRatio 	= 2050.175633 # actual gear ratio
+BetaGearRatio 	= 1517.662482 # actual gear ratio
+
+
+# There are 20 steps per revolution on the non-geared side, so:
+StepsPerRevolution = 20.0
+DegreePerRevolution = 360.0
+
+# Note that these numbers must not be confounded with actual calibrated values!
+
+StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
+StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
+
+MIN_ALPHA = int(ALPHA_LIMIT_MIN_DEGREE * StepsPerDegreeAlpha)
+MAX_ALPHA = int(ALPHA_LIMIT_MAX_DEGREE * StepsPerDegreeAlpha)
+
+MIN_BETA = int(BETA_LIMIT_MIN_DEGREE * StepsPerDegreeBeta)
+MAX_BETA = int(BETA_LIMIT_MAX_DEGREE * StepsPerDegreeBeta)
 
 # E_REQUEST_DIRECTION
 
@@ -51,7 +83,9 @@ class FPU:
         self.running_wave = False
         self.abort_wave = False
         self.wave_valid = False
-        self.collision_protection_active = True        
+        self.collision_protection_active = True
+        self.ustep_level = 1
+        self.step_timing_fault = False
 
     def resetFPU(self, fpu_id, sleep):
         print("resetting FPU #%i..." % fpu_id)
@@ -69,7 +103,10 @@ class FPU:
             raise RuntimeError("wavetable not valid")
         self.move_forward = True
         self.wave_ready = True
-        
+
+    def setUStepLevel(self, ustep_level):
+        print("setting UStepLevel=", ustep_level)
+        self.ustep_level = ustep_level
         
     def reverseMotion(self, fpu_id):
         print("reversing wavetable of FPU #%i..." % fpu_id)
@@ -192,7 +229,8 @@ class FPU:
             raise RuntimeError("wavetable not ready")
 
         self.running_wave = True
-
+        self.step_timing_fault = False
+        
         if self.move_forward:
             wt_sign = 1
         else:
@@ -229,6 +267,11 @@ class FPU:
             sleep(frame_time)
             if self.abort_wave:
                 break
+
+            if self.ustep_level == 8:
+                if random.uniform(0, 100) < 50:
+                    self.step_timing_fault = True
+                    break
             
             if newalpha < MIN_ALPHA:
                 self.alpha_steps = MIN_ALPHA
@@ -265,6 +308,9 @@ class FPU:
         elif self.is_collided:
             print("FPU %i, section %i: beta_collision, movement cancelled at (%i, %i)" % (self.fpu_id, section,
                                                                               self.alpha_steps, self.beta_steps))
+        elif self.step_timing_fault:
+            print("FPU %i, section %i: step timing error, movement cancelled at (%i, %i)" % (self.fpu_id, section,
+                                                                                self.alpha_steps, self.beta_steps))
         else:
             print("FPU %i, section %i: movement finished at (%i, %i)" % (self.fpu_id, section,
                                                              newalpha, newbeta))
