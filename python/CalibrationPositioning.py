@@ -30,33 +30,24 @@ def printtime():
     print(time.strftime("%a, %d %b %Y %H:%M:%S +0000 (%Z)", time.gmtime()))
     
 def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
-    null_movement = (alpha_move == 0) and (beta_move == 0)
-    
-    if not null_movement:
-        # generate waveform
-        waveform = gen_wf(alpha_move, beta_move)
 
-        # configure waveform, by uploading it to the FPU
-        print("%s : waveform=%r" %(label, waveform))
-        for steplist in waveform.values():
-            if steplist == [ (0, 0) ]:
-                null_movement = True
-                break
+    # generate waveform
+    waveform = gen_wf(alpha_move, beta_move)
+    
+    # configure waveform, by uploading it to the FPU
+    print("%s : waveform=%r" %(label, waveform))
             
-    if not null_movement:
-        gd.configMotion(waveform, grid_state)
-        printtime()
-        a, b = list_angles(grid_state)[0]
-        print("{}: now moving to ({:6.2f}, {:6.2f})".format(label, a + alpha_move, b + beta_move))
-        gd.executeMotion(grid_state)
-    else:
-        print("{}: not moving (null movement discarded)".format(label))
+    gd.configMotion(waveform, grid_state)
+    printtime()
+    a, b = list_angles(grid_state)[0]
+    print("{}: now moving to ({:6.2f}, {:6.2f})".format(label, a + alpha_move, b + beta_move))
+    gd.executeMotion(grid_state)
+
     # display the new position
     gd.pingFPUs(grid_state)
     a, b = list_angles(grid_state)[0]
     print("{}: reached position: ({:6.2f}, {:6.2f})".format(label, a,b) )
 
-    return (not null_movement)
     
 def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
                      return_to_datum=True, deviation_list=[]):
@@ -67,7 +58,7 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
     alpha_move = alpha - alpha0
     beta_move = beta - beta0
 
-    was_moved = move_fpu(gd, grid_state, alpha_move, beta_move, "out" )
+    move_fpu(gd, grid_state, alpha_move, beta_move, "out" )
  
 
     alpha_steps = grid_state.FPU[0].alpha_steps
@@ -79,12 +70,9 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
     if return_to_datum:
         printtime()
         if (alpha0 == 0) and (beta0 == 0):
-            if was_moved:
-                print("now moving back to ({},{})".format(0, 0))
-                gd.reverseMotion(grid_state)
-                gd.executeMotion(grid_state)
-            else:
-                print("not moving back (null movement discarded)")
+            print("now moving back to ({},{})".format(0, 0))
+            gd.reverseMotion(grid_state)
+            gd.executeMotion(grid_state)
         else:
             move_fpu(gd, grid_state, -alpha, -beta, "return" )
 
