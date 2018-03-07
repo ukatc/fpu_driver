@@ -7,13 +7,12 @@ positions and calls a measurement function at each position.
 import time
 import argparse
 import numpy
-import random
+from numpy import random, asarray
 
 import FpuGridDriver
 from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST, GatewayAddress
 from fpu_commands import *
 
-NUM_FPUS = 1
 
 
 
@@ -39,22 +38,30 @@ def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
             
     gd.configMotion(waveform, grid_state)
     printtime()
-    a, b = list_angles(grid_state)[0]
-    print("{}: now moving to ({:6.2f}, {:6.2f})".format(label, a + alpha_move, b + beta_move))
+    print("angles:", list_angles(grid_state))
+    print("indexed:", enumerate(list_angles(grid_state)))
+    for i, pos in enumerate(list_angles(grid_state)):
+        a,b = pos
+        print("{}: FPU #{}: now moving to ({:6.2f}, {:6.2f})".format(label, i, a + alpha_move[i], b + beta_move[i]))
     gd.executeMotion(grid_state)
 
     # display the new position
     gd.pingFPUs(grid_state)
-    a, b = list_angles(grid_state)[0]
-    print("{}: reached position: ({:6.2f}, {:6.2f})".format(label, a,b) )
+    for i, pos in enumerate(list_angles(grid_state)):
+        a, b = pos
+        print("{}: FPU #{}: reached position: ({:6.2f}, {:6.2f})".format(label, i, a,b) )
 
     
 def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
                      return_to_datum=True, deviation_list=[]):
 
     #gd.pingFPUs(grid_state)
-    alpha0, beta0 = list_angles(grid_state)[0]
-    print("starting pos: ({:6.2f}, {:6.2f})".format(alpha0, beta0))
+    positions = asarray(list_angles(grid_state))
+    alpha0 = positions[:,0]
+    beta0 = positions[:,1]
+    for i in range(len(alpha0)):
+        print("starting pos: ({:6.2f}, {:6.2f})".format(alpha0[i], beta0[i]))
+        
     alpha_move = alpha - alpha0
     beta_move = beta - beta0
 
@@ -110,6 +117,9 @@ def parse_args():
     parser.add_argument('--gateway_address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
     
+    parser.add_argument('--N', metavar='NUM_FPUS', type=int, default=100,
+                        help='Number of adressed FPUs. For the deterministic patterns, the FPUs will be steered in unison. For the raodnom patterns, each FPU will receive a random value. WARNING: No conflict checking is done.  (default: %(default)s)')
+    
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=0.0,
                         help='minimum alpha value  (default: %(default)s)')
     parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=360.0,
@@ -156,7 +166,7 @@ def parse_args():
 
 def initialize_FPU(args):
     
-    gd = FpuGridDriver.GridDriver(NUM_FPUS)
+    gd = FpuGridDriver.GridDriver(args.N)
 
     if args.mockup:
         gateway_address = [ GatewayAddress("127.0.0.1", 4700)  ]
@@ -189,7 +199,8 @@ def initialize_FPU(args):
 
 
 def grid_positions(args):
-                   
+
+    ones_vect = numpy.ones(args.N)
     for alpha in numpy.linspace(args.alpha_min, args.alpha_max, args.asteps):
         if args.datum_at == 'alpha_change':
             go_datum = True
@@ -200,11 +211,12 @@ def grid_positions(args):
             if args.datum_at == 'beta_change':
                 go_datum = True
 
-            yield (alpha, beta, go_datum)        
+            yield (alpha * ones_vect, beta, go_datum)        
             go_datum = False
 
 def abcircle_positions(args):
 
+    ones_vect = numpy.ones(args.N)
     # track alpha circle
     beta = min(180, args.beta_max)
     if args.datum_at == 'alpha_change':
@@ -223,18 +235,19 @@ def abcircle_positions(args):
         go_datum = False
         
     for beta in numpy.linspace(args.beta_min, args.beta_max, args.bsteps):
-        yield (alpha, beta, go_datum)        
+        yield (alpha * ones_vect, beta, go_datum)        
             
 def whitenoise_positions(args):
+    N = args.N
     for j in range(args.asteps):
-        alpha = random.uniform(args.alpha_min, args.alpha_max)
+        alpha = random.uniform(args.alpha_min, args.alpha_max, N)
         if args.datum_at == 'alpha_change':
             go_datum = True
         else:
             go_datum = False
 
         for j in range(args.bsteps):
-            beta = random.uniform(args.beta_min, args.beta_max)
+            beta = random.uniform(args.beta_min, args.beta_max, N)
             if args.datum_at == 'beta_change':
                 go_datum = True
 
@@ -243,17 +256,18 @@ def whitenoise_positions(args):
             
 
 def bluenoise_positions(args):
+    N = args.N
     last_alpha = 0
     last_beta = 0
     for j in range(args.asteps):
-        alpha = random.triangular(args.alpha_min, args.alpha_max, last_alpha)
+        alpha = random.triangular(args.alpha_min, args.alpha_max, last_alpha, N)
         if args.datum_at == 'alpha_change':
             go_datum = True
         else:
             go_datum = False
 
         for j in range(args.bsteps):
-            beta = random.triangular(args.beta_min, args.beta_max, last_beta)
+            beta = random.triangular(args.beta_min, args.beta_max, last_beta, N)
             if args.datum_at == 'beta_change':
                 go_datum = True
 
