@@ -148,6 +148,11 @@ public:
         {
             for(int busid=0; busid < BUSES_PER_GATEWAY; busid++)
             {
+                const int broadcast_id = getBroadcastID(gateway_id, busid);
+                if (broadcast_id >= num_fpus)
+                {
+                    goto Exit;
+                }
                 can_command = provideInstance<T>();
 
                 if (can_command == nullptr)
@@ -157,12 +162,12 @@ public:
                 const bool do_broadcast = true;
                 // broadcast_id is an fpu id which makes sure
                 // the message goes to the requested bus.
-                const int broadcast_id = getBroadcastID(gateway_id, busid);
                 can_command->parametrize(broadcast_id, do_broadcast);
                 unique_ptr<I_CAN_Command> cmd(can_command.release());
                 sendCommand(broadcast_id, cmd);
             }
         }
+    Exit:
         return DE_OK;
     }
 
