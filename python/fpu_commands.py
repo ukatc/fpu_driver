@@ -2,6 +2,7 @@
 from __future__ import division, print_function
 
 import math
+from numpy import asarray, ones_like
 
 """ Utility functions for using the fpu_driver module on the command line.
 """
@@ -171,19 +172,8 @@ def step_list_pad(slist, target_len):
     return slist
 
 
-def gen_wf(adegree, bdegree, asteps_per_deg=StepsPerDegreeAlpha, bsteps_per_deg=StepsPerDegreeBeta,
-           mode='fast'):
-    """
-    Generate a waveform which moves the alpha arm by an angle of 
-    adegree and the beta arm by bdegree. asteps_per_deg and bsteps_er_deg
-    are approximate calibration factors. The mode parameter can be
-    'fast' to generate a movement which is as quick as possible, or 
-    'slow' to generate a movement with minimum speed, or
-    'slowpar' to generate a slow movement where alpha and beta
-    are moved in parallel.
-
-    No range checking of movements is done.
-    """
+def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
+              mode=None):
     # assert we don't deal with NaNs
     assert( (adegree == adegree) and (bdegree == bdegree))
     # (if the above code confuses you, read https://en.wikipedia.org/wiki/NaN
@@ -222,4 +212,46 @@ def gen_wf(adegree, bdegree, asteps_per_deg=StepsPerDegreeAlpha, bsteps_per_deg=
     if len(slist) == 0:
         slist = [ (0, 0) ]
     assert(len(slist) <= 128)
-    return { 0 : slist }
+
+    return slist
+
+
+def gen_wf(adegree, bdegree, asteps_per_deg=StepsPerDegreeAlpha, bsteps_per_deg=StepsPerDegreeBeta,
+           mode='fast'):
+    """
+    Generate a waveform which moves the alpha arm by an angle of 
+    adegree and the beta arm by bdegree. asteps_per_deg and bsteps_er_deg
+    are approximate calibration factors. The mode parameter can be
+    'fast' to generate a movement which is as quick as possible, or 
+    'slow' to generate a movement with minimum speed, or
+    'slowpar' to generate a slow movement where alpha and beta
+    are moved in parallel.
+
+    If adegree or bdegree are arrays, extend then if possible to a
+    common shape, and return a list of waveforms for a number of
+    FPUs corresponding to the array.
+
+    No range checking of movements is done.
+    """
+
+    adeg = asarray(adegree)
+    bdeg = asarray(bdegree)
+
+    if adeg.ndim == 0:
+        adeg.shape = 1
+
+    bdeg = ones_like(adeg) * bdeg
+    adeg = ones_like(bdeg) * adeg
+
+    assert(adeg.ndim <= 1)
+
+    slists = dict( (i, gen_slist(adeg[i], bdeg[i], asteps_per_deg, bsteps_per_deg, mode))
+                 for i in range(len(adeg)))
+
+    # extend waveform to common maximum length
+    maxlen = max(map(len, slists.values()))
+
+    for v in slists.values():
+        v.extend([(0, 0)] * (maxlen - len(v)))
+        
+    return slists
