@@ -12,6 +12,7 @@
 #include <boost/python/tuple.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <boost/python/operators.hpp>
+#include <boost/python/exception_translator.hpp>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -21,6 +22,8 @@
 #include "../../include/E_GridState.h"
 #include "../../include/GridDriver.h"
 #include "../../include/GridState.h"
+
+PyObject* FPUDriverExceptionTypeObj = 0;
 
 
 namespace   // Avoid cluttering the global namespace.
@@ -303,13 +306,47 @@ E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
 }
 
 
-struct TooManyGatewaysException : std::exception
+class FPUDriverException : public std::exception
 {
-    char const* what() const throw()
-    {
-        return "Number of EtherCAN gateways exceed driver limit";
-    }
+public:
+  FPUDriverException(std::string message, int errno)
+  {
+    _message = message;
+    _errno = errno;
+  }
+
+  FPUDriverException(std::string message)
+  {
+    _message = message;
+    _errno = 0;
+  }
+    
+  const char *what() const throw()
+  {
+    return _message.c_str();
+  }
+  ~FPUDriverException() throw()
+  {
+  }
+
+  int getErrNo()
+  {
+    return _errno;
+  }
+    
+private:
+    std::string _message;
+    int _errno;
 };
+
+//struct TooManyGatewaysException : FPUDriverException
+//{
+//    char const* what() const throw()
+//    {
+//        return "Number of EtherCAN gateways exceed driver limit";
+//    }
+//};
+//
 
 struct NoGatewaysException : std::exception
 {
@@ -320,14 +357,15 @@ struct NoGatewaysException : std::exception
 };
 
 
-struct InsufficientNumGatewaysException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INSUFFICENT_NUM_GATEWAYS: The number of EtherCAN gateways"
-            " configured is insufficient for the configured number of FPUs";
-    }
-};
+//struct InsufficientNumGatewaysException : std::exception
+//{
+//    char const* what() const throw()
+//    {
+//        return "DE_INSUFFICENT_NUM_GATEWAYS: The number of EtherCAN gateways"
+//            " configured is insufficient for the configured number of FPUs";
+//    }
+//};
+//
 
 struct TooFewFPUsException : std::exception
 {
@@ -770,23 +808,31 @@ void translate(CommandTimeOutException const& e)
 }
 
 
-void translate(TooManyGatewaysException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
+//void translate_driver_error(TooManyGatewaysException const& e)
+//{
+//    // Use the Python 'C' API to set up an exception object
+//    PyErr_SetString(PyExc_RuntimeError, e.what());
+//}
+//
 void translate(NoGatewaysException const& e)
 {
     // Use the Python 'C' API to set up an exception object
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
-void translate(InsufficientNumGatewaysException const& e)
+void translate_driver_error(FPUDriverException const& e)
 {
     // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
+    PyErr_SetString(FPUDriverExceptionTypeObj, e.what());
 }
+
+
+//void translate_driver_error(FPUDriverException const& e)
+//{
+//    // Use the Python 'C' API to set up an exception object
+//    PyErr_SetString(FPUDriverExceptionTypeObj, e.what());
+//}
+//
 
 void translate(TooFewFPUsException const& e)
 {
@@ -820,7 +866,8 @@ void checkDriverError(E_DriverErrCode ecode)
         break;
 
     case DE_INSUFFICENT_NUM_GATEWAYS:
-        throw InsufficientNumGatewaysException();
+        throw FPUDriverException("DE_INSUFFICENT_NUM_GATEWAYS: The number of EtherCAN gateways"
+            " configured is insufficient for the configured number of FPUs");
         break;
 
     case DE_STILL_BUSY:
@@ -979,7 +1026,7 @@ public:
 
         if (actual_num_gw > MAX_NUM_GATEWAYS)
         {
-            throw TooManyGatewaysException();
+            throw FPUDriverException("Number of EtherCAN gateways exceed driver limit");
         }
         if (actual_num_gw == 0)
         {
@@ -1229,6 +1276,21 @@ public:
 
 }
 
+PyObject* createExceptionClass(const char* name, PyObject* baseTypeObj = PyExc_Exception)
+{
+    using std::string;
+    namespace bp = boost::python;
+
+    string scopeName = bp::extract<string>(bp::scope().attr("__name__"));
+    string qualifiedName0 = scopeName + "." + name;
+    char* qualifiedName1 = const_cast<char*>(qualifiedName0.c_str());
+
+    PyObject* typeObj = PyErr_NewException(qualifiedName1, baseTypeObj, 0);
+    if(!typeObj) bp::throw_error_already_set();
+    bp::scope().attr(name) = bp::handle<>(bp::borrowed(typeObj));
+    return typeObj;
+}
+
 BOOST_PYTHON_MODULE(fpu_driver)
 {
     using namespace boost::python;
@@ -1236,6 +1298,11 @@ BOOST_PYTHON_MODULE(fpu_driver)
     scope().attr("__version__") = (strlen(VERSION) > 0) ?  (((const char*)VERSION) + 1) : "";
 
     scope().attr("CAN_PROTOCOL_VERSION") = CAN_PROTOCOL_VERSION;
+
+
+    FPUDriverExceptionTypeObj = createExceptionClass("FPUDriverException");
+    
+    register_exception_translator<FPUDriverException>(&translate_driver_error);
 
     // include summary function
     def("getGridStateSummary", wrapGetGridStateSummary);

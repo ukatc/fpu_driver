@@ -5,7 +5,8 @@ import signal
 
 import fpu_driver
 
-from fpu_driver import __version__, CAN_PROTOCOL_VERSION, GatewayAddress,  REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
+from fpu_driver import __version__, CAN_PROTOCOL_VERSION, GatewayAddress,  \
+    REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, FPUDriverException
 
 import fpu_commands as cmds
 
@@ -159,7 +160,7 @@ class GridDriver:
                         was_aborted = True
                         break
                     is_ready = (rv != fpu_driver.E_DriverErrCode.DE_COMMAND_TIMEOUT)
-        except RuntimeError as rtex:
+        except FpuDriverException as rtex:
             errtype = str(rtex).split(":")[0].strip()
             if errtype in [ "DE_STEP_TIMING_ERROR", "DE_NEW_COLLISION", "DE_NEW_LIMIT_BREACH"] :
                 refresh_state = True
