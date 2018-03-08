@@ -339,511 +339,10 @@ private:
     int _errno;
 };
 
-//struct TooManyGatewaysException : FPUDriverException
-//{
-//    char const* what() const throw()
-//    {
-//        return "Number of EtherCAN gateways exceed driver limit";
-//    }
-//};
-//
-
-struct NoGatewaysException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "Need to configure at least one EtherCAN gateway";
-    }
-};
-
-
-//struct InsufficientNumGatewaysException : std::exception
-//{
-//    char const* what() const throw()
-//    {
-//        return "DE_INSUFFICENT_NUM_GATEWAYS: The number of EtherCAN gateways"
-//            " configured is insufficient for the configured number of FPUs";
-//    }
-//};
-//
-
-struct TooFewFPUsException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_WAVEFORM: Waveform table needs to address at least one FPU.";
-    }
-};
-
-struct TooFewStepsException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_WAVEFORM: Waveform entry needs to contain at least one step.";
-    }
-};
-
-struct DriverNotInitializedException
-    : std::exception
-
-
-{
-    char const* what() const throw()
-    {
-        return "DE_DRIVER_NOT_INITIALIZED: GridDriver was not initialized "
-               "properly, possibly due to system error or out-of-memory condition.";
-    }
-};
-
-void translate(DriverNotInitializedException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct DriverAlreadyInitializedException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_DRIVER_ALREADY_INITIALIZED: GridDriver was already initialized properly.";
-    }
-};
-
-void translate(DriverAlreadyInitializedException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct NoConnectionException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_NO_CONNECTION: The FPU Driver is not connected to a gateway.";
-    }
-};
-
-void translate(NoConnectionException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct DriverStillBusyException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_STILL_BUSY: The FPU driver is still busy working on a previosu command";
-    }
-};
-
-void translate(DriverStillBusyException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct NewCollisionException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_NEW_COLLISION: A collision was detected, movement for this FPU aborted.";
-    }
-};
-
-void translate(NewCollisionException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct NewLimitBreachException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_NEW_LIMIT_BREACH: An alpha limit breach was detected, movement for this FPU aborted.";
-    }
-};
-
-void translate(NewLimitBreachException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct UnresolvedCollisionException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_UNRESOLVED_COLLISION: A previous collision, limit breach, or abort message needs to be resolved first";
-    }
-};
-
-void translate(UnresolvedCollisionException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct FpuNotInitializedException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_FPU_NOT_INITIALIZED: A fibre positioner unit (FPU) was not initialized as"
-               " required, needs to do a datum search first";
-    }
-};
-
-void translate(FpuNotInitializedException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct DriverAlreadyConnectedException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_DRIVER_ALREADY_CONNECTED: Driver was already connected, would need to disconnect() first.";
-    }
-};
-
-void translate(DriverAlreadyConnectedException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct DriverStillConnectedException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_DRIVER_STILL_CONNECTED: FPU driver is still connected";
-    }
-};
-
-void translate(DriverStillConnectedException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct MaxRetriesExceededException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_MAX_RETRIES_EXCEEDED: A command could not be send in spite of several retries";
-    }
-};
-
-void translate(MaxRetriesExceededException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct InvalidWaveformTooManySectionsException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS: The passed waveform has too many sections.";
-    }
-};
-
-void translate(InvalidWaveformTooManySectionsException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct InvalidWaveformRaggedException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_WAVEFORM_RAGGED: The passed waveform has different number of sections for different FPUs.";
-    }
-};
-
-void translate(InvalidWaveformRaggedException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct InvalidWaveformStepCountTooLargeException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_WAVEFORM_STEP_COUNT_TOO_LARGE: The passed waveform has a section with too many steps.";
-    }
-};
-
-void translate(InvalidWaveformStepCountTooLargeException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct InvalidWaveformChangeException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_WAVEFORM_CHANGE: The passed waveform has an invalid change in step counts / speed between adjacent sections";
-    }
-};
-
-void translate(InvalidWaveformChangeException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct InvalidWaveformTailException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_WAVEFORM_TAIL: The passed waveform has an invalid tail section.";
-    }
-};
-
-void translate(InvalidWaveformTailException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct WaveformNotReadyException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_WAVEFORM_NOT_READY: The FPU has no valid waveform configured for a movement.";
-    }
-};
-
-void translate(WaveformNotReadyException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct FPUsNotCalibratedException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_FPUS_NOT_CALIBRATED: FPUs are lacking calibration by "
-               "a findDatum operation. For engineering or recovery use, consider"
-               " to set the 'check_protection' keyword argument to False,"
-               " to disable hardware safety checks.";
-    }
-};
-
-void translate(FPUsNotCalibratedException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct NoMovableFPUsException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_NO_MOVABLE_FPUS: No FPUs are currently movable.";
-    }
-};
-
-void translate(NoMovableFPUsException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct CommandTimeOutException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_COMMAND_TIMEOUT: Response to a CAN command surpassed the "
-               "configured maximum waiting time."
-               "This can be caused by a broken connection or networking problems.";
-    }
-};
-
-
-struct AbortedStateException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_ABORTED_STATE: There are FPUs in aborted state,"
-               " because of an abortMotion command or a step timing error "
-               "- use the resetFPUs command to reset state.";
-    }
-};
-
-void translate(AbortedStateException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct FPUsLockedException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_FPUS_LOCKED: Some addressed FPUs are in locked state, they need to be unlocked first.";
-    }
-};
-
-void translate(FPUsLockedException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct StepTimingException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_STEP_TIMING_ERROR: An FPU's controller"
-               " generated a step timing error"
-               " during movement. Possibly, reduce the microstepping level"
-               " to compute the step frequency in time.";
-    }
-};
-
-void translate(StepTimingException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct InvalidFPUIdException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_FPU_ID: A passed FPU id is out of range.";
-    }
-};
-
-void translate(InvalidFPUIdException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct InvalidParValueException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_PAR_VALUE: The passed parameter value is invalid.";
-    }
-};
-
-void translate(InvalidParValueException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-struct InvalidFPUStateException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_INVALID_FPU_STATE: Command not allowed for present FPU state.";
-    }
-};
-
-void translate(InvalidFPUStateException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-
-
-struct UnimplementedException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_UNIMPLEMENTED: Command or operation not implemented for this protocol version";
-    }
-};
-
-void translate(UnimplementedException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-struct AssertionFailedException : std::exception
-{
-    char const* what() const throw()
-    {
-        return "DE_ASSERTION_FAILED: The driver determined an internal logic error, "
-               "should probably be terminated.";
-    }
-};
-
-void translate(AssertionFailedException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-void translate(CommandTimeOutException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-
-//void translate_driver_error(TooManyGatewaysException const& e)
-//{
-//    // Use the Python 'C' API to set up an exception object
-//    PyErr_SetString(PyExc_RuntimeError, e.what());
-//}
-//
-void translate(NoGatewaysException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
 void translate_driver_error(FPUDriverException const& e)
 {
     // Use the Python 'C' API to set up an exception object
     PyErr_SetString(FPUDriverExceptionTypeObj, e.what());
-}
-
-
-//void translate_driver_error(FPUDriverException const& e)
-//{
-//    // Use the Python 'C' API to set up an exception object
-//    PyErr_SetString(FPUDriverExceptionTypeObj, e.what());
-//}
-//
-
-void translate(TooFewFPUsException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}
-
-void translate(TooFewStepsException const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
 void checkDriverError(E_DriverErrCode ecode)
@@ -854,15 +353,16 @@ void checkDriverError(E_DriverErrCode ecode)
         break;
 
     case DE_DRIVER_NOT_INITIALIZED:
-        throw DriverNotInitializedException();
+        throw FPUDriverException("DE_DRIVER_NOT_INITIALIZED: GridDriver was not initialized "
+               "properly, possibly due to system error or out-of-memory condition.");
         break;
 
     case DE_DRIVER_ALREADY_INITIALIZED:
-        throw DriverAlreadyInitializedException();
+        throw FPUDriverException("DE_DRIVER_ALREADY_INITIALIZED: GridDriver was already initialized properly.");
         break;
 
     case DE_NO_CONNECTION :
-        throw NoConnectionException();
+        throw FPUDriverException("DE_NO_CONNECTION: The FPU Driver is not connected to a gateway.");
         break;
 
     case DE_INSUFFICENT_NUM_GATEWAYS:
@@ -871,104 +371,117 @@ void checkDriverError(E_DriverErrCode ecode)
         break;
 
     case DE_STILL_BUSY:
-        throw DriverStillBusyException();
+        throw FPUDriverException("DE_STILL_BUSY: The FPU driver is still busy working on a previosu command");
         break;
 
     case DE_NEW_COLLISION :
-        throw NewCollisionException();
+        throw FPUDriverException("DE_NEW_COLLISION: A collision was detected, movement for this FPU aborted.");
         break;
 
     case DE_NEW_LIMIT_BREACH :
-        throw NewLimitBreachException();
+        throw FPUDriverException("DE_NEW_LIMIT_BREACH: An alpha limit breach was detected, movement for this FPU aborted.");
         break;
 
     case DE_UNRESOLVED_COLLISION :
-        throw UnresolvedCollisionException();
+        throw FPUDriverException("DE_UNRESOLVED_COLLISION: A previous collision, limit breach, or abort message needs to be resolved first");
         break;
 
     case DE_FPU_NOT_INITIALIZED:
-        throw FpuNotInitializedException();
+        throw FPUDriverException("DE_FPU_NOT_INITIALIZED: A fibre positioner unit (FPU) was not initialized as"
+               " required, needs to do a datum search first");
         break;
 
     case DE_DRIVER_ALREADY_CONNECTED :
-        throw DriverAlreadyConnectedException();
+        throw FPUDriverException("DE_DRIVER_ALREADY_CONNECTED: Driver was already connected, would need to disconnect() first.");
         break;
 
     case DE_DRIVER_STILL_CONNECTED:
-        throw DriverStillConnectedException();
+        throw FPUDriverException("DE_DRIVER_STILL_CONNECTED: FPU driver is still connected");
         break;
 
     case DE_MAX_RETRIES_EXCEEDED :
-        throw MaxRetriesExceededException();
+        throw FPUDriverException("DE_MAX_RETRIES_EXCEEDED: A command could not be send in spite of several retries");
         break;
 
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS :
-        throw InvalidWaveformTooManySectionsException();
+        throw FPUDriverException("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS: The passed waveform has too many sections.");
         break;
 
     case DE_INVALID_WAVEFORM_RAGGED :
-        throw InvalidWaveformRaggedException();
+        throw FPUDriverException("DE_INVALID_WAVEFORM_RAGGED: The passed waveform has different number of sections for different FPUs.");
         break;
 
     case DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE :
-        throw InvalidWaveformStepCountTooLargeException();
+        throw FPUDriverException("DE_INVALID_WAVEFORM_STEP_COUNT_TOO_LARGE:"
+                                                        " The passed waveform has a section with too many steps.");
         break;
 
     case DE_INVALID_WAVEFORM_CHANGE :
-        throw InvalidWaveformChangeException();
+        throw FPUDriverException("DE_INVALID_WAVEFORM_CHANGE: The passed waveform has an invalid change in step counts / speed between adjacent sections");
         break;
 
     case DE_INVALID_WAVEFORM_TAIL :
-        throw InvalidWaveformTailException();
+        throw FPUDriverException("DE_INVALID_WAVEFORM_TAIL: The passed waveform has an invalid tail section.");
         break;
 
     case DE_WAVEFORM_NOT_READY :
-        throw WaveformNotReadyException();
+        throw FPUDriverException("DE_WAVEFORM_NOT_READY: The FPU has no valid waveform configured for a movement.");
         break;
 
     case DE_FPUS_NOT_CALIBRATED:
-        throw FPUsNotCalibratedException();
+        throw FPUDriverException("DE_FPUS_NOT_CALIBRATED: FPUs are lacking calibration by "
+               "a findDatum operation. For engineering or recovery use, consider"
+               " to set the 'check_protection' keyword argument to False,"
+               " to disable hardware safety checks.");
         break;
 
     case DE_NO_MOVABLE_FPUS :
-        throw NoMovableFPUsException();
+        throw FPUDriverException("DE_NO_MOVABLE_FPUS: No FPUs are currently movable.");
         break;
 
     case DE_COMMAND_TIMEOUT :
-        throw CommandTimeOutException();
+        throw FPUDriverException("DE_COMMAND_TIMEOUT: Response to a CAN command surpassed the "
+               "configured maximum waiting time."
+               "This can be caused by a broken connection or networking problems.");
         break;
 
     case DE_ABORTED_STATE :
-        throw AbortedStateException();
+        throw FPUDriverException("DE_ABORTED_STATE: There are FPUs in aborted state,"
+               " because of an abortMotion command or a step timing error "
+               "- use the resetFPUs command to reset state.");
         break;
 
     case DE_FPUS_LOCKED :
-        throw FPUsLockedException();
+        throw FPUDriverException("DE_FPUS_LOCKED: Some addressed FPUs are in locked state, they need to be unlocked first.");
         break;
 
     case DE_STEP_TIMING_ERROR:
-        throw StepTimingException();
+        throw FPUDriverException("DE_STEP_TIMING_ERROR: An FPU's controller"
+               " generated a step timing error"
+               " during movement. Possibly, reduce the microstepping level"
+               " to compute the step frequency in time.");
         break;
 
 
     case DE_INVALID_FPU_ID:
-        throw InvalidFPUIdException();
+        throw FPUDriverException("DE_INVALID_FPU_ID: A passed FPU id is out of range.");
         break;
 
     case DE_INVALID_FPU_STATE:
-        throw InvalidFPUStateException();
+        throw FPUDriverException("DE_INVALID_FPU_STATE: Command not allowed for present FPU state.");
         break;
 
     case DE_INVALID_PAR_VALUE:
-        throw InvalidParValueException();
+        throw FPUDriverException("DE_INVALID_PAR_VALUE: The passed parameter value is invalid.");
         break;
 
     case DE_UNIMPLEMENTED:
-        throw UnimplementedException();
+        throw FPUDriverException("DE_UNIMPLEMENTED: Command or operation not implemented for this protocol version");
         break;
 
     case DE_ASSERTION_FAILED:
-        throw AssertionFailedException();
+        throw FPUDriverException("DE_ASSERTION_FAILED: The driver determined an internal logic error, "
+               "should probably be terminated.");
         break;
 
 
@@ -1030,7 +543,7 @@ public:
         }
         if (actual_num_gw == 0)
         {
-            throw NoGatewaysException();
+            throw FPUDriverException("Need to configure at least one EtherCAN gateway");
         }
 
         for (int i=0; i < actual_num_gw; i++)
@@ -1058,7 +571,7 @@ public:
 
         if (nkeys == 0)
         {
-            throw TooFewFPUsException();
+            throw FPUDriverException("DE_INVALID_WAVEFORM: Waveform table needs to address at least one FPU.");
         }
 
         t_wtable wtable;
@@ -1071,7 +584,7 @@ public:
 
             if (num_steps == 0)
             {
-                throw TooFewStepsException();
+                throw FPUDriverException("DE_INVALID_WAVEFORM: Waveform entry needs to contain at least one step.");
             }
 
             std::vector<t_step_pair> steps;
@@ -1276,7 +789,7 @@ public:
 
 }
 
-PyObject* createExceptionClass(const char* name, PyObject* baseTypeObj = PyExc_Exception)
+PyObject* FPUDriverExceptionClass(const char* name, PyObject* baseTypeObj = PyExc_Exception)
 {
     using std::string;
     namespace bp = boost::python;
@@ -1300,7 +813,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     scope().attr("CAN_PROTOCOL_VERSION") = CAN_PROTOCOL_VERSION;
 
 
-    FPUDriverExceptionTypeObj = createExceptionClass("FPUDriverException");
+    FPUDriverExceptionTypeObj = FPUDriverExceptionClass("FPUDriverException");
     
     register_exception_translator<FPUDriverException>(&translate_driver_error);
 

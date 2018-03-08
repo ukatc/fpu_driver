@@ -160,7 +160,7 @@ class GridDriver:
                         was_aborted = True
                         break
                     is_ready = (rv != fpu_driver.E_DriverErrCode.DE_COMMAND_TIMEOUT)
-        except FpuDriverException as rtex:
+        except FPUDriverException as rtex:
             errtype = str(rtex).split(":")[0].strip()
             if errtype in [ "DE_STEP_TIMING_ERROR", "DE_NEW_COLLISION", "DE_NEW_LIMIT_BREACH"] :
                 refresh_state = True
