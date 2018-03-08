@@ -177,6 +177,9 @@ enum E_DriverErrCode
     // command not allowed for present FPU state
     DE_INVALID_FPU_STATE = 26,
 
+    // insufficient number of gateways
+    DE_INSUFFICENT_NUM_GATEWAYS = 27,
+
     // operation not implemented for this protocol version
     DE_UNIMPLEMENTED=98,
 

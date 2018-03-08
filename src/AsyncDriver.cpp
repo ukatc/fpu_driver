@@ -112,6 +112,13 @@ E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_addres
         return DE_ASSERTION_FAILED;
     }
 
+    // Make sure that the passed number of gateways can support the
+    // configured number of FPUs.
+    if (ngateways < (num_fpus + MAX_FPUS_PER_GATEWAY-1) / MAX_FPUS_PER_GATEWAY)
+    {
+        return DE_INSUFFICENT_NUM_GATEWAYS;
+    }
+
     E_DriverErrCode err_code =  gateway.connect(ngateways, gateway_addresses);
     if (err_code == DE_OK)
     {

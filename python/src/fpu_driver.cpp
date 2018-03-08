@@ -311,11 +311,21 @@ struct TooManyGatewaysException : std::exception
     }
 };
 
-struct TooFewGatewaysException : std::exception
+struct NoGatewaysException : std::exception
 {
     char const* what() const throw()
     {
         return "Need to configure at least one EtherCAN gateway";
+    }
+};
+
+
+struct InsufficientNumGatewaysException : std::exception
+{
+    char const* what() const throw()
+    {
+        return "DE_INSUFFICENT_NUM_GATEWAYS: The number of EtherCAN gateways"
+            " configured is insufficient for the configured number of FPUs";
     }
 };
 
@@ -766,7 +776,13 @@ void translate(TooManyGatewaysException const& e)
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
-void translate(TooFewGatewaysException const& e)
+void translate(NoGatewaysException const& e)
+{
+    // Use the Python 'C' API to set up an exception object
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
+void translate(InsufficientNumGatewaysException const& e)
 {
     // Use the Python 'C' API to set up an exception object
     PyErr_SetString(PyExc_RuntimeError, e.what());
@@ -801,6 +817,10 @@ void checkDriverError(E_DriverErrCode ecode)
 
     case DE_NO_CONNECTION :
         throw NoConnectionException();
+        break;
+
+    case DE_INSUFFICENT_NUM_GATEWAYS:
+        throw InsufficientNumGatewaysException();
         break;
 
     case DE_STILL_BUSY:
@@ -963,7 +983,7 @@ public:
         }
         if (actual_num_gw == 0)
         {
-            throw TooFewGatewaysException();
+            throw NoGatewaysException();
         }
 
         for (int i=0; i < actual_num_gw; i++)
@@ -1320,6 +1340,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_DRIVER_NOT_INITIALIZED",DE_DRIVER_NOT_INITIALIZED)
     .value("DE_DRIVER_ALREADY_INITIALIZED",DE_DRIVER_ALREADY_INITIALIZED)
     .value("DE_NO_CONNECTION",DE_NO_CONNECTION)
+    .value("DE_INSUFFICENT_NUM_GATEWAYS", DE_INSUFFICENT_NUM_GATEWAYS)
     .value("DE_STILL_BUSY",DE_STILL_BUSY)
     .value("DE_MAX_RETRIES_EXCEEDED", DE_MAX_RETRIES_EXCEEDED)
     .value("DE_UNRESOLVED_COLLISION",DE_UNRESOLVED_COLLISION)
