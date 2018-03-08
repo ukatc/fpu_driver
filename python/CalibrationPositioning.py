@@ -38,8 +38,6 @@ def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
             
     gd.configMotion(waveform, grid_state)
     printtime()
-    print("angles:", list_angles(grid_state))
-    print("indexed:", enumerate(list_angles(grid_state)))
     for i, pos in enumerate(list_angles(grid_state)):
         a,b = pos
         print("{}: FPU #{}: now moving to ({:6.2f}, {:6.2f})".format(label, i, a + alpha_move[i], b + beta_move[i]))
@@ -211,7 +209,7 @@ def grid_positions(args):
             if args.datum_at == 'beta_change':
                 go_datum = True
 
-            yield (alpha * ones_vect, beta, go_datum)        
+            yield (alpha * ones_vect, beta * ones_vect, go_datum)        
             go_datum = False
 
 def abcircle_positions(args):
@@ -235,7 +233,7 @@ def abcircle_positions(args):
         go_datum = False
         
     for beta in numpy.linspace(args.beta_min, args.beta_max, args.bsteps):
-        yield (alpha * ones_vect, beta, go_datum)        
+        yield (alpha * ones_vect, beta * ones_vect, go_datum)        
             
 def whitenoise_positions(args):
     N = args.N
