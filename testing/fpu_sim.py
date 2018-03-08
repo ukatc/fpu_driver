@@ -10,6 +10,7 @@ from __future__ import print_function
 
 import numpy as np
 import random
+import time
 
 MAX_WAVE_ENTRIES = 128
 
@@ -58,6 +59,9 @@ MAX_BETA = int(BETA_LIMIT_MAX_DEGREE * StepsPerDegreeBeta)
 
 REQD_ANTI_CLOCKWISE = 0
 REQD_CLOCKWISE      = 1
+
+def printtime():
+    print(time.strftime("%a, %d %b %Y %H:%M:%S +0000 (%Z)", time.gmtime()))
 
 
 class FPU:
@@ -160,10 +164,11 @@ class FPU:
         
         
     def findDatum(self, sleep):
+        printtime()
         datum_op_duration_mu = 1
         datum_op_duration_sigma = 2
         datum_op_duration_sec = min(max(random.gauss(datum_op_duration_mu, datum_op_duration_sigma), 0), 5)
-        #print("FPU #%i: findDatum will take %f sec" % (self.fpu_id, datum_op_duration_sec) )
+        print("FPU #%i: searching datum" % self.fpu_id)
         wait_interval_sec = 0.1
         while datum_op_duration_sec > 0:
             sleep_time = min(datum_op_duration_sec, wait_interval_sec)
@@ -186,6 +191,8 @@ class FPU:
             self.alpha_steps = 0
             self.beta_steps = 0
             self.at_datum = True
+        print("FPU #%i: datum found" % self.fpu_id)
+        printtime()
             
 
     def abortMotion(self, sleep):
@@ -222,6 +229,7 @@ class FPU:
 
         
     def executeMotion(self, sleep, limit_callback, collision_callback):
+        printtime()
         if self.running_wave :
             raise RuntimeError("FPU is already moving")
         
@@ -236,6 +244,10 @@ class FPU:
         else:
             wt_sign = -1
 
+        #simulate between 0 and 10 ms of latency
+        latency_secs = random.uniform(0, 10) / 1000.
+        sleep(latency_secs)
+        
         section = -1
         for k in range(self.nwave_entries):
             section = k
@@ -299,6 +311,7 @@ class FPU:
             else:
                 self.beta_steps = newbeta
 
+        printtime()
         if self.abort_wave:
             print("FPU %i, section %i: MOVEMENT ABORTED at (%i, %i)" % (self.fpu_id, section,
                                                             newalpha, newbeta))

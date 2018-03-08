@@ -129,6 +129,7 @@ when the internal state struct is used.
 ** DONE make signatures const-correct
 ** DONE make API const-correct
 ** DONE split findDatum into start and wait functions
+
 ** DONE Wrap error returns into Python Exceptions
 ** DONE revise expects_response field
 ** DONE add Python wrappers for base commands
@@ -147,11 +148,11 @@ when the internal state struct is used.
 ** DONE revise initializations of socket and threads
 ** DONE Implement ustep errors in mock-up and test handler
 ** DONE Bugfix broadast command for more than one bus
-** TODO Lift waveform restriction for zero movement (DEFINE)
+** DONE Lift waveform restriction for zero movement (DEFINE)
+** DONE Update tutorial on allowed waveforms
 ** TODO stress tests with multiple FPUs
-** TODO translate thorpy driver to python2
+** TODO make thorpy driver accessible in python2
 ** TODO Integrate path analysis script into MOONS shared library
-** TODO Update tutorial on allowed waveforms
 ** TODO expand tutorial with reference part
 ** TODO add separate reporting/logging of results
 ** TODO Fix multiplexing of broadcast commands (currently, they are only sent to bus 0)

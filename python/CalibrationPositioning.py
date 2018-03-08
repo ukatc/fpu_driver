@@ -7,7 +7,7 @@ positions and calls a measurement function at each position.
 import time
 import argparse
 import numpy
-from numpy import random, asarray
+from numpy import random, asarray, zeros
 
 import FpuGridDriver
 from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST, GatewayAddress
@@ -117,7 +117,7 @@ def parse_args():
     parser.add_argument('--gateway_address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
     
-    parser.add_argument('--N', metavar='NUM_FPUS', type=int, default=100,
+    parser.add_argument('--N', metavar='NUM_FPUS', type=int, default=1,
                         help='Number of adressed FPUs. For the deterministic patterns, the FPUs will be steered in unison. For the raodnom patterns, each FPU will receive a random value. WARNING: No conflict checking is done.  (default: %(default)s)')
     
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=0.0,
@@ -255,25 +255,35 @@ def whitenoise_positions(args):
             go_datum = False
             
 
+def triangular_distributed(minval, maxval, mode):
+    """Computes triangular-distributed values with a vector
+    mode parameter.
+    """
+    # note that the signature of random.triangular and numpy.random.triangular
+    # differs in the position of the mode parameter
+    return asarray([random.triangular(minval, m, maxval) for m in mode])
+            
 def bluenoise_positions(args):
     N = args.N
-    last_alpha = 0
-    last_beta = 0
+    last_alpha = zeros(N)
+    last_beta = zeros(N)
     for j in range(args.asteps):
-        alpha = random.triangular(args.alpha_min, args.alpha_max, last_alpha, N)
+        alpha = triangular_distributed(args.alpha_min, args.alpha_max, last_alpha)
         if args.datum_at == 'alpha_change':
             go_datum = True
         else:
             go_datum = False
 
         for j in range(args.bsteps):
-            beta = random.triangular(args.beta_min, args.beta_max, last_beta, N)
+            beta = triangular_distributed(args.beta_min, args.beta_max, last_beta)
             if args.datum_at == 'beta_change':
                 go_datum = True
 
             yield (alpha, beta, go_datum)
             last_alpha = alpha
             last_beta = beta
+
+
             go_datum = False
 
             
