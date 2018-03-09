@@ -167,7 +167,7 @@ public:
                 sendCommand(broadcast_id, cmd);
             }
         }
-    Exit:
+Exit:
         return DE_OK;
     }
 

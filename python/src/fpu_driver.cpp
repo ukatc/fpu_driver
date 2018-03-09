@@ -30,6 +30,12 @@ PyObject* CollisionErrorExceptionTypeObj = 0;
 PyObject* LimitBreachErrorExceptionTypeObj = 0;
 PyObject* AbortMotionErrorExceptionTypeObj = 0;
 PyObject* TimingErrorExceptionTypeObj = 0;
+PyObject* InvalidStateExceptionTypeObj = 0;
+PyObject* SystemFailureExceptionTypeObj = 0;
+PyObject* SetupErrorExceptionTypeObj = 0;
+PyObject* InvalidParameterExceptionTypeObj = 0;
+PyObject* ConnectionFailureExceptionTypeObj = 0;
+
 
 
 namespace   // Avoid cluttering the global namespace.
@@ -316,30 +322,24 @@ class FPUDriverException : public std::exception
 {
 public:
     FPUDriverException(std::string message, mpifps::E_DriverErrCode errcode)
-  {
-    _message = message;
-    _errcode = errcode;
-  }
+    {
+        _message = message;
+        _errcode = errcode;
+    }
 
-  FPUDriverException(std::string message)
-  {
-    _message = message;
-    _errcode = DE_ASSERTION_FAILED;
-  }
-    
-  const char *what() const throw()
-  {
-    return _message.c_str();
-  }
-  ~FPUDriverException() throw()
-  {
-  }
+    const char *what() const throw()
+    {
+        return _message.c_str();
+    }
+    ~FPUDriverException() throw()
+    {
+    }
 
     E_DriverErrCode getErrCode() const throw()
-  {
-    return _errcode;
-  }
-    
+    {
+        return _errcode;
+    }
+
 private:
     std::string _message;
     mpifps::E_DriverErrCode _errcode;
@@ -350,6 +350,47 @@ void translate_driver_error(FPUDriverException const& e)
     // Use the Python 'C' API to set up an exception object
     switch (e.getErrCode())
     {
+
+    case DE_DRIVER_NOT_INITIALIZED :
+    case DE_DRIVER_ALREADY_INITIALIZED :
+    case DE_STILL_BUSY :
+    case DE_UNRESOLVED_COLLISION :
+    case DE_FPU_NOT_INITIALIZED :
+    case DE_DRIVER_ALREADY_CONNECTED :
+    case DE_DRIVER_STILL_CONNECTED :
+    case DE_WAVEFORM_NOT_READY :
+    case DE_FPUS_NOT_CALIBRATED :
+    case DE_NO_MOVABLE_FPUS :
+    case DE_FPUS_LOCKED :
+    case DE_INVALID_FPU_STATE :
+    case DE_INVALID_DRIVER_STATE :
+        PyErr_SetString(InvalidStateExceptionTypeObj, e.what());
+        break;
+
+    case DE_UNIMPLEMENTED:
+    case DE_OUT_OF_MEMORY:
+    case DE_RESOURCE_ERROR:
+    case DE_ASSERTION_FAILED:
+        PyErr_SetString(SystemFailureExceptionTypeObj, e.what());
+        break;
+
+    case DE_INSUFFICENT_NUM_GATEWAYS :
+    case DE_INVALID_CONFIG :
+        PyErr_SetString(SetupErrorExceptionTypeObj, e.what());
+        break;
+
+    case DE_INVALID_FPU_ID :
+    case DE_INVALID_PAR_VALUE :
+        PyErr_SetString(InvalidParameterExceptionTypeObj, e.what());
+        break;
+
+    case DE_MAX_RETRIES_EXCEEDED :
+    case DE_COMMAND_TIMEOUT :
+    case DE_NO_CONNECTION :
+        PyErr_SetString(ConnectionFailureExceptionTypeObj, e.what());
+        break;
+
+    case DE_INVALID_WAVEFORM :
     case DE_INVALID_WAVEFORM_TAIL:
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:
     case DE_INVALID_WAVEFORM_RAGGED:
@@ -357,7 +398,7 @@ void translate_driver_error(FPUDriverException const& e)
     case DE_INVALID_WAVEFORM_CHANGE:
         PyErr_SetString(InvalidWaveformExceptionTypeObj, e.what());
         break;
-        
+
     case DE_NEW_COLLISION:
         PyErr_SetString(CollisionErrorExceptionTypeObj, e.what());
         break;
@@ -367,10 +408,10 @@ void translate_driver_error(FPUDriverException const& e)
     case DE_STEP_TIMING_ERROR:
         PyErr_SetString(TimingErrorExceptionTypeObj, e.what());
         break;
-    case DE_ABORTED_STATE:        
+    case DE_ABORTED_STATE:
         PyErr_SetString(AbortMotionErrorExceptionTypeObj, e.what());
         break;
-        
+
     default:
         PyErr_SetString(FPUDriverExceptionTypeObj, e.what());
     }
@@ -385,53 +426,70 @@ void checkDriverError(E_DriverErrCode ecode)
 
     case DE_DRIVER_NOT_INITIALIZED:
         throw FPUDriverException("DE_DRIVER_NOT_INITIALIZED: GridDriver was not initialized "
-               "properly, possibly due to system error or out-of-memory condition.");
+                                 "properly, possibly due to system error or out-of-memory condition.",
+                                 DE_DRIVER_NOT_INITIALIZED);
         break;
 
     case DE_DRIVER_ALREADY_INITIALIZED:
-        throw FPUDriverException("DE_DRIVER_ALREADY_INITIALIZED: GridDriver was already initialized properly.");
+        throw FPUDriverException("DE_DRIVER_ALREADY_INITIALIZED: GridDriver was already initialized properly.",
+                                 DE_DRIVER_ALREADY_INITIALIZED);
         break;
 
     case DE_NO_CONNECTION :
-        throw FPUDriverException("DE_NO_CONNECTION: The FPU Driver is not connected to a gateway.");
+        throw FPUDriverException("DE_NO_CONNECTION: The FPU Driver is not connected to a gateway.",
+                                 DE_NO_CONNECTION);
         break;
 
     case DE_INSUFFICENT_NUM_GATEWAYS:
         throw FPUDriverException("DE_INSUFFICENT_NUM_GATEWAYS: The number of EtherCAN gateways"
-            " configured is insufficient for the configured number of FPUs");
+                                 " configured is insufficient for the configured number of FPUs",
+                                 DE_INSUFFICENT_NUM_GATEWAYS);
         break;
 
     case DE_STILL_BUSY:
-        throw FPUDriverException("DE_STILL_BUSY: The FPU driver is still busy working on a previosu command");
+        throw FPUDriverException("DE_STILL_BUSY: The FPU driver is still busy "
+                                 "working on a previosu command",
+                                 DE_STILL_BUSY);
         break;
 
     case DE_NEW_COLLISION :
-        throw FPUDriverException("DE_NEW_COLLISION: A collision was detected, movement for this FPU aborted.", DE_NEW_COLLISION);
+        throw FPUDriverException("DE_NEW_COLLISION: A collision was detected,"
+                                 " movement for this FPU aborted.",
+                                 DE_NEW_COLLISION);
         break;
 
     case DE_NEW_LIMIT_BREACH :
-        throw FPUDriverException("DE_NEW_LIMIT_BREACH: An alpha limit breach was detected, movement for this FPU aborted.", DE_NEW_LIMIT_BREACH);
+        throw FPUDriverException("DE_NEW_LIMIT_BREACH: An alpha limit breach was detected,"
+                                 " movement for this FPU aborted.",
+                                 DE_NEW_LIMIT_BREACH);
         break;
 
     case DE_UNRESOLVED_COLLISION :
-        throw FPUDriverException("DE_UNRESOLVED_COLLISION: A previous collision, limit breach, or abort message needs to be resolved first");
+        throw FPUDriverException("DE_UNRESOLVED_COLLISION: A previous collision, limit breach,"
+                                 " or abort message needs to be resolved first",
+                                 DE_UNRESOLVED_COLLISION);
         break;
 
     case DE_FPU_NOT_INITIALIZED:
         throw FPUDriverException("DE_FPU_NOT_INITIALIZED: A fibre positioner unit (FPU) was not initialized as"
-               " required, needs to do a datum search first");
+                                 " required, needs to do a datum search first",
+                                 DE_FPU_NOT_INITIALIZED);
         break;
 
     case DE_DRIVER_ALREADY_CONNECTED :
-        throw FPUDriverException("DE_DRIVER_ALREADY_CONNECTED: Driver was already connected, would need to disconnect() first.");
+        throw FPUDriverException("DE_DRIVER_ALREADY_CONNECTED: Driver was already connected,"
+                                 " would need to disconnect() first.",
+                                 DE_DRIVER_ALREADY_CONNECTED);
         break;
 
     case DE_DRIVER_STILL_CONNECTED:
-        throw FPUDriverException("DE_DRIVER_STILL_CONNECTED: FPU driver is still connected");
+        throw FPUDriverException("DE_DRIVER_STILL_CONNECTED: FPU driver is still connected",
+                                 DE_DRIVER_STILL_CONNECTED);
         break;
 
     case DE_MAX_RETRIES_EXCEEDED :
-        throw FPUDriverException("DE_MAX_RETRIES_EXCEEDED: A command could not be send in spite of several retries");
+        throw FPUDriverException("DE_MAX_RETRIES_EXCEEDED: A command could not be"
+                                 " send in spite of several retries", DE_MAX_RETRIES_EXCEEDED);
         break;
 
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS :
@@ -441,84 +499,121 @@ void checkDriverError(E_DriverErrCode ecode)
 
     case DE_INVALID_WAVEFORM_RAGGED :
         throw FPUDriverException("DE_INVALID_WAVEFORM_RAGGED: The passed waveform has different number of sections for different FPUs.",
-                                DE_INVALID_WAVEFORM_RAGGED);
+                                 DE_INVALID_WAVEFORM_RAGGED);
         break;
 
     case DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE :
         throw FPUDriverException("DE_INVALID_WAVEFORM_STEP_COUNT_TOO_LARGE:"
                                  " The passed waveform has a section with too many steps.",
-                                DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE);
+                                 DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE);
         break;
 
     case DE_INVALID_WAVEFORM_CHANGE :
         throw FPUDriverException("DE_INVALID_WAVEFORM_CHANGE: The passed waveform has an"
                                  " invalid change in step counts / speed between adjacent sections",
-                                DE_INVALID_WAVEFORM_CHANGE);
+                                 DE_INVALID_WAVEFORM_CHANGE);
         break;
 
     case DE_INVALID_WAVEFORM_TAIL :
         throw FPUDriverException("DE_INVALID_WAVEFORM_TAIL: The passed waveform has an invalid tail section.",
-                                DE_INVALID_WAVEFORM_TAIL);
+                                 DE_INVALID_WAVEFORM_TAIL);
         break;
 
     case DE_WAVEFORM_NOT_READY :
-        throw FPUDriverException("DE_WAVEFORM_NOT_READY: The FPU has no valid waveform configured for a movement.");
+        throw FPUDriverException("DE_WAVEFORM_NOT_READY: The FPU has no valid waveform configured for a movement.",
+                                 DE_WAVEFORM_NOT_READY);
         break;
 
     case DE_FPUS_NOT_CALIBRATED:
         throw FPUDriverException("DE_FPUS_NOT_CALIBRATED: FPUs are lacking calibration by "
-               "a findDatum operation. For engineering or recovery use, consider"
-               " to set the 'check_protection' keyword argument to False,"
-               " to disable hardware safety checks.");
+                                 "a findDatum operation. For engineering or recovery use, consider"
+                                 " to set the 'check_protection' keyword argument to False,"
+                                 " to disable hardware safety checks.",
+                                 DE_FPUS_NOT_CALIBRATED);
         break;
 
     case DE_NO_MOVABLE_FPUS :
-        throw FPUDriverException("DE_NO_MOVABLE_FPUS: No FPUs are currently movable.");
+        throw FPUDriverException("DE_NO_MOVABLE_FPUS: No FPUs are currently movable.",
+                                 DE_NO_MOVABLE_FPUS);
         break;
 
     case DE_COMMAND_TIMEOUT :
         throw FPUDriverException("DE_COMMAND_TIMEOUT: Response to a CAN command surpassed the "
-               "configured maximum waiting time."
-               "This can be caused by a broken connection or networking problems.");
+                                 "configured maximum waiting time."
+                                 "This can be caused by a broken connection or networking problems.",
+                                 DE_COMMAND_TIMEOUT);
         break;
 
     case DE_ABORTED_STATE :
         throw FPUDriverException("DE_ABORTED_STATE: There are FPUs in aborted state,"
-               " because of an abortMotion command or a step timing error "
-                                 "- use the resetFPUs command to reset state.", DE_ABORTED_STATE);
+                                 " because of an abortMotion command or a step timing error "
+                                 "- use the resetFPUs command to reset state.",
+                                 DE_ABORTED_STATE);
         break;
 
     case DE_FPUS_LOCKED :
-        throw FPUDriverException("DE_FPUS_LOCKED: Some addressed FPUs are in locked state, they need to be unlocked first.");
+        throw FPUDriverException("DE_FPUS_LOCKED: Some addressed FPUs are in locked state,"
+                                 " they need to be unlocked first.",
+                                 DE_FPUS_LOCKED);
         break;
 
     case DE_STEP_TIMING_ERROR:
         throw FPUDriverException("DE_STEP_TIMING_ERROR: An FPU's controller"
-               " generated a step timing error"
-               " during movement. Possibly, reduce the microstepping level"
-                                 " to compute the step frequency in time.", DE_STEP_TIMING_ERROR);
+                                 " generated a step timing error"
+                                 " during movement. Possibly, reduce the microstepping level"
+                                 " to compute the step frequency in time.",
+                                 DE_STEP_TIMING_ERROR);
         break;
 
 
     case DE_INVALID_FPU_ID:
-        throw FPUDriverException("DE_INVALID_FPU_ID: A passed FPU id is out of range.");
+        throw FPUDriverException("DE_INVALID_FPU_ID: A passed FPU id is out of range.",
+                                 DE_INVALID_FPU_ID);
         break;
 
     case DE_INVALID_FPU_STATE:
-        throw FPUDriverException("DE_INVALID_FPU_STATE: Command not allowed for present FPU state.");
+        throw FPUDriverException("DE_INVALID_FPU_STATE: Command not allowed for present FPU state.",
+                                 DE_INVALID_FPU_STATE);
         break;
 
     case DE_INVALID_PAR_VALUE:
-        throw FPUDriverException("DE_INVALID_PAR_VALUE: The passed parameter value is invalid.");
+        throw FPUDriverException("DE_INVALID_PAR_VALUE: The passed parameter value is invalid.",
+                                 DE_INVALID_PAR_VALUE);
         break;
 
     case DE_UNIMPLEMENTED:
-        throw FPUDriverException("DE_UNIMPLEMENTED: Command or operation not implemented for this protocol version");
+        throw FPUDriverException("DE_UNIMPLEMENTED: Command or operation not implemented"
+                                 " for this protocol version",
+                                 DE_UNIMPLEMENTED);
+        break;
+
+    case DE_RESOURCE_ERROR:
+        throw FPUDriverException("DE_RESOURCE_ERROR: The driver could not acquire necessary"
+                                 " resources such as file descriptors from the OS, and can not operate.",
+                                 DE_RESOURCE_ERROR);
+        break;
+
+    case DE_OUT_OF_MEMORY:
+        throw FPUDriverException("DE_OUT_OF_MEMORY: The driver could not allocate the required memory, "
+                                 "and can not operate. Probable cause is a memory leak.",
+                                 DE_OUT_OF_MEMORY);
+        break;
+
+    case DE_INVALID_DRIVER_STATE :
+        throw FPUDriverException("DE_INVALID_DRIVER_STATE: The current state of the driver"
+                                 " does not allow the requested operation.",
+                                 DE_INVALID_DRIVER_STATE);
+        break;
+
+    case DE_INVALID_CONFIG:
+        throw FPUDriverException("DE_INVALID_CONFIG: The driver configuration is not valid",
+                                 DE_INVALID_CONFIG);
         break;
 
     case DE_ASSERTION_FAILED:
         throw FPUDriverException("DE_ASSERTION_FAILED: The driver determined an internal logic error, "
-               "should probably be terminated.");
+                                 "should probably be terminated.",
+                                 DE_ASSERTION_FAILED);
         break;
 
 
@@ -576,11 +671,13 @@ public:
 
         if (actual_num_gw > MAX_NUM_GATEWAYS)
         {
-            throw FPUDriverException("Number of EtherCAN gateways exceed driver limit");
+            throw FPUDriverException("Number of EtherCAN gateways exceed driver limit",
+                                     DE_INVALID_CONFIG);
         }
         if (actual_num_gw == 0)
         {
-            throw FPUDriverException("Need to configure at least one EtherCAN gateway");
+            throw FPUDriverException("Need to configure at least one EtherCAN gateway",
+                                     DE_INSUFFICENT_NUM_GATEWAYS);
         }
 
         for (int i=0; i < actual_num_gw; i++)
@@ -608,7 +705,8 @@ public:
 
         if (nkeys == 0)
         {
-            throw FPUDriverException("DE_INVALID_WAVEFORM: Waveform table needs to address at least one FPU.");
+            throw FPUDriverException("DE_INVALID_WAVEFORM: Waveform table needs to address at least one FPU.",
+                                     DE_INVALID_WAVEFORM);
         }
 
         t_wtable wtable;
@@ -621,7 +719,8 @@ public:
 
             if (num_steps == 0)
             {
-                throw FPUDriverException("DE_INVALID_WAVEFORM: Waveform entry needs to contain at least one step.");
+                throw FPUDriverException("DE_INVALID_WAVEFORM: Waveform entry needs to contain at least one step.",
+                                         DE_INVALID_WAVEFORM);
             }
 
             std::vector<t_step_pair> steps;
@@ -850,16 +949,24 @@ BOOST_PYTHON_MODULE(fpu_driver)
     scope().attr("CAN_PROTOCOL_VERSION") = CAN_PROTOCOL_VERSION;
 
 
+    /* define the exception hierarchy */
     FPUDriverExceptionTypeObj = FPUDriverExceptionClass("FPUDriverException");
-    InvalidWaveformExceptionTypeObj = FPUDriverExceptionClass("InvalidWaveformException", FPUDriverExceptionTypeObj);
     MovementErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", FPUDriverExceptionTypeObj);
-    
     CollisionErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
     LimitBreachErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
     AbortMotionErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
     TimingErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
+    InvalidStateExceptionTypeObj = FPUDriverExceptionClass("InvalidState", FPUDriverExceptionTypeObj);
+    SystemFailureExceptionTypeObj = FPUDriverExceptionClass("SystemFailure", FPUDriverExceptionTypeObj);
+    InvalidParameterExceptionTypeObj  = FPUDriverExceptionClass("InvalidParameter", FPUDriverExceptionTypeObj);
+    SetupErrorExceptionTypeObj  = FPUDriverExceptionClass("SetupError", InvalidParameterExceptionTypeObj);
+    InvalidWaveformExceptionTypeObj = FPUDriverExceptionClass("InvalidWaveformException", InvalidParameterExceptionTypeObj);
+    ConnectionFailureExceptionTypeObj = FPUDriverExceptionClass("ConnectionFailure", FPUDriverExceptionTypeObj);
 
-    
+
+
+
+
     register_exception_translator<FPUDriverException>(&translate_driver_error);
 
     // include summary function
@@ -976,6 +1083,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_DRIVER_ALREADY_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
     .value("DE_DRIVER_STILL_CONNECTED",DE_DRIVER_ALREADY_CONNECTED)
     .value("DE_ASSERTION_FAILED",DE_ASSERTION_FAILED)
+    .value("DE_INVALID_WAVEFORM", DE_INVALID_WAVEFORM)
     .value("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS", DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS)
     .value("DE_INVALID_WAVEFORM_RAGGED", DE_INVALID_WAVEFORM_RAGGED)
     .value("DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE", DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE)
@@ -990,6 +1098,10 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_INVALID_FPU_ID", DE_INVALID_FPU_ID)
     .value("DE_INVALID_FPU_STATE", DE_INVALID_FPU_STATE)
     .value("DE_INVALID_PAR_VALUE", DE_INVALID_PAR_VALUE)
+    .value("DE_INVALID_CONFIG", DE_INVALID_CONFIG)
+    .value("DE_INVALID_DRIVER_STATE", DE_INVALID_DRIVER_STATE)
+    .value("DE_OUT_OF_MEMORY", DE_OUT_OF_MEMORY)
+    .value("DE_RESOURCE_ERROR", DE_RESOURCE_ERROR)
     .value("DE_UNIMPLEMENTED", DE_UNIMPLEMENTED)
     .export_values();
 

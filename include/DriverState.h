@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 // ESO - VLT Project
 //
 // Copyright 2017 E.S.O,
@@ -131,58 +131,74 @@ enum E_DriverErrCode
 
     // number of sections different for different FPUS
     DE_INVALID_WAVEFORM_RAGGED = 13,
-    
+
     // step number in section is too high
     DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE = 14,
-    
+
     // the change in step count per section is incorrect
     DE_INVALID_WAVEFORM_CHANGE = 15,
-    
+
     // the tail of the waveform is incorrect
     DE_INVALID_WAVEFORM_TAIL = 16,
 
     // Waveform is not configured / not ready for movement
     DE_WAVEFORM_NOT_READY = 17,
 
+    // General error in waveform definition, see text
+    DE_INVALID_WAVEFORM = 18,
+
     // the addressed FPUs were not yet calibrated by a datum search
-    DE_FPUS_NOT_CALIBRATED = 18,
+    DE_FPUS_NOT_CALIBRATED = 19,
 
     // a motion command was issued but no FPUs are allowed to move
-    DE_NO_MOVABLE_FPUS = 19,
+    DE_NO_MOVABLE_FPUS = 20,
 
     // The user waited for a command completion using a time-out
     // value, and the state has not been reached yet
-    DE_COMMAND_TIMEOUT = 20,
+    DE_COMMAND_TIMEOUT = 21,
 
     // movement was aborted
-    DE_ABORTED_STATE = 21,
+    DE_ABORTED_STATE = 22,
 
     // some addressed FPUs are locked
-    DE_FPUS_LOCKED = 22,
+    DE_FPUS_LOCKED = 23,
 
     // at least one FPU ran into a step timing error, which means
     // the FPU's motion controller was not able to compute
     // the required step frequency quick enough for the
     // configured microstepping level.
 
-    DE_STEP_TIMING_ERROR = 23,
+    DE_STEP_TIMING_ERROR = 24,
 
     // An FPU id which was passed as a parameter is invalid
     // because it is larger than the maximum number of FPUs.
-    DE_INVALID_FPU_ID = 24,
+    DE_INVALID_FPU_ID = 25,
 
     // passed parameter value is invalid
-    DE_INVALID_PAR_VALUE = 25,
+    DE_INVALID_PAR_VALUE = 26,
 
     // command not allowed for present FPU state
-    DE_INVALID_FPU_STATE = 26,
+    DE_INVALID_FPU_STATE = 27,
 
     // insufficient number of gateways
-    DE_INSUFFICENT_NUM_GATEWAYS = 27,
+    DE_INSUFFICENT_NUM_GATEWAYS = 28,
+
+    // configuration parameters invalid
+    DE_INVALID_CONFIG = 29,
+
+    // The driver state does not allows the operation
+    DE_INVALID_DRIVER_STATE = 30,
 
     // operation not implemented for this protocol version
-    DE_UNIMPLEMENTED=98,
+    DE_UNIMPLEMENTED=96,
 
+    // An initialization command ran out of memory.
+    DE_OUT_OF_MEMORY=97,
+
+    // Some resource from the OS is not available
+    DE_RESOURCE_ERROR=98,
+
+    // A necessary assumption for correctness of the driver was violated
     DE_ASSERTION_FAILED=99,
 
 };

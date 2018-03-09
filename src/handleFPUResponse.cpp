@@ -512,7 +512,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 
     case CCMD_RESET_FPU       :
         // clear pending time-out for reset command
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);        
+        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
             initialize_fpu(fpu);
@@ -527,7 +527,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
                     {
                         const E_CAN_COMMAND can_cmd = static_cast<E_CAN_COMMAND>(cmd_code);
                         remove_pending(fpu, fpu_id,  can_cmd, response_errcode,
-                                       timeout_list, count_pending);        
+                                       timeout_list, count_pending);
                     }
 
                 }
