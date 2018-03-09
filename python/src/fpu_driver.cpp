@@ -952,10 +952,10 @@ BOOST_PYTHON_MODULE(fpu_driver)
     /* define the exception hierarchy */
     FPUDriverExceptionTypeObj = FPUDriverExceptionClass("FPUDriverException");
     MovementErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", FPUDriverExceptionTypeObj);
-    CollisionErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
-    LimitBreachErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
-    AbortMotionErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
-    TimingErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
+    CollisionErrorExceptionTypeObj = FPUDriverExceptionClass("CollisionError", MovementErrorExceptionTypeObj);
+    LimitBreachErrorExceptionTypeObj = FPUDriverExceptionClass("LimitBreachError", MovementErrorExceptionTypeObj);
+    AbortMotionErrorExceptionTypeObj = FPUDriverExceptionClass("AbortMotionError", MovementErrorExceptionTypeObj);
+    TimingErrorExceptionTypeObj = FPUDriverExceptionClass("StepTimingError", MovementErrorExceptionTypeObj);
     InvalidStateExceptionTypeObj = FPUDriverExceptionClass("InvalidState", FPUDriverExceptionTypeObj);
     SystemFailureExceptionTypeObj = FPUDriverExceptionClass("SystemFailure", FPUDriverExceptionTypeObj);
     InvalidParameterExceptionTypeObj  = FPUDriverExceptionClass("InvalidParameter", FPUDriverExceptionTypeObj);

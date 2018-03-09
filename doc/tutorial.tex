@@ -573,7 +573,32 @@ In the case that the FPU responds, the returned value is
 \texttt{True}.  If the FPU does not respond, the value of the
 \verb+ping_ok+ becomes \texttt{False}.
 
+Errors both during making the socket connection, and when sending
+commands to the FPUs cause a \texttt{ConnectionFailure} exception to
+be thrown, like in this log file:
 
+\begin{minted}{python}
+  $ python -i test_mockup/test_asyncMotion.py 
+connect: Connection refused
+Traceback (most recent call last):
+  File "test_mockup/test_asyncMotion.py", line 12, in <module>
+    print("connecting grid:", gd.connect())
+  File "/sw/sw4/jnix/MOONS/fpu_driver/python/FpuGridDriver.py", line 65, in connect
+    return self._gd.connect(address_list)
+fpu_driver.ConnectionFailure: DE_NO_CONNECTION: The FPU Driver is not connected to a gateway.
+>>> 
+\end{minted}
+
+
+The associated error message and enumeration symbol should be sufficient to
+determine the cause of the problem.
+
+If a socket connection fails during an ongoing driver operation,
+depending on operating system parameters the corresponding error
+message can be delayed by several minutes. This is by design
+\textendash{} the socket connection by the normal TCP stack of the
+operating system kernel and its parameters are optimized to complete
+communications even on a highly unreliable connection.
 
 \subsection{Getting the current position}
 
@@ -808,6 +833,10 @@ them. These rules are currently as follows:
   
 \end{enumerate}
 
+If the \texttt{configMotion} method is called with an invalid
+waveform, a \texttt{InvalidWaveformException} is thrown. The error
+message should be specific enough to determine the reason of the
+validation failure.
 
 
 \subsection{Aborting a movement}
@@ -909,8 +938,12 @@ If any movement operation or \texttt{findDatum()} command is going on,
 this command returns with the updated state information on the
 collision, and without further waiting for the movement to complete.
 When the driver call returns to the Python wrapper, the error is
-checked for and transformed into a Python exception. If the exception
-is not caught, this terminates the Python script.
+checked for and transformed into a Python exception of the class
+\texttt{FpuGridDriver.MovementError}. The subclasses
+(\texttt{CollisionError}, \texttt{LimitBreachError},
+\texttt{AbortMotionError}, \texttt{StepTimingError}) allow to discern
+the cause of the error in \texttt{try \ldots except} clauses.  If the
+generated exception is not caught, this terminates the Python script.
 
 It is also possible that a collision occurs while an FPU is \emph{not}
 moving and the driver not executing a command.  In this case, the
