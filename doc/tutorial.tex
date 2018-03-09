@@ -590,15 +590,14 @@ fpu_driver.ConnectionFailure: DE_NO_CONNECTION: The FPU Driver is not connected 
 \end{minted}
 
 
-The associated error message and enumeration symbol should be sufficient to
-determine the cause of the problem.
+The associated error message and enumeration symbol should be
+sufficient to determine the cause of the problem. Time-outs for failed
+sockets connects are by default very long. For changing the time-out
+values of socket connections, see Appendix section ~\ref{sec:socketpars} on
+page~\pageref{sec:socketpars}.
 
-If a socket connection fails during an ongoing driver operation,
-depending on operating system parameters the corresponding error
-message can be delayed by several minutes. This is by design
-\textendash{} the socket connection by the normal TCP stack of the
-operating system kernel and its parameters are optimized to complete
-communications even on a highly unreliable connection.
+
+
 
 \subsection{Getting the current position}
 
@@ -1360,6 +1359,25 @@ In another terminal window, you can run the tests:
 and so on.
 
 
+\section{Changing time-out parameters of socket conenctions}
+\label{sec:socketpars}
+If a socket connection fails during an ongoing driver operation,
+depending on operating system parameters the corresponding error
+message can be delayed by a very long time. This is the intentional default
+behaviour of socket connections \textendash{} the socket connection by
+the normal TCP stack of the operating system kernel and its parameters
+are optimized to complete communications even on a highly unreliable
+connection.
+
+To shorten the time until an idle socket connection is cut to 30
+seconds, the following command can be used from the administrative
+user account:
+
+\begin{minted}{bash}
+  echo 30 > /proc/sys/net/ipv4/tcp_keepalive_time
+\end{minted}
+
+The default value is 7200 seconds.
 
 
 
