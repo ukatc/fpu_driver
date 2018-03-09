@@ -24,6 +24,12 @@
 #include "../../include/GridState.h"
 
 PyObject* FPUDriverExceptionTypeObj = 0;
+PyObject* InvalidWaveformExceptionTypeObj = 0;
+PyObject* MovementErrorExceptionTypeObj = 0;
+PyObject* CollisionErrorExceptionTypeObj = 0;
+PyObject* LimitBreachErrorExceptionTypeObj = 0;
+PyObject* AbortMotionErrorExceptionTypeObj = 0;
+PyObject* TimingErrorExceptionTypeObj = 0;
 
 
 namespace   // Avoid cluttering the global namespace.
@@ -309,16 +315,16 @@ E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
 class FPUDriverException : public std::exception
 {
 public:
-  FPUDriverException(std::string message, int errno)
+    FPUDriverException(std::string message, mpifps::E_DriverErrCode errcode)
   {
     _message = message;
-    _errno = errno;
+    _errcode = errcode;
   }
 
   FPUDriverException(std::string message)
   {
     _message = message;
-    _errno = 0;
+    _errcode = DE_ASSERTION_FAILED;
   }
     
   const char *what() const throw()
@@ -329,20 +335,45 @@ public:
   {
   }
 
-  int getErrNo()
+    E_DriverErrCode getErrCode() const throw()
   {
-    return _errno;
+    return _errcode;
   }
     
 private:
     std::string _message;
-    int _errno;
+    mpifps::E_DriverErrCode _errcode;
 };
 
 void translate_driver_error(FPUDriverException const& e)
 {
     // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(FPUDriverExceptionTypeObj, e.what());
+    switch (e.getErrCode())
+    {
+    case DE_INVALID_WAVEFORM_TAIL:
+    case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:
+    case DE_INVALID_WAVEFORM_RAGGED:
+    case DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:
+    case DE_INVALID_WAVEFORM_CHANGE:
+        PyErr_SetString(InvalidWaveformExceptionTypeObj, e.what());
+        break;
+        
+    case DE_NEW_COLLISION:
+        PyErr_SetString(CollisionErrorExceptionTypeObj, e.what());
+        break;
+    case DE_NEW_LIMIT_BREACH:
+        PyErr_SetString(LimitBreachErrorExceptionTypeObj, e.what());
+        break;
+    case DE_STEP_TIMING_ERROR:
+        PyErr_SetString(TimingErrorExceptionTypeObj, e.what());
+        break;
+    case DE_ABORTED_STATE:        
+        PyErr_SetString(AbortMotionErrorExceptionTypeObj, e.what());
+        break;
+        
+    default:
+        PyErr_SetString(FPUDriverExceptionTypeObj, e.what());
+    }
 }
 
 void checkDriverError(E_DriverErrCode ecode)
@@ -375,11 +406,11 @@ void checkDriverError(E_DriverErrCode ecode)
         break;
 
     case DE_NEW_COLLISION :
-        throw FPUDriverException("DE_NEW_COLLISION: A collision was detected, movement for this FPU aborted.");
+        throw FPUDriverException("DE_NEW_COLLISION: A collision was detected, movement for this FPU aborted.", DE_NEW_COLLISION);
         break;
 
     case DE_NEW_LIMIT_BREACH :
-        throw FPUDriverException("DE_NEW_LIMIT_BREACH: An alpha limit breach was detected, movement for this FPU aborted.");
+        throw FPUDriverException("DE_NEW_LIMIT_BREACH: An alpha limit breach was detected, movement for this FPU aborted.", DE_NEW_LIMIT_BREACH);
         break;
 
     case DE_UNRESOLVED_COLLISION :
@@ -404,24 +435,30 @@ void checkDriverError(E_DriverErrCode ecode)
         break;
 
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS :
-        throw FPUDriverException("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS: The passed waveform has too many sections.");
+        throw FPUDriverException("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS: The passed waveform has too many sections.",
+                                 DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS);
         break;
 
     case DE_INVALID_WAVEFORM_RAGGED :
-        throw FPUDriverException("DE_INVALID_WAVEFORM_RAGGED: The passed waveform has different number of sections for different FPUs.");
+        throw FPUDriverException("DE_INVALID_WAVEFORM_RAGGED: The passed waveform has different number of sections for different FPUs.",
+                                DE_INVALID_WAVEFORM_RAGGED);
         break;
 
     case DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE :
         throw FPUDriverException("DE_INVALID_WAVEFORM_STEP_COUNT_TOO_LARGE:"
-                                                        " The passed waveform has a section with too many steps.");
+                                 " The passed waveform has a section with too many steps.",
+                                DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE);
         break;
 
     case DE_INVALID_WAVEFORM_CHANGE :
-        throw FPUDriverException("DE_INVALID_WAVEFORM_CHANGE: The passed waveform has an invalid change in step counts / speed between adjacent sections");
+        throw FPUDriverException("DE_INVALID_WAVEFORM_CHANGE: The passed waveform has an"
+                                 " invalid change in step counts / speed between adjacent sections",
+                                DE_INVALID_WAVEFORM_CHANGE);
         break;
 
     case DE_INVALID_WAVEFORM_TAIL :
-        throw FPUDriverException("DE_INVALID_WAVEFORM_TAIL: The passed waveform has an invalid tail section.");
+        throw FPUDriverException("DE_INVALID_WAVEFORM_TAIL: The passed waveform has an invalid tail section.",
+                                DE_INVALID_WAVEFORM_TAIL);
         break;
 
     case DE_WAVEFORM_NOT_READY :
@@ -448,7 +485,7 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_ABORTED_STATE :
         throw FPUDriverException("DE_ABORTED_STATE: There are FPUs in aborted state,"
                " because of an abortMotion command or a step timing error "
-               "- use the resetFPUs command to reset state.");
+                                 "- use the resetFPUs command to reset state.", DE_ABORTED_STATE);
         break;
 
     case DE_FPUS_LOCKED :
@@ -459,7 +496,7 @@ void checkDriverError(E_DriverErrCode ecode)
         throw FPUDriverException("DE_STEP_TIMING_ERROR: An FPU's controller"
                " generated a step timing error"
                " during movement. Possibly, reduce the microstepping level"
-               " to compute the step frequency in time.");
+                                 " to compute the step frequency in time.", DE_STEP_TIMING_ERROR);
         break;
 
 
@@ -814,6 +851,14 @@ BOOST_PYTHON_MODULE(fpu_driver)
 
 
     FPUDriverExceptionTypeObj = FPUDriverExceptionClass("FPUDriverException");
+    InvalidWaveformExceptionTypeObj = FPUDriverExceptionClass("InvalidWaveformException", FPUDriverExceptionTypeObj);
+    MovementErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", FPUDriverExceptionTypeObj);
+    
+    CollisionErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
+    LimitBreachErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
+    AbortMotionErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
+    TimingErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
+
     
     register_exception_translator<FPUDriverException>(&translate_driver_error);
 

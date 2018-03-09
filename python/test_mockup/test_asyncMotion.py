@@ -5,6 +5,7 @@ from FpuGridDriver import REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
 from fpu_commands import *
 
 NUM_FPUS = 10
+USTEP_LEVEL = 4
 
 gd = GridDriver(NUM_FPUS)
 
@@ -13,6 +14,11 @@ print("connecting grid:", gd.connect())
 
 print("getting grid state:")
 gs = gd.getGridState()
+
+gd.pingFPUs(gs)
+gd.setUStepLevel(USTEP_LEVEL, gs)
+
+
 
 print("issuing findDatum:")
 gd.findDatum(gs)

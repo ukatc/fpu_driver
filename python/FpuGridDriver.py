@@ -6,7 +6,7 @@ import signal
 import fpu_driver
 
 from fpu_driver import __version__, CAN_PROTOCOL_VERSION, GatewayAddress,  \
-    REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, FPUDriverException
+    REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, FPUDriverException, MovementError
 
 import fpu_commands as cmds
 
@@ -105,7 +105,7 @@ class GridDriver:
         if was_aborted:
             self.pingFPUs(gs)
             print("findDatumw as aborted by SIGINT, movement stopped")
-            raise RuntimeError("findDatum was aborted by SIGINT")
+            raise MovementError("findDatum was aborted by SIGINT")
 
         return rv
 
@@ -160,10 +160,8 @@ class GridDriver:
                         was_aborted = True
                         break
                     is_ready = (rv != fpu_driver.E_DriverErrCode.DE_COMMAND_TIMEOUT)
-        except FPUDriverException as rtex:
-            errtype = str(rtex).split(":")[0].strip()
-            if errtype in [ "DE_STEP_TIMING_ERROR", "DE_NEW_COLLISION", "DE_NEW_LIMIT_BREACH"] :
-                refresh_state = True
+        except MovementError:
+            refresh_state = True
             raise
             
 
@@ -173,7 +171,7 @@ class GridDriver:
             self.pingFPUs(gs)
                             
         if was_aborted:
-            raise RuntimeError("executeMotion was aborted by SIGINT")
+            raise MovementError("executeMotion was aborted by SIGINT")
         
         return rv
 
