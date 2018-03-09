@@ -819,12 +819,15 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
         if (fpu_status == FPST_OBSTACLE_ERROR)
         {
+            printf("waitExecuteMotionAsync(): OBSTACLE_ERROR detected.\n");
             if (fpu.beta_collision)
             {
+                printf("waitExecuteMotionAsync(): beta collision detected.\n");
                 return DE_NEW_COLLISION;
             }
             else
             {
+                printf("waitExecuteMotionAsync(): alpha linmit breach detected.\n");
                 return DE_NEW_LIMIT_BREACH;
             }
         }

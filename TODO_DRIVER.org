@@ -153,6 +153,7 @@ when the internal state struct is used.
 ** TODO stress tests with multiple FPUs
 ** TODO make thorpy driver accessible in python2
 ** TODO Integrate path analysis script into MOONS shared library
+** TODO Fix missing exception for beta collision
 ** TODO expand tutorial with reference part
 ** TODO add separate reporting/logging of results
 ** TODO Fix multiplexing of broadcast commands (currently, they are only sent to bus 0)

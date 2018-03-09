@@ -312,20 +312,23 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.step_timing_errcount++;
 
         }
-        else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
+        else if ((response_errcode == ER_COLLIDE) || fpu.beta_collision)
+        {
+            fpu.state = FPST_OBSTACLE_ERROR;
+            fpu.movement_complete = false;
+            fpu.waveform_valid = false;
+            fpu.beta_collision = true;
+            fpu.waveform_valid = false;
+            fpu.was_zeroed = false;
+        }
+        else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT) || fpu.at_alpha_limit)
         {
             fpu.at_alpha_limit = true;
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
-
-        }
-        else if (response_errcode == ER_COLLIDE)
-        {
-            fpu.state = FPST_OBSTACLE_ERROR;
-            fpu.movement_complete = false;
-            fpu.waveform_valid = false;
-
+            fpu.was_zeroed = false;
+            fpu.alpha_datum_switch_active = true;
         }
         else if (response_errcode == 0)
         {
@@ -580,13 +583,14 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
         {
             fpu.alpha_datum_switch_active = true;
+            fpu.at_alpha_limit = true;
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.waveform_valid = false;
             fpu.was_zeroed = false;
         }
-        else if (response_errcode == ER_COLLIDE)
+        else if ((response_errcode == ER_COLLIDE) || fpu.beta_collision)
         {
-            fpu.alpha_datum_switch_active = true;
+            fpu.beta_collision = true;
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.waveform_valid = false;
             fpu.was_zeroed = false;
@@ -637,6 +641,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 
         }
 
+        printf("handleFPUResponse()::CMSG_WARN_LIMIT_BETA: setting state to OBSTACLE_ERROR\n");
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.beta_collision = true;
         fpu.waveform_valid = false;
@@ -662,6 +667,7 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
         }
 
+        printf("handleFPUResponse()::CMSG_WARN_LIMIT_ALPHA: setting state to OBSTACLE_ERROR\n");
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.at_alpha_limit = true;
         fpu.waveform_valid = false;
