@@ -161,8 +161,10 @@ when the internal state struct is used.
 ** DONE stress tests with multiple FPUs
 ** DONE Fix missing exception for beta collision
 ** DONE fix branching for driver
-** TODO add datum restriction to firmware protocol
-** TODO extend list_angles to list initialized bit
+** DONE add datum restriction to firmware protocol
+** TODO Install Scientific Linux or ESO Linux image on kraken
+** TODO Add & test TCP options for socket connection time-outs.
+** TODO Fix detection & reporting of CAN command timeouts
 ** TODO revise tutorial
 *** TODO expand tutorial with reference part 
 *** TODO apply spelling corrections to tutorial
@@ -170,7 +172,8 @@ when the internal state struct is used.
 *** TODO List exception hierarchy in tutorial
 *** TODO add runnable example scripts
 *** TODO review NaN description
-** TODO Add seperate initialised flags for alpha and beta
+** TODO Add separate initialised flags for alpha and beta
+** TODO extend list_angles to list initialized bit, document that
 ** TODO Add selection parameter for datum method
 ** TODO add separate reporting/logging of results
 ** TODO clarify requirement for variable MAX_FPU
