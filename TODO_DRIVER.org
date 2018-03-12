@@ -150,20 +150,49 @@ when the internal state struct is used.
 ** DONE Bugfix broadast command for more than one bus
 ** DONE Lift waveform restriction for zero movement (DEFINE)
 ** DONE Update tutorial on allowed waveforms
-** TODO stress tests with multiple FPUs
-** TODO make thorpy driver accessible in python2
-** TODO Integrate path analysis script into MOONS shared library
-** TODO Fix missing exception for beta collision
-** TODO expand tutorial with reference part
-** TODO add separate reporting/logging of results
-** TODO Fix multiplexing of broadcast commands (currently, they are only sent to bus 0)
+** DONE Fix multiplexing of broadcast commands (currently, they are only sent to bus 0)
    One CAN command for each bus needs to be generated,
    not only for each gateway.
    This affects both the serialization code in send_buffer,
    the generation of broadcast commands in the gateway method,
    and the update of pending commands which needs to filter
    by busid.
+
+** DONE stress tests with multiple FPUs
+** DONE Fix missing exception for beta collision
+** TODO fix branching for driver
+** TODO add datum restriction to firmware protocol
+** TODO extend list_angles to list initialized bit
+** TODO revise tutorial
+*** TODO expand tutorial with reference part 
+*** TODO apply spelling corrections to tutorial
+*** TODO Tidy up error codes, and list them in tutorial reference
+*** TODO List exception hierarchy in tutorial
+*** TODO add runnable example scripts
+*** TODO review NaN description
+** TODO Add seperate initialised flags for alpha and beta
+** TODO add separate reporting/logging of results
+** TODO clarify requirement for variable MAX_FPU
+** TODO move driver parameters to const struct
 ** TODO Add state filtering to command precondition check
+** TODO Fix caching in TimeOutList
 ** TODO Refactor duplicate code in command header encoding
 ** TODO split SBuffer in independent read buffer and write buffer ?
+
+* TODO Integrate path analysis script into MOONS shared library
+** TODO do a git-svn pull of library
+** TODO integrate test values into test folder
+** TODO convert (r,theta) coordinates to FPU coordinates
+   (observing curvature of focal surface)
+** TODO extend avoidance model
+** TODO do tests
+
+
+* TODO make thorpy driver accessible in python2
+
+** TODO read protocol for stages we have
+** TODO get java environment
+** TODO get turntable
+** TODO Do PySerial experiments
+
 
