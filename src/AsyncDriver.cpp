@@ -179,6 +179,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
 
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -235,6 +236,13 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+    // It is important to compare for inequality here, because
+    // count_timeout is an unsigned value which can intentionally wrap
+    // without causing undefined behaviour.
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
     return DE_OK;
 
 }
@@ -245,6 +253,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -316,6 +325,13 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     }
 
 
+    // It is important to compare for inequality here, because
+    // count_timeout is an unsigned value which can intentionally wrap
+    // without causing undefined behaviour.
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
     return DE_OK;
 
 }
@@ -334,6 +350,8 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
     bool cancelled = false;
 
 
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     state_summary = gateway.waitForState(TGT_NO_MORE_MOVING,
                                          grid_state, max_wait_time, cancelled);
 
@@ -375,6 +393,10 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
         return DE_NEW_COLLISION;
     }
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
 
     finished = (num_moving == 0) && (! cancelled);
 
@@ -384,7 +406,7 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
     }
     else
     {
-        return DE_COMMAND_TIMEOUT;
+        return DE_WAIT_TIMEOUT;
     }
 
 
@@ -525,6 +547,12 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
+    
+#if (CAN_PROTOCOL_VERSION != 1 )
+    // FIXME: disable checks for time-outs for now
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+#endif
+
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -589,6 +617,14 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         int num_loading =  waveforms.size();
         for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
         {
+
+            if ((fpu_index == 0) && (step_index != 0))
+            {
+                // Wait a short time before talking to the same FPU again because the FPUs seem to be
+                // in general a bit sluggish.
+                // We don't care about signals here.
+                usleep(ConfigureMotionCommand::CHAT_PAUSE_TIME_USEC);
+            }
             int fpu_id = waveforms[fpu_index].fpu_id;
             if ((fpu_id >= num_fpus) || (fpu_id < 0))
             {
@@ -654,7 +690,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                         return DE_MAX_RETRIES_EXCEEDED;
                     }
                     do_retry = true;
-                    printf("configMotion: state not confirmed for FPU #%i, retry from start!\n", fpu_id);
+                    printf("configMotion: state not confirmed for FPU #%i,"
+                           " retry from start! (%i retries left)\n", fpu_id, retry_downcount);
                 }
             }
             if (do_retry)
@@ -669,6 +706,13 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         step_index++;
     }
 
+#if (CAN_PROTOCOL_VERSION != 1 )
+    // seems not to work reliably with current firmware
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+#endif
 
     return DE_OK;
 }
@@ -784,6 +828,8 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
     bool cancelled = false;
 
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     if ( (num_moving > 0)
             && (grid_state.driver_state == DS_CONNECTED))
     {
@@ -848,6 +894,14 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
     }
 
+    // It is important to compare for inequality here, because
+    // count_timeout is an unsigned value which can intentionally wrap
+    // without causing undefined behaviour.
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+
     return DE_OK;
 }
 
@@ -858,6 +912,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
 
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -973,6 +1028,11 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
     }
 
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
     return DE_OK;
 
 }
@@ -985,6 +1045,8 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
 
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -1100,6 +1162,11 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
     }
 
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
     return DE_OK;
 
 }
@@ -1111,6 +1178,9 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
 
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
+    
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -1214,6 +1284,11 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
     return DE_OK;
 
 }
@@ -1225,6 +1300,9 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
 
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
+    
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -1327,6 +1405,11 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
     return DE_OK;
 
 }
@@ -1342,6 +1425,8 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(pthread_mutex_t & command_mutex,
 
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -1403,6 +1488,11 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(pthread_mutex_t & command_mutex,
     }
 
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
     return DE_OK;
 
 }
@@ -1413,12 +1503,19 @@ E_DriverErrCode AsyncDriver::lockFPUAsync(t_grid_state& grid_state,
 {
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;
     }
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
     return DE_OK;
 }
 
@@ -1427,12 +1524,19 @@ E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state,
 {
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
         return DE_NO_CONNECTION;
     }
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
     return DE_OK;
 }
 
@@ -1443,6 +1547,8 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
 
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -1495,6 +1601,11 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
                        + grid_state.num_queued);
     }
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
 
     return DE_OK;
 
@@ -1506,6 +1617,9 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
 {
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
+    
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -1563,7 +1677,12 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
     {
         return DE_NO_CONNECTION;
     }
-
+    
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
     return DE_OK;
 }
 
@@ -1573,6 +1692,9 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
 {
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
+
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -1634,6 +1756,11 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
         return DE_NO_CONNECTION;
     }
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
     return DE_OK;
 }
 
@@ -1657,6 +1784,9 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
 {
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
+    
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -1724,6 +1854,11 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
                        + grid_state.num_queued);
     }
 
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
 
     return DE_OK;
 

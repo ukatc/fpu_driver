@@ -126,7 +126,7 @@ public:
             /* currently, the time-out is for the whole
                movement, not only the confirmation.  That's a
                bit simple but will work mostly. */
-            /* .tv_sec = */ 40,
+            /* .tv_sec = */ 45,
             /* .tv_nsec = */ 0
         };
 

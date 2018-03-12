@@ -154,8 +154,9 @@ enum E_DriverErrCode
     DE_NO_MOVABLE_FPUS = 20,
 
     // The user waited for a command completion using a time-out
-    // value, and the state has not been reached yet
-    DE_COMMAND_TIMEOUT = 21,
+    // value, and the state has not been reached yet. This is a
+    // "user notification".
+    DE_WAIT_TIMEOUT = 21,
 
     // movement was aborted
     DE_ABORTED_STATE = 22,
@@ -188,6 +189,11 @@ enum E_DriverErrCode
 
     // The driver state does not allows the operation
     DE_INVALID_DRIVER_STATE = 30,
+
+    // A CAN command to an FPU surpassed the maximum waiting time
+    // This can indicate a failure of the controller or a
+    // connection problem. This is a "hardware error".
+    DE_CAN_COMMAND_TIMEOUT_ERROR = 31,
 
     // operation not implemented for this protocol version
     DE_UNIMPLEMENTED=96,

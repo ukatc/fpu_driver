@@ -49,6 +49,8 @@ def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
         a, b = pos
         print("{}: FPU #{}: reached position: ({:6.2f}, {:6.2f})".format(label, i, a,b) )
 
+    print("timeout count of grid:", grid_state.timeout_count)
+
     
 def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
                      return_to_datum=True, deviation_list=[]):

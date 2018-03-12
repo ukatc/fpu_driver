@@ -82,7 +82,7 @@ E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state, double &max_
 
     if ((! finished) && (estatus == DE_OK))
     {
-        estatus = DE_COMMAND_TIMEOUT;
+        estatus = DE_WAIT_TIMEOUT;
     }
 
     return estatus;

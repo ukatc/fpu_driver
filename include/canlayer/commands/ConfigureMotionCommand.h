@@ -39,11 +39,19 @@ class ConfigureMotionCommand : public I_CAN_Command
 
 public:
 
+    // minimum step count for a movement section (frame)
     static const int MIN_STEPCOUNT=125;
+    // maximum step count for a movement section
     static const int MAX_STEPCOUNT=500;
+    // maximum number of sections the FPU can store
     static const unsigned int MAX_NUM_SECTIONS=128;
-    static constexpr double MAX_REL_INCREASE = 0.4;
-
+    // maximum relative increase in step counts between sections
+    static constexpr double MAX_REL_INCREASE = 0.4;    
+    // Short wait time before sending configMotion commands
+    // to the same FPU, so that the poor thing can have
+    // a break.
+    static const useconds_t CHAT_PAUSE_TIME_USEC = 50000;
+    
     static E_CAN_COMMAND getCommandCode()
     {
         return CCMD_CONFIG_MOTION;
@@ -191,7 +199,7 @@ public:
     {
         const struct timespec  toval =
         {
-            /* .tv_sec = */ 120,
+            /* .tv_sec = */ 10,
             /* .tv_nsec = */ 0
         };
 

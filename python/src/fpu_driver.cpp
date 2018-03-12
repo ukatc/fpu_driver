@@ -385,8 +385,9 @@ void translate_driver_error(FPUDriverException const& e)
         break;
 
     case DE_MAX_RETRIES_EXCEEDED :
-    case DE_COMMAND_TIMEOUT :
+    case DE_WAIT_TIMEOUT :
     case DE_NO_CONNECTION :
+    case DE_CAN_COMMAND_TIMEOUT_ERROR:
         PyErr_SetString(ConnectionFailureExceptionTypeObj, e.what());
         break;
 
@@ -438,6 +439,15 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_NO_CONNECTION :
         throw FPUDriverException("DE_NO_CONNECTION: The FPU Driver is not connected to a gateway.",
                                  DE_NO_CONNECTION);
+        break;
+
+    case DE_CAN_COMMAND_TIMEOUT_ERROR:
+        throw FPUDriverException("DE_CAN_COMMAND_TIMEOUT_ERROR:"
+                                 " A CAN command to an FPU surpassed the maximum waiting time"
+                                 " determined by the CAN protocol."
+                                 " This likely indicates a failure of the controller or a"
+                                 " serious connection problem.",
+                                 DE_CAN_COMMAND_TIMEOUT_ERROR);
         break;
 
     case DE_INSUFFICENT_NUM_GATEWAYS:
@@ -537,11 +547,12 @@ void checkDriverError(E_DriverErrCode ecode)
                                  DE_NO_MOVABLE_FPUS);
         break;
 
-    case DE_COMMAND_TIMEOUT :
-        throw FPUDriverException("DE_COMMAND_TIMEOUT: Response to a CAN command surpassed the "
-                                 "configured maximum waiting time."
-                                 "This can be caused by a broken connection or networking problems.",
-                                 DE_COMMAND_TIMEOUT);
+    case DE_WAIT_TIMEOUT :
+        throw FPUDriverException("DE_WAIT_TIMEOUT: Response to a driver command surpassed the"
+                                 " waiting time parameter passed to waitForState(),"
+                                 " which caused the user command to return unfinished."
+                                 " (This is usually not an error.)",
+                                 DE_WAIT_TIMEOUT);
         break;
 
     case DE_ABORTED_STATE :
@@ -815,9 +826,9 @@ public:
         estatus =  waitFindDatum(grid_state, max_wait_time, finished);
 
         if (((! finished) && (estatus == DE_OK))
-                || (estatus == DE_COMMAND_TIMEOUT))
+                || (estatus == DE_WAIT_TIMEOUT))
         {
-            estatus = DE_COMMAND_TIMEOUT;
+            estatus = DE_WAIT_TIMEOUT;
             return estatus;
         }
 
@@ -849,9 +860,9 @@ public:
         // FIXME: should return remaining wait time in tuple
         estatus =  waitExecuteMotion(grid_state, max_wait_time, finished);
         if (((! finished) && (estatus == DE_OK))
-                || (estatus == DE_COMMAND_TIMEOUT))
+                || (estatus == DE_WAIT_TIMEOUT))
         {
-            estatus = DE_COMMAND_TIMEOUT;
+            estatus = DE_WAIT_TIMEOUT;
             return estatus;
         }
 
@@ -1075,6 +1086,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_INSUFFICENT_NUM_GATEWAYS", DE_INSUFFICENT_NUM_GATEWAYS)
     .value("DE_STILL_BUSY",DE_STILL_BUSY)
     .value("DE_MAX_RETRIES_EXCEEDED", DE_MAX_RETRIES_EXCEEDED)
+    .value("DE_CAN_COMMAND_TIMEOUT_ERROR", DE_CAN_COMMAND_TIMEOUT_ERROR)
     .value("DE_UNRESOLVED_COLLISION",DE_UNRESOLVED_COLLISION)
     .value("DE_NEW_COLLISION", DE_NEW_COLLISION)
     .value("DE_NEW_LIMIT_BREACH", DE_NEW_LIMIT_BREACH)
@@ -1091,7 +1103,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_INVALID_WAVEFORM_TAIL", DE_INVALID_WAVEFORM_TAIL)
     .value("DE_WAVEFORM_NOT_READY", DE_WAVEFORM_NOT_READY)
     .value("DE_NO_MOVABLE_FPUS", DE_NO_MOVABLE_FPUS)
-    .value("DE_COMMAND_TIMEOUT", DE_COMMAND_TIMEOUT)
+    .value("DE_WAIT_TIMEOUT", DE_WAIT_TIMEOUT)
     .value("DE_ABORTED_STATE", DE_ABORTED_STATE)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
     .value("DE_STEP_TIMING_ERROR", DE_STEP_TIMING_ERROR)

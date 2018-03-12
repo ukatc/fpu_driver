@@ -92,6 +92,7 @@ class FPU:
         self.step_timing_fault = False
 
     def resetFPU(self, fpu_id, sleep):
+        printtime()
         print("resetting FPU #%i..." % fpu_id)
         dtime_mu = 0.1
         dtime_sigma = 1.0
@@ -235,6 +236,7 @@ class FPU:
         
         if not (self.wave_ready):
             raise RuntimeError("wavetable not ready")
+
 
         self.running_wave = True
         self.step_timing_fault = False

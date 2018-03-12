@@ -100,7 +100,7 @@ class GridDriver:
                     self.abortMotion(gs)
                     was_aborted = True
                     break
-                is_ready = (rv != fpu_driver.E_DriverErrCode.DE_COMMAND_TIMEOUT)
+                is_ready = (rv != fpu_driver.E_DriverErrCode.DE_WAIT_TIMEOUT)
 
         if was_aborted:
             self.pingFPUs(gs)
@@ -159,7 +159,7 @@ class GridDriver:
                         self.abortMotion(gs)
                         was_aborted = True
                         break
-                    is_ready = (rv != fpu_driver.E_DriverErrCode.DE_COMMAND_TIMEOUT)
+                    is_ready = (rv != fpu_driver.E_DriverErrCode.DE_WAIT_TIMEOUT)
         except MovementError:
             refresh_state = True
             raise
