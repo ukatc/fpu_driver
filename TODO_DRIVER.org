@@ -160,7 +160,7 @@ when the internal state struct is used.
 
 ** DONE stress tests with multiple FPUs
 ** DONE Fix missing exception for beta collision
-** TODO fix branching for driver
+** DONE fix branching for driver
 ** TODO add datum restriction to firmware protocol
 ** TODO extend list_angles to list initialized bit
 ** TODO revise tutorial
@@ -171,6 +171,7 @@ when the internal state struct is used.
 *** TODO add runnable example scripts
 *** TODO review NaN description
 ** TODO Add seperate initialised flags for alpha and beta
+** TODO Add selection parameter for datum method
 ** TODO add separate reporting/logging of results
 ** TODO clarify requirement for variable MAX_FPU
 ** TODO move driver parameters to const struct
