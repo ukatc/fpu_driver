@@ -203,7 +203,7 @@ SBuffer::E_SocketStatus SBuffer::send_pending(int sockfd)
             // This happens if the tcp connection is
             // lost, for example to a physical connection
             // problem. As TCP will normally try and
-            // resent packes for more than one minute,
+            // resent packes until connection time-outs are reached,
             // there is not much we can do at that
             // level, so let the driver return an error.
             return ST_NO_CONNECTION;
@@ -278,11 +278,16 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
     {
         do_retry = false;
         rsize = recv(sockfd, rbuf, MAX_STUFFED_MESSAGE_LENGTH, MSG_DONTWAIT | MSG_NOSIGNAL);
+        int errcode = errno;
 
         // check and process errors
-        if (rsize < 0)
+        if (rsize == 0)
         {
-            int errcode = errno;
+            // connection was closed because of socket failure
+            return ST_NO_CONNECTION;
+        }
+        else if (rsize < 0)
+        {
             switch (errcode)
             {
             case EWOULDBLOCK:
@@ -300,6 +305,7 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
                 break;
 
             case ENOTCONN: // socket not connected
+                printf("3");fflush(stdout);
                 return ST_NO_CONNECTION;
 
             case EINVAL: // invalid argument
