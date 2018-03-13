@@ -31,11 +31,21 @@
 namespace mpifps
 {
 
-
+ 
 // define default value for more convenient testing.
 static const char DEFAULT_GATEWAY_IP[]= "192.168.0.10";
 static const int DEFAULT_GATEWAY_PORT = 4700;
 
+
+// TCP connection parameters. This sets the keepalive option which
+// helps to detect a failed connection.  connection time-out value. If
+// set to zero, using of keep-alive packets is disabled.
+
+static const double SOCKET_TIME_OUT_SECONDS = 20.0;
+// idle time before keep-alive probes are sent
+static const int TCP_IDLE_SECONDS = 10;
+// interval with which keep-alive packets are sent
+static const int TCP_KEEPALIVE_INTERVAL_SECONDS = 1;
 
 // number of gateways for the positioner grid
 const int MAX_NUM_GATEWAYS = 3;

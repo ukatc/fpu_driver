@@ -28,13 +28,14 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <sched.h> // sched_setscheduler()
-
+#include <math.h>
 
 
 #include <arpa/inet.h>		/// inet_addr //
 #include <netinet/tcp.h>	/// TCP_NODELAY
 #include <pthread.h>
 
+#include "DriverConstants.h"
 #include "canlayer/time_utils.h"
 #include "canlayer/GatewayDriver.h"
 #include "canlayer/commands/AbortMotionCommand.h"
@@ -213,10 +214,122 @@ int make_socket(const char *ip, uint16_t port)
 
     // disable Nagle algorithm meaning that
     // segments of any size will be sent
-    // without waiting.
-    setsockopt(sck, IPPROTO_TCP, TCP_NODELAY, &value,
+    // without waiting. This is bad for throughput,
+    // but keeps latency down.
+
+    int errstate=0;
+    errstate = setsockopt(sck, IPPROTO_TCP, TCP_NODELAY, &value,
                sizeof(value));
 
+    if (errstate < 0)
+    {
+        close(sck);
+        return -1;
+    }
+
+#if 0
+    if (SOCKET_TIME_OUT_SECONDS > 0)
+    {
+    
+        struct timeval timeout;
+        timeout.tv_sec = int(SOCKET_TIME_OUT_SECONDS);
+        timeout.tv_usec = int((SOCKET_TIME_OUT_SECONDS - timeout.tv_sec) * 1e6);
+
+        errstate = setsockopt(sck, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+                              sizeof(timeout));
+
+        if (errstate < 0)
+        {
+            close(sck);
+            return -1;
+        }
+
+        errstate = setsockopt(sck, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
+                              sizeof(timeout));
+    
+        if (errstate < 0)
+        {
+            close(sck);
+            return -1;
+        }
+    }
+#endif
+
+    if (SOCKET_TIME_OUT_SECONDS > 0)
+    {
+        // set TCP keepalive parameters and time-outs
+
+        if (TCP_KEEPALIVE_INTERVAL_SECONDS > 0)
+        {
+            /* configure keepalive probing of the connection. After
+               idle_time idle seconds, a packet is sent every keep_alive_interval
+               seconds. If no response is seen after max_keepalives packets,
+               the connection is deemed dead and the driver returns with an error.
+               We need to set this option because the default parameters 
+               on Linux are very long, 7200 seconds.
+            */
+            
+            int opt_ka = 1;
+            errstate = setsockopt(sck, SOL_SOCKET, SO_KEEPALIVE, &opt_ka,
+                                  sizeof(opt_ka));
+
+            if (errstate < 0)
+            {
+                printf("socket error: setting SO_KEEPALIVE failed!\n");
+                close(sck);
+                return -1;
+            }
+            
+            int idle_time = std::max(1, TCP_IDLE_SECONDS);
+            errstate = setsockopt(sck, IPPROTO_TCP, TCP_KEEPIDLE, &idle_time,
+                                  sizeof(idle_time));
+
+            if (errstate < 0)
+            {
+                printf("socket error: setting TCP_KEEPIDLE failed!\n");
+                close(sck);
+                return -1;
+            }
+
+            int keep_alive_interval = std::max(1, TCP_KEEPALIVE_INTERVAL_SECONDS);
+            errstate = setsockopt(sck, IPPROTO_TCP, TCP_KEEPINTVL, &keep_alive_interval,
+                                  sizeof(keep_alive_interval));
+
+            if (errstate < 0)
+            {
+                close(sck);
+                return -1;
+            }
+
+            const double max_idle_time = SOCKET_TIME_OUT_SECONDS - TCP_IDLE_SECONDS;
+            const int max_keepalives = std::max(1, int(ceil(max_idle_time / keep_alive_interval)));
+            errstate = setsockopt(sck, IPPROTO_TCP, TCP_KEEPCNT, &max_keepalives,
+                                  sizeof(max_keepalives));
+
+            if (errstate < 0)
+            {
+                printf("socket error: setting TCP_KEEPCNT failed!\n");
+                close(sck);
+                return -1;
+            }
+        }
+
+        // This sets an additional time-out for the case that a sent packet is not
+        // acknowledged. This is more fine-grained than using keep-alives, and the
+        // time used here can be much shorter than one second.
+        int user_timeout_ms = int(ceil(SOCKET_TIME_OUT_SECONDS * 1000));
+        errstate = setsockopt(sck, IPPROTO_TCP, TCP_USER_TIMEOUT, &user_timeout_ms,
+                              sizeof(user_timeout_ms));
+
+        if (errstate < 0)
+        {
+            printf("socket error: setting TCP_USER_TIMEOUT failed!\n");
+            close(sck);
+            return -1;
+        }
+
+    }
+    
     return sck;
 }
 
@@ -743,6 +856,7 @@ void* GatewayDriver::threadTxFun()
             retval =  ppoll(pfd, num_fds, &MAX_TX_TIMEOUT, &signal_set);
             if (retval < 0)
             {
+                
                 int errcode = errno;
                 switch (errcode)
                 {
