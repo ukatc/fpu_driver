@@ -1264,17 +1264,24 @@ The Python mock-up gateway uses the gevent
 library which is used to serve parallel requests
 using asynchronous code. In difference to
 Python3's asyncio, it is available both in
-Pyhon2 and Python3.
+Python2 and Python3.
 
-Install it as follows:
+On Scientific Linux / Fedora / RHEL, it can be installed
+as follows by the root user:
 
   \begin{minted}{bash}
-    # pip install --user gevent
+    # yum install python-gevent
   \end{minted}    
 
-(This command seems to be need to be run as root, and without the
-  \texttt{--user} option, in order to install under
-  \texttt{/usr/local}).
+
+On Ubuntu or Debian, install it as follows:
+
+  \begin{minted}{bash}
+    $ pip install --user gevent
+  \end{minted}    
+
+(This command needs to be run as root, and without the \texttt{--user}
+  option, in order to install under \texttt{/usr/local}).
 
 
 

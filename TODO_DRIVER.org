@@ -162,22 +162,24 @@ when the internal state struct is used.
 ** DONE Fix missing exception for beta collision
 ** DONE fix branching for driver
 ** DONE add datum restriction to firmware protocol
-** TODO Install Scientific Linux or ESO Linux image on kraken
-** TODO Add & test TCP options for socket connection time-outs.
-** TODO Fix detection & reporting of CAN command timeouts
-** TODO revise tutorial
-*** TODO expand tutorial with reference part 
-*** TODO apply spelling corrections to tutorial
-*** TODO Tidy up error codes, and list them in tutorial reference
-*** TODO List exception hierarchy in tutorial
-*** TODO add runnable example scripts
-*** TODO review NaN description
-** TODO Add separate initialised flags for alpha and beta
-** TODO extend list_angles to list initialized bit, document that
-** TODO Add selection parameter for datum method
+** DONE Install Scientific Linux or ESO Linux image on kraken
+** DONE Add & test TCP options for socket connection time-outs.
+** DONE Fix detection & reporting of CAN command timeouts
+** TODO release 0.5.0
+*** TODO revise tutorial
+**** TODO expand tutorial with reference part 
+**** TODO apply spelling corrections to tutorial
+**** TODO Tidy up error codes, and list them in tutorial reference
+**** TODO List exception hierarchy in tutorial
+**** TODO add runnable example scripts
+**** TODO review NaN description
+*** TODO Add separate initialised flags for alpha and beta
+*** TODO extend list_angles to list initialized bit, document that
+*** TODO Add selection parameter for datum method
+*** TODO Add time-out for socket connect() call
+*** TODO clarify requirement for variable MAX_FPU
+** TODO move all driver configuration parameters to const struct
 ** TODO add separate reporting/logging of results
-** TODO clarify requirement for variable MAX_FPU
-** TODO move driver parameters to const struct
 ** TODO Add state filtering to command precondition check
 ** TODO Fix caching in TimeOutList
 ** TODO Refactor duplicate code in command header encoding
