@@ -165,40 +165,46 @@ when the internal state struct is used.
 ** DONE Install Scientific Linux or ESO Linux image on kraken
 ** DONE Add & test TCP options for socket connection time-outs.
 ** DONE Fix detection & reporting of CAN command timeouts
-** TODO release 0.5.0
+** TODO release 0.5.2
+*** TODO run short stress test of firmware with CAN command logging
 *** TODO revise tutorial
 **** TODO expand tutorial with reference part 
-**** TODO apply spelling corrections to tutorial
+**** DONE apply spelling corrections to tutorial
 **** TODO Tidy up error codes, and list them in tutorial reference
 **** TODO List exception hierarchy in tutorial
 **** TODO add runnable example scripts
 **** TODO review NaN description
+**** TODO Add example scripts 
 *** TODO Add separate initialised flags for alpha and beta
-*** TODO extend list_angles to list initialized bit, document that
-*** TODO Add selection parameter for datum method
+*** TODO extend list_angles to list uninitialized angles or initialized bit, document that
+*** TODO Add alpha/beta selection parameter for datum method
+*** DONE clarify requirement for variable MAX_FPU
 *** TODO Add time-out for socket connect() call
-*** TODO clarify requirement for variable MAX_FPU
-** TODO move all driver configuration parameters to const struct
-** TODO add separate reporting/logging of results
-** TODO Add state filtering to command precondition check
-** TODO Fix caching in TimeOutList
-** TODO Refactor duplicate code in command header encoding
-** TODO split SBuffer in independent read buffer and write buffer ?
-
+** TODO release 0.5.3
+*** TODO move all driver configuration parameters to const struct
+*** TODO Add log levels as discussed
+*** TODO add separate reporting/logging of results
+*** TODO Add state filtering to command precondition check
+*** TODO Fix caching in TimeOutList
+*** TODO Refactor duplicate code in command header encoding
+*** TODO split SBuffer in independent read buffer and write buffer ?   
 * TODO Integrate path analysis script into MOONS shared library
-** TODO do a git-svn pull of library
+** DONE do a git-svn pull of library
 ** TODO integrate test values into test folder
 ** TODO convert (r,theta) coordinates to FPU coordinates
    (observing curvature of focal surface)
 ** TODO extend avoidance model
 ** TODO do tests
-
+   
 
 * TODO make thorpy driver accessible in python2
 
-** TODO read protocol for stages we have
-** TODO get java environment
-** TODO get turntable
-** TODO Do PySerial experiments
+** DONE read protocol for stages we have
+** DONE get java environment
+** DONE get turntable
+** TODO test cli tool
+** DONE [?] Do PySerial experiments
+** Check protocol for turntable / controller
+
 
 
