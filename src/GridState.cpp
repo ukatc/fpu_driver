@@ -1,11 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////
-// ESO - VLT Project
 //
-// Copyright 2017 E.S.O,
+// Copyright 2017 UKRI. See file "LICENSE" for license information.
+//
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// Pablo Gutierrez 2017-07-22  created CAN client sample
 // jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client sample
 //------------------------------------------------------------------------------
 

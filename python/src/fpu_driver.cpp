@@ -1,6 +1,19 @@
-// Copyright Ralf W. Grosse-Kunstleve 2002-2004. Distributed under the Boost
-// Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+// -*- mode: c++ -*-
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright 2017 UKRI. See file "LICENSE" for license information.
+//
+// Who       When        What
+// --------  ----------  -------------------------------------------------------
+//------------------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////////////
+// NAME fpu_driver.cpp
+//
+// This file implements the Üython wrapper for the CAN layer driver
+// for the MOONS instrument fibre positioner unit.
+//
+////////////////////////////////////////////////////////////////////////////////
 
 #include <boost/python/class.hpp>
 #include <boost/python/module.hpp>
