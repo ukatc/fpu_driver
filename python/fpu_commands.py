@@ -40,13 +40,18 @@ MIN_BETA = BETA_MIN_DEGREE * StepsPerDegreeBeta
 MAX_BETA = BETA_MAX_DEGREE * StepsPerDegreeBeta 
 
 
-def list_positions(gs, num_fpus=None):
+def list_positions(gs, num_fpus=None, show_zeroed=True):
     """Show positions for each FPU in the grid. The optional second argument
        is the number of FPUs shown."""
     if num_fpus == None:
         num_fpus = len(gs.FPU)
-    return [ (gs.FPU[i].alpha_steps, gs.FPU[i].beta_steps)
-             for i in range(num_fpus)]
+    if show_zeroed:
+        return [ (gs.FPU[i].alpha_steps, gs.FPU[i].beta_steps,
+                  gs.FPU[i].alpha_was_zeroed, gs.FPU[i].beta_was_zeroed)
+                 for i in range(num_fpus)]
+    else:
+        return [ (gs.FPU[i].alpha_steps, gs.FPU[i].beta_steps)
+                 for i in range(num_fpus)]
 
 def fpu_steps(gs):
     return list_positions(gs)[0]
@@ -54,7 +59,9 @@ def fpu_steps(gs):
 
 def list_angles(gs,
                 asteps_per_deg=StepsPerDegreeAlpha,
-                bsteps_per_deg=StepsPerDegreeBeta, num_fpus=None):
+                bsteps_per_deg=StepsPerDegreeBeta,
+                show_uninitialized=False,
+                num_fpus=None):
     """Show approximate angular positions for each FPU in the grid. 
        The optional second and third argument are the scaling factors,
        and the fourth argument is the number of FPUs shown."""
@@ -62,16 +69,12 @@ def list_angles(gs,
         num_fpus = len(gs.FPU)
 
     nan = float('NaN')
-    tvalid = lambda fpu : 1.0 if fpu.was_zeroed else nan
+    tvalid = lambda zeroed : 1.0 if (zeroed or show_uninitialized) else nan
     # the following line uses Python3 float division
-    return [ (gs.FPU[i].alpha_steps / asteps_per_deg * tvalid(gs.FPU[i]),
-              gs.FPU[i].beta_steps / bsteps_per_deg * tvalid(gs.FPU[i])) for i in range(num_fpus)]
+    return [ (gs.FPU[i].alpha_steps / asteps_per_deg * tvalid(gs.FPU[i].alpha_was_zeroed),
+              gs.FPU[i].beta_steps / bsteps_per_deg * tvalid(gs.FPU[i].beta_was_zeroed)) for i in range(num_fpus)]
 
-
-def fpu_ang(gs, asteps_per_deg=125, bsteps_per_deg=80,):
-    return list_angles(gs, asteps_per_deg=asteps_per_deg,
-                       bsteps_per_deg=bsteps_per_deg)[0]
-
+ 
 def list_deviations(gs, num_fpus=None):
     """Show datum deviations for each FPU in the grid. The optional second argument
        is the number of FPUs shown."""
