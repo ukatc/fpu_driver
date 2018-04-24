@@ -138,6 +138,12 @@ enum E_FPU_STATUS_BITS
 
 #endif
 
+enum E_DATUM_SKIP_FLAG
+{
+    DATUM_SKIP_ALPHA = 1,
+    DATUM_SKIP_BETA = (1 << 1),
+};
+
 
 
 // this uses the unsigned specifier because

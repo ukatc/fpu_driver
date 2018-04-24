@@ -319,7 +319,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.waveform_valid = false;
             fpu.beta_collision = true;
             fpu.waveform_valid = false;
-            fpu.was_zeroed = false;
+            fpu.alpha_was_zeroed = false;
+            fpu.beta_was_zeroed = false;
         }
         else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT) || fpu.at_alpha_limit)
         {
@@ -327,7 +328,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
-            fpu.was_zeroed = false;
+            fpu.alpha_was_zeroed = false;
+            fpu.beta_was_zeroed = false;
             fpu.alpha_datum_switch_active = true;
         }
         else if (response_errcode == 0)
@@ -586,14 +588,16 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.at_alpha_limit = true;
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.waveform_valid = false;
-            fpu.was_zeroed = false;
+            fpu.alpha_was_zeroed = false;
+            fpu.beta_was_zeroed = false;
         }
         else if ((response_errcode == ER_COLLIDE) || fpu.beta_collision)
         {
             fpu.beta_collision = true;
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.waveform_valid = false;
-            fpu.was_zeroed = false;
+            fpu.alpha_was_zeroed = false;
+            fpu.beta_was_zeroed = false;
         }
         else if (response_status & STBT_ABORT_WAVE)
         {
@@ -605,20 +609,39 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             if (fpu.state == FPST_DATUM_SEARCH)
             {
                 fpu.state = FPST_UNINITIALIZED;
-                fpu.was_zeroed = false;
+                fpu.alpha_was_zeroed = false;
+                fpu.beta_was_zeroed = false;
             }
         }
         else
         {
             // response_errcode was 0 and no bad status flags were set
 
-            fpu.was_zeroed = true;
-            fpu.alpha_steps = 0;
-            fpu.beta_steps = 0;
+            uint8_t exclusion_flags = data[5];
+            if ((exclusion_flags & DATUM_SKIP_ALPHA) == 0)
+            {
+                fpu.alpha_was_zeroed = true;
+                fpu.alpha_steps = 0;
+            }
+            if ((exclusion_flags & DATUM_SKIP_BETA) == 0)
+            {
+                fpu.beta_was_zeroed = true;
+                fpu.beta_steps = 0;
+            }
+            if (fpu.beta_was_zeroed && fpu.alpha_was_zeroed)
+            {
+                fpu.state = FPST_AT_DATUM;
+            }
+            else
+            {
+                // if only one arm was zeroed, the state still counts as
+                // uninitialized (zeroing only one arm is used only
+                // for testing and engineering, not for instrument operation).
+                fpu.state = FPST_UNINITIALIZED;
+            }
             // in protocol version 1, we do not know the last movement direction
             fpu.direction_alpha = DIRST_UNKNOWN;
             fpu.direction_beta = DIRST_UNKNOWN;
-            fpu.state = FPST_AT_DATUM;
         }
 
         fpu.last_updated = cur_time;
@@ -645,7 +668,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.beta_collision = true;
         fpu.waveform_valid = false;
-        fpu.was_zeroed = false;
+        fpu.alpha_was_zeroed = false;
+        fpu.beta_was_zeroed = false;
         // FIXME: Update step counter in protocol version 2
         //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
 
@@ -671,7 +695,8 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.at_alpha_limit = true;
         fpu.waveform_valid = false;
-        fpu.was_zeroed = false;
+        fpu.alpha_was_zeroed = false;
+        fpu.beta_was_zeroed = false;
 
         fpu.last_updated = cur_time;
         break;

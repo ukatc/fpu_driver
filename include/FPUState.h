@@ -109,9 +109,12 @@ typedef struct __attribute__((packed)) t_fpu_state
     int8_t num_active_timeouts;
     uint8_t sequence_number; // number of last pending / received command
     unsigned int num_waveform_segments: 9; /* number of loaded waveform segements */
-    unsigned int was_zeroed: 1; /* steps are validly calibrated by
-                                    finding datum.  This is required
-                                    for any science observatons. */
+    unsigned int alpha_was_zeroed: 1; /* alpha steps are validly calibrated by
+                                         finding datum.  This is required
+                                         for any science observations. */
+    unsigned int beta_was_zeroed: 1; /* beta steps are validly calibrated by
+                                        finding datum.  This is required
+                                        for any science observations. */
     unsigned int is_locked: 1;  // FPU was locked by operator
     unsigned int ping_ok: 1;  // last ping command was successful
     unsigned int movement_complete: 1;  // last movement command was completed successfully.

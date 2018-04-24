@@ -62,18 +62,20 @@ public:
 
 
 #if (CAN_PROTOCOL_VERSION == 1)
-    void parametrize(int f_id, bool broadcast)
+    void parametrize(int f_id, bool broadcast, E_DATUM_SELECTION arm_selection)
     {
         fpu_id = f_id;
         bcast = broadcast;
+        _arm_selection = arm_selection;
     };
 #else
-    void parametrize(int f_id, bool broadcast, bool auto_datum, bool clockwise_first)
+    void parametrize(int f_id, bool broadcast, bool auto_datum, bool clockwise_first, E_DATUM_SELECTION arm_selection)
     {
         fpu_id = f_id;
         bcast = broadcast;
         _auto_datum = auto_datum;
         _clockwise_first = clockwise_first;
+        _arm_selection = arm_selection;
     };
 #endif
 
@@ -120,6 +122,41 @@ public:
 
         // CAN command code
         can_buffer.message.data[0] = cmd_code;
+#if (CAN_PROTOCOL_VERSION == 1)
+        bool skip_alpha = false;
+        bool skip_beta = false;
+        switch (_arm_selection)
+        {
+        case DASEL_BOTH:
+            break;
+        case DASEL_ALPHA:
+            skip_beta = true;
+            break;
+        case DASEL_BETA:
+            skip_alpha = true;
+            break;
+        case DASEL_NONE:
+            skip_alpha = true;
+            skip_beta = true;
+            break;
+
+        default:
+            // Invalid values have been filtered out by
+            // AsyncDriver, so this can't happen.
+            assert(0);
+        }
+        // this is defined so that an empty field (all-zero)
+        // has the defeault behavoir implemented by the
+        // current firmware, which datums both arms.
+        //
+        // Note that this is not necessarily safe if
+        // one of the switches is broken - old firmware ignoring
+        // the arm selection can break the FPU then.
+        can_buffer.message.data[1] = ( (skip_alpha ? DATUM_SKIP_ALPHA : 0)
+                                       | (skip_beta ? DATUM_SKIP_BETA : 0));
+
+#endif
+
 #if (CAN_PROTOCOL_VERSION > 1)
         can_buffer.message.data[2] = ( ( _auto_datum ? 1 : 0)
                                        | ((_clockwise_first ?  1 : 0) << 1));
@@ -164,6 +201,8 @@ public:
 
 private:
     uint16_t fpu_id;
+    E_DATUM_SELECTION _arm_selection;
+
 #if (CAN_PROTOCOL_VERSION > 1)
     bool _auto_datum;
     bool _clockwise_first;

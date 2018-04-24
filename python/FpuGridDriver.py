@@ -6,7 +6,9 @@ import signal
 import fpu_driver
 
 from fpu_driver import __version__, CAN_PROTOCOL_VERSION, GatewayAddress,  \
-    REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, FPUDriverException, MovementError
+    REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, FPUDriverException, MovementError, \
+    DASEL_BOTH, DASEL_ALPHA, DASEL_BETA
+     
 
 import fpu_commands as cmds
 
@@ -70,22 +72,22 @@ class GridDriver:
     def getGridState(self):
         return self._gd.getGridState()
 
-    def findDatumB(self, gs):
+    def findDatumB(self, gs, selected_arm=DASEL_BOTH):
         """Moves all FPUs to datum position. 
 
         This is a blocking variand of the findDatum command,
         it is not interruptible by Control-C."""
         
-        return self._gd.findDatum(gs)
+        return self._gd.findDatum(gs, selected_arm)
 
-    def findDatum(self, gs):
+    def findDatum(self, gs, selected_arm=DASEL_BOTH):
         """Moves all FPUs to datum position. 
 
         If the program receives a SIGNINT, or Control-C is pressed, an
         abortMotion command is sent, aborting the search.
 
         """
-        rv = self._gd.startFindDatum(gs)
+        rv = self._gd.startFindDatum(gs, selected_arm)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
             raise RuntimeError("can't search Datum, driver error code = %r" % rv)
         time.sleep(0.1)

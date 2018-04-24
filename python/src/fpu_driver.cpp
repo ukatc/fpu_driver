@@ -136,7 +136,8 @@ class WrapFPUState : public t_fpu_state
 
 public:
 
-    bool was_zeroed;
+    bool alpha_was_zeroed;
+    bool beta_was_zeroed;
     bool is_locked;
     bool ping_ok;
     bool alpha_datum_switch_active;
@@ -172,7 +173,8 @@ public:
         num_waveform_segments     = fpu_state.num_waveform_segments;
         num_active_timeouts       = fpu_state.num_active_timeouts;
         sequence_number           = fpu_state.sequence_number;
-        was_zeroed                = fpu_state.was_zeroed;
+        alpha_was_zeroed          = fpu_state.alpha_was_zeroed;
+        beta_was_zeroed           = fpu_state.beta_was_zeroed;
         ping_ok                   = fpu_state.ping_ok;
         is_locked                 = fpu_state.is_locked;
         movement_complete         = fpu_state.movement_complete;
@@ -224,7 +226,8 @@ public:
           << " 'sequence_number' : " << fpu.sequence_number
           << " 'ping_ok' : " << fpu.ping_ok
           << " 'movement_complete' : " << fpu.movement_complete
-          << " 'was_zeroed' : " << fpu.was_zeroed
+          << " 'alpha_was_zeroed' : " << fpu.alpha_was_zeroed
+          << " 'beta_was_zeroed' : " << fpu.beta_was_zeroed
           << " 'is_locked' : " << fpu.is_locked
           << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active
           << " 'beta_datum_switch_active' : " << fpu.beta_datum_switch_active
@@ -816,16 +819,16 @@ public:
         return ecode;
     }
 
-    E_DriverErrCode wrap_findDatum(WrapGridState& grid_state)
+  E_DriverErrCode wrap_findDatum(WrapGridState& grid_state, E_DATUM_SELECTION arm_selection)
     {
-        E_DriverErrCode ecode = findDatum(grid_state);
+      E_DriverErrCode ecode = findDatum(grid_state, arm_selection);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state)
+    E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state, E_DATUM_SELECTION arm_selection)
     {
-        E_DriverErrCode ecode = startFindDatum(grid_state);
+        E_DriverErrCode ecode = startFindDatum(grid_state, arm_selection);
         checkDriverError(ecode);
         return ecode;
     }
@@ -1163,6 +1166,14 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .export_values();
 
 
+
+
+    // selection which arms should perform a datum operation
+    enum_<E_DATUM_SELECTION>("E_DATUM_SELECTION")
+      .value("DASEL_BOTH",   DASEL_BOTH)
+      .value("DASEL_ALPHA",  DASEL_ALPHA)
+      .value("DASEL_BETA",   DASEL_BETA);
+
     class_<WrapFPUState>("FPUState")
     .def_readonly("state", &WrapFPUState::state)
     .def_readonly("last_command", &WrapFPUState::last_command)
@@ -1174,7 +1185,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("timeout_count", &WrapFPUState::timeout_count)
     .def_readonly("num_active_timeouts", &WrapFPUState::num_active_timeouts)
     .def_readonly("sequence_number", &WrapFPUState::sequence_number)
-    .def_readonly("was_zeroed", &WrapFPUState::was_zeroed)
+    .def_readonly("alpha_was_zeroed", &WrapFPUState::alpha_was_zeroed)
+    .def_readonly("beta_was_zeroed", &WrapFPUState::beta_was_zeroed)
     .def_readonly("is_locked", &WrapFPUState::is_locked)
     .def_readonly("alpha_datum_switch_active", &WrapFPUState::alpha_datum_switch_active)
     .def_readonly("beta_datum_switch_active", &WrapFPUState::beta_datum_switch_active)

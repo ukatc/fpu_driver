@@ -220,6 +220,14 @@ enum E_REQUEST_DIRECTION
     REQD_CLOCKWISE      = 1,
 };
 
+enum E_DATUM_SELECTION
+{
+    DASEL_BOTH  = 0,
+    DASEL_ALPHA = 1,
+    DASEL_BETA  = 2,
+    DASEL_NONE  = 3,
+};
+
 
 }
 #endif

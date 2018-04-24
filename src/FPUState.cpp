@@ -36,7 +36,8 @@ namespace canlayer
 
 void initialize_fpu(t_fpu_state &fpu)
 {
-    fpu.was_zeroed                = false;
+    fpu.alpha_was_zeroed          = false;
+    fpu.beta_was_zeroed           = false;
     fpu.is_locked                 = false;
     fpu.state                     = FPST_UNKNOWN;
     fpu.previous_state            = FPST_UNKNOWN;

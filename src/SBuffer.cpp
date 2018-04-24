@@ -305,7 +305,8 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
                 break;
 
             case ENOTCONN: // socket not connected
-                printf("3");fflush(stdout);
+                printf("3");
+                fflush(stdout);
                 return ST_NO_CONNECTION;
 
             case EINVAL: // invalid argument

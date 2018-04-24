@@ -218,7 +218,7 @@ int make_socket(const char *ip, uint16_t port)
 
     int errstate=0;
     errstate = setsockopt(sck, IPPROTO_TCP, TCP_NODELAY, &value,
-               sizeof(value));
+                          sizeof(value));
 
     if (errstate < 0)
     {
@@ -229,7 +229,7 @@ int make_socket(const char *ip, uint16_t port)
 #if 0
     if (SOCKET_TIME_OUT_SECONDS > 0)
     {
-    
+
         struct timeval timeout;
         timeout.tv_sec = int(SOCKET_TIME_OUT_SECONDS);
         timeout.tv_usec = int((SOCKET_TIME_OUT_SECONDS - timeout.tv_sec) * 1e6);
@@ -245,7 +245,7 @@ int make_socket(const char *ip, uint16_t port)
 
         errstate = setsockopt(sck, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
                               sizeof(timeout));
-    
+
         if (errstate < 0)
         {
             close(sck);
@@ -264,10 +264,10 @@ int make_socket(const char *ip, uint16_t port)
                idle_time idle seconds, a packet is sent every keep_alive_interval
                seconds. If no response is seen after max_keepalives packets,
                the connection is deemed dead and the driver returns with an error.
-               We need to set this option because the default parameters 
+               We need to set this option because the default parameters
                on Linux are very long, 7200 seconds.
             */
-            
+
             int opt_ka = 1;
             errstate = setsockopt(sck, SOL_SOCKET, SO_KEEPALIVE, &opt_ka,
                                   sizeof(opt_ka));
@@ -278,7 +278,7 @@ int make_socket(const char *ip, uint16_t port)
                 close(sck);
                 return -1;
             }
-            
+
             int idle_time = std::max(1, TCP_IDLE_SECONDS);
             errstate = setsockopt(sck, IPPROTO_TCP, TCP_KEEPIDLE, &idle_time,
                                   sizeof(idle_time));
@@ -328,7 +328,7 @@ int make_socket(const char *ip, uint16_t port)
         }
 
     }
-    
+
     return sck;
 }
 
@@ -855,7 +855,7 @@ void* GatewayDriver::threadTxFun()
             retval =  ppoll(pfd, num_fds, &MAX_TX_TIMEOUT, &signal_set);
             if (retval < 0)
             {
-                
+
                 int errcode = errno;
                 switch (errcode)
                 {

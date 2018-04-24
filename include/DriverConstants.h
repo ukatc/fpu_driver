@@ -30,7 +30,7 @@
 namespace mpifps
 {
 
- 
+
 // define default value for more convenient testing.
 static const char DEFAULT_GATEWAY_IP[]= "192.168.0.10";
 static const int DEFAULT_GATEWAY_PORT = 4700;

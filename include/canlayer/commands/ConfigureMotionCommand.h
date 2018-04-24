@@ -45,12 +45,12 @@ public:
     // maximum number of sections the FPU can store
     static const unsigned int MAX_NUM_SECTIONS=128;
     // maximum relative increase in step counts between sections
-    static constexpr double MAX_REL_INCREASE = 0.4;    
+    static constexpr double MAX_REL_INCREASE = 0.4;
     // Short wait time before sending configMotion commands
     // to the same FPU, so that the poor thing can have
     // a break.
     static const useconds_t CHAT_PAUSE_TIME_USEC = 50000;
-    
+
     static E_CAN_COMMAND getCommandCode()
     {
         return CCMD_CONFIG_MOTION;

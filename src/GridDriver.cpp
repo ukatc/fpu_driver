@@ -25,10 +25,10 @@ namespace mpifps
 
 
 
-E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state, E_DATUM_SELECTION arm_selection=DASEL_BOTH)
 {
 
-    E_DriverErrCode estatus = startFindDatum(grid_state);
+    E_DriverErrCode estatus = startFindDatum(grid_state, arm_selection);
 
     if (estatus != DE_OK)
     {
@@ -43,7 +43,7 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state)
     return estatus;
 }
 
-E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state, E_DATUM_SELECTION arm_selection)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -54,7 +54,7 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state)
     while (num_avaliable_retries > 0)
     {
         // writes grid_state into member variable
-        estatus = startAutoFindDatumAsync(grid_state, state_summary);
+        estatus = startAutoFindDatumAsync(grid_state, state_summary, arm_selection);
 
         break;
 

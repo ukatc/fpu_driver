@@ -95,7 +95,8 @@ public:
 
     E_DriverErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
+                                            E_DATUM_SELECTION arm_selection);
 
     E_DriverErrCode waitAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
                                            double &max_wait_time, bool &finished);

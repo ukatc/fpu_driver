@@ -71,9 +71,9 @@ public:
     E_DriverErrCode pingFPUs(t_grid_state& grid_state);
 
     // find datum with automatic firmware operation
-    E_DriverErrCode findDatum(t_grid_state& grid_state);
+    E_DriverErrCode findDatum(t_grid_state& grid_state, E_DATUM_SELECTION arm_selection);
 
-    E_DriverErrCode startFindDatum(t_grid_state& grid_state);
+    E_DriverErrCode startFindDatum(t_grid_state& grid_state, E_DATUM_SELECTION arm_selection);
 
     E_DriverErrCode waitFindDatum(t_grid_state& grid_state,
                                   double &max_wait_time, bool &finished);
