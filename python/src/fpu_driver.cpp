@@ -1172,7 +1172,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     enum_<E_DATUM_SELECTION>("E_DATUM_SELECTION")
       .value("DASEL_BOTH",   DASEL_BOTH)
       .value("DASEL_ALPHA",  DASEL_ALPHA)
-      .value("DASEL_BETA",   DASEL_BETA);
+      .value("DASEL_BETA",   DASEL_BETA)
+      .export_values();
 
     class_<WrapFPUState>("FPUState")
     .def_readonly("state", &WrapFPUState::state)

@@ -11,6 +11,9 @@ coroutines.
 
 """
 from __future__ import print_function
+
+import argparse
+
 from gevent.server import StreamServer
 from gevent.pool import Pool
 from gevent.monkey import patch_all
@@ -23,14 +26,16 @@ import codec
 import mock_controller as mock_controller
 from mock_controller import command_handler
 
+DEFAULT_PORTS = [ 4700, 4701, 4702]
+
 DEBUG=int(os.environ.get("DEBUG","0"))
 
 # this handler will be run for each incoming connection in a dedicated greenlet
-def echo(socket, address):
+def gateway(socket, address, args):
     print('New connection from %s:%s' % address)
     # using a makefile because we want to use readline()
     msg_len = 10
-    prot = codec.Decoder(verbose=DEBUG)
+    prot = codec.Decoder(verbose=args.debug)
 
     socket.setsockopt(IPPROTO_TCP, TCP_NODELAY, 1)
 
@@ -42,16 +47,42 @@ def echo(socket, address):
         prot.decode(command, command_handler, socket)
         
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='Start EtherCAN gateway simulation')
+    parser.add_argument('ports', metavar='p', type=int, nargs='*',
+                        default = DEFAULT_PORTS,
+                        help='ports which will listen to a connection')
+    
+    parser.add_argument('--debug', dest='debug',  action='store_true',
+                        default=DEBUG,
+                        help='print extensive debug output')
+    
+    parser.add_argument('-V', '--protocol_version',  dest='protocol_version',
+                        default="1.0",
+                        help='CAN protocol version')
+
+    args = parser.parse_args()
+    return args
+    
+
+        
 if __name__ == '__main__':
-    ports = [ 4700, 4701, 4702]
     ip = '127.0.0.1'
-    mock_controller.gateway_map = { (ip, ports[i]) : i for i in range(len(ports))  }
+    
+    args = parse_args()
+    print("protocol_version:", args.protocol_version)
+    print("listening to ports:", args.ports)
+    
+    mock_controller.gateway_map = { (ip, args.ports[i]) : i for i in range(len(args.ports))  }
     print("gateway map:", mock_controller.gateway_map)
     pool = Pool(10000)
-    servers = [ StreamServer((ip, p), echo, spawn=pool) for p in ports]
+
+    start_gateway = lambda socket, address: gateway(socket, address, args)
+    
+    servers = [ StreamServer((ip, p), start_gateway, spawn=pool) for p in args.ports]
     # to start the servers asynchronously, we use its start() method;
     # we use blocking serve_forever() for the third and last connection.
-    print('Starting mock gateway on ports %s' % ports)
+    print('Starting mock gateway on ports %s' % args.ports)
     ##server.serve_forever()
     for s in servers[:-1]:
         s.start()
