@@ -10,7 +10,7 @@ from __future__ import print_function
 import os
 
 import codec
-from fpu_sim import FPU
+from fpu_sim import FPU, FPUGrid
 
 from gevent import sleep, spawn, spawn_later
 
@@ -102,13 +102,6 @@ STBT_ABORT_WAVE      = 1 << 4   #  abort waveform
 STBT_M1LIMIT         = 1 << 5   #  M1 Limit breached 
 STBT_M2LIMIT         = 1 << 6   #  no longer used
 STBT_REVERSE_WAVE    = 1 << 7   #  waveform to be run in reverse
-
-if os.environ.has_key("NUM_FPUS"):
-    NUM_FPUS=int(os.environ.get("NUM_FPUS"))
-else:
-    NUM_FPUS = 15 * 67
-
-FPUGrid = [FPU(i) for i in range(NUM_FPUS) ]
 
 def encode_and_send(msg, socket, verbose=False):
     confirmation = codec.encode(msg, verbose=verbose)
@@ -974,7 +967,8 @@ def handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX
 
 
-def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbose=0):
+def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args):
+    verbose = args.debug
     if command_id == CCMD_PING_FPU                         :
         # resp = handle_pingFPU(fpu_id, cmd)
         resp = handle_pingFPU(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
@@ -1063,7 +1057,8 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbo
 
 gCountTotalCommands = 0
 
-def command_handler(cmd, socket, verbose=0):
+def command_handler(cmd, socket, args):
+    verbose = args.debug
     global gCountTotalCommands
     gCountTotalCommands += 1
     if verbose:
@@ -1088,7 +1083,7 @@ def command_handler(cmd, socket, verbose=0):
             print("CAN command #%i to FPU %i" % (command_id, fpu_id))
 
 
-        fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, verbose=verbose)
+        fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
     else:
         # broadcast message
         if verbose:
@@ -1099,10 +1094,10 @@ def command_handler(cmd, socket, verbose=0):
         for fpu_adr_bus in range(1, FPUS_PER_BUS+1):
             fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
             assert(fpu_id >= 0)
-            if fpu_id < NUM_FPUS:
+            if fpu_id < args.NUM_FPUS:
 
                 #print("Spawning CAN command #%i to FPU %i" % (command_id, fpu_id))
-                spawn(fpu_handler, command_id, fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
+                spawn(fpu_handler, command_id, fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, args)
             
 
 

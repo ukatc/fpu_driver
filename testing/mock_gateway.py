@@ -23,19 +23,27 @@ import array
 
 import codec
 
+import fpu_sim
 import mock_controller as mock_controller
+from mock_controller import FPUS_PER_BUS, BUSES_PER_GATEWAY
+
 from mock_controller import command_handler
 
 DEFAULT_PORTS = [ 4700, 4701, 4702]
 
 DEBUG=int(os.environ.get("DEBUG","0"))
 
+if os.environ.has_key("NUM_FPUS"):
+    DEFAULT_NUM_FPUS=int(os.environ.get("NUM_FPUS"))
+else:
+    DEFAULT_NUM_FPUS = len(DEFAULT_PORTS) * FPUS_PER_BUS * BUSES_PER_GATEWAY
+
 # this handler will be run for each incoming connection in a dedicated greenlet
 def gateway(socket, address, args):
     print('New connection from %s:%s' % address)
     # using a makefile because we want to use readline()
     msg_len = 10
-    prot = codec.Decoder(verbose=args.debug)
+    prot = codec.Decoder(args)
 
     socket.setsockopt(IPPROTO_TCP, TCP_NODELAY, 1)
 
@@ -55,24 +63,37 @@ def parse_args():
     
     parser.add_argument('--debug', dest='debug',  action='store_true',
                         default=DEBUG,
-                        help='print extensive debug output')
+                        help='print received binary commands and responses')
     
+    parser.add_argument('-v', '--verbosity', dest='verbosity',  
+                        default=1,
+                        help='verbosity: 0 - no extra output ... 5 - print extensive debug output')
+
     parser.add_argument('-V', '--protocol_version',  dest='protocol_version',
                         default="1.0",
                         help='CAN protocol version')
 
+    parser.add_argument('-N', '--NUM_FPUS',  dest='NUM_FPUS',
+                        default=DEFAULT_NUM_FPUS,
+                        help='number of simulated FPUs')
+    
     args = parser.parse_args()
     return args
-    
+     
 
         
 if __name__ == '__main__':
     ip = '127.0.0.1'
     
     args = parse_args()
+    
+    
     print("protocol_version:", args.protocol_version)
     print("listening to ports:", args.ports)
+    print("listening to ports:", args.ports)
+    print("number of FPUs    :", args.NUM_FPUS)
     
+    fpu_sim.init_FPUGrid(args, args.NUM_FPUS)
     mock_controller.gateway_map = { (ip, args.ports[i]) : i for i in range(len(args.ports))  }
     print("gateway map:", mock_controller.gateway_map)
     pool = Pool(10000)

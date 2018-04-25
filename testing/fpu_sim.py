@@ -17,6 +17,8 @@ MAX_WAVE_ENTRIES = 128
 IDXA = 0
 IDXB = 1
 
+FPUGrid = []
+
 # These are parameters from the instrument control system
 # They do NOT match the origin of the FPU step counter
 
@@ -66,7 +68,8 @@ def printtime():
 
 class FPU:
     
-    def __init__(self, fpu_id):
+    def __init__(self, fpu_id, opts):
+        self.opts = opts
         self.initialize(fpu_id)
 
     def initialize(self, fpu_id):
@@ -125,7 +128,10 @@ class FPU:
     def addStep(self, first, last,
 
                 asteps, apause, aclockwise,
-                bsteps, bpause, bclockwise, verbose=0):
+                bsteps, bpause, bclockwise):
+        
+        verbose = self.opts.verbosity > 4
+        
         if self.running_wave:
             raise RuntimeError("FPU is moving")
         
@@ -333,7 +339,9 @@ class FPU:
         self.wave_ready = False
             
             
-            
+
+def init_FPUGrid(options, num_fpus):        
+    FPUGrid[:] = [FPU(i, options) for i in range(num_fpus) ]
     
         
         

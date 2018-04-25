@@ -15,10 +15,11 @@ class E_STATE:
     
 
 class Decoder:
-    def __init__(self, verbose=0):
+    def __init__(self, args):
         self.state = E_STATE.UNSYNC
         self.bytelist = []
-        self.verbose=verbose
+        self.args = args
+        self.verbose=args.debug
 
 
     def add_byte(self, b, callback, socket):
@@ -35,7 +36,7 @@ class Decoder:
             if self.state == E_STATE.DLE_ESCAPE:
                 self.state = E_STATE.UNSYNC
                 callback(array.array('B', self.bytelist), socket,
-                         verbose=self.verbose)
+                         self.args)
             elif self.state == E_STATE.IN_FRAME:
                 self.bytelist.append(b)
             else:
