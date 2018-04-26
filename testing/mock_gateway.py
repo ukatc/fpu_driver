@@ -73,8 +73,8 @@ def parse_args():
                         default="1.0",
                         help='CAN protocol version')
 
-    parser.add_argument('-N', '--NUM_FPUS',  dest='NUM_FPUS',
-                        default=DEFAULT_NUM_FPUS,
+    parser.add_argument('-N', '--NUM_FPUS',  type=int, dest='NUM_FPUS',
+                        default=int(DEFAULT_NUM_FPUS),
                         help='number of simulated FPUs')
     
     args = parser.parse_args()

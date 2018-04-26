@@ -103,6 +103,12 @@ STBT_M1LIMIT         = 1 << 5   #  M1 Limit breached
 STBT_M2LIMIT         = 1 << 6   #  no longer used
 STBT_REVERSE_WAVE    = 1 << 7   #  waveform to be run in reverse
 
+# datum option flags
+
+DATUM_SKIP_ALPHA = 1
+DATUM_SKIP_BETA = (1 << 1)
+
+
 def encode_and_send(msg, socket, verbose=False):
     confirmation = codec.encode(msg, verbose=verbose)
     socket.sendall(confirmation)
@@ -376,7 +382,7 @@ def handle_GetErrorBeta(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX 
 
 
-def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
+def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
         
     print("starting findDatum for FPU %i" % fpu_id)
 
@@ -416,7 +422,7 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
         TX[4] = errcode = 0
 
 
-        def findDatum_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
+        def findDatum_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
 
             tx_prio = 0x02
             tx_canid = (tx_prio << 7) | fpu_adr_bus
@@ -427,11 +433,20 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
             TH[2] = ((tx_canid >> 8) & 0xff)
 
             command_id = RX[0]
-            
-            
+
+            flag_skip_alpha = False
+            flag_skip_beta = False
+            skip_flag = RX[1]
+            if skip_flag > 0:
+                if opts.protocol_version > "1.0":
+                    flag_skip_alpha = (skip_flag & DATUM_SKIP_ALPHA) > 0
+                    flag_skip_beta = (skip_flag & DATUM_SKIP_BETA) > 0
+                else:
+                    print("WARNING: protocol version 1.0 running, ignoring additional datum flags")
+                    skip_flag = 0
 
             # simulate findDatum FPU operation
-            FPUGrid[fpu_id].findDatum(sleep)
+            FPUGrid[fpu_id].findDatum(sleep, skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta)
             print("FPU %i: findDatum command finished" % fpu_id);
 
             TX = [0] * 8
@@ -443,17 +458,19 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
                 # only send an error message
                 TX[3] = errflag = 0xff
                 TX[4] = errcode = ER_COLLIDE
+                TX[5] = 0
             elif status & STBT_M1LIMIT:
                 TX[3] = errflag = 0xff
                 TX[4] = errcode = ER_M1LIMIT
+                TX[5] = 0
             else:
                 # in version 1, other cases do not have
                 # status flag / error code information
                 TX[3] = errflag = 0
                 TX[4] = dummy0 = 0
+                TX[5] = skip_flag
 
                 
-            TX[5] = dummy1 = 0
             TX[6] = dummy2 = 0
             TX[7] = dummy3 = 0
 
@@ -462,11 +479,11 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
             
             #print("FPU %i: findDatum command finished" % fpu_id);
-            encode_and_send(finish_message, socket, verbose=verbose)
+            encode_and_send(finish_message, socket, verbose=opts.debug)
 
         # "spawn_later" inserts a timed event into the aynchronous event loop
         # - similar to a thread but not running in parallel.
-        spawn_later(1, findDatum_func, fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=verbose)
+        spawn_later(1, findDatum_func, fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts)
     
     ## send confirmation message 
     #print("FPU %i: sending confirmation to findDatum command" % fpu_id);
@@ -978,7 +995,7 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
         
     elif command_id == CCMD_FIND_DATUM                       :
         # we pass the socket here to send an interim confirmation
-        resp = handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
+        resp = handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, args)
         
     elif command_id == CCMD_CONFIG_MOTION  :
         resp = handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)

@@ -170,7 +170,7 @@ class FPU:
                 print("fpu #%i: wavetable ready (%i sections)" % (self.fpu_id, n))
         
         
-    def findDatum(self, sleep):
+    def findDatum(self, sleep, skip_alpha=False, skip_beta=False):
         printtime()
         datum_op_duration_mu = 1
         datum_op_duration_sigma = 2
@@ -184,21 +184,31 @@ class FPU:
             
             if self.abort_wave:
                 print("ABORTING DATUM SEARCH FOR FPU", self.fpu_id);
-                self.at_datum = True
-                break
+                self.at_datum = False
+                break 
 
         if not self.abort_wave:
             def random_deviation():                
                 deviation_mu = 0
                 deviation_sigma = 10
                 return min(max(random.gauss(deviation_mu, deviation_sigma), -15), 15)
-            
-            self.alpha_deviation = int(random_deviation())
-            self.beta_deviation = int(random_deviation())
-            self.alpha_steps = 0
-            self.beta_steps = 0
-            self.at_datum = True
-        print("FPU #%i: datum found" % self.fpu_id)
+
+            if not skip_alpha:
+                self.alpha_deviation = int(random_deviation())
+                self.alpha_steps = 0
+                if skip_beta:
+                    print("FPU #%i: alpha datum reached" % self.fpu_id)
+            if not skip_beta:
+                self.beta_deviation = int(random_deviation())
+                self.beta_steps = 0
+                if skip_alpha:
+                    print("FPU #%i: beta datum reached" % self.fpu_id)
+            if not (skip_alpha or skip_beta):
+                self.at_datum = True
+                print("FPU #%i: datum found" % self.fpu_id)
+            else:
+                print("FPU #%i: partial datum operation finished" % self.fpu_id)
+
         printtime()
             
 
@@ -279,14 +289,18 @@ class FPU:
                 beta_sign = 1
             delta_beta = wt_sign * beta_sign * self.steps[n,IDXB]
             newbeta = self.beta_steps + delta_beta
-            
-            print("section %i: moving FPU %i by (%i,%i) to (%i, %i)" % (
-                n, self.fpu_id, delta_alpha, delta_beta, newalpha, newbeta))
+
+            if self.opts.verbosity > 0:
+                print("section %i: moving FPU %i by (%i,%i) to (%i, %i)" % (
+                    n, self.fpu_id, delta_alpha, delta_beta, newalpha, newbeta))
             
             frame_time = 0.25
             sleep(frame_time)
             if self.abort_wave:
                 break
+
+            if (delta_beta > 0) or (delta_alpha > 0):
+                self.at_datum = False
 
             if self.ustep_level == 8:
                 if random.uniform(0, 100) < 50:
