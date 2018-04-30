@@ -181,7 +181,8 @@ bool GatewayDriver::isLocked(int fpu_id) const
 
 int make_socket(const char *ip, uint16_t port)
 {
-    int sck;
+    int sck = -1;
+    int rval = 0;
     struct sockaddr_in addr;
 
     long value = 1;
@@ -196,7 +197,7 @@ int make_socket(const char *ip, uint16_t port)
         return -1;
     }
 
-    sck = socket (PF_INET, SOCK_STREAM, 0);
+    sck = socket (PF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
     if (sck < 0)
     {
@@ -204,9 +205,10 @@ int make_socket(const char *ip, uint16_t port)
         return -1;
     }
 
-    if (connect(sck, (struct sockaddr *) &addr, sizeof(addr)) < 0)
+    rval = connect(sck, (struct sockaddr *) &addr, sizeof(addr));
+    if ((rval < 0) && (errno != EINPROGRESS))
     {
-        perror("connect");
+        fprintf(stderr, "connect failed: %s\n", strerror(errno));
         close(sck);
         return -1;
     }
