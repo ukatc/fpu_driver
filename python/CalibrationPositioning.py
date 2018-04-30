@@ -7,7 +7,7 @@ positions and calls a measurement function at each position.
 import time
 import argparse
 import numpy
-from numpy import random, asarray, zeros
+from numpy import random, asarray, zeros, ones
 
 import FpuGridDriver
 from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST, GatewayAddress
@@ -38,9 +38,12 @@ def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
             
     gd.configMotion(waveform, grid_state)
     printtime()
-    for i, pos in enumerate(list_angles(grid_state)):
+    cur_angles = list_angles(grid_state)
+    am = asarray(alpha_move) * ones(len(cur_angles))
+    bm = asarray(beta_move) * ones(len(cur_angles))
+    for i, pos in enumerate(cur_angles):
         a,b = pos
-        print("{}: FPU #{}: now moving to ({:6.2f}, {:6.2f})".format(label, i, a + alpha_move[i], b + beta_move[i]))
+        print("{}: FPU #{}: now moving to ({:6.2f}, {:6.2f})".format(label, i, a + am[i], b + bm[i]))
     gd.executeMotion(grid_state)
 
     # display the new position
@@ -76,7 +79,7 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
 
     if return_to_datum:
         printtime()
-        if (alpha0 == 0) and (beta0 == 0):
+        if (alpha0 == 0).all() and (beta0 == 0).all():
             print("now moving back to ({},{})".format(0, 0))
             gd.reverseMotion(grid_state)
             gd.executeMotion(grid_state)
@@ -84,7 +87,7 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
             move_fpu(gd, grid_state, -alpha, -beta, "return" )
 
         printtime()
-        print("position:", list_angles(grid_state), "steps=", list_positions(grid_state))
+        print("position:", list_angles(grid_state), "steps=", list_positions(grid_state, show_zeroed=False))
         print("issuing findDatum()")
         gd.findDatum(grid_state)
         gd.getCounterDeviation(grid_state)
@@ -117,7 +120,7 @@ def parse_args():
     parser.add_argument('--gateway_address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
     
-    parser.add_argument('--N', metavar='NUM_FPUS', type=int, default=1,
+    parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=1,
                         help='Number of adressed FPUs. For the deterministic patterns, the FPUs will be steered in unison. For the raodnom patterns, each FPU will receive a random value. WARNING: No conflict checking is done.  (default: %(default)s)')
     
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=0.0,
