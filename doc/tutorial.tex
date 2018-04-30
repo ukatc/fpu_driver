@@ -12,7 +12,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 0.5.1 (document version \texttt{\input{../git_version}})}
+  module} \subtitle{For driver version 0.5.2 (document version \texttt{\input{../git_version}})}
 
 \author{Johannes Nix}
 
@@ -440,10 +440,10 @@ the starting position (in degrees) is: [(0.0, 0.0)]
   'direction_alpha' : 0 'direction_beta' : 0
   'num_waveform_segments' : 0 'num_active_timeouts' : 0
   'sequence_number' : 0 'ping_ok' : 0 'movement_complete' : 0
-  'was_zeroed' : 1 'is_locked' : 0 'alpha_datum_switch_active' : 0
-  'beta_datum_switch_active' : 0 'at_alpha_limit' : 0
-  'beta_collision' : 0 'waveform_valid' : 1 'waveform_ready' : 1
-  'waveform_reversed' : 0 }
+  'alpha_was_zeroed' : 1 'beta_was_zeroed' : 1 'is_locked' : 0
+  'alpha_datum_switch_active' : 0 'beta_datum_switch_active' : 0
+  'at_alpha_limit' : 0   'beta_collision' : 0 'waveform_valid' : 1
+  'waveform_ready' : 1 'waveform_reversed' : 0 }
 >>> list_angles(grid_state)
 [(0.0, 0.0)]
 >>> gd.executeMotion(grid_state)
@@ -457,10 +457,10 @@ fpu_driver.E_DriverErrCode.DE_OK
   'direction_alpha' : 0 'direction_beta' : 0
   'num_waveform_segments' : 0 'num_active_timeouts' : 0
   'sequence_number' : 0 'ping_ok' : 1 'movement_complete' : 1
-  'was_zeroed' : 1 'is_locked' : 0 'alpha_datum_switch_active' : 0
-  'beta_datum_switch_active' : 0 'at_alpha_limit' : 0
-  'beta_collision' : 0 'waveform_valid' : 1 'waveform_ready' : 0
-  'waveform_reversed' : 0 }
+  'alpha_was_zeroed' : 1 'beta_was_zeroed' : 1 'is_locked' : 0
+  'alpha_datum_switch_active' : 0 'beta_datum_switch_active' : 0
+  'at_alpha_limit' : 0 'beta_collision' : 0 'waveform_valid' : 1
+  'waveform_ready' : 0 'waveform_reversed' : 0 }
 >>> list_angles(grid_state)
 [(45.0, 15.0)]
 >>>
@@ -632,24 +632,42 @@ fpu_driver.ConnectionFailure: DE_NO_CONNECTION: The FPU Driver is not connected 
 
 
 The associated error message and enumeration symbol should be
-sufficient to determine the cause of the problem. 
+sufficient to determine the cause of the problem. A comprehensive list
+of exceptions and error codes is given in section~\ref{sec:errors} on
+page~\pageref{sec:errors}.
+
 
 
 
 
 \subsection{Getting the current position}
 
-We already saw how to use the \texttt{pingFPUs()} method
-of the driver object. This method automatically
-retrieves the current step counters of the FPU.
-there are two utility functions which display them:
+We already saw how to use the \texttt{pingFPUs()} method of the driver
+object. This method also automatically retrieves the current step
+counters of the FPU.  There are two utility functions which display
+them: The command
 
 \begin{minted}{python}
   list_positions(grid_state)
 \end{minted}
 
-shows the values of the alpha and beta step counters.
-Often, it is interesting to know the value scaled
+shows a list of tuples with the values of the alpha and beta step
+counters, and whether the counter has been initialised by a datum
+operation. The first element of the tuple corresponds to the alphga
+step counter, the second to the beta step counter, the third is a
+Boolean value which indicates whether the alpha counter was
+initialised, and the fourth indicates the beta counter
+initialisation. The keyword option ``\texttt{show\_zeroed=False}''
+disables display of the datum flags.  As any other keyword arguments
+in python, it is passed like this:
+
+\begin{minted}{python}
+  list_positions(grid_state, show_zeroed=False)
+\end{minted}
+
+
+
+Often, it is useful to know the value scaled
 to an approximate angle. The scaled values
 are displayed by the command
 
@@ -657,15 +675,22 @@ are displayed by the command
   list_angles(grid_state)
 \end{minted}
 
+If one or both arms have not been initialised, by default a
+non-a-number (NaN) value is shown. Any floating point computation
+which involves a NaN value will result in another NaN value, so that
+using invalid positions is avoided.  In the case that the
+uninitialised values are needed, the option
+``\texttt{show\_uninitialized=True}'' can be used.
+
 
 One can wonder how this angle is calibrated and what is the relative
 position to the datum position. The answer is, these values are not
 calibrated - \texttt{list\_angles()} shows only an approximately
-scaled value.  Also, the displayed values are only relative to the
-datum position, which is defined to have the step counter values
-(0,0). If the datum position was not searched at least once before,
-both values are meaningless, and \texttt{list\_angles()} returns a
-pair of NaN values.
+scaled value derived from the gear ratio.  Also, the displayed values
+are only relative to the datum position, which is defined to have the
+step counter values (0,0). If the datum position was not searched at
+least once before, both values are probably meaningless, and this is
+why \texttt{list\_angles()} returns a pair of NaN values.
 
 
 
@@ -686,21 +711,37 @@ It is also highly recommend to move the FPUs to the datum position
 before powering off. Doing this avoids to have the FPU in an ambiguous
 state which might easily lead to hardware damage.
 
+The FPU verification procedure requires that the alpha and beta arms
+of the FPU can be moved independently to the datum position.  To
+perform this, the \texttt{findDatum()} command has an additional
+keyword parameter. It indicates which arm should be moved to the zero
+position. The possible values of this keyword argument are
+\texttt{DASEL\_BOTH, DASEL\_ALPHA}, and \texttt{DASEL\_BETA}.
+\texttt{DASEL\_BOTH} is the default behaviour: Both alpha and beta arm
+are moved to the datum position. The value \texttt{DASEL\_ALPHA} moves
+only the alpha arm, and the value \texttt{DASEL\_BETA} will move only
+the beta arm. Using this option is compatible with CAN protocol
+version 1 firmware. However, moving alpha and beta arms seperately
+depends on a minor firmware update to protocol version 1.1 which
+enables this feature. Earlier versions of the firmware will always
+show the default behaviour, and datum both arms at once.
+
 \textbf{Important:} As an important limitation to the CAN protocol
 version 1, the \texttt{findDatum()} command mandatory requires that,
-before starting the datum search, \textbf{the beta arm is in a
-  counter-clockwise position relative to the datum switch}. If the the
-step counters have valid values, the beta arm needs to be in a
-positive range of valid step counts from the datum switch, or at count
-zero. If the beta arm has a position corresponding to the negative
-range (that is, clock-wise from the datum position), it needs to be
-manually moved first.  This applies also when the step counters in the
-meantime have been reset by a \texttt{resetFPU()} command or by
-powering off the FPU. You can check whether the step counters are
-valid by testing the boolean flag \verb+grid_state.FPU[0].was_zeroed+,
-as explained in section~\ref{sec:fpustate} on
-page~\pageref{sec:fpustate}. Also, the alpha arm must \textbf{not} be
-in a limit breach state, otherwise hardware damage can occur.
+before starting the datum search, \textbf{the beta arm is either at
+  the zero position, or in a counter-clockwise position relative to
+  the datum switch}. If the the step counters have valid values, the
+beta arm needs to be in a positive range of valid step counts from the
+datum switch, or at count zero. If the beta arm has a position
+corresponding to the negative range (that is, clock-wise from the
+datum position), it needs to be manually moved first.  This applies
+also when the step counters in the meantime have been reset by a
+\texttt{resetFPU()} command or by powering off the FPU. You can check
+whether the beta step counters are valid by testing the boolean flag
+\verb+grid_state.FPU[0].beta_was_zeroed+, as explained in
+section~\ref{sec:fpustate} on page~\pageref{sec:fpustate}. Also, the
+alpha arm must \textbf{not} be in a limit breach state, otherwise
+hardware damage is likely to occur.
 
 
 \subsection{Moving the FPU}
@@ -1215,7 +1256,221 @@ guided by geometric information and a high-level resolution strategy.
 
 \section{Reference}
 \subsection{Commands}
+\label{sec:commands}
+ 
 \subsection{Errors}
+\label{sec:errors}
+
+\subsubsection{Exception Hierarchy}
+
+The hierarchy of exceptions used by the Python module is as follows:
+
+\begin{verbatim}
+    FPUDriverException               // top-level class
+        MovementError                // error during movement operations
+            CollisionError           // collision detected
+            LimitBreachError         // alpha limit breach detected
+            AbortMotionError         // AbortMotion message was sent
+            StepTimingError          // internal FPU error
+        InvalidState                 // command does not match driver state
+        SystemFailure                // system ressource error
+        InvalidParameter             // parameters for command not valid
+            SetupError               // system set-up not allowed
+            InvalidWaveformException // waveform does not match specs
+        ConnectionFailure            // Ethernet / Socket connection was lost
+\end{verbatim}
+
+\subsubsection{Error codes}
+
+The following error symbols are used in the driver.  It is recommended
+to use only the symbols, not the actual enumeration values, which
+might change.
+
+
+\begin{verbatim}
+// everything worked
+DE_OK = 0,
+
+/*********************************/
+/* non-error return codes */
+
+// The user waited for a command completion using a time-out
+// value, and the state has not been reached yet. This is a
+// "user notification", not an error.
+DE_WAIT_TIMEOUT = 1,
+
+// operation not implemented for this protocol version - the
+// calling code might need to check and branch according to the
+// used protocol version
+DE_UNIMPLEMENTED = 2,
+
+
+/*********************************/
+/* Fatal system failure */
+
+// An initialization command ran out of memory, which prevents
+// successful driver start-up.
+DE_OUT_OF_MEMORY = 10,
+
+// Some resource from the OS is not available, which leads
+// to an unrecoverable situation.
+DE_RESOURCE_ERROR = 11,
+
+// A necessary assumption or check for correctness of the driver
+// was violated.
+DE_ASSERTION_FAILED = 12,
+
+
+/*********************************/
+/* state errors where requested operations do not match the
+   current system state */
+
+// A command was tried to send, or the driver was instructed to
+// connect, but the driver was not initialized properly.  That can
+// happen if the system goes out of memory, or if a logical error
+// affected the initialization.
+DE_DRIVER_NOT_INITIALIZED = 101,
+
+
+// Driver has already been correctly initialised, and another
+// initialisation was tried.
+DE_DRIVER_ALREADY_INITIALIZED = 102,
+
+
+// The user tried to send a high-level command while another
+// high-level command was still not finished and waited for.
+DE_STILL_BUSY = 103,
+
+// The user tried to start a movement command while at least one
+// FPU was in collided or aborted state - the command was rejected
+// because of that.
+DE_UNRESOLVED_COLLISION = 104,
+
+// An FPU has not been initialised, so it cannot be moved
+// accurately and safely.
+DE_FPU_NOT_INITIALIZED = 105,
+
+// Driver is already initialized.
+DE_DRIVER_ALREADY_CONNECTED = 106,
+
+// Driver is still connected.
+DE_DRIVER_STILL_CONNECTED = 107,
+
+// Waveform is not configured / not ready for movement.
+DE_WAVEFORM_NOT_READY = 108,
+
+// The addressed FPUs were not yet calibrated by a datum search.
+DE_FPUS_NOT_CALIBRATED = 109,
+
+// A motion command was issued but no FPUs are allowed to move.
+DE_NO_MOVABLE_FPUS = 110,
+
+// Command not allowed for present FPU state.
+DE_INVALID_FPU_STATE = 111,
+
+// The driver state does not allows the operation
+DE_INVALID_DRIVER_STATE = 112,
+
+// Some addressed FPUs are locked.
+DE_FPUS_LOCKED = 113,
+
+// A previous movement was aborted.
+DE_ABORTED_STATE = 114,
+
+/***************************************/
+/* setup errors */
+
+// Insufficient number of gateways for requested number of FPUs.
+DE_INSUFFICENT_NUM_GATEWAYS = 201,
+
+// Configuration parameters invalid, see log message.
+DE_INVALID_CONFIG = 202,
+
+/***************************************/
+/* invalid command parameters*/
+
+// An FPU id which was passed as a parameter is invalid
+// because it is larger than the maximum number of FPUs.
+DE_INVALID_FPU_ID = 301,
+
+// passed parameter value is invalid
+DE_INVALID_PAR_VALUE = 302,
+
+
+/***************************************/
+/* Connection failures */
+
+// The maximum retry count was exceeded for command.
+DE_MAX_RETRIES_EXCEEDED = 401,
+
+// A CAN command to an FPU surpassed the maximum waiting time for
+// a response.
+//
+// This can indicate either a connection problem, a failure of the
+// FPU controller, or a failure of the FPU hardware.
+DE_CAN_COMMAND_TIMEOUT_ERROR = 402,
+
+// A command was tried to send to the FPUs but this was not
+// possible because the driver was or became disconnected from a
+// gateway. During operation, this should only happen when the
+// socket connection breaks down for an extended time, as the
+// socket protocol will try hard to do re-sends for several
+// minutes.  Before this error happens, one will probably see
+// time-outs on every single FPU command to the corresponding
+// gateways as they all fail to respond.
+DE_NO_CONNECTION = 403,
+
+
+/***************************************/
+/* invalid waveforms */
+
+// General error in waveform definition, see text.
+//
+// Also: We tried to move FPUs but some addressed FPUs still have
+// invalid waveforms.
+DE_INVALID_WAVEFORM = 500,
+
+
+// waveform has to many steps
+DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS = 501,
+
+// Number of sections different for different FPUS - this isn't
+// allowed to avoid collisions.
+DE_INVALID_WAVEFORM_RAGGED = 502,
+
+// Step number in section is too high for current firmware.
+DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE = 503,
+
+// The change in step count per section is incorrect (e.g. too large)
+DE_INVALID_WAVEFORM_CHANGE = 504,
+
+// The tail of the waveform is incorrect.
+DE_INVALID_WAVEFORM_TAIL = 505,
+
+
+/***************************************/
+/***************************************/
+/* Errors which terminate movements  */
+
+/***************************************/
+/* Collision error */
+// A collision occured, and the operation was aborted.
+DE_NEW_COLLISION = 601,
+
+/***************************************/
+/* limit breach */
+// An alpha limit breach occured, and the operation was aborted.
+DE_NEW_LIMIT_BREACH = 602,
+
+// At least one FPU ran into a step timing error, which means the
+// FPU's motion controller was not able to compute the required
+// step frequency quick enough for the configured microstepping
+// level.
+
+DE_STEP_TIMING_ERROR = 603,
+\end{verbatim}
+
+
 \subsection{State Machine}
 
 \appendix
