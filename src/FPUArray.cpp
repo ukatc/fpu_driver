@@ -934,8 +934,6 @@ timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration
     // remove all commands in the pending set which have a timeout
     // value before or equal to the expiration time, adjust pending
     // count, and return the remaining minimum time.
-    printf("entering expire_pending, fpuid=%i, fpu.num_active_timeouts = %i\n",
-           fpu_id, fpu.num_active_timeouts);
     assert(fpu.num_active_timeouts >= 0);
 
     if (fpu.num_active_timeouts == 0)
@@ -970,8 +968,6 @@ timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration
             // it is an unsigned value which will wrap around
             // and is only compared against change.
             count_timeouts++;
-            printf("decrementing num_active_timeouts %i -> %i\n",
-                   fpu.num_active_timeouts, fpu.num_active_timeouts -1);
             fflush(stdout);
             fpu.num_active_timeouts--;
             // fix state if necessary
@@ -1006,10 +1002,6 @@ timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration
         assert( (new_min_val.tv_sec == TimeOutList::MAX_TIMESPEC.tv_sec)
                 && (new_min_val.tv_nsec == TimeOutList::MAX_TIMESPEC.tv_nsec));
     }
-    printf("expirePending() next timeout: %li/%li\n",
-           new_min_val.tv_sec, new_min_val.tv_nsec);
-
-    printf("exiting expire_pending, n_active = %i\n", fpu.num_active_timeouts);
     return new_min_val;
 }
 
