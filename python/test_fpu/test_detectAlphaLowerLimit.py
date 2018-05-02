@@ -47,38 +47,38 @@ print("issuing 1st executeMotion")
 gd.executeMotion(gs)
 print("positions:", list_positions(gs))
 
-# gd.repeatMotion(gs)
-# print("issuing 2nd executeMotion")
-# gd.executeMotion(gs)
-# print("positions:", list_positions(gs))
-# 
-# gd.repeatMotion(gs)
-# print("issuing 3rd executeMotion")
-# gd.executeMotion(gs)
-# print("positions:", list_positions(gs))
-# 
-# 
-# gd.reverseMotion(gs)
-# print("issuing 4th executeMotion")
-# gd.executeMotion(gs)
-# print("positions:", list_positions(gs))
-# 
-# gd.reverseMotion(gs)
-# print("issuing 5th executeMotion")
-# gd.executeMotion(gs)
-# print("positions:", list_positions(gs))
-# 
-# gd.reverseMotion(gs)
-# print("issuing 6th executeMotion")
-# gd.executeMotion(gs)
-# print("positions (should be back to origin):", list_positions(gs))
-# 
-# 
-# 
-# 
-# 
-# 
-#                        
+gd.repeatMotion(gs)
+print("issuing 2nd executeMotion")
+gd.executeMotion(gs)
+print("positions:", list_positions(gs))
+
+gd.repeatMotion(gs)
+print("issuing 3rd executeMotion")
+gd.executeMotion(gs)
+print("positions:", list_positions(gs))
+
+
+gd.reverseMotion(gs)
+print("issuing 4th executeMotion")
+gd.executeMotion(gs)
+print("positions:", list_positions(gs))
+
+gd.reverseMotion(gs)
+print("issuing 5th executeMotion")
+gd.executeMotion(gs)
+print("positions:", list_positions(gs))
+
+gd.reverseMotion(gs)
+print("issuing 6th executeMotion")
+gd.executeMotion(gs)
+print("positions (should be back to origin):", list_positions(gs))
+
+
+
+
+
+
+                       
 
 
 

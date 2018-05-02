@@ -58,7 +58,7 @@ git_version: force
 	echo '$(GIT_VERSION)' | cmp -s - $@ || echo '$(GIT_VERSION)' > $@
 
 tutorial:	doc/tutorial.tex
-	cd doc; pdflatex --shell-escape tutorial.tex
+	cd doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
 $(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS) 
 	$(CC) $(CXXFLAGS) -c -o $@ $< 

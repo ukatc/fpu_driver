@@ -168,6 +168,8 @@ when the internal state struct is used.
 ** TODO release 0.5.2
 *** TODO run short stress test of firmware with CAN command logging
 *** TODO revise tutorial
+**** TODO Document listing uninitialized angles
+**** TODO document separate datum options
 **** TODO expand tutorial with reference part 
 **** DONE apply spelling corrections to tutorial
 **** TODO Tidy up error codes, and list them in tutorial reference
@@ -175,11 +177,11 @@ when the internal state struct is used.
 **** TODO add runnable example scripts
 **** TODO review NaN description
 **** TODO Add example scripts 
-*** TODO Add separate initialised flags for alpha and beta
-*** TODO extend list_angles to list uninitialized angles or initialized bit, document that
-*** TODO Add alpha/beta selection parameter for datum method
+*** DONE Add separate initialised flags for alpha and beta
+*** DONE extend list_angles to list uninitialized angles or initialized bit, document that
+*** DONE Add alpha/beta selection parameter for datum method
 *** DONE clarify requirement for variable MAX_FPU
-*** TODO Add time-out for socket connect() call
+*** DONE Add time-out for socket connect() call
 ** TODO release 0.5.3
 *** TODO move all driver configuration parameters to const struct
 *** TODO Add log levels as discussed

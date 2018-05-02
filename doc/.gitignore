@@ -5,3 +5,6 @@
 *.out
 *.toc
 *.pdf
+*.idx
+*.ilg
+*.ind

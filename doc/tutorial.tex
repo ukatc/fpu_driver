@@ -8,6 +8,9 @@
 \usepackage{xcolor}
 \usepackage{cmbright}
 \usepackage[T1]{fontenc}
+\usepackage{makeidx}
+
+\makeindex
 
 \begin{document}
 
@@ -61,6 +64,8 @@ to understand the possible states of the hardware.
 
 
 \subsection{Required knowledge}
+\index{Python!introduction}
+\index{Python!further information}
 
 It is assumed that the reader has basic knowledge of Python, or,
 alternatively, a similar object-oriented language, like Java or C\#.
@@ -71,6 +76,8 @@ of the driver as well as this document use Python 2.7. Python 2 has
 some differences to Python 3. However this description will proceed in
 a way that differences to Python 3 are minimised.
 
+\index{git!further information}
+\index{git!getting or updating a repository}
 Also, in order to retrieve the current version of the library, the
 user needs to have a minimum knowledge of the git version control
 system. This is explained, for example, in
@@ -78,6 +85,7 @@ system. This is explained, for example, in
   a git repository}\footnote{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}''.
 
 \section{Setting up the library module}
+\index{driver!building}
 
 This section deals with retrieving, installing and configuring the
 driver module. On the MOONS workstation, it can be skipped because the
@@ -98,6 +106,7 @@ Alternatively, a fresh copy can be retrieved from the UKATC dalriada
 server. Doing this this requires a personal user account on that
 server. Assuming the account name is \texttt{carl}, this is done by
 the command
+\index{git!repository setup}
 
 \mint{bash}|git clone carl@dalriada/sw/sw4/jnix/MOONS/fpu_driver|
 
@@ -105,6 +114,7 @@ After entering the password for user \texttt{carl}, the
 source code is copied into the new folder \texttt{fpu\_driver}.
 
 \subsection{Refreshing the source code}
+\index{driver!building!update or change version}
 To refresh the source code, change the
 working directory to \texttt{fpu\_driver},
 and issue the command
@@ -113,6 +123,8 @@ and issue the command
 
 
 \subsection{Building specific revisions}
+\index{git!get specific version}
+\index{driver!building!specific version}
 In the default case, the library is build from
 the master branch of the git repository.
 The master branch contains the most current
@@ -133,7 +145,7 @@ switch back to the master branch, issue the command
 
 
 \subsection{Building the library module}
-
+\index{driver!building}
 To build the Python library module,
 change the working directory to \texttt{fpu\_driver},
 and issue the command \mint{bash}|make pyext|
@@ -156,7 +168,9 @@ version is already available.
 
 
 \subsection{Environment configuration}
-
+\index{driver!configuration}
+\index{setup!environment variables}
+\index{environment variables}
 For the Python module to work, the directory \texttt{/user/local/lib}
 needs to be added to the environment variable
 \texttt{LD\_LIBRARY\_PATH}.
@@ -174,11 +188,44 @@ user-specific home directory:
 \end{minted}
 
 
+\subsection{Hardware configuration and addressing}
+\index{addressing FPUs}
+\index{indexing FPUs}
+\index{FPU IDs!configuration}
+\index{CAN ID}
+\index{FPU!addressing}
+\index{FPU!hardware configuration}
+\index{networking!FPU addressing}
+Messages to an individual FPU are sent using a logical number, the FPU
+ID, which starts at 0 and goes up to a maximum value.
 
+The messages from the driver to FPUs are transported by two layers of
+hardware, resulting in a physical address with three elements: gateway
+number, bus number, and CAN ID.
+
+First, the messages are transmitted by an Ethernet socket connection
+to up to three EtherCAN gateways. To connect to each gateway, its IP
+address and port number are used. From the selected gateway, the
+messages are then forwarded to five CAN buses. Each of the latter is
+connected to up to 57 FPUs.
+
+To identify each FPU in a setup with many FPUs, they have to use a CAN
+ID which is unique on each bus. This ID is physically configured by
+manually toggling a DIP switch in the FPU's electronics board. The
+current driver uses a fixed continuous mapping (basically, array
+indexing) from the translation of FPU IDs to gateway number, bus
+number, and CAN ID.
+
+\emph{For addressing a single FPU, this simply means that its CAN ID
+  needs to be set to one, which means its DIP switch needs to be set
+  to the delivered configuration. That FPU then needs to be connected
+  to the first bus on the first gateway}.
 
 
 \subsection{Communication protocol versions}
-
+\index{protocol!see{CAN protocol}}
+\index{CAN protocol versions}
+\index{CAN protocol versions! version 1 capabilities}
 The FPU driver sends commands to the fibre positioner units, which use
 a specific communication protocol. This protocol needs to match the
 FPUs firmware and its capabilities. The current version of the driver
@@ -196,6 +243,7 @@ in section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 \textbf{Do not issue a \texttt{findDatum} command when the alpha arm
   is at the other side of the limit switch}.
 
+\index{safety!protecting hardware}
 Second, the \texttt{findDatum()} command mandatory requires that,
 before starting the datum search, \textbf{the beta arm is in a
   counter-clockwise position relative to the datum switch}. If the the
@@ -207,13 +255,33 @@ specific ``unsafe'' commands.  This applies also when the step
 counters have been invalidated in the meantime by a
 \texttt{resetFPU()} command or by powering off the FPU.
 
+\index{datum search!independent operation of alpha and beta arms}
+A third practical difference is that the the FPU verification system
+requires the capability to datum the alpha and beta arms separately.
+This is supported by driver versions equal or newer than 0.5.2 and a
+firmware that supports the CAN protocol version 1.1 or later. Earlier
+firmware versions will respond by moving both arms to the zero
+position.
+
 
 \section{A minimal example}
 \label{sec:minimalexample}
+\index{example script}\index{movements!example}
+\index{connect()!example}
+\index{driver!initialisation!example}
+\index{getGridState()!example}
+\index{gen\_wf()!example}
+\index{configMotion()!example}
+\index{executeMotion()!example}
+\index{findDatum()!example}
+\index{version information!retrieving!example}
 The following listing shows a minimal example of the
 driver usage, and explains the underlying concepts
 step by step.
 
+\index{waveforms!example}
+\index{driver!initialisation!example}
+\index{getGridState()!example}
 \begin{minted}[linenos]{python}
 
 from __future__ import print_function
@@ -266,6 +334,7 @@ print("ready")
 
 
 \subsection{Import statements}
+\index{import statements}
 
 The import statements in lines 1 -- 4 load the following modules and
 configurations:
@@ -291,6 +360,7 @@ configurations:
 \end{itemize}
 
 \subsection{Grid driver object}
+\index{driver!instantiation}
 
 In line 10, the used number of FPUs is set to one, and in line 11, the
 FPU grid driver is initialised with that value. The returned object,
@@ -298,7 +368,9 @@ which is referenced by the Python variable \texttt{gd}, is always
 required to access the FPUs.
 
 \subsection{Driver methods}
-
+\index{networking!see{also connect()}}
+\index{connect()}
+\index{driver!how to call methods}
 The driver object allows to invoke method calls (methods are also
 often called member functions) which control the FPU hardware. The
 method names always start with a dot after the name of the driver
@@ -321,7 +393,7 @@ terminates\footnote{However if required, you can use the statements
 
 
 \subsection{Grid state variable}
-
+\index{grid\_state!introduction}
 Almost all commands to the driver receive and return a snapshot of the
 current state of the used FPU (or, if there are several, of all
 FPUs). That snapshot is passed in a variable called
@@ -344,7 +416,8 @@ Technically, these names are simply Python variable names, which can
 be arbitrarily chosen by the user.
 
 \subsection{Moving the FPU around}
-
+\index{movements!example}
+\index{movements!overview}
 The example script then proceeds to use three methods to move
 the FPUs:
 
@@ -359,6 +432,7 @@ the FPUs:
   passed the limit switch), and the beta arm must be in the positive
   range.
 
+  \index{waveforms!configuring}
 \item[\texttt{configMotion()}] is a method which sends a table with movement
   operations, also called waveform table, to the FPU. In the listing,
   this is done in line 37. The movement table is stored in the
@@ -372,7 +446,9 @@ the FPUs:
 \end{description}
 
 \subsection{Utility functions}
-
+\index{list\_angles()!example}
+\index{list\_positions()!example}
+\index{gen\_wf()!example}
 The example also shows two utility functions for generating movement
 data, and displaying information about the FPU state:
 
@@ -392,7 +468,21 @@ data, and displaying information about the FPU state:
 \end{description}
 
 \subsection{Interactive inspection of the FPU state}
-
+\index{fpu\_state!interactive inspection}
+\index{fpu\_state|see{~\emph{also} FPU state}}
+\index{Python!running interactively}
+\index{driver!configuration!example}
+\index{collisions!indicator flags}
+\index{grid state!interactive inspection}
+\index{FPU!detailed state information}
+\index{FPU!state!inspecting details}
+\index{FPU!state!of grid|see{\emph{also} grid state}}
+\index{state|see{FPU state}}
+\index{position information!details}
+\index{position information!retrieval}
+\index{grid state!position|see{position information}}
+\index{grid state!datum flags}
+\index{datum search!flag inspection}
 \label{sec:fpustate}
 The grid state variable holds a large amount of detail information
 about the current state of FPUs. This is by design, because upper
@@ -486,7 +576,8 @@ the driver was started, and no collisions, limit switch breaches, or
 abortMotion commands have happened since.
 
 \subsubsection*{Capturing interactive output}
-
+\index{capturing output}
+\index{troubleshooting!capturing output}
 To investigate any difficulties or errors, it is sometimes helpful to
 capture the interactive output. A helpful tool for this is the Linux
 ``\texttt{script}'' command, which does exactly this, and is installed
@@ -496,6 +587,12 @@ on the MOONS workstation.  For further information, please consult the
 
 
 \subsection{FPU states}
+\index{state|see{FPU!FSM states}}
+\index{Finite State Machine|see{FPU!FSM states}}
+\index{FPU!states, how to query}
+\index{FPU!FSM states!overview}
+\index{FPU!FSM states!table}
+\index{FPU!FSM states|see{~\emph{also} fpu\_state}}
 The state of an FPU is summarised in a enumeration value, which is
 stored in the attribute \texttt{state}. For example, the state of FPU 0
 can be retrieved by
@@ -562,7 +659,7 @@ as a result of errors.  Table~\ref{tab:fpustates} on
 page~\pageref{tab:fpustates} lists the different states.
 
 \begin{figure}
-
+\index{FPU!states!allowed transitions}
   \includegraphics[width=1\textwidth]{FPU-state1.pdf}
   \caption{Allowed state transitions of a single FPU (CAN protocol
     version1), and the associated driver commands}
@@ -570,6 +667,7 @@ page~\pageref{tab:fpustates} lists the different states.
 \end{figure}
 
 
+\index{FPU!possible state transitions}
 Figure~\ref{fig:states} on page~\pageref{fig:states} shows, as a
 reference, the states of the FPU, and the possible state transitions
 and commands which are allowed in protocol version 1.
@@ -584,7 +682,11 @@ and which commands can be used to achieve them.
 
 
 \subsection{Checking the connection}
-
+\index{networking!check}
+\index{networking!example}
+\index{errors!connection}
+\index{connection,checking the}
+\index{troubleshooting!connection problems}
 At some points, it is of interest what the state of
 the connection to the CAN gateway and the FPUs is.
 This can be achieved by the following commands:
@@ -600,6 +702,7 @@ on the FPUs, but it cannot be refreshed any more until the connection
 is re-established using the \texttt{connect()} method of the driver
 object.
 
+\index{connection errors!example}
 Of course, it is possible that the connection between driver and
 EtherCAN gateway works, but that the FPU does not respond, for
 example, if the CAN bus connection wiring is broken. This can be
@@ -618,6 +721,7 @@ Errors both during making the socket connection, and when sending
 commands to the FPUs cause a \texttt{ConnectionFailure} exception to
 be thrown, like in this log file:
 
+\index{exceptions!example}
 \begin{minted}{python}
   $ python -i test_mockup/test_asyncMotion.py 
 connect: Connection refused
@@ -641,7 +745,9 @@ page~\pageref{sec:errors}.
 
 
 \subsection{Getting the current position}
-
+\index{position information!retrieving}
+\index{FPU!position!retrieving the}
+\index{FPU!position|see{position}}
 We already saw how to use the \texttt{pingFPUs()} method of the driver
 object. This method also automatically retrieves the current step
 counters of the FPU.  There are two utility functions which display
@@ -653,7 +759,7 @@ them: The command
 
 shows a list of tuples with the values of the alpha and beta step
 counters, and whether the counter has been initialised by a datum
-operation. The first element of the tuple corresponds to the alphga
+operation. The first element of the tuple corresponds to the alpha
 step counter, the second to the beta step counter, the third is a
 Boolean value which indicates whether the alpha counter was
 initialised, and the fourth indicates the beta counter
@@ -670,11 +776,12 @@ in python, it is passed like this:
 Often, it is useful to know the value scaled
 to an approximate angle. The scaled values
 are displayed by the command
-
+\index{list\_angles()!example}
 \begin{minted}{python}
   list_angles(grid_state)
 \end{minted}
 
+\index{list\_angles()!showing uninitialised angles}
 If one or both arms have not been initialised, by default a
 non-a-number (NaN) value is shown. Any floating point computation
 which involves a NaN value will result in another NaN value, so that
@@ -696,7 +803,10 @@ why \texttt{list\_angles()} returns a pair of NaN values.
 
 
 \subsection{Moving the FPU to the datum position}
-
+\index{calibration of arm positions|see{datum}}
+\index{FPU!datum}
+\index{commands!findDatum()!extended example}
+\index{datum search!command}
 Because the FPU's step counters need to be zeroed
 before any accurate positioning is possible, a
 sensible operation early after powering on
@@ -721,7 +831,7 @@ position. The possible values of this keyword argument are
 are moved to the datum position. The value \texttt{DASEL\_ALPHA} moves
 only the alpha arm, and the value \texttt{DASEL\_BETA} will move only
 the beta arm. Using this option is compatible with CAN protocol
-version 1 firmware. However, moving alpha and beta arms seperately
+version 1 firmware. However, moving alpha and beta arms separately
 depends on a minor firmware update to protocol version 1.1 which
 enables this feature. Earlier versions of the firmware will always
 show the default behaviour, and datum both arms at once.
@@ -737,7 +847,7 @@ corresponding to the negative range (that is, clock-wise from the
 datum position), it needs to be manually moved first.  This applies
 also when the step counters in the meantime have been reset by a
 \texttt{resetFPU()} command or by powering off the FPU. You can check
-whether the beta step counters are valid by testing the boolean flag
+whether the beta step counters are valid by testing the Boolean flag
 \verb+grid_state.FPU[0].beta_was_zeroed+, as explained in
 section~\ref{sec:fpustate} on page~\pageref{sec:fpustate}. Also, the
 alpha arm must \textbf{not} be in a limit breach state, otherwise
@@ -745,7 +855,8 @@ hardware damage is likely to occur.
 
 
 \subsection{Moving the FPU}
-
+\index{FPU!moving}
+\index{executeMotion()!extended example}
 To move the FPU in a precise and safe way, four steps are necessary:
 
 \begin{enumerate}
@@ -767,7 +878,9 @@ pass two values which define how much the alpha and beta arms should
 move.
 
 \subsubsection{Moving by an angle}
-
+\index{movements!moving by a certain angle}
+\index{waveforms!defining!using gen\_wf()}
+\index{waveforms!how to generate!example}
 \begin{minted}[linenos]{python}
 alpha_move = 45
 beta_move = 15
@@ -807,7 +920,8 @@ will be raised.
 
 
 \subsubsection{Manually defining a waveform table}
-
+\label{sec:waveform_rules}
+\index{waveforms!defining!manually}
 \paragraph{Waveform syntax}
 
 In the example above, the waveform was generated by the
@@ -836,6 +950,7 @@ that sounds a bit complex, let's dissect this
 structure into its components:
 
 \begin{itemize}
+  \index{waveforms!syntax}
   
 \item At the top layer, we have a Python dictionary.  The key of each
   dictionary entry, and integer, is the numerical ID of the FPU we are
@@ -865,6 +980,7 @@ counter-clockwise, and the beta arm should move 125 steps
 clockwise,'' and so on.
 
 \paragraph{Waveform validity rules}
+  \index{waveforms!validity rules}
 
 When you define waveforms, they have to conform to a number of rules
 and conditions to make sure that the FPU firmware can actually execute
@@ -912,13 +1028,26 @@ them. These rules are currently as follows:
 \end{enumerate}
 
 If the \texttt{configMotion} method is called with an invalid
-waveform, a \texttt{InvalidWaveformException} is thrown. The error
-message should be specific enough to determine the reason of the
-validation failure.
+waveform, a \texttt{InvalidWaveformException} is thrown, with a more
+specific error symbol and message. The error message should be
+specific enough to determine the reason of the validation failure.  A
+complete list of waveform error messages and codes is given in
+section~\ref{sec:errorcodes} on page~\pageref{sec:errorcodes} ff.
+
+
+\subsubsection{Errors during movements}
+Movement operations can result in errors caused by collisions, limit
+switch breaches, connection failures, or hardware failures. Such
+errors generate an exception of type \texttt{MovementError} during the
+movement. A detailed description of error handling is given in the
+sections~\ref{sec:errorhandling}. Section~\ref{sec:recovery} describes
+how to resolve collisions and limit switch breaches.
+
 
 
 \subsection{Aborting a movement}
-
+\index{movements!aborting}
+\index{abortMotion()!example}
 In the case that one wants to abort a \texttt{findDatum()} or a
 \texttt{executeMotion()} operation, one can press
 \verb+<Control-c>+. This terminates the movement in about 0.1
@@ -948,6 +1077,8 @@ current Python script when the method returns.\footnote{In some cases,
 
 
 \subsection{Reversing a movement}
+\index{movements!reversing}
+\index{FPU!return to start}
 Often, an FPU has been moved away from the datum position, and it is
 desired to move it back to the datum position.  This can be done using
 the following method:
@@ -968,7 +1099,7 @@ resting).
 
 
 \subsection{Repeating a movement}
-
+\index{movements!repeating}
 Sometimes, a waveform for moving in a certain direction has been
 configured, and this movement just needs to be repeated.  This is
 achieved by the following method:
@@ -977,9 +1108,61 @@ achieved by the following method:
 gd.repeatMotion(grid_state)
 \end{minted}
 
+\subsection{Additional example scripts}
+
+Section~\ref{sec:moreexamples} on page~\pageref{sec:moreexamples}
+describes a number of additional example scripts which can be used and
+modified to perform specific tests.
+
+    
+
+
+\section{Error handling}
+\label{sec:errorhandling}
+\index{exceptions}
+\index{errors!during movements!handling}
+\index{errors!resolving collisions}
+\index{errors!resolving limit switch breaches}
+\index{movements!handling of errors during}
+\index{collisions!of alpha arm|see{errors!handling of movement errors}}
+\index{limit switch breaches|see{errors!handling of movement errors}}
+\index{collisions|see{limit switch breaches}}
+When a driver methods encounters an error, such as an invalid command,
+a Python exception is raised. Exceptions are grouped into a hierarchy,
+and the exceptions generated by the driver are listed in the reference
+part in section~\ref{sec:ExceptionsReference} on
+page~\pageref{sec:ExceptionsReference}. Each exception is accompanied
+by a specific symbol and a string which in more detail describes the
+cause of the error.
+
+Exceptions fall roughly into the following categories:
+\index{errors!categories}
+
+\begin{itemize}
+  \item An invalid configuration 
+  \item Invalid parameters to a command, for example addressing an FPU
+    ID which is not existent or not configured.
+  \item Issuing a command which is invalid at the current state of
+    an FPU, or of the driver as a whole.
+  \item Errors which result from collisions, limit switch breaches,
+    or abortions of movements.
+  \item Rarely, errors which are caused by the depletion of memory
+    or other system resources.
+\end{itemize}
+
+The detailed explanation for each error code is replicated in
+section~\ref{sec:errorcodes} on page~\pageref{sec:errorcodes}.
+
+\index{exceptions!handling of}
+Exceptions can be handled programmatically to support automatic
+testing, and correct discovery of fault conditions, such as
+collisions. A full explanation on how to handle exceptions in Python can
+be found at \url{https://docs.python.org/2.7/tutorial/errors.html}.
 
 \section{Recovery from collisions and limit breaches}
 \label{sec:recovery}
+\index{recovery of movement errors}
+\index{movements!errors!recovery}
 
 Because the FPUs are controlled individually, and the CAN-level driver
 has absolutely no concept of their geometric configuration, it cannot
@@ -991,6 +1174,10 @@ software.
 The following section explains how this is achieved.
 
 \subsection{What happens when a collision or limit switch breach occurs}
+\index{collision!effect}
+\index{limit switch breach!effect}
+\index{collision!explanation}
+\index{limit switch breach!explanation}
 
 Situations in which the movement of the hardware is obstructed are
 either collisions between FPUs or limit switch breaches of the alpha
@@ -1015,7 +1202,7 @@ this command returns with the updated state information on the
 collision, and without further waiting for the movement to complete.
 When the driver call returns to the Python wrapper, the error is
 checked for and transformed into a Python exception of the class
-\texttt{FpuGridDriver.MovementError}. The subclasses
+\texttt{fpu\_driver.MovementError}. The sub-classes
 (\texttt{CollisionError}, \texttt{LimitBreachError},
 \texttt{AbortMotionError}, \texttt{StepTimingError}) allow to discern
 the cause of the error in \texttt{try \ldots except} clauses.  If the
@@ -1040,6 +1227,11 @@ In the general case, this can be a complex question. The
 information for making this decision.
 
 \subsection{Resolution of a beta arm collision}
+\label{sec:betacollisionresolution}.
+\index{errors!resolution of collisions}
+\index{collisions!resolution}
+\index{freeBetaCollision()!example}
+\index{enableBetaCollisionProtection()!example}
 
 In case of a collision of a beta arm, the driver provides two special
 member functions of the grid driver object for resolving this. The
@@ -1076,7 +1268,9 @@ waveforms become invalid, a new movement needs to be configured using
 new datum search is required at that point.
 
 \subsection{Resolution of an alpha limit switch breach}
-
+\index{limit switch breach!resolution}
+\index{errors!resolution of limit switch breaches}
+\index{limit switch breach|see{collision}}
 For firmware and CAN protocol  version 2, limit switch
 breaches can be handled in an analogous way as the
 beta arm collisions. For CAN protocol version 1,
@@ -1128,7 +1322,7 @@ the FPU needs to be reset and moved manually for a second time.
 
 
 \subsection{Limitations of CAN protocol version 1}
-
+\index{CAN protocol versions!protocol 1 limitations}
 The following are the main limitations and functional
 differences for protocol version 1:
 
@@ -1177,7 +1371,9 @@ differences for protocol version 1:
 \end{itemize}
 
 \section{Outline on management of multiple FPUs}
-
+\index{FPU!controlling multiple}
+\index{grid state!overall state}
+\index{multiple FPUs}
 This section attempts to give a broad overview on how a grid with 1000
 or more FPUs can be managed by higher levels of the instrument
 software.
@@ -1255,14 +1451,476 @@ guided by geometric information and a high-level resolution strategy.
 
 
 \section{Reference}
-\subsection{Commands}
+
+\subsection{Retrieving version information}
+\index{version information!retrieving!reference}
+\index{networking!CAN protocol!retrieving version}
+There are two attributes of the \texttt{FpuGridDriver} module
+which allow to retrieve version information:
+
+The standard attribute \texttt{FpuGridDriver.\_\_version\_\_} returns
+the git version label of the driver. The first letter is stripped, so
+that ``v0.9.3'' turns into ``0.9.3''. This version number is
+authoritative when testing whether a driver API or documentation is
+valid for the installed module.
+
+The attribute \texttt{FpuGridDriver.CAN\_PROTOCOL\_VERSION} displays
+the major version number of the CAN protocol against which the driver
+was compiled, it can be ``1'' or ``2''. This version number needs to
+match the version of the firmware which is running on the FPUs,
+otherwise the driver will not work. Protocol version 1 does not allow
+to retrieve the version of the firmware which is actually running on
+the FPUs. Therefore, the firmware version has to be tracked using
+other means.
+
+
+\subsection{Driver initialisation}
+\index{driver!initialisation!reference}
+The driver is initialised by calling the class constructor
+\texttt{FpuGridDriver.GridDriver()}, and assigning it to a Python
+variable. The constructor has one integer parameter, which is the
+number of FPUs which will be used. The maximum value for this number
+is defined at compile time in the driver, and is currently 1005.
+
+The numbering of FPUs and buses is currently fixed. Future
+versions will allow for arbitrary numbering.
+
+If the running OS is lacking system resources, for example if the
+memory is exhausted, initializing the driver might return either a
+Python MemoryError exception, or an
+\texttt{fpu\_driver.SystemFailure} exception. In the latter case,
+the detailed resource which is lacking will be indicated in the error
+message, and in the log output.
+
+
+
+
+
+\subsection{Commands and driver methods}
 \label{sec:commands}
- 
+
+
+\subsubsection{connect()}
+\index{connect()!reference}
+\index{networking!ip and port configuration}
+\index{errors!connection}
+The method \texttt{FpuGridDriver.connect()} establishes a connection
+to a list of EtherCAN gateways. The configuration of gateways ip
+address and port numbers can be passed by the keyword parameter
+\texttt{address\_list}. By default, this is using the IP
+\texttt{192.168.0.10} and the port number \texttt{4700}, which as of
+May 2018 matches the current gateway prototype setup.  For using the
+EtherCAN mock-up, the value
+\texttt{FpuGridDriver.TEST\_GATEWAY\_ADDRESS\_LIST} can be used.
+
+If the connection fails hard, the command will return a
+\texttt{ConnectionFailure} exception.  It is in some cases possible
+that the initial \texttt{connect()} command is successful, but the
+first command which accesses the FPU grid fails because setting up the
+connection has timed out. In this case, the failing command will
+return a \texttt{ConnectionFailure} exception.
+
+It is possible that different driver instances are initialised at the
+same time, which connect to different gateways, that is, each instance
+controls its own group of FPUs.
+
+
+\subsubsection{getGridState}
+\index{getGridState()!reference}
+The method \texttt{FpuGridDriver.getGridState()} creates and returns
+an instance of the grid state object. To update its content, it needs
+to be passed to the \texttt{pingFPUs()} command. After this, it will
+reflect the updated state and position of each FPU.
+
+In the following description, the state variable is named as
+\texttt{grid\_state}, it can however have any other name which is
+valid for a Python variable.
+
+Typically, the \texttt{grid\_state} variable is updated by each call
+to a driver method. In case of errors, it can however be useful to
+refresh its state, because the state of the FPU grid might still be
+changing after the failed command has returned.
+
+\subsubsection{pingFPUs()}
+\index{pingFPUs()!reference} \index{networking!checking the connection
+  using pingFPUs()} The method
+\texttt{FpuGridDriver.pingFPUs(grid\_state)} connects to each FPU and
+refreshes the content of the \texttt{grid\_state} variable. If an FPU
+cannot be reached within a time-out period, an
+\texttt{ConnectionFailure} exception is raised. The sub-type of the
+error can be \texttt{DE\_NO\_CONNECTION}, if the connection to an
+EtherCAN gateway was lost, or
+\texttt{DE\_CAN\_COMMAND\_TIMEOUT\_ERROR}, if one or more FPUs failed
+to respond. The total count of timed out responses is available in the
+field \texttt{grid\_state.count\_timeout} field.
+
+After the first \texttt{pingFPUs()} command, the positions of the FPUs
+can be printed using the functions \texttt{list\_positions()} and
+\texttt{list\_angles()}, which are described in
+section~\ref{sec:listpositions} and ~\ref{sec:listangles} on
+page~\pageref{sec:listpositions} ff.
+
+\subsubsection{findDatum}
+\index{commands!findDatum!reference}
+\index{findDatum!reference}
+\index{findDatum!Warnings}
+\index{FPU!zeroing}
+\index{datum!flags|see{grid state}}
+\index{collisions!during datum search}
+\index{errors!during movements |see{movement errors}}
+\index{movement errors!during datum search}
+  
+The method \texttt{FpuGridDriver.findDatum(grid\_state)} moves the
+arms of the FPU to the datum position.  By default, this always moves
+both arms. This mode is always used in instrument operation.
+
+Optionally, the keyword argument \texttt{arm\_selection} can be passed
+to move the arms individually like this:
+
+\begin{minted}{python}
+  gd.findDatum(grid_state, arm_selection=DASEL_ALPHA)
+\end{minted}
+
+If the value of this parameter is \texttt{DASEL\_BOTH}, it shows the
+default behaviour, if it is \texttt{DASEL\_ALPHA}, only the alpha arm
+is datumed, if it is \texttt{DASEL\_BETA}, only the beta arm is
+datumed. This feature requires the FPU firmware to support the CAN
+protocol version 1.1, otherwise, the command always moves both arms.
+
+\index{safety!datum operation}
+\textbf{WARNING: When the beta arm receives a datum command, it has to
+  be at the physical zero position, or in a positive (anti-clockwise)
+  position from that. Otherwise, it is likely that the hardware
+  becomes damaged.}
+
+\textbf{WARNING: When the alpha arm receives a datum command, it is
+  imperative that it is not in a physical limit breach position.}
+
+
+After a normal termination of the command, all FPUs will be in
+\texttt{AT\_DATUM} state. If one or both arms has not been
+initialised, the final state is \texttt{UNINITIALIZED}.
+
+If there is any collision, limit switch breach, or step timing error
+at firmware level, the movement of that FPU is stopped and the command
+returns an exception of type \texttt{FpuGridDriver.MovementError}. The
+sub-type of the exception indicates the cause of the error;
+section~\ref{sec:ExceptionsReference} on
+page~\pageref{sec:ExceptionsReference} lists the name of this
+sub-classes.
+
+The \texttt{findDatum()} command can be interrupted by the
+\texttt{<Control>-<C>} keyboard combination, which causes a
+\texttt{SIGINT} signal to be delivered to the Python process. A
+programmatic way to do the same is to send an \texttt{abortMotion()}
+command to the FPUs.  In both cases, FPUs which were moving will be in
+\texttt{ABORTED} state.
+
+
+
+
+\subsubsection{configMotion()}
+\index{commands!configMotion()!reference}
+\index{configMotion()!reference}
+
+The method \texttt{FpuGridDriver.configMotion(wavetable, grid\_state)}
+sends a dictionary of waveform tables to a set of FPUs. The dictionary
+keys are the IDs of the FPUs which are configured. The valid format
+for the input data is described in section~\ref{sec:waveform_rules} on
+page~\pageref{sec:waveform_rules}, and the function \texttt{gen\_wf()}
+can be used to generate a suitable waveform table. (The
+\texttt{gen\_wf()} function is described in section~\ref{sec:genwf} on
+page~\pageref{sec:genwf}.)
+
+In CAN protocol version 1, the command is normally only accepted if
+all addressed FPUs are in state \texttt{AT\_DATUM} or \texttt{RESTING}.
+This requires that each FPU was moved to the datum position before, using
+the \texttt{findDatum()} method.
+
+In a number of situations, it can be necessary to move the FPU even if
+it was not initialised before, for example when the beta arm is at a
+negative physical position, which prohibits the datum operation. To do
+this, the keyword argument \texttt{check\_protection=False} needs to be
+passed, which skips the state check.
+
+
+\index{waveforms!errors}
+If the passed waveform is not valid, an exception of type
+\texttt{InvalidWaveformException} is raised. In this case, the error
+symbol and text message provides a more detailed description of the
+failed check. 
+
+If an \texttt{fpuid} parameter in the keys of the waveform dictionary
+is not valid, an \texttt{InvalidParameter} exception is raised.
+
+\subsubsection{executeMotion()}
+\index{commands!executeMotion()!reference}
+\index{executeMotion()!reference}
+
+The method \texttt{FpuGridDriver.executeMotion(grid\_state)} starts
+the movement of all FPUs for which a valid wavetable was configured,
+and which are in either the state \texttt{READY\_FORWARD} or
+\texttt{READY\_BACKWARD}. The command blocks until this movement has
+completed, or until an error occurs. Depending on the individual FPU
+state, the movement will be forward or backward, where ``forward''
+means that increasing step numbers (positive differences)
+cause a anti-clockwise rotation.
+
+
+If no error occurs, the \texttt{grid\_state} parameter contains the
+final new positions of the FPUs.
+
+\index{collisions!types}
+\index{movement errors!types}
+\index{errors!during movements}
+If there is any collision, limit switch breach, or error at firmware
+level, the movement of that FPU is stopped and the command returns an
+exception of type \texttt{fpu\_driver.MovementError}. The sub-type of
+the exception indicates the cause of the error;
+section~\ref{sec:ExceptionsReference} on
+page~\pageref{sec:ExceptionsReference} lists the name of this
+sub-classes.
+
+If the \texttt{FpuGridDriver.abortMotion()} method is called, or if
+the key combination \texttt{<Ctrl>-<c>} is pressed (which generates an
+abortMotion message), all FPUs are stopped and the command returns.
+
+In the case of an error or interruption of the movement, the
+\texttt{grid\_state} parameter will be partially updated with the
+state of one FPU which was stopped, but might not contain the final
+positions and states of all FPUs.
+
+The command requires the FPUs to be in state \texttt{READY\_FORWARD}
+or \texttt{READY\_BACKWARD}, and on normal completion will leave FPUs
+in the state \texttt{RESTING}. In case of an error, the FPUs will be
+in state \texttt{ABORTED} or \texttt{OBSTACLE\_ERROR}.
+Section~\ref{sec:recovery} on page~\pageref{sec:recovery} explains how
+such a condition is resolved.
+
+
+
+\subsubsection{reverseMotion()}
+\index{commands!reverseMotion()!reference}
+\index{reverseMotion()!reference}
+\index{movements!reversing!reference}
+
+The method \texttt{FpuGridDriver.reverseMotion(fpu\_state)} requires
+that a valid waveform table is present and that FPUs are either in
+\texttt{READY\_FORWARD} or \texttt{RESTING} state
+(\texttt{READY\_BACKWARD} is accepted, too, but the command will have
+no effect). It configures the FPU so that on the next
+\texttt{executeMotion} command, the waveforms will be executed in
+reverse direction, and putting the FPUs into \texttt{READY\_BACKWARD}
+state.
+
+Note that this command is not available after a collision, movement
+error, or \texttt{abortMotion} message -- the assumption is that the
+calibration of the FPU is not more exact after such an event, and a
+new \texttt{findDatum} command is needed to restore the calibrated
+state.
+
+
+\subsubsection{repeatMotion()}
+\index{commands!repeatMotion!reference}
+\index{repeatMotion!reference}
+\index{movements!repeating!reference}
+
+The method \texttt{FpuGridDriver.repeatMotion(fpu\_state)} requires
+that a valid waveform table is present and that FPUs are either in
+\texttt{READY\_BACKWARD} or \texttt{RESTING} state
+(\texttt{READY\_FORWARD} is accepted, too, but the command will have
+no effect). It configures the FPU so that on the next
+\texttt{executeMotion} command, the waveforms will be executed in
+forward direction, and putting the FPUs into \texttt{READY\_FORWARD}
+state. 
+
+Note that this command is, as the preceding one, not available after a
+collision, movement error, or \texttt{abortMotion} message -- the
+assumption is that the calibration of the FPU is not more exact after
+such an event, and a new \texttt{findDatum} command is needed to
+restore the calibrated state.
+
+
+\subsubsection{abortMotion()}
+\index{commands!abortMotion()!reference}
+\index{abortMotion()!reference}
+\index{aborting movements!reference}
+\index{movements!aborting!reference}
+
+
+The method \texttt{FpuGridDriver.abortMotion(fpu\_state)} terminates
+any movement and and datum search operation, and puts any moving FPUs
+into \texttt{ABORTED} state. On an FPU which is not moving, it has no
+effect.
+
+Similar to other commands, the method is thread-safe, but it has a
+slightly different behaviour: If other driver methods are called while
+an operation is ongoing, they wait until the previous operation is
+completed. In turn, the \texttt{abortMotion()} method cancels all
+ongoing operations, waits until all FPUs have send a confirmation, and
+returns.
+
+The \texttt{abortMotion()} method is also automatically called if the
+key combination \verb+<Control>-<c>+ is called during a movement
+operation or a datum search.
+
+After an \texttt{abortMotion()} command, FPUs which are in the state
+\texttt{ABORTED} will not be able to move again before this state is
+resolved. In protocol version 1, this can only be done by resetting
+the FPUs, which also clears the step counter calibration and resets
+the counter to zero\footnote{In protocol version 2, there are
+  additional commands available which simplify handling this state}.
+
+
+\subsubsection{resetFPUs()}
+\index{resetFPUs()!reference}
+\index{FPU!resetting!reference}
+\index{clearing FPU state}
+
+\texttt{FpuGridDriver.resetFPUs(fpu\_state)} resets all FPUs to their
+power-on state. All step counters are reset to zero, the datum flag is
+cleared, and the FPU state is set to \texttt{UNINITIALIZED}. This
+command is useful to get out of specific error states. 
+
+\index{safety!after reset} \textbf{WARNING:} After a reset, an FPU can
+be arbitrarily moved if the flag \texttt{check\_protection=False} is
+passed to the \texttt{configMotion} method. However the operator needs
+to be very careful that further commands will not damage the FPU by
+assuming that the FPU is in a position which is safe to move in a
+certain direction. Especially, a datum search operation is not
+necessarily safe.
+
+
+\subsubsection{freeBetaCollision()}
+\index{commands!freeBetaCollision()!reference}
+\index{freeBetaCollision()!reference}
+\index{collision handling!reference}
+
+The command \texttt{FpuGridDriver.freeBetaCollision(fpu\_id,
+  direction, fpu\_state)} allows to conveniently resolve a collision
+of the beta arm without completely losing the step counter
+information. This is done by moving the FPU a small number of steps
+(about 10 steps) into a specified direction.
+
+The parameter \texttt{fpu\_id} identifies the FPU which shall be
+moved. The parameter \texttt{direction} can be one of
+\texttt{FpuGridDriver.REQD\_CLOCKWISE} or
+\texttt{FpuGridDriver.REQD\_ANTI\_CLOCKWISE}, and indicates the
+direction in which the FPU should be moved. The \texttt{grid\_state}
+variable is updated accordingly.
+
+After resolving the collision, the command
+\texttt{enableBetaCollisionProtection()} needs to be called, to return
+the FPU back into a movable state.  Also, the flags which indicate
+that the alpha and beta step counters have been zeroed are cleared,
+because the step counters cannot longer accurately reflect the
+position. Therefore, a new \texttt{findDatum()} operation needs to be
+performed, possibly after first moving the beta arm to a safe sector.
+
+
+
+\subsubsection{enableBetaCollisionProtection}
+\index{commands!enableBetaCollisionProtection()!reference}
+\index{enableBetaCollisionProtection()!reference}
+\index{collision handling!reference}
+
+The command \texttt{FpuGridDriver.enableBetaCollisionProtection(fpuid,
+  grid\_state)} resolves the collision state of one FPU by changing
+its state from \texttt{OBSTACLE\_ERROR} to \texttt{RESTING}.  This
+re-activates the collision protection, and allows to operate the FPU
+safely. If the collision has not been resolved successfully, another
+\texttt{CollisionError} exception is raised, and the FPU state is set
+again to \texttt{OBSTACLE\_ERROR}.
+
+
+\subsection{Utility functions}
+
+The following functions are not part of the driver object, but are
+implemented in the module \texttt{fpu\_commands}, which needs to be
+imported separately. They are implemented in pure Python. It is
+encouraged to inspect their implementation and modify a copy if a
+somewhat different functionality is desired.
+
+\subsubsection{list\_positions()}
+\label{sec:listpositions}
+\index{functions!list\_positions()} \index{list\_positions()!reference}
+The function \texttt{fpu\_commands.list\_positions(grid\_state)}
+returns the step counters of each FPU in a list.  Each element of the
+list consists in a tuple which has the following four elements:
+\texttt{alpha\_steps, beta\_steps, alpha\_initialized,
+  beta\_initialized}. \texttt{alpha\_steps} and \texttt{beta\_steps}
+are integer values which contain the step counters of the alpha and
+beta arm, and \texttt{alpha\_initialized} and
+\texttt{beta\_initialized} are each a Boolean value which indicates
+whether this arm was initialised by searching for the datum position.
+
+If the keyword argument \texttt{show\_zeroed} is passed with a value of
+\texttt{False}, the last two parameters are not shown.
+
+\subsubsection{list\_angles()}
+\label{sec:listangles}
+\index{functions!list\_angles()}
+\index{list\_angles()!reference}
+
+Similar to the preceding function, the function
+\texttt{fpu\_commands.list\_angles(grid\_state))} shows the
+approximate current angle of both arms, in units of degrees. The
+angles are computed by multiplying the step counters with the correct
+gear ratio. If the step counters have not been initialised, the
+symbolic floating point value NaN (not-a-number) is returned.  If the
+keyword argument \texttt{show\_uninitialized} is passed with a value
+of \texttt{False}, instead of NaN values the values derived from the
+current counter positions are shown. In this case, the angles may or
+may not correspond to the current arm position.
+
+\subsubsection{gen\_wf()}
+\label{sec:genwf}
+
+\index{functions!gen\_wf()}
+\index{gen\_wf()!reference}
+\index{waveform generation!reference}
+\index{waveforms!how to generate!reference}
+
+The function \texttt{fpu\_commands.gen\_wf(delta\_alpha,
+  delta\_beta)} generates a valid waveform which moves the alpha arm
+by an angle of \texttt{delta\_alpha} and the beta arm by
+\texttt{delta\_beta}. A positive value means a rotation in the
+counter-clockwise direction.  One or both parameters can be set to
+zero. The function makes sure that the rules described in
+section~\ref{sec:waveform_rules} on page~\pageref{sec:waveform_rules}
+are followed.
+
+The return value of the function is a normal Python data structure
+which can be assigned to a Python variable, and examined like other
+Python objects (for example, the \texttt{``type()'')} builtin function
+can be used to examine the data structure).
+
+The function has the optional keyword parameter \texttt{mode}, which
+can be one of \texttt{"fast"}, \texttt{"slow"}, or \texttt{"slowpar"}.
+Mode ``fast'' is the default mode, which uses a high acceleration and
+moves the arms in parallel. Mode ``slow'' moves one arm after the
+other, and uses less acceleration. Mode ``slowpar'' also uses less
+acceleration, but moves the arms in parallel.
+
+Using the ``slow'' mode can be useful if spurious triggers of the
+alpha switch occur, for example caused by vibration.
+
+If one of the parameters is a NaN value, an \texttt{assertionError}
+exception is raised.
+
+
 \subsection{Errors}
 \label{sec:errors}
 
 \subsubsection{Exception Hierarchy}
-
+\label{sec:ExceptionsReference}
+\index{exceptions!hierarchy}
+\index{collisions!types}
+\index{movement errors!see{~\emph{also} movements}}
+\index{movement errors!types}
+\index{errors!during movements}
+\index{errors!during setup}
+\index{errors!diagnosis of invalid parameters}
 The hierarchy of exceptions used by the Python module is as follows:
 
 \begin{verbatim}
@@ -1281,6 +1939,10 @@ The hierarchy of exceptions used by the Python module is as follows:
 \end{verbatim}
 
 \subsubsection{Error codes}
+\label{sec:errorcodes}
+\index{errors!detailed error codes}
+\index{error codes}
+\index{errors!during setup}
 
 The following error symbols are used in the driver.  It is recommended
 to use only the symbols, not the actual enumeration values, which
@@ -1470,14 +2132,74 @@ DE_NEW_LIMIT_BREACH = 602,
 DE_STEP_TIMING_ERROR = 603,
 \end{verbatim}
 
+\section{Changelog}
 
-\subsection{State Machine}
+The following list contains a chronological list of
+all changes which alter either behaviour of the
+driver, or require adaptions in scripts which
+use the corresponding commands.
+
+\subsection*{Changes in version 0.5.2}
+\begin{itemize}
+\item the \texttt{findDatum()} method has an additional keyword
+  argument which allows to select only the alpha or only the beta arm
+  for the datum operation. Using this feature requires firmware for
+  CAN protocol version 1.1
+\item The \texttt{list\_positions()} function will now, by default,
+  show not only a tuple containing the step counters for each FPU, but
+  additionally also two Boolean values which indicate whether each of
+  alpha and beta arm have performed a valid datum search.
+\item Several small errors in the CalibrationPositioning test script
+  have been fixed.
+\item The \texttt{connect()} method will now cause a time-out and
+  return of a ConnectionFailure if establishing the connection takes
+  longer than 20 seconds.
+\item The \texttt{list\_angles()} function has now an option which
+  causes it to display angles for uninitialised step counters.
+\item The numerical error codes have been changed.
+\item The EtherCAN simulator has an option to simulate protocol version 1.1
+\end{itemize}
 
 \appendix
 
+\section{Additional examples}
+\label{sec:moreexamples}
+
+The \texttt{python} directory in the driver package contains
+two sub-directories with further examples and small test scripts,
+\texttt{python/test\_mock} and \texttt{python/test\_fpu}. The scripts in
+the former are written to send commands to the mock EtherCAN
+gateway, and the scripts in the latter send commands
+to physical FPUs. They can be modified and adapted
+as needed. Here is an overview what each script does:
+
+\begin{description}
+\item[test\_pingFPU.py] issues a pingFPU command and reports the positions
+\item[test\_getPositions.py] retrieves and lists the step counters of the FPUs
+\item[test\_configMotionA.py] configures a movement by defining a wavetable as a Python literal
+\item[test\_executeMotionA.py] configures and executes a movement
+\item[test\_findDatum.py] performs a datum search
+\item[test\_findDatumAlpha.py] performs a datum search only for the alpha arm (CAN protocol version 1.1 firmware required)
+\item[test\_findDatumBeta.py] performs a datum search only for the beta arm (CAN protocol version 1.1 firmware required)
+\item[test\_findrepeatMotion.py] uses the repeatMotion command to perform a movement repeatedly
+\item[test\_warnCollisionAlpha.py] generates a alpha limit breach message
+\item[test\_warnCollisionBeta.py] generates a beta collision message
+\item[test\_detectAlphaLowerLimit.py] drives the FPU into the limit switch by issuing repeated negative movement commands.
+\item[test\_detectAlphaUpperLimit.py] drives the FPU into the limit switch by issuing repeated positive movement commands.
+\item[test\_detectBetaCollision.py] provokes a beta arm collision
+\item[test\_warnStepTimingError.py] generates a step timing error
+  in the mock-up EtherCAN gateway by setting the uStepLevel to a high
+  value  
+\item[test\_abortMotion.py]  configures a movement which can be aborted
+  using the \verb+<Ctrl>-<c>+ key combination.
+\end{description}
+
 \section{Dependency requirements and installation}
 \label{sec:installationfromscratch}
-
+\index{driver!building}
+\index{driver!building requirements and dependencies}
+\index{boost libraries!retrieving}
+\index{git!installation}
 
 \subsection{Prerequisites}
 
@@ -1510,9 +2232,9 @@ Note that Python might need to be called with the command name
 \texttt{python2} on newer systems.
 
 \subsection{Installation of FPU driver module}
-
+\index{driver!installing}
 \subsubsection{Installing boost libraries}
-
+\index{boost libraries!installing}
 Recent Boost libraries are required to build the Python module, which
 is needed in the verification system (but not in the final ICS
 software).
@@ -1580,7 +2302,7 @@ Boost libraries require re-compiling when system upgrades are
 performed.
 
 \subsubsection{Installing the python-gevent module}
-
+\index{gevent module}
 The Python mock-up gateway uses the gevent
 library which is used to serve parallel requests
 using asynchronous code. In difference to
@@ -1607,7 +2329,7 @@ On Ubuntu or Debian, install it as follows:
 
 
 \subsubsection{Building the C++ driver library}
-
+\index{driver!building!commands}
 The FPU driver is a static library which becomes included in the
 Python module.  Build the FPU driver library as follows:
 
@@ -1633,13 +2355,12 @@ In the same subdirectory, there are some test
 scripts which can be used to test the module.
 
 \subsubsection{Generating the documentation}
+\index{documentation!generating}
 
-An up-to-date version of this document for the latest driver will be
-provided in the Livelink system. The documentation source is managed
-along with the driver sources.  To generate the documentation for a
-specific earlier version of the driver, a \LaTeX{} distribution
-including the \texttt{minted} package and the Python pygments software
-needs to be installed.
+The documentation source is managed along with the driver sources.  To
+generate the documentation for a specific earlier version of the
+driver, a \LaTeX{} distribution including the \texttt{minted} package
+and the Python pygments software needs to be installed.
 
 From the folder \texttt{fpu\_driver}, run the
 command
@@ -1655,7 +2376,7 @@ name \texttt{doc/tutorial.pdf}.
 
 
 \section{Running the test gateway simulator} 
-
+\index{EtherCAN simulator}
 \subsection{Running the gateway simulator normally}
 In the sub-directory /testing, the package contains a mock-up test
 gateway which responds to messages as specified by the hardware
@@ -1676,7 +2397,7 @@ protocol specification faithfully.
 \subsection{Running the test gateway with debug output}
 
 In normal operation, the test gateway shows for each FPU the main
-commands it receives. In some situations, such as wenn debugging the
+commands it receives. In some situations, such as when debugging the
 CAN message encoding, it might be of interest which binary messages
 are actually send and responded. To run the mock-up gateway in this
 mode, set the environment variable \texttt{DEBUG} to the value ``1''
@@ -1703,5 +2424,7 @@ but this usually makes little difference. Keep in mind, however, that
 extra simulated FPUs respond to broadcast commands, which is reported
 by the driver.
 
+\index{aborting movements|see{abortMotion}}
+\printindex
 
 \end{document}
