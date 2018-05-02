@@ -166,17 +166,16 @@ when the internal state struct is used.
 ** DONE Add & test TCP options for socket connection time-outs.
 ** DONE Fix detection & reporting of CAN command timeouts
 ** TODO release 0.5.2
-*** TODO run short stress test of firmware with CAN command logging
-*** TODO revise tutorial
-**** TODO Document listing uninitialized angles
-**** TODO document separate datum options
-**** TODO expand tutorial with reference part 
+*** DONE revise tutorial
+**** DONE Document listing uninitialized angles
+**** DONE document separate datum options
+**** DONE expand tutorial with reference part 
 **** DONE apply spelling corrections to tutorial
-**** TODO Tidy up error codes, and list them in tutorial reference
-**** TODO List exception hierarchy in tutorial
-**** TODO add runnable example scripts
-**** TODO review NaN description
-**** TODO Add example scripts 
+**** DONE Tidy up error codes, and list them in tutorial reference
+**** DONE List exception hierarchy in tutorial
+**** DONE add runnable example scripts
+**** DONE review NaN description
+**** DONE Add example scripts 
 *** DONE Add separate initialised flags for alpha and beta
 *** DONE extend list_angles to list uninitialized angles or initialized bit, document that
 *** DONE Add alpha/beta selection parameter for datum method
@@ -188,6 +187,7 @@ when the internal state struct is used.
 *** TODO add separate reporting/logging of results
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList
+*** TODO run short stress test of firmware with CAN command logging
 *** TODO Refactor duplicate code in command header encoding
 *** TODO split SBuffer in independent read buffer and write buffer ?   
 * TODO Integrate path analysis script into MOONS shared library
