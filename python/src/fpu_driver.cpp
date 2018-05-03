@@ -681,7 +681,7 @@ class WrapGridDriver : public GridDriver
 {
 public:
 
-    WrapGridDriver(int nfpus) : GridDriver(nfpus)
+    WrapGridDriver(const GridDriverConfig config) : GridDriver(config)
     {
 
         E_DriverErrCode ecode = initializeDriver();
@@ -1023,6 +1023,17 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DS_ASSERTION_FAILED", DS_ASSERTION_FAILED)
     .export_values();
 
+
+    enum_<E_LogLevel>("E_LogLevel")
+    .value("LOG_ERROR",               LOG_ERROR)
+    .value("LOG_INFO",                LOG_INFO)  
+    .value("LOG_GRIDSTATE",           LOG_GRIDSTATE)
+    .value("LOG_VERBOSE",             LOG_VERBOSE)
+    .value("LOG_DEBUG",               LOG_DEBUG)
+    .value("LOG_TRACE_CAN_MESSAGES",  LOG_TRACE_CAN_MESSAGES)
+    .export_values();
+
+
     /* The following codes are used in the last_status flag.  These
        values depend on the firmware protocol. It is legitimate to use
        them for engineering and troubleshooting but thy should *not*
@@ -1227,7 +1238,20 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readwrite("ip", &WrapGatewayAddress::ip)
     .def_readwrite("port", &WrapGatewayAddress::port);
 
-    class_<WrapGridDriver, boost::noncopyable>("GridDriver", init<int>())
+
+    class_<GridDriverConfig>("GridDriverConfig", init<>())
+    .def_readwrite("num_fpus", &GridDriverConfig::num_fpus)
+    .def_readwrite("logLevel", &GridDriverConfig::logLevel)
+    .def_readwrite("SocketTimeOutSeconds", &GridDriverConfig::SocketTimeOutSeconds)
+    .def_readwrite("TCP_IdleSeconds", &GridDriverConfig::TCP_IdleSeconds)
+    .def_readwrite("TCP_KeepaliveIntervalSeconds", &GridDriverConfig::TCP_KeepaliveIntervalSeconds)
+    .def_readwrite("TCP_KeepaliveIntervalSeconds", &GridDriverConfig::TCP_KeepaliveIntervalSeconds)
+    .def_readwrite("fd_controllog", &GridDriverConfig::fd_controllog)
+    .def_readwrite("fd_txlog", &GridDriverConfig::fd_txlog)
+    .def_readwrite("fd_rxlog", &GridDriverConfig::fd_rxlog);
+
+    
+    class_<WrapGridDriver, boost::noncopyable>("GridDriver", init<GridDriverConfig>())
     .def("getNumFPUs", &WrapGridDriver::getNumFPUs)
     .def("connect", &WrapGridDriver::connectGateways)
     .def("disconnect", &WrapGridDriver::disconnect)

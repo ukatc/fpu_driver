@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import os
 import time
 import signal
 
@@ -60,8 +61,26 @@ class SignalHandler(object):
         return True
 
 class GridDriver:
-    def __init__(self, nfpus=DEFAULT_NUM_FPUS):
-        self._gd = fpu_driver.GridDriver(nfpus)
+    def __init__(self, nfpus=DEFAULT_NUM_FPUS,
+                 SocketTimeOutSeconds=20.0,
+                 control_logfile="_{timestamp}-fpu_control.log",
+                 tx_logfile = "_{timestamp}-fpu_tx.log",
+                 rx_logfile = "_{timestamp}-fpu_rx.log",
+                 timestamp=None):
+        
+        config = fpu_driver.GridDriverConfig()
+        config.num_dpus = nfpus
+        config.SocketTimeOutSeconds = SocketTimeOutSeconds
+        
+        flags = os.O_APPEND | os.O_CREAT
+        if timestamp==None:
+            timestamp= time.strftime("%Y-%m-%d_%H:%m:%S", time.localtime())
+            
+        config.fd_controllog = os.open(control_logfile.format(timestamp=timestamp), flags)
+        config.fd_txlog = os.open(tx_logfile.format(timestamp=timestamp), flags)
+        config.fd_rxlog = os.open(rx_logfile.format(timestamp=timestamp), flags)
+        
+        self._gd = fpu_driver.GridDriver(config)
 
     def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST):
         return self._gd.connect(address_list)
