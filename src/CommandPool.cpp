@@ -53,7 +53,7 @@ namespace canlayer
 E_DriverErrCode CommandPool::initialize()
 {
 
-    assert(num_fpus > 0);
+    assert(config.num_fpus > 0);
     pthread_mutex_lock(&pool_mutex);
     bool allocation_error = false;
     try
@@ -64,8 +64,8 @@ E_DriverErrCode CommandPool::initialize()
         {
             int capacity=0;
             const int cap_broadcast = 10;
-            const int cap_individual = num_fpus * 10;
-            const int cap_wform = num_fpus * MAX_SUB_COMMANDS;
+            const int cap_individual = config.num_fpus * 10;
+            const int cap_wform = config.num_fpus * MAX_SUB_COMMANDS;
 
 //            printf("CommandPool::initialize(): cap_individual = %i\n", cap_individual);
             switch (i)
@@ -237,7 +237,7 @@ E_DriverErrCode CommandPool::initialize()
 E_DriverErrCode CommandPool::deInitialize()
 {
 
-    assert(num_fpus > 0);
+    assert(config.num_fpus > 0);
     bool allocation_error = false;
     try
     {

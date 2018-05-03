@@ -27,7 +27,7 @@
 #include <pthread.h>
 
 #include "../DriverState.h"
-
+#include "../GridDriverConfig.h"
 
 #include "E_CAN_COMMAND.h"
 #include "I_CAN_Command.h"
@@ -44,9 +44,9 @@ class CommandPool
 {
 public:
 
-    CommandPool(int nfpus)
+    CommandPool(const GridDriverConfig config_vals):
+        config(config_vals)
     {
-        num_fpus = nfpus;
     };
 
     ~CommandPool() {};
@@ -111,7 +111,7 @@ public:
 private:
     typedef std::vector<unique_ptr<I_CAN_Command>> t_cmdvec;
 
-    int num_fpus;
+    const GridDriverConfig config;
     t_cmdvec pool[NUM_CAN_COMMANDS+1]; // numbers are one-based
     pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t cond_pool_add = PTHREAD_COND_INITIALIZER;

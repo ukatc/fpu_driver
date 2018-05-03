@@ -112,7 +112,7 @@ E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_addres
 
     // Make sure that the passed number of gateways can support the
     // configured number of FPUs.
-    if (ngateways < (num_fpus + MAX_FPUS_PER_GATEWAY-1) / MAX_FPUS_PER_GATEWAY)
+    if (ngateways < (config.num_fpus + MAX_FPUS_PER_GATEWAY-1) / MAX_FPUS_PER_GATEWAY)
     {
         return DE_INSUFFICENT_NUM_GATEWAYS;
     }
@@ -186,7 +186,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
 
     // make sure no FPU is moving or finding datum
     bool resetok=true;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         // we exclude moving FPUs snf FPUs which are
@@ -208,7 +208,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
 
 
     unique_ptr<ResetFPUCommand> can_command;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         bool broadcast = false;
         can_command = gateway.provideInstance<ResetFPUCommand>();
@@ -217,7 +217,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         gateway.sendCommand(i, cmd);
     }
 
-    int cnt_pending = num_fpus;
+    int cnt_pending = config.num_fpus;
 
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
@@ -278,7 +278,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     }
 
     // check no FPUs have ongoing collisions
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if (fpu_status == FPST_OBSTACLE_ERROR)
@@ -292,7 +292,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     }
 
     // check that beta arms are in allowed half-plane
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         const int BETA_DATUM_LIMIT = -5 * STEPS_PER_DEGREE_BETA;
         int beta_steps = grid_state.FPU_state[i].beta_steps;
@@ -307,7 +307,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 
 //    int num_moving = 0;
     unique_ptr<FindDatumCommand> can_command;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         if ( (fpu_state.state != FPST_UNINITIALIZED)
@@ -374,7 +374,7 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state fpu = grid_state.FPU_state[i];
         E_FPU_STATE fpu_status = fpu.state;
@@ -440,7 +440,7 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
     for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
     {
         const int fpu_id = waveforms[fpu_index].fpu_id;
-        if ((fpu_id >= num_fpus) || (fpu_id < 0))
+        if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
         {
             // the FPU id is out of range
             printf("FPU ID is out of range\n");
@@ -575,7 +575,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     {
         // check no FPUs have ongoing collisions
         // and has been initialized
-        for (int i=0; i < num_fpus; i++)
+        for (int i=0; i < config.num_fpus; i++)
         {
             E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
             if (fpu_status == FPST_OBSTACLE_ERROR)
@@ -637,7 +637,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 usleep(ConfigureMotionCommand::CHAT_PAUSE_TIME_USEC);
             }
             int fpu_id = waveforms[fpu_index].fpu_id;
-            if ((fpu_id >= num_fpus) || (fpu_id < 0))
+            if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
             {
                 // the FPU id is out of range
                 return DE_INVALID_FPU_ID;
@@ -740,7 +740,7 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
     }
 
     // check no FPUs have ongoing collisions
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
 
@@ -759,7 +759,7 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
        This check intends to make sure that even in protocol version 1,
        waveforms are not used when they have been involved
        in collision or abort. */
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if (((fpu_status == FPST_READY_FORWARD)
@@ -868,7 +868,7 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
     }
 
 
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
 
         const t_fpu_state& fpu = grid_state.FPU_state[i];
@@ -933,7 +933,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
 
 
     unique_ptr<GetStepsAlphaCommand> can_command1;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         // we exclude locked FPUs
         if (! gateway.isLocked(i) )
@@ -955,7 +955,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
     // We do not expect the locked FPUs to respond.
     // FIXME: This needs to be documented and checked
     // with the firmware protocol.
-    int num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
+    int num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED];
 
     // fpus are now responding in parallel.
     //
@@ -988,7 +988,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
     }
 
     unique_ptr<GetStepsBetaCommand> can_command2;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         // we exclude locked FPUs
         if (! gateway.isLocked(i) )
@@ -1006,7 +1006,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         }
     }
 
-    num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
+    num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED];
 
     // fpus are now responding in parallel.
     //
@@ -1067,7 +1067,7 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
 
 
     unique_ptr<GetErrorAlphaCommand> can_command1;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         // we exclude locked FPUs
         if (! gateway.isLocked(i) )
@@ -1089,7 +1089,7 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
     // We do not expect the locked FPUs to respond.
     // FIXME: This needs to be documented and checked
     // with the firmware protocol.
-    int num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
+    int num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED];
 
     // fpus are now responding in parallel.
     //
@@ -1122,7 +1122,7 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
     }
 
     unique_ptr<GetErrorBetaCommand> can_command2;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         // we exclude locked FPUs
         if (! gateway.isLocked(i) )
@@ -1140,7 +1140,7 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
         }
     }
 
-    num_pending = num_fpus - grid_state.Counts[FPST_LOCKED];
+    num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED];
 
     // fpus are now responding in parallel.
     //
@@ -1199,7 +1199,7 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
     }
 
     // check no FPUs have ongoing collisions or are moving
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
@@ -1209,7 +1209,7 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         }
     }
 
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if (fpu_status == FPST_MOVING)
@@ -1223,7 +1223,7 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
        waveforms are not used when they have been involved
        in collision or abort. */
     int count_movable = 0;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state fpu = grid_state.FPU_state[i];
         if (((fpu.state == FPST_READY_FORWARD)
@@ -1244,7 +1244,7 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
 
     int cnt_pending = 0;
     unique_ptr<RepeatMotionCommand> can_command;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         // we exclude moving FPUs, but include FPUs which are
@@ -1321,7 +1321,7 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
     }
 
     // check no FPUs have ongoing collisions or are moving
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_ABORTED)
@@ -1331,7 +1331,7 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         }
     }
 
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if (fpu_status == FPST_MOVING)
@@ -1345,7 +1345,7 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
        waveforms are not used when they have been involved
        in collision or abort. */
     int count_movable = 0;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state fpu = grid_state.FPU_state[i];
         if (((fpu.state == FPST_READY_FORWARD)
@@ -1366,7 +1366,7 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
 
     int cnt_pending = 0;
     unique_ptr<ReverseMotionCommand> can_command;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         if (((fpu_state.state == FPST_READY_FORWARD)
@@ -1571,7 +1571,7 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
 
     int cnt_pending = 0;
     unique_ptr<PingFPUCommand> can_command;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         // we exclude moving FPUs, but include FPUs which are
@@ -1640,7 +1640,7 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
 
     // make sure no FPU is moving or finding datum
     bool recoveryok=true;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         // we exclude moving FPUs and FPUs which are
@@ -1662,7 +1662,7 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
 
 
     unique_ptr<EnableBetaCollisionProtectionCommand> can_command;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         bool broadcast = false;
         can_command = gateway.provideInstance<EnableBetaCollisionProtectionCommand>();
@@ -1671,7 +1671,7 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
         gateway.sendCommand(i, cmd);
     }
 
-    int cnt_pending = num_fpus;
+    int cnt_pending = config.num_fpus;
 
     while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
     {
@@ -1712,7 +1712,7 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
         return DE_NO_CONNECTION;
     }
 
-    if ((fpu_id >= num_fpus) || (fpu_id < 0))
+    if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
     {
         // the FPU id is out of range
         return DE_INVALID_FPU_ID;
@@ -1721,7 +1721,7 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
 
     // make sure no FPU is moving or finding datum
     bool recoveryok=true;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         // we exclude moving FPUs and FPUs which are
@@ -1817,7 +1817,7 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
     }
 
 
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         // we exclude moving FPUs and FPUs which are
@@ -1832,7 +1832,7 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
 
     int cnt_pending = 0;
     unique_ptr<SetUStepLevelCommand> can_command;
-    for (int i=0; i < num_fpus; i++)
+    for (int i=0; i < config.num_fpus; i++)
     {
         // We use a non-broadcast instance. The advantage of
         // this is that the CAN protocol is able to reliably

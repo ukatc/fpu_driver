@@ -31,6 +31,7 @@
 
 #include "CAN_Constants.h"
 #include "../DriverConstants.h"
+#include "../GridDriverConfig.h"
 #include "TimeOutList.h"
 #include "I_CAN_Command.h"
 
@@ -72,7 +73,7 @@ public:
     typedef uint16_t t_address_map[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][1 + FPUS_PER_BUS];
 
 
-    FPUArray(int nfpus);
+    FPUArray(const GridDriverConfig config_vals);
 
     ~FPUArray();
 
@@ -191,7 +192,7 @@ private:
     bool inTargetState(E_GridState sum_state,
                        E_WaitTarget tstate) const;
 
-    int num_fpus;
+    const GridDriverConfig config;
 
     mutable std::atomic<int> num_trace_clients;
 

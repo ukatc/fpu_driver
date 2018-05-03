@@ -27,6 +27,7 @@
 #include <atomic>
 
 #include "../E_GridState.h"
+#include "../GridDriverConfig.h"
 #include "../T_GatewayAddress.h"
 
 #include "SBuffer.h"          // coding and decoding message frames
@@ -67,7 +68,7 @@ public:
                                     };
 
 
-    GatewayDriver(int num_fpus);
+    GatewayDriver(const GridDriverConfig config_vals);
     ~GatewayDriver();
 
     E_DriverErrCode initialize();
@@ -149,7 +150,7 @@ public:
             for(int busid=0; busid < BUSES_PER_GATEWAY; busid++)
             {
                 const int broadcast_id = getBroadcastID(gateway_id, busid);
-                if (broadcast_id >= num_fpus)
+                if (broadcast_id >= config.num_fpus)
                 {
                     goto Exit;
                 }
@@ -233,7 +234,7 @@ private:
     // reverse map of addresses to FPU id.
     FPUArray::t_address_map fpu_id_by_adr; // address map from can bus addresses to fpu id
 
-    int num_fpus;
+    const GridDriverConfig config;
 
     FPUArray fpuArray;        // member which stores the state of the grid
 

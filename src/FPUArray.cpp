@@ -47,7 +47,8 @@ namespace canlayer
 
 
 
-FPUArray::FPUArray(int nfpus)
+FPUArray::FPUArray(const GridDriverConfig config_vals):
+    config(config_vals)
 {
 
     // TODO: check if any condition variables
@@ -60,7 +61,7 @@ FPUArray::FPUArray(int nfpus)
            sizeof(FPUGridState.Counts));
 
     // for the beginning, we don't know the FPU states
-    FPUGridState.Counts[FPST_UNKNOWN] = nfpus;
+    FPUGridState.Counts[FPST_UNKNOWN] = config.num_fpus;
 
     for (int i=0; i < MAX_NUM_POSITIONERS; i++)
     {
@@ -69,8 +70,6 @@ FPUArray::FPUArray(int nfpus)
 
     }
 
-
-    num_fpus = nfpus;
     num_trace_clients = 0;
     FPUGridState.num_queued = 0;
 }
@@ -265,7 +264,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         // If all FPUs have been updated, that might be
         // enough.
         const bool all_updated = ((target & GS_ALL_UPDATED) &&
-                                  check_all_fpus_updated(num_fpus,
+                                  check_all_fpus_updated(config.num_fpus,
                                           reference_state,
                                           FPUGridState));
 
@@ -528,7 +527,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
             break;
         }
 
-        assert(toentry.id < num_fpus);
+        assert(toentry.id < config.num_fpus);
 
         int fpu_id = toentry.id;
 
@@ -718,7 +717,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     // fpu_busid uses a one-based index here, this is
     // deliberate and reflected in the array size.
     int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
-    if ((fpu_id >= num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
+    if ((fpu_id >= config.num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
     {
 #ifdef DEBUG
         static bool has_warned = false;

@@ -144,7 +144,7 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
             printf("fpu id #%i is already at READY_FOWARD, erase it from waveform table\n",
                    fpu_id);
             assert(fpu_id >= 0);
-            assert(fpu_id < num_fpus);
+            assert(fpu_id < config.num_fpus);
 
             if (grid_state.FPU_state[fpu_id].state == FPST_READY_FORWARD)
             {
@@ -374,7 +374,7 @@ E_DriverErrCode GridDriver::setUStepLevel(int ustep_level, t_grid_state& grid_st
 
 int GridDriver::getNumFPUs() const
 {
-    return num_fpus;
+    return config.num_fpus;
 }
 
 

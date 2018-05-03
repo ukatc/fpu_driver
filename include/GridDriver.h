@@ -21,6 +21,8 @@
 #define GRID_DRIVER_H
 
 #include "DriverConstants.h"
+#include "GridDriverConfig.h"
+
 #include "canlayer/AsyncDriver.h"
 
 #if (__cplusplus < 201103L)
@@ -41,9 +43,9 @@ public:
     // number of retries for each action
     const int DEFAULT_NUM_RETRIES = 10;
 
-    GridDriver(int nfpus) : AsyncDriver(nfpus)
+    GridDriver(const GridDriverConfig config_values)
+        : AsyncDriver(config_values)
     {
-        num_fpus = nfpus;
     }
 
     ~GridDriver()
@@ -115,8 +117,6 @@ private:
     E_DriverErrCode untangleFPU();
 
     E_DriverErrCode clearCollision();
-
-    int num_fpus;
 
     // this mutex ensures that no new
     // command is initiated while a running

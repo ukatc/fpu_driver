@@ -47,12 +47,11 @@ namespace canlayer
 {
 
 
-GatewayDriver::GatewayDriver(int nfpus)
-    : fpuArray(nfpus), command_pool(nfpus)
+GatewayDriver::GatewayDriver(GridDriverConfig config_vals)
+    : config(config_vals), fpuArray(config_vals), command_pool(config_vals)
 {
 
-    assert(nfpus <= MAX_NUM_POSITIONERS);
-    num_fpus = nfpus;
+    assert(config.num_fpus <= MAX_NUM_POSITIONERS);
 
     // number of commands which are being processed
     fpuArray.setDriverState(DS_UNINITIALIZED);
@@ -87,8 +86,6 @@ GatewayDriver::GatewayDriver(int nfpus)
 
 GatewayDriver::~GatewayDriver()
 {
-
-
 }
 
 
@@ -179,7 +176,7 @@ bool GatewayDriver::isLocked(int fpu_id) const
 }
 
 
-int make_socket(const char *ip, uint16_t port)
+int make_socket(const GridDriverConfig &config, const char *ip, uint16_t port)
 {
     int sck = -1;
     int rval = 0;
@@ -229,12 +226,12 @@ int make_socket(const char *ip, uint16_t port)
     }
 
 #if 0
-    if (SOCKET_TIME_OUT_SECONDS > 0)
+    if (config.SocketTimeOutSeconds > 0)
     {
 
         struct timeval timeout;
-        timeout.tv_sec = int(SOCKET_TIME_OUT_SECONDS);
-        timeout.tv_usec = int((SOCKET_TIME_OUT_SECONDS - timeout.tv_sec) * 1e6);
+        timeout.tv_sec = int(config.SocketTimeOutSeconds);
+        timeout.tv_usec = int((config.SocketTimeOutSeconds - timeout.tv_sec) * 1e6);
 
         errstate = setsockopt(sck, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
                               sizeof(timeout));
@@ -256,11 +253,11 @@ int make_socket(const char *ip, uint16_t port)
     }
 #endif
 
-    if (SOCKET_TIME_OUT_SECONDS > 0)
+    if (config.SocketTimeOutSeconds > 0)
     {
         // set TCP keepalive parameters and time-outs
 
-        if (TCP_KEEPALIVE_INTERVAL_SECONDS > 0)
+        if (config.TCP_KeepaliveIntervalSeconds > 0)
         {
             /* configure keepalive probing of the connection. After
                idle_time idle seconds, a packet is sent every keep_alive_interval
@@ -281,7 +278,7 @@ int make_socket(const char *ip, uint16_t port)
                 return -1;
             }
 
-            int idle_time = std::max(1, TCP_IDLE_SECONDS);
+            int idle_time = std::max(1, config.TCP_IdleSeconds);
             errstate = setsockopt(sck, IPPROTO_TCP, TCP_KEEPIDLE, &idle_time,
                                   sizeof(idle_time));
 
@@ -292,7 +289,7 @@ int make_socket(const char *ip, uint16_t port)
                 return -1;
             }
 
-            int keep_alive_interval = std::max(1, TCP_KEEPALIVE_INTERVAL_SECONDS);
+            int keep_alive_interval = std::max(1, config.TCP_KeepaliveIntervalSeconds);
             errstate = setsockopt(sck, IPPROTO_TCP, TCP_KEEPINTVL, &keep_alive_interval,
                                   sizeof(keep_alive_interval));
 
@@ -302,7 +299,7 @@ int make_socket(const char *ip, uint16_t port)
                 return -1;
             }
 
-            const double max_idle_time = SOCKET_TIME_OUT_SECONDS - TCP_IDLE_SECONDS;
+            const double max_idle_time = config.SocketTimeOutSeconds - config.TCP_IdleSeconds;
             const int max_keepalives = std::max(1, int(ceil(max_idle_time / keep_alive_interval)));
             errstate = setsockopt(sck, IPPROTO_TCP, TCP_KEEPCNT, &max_keepalives,
                                   sizeof(max_keepalives));
@@ -318,7 +315,7 @@ int make_socket(const char *ip, uint16_t port)
         // This sets an additional time-out for the case that a sent packet is not
         // acknowledged. This is more fine-grained than using keep-alives, and the
         // time used here can be much shorter than one second.
-        int user_timeout_ms = int(ceil(SOCKET_TIME_OUT_SECONDS * 1000));
+        int user_timeout_ms = int(ceil(config.SocketTimeOutSeconds * 1000));
         errstate = setsockopt(sck, IPPROTO_TCP, TCP_USER_TIMEOUT, &user_timeout_ms,
                               sizeof(user_timeout_ms));
 
@@ -458,7 +455,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
         const char* ip = gateway_addresses[i].ip;
         uint16_t port = gateway_addresses[i].port;
 
-        int sock_fd = make_socket(ip, port);
+        int sock_fd = make_socket(config, ip, port);
         if (sock_fd < 0)
         {
             ecode = DE_NO_CONNECTION;
@@ -691,7 +688,7 @@ void GatewayDriver::updatePendingSets(unique_ptr<I_CAN_Command> &active_can_comm
         for (int bus_adr=1; bus_adr < (1 + FPUS_PER_BUS); bus_adr++)
         {
             const int fpu_id = fpu_id_by_adr[gateway_id][busid][bus_adr];
-            if ((fpu_id < num_fpus) && (fpu_id >= 0))
+            if ((fpu_id < config.num_fpus) && (fpu_id >= 0))
             {
                 updatePendingCommand(fpu_id, active_can_command);
             }
@@ -1187,7 +1184,7 @@ E_GridState GatewayDriver::waitForState(E_WaitTarget target, t_grid_state& out_d
 CommandQueue::E_QueueState GatewayDriver::sendCommand(const int fpu_id, unique_ptr<I_CAN_Command>& new_command)
 {
 
-    assert(fpu_id < num_fpus);
+    assert(fpu_id < config.num_fpus);
     const int gateway_id = address_map[fpu_id].gateway_id;
     assert(gateway_id < MAX_NUM_GATEWAYS);
 

@@ -15,12 +15,12 @@ SRCDIR = ./src
 LIBS = -lm -lpthread
 
 _DEPS = DriverState.h E_GridState.h FPUState.h GridDriver.h		\
-	GridState.h T_GridState.h canlayer/AsyncDriver.h		\
-	T_GatewayAddress.h canlayer/handleFPUResponse.h			\
-	canlayer/handleTimeout.h canlayer/CANError.h			\
-	canlayer/CommandPool.h canlayer/CAN_Constants.h			\
-	canlayer/E_CAN_COMMAND.h canlayer/CommandQueue.h		\
-	DriverConstants.h canlayer/FPUArray.h				\
+	GridDriverConfig.h E_LogLevel.h GridState.h T_GridState.h	\
+	canlayer/AsyncDriver.h T_GatewayAddress.h			\
+	canlayer/handleFPUResponse.h canlayer/handleTimeout.h		\
+	canlayer/CANError.h canlayer/CommandPool.h			\
+	canlayer/CAN_Constants.h canlayer/E_CAN_COMMAND.h		\
+	canlayer/CommandQueue.h DriverConstants.h canlayer/FPUArray.h	\
 	canlayer/GatewayDriver.h canlayer/I_CAN_Command.h		\
 	canlayer/I_ResponseHandler.h canlayer/SBuffer.h			\
 	canlayer/TimeOutList.h canlayer/commands/AbortMotionCommand.h	\
@@ -28,16 +28,16 @@ _DEPS = DriverState.h E_GridState.h FPUState.h GridDriver.h		\
 	canlayer/commands/EnableBetaCollisionProtectionCommand.h	\
 	canlayer/commands/ExecuteMotionCommand.h			\
 	canlayer/commands/FindDatumCommand.h				\
-	canlayer/commands/FreeBetaCollisionCommand.h                    \
+	canlayer/commands/FreeBetaCollisionCommand.h			\
 	canlayer/commands/GetErrorAlphaCommand.h			\
 	canlayer/commands/GetErrorBetaCommand.h				\
 	canlayer/commands/GetStepsAlphaCommand.h			\
-	canlayer/commands/GetStepsBetaCommand.h			 	\
+	canlayer/commands/GetStepsBetaCommand.h				\
 	canlayer/commands/PingFPUCommand.h				\
 	canlayer/commands/RepeatMotionCommand.h				\
 	canlayer/commands/ResetFPUCommand.h				\
 	canlayer/commands/ReverseMotionCommand.h			\
-	canlayer/commands/SetUStepLevelCommand.h                        \
+	canlayer/commands/SetUStepLevelCommand.h			\
 	canlayer/sync_utils.h canlayer/time_utils.h
 
 

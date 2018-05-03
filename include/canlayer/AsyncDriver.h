@@ -19,7 +19,7 @@
 #ifndef ASYNC_DRIVER_H
 #define ASYNC_DRIVER_H
 
-
+#include "../GridDriverConfig.h"
 #include "GatewayDriver.h"
 #include "../DriverConstants.h"
 
@@ -51,10 +51,9 @@ public:
        motion before the driver will give up. */
     const int MAX_CONFIG_MOTION_RETRIES = 5;
 
-    AsyncDriver(int nfpus)
-        : gateway(nfpus)
+    AsyncDriver(const GridDriverConfig config_vals)
+        : config(config_vals), gateway(config_vals)
     {
-        num_fpus = nfpus;
         num_gateways = 0;
     }
 
@@ -143,9 +142,12 @@ public:
     E_DriverErrCode validateWaveforms(const t_wtable& waveforms, const int MIN_STEPS, const int MAX_STEPS,
                                       const unsigned int MAX_NUM_SECTIONS, const double MAX_INCREASE) const;
 
+protected:
+    
+    const GridDriverConfig config;
+    
 private:
 
-    int num_fpus;
     int num_gateways;
     GatewayDriver gateway;
 };
