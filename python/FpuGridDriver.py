@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from __future__ import print_function, division
 import os
 import time
 import signal
@@ -8,7 +9,8 @@ import fpu_driver
 
 from fpu_driver import __version__, CAN_PROTOCOL_VERSION, GatewayAddress,  \
     REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, FPUDriverException, MovementError, \
-    DASEL_BOTH, DASEL_ALPHA, DASEL_BETA
+    DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
+    LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_TRACE_CAN_MESSAGES
      
 
 import fpu_commands as cmds
@@ -63,24 +65,40 @@ class SignalHandler(object):
 class GridDriver:
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
-                 control_logfile="_{timestamp}-fpu_control.log",
-                 tx_logfile = "_{timestamp}-fpu_tx.log",
-                 rx_logfile = "_{timestamp}-fpu_rx.log",
-                 timestamp=None):
-        
+                 logLevel=LOG_DEBUG,
+                 control_logfile="_{start_timestamp}-fpu_control.log",
+                 tx_logfile = "_{start_timestamp}-fpu_tx.log",
+                 rx_logfile = "_{start_timestamp}-fpu_rx.log",
+                 start_timestamp=None):
+
+
         config = fpu_driver.GridDriverConfig()
-        config.num_dpus = nfpus
+        config.num_fpus = nfpus
         config.SocketTimeOutSeconds = SocketTimeOutSeconds
         
-        flags = os.O_APPEND | os.O_CREAT
-        if timestamp==None:
-            timestamp= time.strftime("%Y-%m-%d_%H:%m:%S", time.localtime())
-            
-        config.fd_controllog = os.open(control_logfile.format(timestamp=timestamp), flags)
-        config.fd_txlog = os.open(tx_logfile.format(timestamp=timestamp), flags)
-        config.fd_rxlog = os.open(rx_logfile.format(timestamp=timestamp), flags)
+        flags = os.O_CREAT | os.O_APPEND | os.O_WRONLY
+        mode = 0o00644
+        if start_timestamp==None:
+            start_timestamp= time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
+
+        config.logLevel = logLevel
+        config.fd_controllog = os.open(control_logfile.format(start_timestamp=start_timestamp), flags, mode)
+        config.fd_txlog = os.open(tx_logfile.format(start_timestamp=start_timestamp), flags, mode)
+        config.fd_rxlog = os.open(rx_logfile.format(start_timestamp=start_timestamp), flags, mode)
         
+        self.config = config
+
+
         self._gd = fpu_driver.GridDriver(config)
+
+    def __del__(self):
+        if self.getGridState().driver_state == fpu_driver.E_DriverState.DS_CONNECTED:
+            self._gd.disconnect()
+        del self._gd
+        os.close(self.config.fd_controllog)
+        os.close(self.config.fd_txlog)
+        os.close(self.config.fd_rxlog)
+        
 
     def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST):
         return self._gd.connect(address_list)
