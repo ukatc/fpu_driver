@@ -143,6 +143,10 @@ E_DriverErrCode AsyncDriver::disconnect()
         break;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : disconnecting driver\n",
+                canlayer::get_realtime());
+
+
     E_DriverErrCode err_code = gateway.disconnect();
 
     if (err_code == DE_OK)

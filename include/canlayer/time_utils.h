@@ -95,6 +95,12 @@ static inline void set_normalized_timespec(struct timespec &new_val,
 // for measuring time-outs.
 timespec get_monotonic_time(timespec& now);
 
+// Get current wall-clock system time as a double value.  This clock
+// is not monotonic, as NTP adjustments and leap seconds can cause the
+// clock to jump, but it seems a better choice for logging as it
+// allows to compare events across systems
+double get_realtime();
+
 // Adds two timespecs. The sum must be representable,
 // otherwise undefined behavior happens.
 timespec time_add(const timespec& time_a,

@@ -33,6 +33,15 @@ timespec get_monotonic_time(timespec& now)
     return now;
 }
 
+double get_realtime()
+{
+    timespec now;
+    double dnow;
+    clock_gettime(CLOCK_REALTIME, &now);
+    dnow = now.tv_sec + now.tv_nsec * 1e-9;
+    return dnow;
+}
+
 
 timespec time_add(const timespec& time_a,
                   const timespec& time_b)

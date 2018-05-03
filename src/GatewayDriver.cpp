@@ -565,6 +565,9 @@ E_DriverErrCode GatewayDriver::disconnect()
         return DE_NO_CONNECTION;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : GatewayDriver::disconnect(): disconnecting driver\n",
+                get_realtime());
+    
     // disable retrieval of new commands from command queue
     commandQueue.setNumGateways(0);
 
@@ -611,6 +614,15 @@ E_DriverErrCode GatewayDriver::disconnect()
     pthread_join(tx_thread, NULL);
     pthread_join(rx_thread, NULL);
 
+    if (config.fd_txlog >= 0)
+    {
+        syncfs(config.fd_txlog);
+    }
+    if (config.fd_rxlog >= 0)
+    {
+        syncfs(config.fd_rxlog);
+    }
+    
     if (!sockets_closed)
     {
         for (int i = 0; i < num_gateways; i++)
@@ -629,6 +641,8 @@ E_DriverErrCode GatewayDriver::disconnect()
     // so they don't go into dead-lock.
     fpuArray.setDriverState(DS_UNCONNECTED);
 
+    LOG_CONTROL(LOG_GRIDSTATE, "%18.6f : driver is disconnected\n",
+                get_realtime());
 
     return DE_OK;
 
@@ -769,6 +783,8 @@ void GatewayDriver::incSending()
 void* GatewayDriver::threadTxFun()
 {
 
+    LOG_TX(LOG_GRIDSTATE, "%18.6f : starting TX loop\n",
+           get_realtime());
 
     bool exitFlag = false;
 
@@ -921,9 +937,9 @@ void* GatewayDriver::threadTxFun()
                     switch (status)
                     {
                     case SBuffer::ST_NO_CONNECTION:
-#ifdef DEBUG
-                        printf("TX error: SBuffer::ST_NO_CONNECTION, disconnecting driver\n");
-#endif
+                        LOG_TX(LOG_INFO, "%18.6f : TX: SBuffer::ST_NO_CONNECTION, disconnecting driver\n",
+                                    get_realtime());
+                        
                         fpuArray.setDriverState(DS_UNCONNECTED);
                         break;
 
@@ -953,6 +969,9 @@ void* GatewayDriver::threadTxFun()
         }
 
     }
+    
+    LOG_TX(LOG_GRIDSTATE, "%18.6f : exited TX loop\n",
+           get_realtime());
     // clean-up before terminating the thread
 
     // return pending commands to the *front* of the command queue
@@ -998,6 +1017,10 @@ void* GatewayDriver::threadRxFun()
     //assert(poll_timeout_ms > 0);
 
     nfds_t num_fds = num_gateways + 1;
+
+    LOG_RX(LOG_GRIDSTATE, "%18.6f : starting RX loop\n",
+           get_realtime());
+    
 
     for (int i=0; i < num_gateways; i++)
     {
@@ -1096,6 +1119,9 @@ void* GatewayDriver::threadRxFun()
                     {
                         // a error happened when reading the socket,
                         // or the connection was closed
+                        
+                        LOG_RX(LOG_INFO, "%18.6f : RX: read error from socket, exiting read loop\n",                               
+                               get_realtime());
 #ifdef DEBUG
                         printf("RX thread fatal error: sbuffer socket status = %i, exiting\n",
                                status);
@@ -1112,9 +1138,12 @@ void* GatewayDriver::threadRxFun()
         {
             // signal event listeners
             exit_threads.store(true, std::memory_order_release);
+            LOG_RX(LOG_INFO, "%18.6f : RX: loop exit, disconnecting driver\n",
+                   get_realtime());
+            
 #ifdef DEBUG
-            printf("RX thread: disconnecting driver\n");
-#endif
+            printf("RX thread: disconnecting driver\n");            
+#endif            
             fpuArray.setDriverState(DS_UNCONNECTED);
             break; // exit outer loop, and terminate thread
         }

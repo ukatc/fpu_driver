@@ -70,6 +70,28 @@ enum E_LogLevel
     
 };
 
+#define LOG_CONTROL(minlevel, ...){                                       \
+        if ((config.logLevel >= minlevel) && (config.fd_controllog >= 0)) \
+        {                                                                 \
+            dprintf(config.fd_controllog, __VA_ARGS__);                   \
+        }                                                                 \
+        }
+
+#define LOG_TX(minlevel, ...){                                            \
+        if ((config.logLevel >= minlevel) && (config.fd_txlog >= 0))      \
+        {                                                                 \
+            dprintf(config.fd_txlog, __VA_ARGS__);                        \
+        }                                                                 \
+        }
+
+#define LOG_RX(minlevel, ...){                                            \
+        if ((config.logLevel >= minlevel) && (config.fd_rxlog >= 0))      \
+        {                                                                 \
+            dprintf(config.fd_rxlog, __VA_ARGS__);                        \
+        }                                                                 \
+        }
+
+
 }
 
 #endif

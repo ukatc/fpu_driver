@@ -20,8 +20,11 @@
 #ifndef GRID_DRIVER_H
 #define GRID_DRIVER_H
 
+#include <stdio.h>
+#include <unistd.h>
 #include "DriverConstants.h"
 #include "GridDriverConfig.h"
+#include "canlayer/time_utils.h"
 
 #include "canlayer/AsyncDriver.h"
 
@@ -46,10 +49,27 @@ public:
     GridDriver(const GridDriverConfig config_values)
         : AsyncDriver(config_values)
     {
+    
+        LOG_CONTROL(LOG_INFO, "%18.6f : starting driver for %i FPUs\n",
+                    canlayer::get_realtime(), config.num_fpus);
+
+        
     }
 
     ~GridDriver()
     {
+        if (config.fd_controllog >= 0)
+        {
+            syncfs(config.fd_controllog);
+        }
+        if (config.fd_txlog >= 0)
+        {
+            syncfs(config.fd_txlog);
+        }
+        if (config.fd_rxlog >= 0)
+        {
+            syncfs(config.fd_rxlog);
+        }
     }
 
     // prohibit copying of the class - this would lead to resource leaks
