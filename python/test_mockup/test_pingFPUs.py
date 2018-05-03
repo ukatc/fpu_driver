@@ -3,7 +3,7 @@ from __future__ import print_function, division
 import FpuGridDriver
 from fpu_commands import *
 
-NUM_FPUS = 1000
+NUM_FPUS = 10
 gateway_adr_list = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 
