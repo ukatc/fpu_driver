@@ -2,6 +2,8 @@
 
 from __future__ import print_function, division
 import os
+from os import path
+import errno
 import time
 import signal
 
@@ -62,14 +64,42 @@ class SignalHandler(object):
 
         return True
 
+def get_logname(basename,
+                log_dir="",
+                timestamp=None):
+    
+    if timestamp=="ISO8601":
+        timestamp= time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+
+    filename = basename.format(start_timestamp=timestamp)
+    return path.join(log_dir, path.expandvars(path.expanduser(filename)))
+
+DEFAULT_LOGDIR="./_logs"
+
+def make_logdir(log_dir):
+    log_path = path.abspath(path.expandvars(path.expanduser(log_dir)))
+    try:
+        os.makedirs(log_path, 0o00744)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            pass
+        else:
+            raise
+        
+    if log_dir != DEFAULT_LOGDIR:
+        print("logging to ", log_path)
+        
+    return log_path
+
 class GridDriver:
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
                  logLevel=LOG_DEBUG,
+                 log_dir=DEFAULT_LOGDIR,
                  control_logfile="_{start_timestamp}-fpu_control.log",
                  tx_logfile = "_{start_timestamp}-fpu_tx.log",
                  rx_logfile = "_{start_timestamp}-fpu_rx.log",
-                 start_timestamp=None):
+                 start_timestamp="ISO8601"):
 
 
         config = fpu_driver.GridDriverConfig()
@@ -78,16 +108,21 @@ class GridDriver:
         
         flags = os.O_CREAT | os.O_APPEND | os.O_WRONLY
         mode = 0o00644
-        if start_timestamp==None:
-            start_timestamp= time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
+
+        
 
         config.logLevel = logLevel
-        config.fd_controllog = os.open(control_logfile.format(start_timestamp=start_timestamp), flags, mode)
-        config.fd_txlog = os.open(tx_logfile.format(start_timestamp=start_timestamp), flags, mode)
-        config.fd_rxlog = os.open(rx_logfile.format(start_timestamp=start_timestamp), flags, mode)
+
+        log_path = make_logdir(log_dir)
+        
+        config.fd_controllog = os.open(get_logname(control_logfile, 
+                 log_dir=log_path, timestamp=start_timestamp), flags, mode)
+        config.fd_txlog = os.open(get_logname(tx_logfile, 
+                 log_dir=log_path, timestamp=start_timestamp), flags, mode)
+        config.fd_rxlog = os.open(get_logname(rx_logfile, 
+                 log_dir=log_path, timestamp=start_timestamp), flags, mode)
         
         self.config = config
-
 
         self._gd = fpu_driver.GridDriver(config)
 
