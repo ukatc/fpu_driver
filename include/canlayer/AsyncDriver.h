@@ -59,7 +59,7 @@ public:
 
     ~AsyncDriver()
     {
-        if ( gateway.getDriverState() != DS_UNCONNECTED)
+        if ( gateway.getDriverState() == DS_CONNECTED)
         {
             disconnect();
         }

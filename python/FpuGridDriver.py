@@ -127,8 +127,7 @@ class GridDriver:
         self._gd = fpu_driver.GridDriver(config)
 
     def __del__(self):
-        if self.getGridState().driver_state == fpu_driver.E_DriverState.DS_CONNECTED:
-            self._gd.disconnect()
+        # the following delete is necessary to run destructors!!
         del self._gd
         os.close(self.config.fd_controllog)
         os.close(self.config.fd_txlog)
