@@ -81,7 +81,7 @@ GatewayDriver::GatewayDriver(GridDriverConfig config_vals)
     }
 
     exit_threads = false;
-
+    shutdown_in_progress = false;
 }
 
 GatewayDriver::~GatewayDriver()
@@ -482,6 +482,8 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
         // we create one thread for reading and one for writing.
         exit_threads = false; // assure flag is cleared
+        shutdown_in_progress = false;
+
         num_gateways = ngateways; /* this becomes fixed for the threads */
 
         // At this point, all constant shared data and synchronization
@@ -571,6 +573,8 @@ E_DriverErrCode GatewayDriver::disconnect()
     // disable retrieval of new commands from command queue
     commandQueue.setNumGateways(0);
 
+    // inform threads about shutdown
+    shutdown_in_progress.store(true, std::memory_order_release);
     bool sockets_closed = false;
 
     // check whether there was any error (so threads are
@@ -1119,13 +1123,20 @@ void* GatewayDriver::threadRxFun()
                     {
                         // a error happened when reading the socket,
                         // or the connection was closed
-                        
-                        LOG_RX(LOG_INFO, "%18.6f : RX: read error from socket, exiting read loop\n",                               
-                               get_realtime());
-#ifdef DEBUG
-                        printf("RX thread fatal error: sbuffer socket status = %i, exiting\n",
-                               status);
-#endif
+
+                        if (! shutdown_in_progress.load(std::memory_order_acquire))
+                        {
+                            
+                            LOG_RX(LOG_ERROR, "%18.6f : RX: read error from socket, exiting read loop\n",
+                                   get_realtime());
+                            printf("RX thread fatal error: sbuffer socket status = %i, exiting\n",
+                                   status);
+                        }
+                        else
+                        {
+                            LOG_RX(LOG_INFO, "%18.6f : RX: shutdown in progress, exiting read loop\n",
+                                   get_realtime());
+                        }
                         exitFlag = true;
                         break;
                     }

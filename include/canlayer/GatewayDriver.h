@@ -217,6 +217,8 @@ private:
     pthread_t    rx_thread;
     // this atomic flag serves to signal both threads to exit
     std::atomic<bool> exit_threads;
+    // this flag informs that a driver shutdown is in progress
+    std::atomic<bool> shutdown_in_progress;
 
 
 
