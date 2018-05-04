@@ -134,6 +134,8 @@ E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_addres
     // configured number of FPUs.
     if (ngateways < (config.num_fpus + MAX_FPUS_PER_GATEWAY-1) / MAX_FPUS_PER_GATEWAY)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver::connect(): number of configured gateways is insufficient\n",
+                    canlayer::get_realtime());
         return DE_INSUFFICENT_NUM_GATEWAYS;
     }
 
@@ -179,6 +181,9 @@ E_DriverErrCode AsyncDriver::disconnect()
     if (err_code == DE_OK)
     {
         num_gateways = 0;
+        LOG_CONTROL(LOG_INFO, "%18.6f : disconnect(): OK\n",
+                    canlayer::get_realtime());
+
     }
 
     return err_code;
@@ -203,6 +208,9 @@ E_DriverErrCode AsyncDriver::initializeGridAsync(t_grid_state& grid_state,
                     canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
+    
+    LOG_CONTROL(LOG_INFO, "%18.6f : initializeGrid(): command successfully sent\n",
+                canlayer::get_realtime());
 
     return DE_OK;
 }
@@ -220,7 +228,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : error: driver is not connected, can't reset FPUs\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : resetFPUs() error: driver is not connected, can't reset FPUs\n",
                     canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
@@ -274,6 +282,8 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: driver is not connected, can't reset FPUs\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -296,8 +306,32 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         E_DATUM_SELECTION arm_selection)
 {
 
-    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum started\n",
-                canlayer::get_realtime());
+    {
+        const char * as_string;
+        switch (arm_selection){
+        case DASEL_BOTH:
+            as_string = "'both arms'";
+            break;
+        case DASEL_ALPHA:
+            as_string = "'alpha arm'";
+            break;
+        
+        case DASEL_BETA:
+            as_string = "'beta arm'";
+            break;
+        
+        case DASEL_NONE:
+            as_string = "(no arm selected)";
+            break;
+            
+        default:
+            as_string = "'invalid selection'";
+            break;                   
+        }
+    
+        LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum started, arm_selection=%s\n",
+                    canlayer::get_realtime(), as_string);
+    }
     
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
@@ -305,6 +339,8 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: driver is not connected\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -316,6 +352,8 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     case DASEL_BETA:
         break;
     default:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: invalid arm selection\n",
+                    canlayer::get_realtime());
         return DE_INVALID_PAR_VALUE;
     }
 
@@ -323,6 +361,8 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 
     if (ecode != DE_OK)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : ping failed, aborting findDatum()operation \n",
+                    canlayer::get_realtime());
         return ecode;
     }
 
@@ -332,10 +372,14 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if (fpu_status == FPST_OBSTACLE_ERROR)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : unresolved collisions - aborting findDatum()operation \n",
+                        canlayer::get_realtime());
             return DE_UNRESOLVED_COLLISION;
         }
         if (fpu_status == FPST_ABORTED)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : FPUs are in aborted state - cancelling findDatum()operation \n",
+                        canlayer::get_realtime());
             return DE_ABORTED_STATE;
         }
     }
@@ -347,6 +391,8 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         int beta_steps = grid_state.FPU_state[i].beta_steps;
         if (beta_steps < BETA_DATUM_LIMIT)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : beta arm appears to be in negative position - aborting findDatum()operation \n",
+                        canlayer::get_realtime());
             return DE_UNIMPLEMENTED;
         }
     }
@@ -354,7 +400,6 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     // All fpus which are allowed to move, are moved automatically
     // until they hit the datum switch.
 
-//    int num_moving = 0;
     unique_ptr<FindDatumCommand> can_command;
     for (int i=0; i < config.num_fpus; i++)
     {
@@ -378,7 +423,6 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 #endif
             unique_ptr<I_CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
-//            num_moving++;
 
         }
     }
@@ -389,8 +433,15 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     // without causing undefined behaviour.
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: command timed out\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+    LOG_CONTROL(LOG_INFO, "%18.6f : findDatum(): command successfully sent\n",
+                canlayer::get_realtime());
+#if CAN_PROTOCOL_VERSION == 1
+    last_datum_arm_selection = arm_selection;
+#endif
     return DE_OK;
 
 }
@@ -401,11 +452,15 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 {
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
-
-
+#if (CAN_PROTOCOL_VERSION == 1)
+    const t_grid_state prev_grid_state = grid_state;
+#endif    
+    
     bool cancelled = false;
 
 
@@ -420,6 +475,8 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: driver is not connected\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -432,15 +489,21 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
         {
             if (fpu.beta_collision)
             {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: collision detected for FPU %i\n",
+                            canlayer::get_realtime(), i);
                 return DE_NEW_COLLISION;
             }
             else
             {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: limit breach detected for FOU %i\n",
+                            canlayer::get_realtime(), i);
                 return DE_NEW_LIMIT_BREACH;
             }
         }
         if (fpu_status == FPST_ABORTED)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU movement was aborted for FPU %i\n",
+                        canlayer::get_realtime(), i);
             return DE_ABORTED_STATE;
         }
 
@@ -454,14 +517,49 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: command timed out\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
     finished = (num_moving == 0) && (! cancelled);
 
+#if (CAN_PROTOCOL_VERSION == 1)
+    {
+        // Check if command moved both arms without instruction.
+        //
+        // In this case, we have firmware 1.0 on some FPUs, which will
+        // trigger a warning because unexpected moves can break the
+        // beta arm.
+        bool move_alpha = (last_datum_arm_selection == DASEL_BOTH) || (last_datum_arm_selection == DASEL_ALPHA);
+        bool move_beta = (last_datum_arm_selection == DASEL_BOTH) || (last_datum_arm_selection == DASEL_BETA);
+        
+        for(int i = 0; i < config.num_fpus; i++)
+        {
+            if ((((prev_grid_state.FPU_state[i].alpha_steps != 0)
+                  && (grid_state.FPU_state[i].alpha_steps == 0)
+                  && (! move_alpha))
+                )
+                || 
+                ( ((prev_grid_state.FPU_state[i].beta_steps != 0)
+                   && (grid_state.FPU_state[i].beta_steps == 0)
+                   && (! move_beta))
+                ))
+            {            
+                fprintf(stderr, "AsyncDriver: WARNING\b: findDatum() moved both arms in FPU %i,"
+                       " arm selection ignored, this indicates version 1.0 firmware on FPU.\n",
+                       i);
+                LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: WARNING: findDatum moved both"
+                            " arms in FPU %i, arm selection ignored.\n",
+                            canlayer::get_realtime(), i);
+            }
+        }
+    }
+#endif
+    
     if (finished)
     {
-        LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum finished\n",
+        LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum finished successfully\n",
                     canlayer::get_realtime());
         return DE_OK;
     }
@@ -490,8 +588,8 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
     if (num_steps > MAX_NUM_SECTIONS)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:"
-                    "  waveform has too many steps\n",
-                    canlayer::get_realtime());
+                    "  waveform has too many steps (%i)\n",
+                    canlayer::get_realtime(), num_steps);
         return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
     }
 
@@ -501,17 +599,17 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
         if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: waveform error DE_INVALID_FPU_ID:"
-                        " FPU ID in waveform table is out of range\n",
-                        canlayer::get_realtime());
+                        " FPU ID %i in waveform table is out of range\n",
+                        canlayer::get_realtime(), fpu_id);
             return DE_INVALID_FPU_ID;
         }
 
         // require same number of steps for all FPUs
-        if (waveforms[0].steps.size() != num_steps)
+        if (waveforms[fpu_index].steps.size() != num_steps)
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_RAGGED:"
-                        " waveforms for different FPUs have unequal length\n",
-                        canlayer::get_realtime());
+                        " waveforms for FPU %i have unequal length\n",
+                        canlayer::get_realtime(), fpu_id);
             return DE_INVALID_WAVEFORM_RAGGED;
         }
 
@@ -653,8 +751,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             if (fpu_status == FPST_OBSTACLE_ERROR)
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_UNRESOLVED_COLLISION"
-                            " - unresolved collision active\n",
-                            canlayer::get_realtime());
+                            " - unresolved collision active for FPU %i\n",
+                            canlayer::get_realtime(), i);
                 return DE_UNRESOLVED_COLLISION;
             }
             // This isn't enforced in protocol version 1,
@@ -664,8 +762,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             if (fpu_status == FPST_ABORTED)
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_ABORTED_STATE"
-                            " - FPUs are in aborted state\n",
-                            canlayer::get_realtime());
+                            " - FPU %i is in aborted state\n",
+                            canlayer::get_realtime(), i);
                 return DE_ABORTED_STATE;
             }
 
@@ -673,8 +771,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                     && grid_state.FPU_state[i].beta_was_zeroed))
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_FPUS_NOT_CALIBRATED"
-                            " - FPUs are not calibrated and check_protection flag was not cleared\n",
-                            canlayer::get_realtime());
+                            " - FPU %i is not calibrated and check_protection flag was not cleared\n",
+                            canlayer::get_realtime(), i);
                 return DE_FPUS_NOT_CALIBRATED;
             }
         }
@@ -790,6 +888,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                                                  grid_state, max_wait_time, cancelled);
             if (grid_state.driver_state != DS_CONNECTED)
             {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: driver is not connected\n",
+                    canlayer::get_realtime());
                 return DE_NO_CONNECTION;
             }
             bool do_retry = false;
@@ -811,8 +911,12 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                         return DE_MAX_RETRIES_EXCEEDED;
                     }
                     do_retry = true;
-                    printf("configMotion: state not confirmed for FPU #%i,"
-                           " retry from start! (%i retries left)\n", fpu_id, retry_downcount);
+                    LOG_CONTROL(LOG_INFO, "%18.6f : configMotion(): warning: "
+                                "loading/ready state not confirmed for FPU #%i,"
+                                " retry from start! (%i retries left)\n", 
+                                canlayer::get_realtime(),
+                                fpu_id,
+                                retry_downcount);
                 }
             }
             if (do_retry)
@@ -831,6 +935,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     // seems not to work reliably with current firmware
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN command timed out\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 #endif
@@ -849,17 +955,25 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                     beta_cur[fpu_id] / STEPS_PER_DEGREE_BETA);
     }
     
+    LOG_CONTROL(LOG_INFO, "%18.6f : configMotion(): waveforms successfully sent OK\n",
+                canlayer::get_realtime());
     return DE_OK;
 }
 
 E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
+
+    LOG_CONTROL(LOG_VERBOSE, "%18.6f : AsyncDriver: starting executeMotion()\n",
+                canlayer::get_realtime());
+    
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_NO_CONNECTION, driver is not connected\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -870,10 +984,14 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
 
         if (fpu_status == FPST_OBSTACLE_ERROR)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_UNRESOLVED_COLLISION in PU %i, ongoing collision\n",
+                        canlayer::get_realtime(), i);
             return DE_UNRESOLVED_COLLISION;
         }
         if (fpu_status == FPST_ABORTED)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_ABORTED_STATE in FPU %i, FPUs are in aborted state\n",
+                        canlayer::get_realtime(), i);
             return DE_ABORTED_STATE;
         }
 
@@ -891,6 +1009,8 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
                 && ( ! (grid_state.FPU_state[i].waveform_valid
                         && grid_state.FPU_state[i].waveform_ready)))
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_WAVEFORM_NOT_READY for FPU %i: no waveform ready\n",
+                        canlayer::get_realtime(), i);
             return DE_WAVEFORM_NOT_READY;
         }
     }
@@ -906,6 +1026,8 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
 
     if (num_moving == 0)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_NO_MOVABLE_FPUS: no FPUs present which can move\n",
+                    canlayer::get_realtime());
         return DE_NO_MOVABLE_FPUS;
     }
 
@@ -942,6 +1064,8 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
     {
         unset_rt_priority();
     }
+    LOG_CONTROL(LOG_INFO, "%18.6f : executeMotion(): executeMotion command successsfully sent to grid\n",
+                canlayer::get_realtime());
 
     return ecode;
 
@@ -965,6 +1089,10 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
     const unsigned long old_count_timeout = grid_state.count_timeout;
 
+    
+    LOG_CONTROL(LOG_VERBOSE, "%18.6f : waitExecuteMotion() - waiting for movement to complete\n",
+                canlayer::get_realtime());
+    
     if ( (num_moving > 0)
             && (grid_state.driver_state == DS_CONNECTED))
     {
@@ -988,45 +1116,56 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error DE_NO_CONNECTION, driver is not connected\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
 
-    for (int i=0; i < config.num_fpus; i++)
+    if ((grid_state.Counts[FPST_OBSTACLE_ERROR] > 0) || (grid_state.Counts[FPST_ABORTED] > 0))
     {
-
-        const t_fpu_state& fpu = grid_state.FPU_state[i];
-        E_FPU_STATE fpu_status = fpu.state;
-
-        if (fpu_status == FPST_OBSTACLE_ERROR)
+        for (int i=0; i < config.num_fpus; i++)
         {
-            printf("waitExecuteMotionAsync(): OBSTACLE_ERROR detected.\n");
-            if (fpu.beta_collision)
+
+            const t_fpu_state& fpu = grid_state.FPU_state[i];
+            E_FPU_STATE fpu_status = fpu.state;
+
+            if (fpu_status == FPST_OBSTACLE_ERROR)
             {
-                printf("waitExecuteMotionAsync(): beta collision detected.\n");
-                return DE_NEW_COLLISION;
+                if (fpu.beta_collision)
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: DE_NEW_COLLISION detected for FPU %i.\n",
+                                canlayer::get_realtime(), i);
+                    return DE_NEW_COLLISION;
+                }
+                else
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: DE_NEW_LIMIT_BREACH detected for FPU %i.\n",
+                                canlayer::get_realtime(), i);
+                    return DE_NEW_LIMIT_BREACH;
+                }
             }
-            else
+
+            // step timing errors cause an FPU to change to ABORTED
+            // state. To avoid confusion, a more specific error code is
+            // returned.
+            if (fpu.step_timing_errcount != previous_grid_state.FPU_state[i].step_timing_errcount)
             {
-                printf("waitExecuteMotionAsync(): alpha linmit breach detected.\n");
-                return DE_NEW_LIMIT_BREACH;
+                LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: DE_STEP_TIMING_ERROR detected for FPU %i.\n",
+                            canlayer::get_realtime(), i);
+                return DE_STEP_TIMING_ERROR;
             }
+
+
+            if (fpu_status == FPST_ABORTED)
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: FPST_ABORTED state"
+                            " detected for FPU %i, movement was aborted.\n",
+                            canlayer::get_realtime(), i);
+                return DE_ABORTED_STATE;
+            }
+
         }
-
-        // step timing errors cause an FPU to change to ABORTED
-        // state. To avoid confusion, a more specific error code is
-        // returned.
-        if (fpu.step_timing_errcount != previous_grid_state.FPU_state[i].step_timing_errcount)
-        {
-            return DE_STEP_TIMING_ERROR;
-        }
-
-
-        if (fpu_status == FPST_ABORTED)
-        {
-            return DE_ABORTED_STATE;
-        }
-
     }
 
     // It is important to compare for inequality here, because
@@ -1034,9 +1173,23 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
     // without causing undefined behaviour.
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: DE_CAN_COMMAND_TIMEOUT_ERROR.\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    if (finished)
+    {
+        LOG_CONTROL(LOG_INFO, "%18.6f : executeMotion(): movement successfully finished OK\n",
+                    canlayer::get_realtime());
+    }
+    else
+    {
+        LOG_CONTROL(LOG_GRIDSTATE, "%18.6f : executeMotion(): waiting time exceeded,"
+                    " movement still incomplete\n",
+                    canlayer::get_realtime());
+    }
+    
     return DE_OK;
 }
 
@@ -1051,6 +1204,8 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -1108,6 +1263,8 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -1159,14 +1316,21 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions(): error: DE_CAN_COMMAND_TIMEOUT_ERROR.\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+    
+    LOG_CONTROL(LOG_INFO, "%18.6f : getPositions(): positions were retrieved successfully.\n",
+                canlayer::get_realtime());
 
     return DE_OK;
 
@@ -1185,6 +1349,8 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -1242,6 +1408,8 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -1293,15 +1461,21 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : getCounterDeviations(): retrieved counter deviations successfully\n",
+                canlayer::get_realtime());
     return DE_OK;
 
 }
@@ -1319,6 +1493,8 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -1329,6 +1505,9 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         if ((fpu_status == FPST_ABORTED)
                 || (fpu_status == FPST_OBSTACLE_ERROR))
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_UNRESOLVED_COLLISION for FPU %i,"
+                        " collision needs to be resolvedfirst\n",
+                        canlayer::get_realtime(), i);
             return DE_UNRESOLVED_COLLISION;
         }
     }
@@ -1338,6 +1517,8 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if (fpu_status == FPST_MOVING)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_SRILL_BUSY, FPU %i is still moving\n",
+                        canlayer::get_realtime(), i);
             return DE_STILL_BUSY;
         }
     }
@@ -1360,6 +1541,9 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
     }
     if (count_movable == 0)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_NO_MOVABLE_FPUs, "
+                    "no FPUs are eligible to move\n",
+                    canlayer::get_realtime());
         return DE_NO_MOVABLE_FPUS;
     }
 
@@ -1416,14 +1600,20 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_CAN_COMMAND_TIMEOUT_ERROR, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : repeatMotion(): command successfully sent OK\n",
+                canlayer::get_realtime());
     return DE_OK;
 
 }
@@ -1441,6 +1631,8 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : reverseMotion():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -1451,6 +1643,8 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         if ((fpu_status == FPST_ABORTED)
                 || (fpu_status == FPST_OBSTACLE_ERROR))
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : reverseMotion():  error DE_UNRESOLVED_COLLISON for FPU %i\n",
+                        canlayer::get_realtime(), i);
             return DE_UNRESOLVED_COLLISION;
         }
     }
@@ -1460,6 +1654,8 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if (fpu_status == FPST_MOVING)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : reverseMotion():  error DE_SRILL_BUSY, FPU %i is still moving\n",
+                        canlayer::get_realtime(), i);
             return DE_STILL_BUSY;
         }
     }
@@ -1482,6 +1678,9 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
     }
     if (count_movable == 0)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : reverseMotion():  error DE_NO_MOVABLE_FPUs, "
+                    "no FPUs are eligible to move\n",
+                    canlayer::get_realtime());
         return DE_NO_MOVABLE_FPUS;
     }
 
@@ -1537,14 +1736,21 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : reverseMotion():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : reverseMotion():  error DE_CAN_COMMAND_TIMEOUT_ERROR, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : reverseMotion: command successfully sent OK\n",
+                canlayer::get_realtime());
+    
     return DE_OK;
 
 }
@@ -1565,6 +1771,8 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(pthread_mutex_t & command_mutex,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : abortMotion():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -1619,15 +1827,21 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(pthread_mutex_t & command_mutex,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : abortMotion():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : abortMotion():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : abortMotion(): command successfully sent\n",
+                canlayer::get_realtime());
     return DE_OK;
 
 }
@@ -1643,14 +1857,20 @@ E_DriverErrCode AsyncDriver::lockFPUAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : lockFPU(): command successfully sent\n",
+                canlayer::get_realtime());
     return DE_OK;
 }
 
@@ -1664,14 +1884,20 @@ E_DriverErrCode AsyncDriver::unlockFPUAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : unlockFPU(): command successfully sent\n",
+                canlayer::get_realtime());
     return DE_OK;
 }
 
@@ -1687,6 +1913,8 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : pingFPUs():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -1729,6 +1957,8 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
 
         if (grid_state.driver_state != DS_CONNECTED)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : pingFPUs():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
             return DE_NO_CONNECTION;
         }
 
@@ -1738,10 +1968,14 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : pingFPUs():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : pingFPUs(): command successfully completed\n",
+                canlayer::get_realtime());
     return DE_OK;
 
 }
@@ -1758,6 +1992,8 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : enableBetaCollisionProtection():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -1781,6 +2017,9 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
         // We do not allow recovery when there are moving FPUs.  (In
         // that case, the user should send an abortMotion command
         // first.)
+        LOG_CONTROL(LOG_ERROR, "%18.6f : enableBetaCollisionProtection():  error DE_STILL_BUSY, "
+                    "FPUs are still moving\n",
+                    canlayer::get_realtime());
         return DE_STILL_BUSY;
     }
 
@@ -1810,14 +2049,20 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : enableBetaCollisionProtection():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : enableBetaCollisionProtection():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : enableBetaCollisionProtection(): command successfully sent to grid\n",
+                canlayer::get_realtime());
     return DE_OK;
 }
 
@@ -1833,12 +2078,16 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
     if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
     {
         // the FPU id is out of range
+        LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error DE_INVALID_FPU_ID, FPU id out of range\n",
+                    canlayer::get_realtime());
         return DE_INVALID_FPU_ID;
     }
 
@@ -1862,6 +2111,9 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
         // We do not allow recovery when there are moving FPUs.  (In
         // that case, the user should send an abortMotion command
         // first.)
+        LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error DE_STILL_BUSY, "
+                    "FPUs are still moving, if needed send abortMotion() first()\n",
+                    canlayer::get_realtime());
         return DE_STILL_BUSY;
     }
 
@@ -1888,14 +2140,21 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : freeBetaCollision(): command successfully sent to FPU %i\n",
+                canlayer::get_realtime(), fpu_id);
+    
     return DE_OK;
 }
 
@@ -1925,6 +2184,8 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : setUStepLevel():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -1937,6 +2198,8 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
         break;
     default:
         // value is not allowed
+        LOG_CONTROL(LOG_ERROR, "%18.6f : setUStepLevel():  error DE_INVALID_PAR_VALUE, level %i not allowed\n",
+                    canlayer::get_realtime(), ustep_level);
         return DE_INVALID_PAR_VALUE;
     }
 
@@ -1949,6 +2212,9 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
         if ( fpu_state.state != FPST_UNINITIALIZED)
         {
             // FPU state does not allows command
+        LOG_CONTROL(LOG_ERROR, "%18.6f : setUStepLevel():  error DE_INVALID_FPU_STATE, all FPUs "
+                    "need to be in state FPST_UNINITIALIZED\n",
+                    canlayer::get_realtime());
             return DE_INVALID_FPU_STATE;
         }
     }
@@ -1982,6 +2248,8 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
 
         if (grid_state.driver_state != DS_CONNECTED)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : setUStepLevel():  error DE_NO_CONNECTION, connection was lost\n",
+                        canlayer::get_realtime());
             return DE_NO_CONNECTION;
         }
 
@@ -1991,9 +2259,13 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
 
     if (grid_state.count_timeout != old_count_timeout)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : setUStepLevel():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : setUStepLevel(): command successfully sent, ustep_level set to %i\n",
+                canlayer::get_realtime(), ustep_level);
 
     return DE_OK;
 
