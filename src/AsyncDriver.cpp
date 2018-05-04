@@ -61,12 +61,18 @@ E_DriverErrCode AsyncDriver::initializeDriver()
 
     case DS_UNCONNECTED:
     case DS_CONNECTED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : initializeDriver() - driver was already initialized\n",
+                    canlayer::get_realtime());
         return DE_DRIVER_ALREADY_INITIALIZED;
 
     case DS_ASSERTION_FAILED:
     default:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error during initializeDriver() - assertion failed\n",
+                    canlayer::get_realtime());
         return DE_ASSERTION_FAILED;
     }
+    LOG_CONTROL(LOG_INFO, "%18.6f : initializing driver\n",
+                canlayer::get_realtime());
     return gateway.initialize();
 }
 
@@ -80,15 +86,23 @@ E_DriverErrCode AsyncDriver::deInitializeDriver()
         break;
 
     case DS_UNINITIALIZED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : deinitializeDriver() - error: driver is already in uninitialized state \n",
+                    canlayer::get_realtime());
         return DE_DRIVER_NOT_INITIALIZED;
 
     case DS_CONNECTED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : deinitializeDriver() - error: can't deinitialize driver, it is still connected\n",
+                    canlayer::get_realtime());
         return DE_DRIVER_STILL_CONNECTED;
 
     default:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : deinitializeDriver() - fatal error: assertion failed\n",
+                    canlayer::get_realtime());
         return DE_ASSERTION_FAILED;
     };
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : deinitializing driver\n",
+                canlayer::get_realtime());
     return gateway.deInitialize();
 }
 
@@ -97,16 +111,22 @@ E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_addres
     switch (gateway.getDriverState())
     {
     case DS_UNINITIALIZED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver::connect(): error: driver not initialized\n",
+                    canlayer::get_realtime());
         return DE_DRIVER_NOT_INITIALIZED;
 
     case DS_UNCONNECTED:
         break;
 
     case DS_CONNECTED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver::connect(): error: driver already connected, needs to disconnect() first\n",
+                    canlayer::get_realtime());
         return DE_DRIVER_ALREADY_CONNECTED;
 
     case DS_ASSERTION_FAILED:
     default:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver::connect(): fatal error: assertion failed\n",
+                    canlayer::get_realtime());
         return DE_ASSERTION_FAILED;
     }
 
@@ -122,6 +142,9 @@ E_DriverErrCode AsyncDriver::connect(const int ngateways, const t_gateway_addres
     {
         num_gateways = ngateways;
     }
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver::connect(): driver is connected to %i gateways\n",
+                canlayer::get_realtime(),
+                num_gateways);
 
     return err_code;
 }
@@ -132,18 +155,22 @@ E_DriverErrCode AsyncDriver::disconnect()
     switch (gateway.getDriverState())
     {
     case DS_UNINITIALIZED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver::disconnect(): error, driver not initialized\n",
+                  canlayer::get_realtime());
         return DE_DRIVER_NOT_INITIALIZED;
 
     case DS_UNCONNECTED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver::disconnect(): error, driver not connected\n",
+                  canlayer::get_realtime());
         return DE_NO_CONNECTION;
 
-    case DS_ASSERTION_FAILED:
     case DS_CONNECTED:
+    case DS_ASSERTION_FAILED:
     default:
         break;
     }
 
-    LOG_CONTROL(LOG_INFO, "%18.6f : disconnecting driver\n",
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver::disconnect(): disconnecting driver\n",
                 canlayer::get_realtime());
 
 
@@ -167,8 +194,13 @@ E_DriverErrCode AsyncDriver::initializeGridAsync(t_grid_state& grid_state,
     state_summary = GS_UNKNOWN;
     grid_state.driver_state = DS_ASSERTION_FAILED;
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : initializing grid\n",
+                canlayer::get_realtime());
+    
     if (gateway.getDriverState() != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : initializeGridAsync() error: driver is not connected\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -179,12 +211,17 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : resetting FPUs\n",
+                canlayer::get_realtime());
+    
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: driver is not connected, can't reset FPUs\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -207,6 +244,8 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         // We do not perform a reset when there are moving FPUs.  (In
         // that case, the user should send an abortMotion command
         // first.)
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: FPUs are moving, refusing to reset FPUs. Call abortMotion first.\n",
+                    canlayer::get_realtime());
         return DE_STILL_BUSY;
     }
 
@@ -245,6 +284,9 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
     {
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+    
+    LOG_CONTROL(LOG_INFO, "%18.6f : resetFPUs: command completed succesfully\n",
+                canlayer::get_realtime());
     return DE_OK;
 
 }
@@ -254,6 +296,9 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         E_DATUM_SELECTION arm_selection)
 {
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum started\n",
+                canlayer::get_realtime());
+    
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
@@ -416,10 +461,14 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 
     if (finished)
     {
+        LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum finished\n",
+                    canlayer::get_realtime());
         return DE_OK;
     }
     else
     {
+        LOG_CONTROL(LOG_GRIDSTATE, "%18.6f : AsyncDriver: findDatum not finished, waiting time elapsed\n",
+                    canlayer::get_realtime());
         return DE_WAIT_TIMEOUT;
     }
 
@@ -431,13 +480,18 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
         const unsigned int MAX_NUM_SECTIONS, const double MAX_INCREASE) const
 {
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: validating waveforms\n",
+                canlayer::get_realtime());
+    
     const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
 
 
     if (num_steps > MAX_NUM_SECTIONS)
     {
-        printf("too many steps in waveform\n");
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:"
+                    "  waveform has too many steps\n",
+                    canlayer::get_realtime());
         return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
     }
 
@@ -446,14 +500,18 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
         const int fpu_id = waveforms[fpu_index].fpu_id;
         if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
         {
-            // the FPU id is out of range
-            printf("FPU ID is out of range\n");
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: waveform error DE_INVALID_FPU_ID:"
+                        " FPU ID in waveform table is out of range\n",
+                        canlayer::get_realtime());
             return DE_INVALID_FPU_ID;
         }
 
         // require same number of steps for all FPUs
         if (waveforms[0].steps.size() != num_steps)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_RAGGED:"
+                        " waveforms for different FPUs have unequal length\n",
+                        canlayer::get_realtime());
             return DE_INVALID_WAVEFORM_RAGGED;
         }
 
@@ -488,8 +546,10 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
 
                 if (xa > MAX_STEPS)
                 {
-                    printf("fpu %i, %s arm, movement interval %i: step count exceeds maximum\n",
-                           fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:"
+                                "fpu %i, %s arm, movement interval %i: step count exceeds maximum\n\n",
+                                canlayer::get_realtime(),
+                                fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
                     return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
                 }
 
@@ -497,8 +557,6 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
 
                 int xa_small = std::min(xa_last, xa);
                 int xa_large = std::max(xa_last, xa);
-                //printf(", xa_small=%i, xa_large=%i, xa_small*max_factor=%i\n",
-                //       xa_small, xa_large, int(xa_small * MAX_FACTOR));
 
                 bool valid_acc = (
                                      // 1) movement into the same direction
@@ -532,10 +590,10 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
 
                 if (!valid_acc)
                 {
-                    //printf("fpu_id=%i, channel=%i, step=%i, x_sign=%i, x_last_sign=%i, xa_small=%i, xa_large=%i\n",
-                    //       fpu_id, chan_idx, sidx, x_sign, x_last_sign, xa_small, xa_large);
-                    printf("fpu %i, %s arm, movement interval %i: invalid step count change\n",
-                           fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: DE_INVALID_WAVEFORM_CHANGE: "
+                                "fpu %i, %s arm, movement interval %i: invalid step count change\n",
+                                canlayer::get_realtime(),
+                                fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
                     return DE_INVALID_WAVEFORM_CHANGE;
                 }
 
@@ -545,12 +603,17 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
             if (xa_last > MIN_STEPS)
             {
                 // last step count must be minimum or smaller
-                printf("fpu %i, %s arm, movement interval %i: last step count too large\n",
-                       fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
+                LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: DE_INVALID_WAVEFORM_TAIL: "
+                            "fpu %i, %s arm, movement interval %i: last step count too large\n",
+                            canlayer::get_realtime(),
+                            fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
                 return DE_INVALID_WAVEFORM_TAIL;
             }
         }
     }
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver::validateWaveforms() waveform OK\n",
+                canlayer::get_realtime());
+
     return DE_OK;
 }
 
@@ -559,6 +622,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         const t_wtable& waveforms, bool check_protection)
 {
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: calling configMotion()\n",
+                canlayer::get_realtime());
+    
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
 
@@ -570,6 +636,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_NO_CONNECTION - no connection present\n",
+                    canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
 
@@ -584,6 +652,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
             if (fpu_status == FPST_OBSTACLE_ERROR)
             {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_UNRESOLVED_COLLISION"
+                            " - unresolved collision active\n",
+                            canlayer::get_realtime());
                 return DE_UNRESOLVED_COLLISION;
             }
             // This isn't enforced in protocol version 1,
@@ -592,12 +663,18 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             // enableMove first.
             if (fpu_status == FPST_ABORTED)
             {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_ABORTED_STATE"
+                            " - FPUs are in aborted state\n",
+                            canlayer::get_realtime());
                 return DE_ABORTED_STATE;
             }
 
             if ( ! (grid_state.FPU_state[i].alpha_was_zeroed
                     && grid_state.FPU_state[i].beta_was_zeroed))
             {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_FPUS_NOT_CALIBRATED"
+                            " - FPUs are not calibrated and check_protection flag was not cleared\n",
+                            canlayer::get_realtime());
                 return DE_FPUS_NOT_CALIBRATED;
             }
         }
@@ -622,14 +699,29 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     bool configured_fpus[MAX_NUM_POSITIONERS];
     memset(configured_fpus, 0, sizeof(configured_fpus));
 #endif
+    const int num_loading =  waveforms.size();
+        
     int step_index = 0;
     int retry_downcount = 5;
+    int alpha_cur[MAX_NUM_POSITIONERS];
+    int beta_cur[MAX_NUM_POSITIONERS];
     while (step_index < num_steps)
     {
         const bool first_entry = (step_index == 0);
         const bool last_entry = (step_index == (num_steps-1));
+        if (first_entry)
+        {
+            // get current step number to track positions
+            memset(alpha_cur,0,sizeof(alpha_cur));
+            memset(beta_cur,0,sizeof(beta_cur));
+            for (int i = 0; i < config.num_fpus; i++)
+            {
+                alpha_cur[i] = grid_state.FPU_state[i].alpha_steps;
+                beta_cur[i] = grid_state.FPU_state[i].beta_steps;
+            }
+        }
+       
 
-        int num_loading =  waveforms.size();
         for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
         {
 
@@ -644,6 +736,10 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
             if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
             {
                 // the FPU id is out of range
+                LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver::configMotion(): FPU id '%i' is out of range"
+                            "needs to be between 0 and %i\n",
+                            canlayer::get_realtime(),
+                            fpu_id, (config.num_fpus - 1));
                 return DE_INVALID_FPU_ID;
             }
 
@@ -664,6 +760,16 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
                 unique_ptr<I_CAN_Command> cmd(can_command.release());
+                alpha_cur[fpu_id] += step.alpha_steps;
+                beta_cur[fpu_id] += step.beta_steps;
+                
+                LOG_CONTROL(LOG_VERBOSE, "%18.6f : configMotion(): sending wtable section %i, fpu # %i "
+                            "= (%+4i, %+4i) steps --> pos (%7.3f, %7.3f) degree)\n",
+                            canlayer::get_realtime(),
+                            step_index, fpu_id, step.alpha_steps, step.beta_steps,
+                            alpha_cur[fpu_id] / STEPS_PER_DEGREE_ALPHA,
+                            beta_cur[fpu_id] / STEPS_PER_DEGREE_BETA);
+                
                 gateway.sendCommand(fpu_id, cmd);
             }
         }
@@ -729,6 +835,20 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     }
 #endif
 
+
+    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    {
+        int fpu_id = waveforms[fpu_index].fpu_id;
+        LOG_CONTROL(LOG_GRIDSTATE, "%18.6f : configMotion(): fpu # %i "
+                    "--> pos (%5i, %5i) steps ~ (%7.3f, %7.3f) degree) - OK\n",
+                    canlayer::get_realtime(),
+                    fpu_id,
+                    alpha_cur[fpu_id],
+                    beta_cur[fpu_id],
+                    alpha_cur[fpu_id] / STEPS_PER_DEGREE_ALPHA,
+                    beta_cur[fpu_id] / STEPS_PER_DEGREE_BETA);
+    }
+    
     return DE_OK;
 }
 
