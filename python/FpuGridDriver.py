@@ -94,7 +94,8 @@ def make_logdir(log_dir):
 class GridDriver:
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
-                 logLevel=LOG_DEBUG,
+                 # logLevel=LOG_DEBUG,
+                 logLevel=LOG_TRACE_CAN_MESSAGES,
                  log_dir=DEFAULT_LOGDIR,
                  control_logfile="_{start_timestamp}-fpu_control.log",
                  tx_logfile = "_{start_timestamp}-fpu_tx.log",
