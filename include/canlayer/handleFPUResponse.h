@@ -21,6 +21,7 @@
 #define HANDLE_FPU_RESPONSE_H
 
 #include "FPUState.h"
+#include "GridDriverConfig.h"
 #include "canlayer/I_CAN_Command.h"
 #include "canlayer/TimeOutList.h"
 
@@ -28,10 +29,11 @@ namespace mpifps
 {
 namespace canlayer
 {
-void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
-                       const t_response_buf& data,
-                       const int blen, TimeOutList& timeout_list,
-                       int &count_pending);
+    void handleFPUResponse(const GridDriverConfig config,
+                           int fpu_id, t_fpu_state& fpu,
+                           const t_response_buf& data,
+                           const int blen, TimeOutList& timeout_list,
+                           int &count_pending);
 
 }
 }

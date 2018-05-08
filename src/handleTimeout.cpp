@@ -37,7 +37,7 @@ namespace mpifps
 namespace canlayer
 {
 
-void handleTimeout(int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id)
+void handleTimeout(const GridDriverConfig config, int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id)
 {
     timespec cur_time;
 
@@ -47,17 +47,27 @@ void handleTimeout(int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id)
     {
     case CCMD_PING_FPU   :
         fpu.ping_ok = false;
+        LOG_RX(LOG_ERROR, "%18.6f : RX WARNING: pingFPU command  timed out for FPU #%i!.\n",
+               canlayer::get_realtime(),
+               fpu_id);
         break;
 
     case CCMD_CONFIG_MOTION   :
         break;
 
     case CCMD_EXECUTE_MOTION  :
+        LOG_RX(LOG_ERROR, "%18.6f : RX ERROR: executeMotion command  timed out for FPU #%i!.\n",
+               canlayer::get_realtime(),
+               fpu_id);
         fpu.state = FPST_RESTING;
         break;
 
     case CCMD_ABORT_MOTION    :
-        printf("CRITICAL ERROR: ABORT_MOTION timed out for FPU #%i!\n", fpu_id);
+        fprintf(stderr, "CRITICAL ERROR: ABORT_MOTION timed out for FPU #%i!\n", fpu_id);
+        
+        LOG_RX(LOG_ERROR, "%18.6f : RX CRITICAL ERROR: ABORT_MOTION timed out for FPU #%i!.\n",
+               canlayer::get_realtime(),
+               fpu_id);
         break;
 
     case CCMD_RESET_FPU       :
@@ -66,21 +76,34 @@ void handleTimeout(int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id)
 
     case CCMD_FIND_DATUM :
         fpu.state = FPST_UNINITIALIZED;
-        printf("Error: findDatum timed out for FPU #%i\n", fpu_id);
+        fprintf(stderr, "Error: findDatum timed out for FPU #%i\n", fpu_id);
+        
+        LOG_RX(LOG_ERROR, "%18.6f : RX ERROR: findDatum() timed out for FPU #%i!.\n",
+               canlayer::get_realtime(),
+               fpu_id);
         break;
 
 
     case CCMD_ENABLE_BETA_COLLISION_PROTECTION:
         fpu.state = fpu.previous_state;
+        LOG_RX(LOG_ERROR, "%18.6f : RX ERROR: enableBetaCollisionProtection() command timed out for FPU #%i!.\n",
+               canlayer::get_realtime(),
+               fpu_id);
         break;
 
     case CCMD_FREE_BETA_COLLISION:
+        LOG_RX(LOG_ERROR, "%18.6f : RX ERROR: freeBetaCollision() command timed out for FPU #%i!.\n",
+               canlayer::get_realtime(),
+               fpu_id);
         fpu.state = fpu.previous_state;
         break;
 
     default:
         // invalid command, ignore
-        // FIXME: log invalid responses
+        LOG_RX(LOG_ERROR, "%18.6f : RX WARNING: FPU #%i: time-out for command code %i ignored.\n",
+               canlayer::get_realtime(),
+               fpu_id,
+               cmd_id);
         break;
 
     }

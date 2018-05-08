@@ -48,10 +48,20 @@ namespace canlayer
 
 
 GatewayDriver::GatewayDriver(GridDriverConfig config_vals)
-    : config(config_vals), fpuArray(config_vals), command_pool(config_vals)
+    : commandQueue(config_vals), config(config_vals),
+      fpuArray(config_vals), 
+      command_pool(config_vals)       
 {
 
     assert(config.num_fpus <= MAX_NUM_POSITIONERS);
+
+    // pass config parameters to sbuffer instances.  This is a bit
+    // ugly as config needs to be kept const, but sbuffer being an
+    // array, we unfortunately cannot set it in the initializer list.
+    for(int i=0; i < MAX_NUM_GATEWAYS; i++)
+    {
+        sbuffer[i].setConfig(config_vals);
+    }
 
     // number of commands which are being processed
     fpuArray.setDriverState(DS_UNINITIALIZED);
@@ -134,9 +144,16 @@ E_DriverErrCode GatewayDriver::deInitialize()
         break;
 
     case DS_CONNECTED:
+        
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::deInitialize() : "
+                    "GatewayDriver::deInitialize() - driver is still connected",
+                    canlayer::get_realtime());
         return DE_DRIVER_STILL_CONNECTED;
 
     case DS_UNINITIALIZED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : warning: GridDriver::deInitialize() : "
+                    "GatewayDriver::deInitialize() - driver is not initialized",
+                    canlayer::get_realtime());
         return DE_DRIVER_NOT_INITIALIZED;
     }
 
@@ -407,13 +424,23 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
         break; // OK
 
     case DS_UNINITIALIZED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                    "GatewayDriver::connect() - driver is not initialized",
+                    canlayer::get_realtime());
         return DE_DRIVER_NOT_INITIALIZED;
 
     case DS_CONNECTED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                    "GatewayDriver::connect() - driver is already connected",
+                    canlayer::get_realtime());
+        
         return DE_DRIVER_ALREADY_CONNECTED;
 
     default:
     case DS_ASSERTION_FAILED:
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                    "GatewayDriver::connect() - assertion failed in FPUArray.getDriverState()",
+                    canlayer::get_realtime());
         return DE_ASSERTION_FAILED;
     }
 
@@ -424,6 +451,10 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     DescriptorCommandEvent = eventfd(0, EFD_NONBLOCK);
     if (DescriptorCommandEvent < 0)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                    "GatewayDriver::connect() - assertion failed,"
+                    " creation of event file descriptor failed",
+                    canlayer::get_realtime());
         ecode = DE_ASSERTION_FAILED;
         // we use goto here to avoid code duplication.
         goto error_exit;
@@ -433,6 +464,11 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     if (DescriptorCloseEvent < 0)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                    "GatewayDriver::connect() - assertion failed,"
+                    " creation of event file descriptor failed",
+                    canlayer::get_realtime());
+        
         ecode= DE_ASSERTION_FAILED;
         goto close_CommandEventDescriptor;
     }
@@ -458,6 +494,10 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
         int sock_fd = make_socket(config, ip, port);
         if (sock_fd < 0)
         {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                        "GatewayDriver::connect() - assertion failed,"
+                        " creation of socket failed",
+                        canlayer::get_realtime());
             ecode = DE_NO_CONNECTION;
             goto close_sockets;
         }
@@ -494,7 +534,13 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
         if (err != 0)
         {
-            printf("\ncan't create thread :[%s]", strerror(err));
+            fprintf(stderr, "\ncan't create thread :[%s]", strerror(err));
+            
+            LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                        "GatewayDriver::connect() - assertion failed,"
+                        "RX thread creation failed : %s",
+                        canlayer::get_realtime(),
+                        strerror(err));
             ecode = DE_ASSERTION_FAILED;
             // no goto here, this is intentional, we need
             // to deallocate attr.
@@ -506,9 +552,17 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
                                  (void *) this);
             if (err != 0)
             {
+                
+                fprintf(stderr, "\ncan't create thread :[%s]", strerror(err));
+                
+                LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                            "GatewayDriver::connect() - assertion failed,"
+                            "RX thread creation failed : %s",
+                            canlayer::get_realtime(),
+                            strerror(err));
+                
                 ecode = DE_ASSERTION_FAILED;
-                printf("\ncan't create thread :[%s]", strerror(err));
-
+                
                 // set flag to stop first thread
                 exit_threads.store(true, std::memory_order_release);
                 // also signal termination via eventfd, to inform epoll()
@@ -527,6 +581,11 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
 
     if (ecode != DE_OK)
     {
+
+        LOG_CONTROL(LOG_DEBUG, "%18.6f : error: GridDriver::connect() : "
+                    "GatewayDriver::connect() - error exit, freeing any open resources ",
+                    canlayer::get_realtime());
+
 
 close_sockets:
         for(int k = (num_initialized_sockets -1); k >= 0; k--)
@@ -564,6 +623,10 @@ E_DriverErrCode GatewayDriver::disconnect()
     if ( (dstate == DS_UNCONNECTED) || (dstate == DS_UNINITIALIZED))
     {
         // nothing to be done
+        LOG_CONTROL(LOG_ERROR, "%18.6f : warning: GridDriver::disconnect() : "
+                    "GatewayDriver::disconnect() - driver is not connected ",
+                    canlayer::get_realtime());
+            
         return DE_NO_CONNECTION;
     }
 
@@ -1173,17 +1236,13 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buff
     // call fpu-secific handler.
     if (can_msg == nullptr)
     {
-        // FIXME: logging of invalid messages
-#ifdef DEBUG
-        printf("RX invalid CAN message (empty)- ignoring.\n");
-#endif
+        LOG_RX(LOG_ERROR, "RX %18.6f: error:  invalid CAN message (empty)- ignoring.\n",
+              canlayer::get_realtime());
     }
     else if (clen < 3)
     {
-        // FIXME: logging of invalid messages
-#ifdef DEBUG
-        printf("RX invalid CAN message (length is only %i)- ignoring.\n", clen);
-#endif
+        LOG_RX(LOG_ERROR, "RX %18.6f : error: invalid CAN message (length is only %i)- ignoring.\n",
+               canlayer::get_realtime(), clen);
     }
     else
     {
@@ -1268,6 +1327,10 @@ E_DriverErrCode GatewayDriver::abortMotion(t_grid_state& grid_state,
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : FATAL ERROR: GridDriver::abortMotion() : "
+                    " - driver is not connected, skipping command ",
+                    canlayer::get_realtime());
+        
         return DE_NO_CONNECTION;
     }
 

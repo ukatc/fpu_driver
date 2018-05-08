@@ -21,6 +21,8 @@
 #include <cassert>
 
 #include "DriverConstants.h"
+#include "canlayer/time_utils.h"
+
 #include "canlayer/CommandPool.h"
 // alphabetically sorted below
 #include "canlayer/commands/AbortMotionCommand.h"
@@ -225,6 +227,8 @@ E_DriverErrCode CommandPool::initialize()
     pthread_mutex_unlock(&pool_mutex);
     if (allocation_error)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : GridDriver::initialize() - out of memory in CommandPool::initialize()\n",
+                    canlayer::get_realtime());
         return DE_DRIVER_NOT_INITIALIZED;
     }
 
@@ -260,6 +264,8 @@ E_DriverErrCode CommandPool::deInitialize()
     }
     if (allocation_error)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : GridDriver::deinitialize() : Assertion failed: out of memory\n",
+                    canlayer::get_realtime());
         return DE_ASSERTION_FAILED;
     }
 

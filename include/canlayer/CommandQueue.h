@@ -23,6 +23,7 @@
 #include "../DriverConstants.h"
 #include "I_CAN_Command.h"
 
+#include "GridDriverConfig.h"
 #include "time_utils.h"
 #include "CommandPool.h"
 
@@ -54,7 +55,7 @@ public:
 
     typedef int t_command_mask;
 
-    CommandQueue();
+    CommandQueue(const GridDriverConfig config_values);
 
     // set number of active gateways for which queue is polled
     void setNumGateways(int ngws);
@@ -107,6 +108,7 @@ public:
     void setEventDescriptor(int fd);
 
 private:
+    const GridDriverConfig config;
     int ngateways;
     mutable pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
     // condition variables which is signaled on state changes

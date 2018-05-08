@@ -55,6 +55,11 @@ public:
         : config(config_vals), gateway(config_vals)
     {
         num_gateways = 0;
+        
+#if CAN_PROTOCOL_VERSION == 1
+        // initialize field which records last arm selection
+        last_datum_arm_selection = DASEL_NONE;
+#endif
     }
 
     ~AsyncDriver()
@@ -150,6 +155,10 @@ private:
 
     int num_gateways;
     GatewayDriver gateway;
+#if CAN_PROTOCOL_VERSION == 1
+    E_DATUM_SELECTION last_datum_arm_selection;
+#endif
+    
 };
 
 } // end of namespace

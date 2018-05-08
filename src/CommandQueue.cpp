@@ -30,7 +30,8 @@ namespace canlayer
 {
 
 
-CommandQueue::CommandQueue()
+CommandQueue::CommandQueue(const GridDriverConfig config_values):
+config(config_values)
 {
     ngateways = 0;
     EventDescriptorNewCommand = -1;
@@ -41,6 +42,9 @@ E_DriverErrCode CommandQueue::initialize()
 
     if (condition_init_monotonic(cond_queue_append) != 0)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : initializeDriver() CommandQueue::initialize()- assertion "
+                    "failed, could not initialize pthreads condition variable\n",
+                    canlayer::get_realtime());
         return DE_ASSERTION_FAILED;
     }
 
@@ -200,6 +204,8 @@ CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
 
     if (new_command == nullptr)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : CommandQueue::requeue() - QS_MISSING_INSTANCE, no instance passed\n",
+                    canlayer::get_realtime());
         return QS_MISSING_INSTANCE;
     }
 

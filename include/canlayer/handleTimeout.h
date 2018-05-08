@@ -22,15 +22,16 @@
 
 #include "FPUState.h"
 #include "canlayer/I_CAN_Command.h"
+#include "GridDriverConfig.h"
 
 namespace mpifps
 {
-namespace canlayer
-{
+    namespace canlayer
+    {
 
-void handleTimeout(int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id);
+        void handleTimeout(const GridDriverConfig config, int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id);
 
-}
+    }
 }
 
 #endif

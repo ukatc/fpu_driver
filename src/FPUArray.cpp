@@ -94,6 +94,9 @@ E_DriverErrCode FPUArray::initialize()
     // bugs).
     if (condition_init_monotonic(cond_state_change) != 0)
     {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : GridDriver::initialize() FpuArray::initialize()"
+                    " - assertion failed, could not initialize pthreads condition variable\n",
+                    canlayer::get_realtime());
         return DE_ASSERTION_FAILED;
     }
 
@@ -537,7 +540,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
         const E_FPU_STATE old_state = fpu.state;
 
         // remlove entries which are expired, and adjust pending count
-        timespec next_timeout = expire_pending(fpu, fpu_id,
+        timespec next_timeout = expire_pending(config, fpu, fpu_id,
                                                cur_time,
                                                FPUGridState.count_pending,
                                                FPUGridState.count_timeout);
@@ -638,43 +641,53 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
     int fpu_busid = can_identifier & 0x7f;
 
-#ifdef DEBUG2
-#define PRINT_BYTES
-#ifdef PRINT_BYTES
+    char log_buf[256];
+    int buf_idx=0;
+    int char_cnt = 0;
+
+
     int priority = can_identifier >> 7;
-    printf("dispatching response: gateway_id=%i, bus_id=%i,can_identifier=%i,"
-           "priority=%i, fpu_busid=%i, data[%i] =",
-           gateway_id, bus_id, can_identifier, priority, fpu_busid, blen);
-#endif
+    char_cnt = sprintf(log_buf, "RX: %18.6f: dispatching response: gateway_id=%i, bus_id=%i, can_identifier=%i,"
+                       "priority=%i, fpu_busid=%i, data[%i] =",
+                       canlayer::get_realtime(),
+                       gateway_id, bus_id, can_identifier, priority, fpu_busid, blen);
+    buf_idx += char_cnt;
 
     assert(gateway_id < MAX_NUM_GATEWAYS);
 
+    E_LogLevel log_level = config.logLevel;
     int nbytes = blen;
     if (nbytes > MAX_CAN_PAYLOAD_BYTES)
     {
-        printf("WARNING: blen too long");
+        char_cnt = sprintf(log_buf + buf_idx, "WARNING: blen too long");
+        buf_idx += char_cnt;
         nbytes = MAX_CAN_PAYLOAD_BYTES;
+        log_level = LOG_ERROR;
     }
     if (nbytes < 0)
     {
-        printf("WARNING: blen negative");
+        char_cnt = sprintf(log_buf + buf_idx, "WARNING: blen negative");
+        buf_idx += char_cnt;
         nbytes = 0;
+        log_level = LOG_ERROR;
     }
-#ifdef PRINT_BYTES
-    for (int i=0; i < nbytes; i++)
+
+    if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
     {
-        printf(" %02i", data[i]);
+        for (int i=0; i < nbytes; i++)
+        {
+            char_cnt = sprintf(log_buf + buf_idx, " %02x", data[i]);
+            buf_idx += char_cnt;
+        }
     }
-    printf("\n");
-#endif
-#endif
+        
+    LOG_RX(log_level, "%s\n", log_buf);
 
 #if (CAN_PROTOCOL_VERSION == 1)
     if (blen != 8)
     {
-#ifdef DEBUG
-        printf("wrong message length (blen=%i) for version 1 - ignored.\n", blen);
-#endif
+        LOG_RX(LOG_ERROR, "%18.6f : RX: wrong message length (blen=%i) for version 1 - ignored.\n",
+               canlayer::get_realtime(), blen);
         return;
     }
 #endif
@@ -682,23 +695,22 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     // fpu_busid is a one-based index
     if (fpu_busid == 0)
     {
-#ifdef DEBUG
-        printf("fpu_busid zero, ignored\n");
-#endif
+        LOG_RX(LOG_ERROR, "%18.6f : RX: fpu_busid zero, ignored\n.\n",
+               canlayer::get_realtime());
         return;
     }
     if (fpu_busid > FPUS_PER_BUS)
     {
-#ifdef DEBUG
-        printf("fpu_busid too large (%i), ignored\n", fpu_busid);
-#endif
+        LOG_RX(LOG_ERROR, "%18.6f : RX: fpu_busid too large (%i), ignored\n", 
+               canlayer::get_realtime(),
+               fpu_busid);
         return;
     }
     if (bus_id >= BUSES_PER_GATEWAY)
     {
-#ifdef DEBUG
-        printf("bus_id too large (%i), ignored\n", bus_id);
-#endif
+        LOG_RX(LOG_ERROR, "%18.6f : RX: CAN bus id too large (%i), ignored\n", 
+               canlayer::get_realtime(),
+               bus_id);
         return;
     }
 
@@ -706,11 +718,10 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     // version 2 gets rid of this.
     if (data[0] != fpu_busid)
     {
-#ifdef DEBUG
-        printf("RX invalid message for protocol 1: payload fpu_busid (%i) does"
+        LOG_RX(LOG_ERROR, "%18.6f : RX invalid message for protocol 1: payload fpu_busid (%i) does"
                " not match fpu_busid from canid (%i) - ignored.\n",
+               canlayer::get_realtime(),
                data[0], fpu_busid);
-#endif
         return;
     }
 
@@ -719,14 +730,18 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
     if ((fpu_id >= config.num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
     {
-#ifdef DEBUG
         static bool has_warned = false;
         if (! has_warned)
         {
             printf("WARNING (once): fpu_id too large (%i), ignored\n", fpu_id);
             has_warned = true;
         }
-#endif
+        
+        LOG_RX(LOG_ERROR, "%18.6f : RX WARNING :"
+               " received fpu_id (%i) larger than config.num_fpus (%i), ignored\n",
+               canlayer::get_realtime(),
+               fpu_id,
+               config.num_fpus);
         return;
     }
 
@@ -745,7 +760,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
         const t_fpu_state oldstate = FPUGridState.FPU_state[fpu_id];
 
-        canlayer::handleFPUResponse(fpu_id, FPUGridState.FPU_state[fpu_id], data, blen,
+        canlayer::handleFPUResponse(config, fpu_id, FPUGridState.FPU_state[fpu_id], data, blen,
                                     tout_list, FPUGridState.count_pending);
 
 
@@ -778,14 +793,6 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
     } // end of locked block
     pthread_mutex_unlock(&grid_state_mutex);
-
-#ifdef PRINT_BYTES
-    printf(" (dispatch_response): OK\n");
-#endif
-
-
-
-
 
 }
 
@@ -926,7 +933,7 @@ void remove_pending(t_fpu_state& fpu, int fpu_id,
 
 }
 
-timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
+timespec expire_pending(const GridDriverConfig config, t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
                         int &count_pending, unsigned long &count_timeouts)
 {
 
@@ -962,15 +969,19 @@ timespec expire_pending(t_fpu_state& fpu, int fpu_id, const timespec& expiration
             fpu.last_command = static_cast<E_CAN_COMMAND>(cmd_code);
             fpu.last_status = ER_TIMEDOUT;
 
-            count_pending--;
+            LOG_RX(LOG_ERROR, "%18.6f : RX FPU %i: command code %i timed out.\n",
+                   canlayer::get_realtime(),
+                   fpu_id,
+                   cmd_code);
+            
+            count_pending--; 
             // Note: the counter below wraps and this is intended,
             // it is an unsigned value which will wrap around
             // and is only compared against change.
             count_timeouts++;
-            fflush(stdout);
             fpu.num_active_timeouts--;
             // fix state if necessary
-            canlayer::handleTimeout(fpu_id, fpu, static_cast<E_CAN_COMMAND>(cmd_code));
+            canlayer::handleTimeout(config, fpu_id, fpu, static_cast<E_CAN_COMMAND>(cmd_code));
         }
         read_index++;
 

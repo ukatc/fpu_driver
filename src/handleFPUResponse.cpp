@@ -153,7 +153,8 @@ void update_status_flags(t_fpu_state& fpu, unsigned int status_mask)
 
 }
 
-void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
+void handleFPUResponse(const GridDriverConfig config,
+                       int fpu_id, t_fpu_state& fpu,
                        const t_response_buf& data,
                        const int blen, TimeOutList& timeout_list,
                        int &count_pending)
@@ -172,11 +173,13 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     switch (cmd_id)
     {
     case CCMD_CONFIG_MOTION   :
-#ifdef DEBUG2
-        printf("handle_ConfigMotion: fpu #%i, segment %ui: status=%ui, error=%i\n",
+        
+        LOG_RX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX : handle_ConfigMotion:"
+               " fpu #%i, segment %ui: status=%ui, error=%i\n",
+               get_realtime(),
                fpu_id, fpu.num_waveform_segments,
                response_status, response_errcode);
-#endif
+        
         // clear time-out flag
         remove_pending(fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
@@ -184,6 +187,14 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             //logErrorStatus(fpu_id, cur_time, response_errcode);
             // if the FPU was in loading state, it is switched to RESTING,
             // otherwise unchanged.
+
+            // FIXME: decrease log level in production system to keep responsivity at maximum
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "configMotion command for FPU %i failed with error code %i\n",
+                   get_realtime(),
+                   fpu_id,
+                   response_errcode);
+            
             if (fpu.state == FPST_LOADING)
             {
                 fpu.state = FPST_RESTING;
@@ -232,10 +243,11 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // re-add it as pending to avoid a stuck state.
             if (((fpu.pending_command_set >> CCMD_EXECUTE_MOTION) & 1) == 0)
             {
-#ifdef DEBUG
-                printf("FPU #%i: WARNING: executeMotion was removed from pending set (%0x), added again\n",
+                LOG_RX(LOG_DEBUG, "%18.6f : RX : "
+                       "FPU #%i: WARNING: executeMotion was removed from pending set (%0x), added again\n",
+                       get_realtime(),
                        fpu_id, fpu.pending_command_set);
-#endif
+                    
                 const timespec new_timeout = {40, 0};
                 add_pending(fpu, fpu_id, CCMD_EXECUTE_MOTION,
                             new_timeout,
@@ -247,10 +259,14 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // clear timeout status
             remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode,
                            timeout_list, count_pending);
-#ifdef DEBUG
-            printf("FPU # %i: executeMotion command got error response,"
-                   " removed from pending list.\n", fpu_id);
-#endif
+            
+            // FIXME: decrease log level in production system to keep responsivity at maximum
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "FPU # %i: executeMotion command got error response code #%i,"
+                   " removed from pending list.\n",
+                   get_realtime(),
+                   fpu_id,
+                   response_errcode);
 
             if ((response_errcode == ER_WAVENRDY)
                     || (response_errcode == ER_PARAM))
@@ -304,8 +320,13 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // FIXME: This should possibly generate an abortMotion
             // message for all FPUs, because other FPUs can crash into
             // the stopped one if they continue moving.
-            printf("step timing error response received for FPU %i\n",
+            
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "while waiting for finishedMotion: "
+                   "step timing error response received for FPU %i\n",
+                   get_realtime(),
                    fpu_id);
+            
             fpu.state = FPST_ABORTED;
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
@@ -321,6 +342,13 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.waveform_valid = false;
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
+            
+            // FIXME: decrease log level in production system to keep responsivity at maximum
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "while waiting for finishedMotion: "
+                   "collision detected message received for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
         }
         else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT) || fpu.at_alpha_limit)
         {
@@ -331,6 +359,13 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
             fpu.alpha_datum_switch_active = true;
+            
+            // FIXME: decrease log level in production system to keep responsivity at maximum
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "while waiting for finishedMotion: "
+                   "limit switch breach message received for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
         }
         else if (response_errcode == 0)
         {
@@ -369,6 +404,14 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         }
         remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
+
+        // this is set to a low logging level because any moving FPU
+        // will send this message
+        LOG_RX(LOG_DEBUG, "%18.6f : RX : "
+               "abortMotion message received for FPU %i\n",
+               get_realtime(),
+               fpu_id);
+        
         break;
 
     case CCMD_GET_STEPS_ALPHA :
@@ -477,6 +520,12 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         else
         {
             fpu.ping_ok = false;
+            
+            // FIXME: decrease log level in production system to keep responsivity at maximum
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "pingFPU command failed for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
         }
 
 
@@ -548,7 +597,6 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     case CCMD_FIND_DATUM :
         // we do not clear the pending flag, because
         // we wait for the datum search to finish
-        //printf("confirmed: datum search for FPU %i \n", fpu_id);
         if (response_errcode == 0)
         {
             // datum search was successfully started
@@ -562,10 +610,11 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             // case, re-add it as pending to avoid a stuck state.
             if (((fpu.pending_command_set >> CCMD_FIND_DATUM) & 1) == 0)
             {
-#ifdef DEBUG
-                printf("FPU #%i: WARNING: findDatum was removed from pending set, added again\n",
+                LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                       "FPU #%i: WARNING: findDatum was removed from pending set, added again\n",
+                       get_realtime(),
                        fpu_id);
-#endif
+                
                 const timespec new_timeout = {40, 0};
                 add_pending(fpu, fpu_id, CCMD_FIND_DATUM,
                             new_timeout,
@@ -590,6 +639,13 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.waveform_valid = false;
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
+            
+            // FIXME: decrease log level in production system to keep responsivity at maximum
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "while waiting for end of datum command:" 
+                   "limit switch breach message received for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
         }
         else if ((response_errcode == ER_COLLIDE) || fpu.beta_collision)
         {
@@ -598,11 +654,24 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             fpu.waveform_valid = false;
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
+            
+            // FIXME: decrease log level in production system to keep responsivity at maximum
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "while waiting for end of datum command:" 
+                   "collision detection message received for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
         }
         else if (response_status & STBT_ABORT_WAVE)
         {
             fpu.state = FPST_ABORTED;
             fpu.waveform_valid = false;
+            
+            LOG_RX(LOG_DEBUG, "%18.6f : RX : "
+                   "while waiting for end of datum command:" 
+                   "movement abortion message received for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
         }
         else if (response_errcode != 0)
         {
@@ -648,8 +717,11 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
 
     case CMSG_WARN_COLLISION_BETA:
-        printf("FPU # %i: beta collision message received \n", fpu_id);
-
+        LOG_RX(LOG_ERROR, "%18.6f : RX : "
+               "collision detection message received for FPU %i\n",
+               get_realtime(),
+               fpu_id);
+            
         if (fpu.state == FPST_MOVING)
         {
             // clear time-out flag
@@ -664,7 +736,6 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
 
         }
 
-        printf("handleFPUResponse()::CMSG_WARN_LIMIT_BETA: setting state to OBSTACLE_ERROR\n");
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.beta_collision = true;
         fpu.waveform_valid = false;
@@ -677,7 +748,6 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
         break;
 
     case CMSG_WARN_LIMIT_ALPHA:
-        printf("FPU # %i: alpha limit breach message received \n", fpu_id);
         if (fpu.state == FPST_MOVING)
         {
             // clear time-out flag
@@ -691,7 +761,11 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
             remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
         }
 
-        printf("handleFPUResponse()::CMSG_WARN_LIMIT_ALPHA: setting state to OBSTACLE_ERROR\n");
+        LOG_RX(LOG_ERROR, "%18.6f : RX : "
+               "limit switch breach message received for FPU %i\n",
+               get_realtime(),
+               fpu_id);
+        
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.at_alpha_limit = true;
         fpu.waveform_valid = false;
@@ -739,7 +813,11 @@ void handleFPUResponse(int fpu_id, t_fpu_state& fpu,
     case CCMD_NO_COMMAND      :
     default:
         // invalid command, ignore
-        // FIXME: log invalid responses
+        LOG_RX(LOG_ERROR, "%18.6f : RX : "
+               "invalid message (id # %i) received for FPU %i\n",
+               get_realtime(),
+               cmd_id,
+               fpu_id);
         break;
 
     }

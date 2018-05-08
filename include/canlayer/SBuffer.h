@@ -25,6 +25,7 @@
 #include <stdint.h>
 
 #include "CAN_Constants.h"
+#include "../GridDriverConfig.h"
 
 #include "I_ResponseHandler.h"  // interface for processing received CAN responses
 
@@ -60,6 +61,8 @@ public:
 
 
     SBuffer();
+
+    void setConfig(const GridDriverConfig config_vals);
 
     // encodes a buffer with a CAN message and sends it to
     // the socket identified with sockfd
@@ -117,6 +120,10 @@ private:
     int clen;
 
     uint8_t wbuf[MAX_STUFFED_MESSAGE_LENGTH];
+
+    // this isn't declared as const because sbuffer is an array member
+    // in use, and C++11 lacks a pratical way to initialize this
+    GridDriverConfig config;
 
 };
 

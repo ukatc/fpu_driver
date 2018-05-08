@@ -26,7 +26,7 @@
 #include <stdio.h>
 
 #include "canlayer/SBuffer.h"
-
+#include "canlayer/time_utils.h"
 
 // FIXME: reading and writing data is technically unrelated, and
 // should probably splitted into two classes.
@@ -157,20 +157,40 @@ SBuffer::SBuffer()
     memset(command_buf, 0, sizeof(command_buf));
 }
 
+void SBuffer::setConfig(const GridDriverConfig config_vals)
+{
+    config = config_vals;
+    // config must not be changed any more, it is meant to be const
+}
+
 
 SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
         int const input_len,
         uint8_t src[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES])
 {
     int out_len = 0;
-#if DEBUG2
-    printf("command bytes (len=%i)= [", input_len);
-    for(int i=0; i < input_len; i++)
+    const int LINE_LEN=128;
+    char log_buffer[LINE_LEN];
+
+    int buf_idx = sprintf(log_buffer, "command bytes (len=%i)= [", input_len);
+
+    if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)        
     {
-        printf(" %02x", src[i]);
+        for(int i=0; i < input_len; i++)
+        {
+            int nchars = sprintf(log_buffer + buf_idx," %02x", src[i]);
+            buf_idx += nchars;
+    
+            sprintf(log_buffer + buf_idx,"]\n");
+        }
+    
+
+        LOG_TX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX: encode_and_send(): sending %s",
+               canlayer::get_realtime(),
+               log_buffer);
     }
-    printf("]\n");
-#endif
+    
+
 
     encode_buffer(input_len, src, out_len, wbuf);
     out_offset = 0;
@@ -259,6 +279,11 @@ SBuffer::E_SocketStatus SBuffer::send_pending(int sockfd)
         unsent_len -= retval;
         // increment offset into buffer
         out_offset += retval;
+    }
+    if (unsent_len >0)
+    {
+        LOG_TX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX: send_pending(): %i bytes left to send",
+               canlayer::get_realtime(), unsent_len);
     }
     return ST_OK;
 }
