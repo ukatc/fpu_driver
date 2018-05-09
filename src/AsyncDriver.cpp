@@ -619,7 +619,7 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
             {
                 LOG_CONTROL(LOG_GRIDSTATE, "%18.6f : AsyncDriver: findDatum not finished, waiting time elapsed\n",
                             canlayer::get_realtime());
-                if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
+                if (config.logLevel >= LOG_VERBOSE)
                 {
                     logGridState(config.logLevel, grid_state);
                 }
