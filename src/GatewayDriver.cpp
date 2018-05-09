@@ -630,7 +630,7 @@ E_DriverErrCode GatewayDriver::disconnect()
         return DE_NO_CONNECTION;
     }
 
-    LOG_CONTROL(LOG_INFO, "%18.6f : GatewayDriver::disconnect(): disconnecting driver\n",
+    LOG_CONTROL(LOG_DEBUG, "%18.6f : GatewayDriver::disconnect(): disconnecting driver\n",
                 get_realtime());
     
     // disable retrieval of new commands from command queue
@@ -708,7 +708,7 @@ E_DriverErrCode GatewayDriver::disconnect()
     // so they don't go into dead-lock.
     fpuArray.setDriverState(DS_UNCONNECTED);
 
-    LOG_CONTROL(LOG_GRIDSTATE, "%18.6f : driver is disconnected\n",
+    LOG_CONTROL(LOG_GRIDSTATE, "%18.6f : disconnect(): driver is disconnected\n",
                 get_realtime());
 
     return DE_OK;

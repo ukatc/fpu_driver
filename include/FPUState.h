@@ -76,6 +76,7 @@ typedef struct __attribute__((packed)) t_fpu_state
     // Note: this time needs to use the monotonic linux system
     // clock so that leap seconds don't trigger bugs.
     tout_entry cmd_timeouts[MAX_NUM_TIMEOUTS];
+    // this uses the monotonic system time (roughly, seconds since booting)
     timespec last_updated;
     // set of any still running and incomplete commands
     uint32_t pending_command_set;

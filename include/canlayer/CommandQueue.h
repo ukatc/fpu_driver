@@ -23,7 +23,7 @@
 #include "../DriverConstants.h"
 #include "I_CAN_Command.h"
 
-#include "GridDriverConfig.h"
+#include "../GridDriverConfig.h"
 #include "time_utils.h"
 #include "CommandPool.h"
 

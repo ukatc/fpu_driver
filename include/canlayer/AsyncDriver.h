@@ -55,6 +55,7 @@ public:
         : config(config_vals), gateway(config_vals)
     {
         num_gateways = 0;
+        log_repeat_count = 0;
         
 #if CAN_PROTOCOL_VERSION == 1
         // initialize field which records last arm selection
@@ -147,9 +148,13 @@ public:
     E_DriverErrCode validateWaveforms(const t_wtable& waveforms, const int MIN_STEPS, const int MAX_STEPS,
                                       const unsigned int MAX_NUM_SECTIONS, const double MAX_INCREASE) const;
 
+    void logGridState(const E_LogLevel logLevel, t_grid_state& grid_state) const;
+
 protected:
     
     const GridDriverConfig config;
+    unsigned int log_repeat_count;
+    
     
 private:
 
