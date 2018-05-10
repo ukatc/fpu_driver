@@ -465,6 +465,7 @@ data, and displaying information about the FPU state:
   tale care that it contains valid movement data when it is passed to
   the \texttt{configMotion()} method!
 
+
 \end{description}
 
 \subsection{Interactive inspection of the FPU state}
@@ -917,6 +918,8 @@ blocks and returns when the FPUs have finished moving.  In the case
 that there is an error, for example a collision, a Python exception
 will be raised.
 
+The function \texttt{gen\_wf()} can also generate waveform tables for
+multiple FPUs, see section~\ref{sec:genwf} for further details.
 
 
 \subsubsection{Manually defining a waveform table}
@@ -2020,6 +2023,7 @@ may not correspond to the current arm position.
 
 \index{functions!gen\_wf()}
 \index{gen\_wf()!reference}
+\index{gen\_wf()|see{\ \emph{also} waveforms}}
 \index{waveform generation!reference}
 \index{waveforms!how to generate!reference}
 
@@ -2037,6 +2041,22 @@ which can be assigned to a Python variable, and examined like other
 Python objects (for example, the \texttt{``type()'')} builtin function
 can be used to examine the data structure).
 
+\index{waveforms!for moving multiple FPUs at once} The
+\verb+delta_alpha+, \verb+delta_beta+ parameters can also be
+vectors. In this case, either one of the parameters needs to be a
+scalar, or they need to be lists or numpy arrays of the same
+length. Either way, the element 0 of both vectors contain the
+alpha/beta movement for FPU 0, element 1 the values for FPU 1, and so
+on.
+
+\index{waveforms!for moving one FPU among a number of connected FPUs}
+If only one or a few FPUs shall be moved, the waveform table should
+still contain data for the FPUs which are not going to be moved -- the
+movement distance should just be set to zero for these FPUs.
+(Otherwise, an \texttt{executeMotion()} command could activate a
+waveform entry which is stale, and is not intended to be used.)
+
+\index{waveforms!for moving one arm after another}
 The function has the optional keyword parameter \texttt{mode}, which
 can be one of \texttt{"fast"}, \texttt{"slow"}, or \texttt{"slowpar"}.
 Mode ``fast'' is the default mode, which uses a high acceleration and
