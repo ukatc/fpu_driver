@@ -15,7 +15,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 0.5.2 (document version \texttt{\input{../git_version}})}
+  module} \subtitle{For driver version 0.5.3 (document version \texttt{\input{../git_version}})}
 
 \author{Johannes Nix}
 
@@ -159,12 +159,12 @@ is given in the text file ``\texttt{doc/INSTALL}''.
 
 \subsection{Enabling debug output of CAN messages}
 
-In some cases, it is helpful to see the actual bytes which are sent to
-the FPUs, and received from them. This can currently be achieved by
-activating specific debug macros in the C++ source code of the
-functions \texttt{dispatchResponse()} and
-\texttt{encode\_and\_send()}. On the MOONS workstation, a patched
-version is already available.
+Previous versions of the driver required to change macros in the C
+source code to enable low-level logging of CAN commands.  With driver
+version 0.5.3, a comprehensive log of sent and received CAN messages
+is enabled by default. See section~\ref{sec:logging} on
+page~/\pageref{sec:logging} for the location of these logs, and any
+further details.
 
 
 \subsection{Environment configuration}
@@ -1159,6 +1159,148 @@ testing, and correct discovery of fault conditions, such as
 collisions. A full explanation on how to handle exceptions in Python can
 be found at \url{https://docs.python.org/2.7/tutorial/errors.html}.
 
+
+\section{Logging}
+\label{sec:logging}
+\subsection{Log files}
+\index{logging}
+\index{logging!files}
+\index{troubleshooting!capturing and examining CAN messages}
+\index{troubleshooting!tracking the FPU grid state}
+
+By default, the driver logs commands and CAN messages to text files
+which are created in the subdirectory \texttt{\_log} of the current
+work directory. Each log file is tagged with a ISO 8601 time
+stamp\footnote{\url{http://en.wikipedia.org/wiki/ISO\_8601}} of the
+driver start-up time, and log data is organised in three different
+files:
+
+\begin{description}
+\item[\texttt{\_\{start\_timestamp\}-fpu\_control.log}] contains all
+  send high-level commands, and the resulting state of the FPU grid.
+  
+\item[\texttt{\_\{start\_timestamp\}-fpu\_tx.log}] contains all CAN messages which were sent to individual FPUs.
+\item[\texttt{\_\{start\_timestamp\}-fpu\_rx.log}] contains all CAN
+  messages which were received, including errors messages sent because
+  of collisions and limit switch breaches.
+  
+\end{description}
+
+
+\subsection{Logging options}
+\index{logging!options}
+Details of logging can be adjusted by passing keyword
+arguments to the driver constructor. The available options are:
+
+\begin{table}
+  \begin{centering}
+    \index{log levels}
+\begin{tabular}{|l|p{0.6\textwidth}|}
+  \hline
+  \textbf{log level} & \textbf{Description} \\
+  \hline
+    LOG\_ERROR & 
+    Log only critical errors and important warnings, such as collision
+    messages and message time-outs. \\
+
+    \hline
+    LOG\_INFO & 
+    Also log summary of each command send to the FPU grid, and
+    overall statistics for FPU states (e.g. number of FPUs which
+    have reached the datum position) \\
+
+    \hline
+    LOG\_GRIDSTATE &
+    Additionally, log the movement targets for each
+    FPU and detailed state of the whole FPU grid on completion of each
+    command.  This level will generate a larger amount of data but
+    will not affect responsiveness of the message processing within
+    the driver.  It is intended to reconstruct any problem with
+    collisions or hardware defects during normal instrument operation
+    and, when necessary, help to improve collision recovery
+    strategies. \\
+
+    \hline
+    LOG\_VERBOSE &
+
+    Log details of each command sent to each FPU
+    (e.g. sent waveform tables). Also, logs the grid state while
+    waiting for the completion of movement commands. This level will
+    generate a large amount of data but should usually not affect
+    responsiveness of the driver. This level of logging is appropriate
+    e.g. when debugging the generation of waveform data from the path
+    analysis layer. \\
+
+    \hline
+    LOG\_DEBUG &
+    Log details on CAN response time-outs and any information which
+    might be helpful to diagnose problems. This level is intended
+    for debugging the driver software.\\
+
+    \hline LOG\_TRACE\_CAN\_MESSAGES & Additionally, log hex dump of
+    binary data of each CAN message as it is sent to the FPUs and each
+    CAN response. This data will be logged to the \ldots{}rx.log and
+    \ldots{}tx.log files. This level will generate a very large amount
+    of data and is intended for debugging issues with the CAN message
+    generation, the CAN protocol itself, or issues with the FPU
+    firmware. Because messages are sent from within high-priority
+    event loops, enabling this level will degrade the responsiveness
+    of the driver and might delay processing of critical error
+    responses. It is not designed to be used during normal instrument
+    operation. \\
+ 
+  
+  \hline
+\end{tabular}
+\end{centering}
+\caption{Log levels of the FPU driver}
+\label{tab:loglevels}
+\end{table}
+
+
+\begin{description}
+\item[logLevel] -- sets the logging level. Possible log levels are
+  listed in table~\ref{tab:loglevels} on
+  page~\pageref{tab:loglevels}. The default level is currently
+  \texttt{LOG\_TRACE\_CAN\_COMMANDS}.
+  
+  \item [log\_dir] -- sets the directory or folder into which the log
+    files are written. A tilde followed by a slash (``\~/``) expands
+    to the user home directory, also environment variables
+    (e.g. \texttt{\$LOG\_DIR} are expanded. The default value is
+    \texttt{./\_logs}. If the leaf directory does not exist when the
+    driver is started, it is automatically created.
+
+    For long-running tests with multiple FPUs, this directory should
+    be adjusted to point to a disk or file system which has plenty of
+    free space.
+
+  \item[start\_timestamp] Allows to change the timestamp prefix which
+    is inserted into the names of the individual log files.  Adjusting
+    this parameter might be used to set different names for driver
+    instances which connect to different gateways, for example.  The
+    default value is \verb+"ISO8601"+ which is expanded to a string of
+    the form \verb+yyyy-mm-ddThh:MM:SS+, denominating the current time
+    in ISO format.
+    
+\end{description}
+
+\subsection{Display of time in the logs}
+\index{time stamps}
+\index{logging!time values}
+At the beginning of each line, the log files show the value of the
+UNIX time as time stamp, which is the fractional number of seconds
+since January 1, 1970 in the UTC time zone.
+
+Calendar dates and times are not always continuous, due to clock
+adjustments and introduction of leap seconds. In some cases, this can
+cause problems, for example spurious time-outs can appear.. Therefore,
+the driver uses internally a different, monotonic clock, which is
+basically the number of seconds since the system start. When certain
+fields are logged, such as the time when an FPU received its last
+command, these times are converted to the UNIX timestamp, too.
+
+
 \section{Recovery from collisions and limit breaches}
 \label{sec:recovery}
 \index{recovery of movement errors}
@@ -2138,6 +2280,12 @@ The following list contains a chronological list of
 all changes which alter either behaviour of the
 driver, or require adaptions in scripts which
 use the corresponding commands.
+
+\subsection*{Changes in version 0.5.2}
+\begin{itemize}
+\item Added optional logging of commands and CAN messages, which
+  is enabled by default (described in section~/ref{sec:logging}).
+\end{itemize}
 
 \subsection*{Changes in version 0.5.2}
 \begin{itemize}
