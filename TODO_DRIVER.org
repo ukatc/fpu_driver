@@ -165,7 +165,7 @@ when the internal state struct is used.
 ** DONE Install Scientific Linux or ESO Linux image on kraken
 ** DONE Add & test TCP options for socket connection time-outs.
 ** DONE Fix detection & reporting of CAN command timeouts
-** TODO release 0.5.2
+** DONE release 0.5.2
 *** DONE revise tutorial
 **** DONE Document listing uninitialized angles
 **** DONE document separate datum options
@@ -182,14 +182,25 @@ when the internal state struct is used.
 *** DONE clarify requirement for variable MAX_FPU
 *** DONE Add time-out for socket connect() call
 ** TODO release 0.5.3
-*** TODO move all driver configuration parameters to const struct
-*** TODO Add log levels as discussed
-*** TODO add separate reporting/logging of results
+*** DONE move all driver configuration parameters to const struct
+*** DONE Add log levels as discussed
+*** DONE add separate reporting/logging of results
+*** TODO document logging
+** TODO 
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList
 *** TODO run short stress test of firmware with CAN command logging
 *** TODO Refactor duplicate code in command header encoding
 *** TODO split SBuffer in independent read buffer and write buffer ?   
+
+* TODO Verification System
+** DONE make thorpy driver accessible in python2
+*** DONE read protocol for stages we have
+*** DONE get java environment
+*** DONE get turntable
+*** DONE test cli tool
+*** DONE [?] Do PySerial experiments
+*** Check protocol for turntable / controller
 * TODO Integrate path analysis script into MOONS shared library
 ** DONE do a git-svn pull of library
 ** TODO integrate test values into test folder
@@ -197,16 +208,6 @@ when the internal state struct is used.
    (observing curvature of focal surface)
 ** TODO extend avoidance model
 ** TODO do tests
-   
-
-* TODO make thorpy driver accessible in python2
-
-** DONE read protocol for stages we have
-** DONE get java environment
-** DONE get turntable
-** TODO test cli tool
-** DONE [?] Do PySerial experiments
-** Check protocol for turntable / controller
 
 
 
