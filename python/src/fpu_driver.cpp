@@ -819,9 +819,9 @@ public:
         return ecode;
     }
 
-  E_DriverErrCode wrap_findDatum(WrapGridState& grid_state, E_DATUM_SELECTION arm_selection)
+    E_DriverErrCode wrap_findDatum(WrapGridState& grid_state, E_DATUM_SELECTION arm_selection)
     {
-      E_DriverErrCode ecode = findDatum(grid_state, arm_selection);
+        E_DriverErrCode ecode = findDatum(grid_state, arm_selection);
         checkDriverError(ecode);
         return ecode;
     }
@@ -1026,7 +1026,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
 
     enum_<E_LogLevel>("E_LogLevel")
     .value("LOG_ERROR",               LOG_ERROR)
-    .value("LOG_INFO",                LOG_INFO)  
+    .value("LOG_INFO",                LOG_INFO)
     .value("LOG_GRIDSTATE",           LOG_GRIDSTATE)
     .value("LOG_VERBOSE",             LOG_VERBOSE)
     .value("LOG_DEBUG",               LOG_DEBUG)
@@ -1181,10 +1181,10 @@ BOOST_PYTHON_MODULE(fpu_driver)
 
     // selection which arms should perform a datum operation
     enum_<E_DATUM_SELECTION>("E_DATUM_SELECTION")
-      .value("DASEL_BOTH",   DASEL_BOTH)
-      .value("DASEL_ALPHA",  DASEL_ALPHA)
-      .value("DASEL_BETA",   DASEL_BETA)
-      .export_values();
+    .value("DASEL_BOTH",   DASEL_BOTH)
+    .value("DASEL_ALPHA",  DASEL_ALPHA)
+    .value("DASEL_BETA",   DASEL_BETA)
+    .export_values();
 
     class_<WrapFPUState>("FPUState")
     .def_readonly("state", &WrapFPUState::state)
@@ -1250,7 +1250,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readwrite("fd_txlog", &GridDriverConfig::fd_txlog)
     .def_readwrite("fd_rxlog", &GridDriverConfig::fd_rxlog);
 
-    
+
     class_<WrapGridDriver, boost::noncopyable>("GridDriver", init<GridDriverConfig>())
     .def("getNumFPUs", &WrapGridDriver::getNumFPUs)
     .def("connect", &WrapGridDriver::connectGateways)

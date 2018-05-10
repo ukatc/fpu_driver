@@ -49,26 +49,26 @@ public:
     GridDriver(const GridDriverConfig config_values)
         : AsyncDriver(config_values)
     {
-    
+
         LOG_CONTROL(LOG_INFO, "%18.6f : starting driver for %i FPUs\n",
                     canlayer::get_realtime(), config.num_fpus);
 
-        
+
     }
 
     ~GridDriver()
     {
         t_grid_state grid_state;
-        
+
         getGridState(grid_state); // throw away return value
-        
+
         if (grid_state.driver_state == DS_CONNECTED)
         {
             LOG_CONTROL(LOG_INFO, "%18.6f : ~GridDriver(): disconnecting driver\n",
                         canlayer::get_realtime());
             disconnect(); // throw away return value
         }
-            
+
         if (config.fd_controllog >= 0)
         {
             syncfs(config.fd_controllog);

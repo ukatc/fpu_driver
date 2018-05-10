@@ -647,12 +647,12 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
 
     assert(gateway_id < MAX_NUM_GATEWAYS);
-    
+
     int priority = can_identifier >> 7;
     int nbytes = blen;
     bool warn_nbytes_too_large = nbytes > MAX_CAN_PAYLOAD_BYTES;
     bool warn_nbytes_negative = nbytes < 0;
-        
+
     if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
     {
         char_cnt = sprintf(log_buf, "RX: %18.6f: dispatching response:"
@@ -667,10 +667,10 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
             char_cnt = sprintf(log_buf + buf_idx, " %02x", data[i]);
             buf_idx += char_cnt;
         }
-        
+
         LOG_RX(LOG_TRACE_CAN_MESSAGES, "%s\n", log_buf);
     }
-        
+
 
     if (warn_nbytes_too_large)
     {
@@ -702,14 +702,14 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     }
     if (fpu_busid > FPUS_PER_BUS)
     {
-        LOG_RX(LOG_ERROR, "%18.6f : RX: fpu_busid too large (%i), ignored\n", 
+        LOG_RX(LOG_ERROR, "%18.6f : RX: fpu_busid too large (%i), ignored\n",
                canlayer::get_realtime(),
                fpu_busid);
         return;
     }
     if (bus_id >= BUSES_PER_GATEWAY)
     {
-        LOG_RX(LOG_ERROR, "%18.6f : RX: CAN bus id too large (%i), ignored\n", 
+        LOG_RX(LOG_ERROR, "%18.6f : RX: CAN bus id too large (%i), ignored\n",
                canlayer::get_realtime(),
                bus_id);
         return;
@@ -970,8 +970,8 @@ timespec expire_pending(const GridDriverConfig config, t_fpu_state& fpu, int fpu
                    canlayer::get_realtime(),
                    fpu_id,
                    cmd_code);
-            
-            count_pending--; 
+
+            count_pending--;
             // Note: the counter below wraps and this is intended,
             // it is an unsigned value which will wrap around
             // and is only compared against change.

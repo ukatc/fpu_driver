@@ -13,7 +13,7 @@
 // NAME GridDriverConfig.h
 //
 // This file defines a POD structure with pre-set configuration values
-// 
+//
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -29,7 +29,7 @@ namespace mpifps
 
 struct GridDriverConfig
 {
-    public:
+public:
 
     // TCP connection parameters. This sets the keepalive option which
     // helps to detect a failed connection.
@@ -37,17 +37,17 @@ struct GridDriverConfig
     // Connection time-out value. If set to zero, using of keep-alive
     // packets is disabled.
     double SocketTimeOutSeconds;
-    
+
     // idle time before keep-alive probes are sent
     int TCP_IdleSeconds;
-    
+
     // interval with which keep-alive packets are sent
     int TCP_KeepaliveIntervalSeconds;
 
     E_LogLevel logLevel;
     // file descriptor for log of commands and results in the control context
     int fd_controllog;
-    
+
     // file descriptor for log of all sent CAN commands
     int fd_txlog;
 
@@ -59,9 +59,9 @@ struct GridDriverConfig
     GridDriverConfig()
     {
         num_fpus = MAX_NUM_POSITIONERS;
-        
-        // set default time-out values 
-        
+
+        // set default time-out values
+
         SocketTimeOutSeconds = 20.0;
         TCP_IdleSeconds = 10;
         TCP_KeepaliveIntervalSeconds = 1;
@@ -72,7 +72,7 @@ struct GridDriverConfig
         fd_rxlog = -1;
         fd_txlog = -1;
     };
-    
+
 };
 
 }

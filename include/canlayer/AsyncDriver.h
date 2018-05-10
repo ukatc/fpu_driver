@@ -56,7 +56,7 @@ public:
     {
         num_gateways = 0;
         log_repeat_count = 0;
-        
+
 #if CAN_PROTOCOL_VERSION == 1
         // initialize field which records last arm selection
         last_datum_arm_selection = DASEL_NONE;
@@ -151,11 +151,11 @@ public:
     void logGridState(const E_LogLevel logLevel, t_grid_state& grid_state) const;
 
 protected:
-    
+
     const GridDriverConfig config;
     unsigned int log_repeat_count;
-    
-    
+
+
 private:
 
     int num_gateways;
@@ -163,7 +163,7 @@ private:
 #if CAN_PROTOCOL_VERSION == 1
     E_DATUM_SELECTION last_datum_arm_selection;
 #endif
-    
+
 };
 
 } // end of namespace

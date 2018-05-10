@@ -31,7 +31,7 @@ namespace canlayer
 
 
 CommandQueue::CommandQueue(const GridDriverConfig config_values):
-config(config_values)
+    config(config_values)
 {
     ngateways = 0;
     EventDescriptorNewCommand = -1;

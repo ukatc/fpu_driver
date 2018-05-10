@@ -174,22 +174,22 @@ SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
 
     int buf_idx = sprintf(log_buffer, "command bytes (len=%i)= [", input_len);
 
-    if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)        
+    if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
     {
         for(int i=0; i < input_len; i++)
         {
             int nchars = sprintf(log_buffer + buf_idx," %02x", src[i]);
             buf_idx += nchars;
-    
+
             sprintf(log_buffer + buf_idx,"]\n");
         }
-    
+
 
         LOG_TX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX: encode_and_send(): sending %s",
                canlayer::get_realtime(),
                log_buffer);
     }
-    
+
 
 
     encode_buffer(input_len, src, out_len, wbuf);

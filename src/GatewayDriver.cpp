@@ -49,8 +49,8 @@ namespace canlayer
 
 GatewayDriver::GatewayDriver(GridDriverConfig config_vals)
     : commandQueue(config_vals), config(config_vals),
-      fpuArray(config_vals), 
-      command_pool(config_vals)       
+      fpuArray(config_vals),
+      command_pool(config_vals)
 {
 
     assert(config.num_fpus <= MAX_NUM_POSITIONERS);
@@ -144,7 +144,7 @@ E_DriverErrCode GatewayDriver::deInitialize()
         break;
 
     case DS_CONNECTED:
-        
+
         LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::deInitialize() : "
                     "GatewayDriver::deInitialize() - driver is still connected",
                     canlayer::get_realtime());
@@ -429,7 +429,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
         LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
                     "GatewayDriver::connect() - driver is already connected",
                     canlayer::get_realtime());
-        
+
         return DE_DRIVER_ALREADY_CONNECTED;
 
     default:
@@ -464,7 +464,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
                     "GatewayDriver::connect() - assertion failed,"
                     " creation of event file descriptor failed",
                     canlayer::get_realtime());
-        
+
         ecode= DE_ASSERTION_FAILED;
         goto close_CommandEventDescriptor;
     }
@@ -531,7 +531,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
         if (err != 0)
         {
             fprintf(stderr, "\ncan't create thread :[%s]", strerror(err));
-            
+
             LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
                         "GatewayDriver::connect() - assertion failed,"
                         "RX thread creation failed : %s",
@@ -548,17 +548,17 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
                                  (void *) this);
             if (err != 0)
             {
-                
+
                 fprintf(stderr, "\ncan't create thread :[%s]", strerror(err));
-                
+
                 LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
                             "GatewayDriver::connect() - assertion failed,"
                             "RX thread creation failed : %s",
                             canlayer::get_realtime(),
                             strerror(err));
-                
+
                 ecode = DE_ASSERTION_FAILED;
-                
+
                 // set flag to stop first thread
                 exit_threads.store(true, std::memory_order_release);
                 // also signal termination via eventfd, to inform epoll()
@@ -622,13 +622,13 @@ E_DriverErrCode GatewayDriver::disconnect()
         LOG_CONTROL(LOG_ERROR, "%18.6f : warning: GridDriver::disconnect() : "
                     "GatewayDriver::disconnect() - driver is not connected ",
                     canlayer::get_realtime());
-            
+
         return DE_NO_CONNECTION;
     }
 
     LOG_CONTROL(LOG_DEBUG, "%18.6f : GatewayDriver::disconnect(): disconnecting driver\n",
                 get_realtime());
-    
+
     // disable retrieval of new commands from command queue
     commandQueue.setNumGateways(0);
 
@@ -685,7 +685,7 @@ E_DriverErrCode GatewayDriver::disconnect()
     {
         syncfs(config.fd_rxlog);
     }
-    
+
     if (!sockets_closed)
     {
         for (int i = 0; i < num_gateways; i++)
@@ -946,7 +946,7 @@ void* GatewayDriver::threadTxFun()
                 case ENOMEM: // out of memory
                     LOG_TX(LOG_ERROR, "TX error: fatal error returnd from ppoll(), retval = %i\n",
                            retval);
-                    
+
                     fpuArray.setDriverState(DS_ASSERTION_FAILED);
                     exitFlag = true;
                     break;
@@ -1000,8 +1000,8 @@ void* GatewayDriver::threadTxFun()
                     {
                     case SBuffer::ST_NO_CONNECTION:
                         LOG_TX(LOG_INFO, "%18.6f : TX: SBuffer::ST_NO_CONNECTION, disconnecting driver\n",
-                                    get_realtime());
-                        
+                               get_realtime());
+
                         fpuArray.setDriverState(DS_UNCONNECTED);
                         break;
 
@@ -1029,7 +1029,7 @@ void* GatewayDriver::threadTxFun()
         }
 
     }
-    
+
     LOG_TX(LOG_GRIDSTATE, "%18.6f : exited TX loop\n",
            get_realtime());
     // clean-up before terminating the thread
@@ -1080,7 +1080,7 @@ void* GatewayDriver::threadRxFun()
 
     LOG_RX(LOG_GRIDSTATE, "%18.6f : starting RX loop\n",
            get_realtime());
-    
+
 
     for (int i=0; i < num_gateways; i++)
     {
@@ -1180,7 +1180,7 @@ void* GatewayDriver::threadRxFun()
 
                         if (! shutdown_in_progress.load(std::memory_order_acquire))
                         {
-                            
+
                             LOG_RX(LOG_ERROR, "%18.6f : RX: read error from socket, exiting read loop\n",
                                    get_realtime());
                             printf("RX thread fatal error: sbuffer socket status = %i, exiting\n",
@@ -1205,8 +1205,8 @@ void* GatewayDriver::threadRxFun()
             exit_threads.store(true, std::memory_order_release);
             LOG_RX(LOG_INFO, "%18.6f : RX: loop exit, disconnecting driver\n",
                    get_realtime());
-            
-            fprintf(stderr, "RX thread: disconnecting driver\n");            
+
+            fprintf(stderr, "RX thread: disconnecting driver\n");
 
             fpuArray.setDriverState(DS_UNCONNECTED);
             break; // exit outer loop, and terminate thread
@@ -1227,7 +1227,7 @@ void GatewayDriver::handleFrame(int const gateway_id, uint8_t const command_buff
     if (can_msg == nullptr)
     {
         LOG_RX(LOG_ERROR, "RX %18.6f: error:  invalid CAN message (empty)- ignoring.\n",
-              canlayer::get_realtime());
+               canlayer::get_realtime());
     }
     else if (clen < 3)
     {
@@ -1320,7 +1320,7 @@ E_DriverErrCode GatewayDriver::abortMotion(t_grid_state& grid_state,
         LOG_CONTROL(LOG_ERROR, "%18.6f : FATAL ERROR: GridDriver::abortMotion() : "
                     " - driver is not connected, skipping command ",
                     canlayer::get_realtime());
-        
+
         return DE_NO_CONNECTION;
     }
 

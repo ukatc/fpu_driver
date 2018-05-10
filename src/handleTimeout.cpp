@@ -64,7 +64,7 @@ void handleTimeout(const GridDriverConfig config, int fpu_id, t_fpu_state& fpu, 
 
     case CCMD_ABORT_MOTION    :
         fprintf(stderr, "CRITICAL ERROR: ABORT_MOTION timed out for FPU #%i!\n", fpu_id);
-        
+
         LOG_RX(LOG_ERROR, "%18.6f : RX CRITICAL ERROR: ABORT_MOTION timed out for FPU #%i!.\n",
                canlayer::get_realtime(),
                fpu_id);
@@ -77,7 +77,7 @@ void handleTimeout(const GridDriverConfig config, int fpu_id, t_fpu_state& fpu, 
     case CCMD_FIND_DATUM :
         fpu.state = FPST_UNINITIALIZED;
         fprintf(stderr, "Error: findDatum timed out for FPU #%i\n", fpu_id);
-        
+
         LOG_RX(LOG_ERROR, "%18.6f : RX ERROR: findDatum() timed out for FPU #%i!.\n",
                canlayer::get_realtime(),
                fpu_id);

@@ -168,13 +168,13 @@ void handleFPUResponse(const GridDriverConfig config,
     switch (cmd_id)
     {
     case CCMD_CONFIG_MOTION   :
-        
+
         LOG_RX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX : handle_ConfigMotion:"
                " fpu #%u, segment %u: status=%u, error=%u\n",
                get_realtime(),
                fpu_id, fpu.num_waveform_segments,
                response_status, response_errcode);
-        
+
         // clear time-out flag
         remove_pending(config, fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
@@ -189,7 +189,7 @@ void handleFPUResponse(const GridDriverConfig config,
                    get_realtime(),
                    fpu_id,
                    response_errcode);
-            
+
             if (fpu.state == FPST_LOADING)
             {
                 fpu.state = FPST_RESTING;
@@ -242,7 +242,7 @@ void handleFPUResponse(const GridDriverConfig config,
                        "FPU #%i: WARNING: executeMotion was removed from pending set (%0x), added again\n",
                        get_realtime(),
                        fpu_id, fpu.pending_command_set);
-                    
+
                 const timespec new_timeout = {40, 0};
                 add_pending(fpu, fpu_id, CCMD_EXECUTE_MOTION,
                             new_timeout,
@@ -254,7 +254,7 @@ void handleFPUResponse(const GridDriverConfig config,
             // clear timeout status
             remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode,
                            timeout_list, count_pending);
-            
+
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
                    "FPU # %i: executeMotion command got error response code #%i,"
@@ -315,13 +315,13 @@ void handleFPUResponse(const GridDriverConfig config,
             // FIXME: This should possibly generate an abortMotion
             // message for all FPUs, because other FPUs can crash into
             // the stopped one if they continue moving.
-            
+
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
                    "while waiting for finishedMotion: "
                    "step timing error response received for FPU %i\n",
                    get_realtime(),
                    fpu_id);
-            
+
             fpu.state = FPST_ABORTED;
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
@@ -337,7 +337,7 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.waveform_valid = false;
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
-            
+
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
                    "while waiting for finishedMotion: "
@@ -354,7 +354,7 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
             fpu.alpha_datum_switch_active = true;
-            
+
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
                    "while waiting for finishedMotion: "
@@ -406,7 +406,7 @@ void handleFPUResponse(const GridDriverConfig config,
                "abortMotion message received for FPU %i\n",
                get_realtime(),
                fpu_id);
-        
+
         break;
 
     case CCMD_GET_STEPS_ALPHA :
@@ -515,7 +515,7 @@ void handleFPUResponse(const GridDriverConfig config,
         else
         {
             fpu.ping_ok = false;
-            
+
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
                    "pingFPU command failed for FPU %i\n",
@@ -609,7 +609,7 @@ void handleFPUResponse(const GridDriverConfig config,
                        "FPU #%i: WARNING: findDatum was removed from pending set, added again\n",
                        get_realtime(),
                        fpu_id);
-                
+
                 const timespec new_timeout = {40, 0};
                 add_pending(fpu, fpu_id, CCMD_FIND_DATUM,
                             new_timeout,
@@ -634,10 +634,10 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.waveform_valid = false;
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
-            
+
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
-                   "while waiting for end of datum command:" 
+                   "while waiting for end of datum command:"
                    "limit switch breach message received for FPU %i\n",
                    get_realtime(),
                    fpu_id);
@@ -649,10 +649,10 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.waveform_valid = false;
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
-            
+
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
-                   "while waiting for end of datum command:" 
+                   "while waiting for end of datum command:"
                    "collision detection message received for FPU %i\n",
                    get_realtime(),
                    fpu_id);
@@ -661,9 +661,9 @@ void handleFPUResponse(const GridDriverConfig config,
         {
             fpu.state = FPST_ABORTED;
             fpu.waveform_valid = false;
-            
+
             LOG_RX(LOG_DEBUG, "%18.6f : RX : "
-                   "while waiting for end of datum command:" 
+                   "while waiting for end of datum command:"
                    "movement abortion message received for FPU %i\n",
                    get_realtime(),
                    fpu_id);
@@ -716,7 +716,7 @@ void handleFPUResponse(const GridDriverConfig config,
                "collision detection message received for FPU %i\n",
                get_realtime(),
                fpu_id);
-            
+
         if (fpu.state == FPST_MOVING)
         {
             // clear time-out flag
@@ -760,7 +760,7 @@ void handleFPUResponse(const GridDriverConfig config,
                "limit switch breach message received for FPU %i\n",
                get_realtime(),
                fpu_id);
-        
+
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.at_alpha_limit = true;
         fpu.waveform_valid = false;

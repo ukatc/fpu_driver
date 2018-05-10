@@ -12,8 +12,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 // NAME E_LogLevel.h
 //
-// Defines an enumeration which sets the log level in the CAN driver 
-// 
+// Defines an enumeration which sets the log level in the CAN driver
+//
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -29,12 +29,12 @@ enum E_LogLevel
     // Log only critical errors and important warnings, such as collision
     // messages and message time-outs.
     LOG_ERROR = 0,
-    
+
     // Also log summary of each command send to the FPU grid, and
     // overall statistics for FPU states (e.g. number of FPUs which
     // have reached the datum position)
     LOG_INFO = 1,
-    
+
     // Additionally, log the movement targets for each FPU and
     // detailed state of the whole FPU grid on completion of each
     // command.  This level will generate a larger amount of data but
@@ -56,7 +56,7 @@ enum E_LogLevel
     // Log details on CAN response time-outs and any information which
     // might be helpful to diagnose problems.
     LOG_DEBUG = 4,
-    
+
     // Additionally, log hex dump of binary data of each CAN message
     // as it is sent to the FPUs and each CAN response. This data will
     // be logged to two additional files. This level will generate a
@@ -67,7 +67,7 @@ enum E_LogLevel
     // will degrade the responsiveness of the driver. It is not
     // designed to be used during normal instrument operation.
     LOG_TRACE_CAN_MESSAGES = 5,
-    
+
 };
 
 #define LOG_CONTROL(minlevel, ...){                                       \
