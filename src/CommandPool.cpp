@@ -118,9 +118,7 @@ E_DriverErrCode CommandPool::initialize()
 
             default:
                 // logical error
-#ifdef DEBUG
-                printf("fatal error: command code %i not found!\n", i);
-#endif
+                LOG_CONTROL(LOG_ERROR, "fatal error: command code %i not found!\n", i);
                 assert(false);
             }
 

@@ -361,7 +361,7 @@ static void* threadRxEntryFun(void *arg)
     return driver->threadRxFun();
 }
 
-void set_rt_priority(int prio)
+void set_rt_priority(const GridDriverConfig config, int prio)
 {
     if (USE_REALTIME_SCHEDULING)
     {
@@ -379,18 +379,14 @@ void set_rt_priority(int prio)
             memset(mem_reserve, 1, sizeof(mem_reserve));
             mlockall(MCL_FUTURE);
 
-#ifdef DEBUG
-            printf("Info: real-time priority successfully set to %i\n", prio);
-#endif
+            LOG_CONTROL(LOG_DEBUG, "Info: real-time priority successfully set to %i\n", prio);
         }
         else
         {
             int errcode = errno;
 
             assert(errcode == EPERM);
-#ifdef DEBUG
-            printf("Warning: real-time scheduling not active, occasional large latencies are possible.\n");
-#endif
+            LOG_CONTROL(LOG_DEBUG, "Warning: real-time scheduling not active, occasional large latencies are possible.\n");
         }
     }
 
@@ -508,7 +504,7 @@ E_DriverErrCode GatewayDriver::connect(const int ngateways,
     // If configured, try to set real-time process scheduling policy
     // to keep latency low. This is optional.
 
-    set_rt_priority(CONTROL_PRIORITY);
+    set_rt_priority(config, CONTROL_PRIORITY);
 
 
     // new block for locals
@@ -887,7 +883,7 @@ void* GatewayDriver::threadTxFun()
     unique_ptr<I_CAN_Command> active_can_command[MAX_NUM_GATEWAYS];
 
 
-    set_rt_priority(WRITER_PRIORITY);
+    set_rt_priority(config, WRITER_PRIORITY);
 
     while (true)
     {
@@ -948,10 +944,9 @@ void* GatewayDriver::threadTxFun()
                 case EFAULT: // argument not contained in address space, see man page for ppoll()
                 case EINVAL: // nfds value too large
                 case ENOMEM: // out of memory
-#ifdef DEBUG
-                    printf("TX error: fatal error returnd from ppoll(), retval = %i\n",
+                    LOG_TX(LOG_ERROR, "TX error: fatal error returnd from ppoll(), retval = %i\n",
                            retval);
-#endif
+                    
                     fpuArray.setDriverState(DS_ASSERTION_FAILED);
                     exitFlag = true;
                     break;
@@ -1012,9 +1007,7 @@ void* GatewayDriver::threadTxFun()
 
                     case SBuffer::ST_ASSERTION_FAILED:
                     default:
-#ifdef DEBUG
-                        printf("TX error: SBuffer::ST_ASSERTION_FAILED or unknown state, disconnecting driver\n");
-#endif
+                        LOG_TX(LOG_ERROR, "TX error: SBuffer::ST_ASSERTION_FAILED or unknown state, disconnecting driver\n");
                         fpuArray.setDriverState(DS_ASSERTION_FAILED);
                         break;
                     }
@@ -1105,7 +1098,7 @@ void* GatewayDriver::threadRxFun()
     sigemptyset(&signal_set);
     sigaddset(&signal_set, SIGPIPE);
 
-    set_rt_priority(READER_PRIORITY);
+    set_rt_priority(config, READER_PRIORITY);
 
 
     while (true)
@@ -1148,10 +1141,8 @@ void* GatewayDriver::threadRxFun()
                 case EFAULT: // argument not contained in address space, see man page for ppoll()
                 case EINVAL: // nfds value too large
                 case ENOMEM: // out of memory
-#ifdef DEBUG
-                    printf("RX error: fatal error from ppoll() (errno = %i),"
+                    LOG_RX(LOG_ERROR, "RX error: fatal error from ppoll() (errno = %i),"
                            " disconnecting driver\n", errcode);
-#endif
                     fpuArray.setDriverState(DS_ASSERTION_FAILED);
                     exitFlag = true;
                     break;
@@ -1215,9 +1206,8 @@ void* GatewayDriver::threadRxFun()
             LOG_RX(LOG_INFO, "%18.6f : RX: loop exit, disconnecting driver\n",
                    get_realtime());
             
-#ifdef DEBUG
-            printf("RX thread: disconnecting driver\n");            
-#endif            
+            fprintf(stderr, "RX thread: disconnecting driver\n");            
+
             fpuArray.setDriverState(DS_UNCONNECTED);
             break; // exit outer loop, and terminate thread
         }

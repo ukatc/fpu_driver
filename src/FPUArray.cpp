@@ -646,42 +646,43 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     int char_cnt = 0;
 
 
-    int priority = can_identifier >> 7;
-    char_cnt = sprintf(log_buf, "RX: %18.6f: dispatching response: gateway_id=%i, bus_id=%i, can_identifier=%i,"
-                       "priority=%i, fpu_busid=%i, data[%i] =",
-                       canlayer::get_realtime(),
-                       gateway_id, bus_id, can_identifier, priority, fpu_busid, blen);
-    buf_idx += char_cnt;
-
     assert(gateway_id < MAX_NUM_GATEWAYS);
-
-    E_LogLevel log_level = config.logLevel;
+    
+    int priority = can_identifier >> 7;
     int nbytes = blen;
-    if (nbytes > MAX_CAN_PAYLOAD_BYTES)
-    {
-        char_cnt = sprintf(log_buf + buf_idx, "WARNING: blen too long");
-        buf_idx += char_cnt;
-        nbytes = MAX_CAN_PAYLOAD_BYTES;
-        log_level = LOG_ERROR;
-    }
-    if (nbytes < 0)
-    {
-        char_cnt = sprintf(log_buf + buf_idx, "WARNING: blen negative");
-        buf_idx += char_cnt;
-        nbytes = 0;
-        log_level = LOG_ERROR;
-    }
-
+    bool warn_nbytes_too_large = nbytes > MAX_CAN_PAYLOAD_BYTES;
+    bool warn_nbytes_negative = nbytes < 0;
+        
     if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
     {
+        char_cnt = sprintf(log_buf, "RX: %18.6f: dispatching response:"
+                           " gateway_id=%i, bus_id=%i, can_identifier=%i,"
+                           " priority=%i, fpu_busid=%i, data[%i] = ",
+                           canlayer::get_realtime(),
+                           gateway_id, bus_id, can_identifier, priority, fpu_busid, blen);
+        buf_idx += char_cnt;
+
         for (int i=0; i < nbytes; i++)
         {
             char_cnt = sprintf(log_buf + buf_idx, " %02x", data[i]);
             buf_idx += char_cnt;
         }
+        
+        LOG_RX(LOG_TRACE_CAN_MESSAGES, "%s\n", log_buf);
     }
         
-    LOG_RX(log_level, "%s\n", log_buf);
+
+    if (warn_nbytes_too_large)
+    {
+        LOG_RX(LOG_ERROR, "WARNING: RX: %18.6f: blen too long",
+               canlayer::get_realtime());
+    }
+    if (warn_nbytes_negative)
+    {
+        LOG_RX(LOG_ERROR, "WARNING: RX: %18.6f: blen negative",
+               canlayer::get_realtime());
+    }
+
 
 #if (CAN_PROTOCOL_VERSION == 1)
     if (blen != 8)
@@ -733,15 +734,22 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         static bool has_warned = false;
         if (! has_warned)
         {
-            printf("WARNING (once): fpu_id too large (%i), ignored\n", fpu_id);
+            fprintf(stderr, "WARNING (once): fpu_id too large (%i), ignored\n", fpu_id);
             has_warned = true;
         }
-        
-        LOG_RX(LOG_ERROR, "%18.6f : RX WARNING :"
-               " received fpu_id (%i) larger than config.num_fpus (%i), ignored\n",
-               canlayer::get_realtime(),
-               fpu_id,
-               config.num_fpus);
+
+        // log responses from inexistent FPUs, but only once every 10 seconds
+        static double last_warn;
+        double cur_wtime = canlayer::get_realtime();
+        if (cur_wtime > last_warn + 10.0)
+        {
+            LOG_RX(LOG_ERROR, "%18.6f : RX WARNING :"
+                   " received fpu_id (%i) larger than config.num_fpus (%i), ignored\n",
+                   cur_wtime,
+                   fpu_id,
+                   config.num_fpus);
+            last_warn = cur_wtime;
+        }
         return;
     }
 
@@ -801,10 +809,6 @@ timespec get_min_pending(const t_fpu_state& fpu)
 {
     // get earliest previous time-out value
     assert(fpu.num_active_timeouts >= 0);
-#ifdef DEBUG3
-    printf("get_min_pending(): fpu.num_active_timeouts = %i\n",
-           fpu.num_active_timeouts);
-#endif
     timespec min_val = TimeOutList::MAX_TIMESPEC;
     for (int i=0; i < fpu.num_active_timeouts; i++)
     {
@@ -821,9 +825,6 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
                  const timespec& new_timeout,
                  TimeOutList& timeout_list, int &count_pending)
 {
-#ifdef DEBUG3
-    printf("fpu #%i: adding cmd code %i\n", fpu_id, cmd_code);
-#endif
     // assert this command is not yet pending
     assert( ((fpu.pending_command_set >> cmd_code) & 1) == 0);
     assert(fpu.num_active_timeouts < (MAX_NUM_TIMEOUTS-1));
@@ -852,7 +853,7 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 
 }
 
-void remove_pending(t_fpu_state& fpu, int fpu_id,
+void remove_pending(const GridDriverConfig &config, t_fpu_state& fpu, int fpu_id,
                     E_CAN_COMMAND cmd_code, E_MOC_ERRCODE cmd_status,
                     TimeOutList& timeout_list, int &count_pending)
 {
@@ -860,26 +861,25 @@ void remove_pending(t_fpu_state& fpu, int fpu_id,
 
     if (fpu.num_active_timeouts == 0)
     {
-#ifdef DEBUG2
-        printf("fpu #%i:  cmd code %i was already removed by time-out\n", fpu_id, cmd_code);
-#endif
+        LOG_RX(LOG_DEBUG, "fpu #%i:  cmd code %i was already removed by time-out\n", fpu_id, cmd_code);
         return;
     }
     assert(cmd_code != CCMD_NO_COMMAND);
 
     if ( ((fpu.pending_command_set >> cmd_code) & 1) == 0)
     {
-#ifdef DEBUG2
-        printf("fpu #%i:  cmd code %i was already removed\n", fpu_id, cmd_code);
-#endif
+
+        LOG_RX(LOG_DEBUG, "fpu #%i:  cmd code %i was already removed\n", fpu_id, cmd_code);
+
         return;
     }
 
-#ifdef DEBUG2
-    printf("fpu #%i: removing cmd code %i %i ==> %i\n", fpu_id, cmd_code,
+#if 0
+    LOG_RX(LOG_TRACE_CAN_MESSAGES, "fpu #%i: removing cmd code %i %i ==> %i\n", fpu_id, cmd_code,
            fpu.pending_command_set,
            fpu.pending_command_set & ~(((unsigned int)1) << cmd_code));
 #endif
+
 
     // iterate list to find entry and value which is to be removed
     timespec removed_val;
@@ -927,9 +927,6 @@ void remove_pending(t_fpu_state& fpu, int fpu_id,
 
     count_pending--;
     assert(fpu.num_active_timeouts >= 0);
-#ifdef DEBUG2
-    printf("fpu #%i:  remove_pending: new pending count is %i\n", fpu_id, count_pending);
-#endif
 
 }
 

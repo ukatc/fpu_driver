@@ -40,9 +40,8 @@ namespace canlayer
 {
 
 // logs error status in CAN response
-void logErrorStatus(int fpu_id, timespec time_stamp, int err_code)
+void logErrorStatus(const GridDriverConfig config, int fpu_id, int err_code)
 {
-#ifdef DEBUG
 
     const char * err_msg = "(no error)";
     switch (err_code)
@@ -83,15 +82,11 @@ void logErrorStatus(int fpu_id, timespec time_stamp, int err_code)
         break;
 
     }
-    // FIXME: In production code, logging of FPU error responses should
-    // be taken out of the time-critical path so that even a large
-    // amount of log messages will not affect the responsiveness of the
-    // driver.
 
-    printf("[%lu.%lu]: FPU #%04i : error response msg = %s\n",
-           time_stamp.tv_sec, time_stamp.tv_nsec,
+    LOG_RX(LOG_DEBUG, "%18.6f: FPU #%04i : error response msg = %s\n",
+           get_realtime(),
            fpu_id, err_msg);
-#endif
+
 }
 
 
@@ -175,16 +170,16 @@ void handleFPUResponse(const GridDriverConfig config,
     case CCMD_CONFIG_MOTION   :
         
         LOG_RX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX : handle_ConfigMotion:"
-               " fpu #%i, segment %ui: status=%ui, error=%i\n",
+               " fpu #%u, segment %u: status=%u, error=%u\n",
                get_realtime(),
                fpu_id, fpu.num_waveform_segments,
                response_status, response_errcode);
         
         // clear time-out flag
-        remove_pending(fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode != 0)
         {
-            //logErrorStatus(fpu_id, cur_time, response_errcode);
+            logErrorStatus(config, fpu_id, response_errcode);
             // if the FPU was in loading state, it is switched to RESTING,
             // otherwise unchanged.
 
@@ -257,7 +252,7 @@ void handleFPUResponse(const GridDriverConfig config,
         else
         {
             // clear timeout status
-            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode,
+            remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode,
                            timeout_list, count_pending);
             
             // FIXME: decrease log level in production system to keep responsivity at maximum
@@ -303,7 +298,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
     case CMSG_FINISHED_MOTION:
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
         if (response_status & STBT_ABORT_WAVE)
         {
             fpu.state = FPST_ABORTED;
@@ -392,17 +387,17 @@ void handleFPUResponse(const GridDriverConfig config,
             switch(fpu.state)
             {
             case FPST_MOVING:
-                remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+                remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
                 break;
             case FPST_DATUM_SEARCH:
-                remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+                remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
                 break;
             default:
                 /* the other commands are not movements */
                 break;
             }
         }
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
 
         // this is set to a low logging level because any moving FPU
@@ -416,7 +411,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
     case CCMD_GET_STEPS_ALPHA :
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode,timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode,timeout_list, count_pending);
         if (response_errcode == 0)
         {
             const uint16_t steps_coded = (data[5] << 8) | data[4];
@@ -432,7 +427,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
     case CCMD_GET_STEPS_BETA  :
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
             const uint16_t steps_coded = (data[5] << 8) |  data[4];
@@ -448,7 +443,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
     case CCMD_GET_ERROR_ALPHA  :
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
             const uint16_t steps_coded = (data[5] << 8) |  data[4];
@@ -464,7 +459,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
     case CCMD_GET_ERROR_BETA  :
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
             const uint16_t steps_coded = (data[5] << 8) |  data[4];
@@ -480,7 +475,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
     case CCMD_PING_FPU        :
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
         if (fpu.state == FPST_UNKNOWN)
         {
@@ -533,7 +528,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
     case CCMD_REPEAT_MOTION        :
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
 
         if ((response_errcode == 0)
@@ -549,7 +544,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
     case CCMD_REVERSE_MOTION        :
         // clear time-out flag
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
 
         if ((response_errcode == 0)
@@ -566,7 +561,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
     case CCMD_RESET_FPU       :
         // clear pending time-out for reset command
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
         {
             initialize_fpu(fpu);
@@ -580,7 +575,7 @@ void handleFPUResponse(const GridDriverConfig config,
                     if (((fpu.pending_command_set >> cmd_code) & 1) == 1)
                     {
                         const E_CAN_COMMAND can_cmd = static_cast<E_CAN_COMMAND>(cmd_code);
-                        remove_pending(fpu, fpu_id,  can_cmd, response_errcode,
+                        remove_pending(config, fpu, fpu_id,  can_cmd, response_errcode,
                                        timeout_list, count_pending);
                     }
 
@@ -629,7 +624,7 @@ void handleFPUResponse(const GridDriverConfig config,
     case CMSG_FINISHED_DATUM :
         // clear time-out flag
         //printf("finished: datum search for FPU %i \n", fpu_id);
-        remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
 
         if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
         {
@@ -725,14 +720,14 @@ void handleFPUResponse(const GridDriverConfig config,
         if (fpu.state == FPST_MOVING)
         {
             // clear time-out flag
-            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+            remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
 
         }
 
         if (fpu.state == FPST_DATUM_SEARCH)
         {
             // clear time-out flag
-            remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+            remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
 
         }
 
@@ -751,14 +746,14 @@ void handleFPUResponse(const GridDriverConfig config,
         if (fpu.state == FPST_MOVING)
         {
             // clear time-out flag
-            remove_pending(fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+            remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
 
         }
 
         if (fpu.state == FPST_DATUM_SEARCH)
         {
             // clear time-out flag
-            remove_pending(fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+            remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
         }
 
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -788,7 +783,7 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.beta_collision = false;
         }
 
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
         break;
 
@@ -799,14 +794,14 @@ void handleFPUResponse(const GridDriverConfig config,
         // FIXME: Update step counter in protocol version 2
         //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
 
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
         break;
 
     case CCMD_SET_USTEP_LEVEL:
         fpu.ping_ok = true;
 
-        remove_pending(fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
         break;
 

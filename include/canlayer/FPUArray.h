@@ -217,7 +217,8 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 
 // remove a command from the pending command set, and refresh the
 // time-out list with the next time out.
-void remove_pending(t_fpu_state& fpu, int fpu_id,
+void remove_pending(const GridDriverConfig &config,
+                    t_fpu_state& fpu, int fpu_id,
                     E_CAN_COMMAND cmd_code, E_MOC_ERRCODE cmd_status,
                     TimeOutList& timeout_list,
                     int &count_pending);
