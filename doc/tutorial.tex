@@ -1,4 +1,6 @@
-\documentclass{scrartcl}[12pt,a4paper]
+%\documentclass{scrartcl}[12pt,a4paper]
+%\documentclass{scrreprt}[12pt,a4paper]
+\documentclass{report}[12pt,a4paper]
 %\documentclass{article}[12pt,a4paper]
 %\documentclass{artikel3}[12pt,a4paper]
 
@@ -15,9 +17,10 @@
 %\usepackage{ebgaramond} % 
 %\usepackage[bitstream-charter]{mathdesign}
 
-%\usepackage{gentium} % looks very good
-%\usepackage{sourcecodepro} % 
-\usepackage{lmodern}
+\usepackage{lmodern} % 
+\usepackage{gentium} % looks very good
+%\usepackage[scaled=1.05,proportional,lightcondensed]{zlmtt} % proportional - is this OK?
+%\usepackage{sourcecodepro} % far too wide
 \usepackage[T1]{fontenc}
 \usepackage{makeidx}
 
@@ -26,7 +29,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 0.5.3 (document version \texttt{\input{../git_version}})}
+  module}% \subtitle{For driver version 0.5.3 (document version \texttt{\input{../git_version}})}
 
 \author{Johannes Nix}
 
