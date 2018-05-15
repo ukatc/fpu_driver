@@ -93,78 +93,78 @@ time_spec_add_safe), also  use TIME_T_MAX from time.h)
 ** DONE Fix makefile to build static lib
 ** DONE build with -Wall -pendandic -Wextra
 ** DONE Move workstation
-* TODO Improvements
-** DONE API methods hould return state reference parameter
+** DONE Improvements
+*** DONE API methods hould return state reference parameter
 .. in output argument. This requires an additional lock
 when the internal state struct is used.
-** DONE fix name field in header
-** DONE put commands in namespace
-** DONE put can level stuff into namespace
-** DONE split methods in initialize() / uninitialize():
-  anywhere we allocate memory via the STL, to catch
-  out-of-memory exceptions
+*** DONE fix name field in header
+*** DONE put commands in namespace
+*** DONE put can level stuff into namespace
+*** DONE split methods in initialize() / uninitialize():
+   anywhere we allocate memory via the STL, to catch
+   out-of-memory exceptions
 
-  Also, thread tghrough the calls of these methods
-  up to the top level.
-** DONE compile -Wall
-** DONE Fix CPU hogging
-** DONE fix Python wrapper for grid_state
-** DONE clean up debug messages 
-** DONE Fix encoding of beta step count in both driver and mock_controller
-** DONE fix changed CAN command names (setTicksPerSegment and setStepsPerFrame, also getCounterDeviation)
-** DONE fix message lengths in all version 1 CAN commands, and re-test
-** DONE fix decoding of all CAN commands in mock_controller.py to make it clearer
-** DONE Fix encoding of mock responses (use TX[n] = ... )
-** DONE fix const correctness
-** DONE add PingFPU  command
-** DONE add resetFPU command
-** DONE Add eventfds for new commands and for driver shutdown
-** DONE Add time-outs for commands
-** DONE add response handlers for base commands
-** DONE Clean-up
-*** DONE Split declarations and implementations into source files as usual
-*** DONE consider: move locus of time-stamping sent command to after termination of sending
-*** DONE collect time utility functions into own file
-*** DONE replace hand-rolled time function with system standard funcs
-** DONE make signatures const-correct
-** DONE make API const-correct
-** DONE split findDatum into start and wait functions
+   Also, thread tghrough the calls of these methods
+   up to the top level.
+*** DONE compile -Wall
+*** DONE Fix CPU hogging
+*** DONE fix Python wrapper for grid_state
+*** DONE clean up debug messages 
+*** DONE Fix encoding of beta step count in both driver and mock_controller
+*** DONE fix changed CAN command names (setTicksPerSegment and setStepsPerFrame, also getCounterDeviation)
+*** DONE fix message lengths in all version 1 CAN commands, and re-test
+*** DONE fix decoding of all CAN commands in mock_controller.py to make it clearer
+*** DONE Fix encoding of mock responses (use TX[n] = ... )
+*** DONE fix const correctness
+*** DONE add PingFPU  command
+*** DONE add resetFPU command
+*** DONE Add eventfds for new commands and for driver shutdown
+*** DONE Add time-outs for commands
+*** DONE add response handlers for base commands
+*** DONE Clean-up
+**** DONE Split declarations and implementations into source files as usual
+**** DONE consider: move locus of time-stamping sent command to after termination of sending
+**** DONE collect time utility functions into own file
+**** DONE replace hand-rolled time function with system standard funcs
+*** DONE make signatures const-correct
+*** DONE make API const-correct
+*** DONE split findDatum into start and wait functions
 
-** DONE Wrap error returns into Python Exceptions
-** DONE revise expects_response field
-** DONE add Python wrappers for base commands
-** DONE Add tentative CAN responses
-*** DONE config_motion
-*** DONE ping
-*** DONE print frequency of epoll / cond_wait calls
-*** DONE solve argument passing of grid_state
-*** DONE print invalid responses
-** DONE fix recording of movement direction
-** DONE add mock gateway code for base commands (version 1)
-** DONE fix unnecessary compile warnings
-** DONE check FIXMEs for resolved stuff
-** DONE remove dead code
-** DONE format code nicely using astyle
-** DONE revise initializations of socket and threads
-** DONE Implement ustep errors in mock-up and test handler
-** DONE Bugfix broadast command for more than one bus
-** DONE Lift waveform restriction for zero movement (DEFINE)
-** DONE Update tutorial on allowed waveforms
-** DONE Fix multiplexing of broadcast commands (currently, they are only sent to bus 0)
-   One CAN command for each bus needs to be generated,
-   not only for each gateway.
-   This affects both the serialization code in send_buffer,
-   the generation of broadcast commands in the gateway method,
-   and the update of pending commands which needs to filter
-   by busid.
+*** DONE Wrap error returns into Python Exceptions
+*** DONE revise expects_response field
+*** DONE add Python wrappers for base commands
+*** DONE Add tentative CAN responses
+**** DONE config_motion
+**** DONE ping
+**** DONE print frequency of epoll / cond_wait calls
+**** DONE solve argument passing of grid_state
+**** DONE print invalid responses
+*** DONE fix recording of movement direction
+*** DONE add mock gateway code for base commands (version 1)
+*** DONE fix unnecessary compile warnings
+*** DONE check FIXMEs for resolved stuff
+*** DONE remove dead code
+*** DONE format code nicely using astyle
+*** DONE revise initializations of socket and threads
+*** DONE Implement ustep errors in mock-up and test handler
+*** DONE Bugfix broadast command for more than one bus
+*** DONE Lift waveform restriction for zero movement (DEFINE)
+*** DONE Update tutorial on allowed waveforms
+*** DONE Fix multiplexing of broadcast commands (currently, they are only sent to bus 0)
+    One CAN command for each bus needs to be generated,
+    not only for each gateway.
+    This affects both the serialization code in send_buffer,
+    the generation of broadcast commands in the gateway method,
+    and the update of pending commands which needs to filter
+    by busid.
 
-** DONE stress tests with multiple FPUs
-** DONE Fix missing exception for beta collision
-** DONE fix branching for driver
-** DONE add datum restriction to firmware protocol
-** DONE Install Scientific Linux or ESO Linux image on kraken
-** DONE Add & test TCP options for socket connection time-outs.
-** DONE Fix detection & reporting of CAN command timeouts
+*** DONE stress tests with multiple FPUs
+*** DONE Fix missing exception for beta collision
+*** DONE fix branching for driver
+*** DONE add datum restriction to firmware protocol
+*** DONE Install Scientific Linux or ESO Linux image on kraken
+*** DONE Add & test TCP options for socket connection time-outs.
+*** DONE Fix detection & reporting of CAN command timeouts
 ** DONE release 0.5.2
 *** DONE revise tutorial
 **** DONE Document listing uninitialized angles
@@ -181,17 +181,32 @@ when the internal state struct is used.
 *** DONE Add alpha/beta selection parameter for datum method
 *** DONE clarify requirement for variable MAX_FPU
 *** DONE Add time-out for socket connect() call
-** TODO release 0.5.3
+** DONE release 0.5.3
 *** DONE move all driver configuration parameters to const struct
 *** DONE Add log levels as discussed
 *** DONE add separate reporting/logging of results
-*** TODO document logging
-** TODO 
+** DONE document logging
+** TODO 0.5.4: Tutorial, fix description of findDatum option selected_arm
+*** TODO replace reference to old version, proof-read again
+** TODO add outstanding features for verification system
+*** TODO control direction of datum command and add automatic datum flag
+*** TODO add readRegister command
+*** TODO add  readFirmwareVersion command
+*** TODO test firmware version in findDatum command
+*** TODO add addressing a subset of FPUs 
+*** TODO add reporting of total number of steps
+*** TODO add reporting number of movements
+*** TODO pack release 0.6.0
+** TODO make Thorlabs automation available to Python
+** TODO  clean-up of version 1 code
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList
 *** TODO run short stress test of firmware with CAN command logging
 *** TODO Refactor duplicate code in command header encoding
 *** TODO split SBuffer in independent read buffer and write buffer ?   
+** TODO Implement CAN Protocol V2
+*** TODO clean up protocol document
+*** TODO confirm agreement on protocol
 
 * TODO Verification System
 ** DONE make thorpy driver accessible in python2
@@ -200,7 +215,9 @@ when the internal state struct is used.
 *** DONE get turntable
 *** DONE test cli tool
 *** DONE [?] Do PySerial experiments
-*** Check protocol for turntable / controller
+*** DONE Check protocol for turntable / controller
+*** TODO fix python library for NR360, parametrize models
+
 * TODO Integrate path analysis script into MOONS shared library
 ** DONE do a git-svn pull of library
 ** TODO integrate test values into test folder
