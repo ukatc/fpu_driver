@@ -272,8 +272,10 @@ void handleFPUResponse(const GridDriverConfig config,
                     fpu.state = FPST_RESTING;
                 }
                 fpu.waveform_valid = false;
-                
-                LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+
+                // This message is set to a low log level because it is sent by any extra FPUs
+                // which have not been configured
+                LOG_CONSOLE(LOG_DEBUG, "%18.6f : RX : "
                             "FPU # %i: executeMotion command got error response 'ER_WAVENREDY' / 'ER_PARAM'"
                             " command skipped.\n",
                             get_realtime(),
