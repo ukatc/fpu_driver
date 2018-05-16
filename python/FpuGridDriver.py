@@ -12,7 +12,7 @@ import fpu_driver
 from fpu_driver import __version__, CAN_PROTOCOL_VERSION, GatewayAddress,  \
     REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, FPUDriverException, MovementError, \
     DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
-    LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_TRACE_CAN_MESSAGES
+    LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_VERBOSE, LOG_TRACE_CAN_MESSAGES
      
 
 import fpu_commands as cmds
@@ -24,7 +24,16 @@ DEFAULT_GATEWAY_ADRESS_LIST = [ GatewayAddress("127.0.0.1", p)
 TEST_GATEWAY_ADRESS_LIST = [ GatewayAddress("192.168.0.10", 4700) ]
 
 
-DEFAULT_NUM_FPUS=1005
+DEFAULT_NUM_FPUS=int(os.environ.get("NUM_FPUS","1005"))
+
+DEFAULT_LOGDIR=os.environ.get("FPU_DRIVER_DEFAULT_LOGDIR","./_logs")
+str_loglevel = os.environ.get("FPU_DRIVER_DEFAULT_LOGLEVEL","LOG_TRACE_CAN_MESSAGES")
+DEFAULT_LOGLEVEL= {"LOG_ERROR":    LOG_ERROR,    
+                   "LOG_INFO":     LOG_INFO,     
+                   "LOG_GRIDSTATE":LOG_GRIDSTATE,
+                   "LOG_VERBOSE":LOG_VERBOSE,
+                   "LOG_DEBUG":    LOG_DEBUG,    
+                   "LOG_TRACE_CAN_MESSAGES": LOG_TRACE_CAN_MESSAGES}[str_loglevel]
 
 
 class SignalHandler(object):
@@ -74,7 +83,6 @@ def get_logname(basename,
     filename = basename.format(start_timestamp=timestamp)
     return path.join(log_dir, path.expandvars(path.expanduser(filename)))
 
-DEFAULT_LOGDIR="./_logs"
 
 def make_logdir(log_dir):
     log_path = path.abspath(path.expandvars(path.expanduser(log_dir)))
@@ -94,7 +102,7 @@ def make_logdir(log_dir):
 class GridDriver:
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
-                 logLevel=LOG_TRACE_CAN_MESSAGES,
+                 logLevel=DEFAULT_LOGLEVEL,
                  log_dir=DEFAULT_LOGDIR,
                  control_logfile="_{start_timestamp}-fpu_control.log",
                  tx_logfile = "_{start_timestamp}-fpu_tx.log",
