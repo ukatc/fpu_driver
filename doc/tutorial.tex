@@ -1,12 +1,11 @@
 %\documentclass{scrartcl}[12pt,a4paper]
-%\documentclass{scrreprt}[12pt,a4paper,DIV=8]
-\documentclass{report}[12pt,a4paper]
-%\documentclass{article}[12pt,a4paper]
+%\documentclass[fontsize=12,a4paper]{scrreprt}
+\documentclass[11pt,a4paper]{report}
+%\documentclass[12pt,a4paper]{article}
 %\documentclass{artikel3}[12pt,a4paper]
-\usepackage{minted}
-\usepackage{hyperref}
-\usepackage{graphicx}
-\usepackage{xcolor}
+
+\usepackage[T1]{fontenc}
+
 %\usepackage{cmbright}
 %\usepackage{newcent} % thos one is good
 %\usepackage{mathpazo} % inot as good as charter
@@ -16,12 +15,17 @@
 %\usepackage[garamond]{mathdesign} %
 %\usepackage[bitstream-charter]{mathdesign}
 
-\usepackage{lmodern} % 
+%\usepackage{lmodern} %
+\usepackage[narrow]{inconsolata}
 \usepackage{gentium} % looks very good
 %\usepackage{charter} % works quite good
 %\usepackage[scaled=1.05,proportional,lightcondensed]{zlmtt} % proportional - is this OK?
 %\usepackage{sourcecodepro} % far too wide
-\usepackage[T1]{fontenc}
+
+\usepackage{minted}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{xcolor}
 \usepackage{makeidx}
 
 \makeindex
