@@ -1,4 +1,6 @@
 *.pyc
 _*.log
-_logs/
+/_logs/
+/_logs
+
 

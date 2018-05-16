@@ -247,7 +247,7 @@ number, and CAN ID.
 The FPU driver sends commands to the fibre positioner units, which use
 a specific communication protocol. This protocol needs to match the
 FPUs firmware and its capabilities. The current version of the driver
-(version 0.5.0) uses ``communication protocol version 1'', which has
+(version 0.5.x) uses ``communication protocol version 1'', which has
 some restrictions in functionality. For example, some edge cases
 cannot be checked, some operations might take longer, and some errors
 are not recognised or cannot as easily worked around.
@@ -1283,7 +1283,9 @@ arguments to the driver constructor. The available options are:
 \item[logLevel] -- sets the logging level. Possible log levels are
   listed in table~\ref{tab:loglevels} on
   page~\pageref{tab:loglevels}. The default level is currently
-  \texttt{LOG\_TRACE\_CAN\_COMMANDS}.
+  \texttt{LOG\_TRACE\_CAN\_COMMANDS}. If the environment variable
+  \texttt{FPU\_DRIVER\_DEFAULT\_LOGLEVEL} is set, its value is used as
+  the default level.
   
   \item [log\_dir] -- sets the directory or folder into which the log
     files are written. A tilde followed by a slash (``\~/``) expands
@@ -1292,9 +1294,11 @@ arguments to the driver constructor. The available options are:
     \texttt{./\_logs}. If the leaf directory does not exist when the
     driver is started, it is automatically created.
 
-    For long-running tests with multiple FPUs, this directory should
-    be adjusted to point to a disk or file system which has plenty of
-    free space.
+    If the environment variable \texttt{FPU\_DRIVER\_DEFAULT\_LOGDIR}
+    is set, its value is used to set the default log directory.  For
+    long-running tests with multiple FPUs, this directory should be
+    adjusted to point to a file system path which has plenty of free
+    space.
 
   \item[start\_timestamp] Allows to change the timestamp prefix which
     is inserted into the names of the individual log files.  Adjusting
@@ -1741,7 +1745,7 @@ Optionally, the keyword argument \texttt{arm\_selection} can be passed
 to move the arms individually like this:
 
 \begin{minted}{python}
-  gd.findDatum(grid_state, arm_selection=DASEL_ALPHA)
+  gd.findDatum(grid_state, selected_arm=DASEL_ALPHA)
 \end{minted}
 
 If the value of this parameter is \texttt{DASEL\_BOTH}, it shows the
@@ -2319,7 +2323,12 @@ all changes which alter either behaviour of the
 driver, or require adaptions in scripts which
 use the corresponding commands.
 
-\subsection*{Changes in version 0.5.2}
+\subsection*{Changes in version 0.5.4}
+\begin{itemize}
+\item Corrections to the documentation of \texttt{findDatum()}.
+\end{itemize}
+
+\subsection*{Changes in version 0.5.3}
 \begin{itemize}
 \item Added optional logging of commands and CAN messages, which
   is enabled by default (described in section~/ref{sec:logging}).
