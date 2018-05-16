@@ -91,6 +91,12 @@ enum E_LogLevel
         }                                                                 \
         }
 
+#define LOG_CONSOLE(minlevel, ...){                                       \
+        if ((config.logLevel >= minlevel) && (config.fd_rxlog >= 0))      \
+        {                                                                 \
+            fprintf(stderr, __VA_ARGS__);                                 \
+        }                                                                 \
+        }
 
 }
 

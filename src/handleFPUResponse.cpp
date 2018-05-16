@@ -272,17 +272,36 @@ void handleFPUResponse(const GridDriverConfig config,
                     fpu.state = FPST_RESTING;
                 }
                 fpu.waveform_valid = false;
+                
+                LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+                            "FPU # %i: executeMotion command got error response 'ER_WAVENREDY' / 'ER_PARAM'"
+                            " command skipped.\n",
+                            get_realtime(),
+                            fpu_id);
             }
             else if (response_status & STBT_ABORT_WAVE)
             {
                 fpu.state = FPST_ABORTED;
                 fpu.waveform_valid = false;
+                
+                LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+                            "FPU # %i: executeMotion command got error status 'STBT_ABORT_WAVE'"
+                            " command cancelled.\n",
+                            get_realtime(),
+                            fpu_id);
             }
             else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
             {
                 fpu.state = FPST_OBSTACLE_ERROR;
                 fpu.waveform_valid = false;
                 fpu.at_alpha_limit = true;
+
+                LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+                            "FPU # %i: executeMotion command got error status 'ER_M1LIMIT'/'STBT_M1LIMIT'"
+                            " command cancelled.\n",
+                            get_realtime(),
+                            fpu_id);
+                
             }
             else if (response_errcode == ER_COLLIDE)
             {
@@ -290,6 +309,11 @@ void handleFPUResponse(const GridDriverConfig config,
                 fpu.state = FPST_OBSTACLE_ERROR;
                 fpu.waveform_valid = false;
 
+                LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+                            "FPU # %i: executeMotion command got error response code 'ER_COLLIDE'"
+                            " command cancelled.\n",
+                            get_realtime(),
+                            fpu_id);
             }
 
         }
@@ -304,6 +328,18 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.state = FPST_ABORTED;
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
+            
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                        "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
+                        " movement aborted.\n",
+                        get_realtime(),
+                        fpu_id);
+            
+            LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
+                        "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
+                        " movement aborted.\n",
+                        get_realtime(),
+                        fpu_id);
         }
         else if (response_errcode == ER_TIMING)
         {
@@ -322,6 +358,13 @@ void handleFPUResponse(const GridDriverConfig config,
                    get_realtime(),
                    fpu_id);
 
+            LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
+                        "FPU # %i: executeMotion command finished error status "
+                        "'ER_TIMING (step timing error / firmware error)'"
+                        " movement aborted.\n",
+                        get_realtime(),
+                        fpu_id);
+            
             fpu.state = FPST_ABORTED;
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
@@ -344,6 +387,13 @@ void handleFPUResponse(const GridDriverConfig config,
                    "collision detected message received for FPU %i\n",
                    get_realtime(),
                    fpu_id);
+            
+            LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
+                        "FPU # %i: executeMotion command finished error status "
+                        "'ER_COLLIDE (beta arm collision)'"
+                        " movement aborted.\n",
+                        get_realtime(),
+                        fpu_id);
         }
         else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT) || fpu.at_alpha_limit)
         {
@@ -361,6 +411,14 @@ void handleFPUResponse(const GridDriverConfig config,
                    "limit switch breach message received for FPU %i\n",
                    get_realtime(),
                    fpu_id);
+            
+            LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
+                        "FPU # %i: executeMotion command finished error status "
+                        "'ER_M1LIMIT' (alpha limit switch breach)"
+                        " movement aborted.\n",
+                        get_realtime(),
+                        fpu_id);
+
         }
         else if (response_errcode == 0)
         {
@@ -716,6 +774,11 @@ void handleFPUResponse(const GridDriverConfig config,
                "collision detection message received for FPU %i\n",
                get_realtime(),
                fpu_id);
+        
+        LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+                    "FPU # %i: beta arm collision detection message received.\n",
+                    get_realtime(),
+                    fpu_id);
 
         if (fpu.state == FPST_MOVING)
         {
@@ -761,6 +824,11 @@ void handleFPUResponse(const GridDriverConfig config,
                get_realtime(),
                fpu_id);
 
+        LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+                    "FPU # %i: alpha arm limit switch breach message received.\n",
+                    get_realtime(),
+                    fpu_id);
+        
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.at_alpha_limit = true;
         fpu.waveform_valid = false;
