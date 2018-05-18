@@ -224,7 +224,10 @@ void handleFPUResponse(const GridDriverConfig config,
         {
             // FIXME: Update step counter in protocol version 2
             // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
-            fpu.state = FPST_MOVING;
+            if ((fpu.state != FPST_OBSTACLE_ERROR) && (fpu.state != FPST_ABORTED))
+            {
+                fpu.state = FPST_MOVING;
+            }
             fpu.movement_complete = false;;
             // status byte should show RUNNING_WAVE, too
 
@@ -281,17 +284,6 @@ void handleFPUResponse(const GridDriverConfig config,
                             get_realtime(),
                             fpu_id);
             }
-            else if (response_status & STBT_ABORT_WAVE)
-            {
-                fpu.state = FPST_ABORTED;
-                fpu.waveform_valid = false;
-                
-                LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
-                            "FPU # %i: executeMotion command got error status 'STBT_ABORT_WAVE'"
-                            " command cancelled.\n",
-                            get_realtime(),
-                            fpu_id);
-            }
             else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
             {
                 fpu.state = FPST_OBSTACLE_ERROR;
@@ -317,6 +309,20 @@ void handleFPUResponse(const GridDriverConfig config,
                             get_realtime(),
                             fpu_id);
             }
+            else if (response_status & STBT_ABORT_WAVE)
+            {
+                if (fpu.state != FPST_OBSTACLE_ERROR)
+                {
+                    fpu.state = FPST_ABORTED;
+                }
+                fpu.waveform_valid = false;
+                
+                LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+                            "FPU # %i: executeMotion command got error status 'STBT_ABORT_WAVE'"
+                            " command cancelled.\n",
+                            get_realtime(),
+                            fpu_id);
+            }
 
         }
         fpu.last_updated = cur_time;
@@ -325,55 +331,7 @@ void handleFPUResponse(const GridDriverConfig config,
     case CMSG_FINISHED_MOTION:
         // clear time-out flag
         remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
-        if (response_status & STBT_ABORT_WAVE)
-        {
-            fpu.state = FPST_ABORTED;
-            fpu.movement_complete = false;
-            fpu.waveform_valid = false;
-            
-            LOG_RX(LOG_ERROR, "%18.6f : RX : "
-                        "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
-                        " movement aborted.\n",
-                        get_realtime(),
-                        fpu_id);
-            
-            LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
-                        "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
-                        " movement aborted.\n",
-                        get_realtime(),
-                        fpu_id);
-        }
-        else if (response_errcode == ER_TIMING)
-        {
-            // we got a step timing error (meaning the interrupt
-            // handler running on the FPUs microcontroller could not
-            // compute the step frequency quick enough for the
-            // configured microstepping level).
-            //
-            // FIXME: This should possibly generate an abortMotion
-            // message for all FPUs, because other FPUs can crash into
-            // the stopped one if they continue moving.
-
-            LOG_RX(LOG_ERROR, "%18.6f : RX : "
-                   "while waiting for finishedMotion: "
-                   "step timing error response received for FPU %i\n",
-                   get_realtime(),
-                   fpu_id);
-
-            LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
-                        "FPU # %i: executeMotion command finished error status "
-                        "'ER_TIMING (step timing error / firmware error)'"
-                        " movement aborted.\n",
-                        get_realtime(),
-                        fpu_id);
-            
-            fpu.state = FPST_ABORTED;
-            fpu.movement_complete = false;
-            fpu.waveform_valid = false;
-            fpu.step_timing_errcount++;
-
-        }
-        else if ((response_errcode == ER_COLLIDE) || fpu.beta_collision)
+        if ((response_errcode == ER_COLLIDE) || fpu.beta_collision)
         {
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.movement_complete = false;
@@ -422,12 +380,69 @@ void handleFPUResponse(const GridDriverConfig config,
                         fpu_id);
 
         }
+        else if (response_status & STBT_ABORT_WAVE)
+        {
+            if (fpu.state != FPST_OBSTACLE_ERROR)
+            {
+                fpu.state = FPST_ABORTED;
+            }
+            fpu.movement_complete = false;
+            fpu.waveform_valid = false;
+            
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                        "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
+                        " movement aborted.\n",
+                        get_realtime(),
+                        fpu_id);
+            
+            LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
+                        "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
+                        " movement aborted.\n",
+                        get_realtime(),
+                        fpu_id);
+        }
+        else if (response_errcode == ER_TIMING)
+        {
+            // we got a step timing error (meaning the interrupt
+            // handler running on the FPUs microcontroller could not
+            // compute the step frequency quick enough for the
+            // configured microstepping level).
+            //
+            // FIXME: This should possibly generate an abortMotion
+            // message for all FPUs, because other FPUs can crash into
+            // the stopped one if they continue moving.
+
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "while waiting for finishedMotion: "
+                   "step timing error response received for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
+
+            LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
+                        "FPU # %i: executeMotion command finished error status "
+                        "'ER_TIMING (step timing error / firmware error)'"
+                        " movement aborted.\n",
+                        get_realtime(),
+                        fpu_id);
+            
+            if (fpu.state != FPST_OBSTACLE_ERROR)
+            {
+                fpu.state = FPST_ABORTED;
+            }
+            fpu.movement_complete = false;
+            fpu.waveform_valid = false;
+            fpu.step_timing_errcount++;
+
+        }
         else if (response_errcode == 0)
         {
             // FIXME: Update step counter in protocol version 2
             // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
-            fpu.state = FPST_RESTING;
-            fpu.movement_complete = true;
+            if ( (fpu.state != FPST_OBSTACLE_ERROR) && (fpu.state != FPST_ABORTED))
+            {               
+                fpu.state = FPST_RESTING;
+                fpu.movement_complete = true;
+            }
 
             // in protocol version 1, we do not know the last movement direction
             fpu.direction_alpha = DIRST_UNKNOWN;
@@ -442,7 +457,10 @@ void handleFPUResponse(const GridDriverConfig config,
         {
             // FIXME: Update step counter in protocol version 2
             //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
-            fpu.state = FPST_ABORTED;
+            if (fpu.state != FPST_OBSTACLE_ERROR)
+            {
+                fpu.state = FPST_ABORTED;
+            }
             // remove executeMotion from pending commands
             switch(fpu.state)
             {
@@ -719,7 +737,10 @@ void handleFPUResponse(const GridDriverConfig config,
         }
         else if (response_status & STBT_ABORT_WAVE)
         {
-            fpu.state = FPST_ABORTED;
+            if (fpu.state != FPST_OBSTACLE_ERROR)
+            {
+                fpu.state = FPST_ABORTED;
+            }
             fpu.waveform_valid = false;
 
             LOG_RX(LOG_DEBUG, "%18.6f : RX : "

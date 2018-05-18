@@ -187,8 +187,13 @@ when the internal state struct is used.
 *** DONE add separate reporting/logging of results
 ** DONE document logging
 ** TODO 0.5.4: Tutorial, fix description of findDatum option selected_arm
-*** TODO replace reference to old version, proof-read again
+*** DONE replace reference to old version, 
+*** TODO proof-read tutorial again
+*** TODO add print_function to imports from __future__ everywhere
+*** DONE fix swallowing of OBSTACLE_ERROR in finishMotion
 ** TODO add outstanding features for verification system
+*** TODO discern SocketFailure from FPUTimeoutError
+*** TODO extend spec to autoDatum and firmwareVersion flags
 *** TODO control direction of datum command and add automatic datum flag
 *** TODO add readRegister command
 *** TODO add  readFirmwareVersion command
