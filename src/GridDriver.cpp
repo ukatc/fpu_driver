@@ -347,6 +347,20 @@ E_DriverErrCode GridDriver::getPositions(t_grid_state& grid_state)
     return status;
 }
 
+
+E_DriverErrCode GridDriver::readRegister(uint16_t read_address, t_grid_state& grid_state)
+{
+    E_GridState state_summary;
+    E_DriverErrCode status;
+
+    pthread_mutex_lock(&command_creation_mutex);
+    status = readRegisterAsync(read_address, grid_state, state_summary);
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return status;
+}
+
+
 E_DriverErrCode GridDriver::getCounterDeviation(t_grid_state& grid_state)
 {
     E_GridState state_summary;

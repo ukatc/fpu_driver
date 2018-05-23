@@ -151,6 +151,8 @@ public:
     int num_active_timeouts;
     int sequence_number;
     int movement_complete;
+    int register_value;
+    uint16_t register_address;
 
     WrapFPUState() {}
 
@@ -185,6 +187,8 @@ public:
         waveform_valid            = fpu_state.waveform_valid;
         waveform_ready            = fpu_state.waveform_ready;
         waveform_reversed         = fpu_state.waveform_reversed;
+        register_value            = fpu_state.register_value;
+        register_address          = fpu_state.register_address;
 
     }
 
@@ -236,6 +240,8 @@ public:
           << " 'waveform_valid' : " << fpu.waveform_valid
           << " 'waveform_ready' : " << fpu.waveform_ready
           << " 'waveform_reversed' : " << fpu.waveform_reversed
+          << " 'register_address' : " << std::hex << std::showbase << fpu.register_address
+          << " 'register_value' : " << fpu.register_value << std::dec << std::noshowbase
           << " }";
         return s.str();
     }
@@ -812,6 +818,18 @@ public:
         return ecode;
     }
 
+    E_DriverErrCode wrap_readRegister(int read_address, WrapGridState& grid_state)
+    {
+        if ( (read_address > 0xffff) || (read_address < 0))
+        {
+            checkDriverError(DE_INVALID_PAR_VALUE);
+        }
+        const uint16_t raddress = (uint16_t) read_address;
+        E_DriverErrCode ecode = readRegister(raddress, grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
+    
     E_DriverErrCode wrap_getCounterDeviation(WrapGridState& grid_state)
     {
         E_DriverErrCode ecode = getCounterDeviation(grid_state);
@@ -1211,6 +1229,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("waveform_ready", &WrapFPUState::waveform_ready)
     .def_readonly("waveform_reversed", &WrapFPUState::waveform_reversed)
     .def_readonly("pending_command_set", &WrapFPUState::pending_command_set)
+    .def_readonly("register_address", &WrapFPUState::register_address)
+    .def_readonly("register_value", &WrapFPUState::register_value)
     .def("__repr__", &WrapFPUState::to_repr)
     ;
 
@@ -1274,6 +1294,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("abortMotion", &WrapGridDriver::wrap_abortMotion)
     .def("freeBetaCollision", &WrapGridDriver::wrap_freeBetaCollision)
     .def("setUStepLevel", &WrapGridDriver::wrap_setUStepLevel)
+    .def("readRegister", &WrapGridDriver::wrap_readRegister)
     .def("enableBetaCollisionProtection", &WrapGridDriver::wrap_enableBetaCollisionProtection)
     .def("lockFPU", &WrapGridDriver::lockFPU)
     .def("unlockFPU", &WrapGridDriver::unlockFPU)

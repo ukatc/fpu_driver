@@ -202,6 +202,9 @@ class GridDriver:
     def getPositions(self, gs):
         return self._gd.getPositions(gs)
 
+    def readRegister(self, address, gs):
+        return self._gd.readRegister(address, gs)
+    
     def getCounterDeviation(self, gs):
         return self._gd.getCounterDeviation(gs)
 

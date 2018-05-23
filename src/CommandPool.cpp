@@ -40,6 +40,7 @@
 #include "canlayer/commands/ResetFPUCommand.h"
 #include "canlayer/commands/ReverseMotionCommand.h"
 #include "canlayer/commands/SetUStepLevelCommand.h"
+#include "canlayer/commands/ReadRegisterCommand.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -202,6 +203,11 @@ E_DriverErrCode CommandPool::initialize()
 
                 case CCMD_SET_USTEP_LEVEL :
                     ptr.reset(new SetUStepLevelCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+                    
+                case CCMD_READ_REGISTER        :
+                    ptr.reset(new ReadRegisterCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
 

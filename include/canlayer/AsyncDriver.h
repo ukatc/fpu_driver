@@ -140,6 +140,10 @@ public:
                                        t_grid_state& grid_state,
                                        E_GridState& state_summary);
 
+    E_DriverErrCode readRegisterAsync(uint16_t read_address, t_grid_state& grid_state,
+                                      E_GridState& state_summary);
+
+
     E_GridState getGridState(t_grid_state& out_state) const;
 
     E_GridState waitForState(E_WaitTarget target,

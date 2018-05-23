@@ -137,6 +137,8 @@ public:
 
     E_DriverErrCode setUStepLevel(int ustep_level, t_grid_state& grid_state);
 
+    E_DriverErrCode readRegister(uint16_t read_address, t_grid_state& grid_state);
+
     E_DriverErrCode lockFPU(t_grid_state& grid_state);
 
     E_DriverErrCode unlockFPU(t_grid_state& grid_state);

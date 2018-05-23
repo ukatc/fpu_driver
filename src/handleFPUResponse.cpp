@@ -451,6 +451,7 @@ void handleFPUResponse(const GridDriverConfig config,
         fpu.last_updated = cur_time;
         break;
 
+    case CMSG_WARN_RACE:  /* fall-trough */
     case CCMD_ABORT_MOTION    :
         // clear time-out flag
         if (response_errcode == 0)
@@ -478,12 +479,22 @@ void handleFPUResponse(const GridDriverConfig config,
         remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
 
-        // this is set to a low logging level because any moving FPU
-        // will send this message
-        LOG_RX(LOG_DEBUG, "%18.6f : RX : "
-               "abortMotion message received for FPU %i\n",
-               get_realtime(),
-               fpu_id);
+        if (cmd_id == CMSG_WARN_RACE)
+        {
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "CMSG_WARN_RACE (step timing error) message received for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
+        }
+        else
+        {
+            // this is set to a low logging level because any moving FPU
+            // will send this message
+            LOG_RX(LOG_DEBUG, "%18.6f : RX : "
+                   "abortMotion message received for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
+        }
 
         break;
 

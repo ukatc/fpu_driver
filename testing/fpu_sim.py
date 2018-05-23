@@ -94,6 +94,37 @@ class FPU:
         self.ustep_level = 1
         self.step_timing_fault = False
 
+        version_tuple = map(int, self.opts.protocol_version.split("."))
+        while len(version_tuple) < 3:
+            version_tuple = version_tuple + [0]
+        print("firmware version=", version_tuple)
+
+        fw_date = map(int, self.opts.firmware_date.split("-"))
+        print("firmware date=",fw_date)
+            
+        self.firmware_major = version_tuple[0]
+        self.firmware_minor = version_tuple[1]
+        self.firmware_patch = version_tuple[2]
+        self.firmware_year = fw_date[0]
+        self.firmware_month = fw_date[1]
+        self.firmware_day = fw_date[2]
+
+    def getRegister(self, register_address):
+        if register_address == 0:
+            return self.firmware_major
+        elif register_address == 1:
+            return self.firmware_minor
+        elif register_address == 2:
+            return self.firmware_patch
+        elif register_address == 3:
+            return self.firmware_year
+        elif register_address == 4:
+            return self.firmware_month
+        elif register_address == 5:
+            return self.firmware_day
+        else:
+            return 0xff
+
     def resetFPU(self, fpu_id, sleep):
         printtime()
         print("resetting FPU #%i..." % fpu_id)

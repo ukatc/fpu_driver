@@ -61,7 +61,7 @@ def parse_args():
                         default = DEFAULT_PORTS,
                         help='ports which will listen to a connection')
     
-    parser.add_argument('--debug', dest='debug',  action='store_true',
+    parser.add_argument('-d', '--debug', dest='debug',  action='store_true',
                         default=DEBUG,
                         help='print received binary commands and responses')
     
@@ -73,6 +73,10 @@ def parse_args():
                         default="1.0",
                         help='CAN protocol version')
 
+    parser.add_argument('-D', '--firmware_date',  dest='firmware_date',
+                        default="18-01-01",
+                        help='ISO timestamp with firmware date (format yy-mm-dd as "18-12-31")')
+    
     parser.add_argument('-N', '--NUM_FPUS',  type=int, dest='NUM_FPUS',
                         default=int(DEFAULT_NUM_FPUS),
                         help='number of simulated FPUs')

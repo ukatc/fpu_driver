@@ -34,6 +34,7 @@ _DEPS = DriverState.h E_GridState.h FPUState.h GridDriver.h		\
 	canlayer/commands/GetStepsAlphaCommand.h			\
 	canlayer/commands/GetStepsBetaCommand.h				\
 	canlayer/commands/PingFPUCommand.h				\
+	canlayer/commands/ReadRegisterCommand.h				\
 	canlayer/commands/RepeatMotionCommand.h				\
 	canlayer/commands/ResetFPUCommand.h				\
 	canlayer/commands/ReverseMotionCommand.h			\

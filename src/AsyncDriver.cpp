@@ -44,6 +44,7 @@
 #include "canlayer/commands/ResetFPUCommand.h"
 #include "canlayer/commands/ReverseMotionCommand.h"
 #include "canlayer/commands/SetUStepLevelCommand.h"
+#include "canlayer/commands/ReadRegisterCommand.h"
 
 
 namespace mpifps
@@ -2615,6 +2616,114 @@ void AsyncDriver::logGridState(const E_LogLevel logLevel, t_grid_state& grid_sta
     LOG_CONTROL(LOG_INFO, "%18.6f : %s \n",
                 cur_time,
                 log_buffer);
+
+}
+
+
+E_DriverErrCode AsyncDriver::readRegisterAsync(uint16_t read_address, t_grid_state& grid_state,
+                                               E_GridState& state_summary)
+{
+
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : readRegister():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
+        return DE_NO_CONNECTION;
+    }
+
+
+
+    const uint8_t bank = (read_address >> 8) & 0xff;
+    const uint8_t address_low_part = read_address & 0xff;
+    unique_ptr<ReadRegisterCommand> can_command;
+    for (int i=0; i < config.num_fpus; i++)
+    {
+        // we exclude locked FPUs
+        if (! gateway.isLocked(i) )
+        {
+            can_command = gateway.provideInstance<ReadRegisterCommand>();
+            assert(can_command);
+            bool broadcast = false;
+            can_command->parametrize(i, broadcast, bank, address_low_part);
+            // send the command (the actual sending happens
+            // in the TX thread in the background).
+            CommandQueue::E_QueueState qstate;
+            unique_ptr<I_CAN_Command> cmd(can_command.release());
+            qstate = gateway.sendCommand(i, cmd);
+            assert(qstate == CommandQueue::QS_OK);
+
+        }
+    }
+
+    int num_pending = config.num_fpus;
+
+    // fpus are now responding in parallel.
+    //
+    // As long as any fpus need to respond, wait for
+    // them to finish.
+    while ( (num_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        // as we do not effect any change on the grid,
+        // we need to wait for any response event,
+        // and filter out whether we are actually ready.
+
+        ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        double max_wait_time = -1;
+        bool cancelled = false;
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state, max_wait_time, cancelled);
+
+        // get fresh count of pending fpus.
+        // The reason we add the unsent command is that
+        // the Tx thread might not have had opportunity
+        // to send all the commands.
+        num_pending = (grid_state.count_pending + grid_state.num_queued);
+
+
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : readRegister():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
+        return DE_NO_CONNECTION;
+    }
+
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : readRegister(): error: DE_CAN_COMMAND_TIMEOUT_ERROR.\n",
+                    canlayer::get_realtime());
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+    
+#if (CAN_PROTOCOL_VERSION < 2)
+    for(int i=0; i < config.num_fpus; i++)
+    {
+        // the version 2 response contains the address
+        grid_state.FPU_state[i].register_address = read_address;
+    }
+#endif
+
+    // log result if in debug mode
+    if (config.logLevel >= LOG_DEBUG)
+    {
+        double log_time = canlayer::get_realtime();
+        for(int i=0; i < config.num_fpus; i++)
+        {
+            LOG_CONTROL(LOG_INFO, "%18.6f : readregister: FPU # %4i, location %0x04u = %02xu.\n",
+                        log_time, i, read_address, grid_state.FPU_state[i].register_value);
+            
+        }
+    }
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : readRegister(): values were retrieved successfully.\n",
+                canlayer::get_realtime());
+
+    return DE_OK;
 
 }
 

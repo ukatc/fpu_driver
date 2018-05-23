@@ -29,7 +29,7 @@ CCMD_EXECUTE_MOTION                   = 2 # execute loaded waveform
 CCMD_ABORT_MOTION                     = 3 # abort any ongoing movement
     
 
-CCMD_READ_REGISTER                    = 6 # read register - unused
+CCMD_READ_REGISTER                    = 6 # read register
 CCMD_PING_FPU                         = 7 # check connectivity
 CCMD_RESET_FPU                        = 8 # reset MCU
 CCMD_FIND_DATUM                       = 9 # "automatic" datum search
@@ -638,6 +638,35 @@ def handle_setUStepLevel(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX
 
 
+def handle_readRegister(fpu_id, fpu_adr_bus, bus_adr, RX):
+
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [0] * 8
+
+    command_id = RX[0]
+    register_address = ((RX[1] << 8) | RX[2])
+
+    TX[0] = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id]) 
+    TX[3] = errflag = 0
+
+    byte = FPUGrid[fpu_id].getRegister(register_address)
+    TX[4] = byte
+    
+    print("fpu #%i: read from address 0x%04x yields 0x%02x" %
+          (fpu_id,register_address, byte) )
+    
+    return TH + TX 
+
+
 def handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
     def reset_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
@@ -1007,7 +1036,8 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
         resp = handle_abortMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
     elif command_id == CCMD_READ_REGISTER                    :
-        pass
+        resp = handle_readRegister(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+        
 
     elif command_id == CCMD_RESET_STEPCOUNTER                :
         pass

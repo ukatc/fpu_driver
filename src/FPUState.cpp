@@ -55,6 +55,8 @@ void initialize_fpu(t_fpu_state &fpu)
     fpu.last_command              = CCMD_NO_COMMAND;
     fpu.last_status               = ER_OK;
     fpu.sequence_number           = 0;
+    fpu.register_address          = 0;
+    fpu.register_value            = 0;
     // the values below are not valid, they need proper
     // initialization from a physical fpu response.
     fpu.alpha_steps               = 0;
