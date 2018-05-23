@@ -896,6 +896,22 @@ void handleFPUResponse(const GridDriverConfig config,
         fpu.last_updated = cur_time;
         break;
 
+    case CCMD_READ_REGISTER :
+        // clear time-out flag
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode,timeout_list, count_pending);
+        if (response_errcode == 0)
+        {
+            fpu.register_value = data[4];
+            // for protcol version 2, also read the echoed memory address
+        }
+        fpu.last_updated = cur_time;
+        if (fpu.state == FPST_UNKNOWN)
+        {
+            fpu.state = FPST_UNINITIALIZED;
+        }
+        break;
+        
+
     case CCMD_NO_COMMAND      :
     default:
         // invalid command, ignore
