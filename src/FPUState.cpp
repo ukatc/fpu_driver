@@ -22,7 +22,7 @@
 
 #include "canlayer/E_CAN_COMMAND.h"
 #include "canlayer/TimeOutList.h"
-
+#include <string.h>
 #ifdef DEBUG
 #include <stdio.h>
 #endif
@@ -73,6 +73,9 @@ void initialize_fpu(t_fpu_state &fpu)
     fpu.waveform_valid            = false;
     fpu.waveform_ready            = false;
     fpu.waveform_reversed         = false;
+    memset(&(fpu.firmware_version), 0, sizeof(fpu.firmware_version));
+    memset(&(fpu.firmware_date), 0, sizeof(fpu.firmware_version));
+    
 }
 
 }

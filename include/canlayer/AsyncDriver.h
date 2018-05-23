@@ -95,6 +95,8 @@ public:
 
 
     E_DriverErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    
+    E_DriverErrCode getFirmwareVersionAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode pingFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary);
 

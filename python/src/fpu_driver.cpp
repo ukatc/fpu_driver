@@ -153,6 +153,12 @@ public:
     int movement_complete;
     int register_value;
     uint16_t register_address;
+    int fw_version_major;
+    int fw_version_minor;
+    int fw_version_patch;
+    int fw_date_year;
+    int fw_date_month;
+    int fw_date_day;
 
     WrapFPUState() {}
 
@@ -189,6 +195,12 @@ public:
         waveform_reversed         = fpu_state.waveform_reversed;
         register_value            = fpu_state.register_value;
         register_address          = fpu_state.register_address;
+        fw_version_major          =  fpu_state.firmware_version[0];
+        fw_version_minor          =  fpu_state.firmware_version[1];
+        fw_version_patch          =  fpu_state.firmware_version[2];
+        fw_date_year              =  fpu_state.firmware_date[0];
+        fw_date_month             =  fpu_state.firmware_date[1];
+        fw_date_day               =  fpu_state.firmware_date[2];
 
     }
 
@@ -242,6 +254,12 @@ public:
           << " 'waveform_reversed' : " << fpu.waveform_reversed
           << " 'register_address' : " << std::hex << std::showbase << fpu.register_address
           << " 'register_value' : " << fpu.register_value << std::dec << std::noshowbase
+          << " 'firmware_version' : " << fpu.fw_version_major
+                                      << "." << fpu.fw_version_minor
+                                      << "." << fpu.fw_version_patch 
+          << " 'firmware_date' : " << fpu.fw_date_year
+                                    << "-" << fpu.fw_date_month
+                                    << "-" << fpu.fw_date_day 
           << " }";
         return s.str();
     }
@@ -829,6 +847,14 @@ public:
         checkDriverError(ecode);
         return ecode;
     }
+
+    E_DriverErrCode wrap_getFirmwareVersion(WrapGridState& grid_state)
+    {
+        E_DriverErrCode ecode = getFirmwareVersion(grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
+
     
     E_DriverErrCode wrap_getCounterDeviation(WrapGridState& grid_state)
     {
@@ -1230,7 +1256,12 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("waveform_reversed", &WrapFPUState::waveform_reversed)
     .def_readonly("pending_command_set", &WrapFPUState::pending_command_set)
     .def_readonly("register_address", &WrapFPUState::register_address)
-    .def_readonly("register_value", &WrapFPUState::register_value)
+    .def_readonly("fw_version_major", &WrapFPUState::fw_version_major)
+    .def_readonly("fw_version_minor", &WrapFPUState::fw_version_minor)
+    .def_readonly("fw_version_patch", &WrapFPUState::fw_version_patch)
+    .def_readonly("fw_date_year", &WrapFPUState::fw_date_year)
+    .def_readonly("fw_date_month", &WrapFPUState::fw_date_month)
+    .def_readonly("fw_date_day", &WrapFPUState::fw_date_day)
     .def("__repr__", &WrapFPUState::to_repr)
     ;
 
@@ -1295,6 +1326,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("freeBetaCollision", &WrapGridDriver::wrap_freeBetaCollision)
     .def("setUStepLevel", &WrapGridDriver::wrap_setUStepLevel)
     .def("readRegister", &WrapGridDriver::wrap_readRegister)
+    .def("getFirmwareVersion", &WrapGridDriver::wrap_getFirmwareVersion)
     .def("enableBetaCollisionProtection", &WrapGridDriver::wrap_enableBetaCollisionProtection)
     .def("lockFPU", &WrapGridDriver::lockFPU)
     .def("unlockFPU", &WrapGridDriver::unlockFPU)

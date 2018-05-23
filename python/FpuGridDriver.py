@@ -205,6 +205,9 @@ class GridDriver:
     def readRegister(self, address, gs):
         return self._gd.readRegister(address, gs)
     
+    def getFirmwareVersion(self, gs):
+        return self._gd.getFirmwareVersion(gs)
+    
     def getCounterDeviation(self, gs):
         return self._gd.getCounterDeviation(gs)
 

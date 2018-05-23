@@ -80,6 +80,8 @@ typedef struct __attribute__((packed)) t_fpu_state
     timespec last_updated;
     // set of any still running and incomplete commands
     uint32_t pending_command_set;
+    uint8_t firmware_version[3];
+    uint8_t firmware_date[3];
 
     // current state of FPU
     E_FPU_STATE state;

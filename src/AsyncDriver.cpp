@@ -2728,6 +2728,66 @@ E_DriverErrCode AsyncDriver::readRegisterAsync(uint16_t read_address, t_grid_sta
 }
 
 
+E_DriverErrCode AsyncDriver::getFirmwareVersionAsync(t_grid_state& grid_state,
+        E_GridState& state_summary)
+{
+
+    const int num_fields=6;
+    uint8_t response_buffer[MAX_NUM_POSITIONERS][num_fields];
+    memset(response_buffer, 0, sizeof(response_buffer));
+
+    E_DriverErrCode ecode;
+    
+#if (CAN_PROTOCOL_VERSION > 1)
+    return DE_UNIMPLEMENTED;
+#endif
+    
+    for (int k=0; k < num_fields; k++)
+    {
+        ecode = readRegisterAsync(k, grid_state, state_summary);
+        if (ecode != DE_OK)
+        {
+            return ecode;
+        }
+        // copy data out of grid_state structure
+        for (int i=0; i < config.num_fpus; i++)
+        {
+            if (grid_state.FPU_state[i].register_address != k)
+            {
+                return DE_ASSERTION_FAILED;
+            }
+            response_buffer[i][k] = grid_state.FPU_state[i].register_value;
+        }
+    }
+
+
+    // copy results back to grid state structure
+    // (these results are *not* kept in the next call)
+    for (int i=0; i < config.num_fpus; i++)
+    {
+        for (int k=0; k < num_fields; k++)
+        {
+            if (k < 3)
+            {
+                grid_state.FPU_state[i].firmware_version[k] = response_buffer[i][k];
+            }
+            else
+            {
+                grid_state.FPU_state[i].firmware_date[k-3] = response_buffer[i][k];
+            }
+        }
+    }
+    
+    LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion(): retrieved firmware version successfully\n",
+                canlayer::get_realtime());
+    
+    LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion(): WARNING: result values are not kept\n",
+                canlayer::get_realtime());
+    return DE_OK;
+
+}
+
+
 }
 
 } // end of namespace
