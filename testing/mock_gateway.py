@@ -70,7 +70,7 @@ def parse_args():
                         help='verbosity: 0 - no extra output ... 5 - print extensive debug output')
 
     parser.add_argument('-V', '--protocol_version',  dest='protocol_version',
-                        default="1.0",
+                        default="1.0.0",
                         help='CAN protocol version')
 
     parser.add_argument('-D', '--firmware_date',  dest='firmware_date',
@@ -82,6 +82,18 @@ def parse_args():
                         help='number of simulated FPUs')
     
     args = parser.parse_args()
+    
+    version_tuple = map(int, args.protocol_version.split("."))
+    
+    while len(version_tuple) < 3:
+        version_tuple = version_tuple + [0]
+        print("firmware version=", version_tuple)
+    args.fw_version = version_tuple
+    
+    del args.protocol_version # delete for safety
+
+    args.fw_date = map(int, args.firmware_date.split("-"))
+
     return args
      
 
@@ -92,7 +104,7 @@ if __name__ == '__main__':
     args = parse_args()
     
     
-    print("protocol_version:", args.protocol_version)
+    print("protocol_version:", args.fw_version)
     print("listening to ports:", args.ports)
     print("listening to ports:", args.ports)
     print("number of FPUs    :", args.NUM_FPUS)

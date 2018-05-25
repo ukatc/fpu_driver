@@ -141,8 +141,14 @@ enum E_FPU_STATUS_BITS
 
 enum E_DATUM_SKIP_FLAG
 {
-    DATUM_SKIP_ALPHA = 1,
+    DATUM_SKIP_ALPHA = (1 << 0),
     DATUM_SKIP_BETA = (1 << 1),
+};
+
+enum E_DATUM_MODE_FLAG
+{
+    MODE_DATUM_AUTO = (1 << 2),
+    MODE_DATUM_ANTI_CLOCKWISE = (1 << 3),
 };
 
 

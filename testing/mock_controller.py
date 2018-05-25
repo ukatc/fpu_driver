@@ -107,7 +107,8 @@ STBT_REVERSE_WAVE    = 1 << 7   #  waveform to be run in reverse
 
 DATUM_SKIP_ALPHA = 1
 DATUM_SKIP_BETA = (1 << 1)
-
+DATUM_MODE_AUTO = (1 << 2)
+DATUM_MODE_ANTI_CLOCKWISE = (1 << 3)
 
 def encode_and_send(msg, socket, verbose=False):
     confirmation = codec.encode(msg, verbose=verbose)
@@ -382,115 +383,6 @@ def handle_GetErrorBeta(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX 
 
 
-def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
-        
-    print("starting findDatum for FPU %i" % fpu_id)
-
-    if len(RX) < 8:
-        print("CAN command format error, length must be 8");
-        return []
-
-    ## gateway header
-    
-    tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_adr_bus
-    
-    TH = [ 0 ] * 3
-    TH[0] = bus_adr
-    TH[1] = (tx_canid & 0xff)
-    TH[2] = ((tx_canid >> 8) & 0xff)
-
-    TX = [0] * 8
-    TX[0] = fpu_adr_bus
-    
-    command_id = RX[0]
-    TX[1] = command_id
-    TX[2] = getStatus(FPUGrid[fpu_id])
-    
-    TX[5] = dummy0 = 0
-    TX[6] = dummy1 = 0
-    TX[7] = dummy2 = 0
-
-    
-    if FPUGrid[fpu_id].is_collided:
-        # only send an error message
-        TX[3] = errflag = 0xff
-        TX[4] = errcode = ER_COLLIDE
-    else:
-        # send confirmation and spawn findDatum method call
-        TX[3] = errflag = 0
-        TX[4] = errcode = 0
-
-
-        def findDatum_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
-
-            tx_prio = 0x02
-            tx_canid = (tx_prio << 7) | fpu_adr_bus
-            
-            TH = [ 0 ] * 3
-            TH[0] = bus_adr
-            TH[1] = (tx_canid & 0xff)
-            TH[2] = ((tx_canid >> 8) & 0xff)
-
-            command_id = RX[0]
-
-            flag_skip_alpha = False
-            flag_skip_beta = False
-            skip_flag = RX[1]
-            if skip_flag > 0:
-                if opts.protocol_version > "1.0":
-                    flag_skip_alpha = (skip_flag & DATUM_SKIP_ALPHA) > 0
-                    flag_skip_beta = (skip_flag & DATUM_SKIP_BETA) > 0
-                else:
-                    print("WARNING: protocol version 1.0 running, ignoring additional datum flags")
-                    skip_flag = 0
-
-            # simulate findDatum FPU operation
-            FPUGrid[fpu_id].findDatum(sleep, skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta)
-            print("FPU %i: findDatum command finished" % fpu_id);
-
-            TX = [0] * 8
-            TX[0] = fpu_adr_bus
-            TX[1] = CMSG_FINISHED_DATUM
-            TX[2] = status = getStatus(FPUGrid[fpu_id])
-
-            if FPUGrid[fpu_id].is_collided:
-                # only send an error message
-                TX[3] = errflag = 0xff
-                TX[4] = errcode = ER_COLLIDE
-                TX[5] = 0
-            elif status & STBT_M1LIMIT:
-                TX[3] = errflag = 0xff
-                TX[4] = errcode = ER_M1LIMIT
-                TX[5] = 0
-            else:
-                # in version 1, other cases do not have
-                # status flag / error code information
-                TX[3] = errflag = 0
-                TX[4] = dummy0 = 0
-                TX[5] = skip_flag
-
-                
-            TX[6] = dummy2 = 0
-            TX[7] = dummy3 = 0
-
-            
-            finish_message =  TH + TX
-
-            
-            #print("FPU %i: findDatum command finished" % fpu_id);
-            encode_and_send(finish_message, socket, verbose=opts.debug)
-
-        # "spawn_later" inserts a timed event into the aynchronous event loop
-        # - similar to a thread but not running in parallel.
-        spawn_later(1, findDatum_func, fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts)
-    
-    ## send confirmation message 
-    #print("FPU %i: sending confirmation to findDatum command" % fpu_id);
-    conf_msg = TH + TX
-
-    return conf_msg
-
 
 def handle_pingFPU(fpu_id, fpu_adr_bus, bus_adr, RX):
     command_id = RX[0]
@@ -738,7 +630,7 @@ def handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 ##############################
 # the following two callback objects are passed as bound methods
-# to the FPUs executeMotion method so that FPUs can signal
+# to the FPUs executeMotion and findDatum methods so that FPUs can signal
 # collisions or limit switch breaks
 
 class LimitCallback:
@@ -816,6 +708,139 @@ class CollisionCallback:
         
         limit_message =  TH + TX
         encode_and_send(limit_message, self.socket, verbose=self.verbose)
+
+
+#################################
+
+def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
+        
+    print("starting findDatum for FPU %i" % fpu_id)
+
+    if len(RX) < 8:
+        print("CAN command format error, length must be 8");
+        return []
+
+    ## gateway header
+    
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [0] * 8
+    TX[0] = fpu_adr_bus
+    
+    command_id = RX[0]
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id])
+    
+    TX[5] = dummy0 = 0
+    TX[6] = dummy1 = 0
+    TX[7] = dummy2 = 0
+
+    
+    if FPUGrid[fpu_id].is_collided:
+        # only send an error message
+        TX[3] = errflag = 0xff
+        TX[4] = errcode = ER_COLLIDE
+    else:
+        # send confirmation and spawn findDatum method call
+        TX[3] = errflag = 0
+        TX[4] = errcode = 0
+
+
+        def findDatum_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
+
+            tx_prio = 0x02
+            tx_canid = (tx_prio << 7) | fpu_adr_bus
+            
+            TH = [ 0 ] * 3
+            TH[0] = bus_adr
+            TH[1] = (tx_canid & 0xff)
+            TH[2] = ((tx_canid >> 8) & 0xff)
+
+            command_id = RX[0]
+
+            flag_skip_alpha = False
+            flag_skip_beta = False
+            flag_auto_datum = False
+            flag_anti_clockwise = False
+            skip_flag = RX[1]
+            if skip_flag > 0:
+                if opts.fw_version > (1,0,0):
+                    flag_skip_alpha = (skip_flag & DATUM_SKIP_ALPHA) > 0
+                    flag_skip_beta = (skip_flag & DATUM_SKIP_BETA) > 0
+                    
+                    if opts.fw_version > (1,1,0):
+                        flag_auto_datum = (skip_flag & DATUM_MODE_AUTO) > 0
+                        flag_anti_clockwise = (skip_flag & DATUM_MODE_ANTI_CLOCKWISE) > 0
+                    else:
+                        print("WARNING: protocol version %r running, "
+                              +"ignoring mode selection flags", opts.fw_version)
+                        skip_flag = skip_flag & 0x3
+                else:
+                    print("WARNING: protocol version %r running,"
+                          + " ignoring arm and mode selection flags flags", opts.fw_version)
+                    skip_flag = 0
+
+            # instantiate two objects which can send collision messages
+            # if needed
+            limit_callback = LimitCallback(fpu_adr_bus, bus_adr, socket)
+            collision_callback = CollisionCallback(fpu_adr_bus, bus_adr, socket)
+
+            # simulate findDatum FPU operation
+            FPUGrid[fpu_id].findDatum(sleep,
+                                      limit_callback.call, collision_callback.call,
+                                      skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta,
+                                      auto_datum=flag_auto_datum,
+                                      anti_clockwise=flag_anti_clockwise)
+            print("FPU %i: findDatum command finished" % fpu_id);
+
+            TX = [0] * 8
+            TX[0] = fpu_adr_bus
+            TX[1] = CMSG_FINISHED_DATUM
+            TX[2] = status = getStatus(FPUGrid[fpu_id])
+
+            if FPUGrid[fpu_id].is_collided:
+                # only send an error message
+                TX[3] = errflag = 0xff
+                TX[4] = errcode = ER_COLLIDE
+                TX[5] = 0
+            elif status & STBT_M1LIMIT:
+                TX[3] = errflag = 0xff
+                TX[4] = errcode = ER_M1LIMIT
+                TX[5] = 0
+            else:
+                # in version 1, other cases do not have
+                # status flag / error code information
+                TX[3] = errflag = 0
+                TX[4] = dummy0 = 0
+                TX[5] = skip_flag
+
+                
+            TX[6] = dummy2 = 0
+            TX[7] = dummy3 = 0
+
+            
+            finish_message =  TH + TX
+
+            
+            #print("FPU %i: findDatum command finished" % fpu_id);
+            encode_and_send(finish_message, socket, verbose=opts.debug)
+
+        # "spawn_later" inserts a timed event into the aynchronous event loop
+        # - similar to a thread but not running in parallel.
+        spawn_later(1, findDatum_func, fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts)
+    
+    ## send confirmation message 
+    #print("FPU %i: sending confirmation to findDatum command" % fpu_id);
+    conf_msg = TH + TX
+
+    return conf_msg
+
 
         
 ##############################

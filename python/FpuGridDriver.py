@@ -12,8 +12,9 @@ import fpu_driver
 from fpu_driver import __version__, CAN_PROTOCOL_VERSION, GatewayAddress,  \
     REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, FPUDriverException, MovementError, \
     DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
-    LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_VERBOSE, LOG_TRACE_CAN_MESSAGES
-     
+    LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_VERBOSE, LOG_TRACE_CAN_MESSAGES, \
+    SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU
+
 
 import fpu_commands as cmds
 
@@ -154,22 +155,36 @@ class GridDriver:
     def getGridState(self):
         return self._gd.getGridState()
 
-    def findDatumB(self, gs, selected_arm=DASEL_BOTH):
+    def findDatumB(self, gs, selected_arm=DASEL_BOTH, fpu_modes={}, check_protection=True):
         """Moves all FPUs to datum position. 
 
-        This is a blocking variand of the findDatum command,
+        This is a blocking variant of the findDatum command,
         it is not interruptible by Control-C."""
         
-        return self._gd.findDatum(gs, selected_arm)
+        return self._gd.findDatum(gs, selected_arm, fpu_modes, checkProtection)
 
-    def findDatum(self, gs, selected_arm=DASEL_BOTH):
+    def findDatum(self, gs, selected_arm=DASEL_BOTH, fpu_modes={}, check_protection=True):
         """Moves all FPUs to datum position. 
 
         If the program receives a SIGNINT, or Control-C is pressed, an
-        abortMotion command is sent, aborting the search.
+        abortMotion command is automatically sended, aborting the search.
+
+        The parameter selected_arm (DASEL_BOTH, DASEL_ALPHA, DASEL_BETA) 
+        controls which arms are moved.
+
+        The dictionary fpu_modes has integer FPU IDs as keys, and 
+        each value is one of SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU,
+        which controls whether the datum search moves clockwise (decreasing step count),
+        anti-clockwise (increasing step count), automatically, or skips the FPU.
+        The default mode is automatically.
+
+        If an beta arm is not datumed, automatic datum search will be refused.
+        If a beta arm position appears not to be safe to be moved into
+        the requested position, the manual datum search will be refused
+        unless check_protection is set to False.
 
         """
-        rv = self._gd.startFindDatum(gs, selected_arm)
+        rv = self._gd.startFindDatum(gs, selected_arm, fpu_modes, check_protection)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
             raise RuntimeError("can't search Datum, driver error code = %r" % rv)
         time.sleep(0.1)

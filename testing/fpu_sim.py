@@ -94,13 +94,11 @@ class FPU:
         self.ustep_level = 1
         self.step_timing_fault = False
 
-        version_tuple = map(int, self.opts.protocol_version.split("."))
-        while len(version_tuple) < 3:
-            version_tuple = version_tuple + [0]
-        print("firmware version=", version_tuple)
-
-        fw_date = map(int, self.opts.firmware_date.split("-"))
+        fw_date = self.opts.fw_date
+        
         print("firmware date=",fw_date)
+
+        version_tuple = self.opts.fw_version
             
         self.firmware_major = version_tuple[0]
         self.firmware_minor = version_tuple[1]
@@ -201,36 +199,99 @@ class FPU:
                 print("fpu #%i: wavetable ready (%i sections)" % (self.fpu_id, n))
         
         
-    def findDatum(self, sleep, skip_alpha=False, skip_beta=False):
+    def findDatum(self, sleep, limit_callback, collision_callback,
+                  skip_alpha=False, skip_beta=False,
+                  auto_datum=False, anti_clockwise=False):
+        
         printtime()
-        datum_op_duration_mu = 1
-        datum_op_duration_sigma = 2
-        datum_op_duration_sec = min(max(random.gauss(datum_op_duration_mu, datum_op_duration_sigma), 0), 5)
-        print("FPU #%i: searching datum" % self.fpu_id)
+        alpha_speed = -120.0 # steps per time interval
+        beta_speed = -120.0 # steps per interval
+        
+        if auto_datum:
+            if self.beta_steps >0:
+                anti_clockwise = True
+            else:
+                anti_clockwise = False
+                
+        if anti_clockwise:
+            beta_sign = -1
+        else:
+            beta_sign = 1
+            
+        print(("FPU #%i: searching datum, skip_alpha=%r,skip_beta=%r, "
+               + "auto_datum=%r, anti_clockwise=%r, beta sign = %i") % (
+                   self.fpu_id, skip_alpha, skip_beta, auto_datum, anti_clockwise,
+                   beta_sign))
+        
+        def random_deviation():                
+            deviation_mu = 0
+            deviation_sigma = 10
+            return min(max(random.gauss(deviation_mu, deviation_sigma), -15), 15)
+        
+        self.alpha_deviation = int(random_deviation())
+        
+        self.beta_deviation = int(random_deviation())
+
+        self.alpha_steps += self.alpha_deviation
+        self.beta_steps += self.beta_deviation
+                
         wait_interval_sec = 0.1
-        while datum_op_duration_sec > 0:
-            sleep_time = min(datum_op_duration_sec, wait_interval_sec)
-            sleep(sleep_time)
-            datum_op_duration_sec -= sleep_time
+        new_alpha = self.alpha_steps
+        new_beta = self.beta_steps
+        while True:
+            sleep(wait_interval_sec)
             
             if self.abort_wave:
                 print("ABORTING DATUM SEARCH FOR FPU", self.fpu_id);
                 self.at_datum = False
-                break 
+                break
+
+            if self.beta_steps * beta_sign> 0:
+                new_beta = self.beta_steps + beta_speed * beta_sign
+
+            if self.alpha_steps > 0:
+                new_alpha = self.alpha_steps + alpha_speed
+
+
+
+            if new_alpha < MIN_ALPHA:
+                self.alpha_steps = MIN_ALPHA
+                self.alpha_limit_breach = True
+                limit_callback(self)
+                break
+            elif new_alpha > MAX_ALPHA:
+                self.alpha_steps = MAX_ALPHA
+                self.alpha_limit_breach = True
+                limit_callback(self)
+                break
+            else:
+                self.alpha_steps = new_alpha
+                
+            if (new_beta < MIN_BETA) and self.collision_protection_active :
+                self.beta_steps = MIN_BETA
+                self.is_collided = True
+                collision_callback(self)
+                break
+            elif (new_beta > MAX_BETA) and self.collision_protection_active:
+                self.is_collided = True
+                self.beta_steps = MAX_BETA
+                collision_callback(self)
+                break
+            else:
+                self.beta_steps = new_beta
+
+
+            if (self.alpha_steps <= 0) or (self.beta_steps * beta_sign) > 0:
+                break
+            
 
         if not self.abort_wave:
-            def random_deviation():                
-                deviation_mu = 0
-                deviation_sigma = 10
-                return min(max(random.gauss(deviation_mu, deviation_sigma), -15), 15)
 
             if not skip_alpha:
-                self.alpha_deviation = int(random_deviation())
                 self.alpha_steps = 0
                 if skip_beta:
                     print("FPU #%i: alpha datum reached" % self.fpu_id)
             if not skip_beta:
-                self.beta_deviation = int(random_deviation())
                 self.beta_steps = 0
                 if skip_alpha:
                     print("FPU #%i: beta datum reached" % self.fpu_id)

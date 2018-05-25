@@ -48,6 +48,9 @@ PyObject* SystemFailureExceptionTypeObj = 0;
 PyObject* SetupErrorExceptionTypeObj = 0;
 PyObject* InvalidParameterExceptionTypeObj = 0;
 PyObject* ConnectionFailureExceptionTypeObj = 0;
+PyObject* SocketFailureExceptionTypeObj = 0;
+PyObject* CommandTimeoutExceptionTypeObj = 0;
+PyObject* ProtectionErrorExceptionTypeObj = 0;
 
 
 
@@ -407,6 +410,10 @@ void translate_driver_error(FPUDriverException const& e)
         PyErr_SetString(InvalidStateExceptionTypeObj, e.what());
         break;
 
+    case DE_PROTECTION_ERROR:
+        PyErr_SetString(ProtectionErrorExceptionTypeObj, e.what());
+        break;        
+
     case DE_UNIMPLEMENTED:
     case DE_OUT_OF_MEMORY:
     case DE_RESOURCE_ERROR:
@@ -424,11 +431,16 @@ void translate_driver_error(FPUDriverException const& e)
         PyErr_SetString(InvalidParameterExceptionTypeObj, e.what());
         break;
 
-    case DE_MAX_RETRIES_EXCEEDED :
     case DE_WAIT_TIMEOUT :
-    case DE_NO_CONNECTION :
-    case DE_CAN_COMMAND_TIMEOUT_ERROR:
+        // this is normally not raised, because not necessarily an error
         PyErr_SetString(ConnectionFailureExceptionTypeObj, e.what());
+        break;
+    case DE_NO_CONNECTION :
+        PyErr_SetString(SocketFailureExceptionTypeObj, e.what());
+        break;
+    case DE_MAX_RETRIES_EXCEEDED :
+    case DE_CAN_COMMAND_TIMEOUT_ERROR:
+        PyErr_SetString(CommandTimeoutExceptionTypeObj, e.what());
         break;
 
     case DE_INVALID_WAVEFORM :
@@ -627,6 +639,11 @@ void checkDriverError(E_DriverErrCode ecode)
                                  DE_INVALID_FPU_STATE);
         break;
 
+    case DE_PROTECTION_ERROR:
+        throw FPUDriverException("DE_PROTECTION_ERROR: Command might damage FPU, protection is enabled.",
+                                 DE_PROTECTION_ERROR);
+        break;
+        
     case DE_INVALID_PAR_VALUE:
         throw FPUDriverException("DE_INVALID_PAR_VALUE: The passed parameter value is invalid.",
                                  DE_INVALID_PAR_VALUE);
@@ -870,9 +887,64 @@ public:
         return ecode;
     }
 
-    E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state, E_DATUM_SELECTION arm_selection)
+    E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state,
+                                        E_DATUM_SELECTION arm_selection,
+                                        dict& dict_modes,
+                                        bool check_protection=true)
     {
-        E_DriverErrCode ecode = startFindDatum(grid_state, arm_selection);
+
+        list fpu_id_list = dict_modes.keys();
+        const int nkeys = len(fpu_id_list);
+
+        t_datum_search_flags direction_flags;
+        
+        if (nkeys == 0)
+        {
+            // default -- everything is SEARCH_AUTO
+            fprintf(stderr,"wrap_startFindDatum(): no keys passed: setting all arms to AUTO\n");
+            for(int i=0; i < MAX_NUM_POSITIONERS; i++)
+            {
+                direction_flags[i] = SEARCH_AUTO;
+            }
+        }
+        else
+        {
+            fprintf(stderr,"wrap_startFindDatum(): some keys passed: setting all arms to SKIP_FPU\n");
+            for(int i=0; i < MAX_NUM_POSITIONERS; i++)
+            {
+                direction_flags[i] = SKIP_FPU;
+            }
+
+
+            const int num_fpus = getNumFPUs();
+            
+            if (nkeys > num_fpus )
+            {
+                throw FPUDriverException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                                         DE_INVALID_FPU_ID);
+            }
+
+
+            for(int i = 0; i < nkeys; i++)
+            {
+                object fpu_key = fpu_id_list[i];
+                int fpu_id = extract<int>(fpu_key);
+
+                if ((fpu_id >= num_fpus) || (fpu_id < 0))
+                {
+                    throw FPUDriverException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                                             DE_INVALID_FPU_ID);
+                }
+
+                
+                int mode = extract<int>(dict_modes[fpu_key]);
+                fprintf(stderr,"wrap_startFindDatum(): setting FPU #%i to key #%i\n", fpu_id, mode);
+                direction_flags[fpu_id] = static_cast<E_DATUM_SEARCH_DIRECTION>(mode);
+
+            }
+        }
+        
+        E_DriverErrCode ecode = startFindDatum(grid_state, arm_selection, check_protection, direction_flags);
         checkDriverError(ecode);
         return ecode;
     }
@@ -889,6 +961,7 @@ public:
                 || (estatus == DE_WAIT_TIMEOUT))
         {
             estatus = DE_WAIT_TIMEOUT;
+            // we return because this is not exceptional or an error
             return estatus;
         }
 
@@ -923,6 +996,7 @@ public:
                 || (estatus == DE_WAIT_TIMEOUT))
         {
             estatus = DE_WAIT_TIMEOUT;
+            // we return because this is not exceptional oo an error
             return estatus;
         }
 
@@ -1033,6 +1107,9 @@ BOOST_PYTHON_MODULE(fpu_driver)
     SetupErrorExceptionTypeObj  = FPUDriverExceptionClass("SetupError", InvalidParameterExceptionTypeObj);
     InvalidWaveformExceptionTypeObj = FPUDriverExceptionClass("InvalidWaveformException", InvalidParameterExceptionTypeObj);
     ConnectionFailureExceptionTypeObj = FPUDriverExceptionClass("ConnectionFailure", FPUDriverExceptionTypeObj);
+    SocketFailureExceptionTypeObj = FPUDriverExceptionClass("SocketFailure", ConnectionFailureExceptionTypeObj);
+    CommandTimeoutExceptionTypeObj = FPUDriverExceptionClass("CommandTimeout", ConnectionFailureExceptionTypeObj);
+    ProtectionErrorExceptionTypeObj = FPUDriverExceptionClass("ProtectionError", InvalidStateExceptionTypeObj);
 
 
 
@@ -1180,6 +1257,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_STEP_TIMING_ERROR", DE_STEP_TIMING_ERROR)
     .value("DE_INVALID_FPU_ID", DE_INVALID_FPU_ID)
     .value("DE_INVALID_FPU_STATE", DE_INVALID_FPU_STATE)
+    .value("DE_PROTECTION_ERROR", DE_PROTECTION_ERROR)
     .value("DE_INVALID_PAR_VALUE", DE_INVALID_PAR_VALUE)
     .value("DE_INVALID_CONFIG", DE_INVALID_CONFIG)
     .value("DE_INVALID_DRIVER_STATE", DE_INVALID_DRIVER_STATE)
@@ -1230,6 +1308,15 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DASEL_BETA",   DASEL_BETA)
     .export_values();
 
+
+    // operation mode for datum command
+    enum_<E_DATUM_SEARCH_DIRECTION>("E_DATUM_SEARCH_DIRECTION")
+    .value("SEARCH_CLOCKWISE",       SEARCH_CLOCKWISE)
+    .value("SEARCH_ANTI_CLOCKWISE",  SEARCH_ANTI_CLOCKWISE)
+    .value("SEARCH_AUTO",            SEARCH_AUTO)
+    .value("SKIP_FPU",               SKIP_FPU)
+    .export_values();
+    
     class_<WrapFPUState>("FPUState")
     .def_readonly("state", &WrapFPUState::state)
     .def_readonly("last_command", &WrapFPUState::last_command)

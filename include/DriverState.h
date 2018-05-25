@@ -138,14 +138,17 @@ enum E_DriverErrCode
     // Command not allowed for present FPU state.
     DE_INVALID_FPU_STATE = 111,
 
+    // The operation can damage hardware and protection is enabled
+    DE_PROTECTION_ERROR = 112,
+    
     // The driver state does not allows the operation
-    DE_INVALID_DRIVER_STATE = 112,
+    DE_INVALID_DRIVER_STATE = 113,
 
     // Some addressed FPUs are locked.
-    DE_FPUS_LOCKED = 113,
+    DE_FPUS_LOCKED = 114,
 
     // A previous movement was aborted.
-    DE_ABORTED_STATE = 114,
+    DE_ABORTED_STATE = 115,
 
     /***************************************/
     /* setup errors */
@@ -254,6 +257,14 @@ enum E_DATUM_SELECTION
     DASEL_ALPHA = 1,
     DASEL_BETA  = 2,
     DASEL_NONE  = 3,
+};
+
+enum E_DATUM_SEARCH_DIRECTION
+{
+    SEARCH_CLOCKWISE      = 0,
+    SEARCH_ANTI_CLOCKWISE = 1,
+    SEARCH_AUTO           = 2,
+    SKIP_FPU              = 3,
 };
 
 

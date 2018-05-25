@@ -47,15 +47,23 @@ public:
 
     typedef  std::vector<t_waveform> t_wtable;
 
+    typedef E_DATUM_SEARCH_DIRECTION t_datum_search_flags[MAX_NUM_POSITIONERS];
+
     /* Maximum number of retries to initialize configure
        motion before the driver will give up. */
     const int MAX_CONFIG_MOTION_RETRIES = 5;
+
+    const uint8_t FIRMWARE_NOT_RETRIEVED = 0xff;
 
     AsyncDriver(const GridDriverConfig config_vals)
         : config(config_vals), gateway(config_vals)
     {
         num_gateways = 0;
         log_repeat_count = 0;
+
+        // initialize firmware version to zero
+        memset(min_firmware_version, FIRMWARE_NOT_RETRIEVED, sizeof(min_firmware_version));
+        min_firmware_fpu =0;
 
 #if CAN_PROTOCOL_VERSION == 1
         // initialize field which records last arm selection
@@ -103,7 +111,9 @@ public:
     E_DriverErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
-                                            E_DATUM_SELECTION arm_selection);
+                                            E_DATUM_SELECTION arm_selection,
+                                            bool check_protection=true,
+                                            E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr);
 
     E_DriverErrCode waitAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
                                            double &max_wait_time, bool &finished);
@@ -165,6 +175,8 @@ protected:
 private:
 
     int num_gateways;
+    uint8_t min_firmware_version[3];
+    int min_firmware_fpu;
     GatewayDriver gateway;
 #if CAN_PROTOCOL_VERSION == 1
     E_DATUM_SELECTION last_datum_arm_selection;

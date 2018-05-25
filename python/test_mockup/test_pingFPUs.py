@@ -1,6 +1,9 @@
 from __future__ import print_function, division
 
 import FpuGridDriver
+from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
+    SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU
+
 from fpu_commands import *
 
 NUM_FPUS = 10

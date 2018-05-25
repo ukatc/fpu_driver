@@ -2329,11 +2329,15 @@ The hierarchy of exceptions used by the Python module is as follows:
             AbortMotionError         // AbortMotion message was sent
             StepTimingError          // internal FPU error
         InvalidState                 // command does not match driver state
+            ProtectionError          // unsafe command called
         SystemFailure                // system ressource error
         InvalidParameter             // parameters for command not valid
             SetupError               // system set-up not allowed
             InvalidWaveformException // waveform does not match specs
-        ConnectionFailure            // Ethernet / Socket connection was lost
+        ConnectionFailure            // connection problem
+            SocketFailure            // Socket connection was lost
+            CommandTimeout           // FPU is not responding in time
+
 \end{verbatim}
 
 \subsubsection{Error codes}
@@ -2428,14 +2432,18 @@ DE_NO_MOVABLE_FPUS = 110,
 // Command not allowed for present FPU state.
 DE_INVALID_FPU_STATE = 111,
 
+// The operation can damage hardware and protection is enabled
+DE_PROTECTION_ERROR = 112,
+
 // The driver state does not allows the operation
-DE_INVALID_DRIVER_STATE = 112,
+DE_INVALID_DRIVER_STATE = 113,
 
 // Some addressed FPUs are locked.
-DE_FPUS_LOCKED = 113,
+DE_FPUS_LOCKED = 114,
 
 // A previous movement was aborted.
-DE_ABORTED_STATE = 114,
+DE_ABORTED_STATE = 115,
+
 
 /***************************************/
 /* setup errors */

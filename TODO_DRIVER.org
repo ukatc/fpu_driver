@@ -188,8 +188,8 @@ when the internal state struct is used.
 ** DONE document logging
 ** TODO 0.5.4: Tutorial, fix description of findDatum option selected_arm
 *** DONE replace reference to old version, 
-*** TODO proof-read tutorial again
-*** TODO add print_function to imports from __future__ everywhere
+*** DONE proof-read tutorial again
+*** DONE add print_function to imports from __future__ everywhere
 *** DONE fix swallowing of OBSTACLE_ERROR in finishMotion
 ** TODO add outstanding features for verification system
 *** TODO discern SocketFailure from FPUTimeoutError
@@ -201,6 +201,11 @@ when the internal state struct is used.
 *** TODO add addressing a subset of FPUs 
 *** TODO add reporting of total number of steps
 *** TODO add reporting number of movements
+*** TODO document orientation in tutorial
+*** TODO document new exceptions for ProtectionError, TimeoutError
+*** TODO document changes to findDatum
+*** TODO document readRegister, getVersionInformation
+*** TODO  test AutoDatum
 *** TODO pack release 0.6.0
 ** TODO make Thorlabs automation available to Python
 ** TODO  clean-up of version 1 code

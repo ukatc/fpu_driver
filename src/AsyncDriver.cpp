@@ -307,8 +307,10 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
 }
 
 E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
-        E_GridState& state_summary,
-        E_DATUM_SELECTION arm_selection)
+                                                     E_GridState& state_summary,
+                                                     E_DATUM_SELECTION arm_selection,
+                                                     bool check_protection,
+                                                     E_DATUM_SEARCH_DIRECTION * p_direction_flags)
 {
 
     {
@@ -332,14 +334,128 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 
         default:
             as_string = "'invalid selection'";
-            break;
+            LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: invalid arm selection\n",
+                        canlayer::get_realtime());
+            return DE_INVALID_PAR_VALUE;
         }
 
         LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum started, arm_selection=%s\n",
                     canlayer::get_realtime(), as_string);
     }
 
-    // first, get current state and time-out count of the grid
+    bool contains_auto=false;
+    bool contains_anti_clockwise=false;
+
+    // if present, copy direction hint
+    t_datum_search_flags direction_flags;
+    if (p_direction_flags == nullptr)
+    {
+        fprintf(stderr,"null passed - setting all directions to default = AUTO\n");
+        for(int i=0; i < config.num_fpus; i++)
+        {
+            direction_flags[i] = SEARCH_AUTO;
+        }
+        contains_auto=true;
+    }
+    else
+    {
+        fprintf(stderr,"copying direction flags\n");
+        memcpy(direction_flags, p_direction_flags, sizeof(direction_flags));
+    }
+
+    for(int i=0; i < config.num_fpus; i++)
+    // check search direction
+    {
+        const char * as_string;
+        switch (direction_flags[i])
+        {
+        case SEARCH_CLOCKWISE:
+            as_string = "'clockwise'";
+            break;
+        case SEARCH_ANTI_CLOCKWISE:
+            contains_anti_clockwise=true;
+            as_string = "'anti-clockwise'";
+            break;
+
+        case SEARCH_AUTO:
+            contains_auto=true;
+            as_string = "'automatic'";
+            break;
+            
+        case SKIP_FPU:
+            as_string = "'skip FPU'";
+            break;
+
+        default:
+            LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: invalid direction selection '%i' for FPU #%i\n",
+                        canlayer::get_realtime(), direction_flags[i], i);
+            return DE_INVALID_PAR_VALUE;
+        }
+
+        LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum(): direction selection for FPU %i =%s\n",
+                    canlayer::get_realtime(), i, as_string);
+    }
+
+
+    // we need a version check if the beta arm is moved
+    // anti-clockwise or automatically
+    bool fw_version_check_needed = (((arm_selection == DASEL_BOTH)
+                                     || (arm_selection == DASEL_BETA))
+                                    && (contains_auto
+                                        || contains_anti_clockwise));
+
+    // we also need a version check if the beta arm
+    // is not moved, because earlier firmware versions would
+    // move it anyway, ignoring the instruction.
+    fw_version_check_needed |= ((arm_selection == DASEL_ALPHA)
+                                || (arm_selection == DASEL_NONE));
+    
+    E_DriverErrCode ecode = DE_OK;
+    if (fw_version_check_needed)
+    {
+        if (min_firmware_version[0] == FIRMWARE_NOT_RETRIEVED)
+        {
+            // we need to retrieve the firmware version first
+            ecode = getFirmwareVersionAsync(grid_state, state_summary);
+            if (ecode != DE_OK)
+            {
+                return ecode;
+                LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: findDatum(): "
+                            "could not retrieve firmware versions - command cancelled\n",
+                            canlayer::get_realtime());
+            }
+        }
+        int req_fw_major = 1;
+        int req_fw_minor = 0;
+        int req_fw_patch = 0;
+        if (contains_anti_clockwise)
+        {
+            req_fw_minor = 1;
+        } else if (contains_auto)
+        {
+            req_fw_minor = 2;
+        }
+        if ((arm_selection == DASEL_ALPHA) || (arm_selection == DASEL_NONE))
+        {
+            req_fw_minor = 1;
+        }
+        if ( (min_firmware_version[0] < req_fw_major)
+             || (min_firmware_version[1] < req_fw_minor)
+             || (min_firmware_version[2] < req_fw_patch))
+        {
+            // the firmware does not implement what we need
+            LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error:"
+                        " command requires firmware version >= %i.%i.%i,"
+                        " version %i.%i.%i found in FPU %i\n",
+                        canlayer::get_realtime(),
+                        req_fw_major, req_fw_minor, req_fw_patch,
+                        min_firmware_version[0], min_firmware_version[1], min_firmware_version[2], min_firmware_fpu);
+            return DE_UNIMPLEMENTED;
+        }
+        
+    }
+
+    // now, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
     // check driver is connected
@@ -356,14 +472,15 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     case DASEL_BOTH:
     case DASEL_ALPHA:
     case DASEL_BETA:
+    case DASEL_NONE:
         break;
     default:
-        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: invalid arm selection\n",
-                    canlayer::get_realtime());
+        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: invalid arm selection '%i'\n",
+                    canlayer::get_realtime(), int(arm_selection));
         return DE_INVALID_PAR_VALUE;
     }
 
-    E_DriverErrCode ecode = pingFPUsAsync(grid_state, state_summary);
+    ecode = pingFPUsAsync(grid_state, state_summary);
 
     if (ecode != DE_OK)
     {
@@ -391,15 +508,43 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     }
 
     // check that beta arms are in allowed half-plane
-    for (int i=0; i < config.num_fpus; i++)
+    if ((arm_selection == DASEL_BETA) || (arm_selection == DASEL_BOTH))
     {
-        const int BETA_DATUM_LIMIT = -5 * STEPS_PER_DEGREE_BETA;
-        int beta_steps = grid_state.FPU_state[i].beta_steps;
-        if (beta_steps < BETA_DATUM_LIMIT)
+        for (int i=0; i < config.num_fpus; i++)
         {
-            LOG_CONTROL(LOG_ERROR, "%18.6f : beta arm appears to be in negative position - aborting findDatum()operation \n",
-                        canlayer::get_realtime());
-            return DE_UNIMPLEMENTED;
+            const int BETA_DATUM_LIMIT = -5 * STEPS_PER_DEGREE_BETA;
+            int beta_steps = grid_state.FPU_state[i].beta_steps;
+            bool beta_initialized = grid_state.FPU_state[i].beta_was_zeroed;
+
+            E_DATUM_SEARCH_DIRECTION beta_mode = direction_flags[i];
+            
+            if (check_protection && (beta_steps < BETA_DATUM_LIMIT) && (beta_mode == SEARCH_CLOCKWISE))
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum():"
+                            " FPU %i: beta arm appears to be in unsafe negative position < -5 degree"
+                            "and mode is SEARCH_CLOCKWISE - aborting findDatum() operation \n",
+                            canlayer::get_realtime(), i);
+                return DE_PROTECTION_ERROR;
+            }
+        
+            if (check_protection && (beta_steps > 0) && (beta_mode == SEARCH_ANTI_CLOCKWISE))
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum():"
+                            " FPU %i: beta arm appears to be in positive position "
+                            "and mode is SEARCH_ANTI_CLOCKWISE - aborting findDatum() operation \n",
+                            canlayer::get_realtime(), i);
+                return DE_PROTECTION_ERROR;
+            }
+
+            if ((! beta_initialized) && (beta_mode == SEARCH_AUTO))
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum():"
+                            " FPU %i beta arm is uninitialized "
+                            "and mode is SEARCH_AUTO - aborting findDatum() operation \n",
+                            canlayer::get_realtime(), i);
+                return DE_PROTECTION_ERROR;
+            }
+
         }
     }
 
@@ -409,6 +554,12 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     unique_ptr<FindDatumCommand> can_command;
     for (int i=0; i < config.num_fpus; i++)
     {
+        // FPUs which are not in the set are skipped
+        if (direction_flags[i] == SKIP_FPU)
+        {
+            continue;
+        }
+            
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         if ( (fpu_state.state != FPST_UNINITIALIZED)
                 || (fpu_state.state != FPST_AT_DATUM)
@@ -420,13 +571,8 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 
             bool broadcast = false;
             can_command = gateway.provideInstance<FindDatumCommand>();
-#if (CAN_PROTOCOL_VERSION == 1)
-            can_command->parametrize(i, broadcast, arm_selection);
-#else
-            bool auto_datum = true;
-            bool clockwise_first = false; // only relevant for non-auto
-            can_command->parametrize(i, broadcast, auto_datum, clockwise_first, arm_selection);
-#endif
+
+            can_command->parametrize(i, broadcast, direction_flags[i], arm_selection);
             unique_ptr<I_CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
 
@@ -445,7 +591,9 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     }
     LOG_CONTROL(LOG_INFO, "%18.6f : findDatum(): command successfully sent\n",
                 canlayer::get_realtime());
+    
 #if CAN_PROTOCOL_VERSION == 1
+    // we store the parameter here because it is not echoed in protocol 1
     last_datum_arm_selection = arm_selection;
 #endif
 
@@ -2765,16 +2913,25 @@ E_DriverErrCode AsyncDriver::getFirmwareVersionAsync(t_grid_state& grid_state,
     // (these results are *not* kept in the next call)
     for (int i=0; i < config.num_fpus; i++)
     {
+        bool is_smaller = false;
         for (int k=0; k < num_fields; k++)
         {
             if (k < 3)
             {
+                is_smaller = is_smaller || (min_firmware_version[k] >  response_buffer[i][k]);
+                
                 grid_state.FPU_state[i].firmware_version[k] = response_buffer[i][k];
             }
             else
             {
                 grid_state.FPU_state[i].firmware_date[k-3] = response_buffer[i][k];
-            }
+            }            
+        }
+        if (is_smaller)
+        {
+            memcpy(min_firmware_version, response_buffer[i], sizeof(min_firmware_version));
+            // store corresponding fpu to allow for easier correction
+            min_firmware_fpu = i;
         }
     }
     
