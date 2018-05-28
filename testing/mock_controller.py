@@ -768,7 +768,8 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
             flag_skip_beta = False
             flag_auto_datum = False
             flag_anti_clockwise = False
-            skip_flag = RX[1]
+            skip_flag = RX[1] # protocol 1 !
+            print("skip_flag= 0x%0x" % skip_flag)
             if skip_flag > 0:
                 if opts.fw_version > (1,0,0):
                     flag_skip_alpha = (skip_flag & DATUM_SKIP_ALPHA) > 0

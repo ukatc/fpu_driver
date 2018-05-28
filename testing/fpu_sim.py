@@ -239,6 +239,13 @@ class FPU:
         new_alpha = self.alpha_steps
         new_beta = self.beta_steps
         while True:
+            if ((self.alpha_steps <= 0) or skip_alpha) and (
+                    ((self.beta_steps * beta_sign) <= 0) or skip_beta):
+                break
+
+            #print("debug break in datum search")
+            #break
+            
             sleep(wait_interval_sec)
             
             if self.abort_wave:
@@ -247,10 +254,10 @@ class FPU:
                 break
 
             if self.beta_steps * beta_sign> 0:
-                new_beta = self.beta_steps + beta_speed * beta_sign
+                new_beta = self.beta_steps + int(beta_speed * beta_sign)
 
             if self.alpha_steps > 0:
-                new_alpha = self.alpha_steps + alpha_speed
+                new_alpha = self.alpha_steps + int(alpha_speed)
 
 
 
@@ -265,7 +272,8 @@ class FPU:
                 limit_callback(self)
                 break
             else:
-                self.alpha_steps = new_alpha
+                if not skip_alpha:
+                    self.alpha_steps = new_alpha
                 
             if (new_beta < MIN_BETA) and self.collision_protection_active :
                 self.beta_steps = MIN_BETA
@@ -278,11 +286,12 @@ class FPU:
                 collision_callback(self)
                 break
             else:
-                self.beta_steps = new_beta
+                if not skip_beta:
+                    self.beta_steps = new_beta
 
+            print("FPU# %i: skip_alpha=%r, skip_beta=%r, beta_sign=%f" % (self.fpu_id, skip_alpha, skip_beta, beta_sign))
+            print("FPU #%i: findDatum is now at (%i, %i) steps\n" % (self.fpu_id, self.alpha_steps, self.beta_steps))
 
-            if (self.alpha_steps <= 0) or (self.beta_steps * beta_sign) > 0:
-                break
             
 
         if not self.abort_wave:

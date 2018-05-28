@@ -88,7 +88,7 @@ def parse_args():
     while len(version_tuple) < 3:
         version_tuple = version_tuple + [0]
         print("firmware version=", version_tuple)
-    args.fw_version = version_tuple
+    args.fw_version = tuple(version_tuple)
     
     del args.protocol_version # delete for safety
 
