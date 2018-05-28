@@ -80,6 +80,15 @@ def parse_args():
     parser.add_argument('-N', '--NUM_FPUS',  type=int, dest='NUM_FPUS',
                         default=int(DEFAULT_NUM_FPUS),
                         help='number of simulated FPUs')
+
+    parser.add_argument('-A', '--alpha-offset',  type=float, dest='alpha_offset',
+                        default=0.0,
+                        help=("""simulated offset of alpha arm at start, when the step count is 0.
+                              This can be used to simulate conditions like a power failure"""))
+    
+    parser.add_argument('-B', '--beta-offset',  type=float, dest='beta_offset',
+                        default=0.0,
+                        help='simulated offset of beta arm at start')
     
     args = parser.parse_args()
     
