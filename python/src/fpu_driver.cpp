@@ -901,7 +901,6 @@ public:
         if (nkeys == 0)
         {
             // default -- everything is SEARCH_AUTO
-            fprintf(stderr,"wrap_startFindDatum(): no keys passed: setting all arms to AUTO\n");
             for(int i=0; i < MAX_NUM_POSITIONERS; i++)
             {
                 direction_flags[i] = SEARCH_AUTO;
@@ -909,7 +908,6 @@ public:
         }
         else
         {
-            fprintf(stderr,"wrap_startFindDatum(): some keys passed: setting all arms to SKIP_FPU\n");
             for(int i=0; i < MAX_NUM_POSITIONERS; i++)
             {
                 direction_flags[i] = SKIP_FPU;
@@ -938,7 +936,6 @@ public:
 
                 
                 int mode = extract<int>(dict_modes[fpu_key]);
-                fprintf(stderr,"wrap_startFindDatum(): setting FPU #%i to key #%i\n", fpu_id, mode);
                 direction_flags[fpu_id] = static_cast<E_DATUM_SEARCH_DIRECTION>(mode);
 
             }
