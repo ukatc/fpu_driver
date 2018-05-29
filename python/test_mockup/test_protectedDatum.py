@@ -6,7 +6,7 @@ from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
 
 from fpu_commands import *
 
-NUM_FPUS = 10
+NUM_FPUS = 1
 gateway_adr_list = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 
@@ -31,4 +31,14 @@ print("positions:", list_positions(gs))
 
 
 gd.findDatum(gs, DASEL_BOTH, {0: SEARCH_CLOCKWISE})
+
+w = gen_wf(380,10)
+wr = gen_wf(-10, 10)
+
+gd.configMotion(w, gs)
+
+
+gd.executeMotion(gs)
+
+
 

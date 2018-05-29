@@ -89,12 +89,13 @@ class LimitBreachException(Exception):
 class BetaCollisionException(Exception):
     pass
 
+class CrashException(Exception):
+    pass
+
 class FPU:
     
     def __init__(self, fpu_id, opts):
         self.opts = opts
-        self.alpha_steps = 0
-        self.beta_steps = 0
         self.initialize(fpu_id)
         print("FPU %i initial offset: (%f, %f)" % (fpu_id, opts.alpha_offset, opts.beta_offset))
         self.aoff_steps = int(StepsPerDegreeAlpha * opts.alpha_offset)
@@ -102,6 +103,8 @@ class FPU:
 
     def initialize(self, fpu_id):
         self.fpu_id = fpu_id
+        self.alpha_steps = 0
+        self.beta_steps = 0
         self.alpha_deviation = 0
         self.beta_deviation = 0
         self.nwave_entries = 0
@@ -245,27 +248,32 @@ class FPU:
         out_direction = (newalpha < MIN_ALPHA_ON) or (newalpha > MAX_ALPHA_ON)
         alpha_offset = self.aoff_steps
 
+        self.alpha_steps = newalpha
+        
         if (not new_switch) and old_switch:
             self.alpha_limit_breach = True
             limit_callback(self)
         
             if (newalpha + alpha_offset) < MIN_ALPHA_OFF:
                 self.alpha_steps = MIN_ALPHA_OFF
-                raise LimitBreachException("An alpha limit breach occured")        
+                raise LimitBreachException("An alpha min limit breach occured")        
             elif (newalpha + alpha_offset) > MAX_ALPHA_OFF:
                 self.alpha_steps = MAX_ALPHA_OFF
-                raise LimitBreachException("An alpha limit breach occured")        
+                raise LimitBreachException("An alpha max limit breach occured")        
         else:
-            self.alpha_steps = newalpha
             if (newalpha + alpha_offset) < MIN_ALPHA_CRASH:
                 raise CrashException("An min alpha crash occured")        
             if (newalpha + alpha_offset) > MAX_ALPHA_CRASH:
+                print("newalpha=",newalpha,
+                      ", alpha_soffset=", alpha_offset,
+                      ", MAX_ALPHA_CRASH=", MAX_ALPHA_CRASH)
                 raise CrashException("An max alpha crash occured")        
                 
             
 
     def move_beta(self, newbeta, collision_callback):
         beta_offset = self.boff_steps
+        self.beta_steps = newbeta
         if ((newbeta + beta_offset) < MIN_BETA) and self.collision_protection_active :
             self.beta_steps = MIN_BETA
             self.is_collided = True
@@ -277,7 +285,6 @@ class FPU:
             collision_callback(self)
             raise BetaCollisionException("a beta arm collision was detected")
         else:
-            self.beta_steps = newbeta
             if (newbeta + beta_offset) < MIN_BETA_CRASH:
                 raise CrashException("An min beta crash occured")        
             if (newbeta + beta_offset) > MAX_BETA_CRASH:
@@ -325,20 +332,30 @@ class FPU:
         wait_interval_sec = 0.1
 
         beta_offset = self.boff_steps
+        alpha_offset = self.aoff_steps
         last_beta_angle = self.beta_steps + beta_offset
+        last_alpha_angle = self.alpha_steps + alpha_offset
 
         beta_crossed_zero = False
+        alpha_crossed_zero = False
         while True:
+            # the model here is that crossing physical zero
+            # edge-triggers the stop signal for both arms
+            
             beta_angle  = self.beta_steps + beta_offset
-            zero_crossing= (last_beta_angle * beta_angle) <= 0
-            beta_crossed_zero = beta_crossed_zero or zero_crossing
+            beta_zero_crossing= (last_beta_angle * beta_angle) <= 0
+            beta_crossed_zero = beta_crossed_zero or beta_zero_crossing
 
+            alpha_angle  = self.alpha_steps + alpha_offset
+            alpha_zero_crossing= (last_alpha_angle * alpha_angle) <= 0
+            alpha_crossed_zero = alpha_crossed_zero or alpha_zero_crossing
+            
         
-            alpha_ready = (self.alpha_steps <= ALPHA_ZERO) or skip_alpha
+            alpha_ready = alpha_crossed_zero or skip_alpha
             beta_ready = beta_crossed_zero or skip_beta
 
-            print("alpha ready=%r, beta crossed zero=%r, is crossing zero=%r, ready=%r" % (
-                  alpha_ready, beta_crossed_zero, zero_crossing, beta_ready))
+            #print("alpha ready=%r, beta crossed zero=%r, is crossing zero=%r, ready=%r" % (
+            #      alpha_ready, beta_crossed_zero, beta_zero_crossing, beta_ready))
             
             if alpha_ready and beta_ready:
                 break
@@ -370,7 +387,7 @@ class FPU:
                 print("Beta collision for FPU  %i" % self.fpu_id)
                 break
 
-            print("FPU# %i: skip_alpha=%r, skip_beta=%r, beta_sign=%f" % (self.fpu_id, skip_alpha, skip_beta, beta_sign))
+            #print("FPU# %i: skip_alpha=%r, skip_beta=%r, beta_sign=%f" % (self.fpu_id, skip_alpha, skip_beta, beta_sign))
             print("FPU #%i: findDatum is now at (%i, %i) steps\n" % (self.fpu_id, self.alpha_steps, self.beta_steps))
 
             
@@ -414,9 +431,13 @@ class FPU:
         else:
             self.beta_steps += UNTANGLE_STEPS
 
-        print("freeBetaCollsion: moving FPU # %i from (%i,%i) to (%i, %i)" % (
+        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha
+        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
+        
+        print("freeBetaCollsion: moving FPU # %i from (%i,%i) to (%i, %i) = real (%5.2f,5.2f) deg" % (
             self.fpu_id, self.alpha_steps, old_beta_steps,
-            self.alpha_steps, self.beta_steps))
+            self.alpha_steps, self.beta_steps,
+            alpha_real_deg, beta_real_deg))
         
         if ((self.beta_steps + beta_ffset) >= MAX_BETA) or (
                 (self.beta_steps + beta_offset) <= MIN_BETA):
@@ -472,7 +493,7 @@ class FPU:
             else:
                 alpha_sign = 1
             delta_alpha = wt_sign * alpha_sign * self.steps[n,IDXA]
-            newalpha = self.alpha_steps + delta_alpha
+            new_alpha = self.alpha_steps + delta_alpha
             if self.clockwise[n, IDXB]:
                 beta_sign = -1
             else:
@@ -480,9 +501,15 @@ class FPU:
             delta_beta = wt_sign * beta_sign * self.steps[n,IDXB]
             new_beta = self.beta_steps + delta_beta
 
+            alpha_offset = self.aoff_steps
+            beta_offset = self.boff_steps
+            alpha_real_deg =  (new_alpha + alpha_offset) / StepsPerDegreeAlpha
+            beta_real_deg =  (new_beta + beta_offset) / StepsPerDegreeBeta
+        
             if self.opts.verbosity > 0:
-                print("section %i: moving FPU %i by (%i,%i) to (%i, %i)" % (
-                    n, self.fpu_id, delta_alpha, delta_beta, newalpha, new_beta))
+                print("section %i: moving FPU %i by (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg" % (
+                    n, self.fpu_id, delta_alpha, delta_beta, new_alpha, new_beta,
+                    alpha_real_deg, beta_real_deg))
             
             frame_time = 0.25
             sleep(frame_time)
@@ -498,15 +525,13 @@ class FPU:
                     break
 
             try:
-                if not skip_alpha:
-                    self.move_alpha(new_alpha, limit_callback)
+                self.move_alpha(new_alpha, limit_callback)
             except LimitBreachException:
                 print("Alpha limit breach for FPU  %i" % self.fpu_id)
                 break
             
             try:
-                if not skip_beta:
-                    self.move_beta(new_beta, collision_callback)
+                self.move_beta(new_beta, collision_callback)
             except BetaCollisionException:
                 print("Beta collision for FPU  %i" % self.fpu_id)
                 break
@@ -514,7 +539,7 @@ class FPU:
         printtime()
         if self.abort_wave:
             print("FPU %i, section %i: MOVEMENT ABORTED at (%i, %i)" % (self.fpu_id, section,
-                                                            newalpha, new_beta))
+                                                            new_alpha, new_beta))
         elif self.alpha_limit_breach:
             print("FPU %i, section %i: limit switch breach, movement cancelled at (%i, %i)" % (self.fpu_id, section,
                                                                                    self.alpha_steps, self.beta_steps))
@@ -526,7 +551,7 @@ class FPU:
                                                                                 self.alpha_steps, self.beta_steps))
         else:
             print("FPU %i, section %i: movement finished at (%i, %i)" % (self.fpu_id, section,
-                                                             newalpha, new_beta))
+                                                             new_alpha, new_beta))
         self.running_wave = False
         self.wave_ready = False
             
