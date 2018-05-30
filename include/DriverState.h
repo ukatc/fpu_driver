@@ -69,9 +69,9 @@ enum E_DriverErrCode
     // "user notification", not an error.
     DE_WAIT_TIMEOUT = 1,
 
-    // operation not implemented for this protocol version - the
-    // calling code might need to check and branch according to the
-    // used protocol version
+    // Firmware does not implement operation for this protocol version
+    // - the calling code might need to check and branch according to
+    // the used protocol version
     DE_UNIMPLEMENTED = 2,
 
 

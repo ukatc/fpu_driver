@@ -29,7 +29,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 0.5.4 (document version \texttt{\input{../git_version}})}
+  module} \subtitle{For driver version 0.6.0 (document version \texttt{\input{../git_version}})}
 
 \author{Johannes Nix}
 
@@ -269,35 +269,29 @@ some restrictions in functionality. For example, some edge cases
 cannot be checked, some operations might take longer, and some errors
 are not recognised or cannot as easily worked around.
 
-There are two significant differences which are visible to the users
-of the FPU driver module. Both need careful consideration.
+There is a  significant difference which are visible to the users
+of the FPU driver module. 
 
-The first is that is that cases in which the alpha arm of the FPU hits
+The difference is that cases in which the alpha arm of the FPU hits
 the limit switch need to be manually recovered from. This is explained
 in section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 
 
 
 \begin{warning}
-\textbf{WARNING: Do not issue a \texttt{findDatum()} command when the
-  alpha arm is at the other side of the limit switch}.
+\textbf{WARNING: Never issue a \texttt{findDatum()} command when the
+  alpha arm is in a limit breach position (on the other side of the
+  limit switch)}.
 \end{warning}
 
-\index{safety!protecting hardware} Second, the \texttt{findDatum()}
-command mandatory requires that, before starting the datum search,
-\textbf{the beta arm is in a counter-clockwise position relative to
-  the datum switch}. If the the step counters have valid values, it
-needs to be in a positive range of valid step counts from the datum
-switch, or at count zero. If the beta arm has a position corresponding
-to the negative range (that is, clock-wise from the datum position),
-it needs to be moved first with specific ``unsafe'' commands.  This
-applies also when the step counters have been invalidated in the
-meantime by a \texttt{resetFPU()} command or by powering off the FPU
--- it is the physical position that counts.
+Another important point, is that when doing a first manual datum
+search after powering on an FPU , it is essential to make sure that
+the instructed search direction will move the beta arm to the datum
+position.
 
 \begin{warning}
-  \textbf{WARNING: Never issue a \texttt{findDatum()} command when the
-    beta arm is in a negative physical position}
+  \textbf{WARNING: When using a manual \texttt{findDatum()} command,
+  make sure that the beta arm is moving into the right direction!}
 \end{warning}
 
 
@@ -308,6 +302,7 @@ This is supported by driver versions equal or newer than 0.5.2 and a
 firmware that supports the CAN protocol version 1.1 or later. Earlier
 firmware versions will respond by moving both arms to the zero
 position.
+
 
 
 \section{A minimal example}
@@ -324,6 +319,11 @@ position.
 The following listing shows a minimal example of the
 driver usage, and explains the underlying concepts
 step by step.
+
+Importantly, the example assumes that the FPUs have been powered on
+before, and have already performed an initial datum search.
+Section~\ref{sec:initialsearch} and ~\ref{sec:refinitialsearch} give
+more information about how to do this.
 
 \index{waveforms!example}
 \index{driver!initialisation!example}
@@ -520,6 +520,50 @@ data, and displaying information about the FPU state:
 
 
 \end{description}
+
+\subsection{sec:initialsearch}
+
+\section{Initial datum search}
+\label{sec:initialsearch}
+\index{datum search!initial}
+
+As mentioned above, the listed example relies on the fact that
+the FPUs already have been powered on, and a datum search
+was performed before. Based on a valid datum search,
+the FPU firmware can decide in which direction the beta
+arm can be moved. This mode of operation is called
+``automatic'' datum search.
+
+However, when an FPU was just powered on, it lacks this information,
+so it cannot perform an automatic search. Instead,
+the operator needs to instruct the hardware in which
+direction it must move. This is done by passing additional
+parameters to the \texttt{findDatum()} command, like this:
+
+
+\begin{minted}{python}
+  gd.findDatum(grid_state, search_modes={0 : SEARCH_CLOCKWISE,
+    1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE}, check_protection=False)
+\end{minted}
+
+Here, the integer numbers (0, 1, 2, \ldots) correspond to FPU
+numbers, and the symbols \texttt{SEARCH\_CLOCKWISE} and
+\texttt{SEARCH\_ANTI\_CLOCKWISE} instruct this FPU in which direction
+it should move. Here, ``clockwise'' and ``anti-clockwise'' refer to
+the directions when looking from above. FPUs which do not get such an
+instruction will not move. An automatic datum search is only possible
+after all FPUs have performed such an initial manual
+search. Section~\ref{sec:initialsearch} gives more information about
+these extra parameters.
+
+\index{safety!datum operation}
+\begin{warning}
+  \textbf{WARNING: When doing a manual datum search, always
+    double-check that the beta arm will correctly move to the datum
+    position with the given direction. Otherwise, the command will
+    damage the hardware.}
+\end{warning}
+
 
 \subsection{Interactive inspection of the FPU state}
 \index{fpu\_state!interactive inspection}
@@ -894,36 +938,22 @@ state which might easily lead to hardware damage.
 The FPU verification procedure requires that the alpha and beta arms
 of the FPU can be moved independently to the datum position.  To
 perform this, the \texttt{findDatum()} command has an additional
-keyword parameter. It indicates which arm should be moved to the zero
-position. The possible values of this keyword argument are
-\texttt{DASEL\_BOTH, DASEL\_ALPHA}, and \texttt{DASEL\_BETA}.
-\texttt{DASEL\_BOTH} is the default behaviour: Both alpha and beta arm
-are moved to the datum position. The value \texttt{DASEL\_ALPHA} moves
-only the alpha arm, and the value \texttt{DASEL\_BETA} will move only
-the beta arm.
+keyword parameter \texttt{selected\_arm}. It indicates which arm
+should be moved to the zero position. The possible values of this
+keyword argument are \texttt{DASEL\_BOTH, DASEL\_ALPHA}, and
+\texttt{DASEL\_BETA}.  \texttt{DASEL\_BOTH} is the default behaviour:
+Both alpha and beta arm are moved to the datum position. The value
+\texttt{DASEL\_ALPHA} moves only the alpha arm, and the value
+\texttt{DASEL\_BETA} will move only the beta arm\footnote{Moving alpha
+  and beta arms separately depends on a minor firmware update to
+  protocol version 1.1 which enables this feature. The driver software
+  will perform a check to make sure the firmware has the right
+  version, or rise an exception of the class
+  \texttt{DE\_UNIMPLEMENTED}.}.
 
-Using this option is compatible with CAN protocol version 1
-firmware. However, moving alpha and beta arms separately depends on a
-minor firmware update to protocol version 1.1 which enables this
-feature. Earlier versions of the firmware will always show the default
-behaviour, and datum both arms at once.
-
-\textbf{Important:} As an important limitation to the CAN protocol
-version 1, the \texttt{findDatum()} command mandatory requires that,
-before starting the datum search, \textbf{the beta arm is either at
-  the zero position, or in a counter-clockwise position relative to
-  the datum switch}. If the the step counters have valid values, the
-beta arm needs to be in a positive range of valid step counts from the
-datum switch, or at count zero. If the beta arm has a position
-corresponding to the negative range (that is, clock-wise from the
-datum position), it needs to be manually moved first.  This applies
-also when the step counters in the meantime have been reset by a
-\texttt{resetFPU()} command or by powering off the FPU. You can check
-whether the beta step counters are valid by testing the Boolean flag
-\verb+grid_state.FPU[0].beta_was_zeroed+, as explained in
-section~\ref{sec:fpustate} on page~\pageref{sec:fpustate}. Also, the
-alpha arm must \textbf{not} be in a limit breach state, otherwise
-hardware damage is likely to occur.
+\textbf{Important:} When doing a datum search, the alpha arm must
+\textbf{not} be in a limit breach state, otherwise hardware damage is
+likely to occur.
 \begin{warning}
   \textbf{WARNING: Before starting a datum search, make sure that both
     arms are in a safe position.}
@@ -1183,7 +1213,7 @@ driver object methods, this method is thread-safe.
 
 For other driver methods, a \verb+<Control>-<c>+ normally aborts the
 current Python script when the method returns.\footnote{
-  \index{toubleshooting!failed socket connection}\index{SIGINT}
+  \index{troubleshooting!failed socket connection}\index{SIGINT}
   \index{UNIX signal}\index{signals (UNIX)}
   \index{SIGQUIT}\index{aborting!a movement script}In some cases, it
   can happen that the Python program is stuck on a failed socket
@@ -1761,7 +1791,7 @@ grid as \texttt{GS\_UNINITIALIZED}. This allows to get quickly an
 overview which operations can be done consistently. For example, if
 the grid is in state \texttt{GS\_READY\_FORWARD}, all FPUs are ready
 to move. In the same way, if 990 FPUs are in state ``\texttt{RESTING}'',
-14 in state ``\texttt{ABORTED}'', and one in state ``\texttt{OBSTACEL\_ERROR}'',
+14 in state ``\texttt{ABORTED}'', and one in state ``\texttt{OBSTACLE\_ERROR}'',
 the resulting overall state is \texttt{OBSTACLE\_ERROR}.
 
 
@@ -1884,7 +1914,7 @@ an instance of the grid state object:
 \end{minted}
 
 To update its content, it can be passed to the \texttt{pingFPUs()}
-command. Also, passing it to any other driver mthod will update
+command. Also, passing it to any other driver method will update
 it. After this, it will reflect the updated state and position of each
 FPU.
 
@@ -1894,7 +1924,7 @@ valid for a Python variable.
 
 Typically, the \texttt{grid\_state} variable is updated by each call
 to a driver method. In case of movement errors such as collisions, it
-can however be useful to refresh its state by callint
+can however be useful to refresh its state by calling
 \texttt{getGridState()} again, because the state of the FPU grid might
 still be changing after the failed command has returned.
 
@@ -1928,10 +1958,83 @@ page~\pageref{sec:listpositions} ff.
   
 The method \texttt{FpuGridDriver.findDatum(grid\_state)} moves the
 arms of the FPU to the datum position.  By default, this always moves
-both arms. This mode is always used in instrument operation.
+both arms of all FPUs. The FPU automatically selects the required
+movement direction of the beta arm according to the step counter. This
+mode is the normal mode used in instrument operation.
 
-Optionally, the keyword argument \texttt{selected\_arm} can be passed
-to move the arms individually like this:
+
+\paragraph{Initial datum search after powering on FPUs}
+\label{sec:refinitialsearch}
+
+Because the ``automatic'' datum search relies on the internal step
+counters of the FPUs, it cannot be used when an FPU was just powered
+on - the FPU firmware lacks the information to perform the datum
+search of the beta arm safely. In this case, the search direction
+needs to be passed by the operator (or the instrument control
+software). The direction needs to be defined for each FPU, like this:
+
+
+
+\begin{minted}{python}
+  gd.findDatum(grid_state, search_modes={0 : SEARCH_CLOCKWISE,
+    1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE})
+\end{minted}
+
+Here, the passed parameter is a Python dictionary. The key of
+each entry in the dictionary is the FPU id, starting from zero.
+The value is one of the following constants:
+
+\begin{description}
+\item[\texttt{SEARCH\_CLOCKWISE}] the beta arm is moved into clock-wise
+  direction (when looking from above), corresponding to decreasing step
+  counts and angle coordinates.
+  
+\item[\texttt{SEARCH\_ANTI\_CLOCKWISE}] the beta arm is moved into
+  anti-clockwise direction (when looking from above), corresponding to
+  an increasing step count.
+  
+\item[\texttt{SEARCH\_AUTO}] The beta arm is moved according to its
+  internal step counter. This is only possible if the step counter was
+  zeroed before, by another datum operation. Also, an automatic search
+  will fail if the FPU had a collision or a movement was interrupted
+  in any other way.
+  
+\item[\texttt{SKIP\_FPU}] The beta arm is not moved.
+  
+\end{description}
+
+
+If the movement direction of the datum search does not -- correctly or
+incorrectly -- correspond to the FPUs internal step counters, the
+software will generate a \texttt{PROTECTION\_ERROR} exception.  In
+this case, to override the software protection and execute the search
+as instructed, the operator needs to set an additional keyword
+argument, ``\texttt{check\_protection}, to the value \texttt{False}.
+
+In this case, the commands looks like this:
+
+\begin{minted}{python}
+  gd.findDatum(grid_state, search_modes={0 : SEARCH_CLOCKWISE,
+    1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE}, check_protection=False)
+\end{minted}
+
+
+\index{safety!datum operation}
+\begin{warning}
+  \textbf{WARNING: When doing an initial datum command on uncalibrated
+    FPUs, always double-check and make sure that the arms can move
+    into the instructed direction, to avoid damage.}
+\end{warning}
+
+
+
+
+\paragraph{Moving alpha and beta arms independently}
+
+For testing purposes, it is sometimes needed to move both arms
+separately.  In this case, , the keyword argument
+\texttt{selected\_arm} can be passed to move the arms individually
+like this:
 
 \begin{minted}{python}
   gd.findDatum(grid_state, selected_arm=DASEL_ALPHA)
@@ -1944,13 +2047,6 @@ datumed. This feature requires the FPU firmware to support the CAN
 protocol version 1.1, otherwise, the command always moves both arms.
 
 \index{safety!datum operation}
-\begin{warning}
-\textbf{WARNING: When the beta arm receives a datum command, it has to
-  be at the physical zero position, or in a positive (anti-clockwise)
-  position from that. Otherwise, it is likely that the hardware
-  becomes damaged.}
-\end{warning}
-
 \begin{warning}
 \textbf{WARNING: When the alpha arm receives a datum command, it is
   imperative that it is not in a physical limit breach position.}
@@ -2145,13 +2241,13 @@ power-on state. All step counters are reset to zero, the datum flag is
 cleared, and the FPU state is set to \texttt{UNINITIALIZED}. This
 command is useful to get out of specific error states. 
 
-\index{safety!after reset}After a reset, an FPU can
-be arbitrarily moved if the flag \texttt{check\_protection=False} is
-passed to the \texttt{configMotion} method. However the operator needs
-to be very careful that further commands will not damage the FPU by
-assuming that the FPU is in a position which is safe to move in a
-certain direction. Especially, a datum search operation is not
-necessarily safe.
+\index{safety!after reset}After a reset, an FPU can be arbitrarily
+moved if the flag \texttt{check\_protection=False} is passed to the
+\texttt{configMotion} method. However the operator needs to be very
+careful that further commands will not damage the FPU by assuming that
+the FPU is in a position which is safe to move in a certain
+direction. Especially, a datum search operation is not safe for the
+alpha arm if it is in a limit breach position.
 \begin{warning}
   \textbf{WARNING: After a reset, make sure that datum search
     operations and movements are safe.}
@@ -2363,9 +2459,8 @@ DE_OK = 0,
 // "user notification", not an error.
 DE_WAIT_TIMEOUT = 1,
 
-// operation not implemented for this protocol version - the
-// calling code might need to check and branch according to the
-// used protocol version
+// Firmware does not implement operation for this protocol 
+// version
 DE_UNIMPLEMENTED = 2,
 
 
