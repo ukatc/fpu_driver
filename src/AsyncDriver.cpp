@@ -308,9 +308,9 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
 
 E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
                                                      E_GridState& state_summary,
+                                                     E_DATUM_SEARCH_DIRECTION * p_direction_flags,
                                                      E_DATUM_SELECTION arm_selection,
-                                                     bool check_protection,
-                                                     E_DATUM_SEARCH_DIRECTION * p_direction_flags)
+                                                     bool check_protection)
 {
 
     {
@@ -350,7 +350,6 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     t_datum_search_flags direction_flags;
     if (p_direction_flags == nullptr)
     {
-        fprintf(stderr,"null passed - setting all directions to default = AUTO\n");
         for(int i=0; i < config.num_fpus; i++)
         {
             direction_flags[i] = SEARCH_AUTO;
@@ -359,7 +358,6 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     }
     else
     {
-        fprintf(stderr,"copying direction flags\n");
         memcpy(direction_flags, p_direction_flags, sizeof(direction_flags));
     }
 

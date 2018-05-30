@@ -104,11 +104,15 @@ public:
     E_DriverErrCode pingFPUs(t_grid_state& grid_state);
 
     // find datum with automatic firmware operation
-    E_DriverErrCode findDatum(t_grid_state& grid_state, E_DATUM_SELECTION arm_selection);
-
-    E_DriverErrCode startFindDatum(t_grid_state& grid_state, E_DATUM_SELECTION arm_selection,
-                                   bool check_protection=true,
-                                   E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr);
+    E_DriverErrCode findDatum(t_grid_state& grid_state,
+                              E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
+                              E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+                              bool check_protection=true);
+    
+    E_DriverErrCode startFindDatum(t_grid_state& grid_state,
+                                   E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
+                                   E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+                                   bool check_protection=true);
 
     E_DriverErrCode waitFindDatum(t_grid_state& grid_state,
                                   double &max_wait_time, bool &finished);

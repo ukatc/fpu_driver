@@ -25,10 +25,13 @@ namespace mpifps
 
 
 
-E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state, E_DATUM_SELECTION arm_selection=DASEL_BOTH)
+E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
+                                      E_DATUM_SEARCH_DIRECTION * p_direction_flags,
+                                      E_DATUM_SELECTION arm_selection,
+                                      bool check_protection)
 {
 
-    E_DriverErrCode estatus = startFindDatum(grid_state, arm_selection);
+    E_DriverErrCode estatus = startFindDatum(grid_state, p_direction_flags, arm_selection, check_protection);
 
     if (estatus != DE_OK)
     {
@@ -43,9 +46,10 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state, E_DATUM_SELECTIO
     return estatus;
 }
 
-E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state, E_DATUM_SELECTION arm_selection,
-                                           bool check_protection,
-                                           E_DATUM_SEARCH_DIRECTION * p_direction_flags)
+E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
+                                           E_DATUM_SEARCH_DIRECTION * p_direction_flags,
+                                           E_DATUM_SELECTION arm_selection,
+                                           bool check_protection)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -56,8 +60,10 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state, E_DATUM_SEL
     while (num_avaliable_retries > 0)
     {
         // writes grid_state into member variable
-        estatus = startAutoFindDatumAsync(grid_state, state_summary, arm_selection,
-                                          check_protection, p_direction_flags);
+        estatus = startAutoFindDatumAsync(grid_state, state_summary,
+                                          p_direction_flags,
+                                          arm_selection,
+                                          check_protection);
 
         break;
 
