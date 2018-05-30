@@ -300,7 +300,7 @@ class FPU:
         beta_speed = -120.0 # steps per interval
         
         if auto_datum:
-            if self.beta_steps >0:
+            if self.beta_steps < 0:
                 anti_clockwise = True
             else:
                 anti_clockwise = False
@@ -388,7 +388,7 @@ class FPU:
                 break
 
             #print("FPU# %i: skip_alpha=%r, skip_beta=%r, beta_sign=%f" % (self.fpu_id, skip_alpha, skip_beta, beta_sign))
-            print("FPU #%i: findDatum is now at (%i, %i) steps\n" % (self.fpu_id, self.alpha_steps, self.beta_steps))
+            print("FPU #%i: findDatum is now at (%i, %i) steps" % (self.fpu_id, self.alpha_steps, self.beta_steps))
 
             
 

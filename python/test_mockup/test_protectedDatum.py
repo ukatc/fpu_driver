@@ -30,7 +30,7 @@ print("positions:", list_positions(gs))
 
 
 
-gd.findDatum(gs, DASEL_BOTH, {0: SEARCH_CLOCKWISE})
+gd.findDatum(gs, {0: SEARCH_CLOCKWISE}, DASEL_BOTH)
 
 w = gen_wf(380,10)
 wr = gen_wf(-10, 10)

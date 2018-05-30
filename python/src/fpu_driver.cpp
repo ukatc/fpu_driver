@@ -880,23 +880,10 @@ public:
         return ecode;
     }
 
-    E_DriverErrCode wrap_findDatum(WrapGridState& grid_state, E_DATUM_SELECTION arm_selection)
+    void getDatumFlags(dict& dict_modes, t_datum_search_flags &direction_flags)
     {
-        E_DriverErrCode ecode = findDatum(grid_state, arm_selection);
-        checkDriverError(ecode);
-        return ecode;
-    }
-
-    E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state,
-                                        E_DATUM_SELECTION arm_selection,
-                                        dict& dict_modes,
-                                        bool check_protection=true)
-    {
-
         list fpu_id_list = dict_modes.keys();
         const int nkeys = len(fpu_id_list);
-
-        t_datum_search_flags direction_flags;
         
         if (nkeys == 0)
         {
@@ -940,8 +927,32 @@ public:
 
             }
         }
+    }
+
+    E_DriverErrCode wrap_findDatum(WrapGridState& grid_state,
+                                   dict &dict_modes,
+                                   E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+                                   bool check_protection=true)
+    {
+        t_datum_search_flags direction_flags;
+        getDatumFlags(dict_modes, direction_flags);
         
-        E_DriverErrCode ecode = startFindDatum(grid_state, arm_selection, check_protection, direction_flags);
+        E_DriverErrCode ecode = findDatum(grid_state, direction_flags, arm_selection, check_protection);
+        checkDriverError(ecode);
+        return ecode;
+    }
+
+
+    E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state,
+                                        dict& dict_modes,
+                                        E_DATUM_SELECTION arm_selection,
+                                        bool check_protection=true)
+    {
+
+        t_datum_search_flags direction_flags;
+        getDatumFlags(dict_modes, direction_flags);
+        
+        E_DriverErrCode ecode = startFindDatum(grid_state, direction_flags, arm_selection, check_protection);
         checkDriverError(ecode);
         return ecode;
     }

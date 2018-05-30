@@ -155,15 +155,15 @@ class GridDriver:
     def getGridState(self):
         return self._gd.getGridState()
 
-    def findDatumB(self, gs, selected_arm=DASEL_BOTH, fpu_modes={}, check_protection=True):
+    def findDatumB(self, gs, fpu_modes={}, selected_arm=DASEL_BOTH, check_protection=True):
         """Moves all FPUs to datum position. 
 
         This is a blocking variant of the findDatum command,
         it is not interruptible by Control-C."""
         
-        return self._gd.findDatum(gs, selected_arm, fpu_modes, checkProtection)
+        return self._gd.findDatum(gs, fpu_modes, selected_arm, check_protection)
 
-    def findDatum(self, gs, selected_arm=DASEL_BOTH, fpu_modes={}, check_protection=True):
+    def findDatum(self, gs, fpu_modes={}, selected_arm=DASEL_BOTH, check_protection=True):
         """Moves all FPUs to datum position. 
 
         If the program receives a SIGNINT, or Control-C is pressed, an
@@ -184,7 +184,7 @@ class GridDriver:
         unless check_protection is set to False.
 
         """
-        rv = self._gd.startFindDatum(gs, selected_arm, fpu_modes, check_protection)
+        rv = self._gd.startFindDatum(gs, fpu_modes, selected_arm, check_protection)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
             raise RuntimeError("can't search Datum, driver error code = %r" % rv)
         time.sleep(0.1)
