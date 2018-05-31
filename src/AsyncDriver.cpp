@@ -428,7 +428,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         int req_fw_patch = 0;
         if (contains_anti_clockwise)
         {
-            req_fw_minor = 1;
+            req_fw_minor = 2;
         } else if (contains_auto)
         {
             req_fw_minor = 2;
@@ -442,7 +442,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
              || (min_firmware_version[2] < req_fw_patch))
         {
             // the firmware does not implement what we need
-            LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error:"
+            LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: DE_FIRMWARE_UNIMPLEMENTED"
                         " command requires firmware version >= %i.%i.%i,"
                         " version %i.%i.%i found in FPU %i\n",
                         canlayer::get_realtime(),
