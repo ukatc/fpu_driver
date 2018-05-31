@@ -47,6 +47,8 @@ public:
 
     typedef  std::vector<t_waveform> t_wtable;
 
+    typedef bool t_fpuset[MAX_NUM_POSITIONERS];
+    
     typedef E_DATUM_SEARCH_DIRECTION t_datum_search_flags[MAX_NUM_POSITIONERS];
 
     /* Maximum number of retries to initialize configure
@@ -61,9 +63,8 @@ public:
         num_gateways = 0;
         log_repeat_count = 0;
 
-        // initialize firmware version to zero
-        memset(min_firmware_version, FIRMWARE_NOT_RETRIEVED, sizeof(min_firmware_version));
-        min_firmware_fpu =0;
+        // initialize known firmware versions to zero
+        memset(fpu_firmware_version, FIRMWARE_NOT_RETRIEVED, sizeof(fpu_firmware_version));
 
 #if CAN_PROTOCOL_VERSION == 1
         // initialize field which records last arm selection
@@ -102,47 +103,63 @@ public:
     E_DriverErrCode disconnect();
 
 
-    E_DriverErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
     
-    E_DriverErrCode getFirmwareVersionAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode getFirmwareVersionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
-    E_DriverErrCode pingFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode pingFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
-    E_DriverErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_DriverErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
                                             E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
                                             E_DATUM_SELECTION arm_selection=DASEL_BOTH,
-                                            bool check_protection=true);
+                                            bool check_protection=true,
+                                            t_fpuset const * const fpuset_opt=nullptr);
 
-    E_DriverErrCode waitAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
-                                           double &max_wait_time, bool &finished);
+    E_DriverErrCode waitAutoFindDatumAsync(t_grid_state& grid_state,
+                                           E_GridState& state_summary,
+                                           double &max_wait_time,
+                                           bool &finished,
+                                           t_fpuset const  * const fpuset_opt=nullptr);
 
-    E_DriverErrCode configMotionAsync(t_grid_state& grid_state, E_GridState& state_summary,
-                                      const t_wtable& waveforms,  bool check_protection);
+    E_DriverErrCode configMotionAsync(t_grid_state& grid_state,
+                                      E_GridState& state_summary,
+                                      const t_wtable& waveforms,
+                                      t_fpuset const &fpuset,
+                                      bool check_protection=true);
 
-    E_DriverErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
-    E_DriverErrCode waitExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, double &max_wait_time, bool &finished);
+    E_DriverErrCode waitExecuteMotionAsync(t_grid_state& grid_state,
+                                           E_GridState& state_summary,
+                                           double &max_wait_time,
+                                           bool &finished,
+                                           t_fpuset const &fpuset);
 
     E_DriverErrCode getPositionsAsync(t_grid_state& grid_state,
-                                      E_GridState& state_summary);
+                                      E_GridState& state_summary,
+                                      t_fpuset const &fpuset);
 
     E_DriverErrCode getCounterDeviationAsync(t_grid_state& grid_state,
-            E_GridState& state_summary);
+                                             E_GridState& state_summary,
+                                             t_fpuset const &fpuset);
 
-    E_DriverErrCode repeatMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode repeatMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
-    E_DriverErrCode reverseMotionAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode reverseMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
-    E_DriverErrCode abortMotionAsync(pthread_mutex_t & command_mutex, t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode abortMotionAsync(pthread_mutex_t & command_mutex,
+                                     t_grid_state& grid_state,
+                                     E_GridState& state_summary,
+                                     t_fpuset const &fpuset);
 
-    E_DriverErrCode lockFPUAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode lockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_DriverErrCode unlockFPUAsync(t_grid_state& grid_state, E_GridState& state_summary);
+    E_DriverErrCode unlockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode enableBetaCollisionProtectionAsync(t_grid_state& grid_state,
-            E_GridState& state_summary);
+                                                       E_GridState& state_summary);
 
     E_DriverErrCode freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
                                            t_grid_state& grid_state,
@@ -150,19 +167,27 @@ public:
 
     E_DriverErrCode setUStepLevelAsync(int ustep_level,
                                        t_grid_state& grid_state,
-                                       E_GridState& state_summary);
+                                       E_GridState& state_summary,
+                                       t_fpuset const &fpuset);
 
-    E_DriverErrCode readRegisterAsync(uint16_t read_address, t_grid_state& grid_state,
-                                      E_GridState& state_summary);
+    E_DriverErrCode readRegisterAsync(uint16_t read_address,
+                                      t_grid_state& grid_state,
+                                      E_GridState& state_summary,
+                                      t_fpuset const &fpuset);
 
-
+    
     E_GridState getGridState(t_grid_state& out_state) const;
 
     E_GridState waitForState(E_WaitTarget target,
-                             t_grid_state& out_detailed_state, double &max_wait_time, bool &cancelled) const;
+                             t_grid_state& out_detailed_state,
+                             double &max_wait_time,
+                             bool &cancelled) const;
 
-    E_DriverErrCode validateWaveforms(const t_wtable& waveforms, const int MIN_STEPS, const int MAX_STEPS,
-                                      const unsigned int MAX_NUM_SECTIONS, const double MAX_INCREASE) const;
+    E_DriverErrCode validateWaveforms(const t_wtable& waveforms,
+                                      const int MIN_STEPS,
+                                      const int MAX_STEPS,
+                                      const unsigned int MAX_NUM_SECTIONS,
+                                      const double MAX_INCREASE) const;
 
     void logGridState(const E_LogLevel logLevel, t_grid_state& grid_state) const;
 
@@ -171,12 +196,20 @@ protected:
     const GridDriverConfig config;
     unsigned int log_repeat_count;
 
+    void getFPUsetOpt(t_fpuset const * const fpuset_opt, t_fpuset &fpuset) const;
+    
+    int countMoving(const t_grid_state &grid_state, t_fpuset const &fpuset) const;
+
+    void getMinFirmwareVersion(t_fpuset const &fpuset,
+                               bool &was_retrieved,
+                               uint8_t (&min_firmware_version)[3],
+                               int &min_firmware_fpu) const;
 
 private:
 
     int num_gateways;
-    uint8_t min_firmware_version[3];
-    int min_firmware_fpu;
+    // firmware version of each FPU, this is a work-around for protocol 1
+    uint8_t fpu_firmware_version[MAX_NUM_POSITIONERS][3];
     GatewayDriver gateway;
 #if CAN_PROTOCOL_VERSION == 1
     E_DATUM_SELECTION last_datum_arm_selection;

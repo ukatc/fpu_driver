@@ -30,4 +30,9 @@ print("positions:", list_positions(gs))
 
 
 
+d = dict([(k, SEARCH_CLOCKWISE) for k in range(NUM_FPUS)])
+
+gd.findDatum(gs, d)
+
+w = gen_wf([5, 10, 0], [0, 10, 20])
 

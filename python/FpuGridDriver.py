@@ -149,21 +149,21 @@ class GridDriver:
     def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST):
         return self._gd.connect(address_list)
 
-    def setUStepLevel(self, ustep_level,  gs):
-        return self._gd.setUStepLevel(ustep_level, gs)
+    def setUStepLevel(self, ustep_level,  gs, fpuset=[]):
+        return self._gd.setUStepLevel(ustep_level, gs, fpuset)
     
     def getGridState(self):
         return self._gd.getGridState()
 
-    def findDatumB(self, gs, search_modes={}, selected_arm=DASEL_BOTH, check_protection=True):
+    def findDatumB(self, gs, search_modes={}, selected_arm=DASEL_BOTH, check_protection=True, fpuset=[]):
         """Moves all FPUs to datum position. 
 
         This is a blocking variant of the findDatum command,
         it is not interruptible by Control-C."""
         
-        return self._gd.findDatum(gs, search_modes, selected_arm, check_protection)
+        return self._gd.findDatum(gs, search_modes, fpuset, selected_arm, check_protection)
 
-    def findDatum(self, gs, search_modes={}, selected_arm=DASEL_BOTH, check_protection=True):
+    def findDatum(self, gs, search_modes={}, selected_arm=DASEL_BOTH, check_protection=True, fpuset=[]):
         """Moves all FPUs to datum position. 
 
         If the program receives a SIGNINT, or Control-C is pressed, an
@@ -184,7 +184,7 @@ class GridDriver:
         unless check_protection is set to False.
 
         """
-        rv = self._gd.startFindDatum(gs, search_modes, selected_arm, check_protection)
+        rv = self._gd.startFindDatum(gs, search_modes, selected_arm, fpuset, check_protection)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
             raise RuntimeError("can't search Datum, driver error code = %r" % rv)
         time.sleep(0.1)
@@ -193,7 +193,7 @@ class GridDriver:
         was_aborted = False
         with SignalHandler() as sh:
             while not is_ready:
-                rv = self._gd.waitFindDatum(gs, time_interval)
+                rv = self._gd.waitFindDatum(gs, time_interval, fpuset)
                 if sh.interrupted:
                     print("STOPPING FPUs.")
                     self.abortMotion(gs)
@@ -208,25 +208,25 @@ class GridDriver:
 
         return rv
 
-    def pingFPUs(self, gs):
-        return self._gd.pingFPUs(gs)
+    def pingFPUs(self, gs, fpuset=[]):
+        return self._gd.pingFPUs(gs, fpuset)
 
-    def resetFPUs(self, gs):
-        return self._gd.resetFPUs(gs)
+    def resetFPUs(self, gs, fpuset=[]):
+        return self._gd.resetFPUs(gs, fpuset)
 
-    def getPositions(self, gs):
-        return self._gd.getPositions(gs)
+    def getPositions(self, gs, fpuset=[]):
+        return self._gd.getPositions(gs, fpuset)
 
-    def readRegister(self, address, gs):
-        return self._gd.readRegister(address, gs)
+    def readRegister(self, address, gs, fpuset=[]):
+        return self._gd.readRegister(address, gs, fpuset)
     
-    def getFirmwareVersion(self, gs):
-        return self._gd.getFirmwareVersion(gs)
+    def getFirmwareVersion(self, gs, fpuset=[]):
+        return self._gd.getFirmwareVersion(gs, fpuset)
     
-    def getCounterDeviation(self, gs):
-        return self._gd.getCounterDeviation(gs)
+    def getCounterDeviation(self, gs, fpuset=[]):
+        return self._gd.getCounterDeviation(gs, fpuset)
 
-    def configMotion(self, wavetable, gs, check_protection=True):
+    def configMotion(self, wavetable, gs, fpuset=[], check_protection=True):
         """ 
         Configures movement by sending a waveform table to a group of FPUs.
         Call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
@@ -237,16 +237,23 @@ class GridDriver:
         the hardware).
 
         """
-        return self._gd.configMotion(wavetable, gs, check_protection)
+        wtable = wavetable.copy()
+        if len(fpuset) > 0:
+            kys = wtable.keys()
+            for k in kys:
+                if not k in fpuset:
+                    del wtable[k]
+                
+        return self._gd.configMotion(wtable, gs, fpuset, check_protection)
 
-    def executeMotionB(self, gs):
-        return self._gd.executeMotion(gs)
+    def executeMotionB(self, gs, fpuset=[]):
+        return self._gd.executeMotion(gs, fpuset)
     
 
-    def executeMotion(self, gs):
+    def executeMotion(self, gs, fpuset=[]):
         # wait a short moment to avoid spurious collision.
         time.sleep(2.5)
-        rv = self._gd.startExecuteMotion(gs)
+        rv = self._gd.startExecuteMotion(gs, fpuset)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
             print("rv=",rv)
             raise RuntimeError("FPUs not ready to move, driver error code = %r" % rv)
@@ -258,10 +265,10 @@ class GridDriver:
         try:
             with SignalHandler() as sh:
                 while not is_ready:
-                    rv = self._gd.waitExecuteMotion(gs, time_interval)
+                    rv = self._gd.waitExecuteMotion(gs, time_interval, fpuset)
                     if sh.interrupted:
                         print("STOPPING FPUs.")
-                        self.abortMotion(gs)
+                        self.abortMotion(gs, fpuset)
                         was_aborted = True
                         break
                     is_ready = (rv != fpu_driver.E_DriverErrCode.DE_WAIT_TIMEOUT)
@@ -273,15 +280,15 @@ class GridDriver:
         if (rv == fpu_driver.E_DriverErrCode.DE_OK) or was_aborted or refresh_state:
             # execute a ping to update positions
             # (this is only needed for protocol version 1)
-            self.pingFPUs(gs)
+            self.pingFPUs(gs, fpuset)
                             
         if was_aborted:
             raise MovementError("executeMotion was aborted by SIGINT")
         
         return rv
 
-    def abortMotion(self, gs):
-        return self._gd.abortMotion(gs)
+    def abortMotion(self, gs, fpuset=[]):
+        return self._gd.abortMotion(gs, fpuset)
 
     def freeBetaCollision(self, fpu_id, direction,  gs):
         return self._gd.freeBetaCollision(fpu_id, direction, gs)
@@ -289,8 +296,8 @@ class GridDriver:
     def enableBetaCollisionProtection(self, gs):
         return self._gd.enableBetaCollisionProtection(gs)
 
-    def reverseMotion(self, gs):
-        return self._gd.reverseMotion(gs)
+    def reverseMotion(self, gs, fpuset=[]):
+        return self._gd.reverseMotion(gs, fpuset)
 
-    def repeatMotion(self, gs):
-        return self._gd.repeatMotion(gs)
+    def repeatMotion(self, gs, fpuset=[]):
+        return self._gd.repeatMotion(gs, fpuset)

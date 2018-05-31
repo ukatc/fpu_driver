@@ -398,8 +398,6 @@ bool FPUArray::inTargetState(E_GridState sum_state,
             && (FPUGridState.count_pending == 0)
             && (FPUGridState.num_queued == 0)
             && (FPUGridState.Counts[FPST_DATUM_SEARCH] == 0)
-            && (FPUGridState.Counts[FPST_READY_FORWARD] == 0)
-            && (FPUGridState.Counts[FPST_READY_BACKWARD] == 0)
             && (FPUGridState.Counts[FPST_MOVING] == 0))
 
     {

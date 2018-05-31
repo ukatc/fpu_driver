@@ -720,9 +720,42 @@ private:
 
 class WrapGridDriver : public GridDriver
 {
+    private:
+    const GridDriverConfig config;
+    
+        void getFPUSet(const list& fpu_list, t_fpuset &fpuset) const
+    {
+        if (len(fpu_list) == 0)
+        {
+            for(int i=0; i < MAX_NUM_POSITIONERS; i++)
+            {
+                fpuset[i] = true;
+            }
+        }
+        else
+        {
+            for(int i=0; i < MAX_NUM_POSITIONERS; i++)
+            {
+                fpuset[i] = false;
+            }
+            for(int i=0; i < len(fpu_list); i++)
+            {
+                int fpu_id = extract<int>(fpu_list[i]);
+                if ((fpu_id < 0)
+                    || (fpu_id >= MAX_NUM_POSITIONERS)
+                    || (fpu_id >= config.num_fpus))
+                {
+                    throw FPUDriverException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                                             DE_INVALID_FPU_ID);
+                }
+                fpuset[fpu_id] = true;
+            }
+        }
+    }
+
 public:
 
-    WrapGridDriver(const GridDriverConfig config) : GridDriver(config)
+    WrapGridDriver(const GridDriverConfig _config) : config(_config), GridDriver(_config)
     {
 
         E_DriverErrCode ecode = initializeDriver();
@@ -766,8 +799,11 @@ public:
     };
 
     E_DriverErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state,
-                                         bool check_protection)
+                                         list &fpu_list, bool check_protection=true)
     {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+        
         list fpu_id_list = dict_waveforms.keys();
         const int nkeys = len(fpu_id_list);
 
@@ -810,7 +846,7 @@ public:
             wform.steps = steps;
             wtable.push_back(wform);
         }
-        E_DriverErrCode ecode = configMotion(wtable, grid_state, check_protection);
+        E_DriverErrCode ecode = configMotion(wtable, grid_state, fpuset, check_protection);
         checkDriverError(ecode);
         return ecode;
 
@@ -823,64 +859,84 @@ public:
         return grid_state;
     }
 
-    E_DriverErrCode wrap_initializeGrid(WrapGridState& grid_state)
+    E_DriverErrCode wrap_initializeGrid(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = initializeGrid(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = initializeGrid(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_resetFPUs(WrapGridState& grid_state)
+    E_DriverErrCode wrap_resetFPUs(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = resetFPUs(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = resetFPUs(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
 
     }
 
-    E_DriverErrCode wrap_pingFPUs(WrapGridState& grid_state)
+    E_DriverErrCode wrap_pingFPUs(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = pingFPUs(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+        E_DriverErrCode ecode = pingFPUs(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
 
-    E_DriverErrCode wrap_getPositions(WrapGridState& grid_state)
+    E_DriverErrCode wrap_getPositions(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = getPositions(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = getPositions(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_readRegister(int read_address, WrapGridState& grid_state)
+    E_DriverErrCode wrap_readRegister(int read_address, WrapGridState& grid_state, list& fpu_list)
     {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
         if ( (read_address > 0xffff) || (read_address < 0))
         {
             checkDriverError(DE_INVALID_PAR_VALUE);
         }
         const uint16_t raddress = (uint16_t) read_address;
-        E_DriverErrCode ecode = readRegister(raddress, grid_state);
+        E_DriverErrCode ecode = readRegister(raddress, grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_getFirmwareVersion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_getFirmwareVersion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = getFirmwareVersion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = getFirmwareVersion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
     
-    E_DriverErrCode wrap_getCounterDeviation(WrapGridState& grid_state)
+    E_DriverErrCode wrap_getCounterDeviation(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = getCounterDeviation(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = getCounterDeviation(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    void getDatumFlags(dict& dict_modes, t_datum_search_flags &direction_flags)
+    void getDatumFlags(dict& dict_modes, t_datum_search_flags &direction_flags, const t_fpuset &fpuset)
     {
         list fpu_id_list = dict_modes.keys();
         const int nkeys = len(fpu_id_list);
@@ -890,7 +946,14 @@ public:
             // default -- everything is SEARCH_AUTO
             for(int i=0; i < MAX_NUM_POSITIONERS; i++)
             {
-                direction_flags[i] = SEARCH_AUTO;
+                if (fpuset[i])
+                {
+                    direction_flags[i] = SEARCH_AUTO;
+                }
+                else
+                {
+                    direction_flags[i] = SKIP_FPU;
+                }
             }
         }
         else
@@ -921,9 +984,12 @@ public:
                                              DE_INVALID_FPU_ID);
                 }
 
-                
-                int mode = extract<int>(dict_modes[fpu_key]);
-                direction_flags[fpu_id] = static_cast<E_DATUM_SEARCH_DIRECTION>(mode);
+
+                if (fpuset[fpu_id])
+                {
+                    int mode = extract<int>(dict_modes[fpu_key]);
+                    direction_flags[fpu_id] = static_cast<E_DATUM_SEARCH_DIRECTION>(mode);
+                }
 
             }
         }
@@ -931,13 +997,17 @@ public:
 
     E_DriverErrCode wrap_findDatum(WrapGridState& grid_state,
                                    dict &dict_modes,
+                                   list& fpu_list,
                                    E_DATUM_SELECTION arm_selection=DASEL_BOTH,
                                    bool check_protection=true)
     {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
         t_datum_search_flags direction_flags;
-        getDatumFlags(dict_modes, direction_flags);
+        getDatumFlags(dict_modes, direction_flags, fpuset);
         
-        E_DriverErrCode ecode = findDatum(grid_state, direction_flags, arm_selection, check_protection);
+        E_DriverErrCode ecode = findDatum(grid_state, direction_flags, arm_selection, check_protection, &fpuset);
         checkDriverError(ecode);
         return ecode;
     }
@@ -946,24 +1016,32 @@ public:
     E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state,
                                         dict& dict_modes,
                                         E_DATUM_SELECTION arm_selection,
+                                        list& fpu_list,
                                         bool check_protection=true)
     {
 
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
         t_datum_search_flags direction_flags;
-        getDatumFlags(dict_modes, direction_flags);
+        getDatumFlags(dict_modes, direction_flags, fpuset);
         
-        E_DriverErrCode ecode = startFindDatum(grid_state, direction_flags, arm_selection, check_protection);
+        E_DriverErrCode ecode = startFindDatum(grid_state, direction_flags, arm_selection, check_protection, &fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_waitFindDatum(WrapGridState& grid_state, double max_wait_time)
+    E_DriverErrCode wrap_waitFindDatum(WrapGridState& grid_state, double max_wait_time, list& fpu_list)
     {
         E_DriverErrCode estatus;
         bool finished = false;
+        
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
 
         // FIXME: should return remaining wait time in tuple
-        estatus =  waitFindDatum(grid_state, max_wait_time, finished);
+        estatus =  waitFindDatum(grid_state, max_wait_time, finished, &fpuset);
 
         if (((! finished) && (estatus == DE_OK))
                 || (estatus == DE_WAIT_TIMEOUT))
@@ -979,27 +1057,36 @@ public:
     }
 
 
-    E_DriverErrCode wrap_executeMotion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_executeMotion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode =executeMotion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode =executeMotion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_startExecuteMotion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_startExecuteMotion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode =startExecuteMotion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode =startExecuteMotion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_waitExecuteMotion(WrapGridState& grid_state, double max_wait_time)
+    E_DriverErrCode wrap_waitExecuteMotion(WrapGridState& grid_state, double max_wait_time, list& fpu_list)
     {
         E_DriverErrCode estatus;
         bool finished = false;
 
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
         // FIXME: should return remaining wait time in tuple
-        estatus =  waitExecuteMotion(grid_state, max_wait_time, finished);
+        estatus =  waitExecuteMotion(grid_state, max_wait_time, finished, fpuset);
         if (((! finished) && (estatus == DE_OK))
                 || (estatus == DE_WAIT_TIMEOUT))
         {
@@ -1012,23 +1099,32 @@ public:
         return estatus;
     }
 
-    E_DriverErrCode wrap_repeatMotion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_repeatMotion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode =repeatMotion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode =repeatMotion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_reverseMotion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_reverseMotion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode =reverseMotion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = reverseMotion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_abortMotion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_abortMotion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode =abortMotion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = abortMotion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
@@ -1041,9 +1137,12 @@ public:
         return ecode;
     }
 
-    E_DriverErrCode wrap_setUStepLevel(int ustep_level, WrapGridState& grid_state)
+    E_DriverErrCode wrap_setUStepLevel(int ustep_level, WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = setUStepLevel(ustep_level, grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = setUStepLevel(ustep_level, grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
@@ -1055,20 +1154,19 @@ public:
         return ecode;
     }
 
-    E_DriverErrCode wrap_lockFPU(WrapGridState& grid_state)
+    E_DriverErrCode wrap_lockFPU(int fpu_id, WrapGridState& grid_state)
     {
-        E_DriverErrCode ecode =lockFPU(grid_state);
+        E_DriverErrCode ecode =lockFPU(fpu_id, grid_state);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_unlockFPU(WrapGridState& grid_state)
+    E_DriverErrCode wrap_unlockFPU(int fpu_id, WrapGridState& grid_state)
     {
-        E_DriverErrCode ecode =unlockFPU(grid_state);
+        E_DriverErrCode ecode =unlockFPU(fpu_id, grid_state);
         checkDriverError(ecode);
         return ecode;
     }
-
 
 
 
@@ -1357,6 +1455,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("fw_date_year", &WrapFPUState::fw_date_year)
     .def_readonly("fw_date_month", &WrapFPUState::fw_date_month)
     .def_readonly("fw_date_day", &WrapFPUState::fw_date_day)
+    .def_readonly("register_value", &WrapFPUState::register_value)
     .def("__repr__", &WrapFPUState::to_repr)
     ;
 

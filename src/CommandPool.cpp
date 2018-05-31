@@ -66,54 +66,54 @@ E_DriverErrCode CommandPool::initialize()
         for (int i = 1; i < NUM_CAN_COMMANDS; i++)
         {
             int capacity=0;
-            const int cap_broadcast = 10;
             const int cap_individual = config.num_fpus * 10;
             const int cap_wform = config.num_fpus * MAX_SUB_COMMANDS;
 
-//            printf("CommandPool::initialize(): cap_individual = %i\n", cap_individual);
             switch (i)
             {
-            // broadcast commands
-            case CCMD_EXECUTE_MOTION       :
-            case CCMD_REPEAT_MOTION       :
-            case CCMD_REVERSE_MOTION       :
-#if CAN_PROTOCOL_VERSION > 1
-            case CCMD_CHECK_INTEGRITY       :
-#endif
-            case CCMD_ABORT_MOTION       :
-                capacity = cap_broadcast;
-                break;
 
-            // waveform table
+                // waveform table
             case CCMD_CONFIG_MOTION   :
                 capacity = cap_wform;
                 break;
 
+                // these are broadcast commands. They require less
+                // instances in normal use, but when using FPU
+                // subsets, more instances are needed.
+                
+            case CCMD_EXECUTE_MOTION    :
+            case CCMD_REPEAT_MOTION     :
+            case CCMD_REVERSE_MOTION    :
+#if CAN_PROTOCOL_VERSION > 1
+            case CCMD_CHECK_INTEGRITY   :
+#endif
+            case CCMD_ABORT_MOTION      :
+
                 // individual commands
 #if CAN_PROTOCOL_VERSION == 1
-            case CCMD_GET_ERROR_ALPHA :
-            case CCMD_GET_ERROR_BETA :
-            case CCMD_GET_STEPS_ALPHA:
-            case CCMD_GET_STEPS_BETA:
+            case CCMD_GET_ERROR_ALPHA   :
+            case CCMD_GET_ERROR_BETA    :
+            case CCMD_GET_STEPS_ALPHA   :
+            case CCMD_GET_STEPS_BETA    :
 #else
-            case CCMD_LOCK_UNIT       :
-            case CCMD_UNLOCK_UNIT     :
+            case CCMD_LOCK_UNIT         :
+            case CCMD_UNLOCK_UNIT       :
             case CCMD_GET_COUNTER_DEVIATION:
             case CCMD_GET_FIRMWARE_VERSION          :
             case CCMD_SET_TIME_STEP                 :
-            case CCMD_SET_STEPS_PER_FRAME             :
+            case CCMD_SET_STEPS_PER_FRAME           :
             case CCMD_FREE_ALPHA_LIMIT_BREACH       :
             case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
-            case CCMD_ENABLE_MOVE   :
+            case CCMD_ENABLE_MOVE       :
 #endif
-            case CCMD_RESET_FPU       :
-            case CCMD_PING_FPU       :
+            case CCMD_RESET_FPU         :
+            case CCMD_PING_FPU          :
             case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
             case CCMD_FREE_BETA_COLLISION    :
-            case CCMD_SET_USTEP_LEVEL :
-            case CCMD_FIND_DATUM :
+            case CCMD_SET_USTEP_LEVEL   :
+            case CCMD_FIND_DATUM        :
             case CCMD_RESET_STEPCOUNTER :
-            case CCMD_READ_REGISTER   :
+            case CCMD_READ_REGISTER    :
                 capacity = cap_individual;
                 break;
 

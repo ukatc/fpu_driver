@@ -28,10 +28,11 @@ namespace mpifps
 E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
                                       E_DATUM_SEARCH_DIRECTION * p_direction_flags,
                                       E_DATUM_SELECTION arm_selection,
-                                      bool check_protection)
+                                      bool check_protection,
+                                      t_fpuset const * const fpuset)
 {
 
-    E_DriverErrCode estatus = startFindDatum(grid_state, p_direction_flags, arm_selection, check_protection);
+    E_DriverErrCode estatus = startFindDatum(grid_state, p_direction_flags, arm_selection, check_protection, fpuset);
 
     if (estatus != DE_OK)
     {
@@ -41,7 +42,7 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
     bool finished = false;
     double max_wait_time = -1; // waits until the CAN timeout is hit
 
-    estatus = waitFindDatum(grid_state, max_wait_time, finished);
+    estatus = waitFindDatum(grid_state, max_wait_time, finished, fpuset);
 
     return estatus;
 }
@@ -49,7 +50,7 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
 E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
                                            E_DATUM_SEARCH_DIRECTION * p_direction_flags,
                                            E_DATUM_SELECTION arm_selection,
-                                           bool check_protection)
+                                           bool check_protection, t_fpuset const * const fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -63,7 +64,8 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
         estatus = startAutoFindDatumAsync(grid_state, state_summary,
                                           p_direction_flags,
                                           arm_selection,
-                                          check_protection);
+                                          check_protection,
+                                          fpuset);
 
         break;
 
@@ -79,13 +81,16 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
     return estatus;
 }
 
-E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state, double &max_wait_time, bool &finished)
+E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state,
+                                          double &max_wait_time,
+                                          bool &finished,
+                                          t_fpuset const * const fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     finished = false;
-    estatus = waitAutoFindDatumAsync(grid_state, state_summary, max_wait_time, finished);
+    estatus = waitAutoFindDatumAsync(grid_state, state_summary, max_wait_time, finished, fpuset);
 
     if ((! finished) && (estatus == DE_OK))
     {
@@ -98,7 +103,7 @@ E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state, double &max_
 
 
 E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state& grid_state,
-        bool check_protection)
+                                         t_fpuset const &fpuset, bool check_protection)
 
 {
     E_DriverErrCode estatus = DE_OK;
@@ -113,7 +118,7 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
 
     while (num_avaliable_retries > 0)
     {
-        estatus = configMotionAsync(grid_state, state_summary, cur_wtable, check_protection);
+        estatus = configMotionAsync(grid_state, state_summary, cur_wtable, fpuset, check_protection);
         if (estatus != DE_OK)
         {
             // if connection is lost or command invalid, quit.
@@ -172,46 +177,54 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
 
 }
 
-E_DriverErrCode GridDriver::initializeGrid(t_grid_state& grid_state)
+#pragma GCC diagnostic push
+#if CAN_PROTOCOL_VERION > 1
+#pragma GCC diagnostic warning "-Wunused-parameter"
+#else
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
+E_DriverErrCode GridDriver::initializeGrid(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     grid_state.driver_state = DS_ASSERTION_FAILED;
 
-    return DE_UNIMPLEMENTED;
+    return DE_FIRMWARE_UNIMPLEMENTED;
 }
+#pragma GCC diagnostic pop
 
-E_DriverErrCode GridDriver::resetFPUs(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::resetFPUs(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     pthread_mutex_lock(&command_creation_mutex);
-    estatus = resetFPUsAsync(grid_state, state_summary);
+    estatus = resetFPUsAsync(grid_state, state_summary, fpuset);
     pthread_mutex_unlock(&command_creation_mutex);
 
     return estatus;
 }
 
-E_DriverErrCode GridDriver::pingFPUs(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::pingFPUs(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     pthread_mutex_lock(&command_creation_mutex);
-    estatus = pingFPUsAsync(grid_state, state_summary);
+    estatus = pingFPUsAsync(grid_state, state_summary, fpuset);
     pthread_mutex_unlock(&command_creation_mutex);
 
     return estatus;
 }
 
 
-E_DriverErrCode GridDriver::startExecuteMotion(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::startExecuteMotion(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     pthread_mutex_lock(&command_creation_mutex);
 
-    estatus = startExecuteMotionAsync(grid_state, state_summary);
+    estatus = startExecuteMotionAsync(grid_state, state_summary, fpuset);
 
     pthread_mutex_unlock(&command_creation_mutex);
 
@@ -219,25 +232,27 @@ E_DriverErrCode GridDriver::startExecuteMotion(t_grid_state& grid_state)
 }
 
 E_DriverErrCode GridDriver::waitExecuteMotion(t_grid_state& grid_state,
-        double &max_wait_time, bool &finished)
+        double &max_wait_time, bool &finished, t_fpuset const &fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     estatus = waitExecuteMotionAsync(grid_state,
                                      state_summary,
-                                     max_wait_time, finished);
+                                     max_wait_time,
+                                     finished,
+                                     fpuset);
     return estatus;
 }
 
-E_DriverErrCode GridDriver::executeMotion(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::executeMotion(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     pthread_mutex_lock(&command_creation_mutex);
 
-    estatus = startExecuteMotionAsync(grid_state, state_summary);
+    estatus = startExecuteMotionAsync(grid_state, state_summary, fpuset);
 
     pthread_mutex_unlock(&command_creation_mutex);
 
@@ -251,48 +266,50 @@ E_DriverErrCode GridDriver::executeMotion(t_grid_state& grid_state)
             double wait_time_sec = 0.5;
             estatus = waitExecuteMotionAsync(grid_state,
                                              state_summary,
-                                             wait_time_sec, finished);
+                                             wait_time_sec,
+                                             finished,
+                                             fpuset);
         }
     }
 
     return estatus;
 }
 
-E_DriverErrCode GridDriver::repeatMotion(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::repeatMotion(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     pthread_mutex_lock(&command_creation_mutex);
 
-    estatus = repeatMotionAsync(grid_state, state_summary);
+    estatus = repeatMotionAsync(grid_state, state_summary, fpuset);
 
     pthread_mutex_unlock(&command_creation_mutex);
 
     return estatus;
 }
 
-E_DriverErrCode GridDriver::reverseMotion(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::reverseMotion(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     pthread_mutex_lock(&command_creation_mutex);
 
-    estatus = reverseMotionAsync(grid_state, state_summary);
+    estatus = reverseMotionAsync(grid_state, state_summary, fpuset);
 
     pthread_mutex_unlock(&command_creation_mutex);
 
     return estatus;
 }
 
-E_DriverErrCode GridDriver::abortMotion(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::abortMotion(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_GridState state_summary;
     E_DriverErrCode estatus = DE_OK;
 
     // the implementation locks the command creation mutex in the waiting time.
-    estatus =  abortMotionAsync(command_creation_mutex, grid_state, state_summary);
+    estatus =  abortMotionAsync(command_creation_mutex, grid_state, state_summary, fpuset);
 
     return estatus;
 }
@@ -329,53 +346,59 @@ E_DriverErrCode GridDriver::enableBetaCollisionProtection(t_grid_state& grid_sta
 
 
 
-E_DriverErrCode GridDriver::lockFPU(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::lockFPU(int fpu_id, t_grid_state& grid_state)
 {
     grid_state.driver_state = DS_ASSERTION_FAILED;
-    return DE_UNIMPLEMENTED;
-
-}
-
-E_DriverErrCode GridDriver::unlockFPU(t_grid_state& grid_state)
-{
+    return DE_FIRMWARE_UNIMPLEMENTED;
     grid_state.driver_state = DS_ASSERTION_FAILED;
 
-    return DE_UNIMPLEMENTED;
+    E_GridState state_summary;
+    return unlockFPUAsync(fpu_id, grid_state, state_summary);
+
+}
+
+E_DriverErrCode GridDriver::unlockFPU(int fpu_id, t_grid_state& grid_state)
+{
+    grid_state.driver_state = DS_ASSERTION_FAILED;
+    return DE_FIRMWARE_UNIMPLEMENTED;
+
+    E_GridState state_summary;
+    return unlockFPUAsync(fpu_id, grid_state, state_summary);
 }
 
 
-E_DriverErrCode GridDriver::getPositions(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::getPositions(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_GridState state_summary;
     E_DriverErrCode status;
 
     pthread_mutex_lock(&command_creation_mutex);
-    status = getPositionsAsync(grid_state, state_summary);
+    status = getPositionsAsync(grid_state, state_summary, fpuset);
     pthread_mutex_unlock(&command_creation_mutex);
 
     return status;
 }
 
 
-E_DriverErrCode GridDriver::readRegister(uint16_t read_address, t_grid_state& grid_state)
+E_DriverErrCode GridDriver::readRegister(uint16_t read_address, t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_GridState state_summary;
     E_DriverErrCode status;
 
     pthread_mutex_lock(&command_creation_mutex);
-    status = readRegisterAsync(read_address, grid_state, state_summary);
+    status = readRegisterAsync(read_address, grid_state, state_summary, fpuset);
     pthread_mutex_unlock(&command_creation_mutex);
 
     return status;
 }
 
-E_DriverErrCode GridDriver::getFirmwareVersion(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::getFirmwareVersion(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_GridState state_summary;
     E_DriverErrCode status;
 
     pthread_mutex_lock(&command_creation_mutex);
-    status = getFirmwareVersionAsync(grid_state, state_summary);
+    status = getFirmwareVersionAsync(grid_state, state_summary, fpuset);
     pthread_mutex_unlock(&command_creation_mutex);
 
     return status;
@@ -383,25 +406,25 @@ E_DriverErrCode GridDriver::getFirmwareVersion(t_grid_state& grid_state)
 
 
 
-E_DriverErrCode GridDriver::getCounterDeviation(t_grid_state& grid_state)
+E_DriverErrCode GridDriver::getCounterDeviation(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_GridState state_summary;
     E_DriverErrCode status;
 
     pthread_mutex_lock(&command_creation_mutex);
-    status = getCounterDeviationAsync(grid_state, state_summary);
+    status = getCounterDeviationAsync(grid_state, state_summary, fpuset);
     pthread_mutex_unlock(&command_creation_mutex);
 
     return status;
 }
 
-E_DriverErrCode GridDriver::setUStepLevel(int ustep_level, t_grid_state& grid_state)
+E_DriverErrCode GridDriver::setUStepLevel(int ustep_level, t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_GridState state_summary;
     E_DriverErrCode status;
 
     pthread_mutex_lock(&command_creation_mutex);
-    status = setUStepLevelAsync(ustep_level, grid_state, state_summary);
+    status = setUStepLevelAsync(ustep_level, grid_state, state_summary, fpuset);
     pthread_mutex_unlock(&command_creation_mutex);
 
     return status;

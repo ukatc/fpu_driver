@@ -176,7 +176,7 @@ class FPU:
         self.wave_ready = True
 
     def setUStepLevel(self, ustep_level):
-        print("setting UStepLevel=", ustep_level)
+        print("setting UStepLevel for fpu # %i to %i" % (self.fpu_id, ustep_level))
         self.ustep_level = ustep_level
         
     def reverseMotion(self, fpu_id):
