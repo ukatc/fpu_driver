@@ -478,11 +478,12 @@ the FPUs:
   position. After this, the internal step counters are set to zero,
   both for the alpha and for the beta arm.
 
-  Keep in mind that for the current protocol version 1, this requires
-  both the alpha arm and the beta arm to be in safe positions -- the
-  alpha arm must be inside its operating range (it must not have
-  passed the limit switch), and the beta arm must be in the positive
-  range.
+  Keep in mind that this requires both the alpha arm to be in a safe
+  positions -- the alpha arm must be inside its operating range (it
+  must not have passed the limit switch). (If the software needs
+  additional information to perform a safe datum search, a
+  \texttt{DE_PROTECTION\_ERROR} exception is returned, see the
+  following section~\ref{sec:initialsearch} for further information).
 
   \index{waveforms!configuring}
 \item[\texttt{configMotion()}] is a method which sends a table with
@@ -526,7 +527,7 @@ data, and displaying information about the FPU state:
 \section{Initial datum search}
 \label{sec:initialsearch}
 \index{datum search!initial}
-
+\index{DE\_PROTECTION\_ERROR}
 As mentioned above, the listed example relies on the fact that
 the FPUs already have been powered on, and a datum search
 was performed before. Based on a valid datum search,
@@ -535,10 +536,12 @@ arm can be moved. This mode of operation is called
 ``automatic'' datum search.
 
 However, when an FPU was just powered on, it lacks this information,
-so it cannot perform an automatic search. Instead,
-the operator needs to instruct the hardware in which
-direction it must move. This is done by passing additional
-parameters to the \texttt{findDatum()} command, like this:
+so it cannot perform an automatic search. In this case, attempting to
+start an automatic datum search would result in a
+\texttt{DE\_PROTECTION\_ERROR} exception. Instead, the operator needs
+to instruct the hardware in which direction it must move. This is done
+by passing additional parameters to the \texttt{findDatum()} command,
+like this:
 
 
 \begin{minted}{python}
@@ -949,7 +952,7 @@ Both alpha and beta arm are moved to the datum position. The value
   protocol version 1.1 which enables this feature. The driver software
   will perform a check to make sure the firmware has the right
   version, or rise an exception of the class
-  \texttt{DE\_UNIMPLEMENTED}.}.
+  \texttt{DE\_FIRMWARE\_UNIMPLEMENTED}.}.
 
 \textbf{Important:} When doing a datum search, the alpha arm must
 \textbf{not} be in a limit breach state, otherwise hardware damage is
@@ -1966,12 +1969,20 @@ mode is the normal mode used in instrument operation.
 \paragraph{Initial datum search after powering on FPUs}
 \label{sec:refinitialsearch}
 
-Because the ``automatic'' datum search relies on the internal step
-counters of the FPUs, it cannot be used when an FPU was just powered
-on - the FPU firmware lacks the information to perform the datum
-search of the beta arm safely. In this case, the search direction
-needs to be passed by the operator (or the instrument control
-software). The direction needs to be defined for each FPU, like this:
+\index{DE\_FIRMWARE\_UNIMPLEMENTED!caused by automatic datum search}
+\index{DE\_PROTECTION\_ERROR!caused by unsafe datum search} Because
+the ``automatic'' datum search relies on the internal step counters of
+the FPUs, it cannot be used when an FPU was just powered on - the FPU
+firmware lacks the information to perform the datum search of the beta
+arm safely. Therefore, the command will result in a
+\texttt{DE\_PROTECTION\_ERROR} exception\footnote{If an old firmware
+  version earlier than 1.2.0 is used, it can also cause a
+  \texttt{DE\_FIRMWARE\_UNIMPLEMENTED} exception - in this case, you
+  need to upgrade the firmware}.
+
+To datum the FPU in this case, the search direction needs to be passed
+by the operator (or the instrument control software). The direction
+needs to be defined for each FPU, like this:
 
 
 
@@ -2461,7 +2472,7 @@ DE_WAIT_TIMEOUT = 1,
 
 // Firmware does not implement operation for this protocol 
 // version
-DE_UNIMPLEMENTED = 2,
+DE_FIRMWARE_UNIMPLEMENTED = 2,
 
 
 /*********************************/

@@ -414,7 +414,7 @@ void translate_driver_error(FPUDriverException const& e)
         PyErr_SetString(ProtectionErrorExceptionTypeObj, e.what());
         break;        
 
-    case DE_UNIMPLEMENTED:
+    case DE_FIRMWARE_UNIMPLEMENTED:
     case DE_OUT_OF_MEMORY:
     case DE_RESOURCE_ERROR:
     case DE_ASSERTION_FAILED:
@@ -649,10 +649,10 @@ void checkDriverError(E_DriverErrCode ecode)
                                  DE_INVALID_PAR_VALUE);
         break;
 
-    case DE_UNIMPLEMENTED:
-        throw FPUDriverException("DE_UNIMPLEMENTED: Command or operation not implemented"
+    case DE_FIRMWARE_UNIMPLEMENTED:
+        throw FPUDriverException("DE_FIRMWARE_UNIMPLEMENTED: Command or operation not implemented"
                                  " for this protocol version",
-                                 DE_UNIMPLEMENTED);
+                                 DE_FIRMWARE_UNIMPLEMENTED);
         break;
 
     case DE_RESOURCE_ERROR:
@@ -1271,7 +1271,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_INVALID_DRIVER_STATE", DE_INVALID_DRIVER_STATE)
     .value("DE_OUT_OF_MEMORY", DE_OUT_OF_MEMORY)
     .value("DE_RESOURCE_ERROR", DE_RESOURCE_ERROR)
-    .value("DE_UNIMPLEMENTED", DE_UNIMPLEMENTED)
+    .value("DE_FIRMWARE_UNIMPLEMENTED", DE_FIRMWARE_UNIMPLEMENTED)
     .export_values();
 
     enum_<E_GridState>("E_GridState")

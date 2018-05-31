@@ -72,7 +72,7 @@ enum E_DriverErrCode
     // Firmware does not implement operation for this protocol version
     // - the calling code might need to check and branch according to
     // the used protocol version
-    DE_UNIMPLEMENTED = 2,
+    DE_FIRMWARE_UNIMPLEMENTED = 2,
 
 
     /*********************************/

@@ -448,7 +448,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
                         canlayer::get_realtime(),
                         req_fw_major, req_fw_minor, req_fw_patch,
                         min_firmware_version[0], min_firmware_version[1], min_firmware_version[2], min_firmware_fpu);
-            return DE_UNIMPLEMENTED;
+            return DE_FIRMWARE_UNIMPLEMENTED;
         }
         
     }
@@ -2885,7 +2885,7 @@ E_DriverErrCode AsyncDriver::getFirmwareVersionAsync(t_grid_state& grid_state,
     E_DriverErrCode ecode;
     
 #if (CAN_PROTOCOL_VERSION > 1)
-    return DE_UNIMPLEMENTED;
+    return DE_FIRMWARE_UNIMPLEMENTED;
 #endif
     
     for (int k=0; k < num_fields; k++)
