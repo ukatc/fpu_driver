@@ -53,9 +53,6 @@ def list_positions(gs, num_fpus=None, show_zeroed=True):
         return [ (gs.FPU[i].alpha_steps, gs.FPU[i].beta_steps)
                  for i in range(num_fpus)]
 
-def fpu_steps(gs):
-    return list_positions(gs)[0]
-
 
 def list_angles(gs,
                 asteps_per_deg=StepsPerDegreeAlpha,

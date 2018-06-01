@@ -1,3 +1,4 @@
+% -*- mode: latex; eval: (flyspell-mode 1) -*-
 \documentclass[11pt,a4paper]{scrartcl}
 
 \usepackage{minted}
@@ -264,7 +265,7 @@ elements: gateway number, bus number, and CAN ID.
 The FPU driver sends commands to the fibre positioner units, which use
 a specific communication protocol. This protocol needs to match the
 FPUs firmware and its capabilities. The current version of the driver
-(version 0.5.x) uses ``communication protocol version 1'', which has
+(version 0.6.x) uses ``communication protocol version 1'', which has
 some restrictions in functionality. For example, some edge cases
 cannot be checked, some operations might take longer, and some errors
 are not recognised or cannot as easily worked around.
@@ -287,7 +288,9 @@ in section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 Another important point, is that when doing a first manual datum
 search after powering on an FPU , it is essential to make sure that
 the instructed search direction will move the beta arm to the datum
-position.
+position. The current version of the driver software does not allow
+any more to do a datum search of an uninitialised FPU without
+explicitly passing the required search direction.
 
 \begin{warning}
   \textbf{WARNING: When using a manual \texttt{findDatum()} command,
@@ -300,8 +303,7 @@ A third practical difference is that the the FPU verification system
 requires the capability to datum the alpha and beta arms separately.
 This is supported by driver versions equal or newer than 0.5.2 and a
 firmware that supports the CAN protocol version 1.1 or later. Earlier
-firmware versions will respond by moving both arms to the zero
-position.
+firmware versions do not support this mode of operation.
 
 
 
@@ -480,10 +482,11 @@ the FPUs:
 
   Keep in mind that this requires both the alpha arm to be in a safe
   positions -- the alpha arm must be inside its operating range (it
-  must not have passed the limit switch). (If the software needs
-  additional information to perform a safe datum search, a
-  \texttt{DE_PROTECTION\_ERROR} exception is returned, see the
-  following section~\ref{sec:initialsearch} for further information).
+  must not have passed the limit switch). If the software needs
+  additional information to perform a safe datum search, an automatic
+  search is not possible, and a \texttt{DE\_PROTECTION\_ERROR}
+  exception is returned. How to do a manual datum search is described
+  in the next section (section~\ref{sec:initialsearch}).
 
   \index{waveforms!configuring}
 \item[\texttt{configMotion()}] is a method which sends a table with
@@ -522,18 +525,15 @@ data, and displaying information about the FPU state:
 
 \end{description}
 
-\subsection{sec:initialsearch}
 
-\section{Initial datum search}
+\subsection{Initial datum search}
 \label{sec:initialsearch}
-\index{datum search!initial}
-\index{DE\_PROTECTION\_ERROR}
-As mentioned above, the listed example relies on the fact that
-the FPUs already have been powered on, and a datum search
-was performed before. Based on a valid datum search,
-the FPU firmware can decide in which direction the beta
-arm can be moved. This mode of operation is called
-``automatic'' datum search.
+\index{datum search!initial} \index{DE\_PROTECTION\_ERROR} As
+mentioned above, the listed example relies on the fact that the FPUs
+already have been powered on, and a successful datum search was
+performed before. Based on a valid datum search, the FPU firmware can
+decide in which direction the beta arm can be moved. This mode of
+operation is called ``automatic'' datum search.
 
 However, when an FPU was just powered on, it lacks this information,
 so it cannot perform an automatic search. In this case, attempting to
@@ -546,18 +546,17 @@ like this:
 
 \begin{minted}{python}
   gd.findDatum(grid_state, search_modes={0 : SEARCH_CLOCKWISE,
-    1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE}, check_protection=False)
+               1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE},
+               check_protection=False)
 \end{minted}
 
-Here, the integer numbers (0, 1, 2, \ldots) correspond to FPU
-numbers, and the symbols \texttt{SEARCH\_CLOCKWISE} and
+Here, the integer numbers (0, 1, 2, \ldots) correspond to FPU numbers,
+and the symbols \texttt{SEARCH\_CLOCKWISE} and
 \texttt{SEARCH\_ANTI\_CLOCKWISE} instruct this FPU in which direction
-it should move. Here, ``clockwise'' and ``anti-clockwise'' refer to
-the directions when looking from above. FPUs which do not get such an
-instruction will not move. An automatic datum search is only possible
-after all FPUs have performed such an initial manual
-search. Section~\ref{sec:initialsearch} gives more information about
-these extra parameters.
+it should move. These symbols needs to be imported by an ``import''
+statement from the \texttt{FpuGridDriver} module.  Here, ``clockwise''
+and ``anti-clockwise'' refer to the directions when looking from
+above. FPUs which do not get such an instruction will not move. 
 
 \index{safety!datum operation}
 \begin{warning}
@@ -614,8 +613,6 @@ everything else is output):
 
 
 \begin{minted}{python}
-
-  
 $ python -i short_script.py
 initializing driver:  DE_OK
 connecting grid: DE_OK
@@ -662,6 +659,7 @@ In this listing, \verb+grid_state.FPU[0]+ displays the state parameters of
 FPU 0 (which is the only one we have because \texttt{NUM\_FPUS} was
 set to 1).
 
+\begin{sloppypar}
 Just to pin-point two of the more important bits of information, the
 fields ``\texttt{alpha\_steps}'' and ``\texttt{beta\_steps}'' contain
 the current step counts of an FPU, and the fields
@@ -678,6 +676,7 @@ flags \texttt{alpha\_was\_zeroed} and \texttt{beta\_was\_zeroed} are
 set to \texttt{True} when the datum position was reached at least once
 since the driver was started, and no collisions, limit switch
 breaches, or abortMotion commands have happened since.
+\end{sloppypar}
 
 \subsubsection*{Capturing interactive output}
 \index{capturing output} \index{troubleshooting!capturing output} To
@@ -834,7 +833,8 @@ Traceback (most recent call last):
     print("connecting grid:", gd.connect())
   File "/sw/sw4/jnix/MOONS/fpu_driver/python/FpuGridDriver.py", line 65, in connect
     return self._gd.connect(address_list)
-fpu_driver.ConnectionFailure: DE_NO_CONNECTION: The FPU Driver is not connected to a gateway.
+    fpu_driver.ConnectionFailure: DE_NO_CONNECTION: The FPU Driver
+    is not connected to a gateway.
 >>> 
 \end{minted}
 
@@ -911,11 +911,14 @@ a pair of NaN values.
 
 
 \subsection{Moving the FPU to the datum position}
+\label{sec:finddatumreference}
 \index{calibration of arm positions|see{datum}}
 \index{FPU!datum}
 \index{commands!findDatum()!extended example}
 \index{datum search!command}
 \subsubsection{Performing a datum search}
+
+\paragraph{Automatic search}
 
 Because the FPU's step counters need to be zeroed
 before any accurate positioning is possible, a
@@ -935,6 +938,24 @@ state which might easily lead to hardware damage.
   \textbf{Whenever possible without risk of damage, issue a datum
     search command before powering off the FPU.}
 \end{warning}
+
+\paragraph{Manual datum search}
+
+If the FPU had been powered off, the beta arm is in a positive range
+(at the datums witch, or rotated anti-clockwise from it), and the
+alpha arm is in a normal safe position, the following command will
+initialise the FPU with ID zero and move it to the datum position:
+\begin{minted}{python}
+  gd.findDatum(grid_state, {0: SEARCH_CLOCKWISE}, check_protection=False)
+\end{minted}
+
+This instructs the FPU to move clock-wise, and enable the driver to do
+this without checking the current position. Analogously, the constant
+\texttt{SEARCH\_ANTI\_CLOCKWISE} can be passed to move the FPU into
+the negative direction. A detailed description of all possible
+parameters for the datum search can be found in
+section~\ref{sec:finddatum} on page~\pageref{sec:finddatum}.
+
 
 \subsubsection{Independent operation of alpha and Beta arm}
 
@@ -958,9 +979,30 @@ Both alpha and beta arm are moved to the datum position. The value
 \textbf{not} be in a limit breach state, otherwise hardware damage is
 likely to occur.
 \begin{warning}
-  \textbf{WARNING: Before starting a datum search, make sure that both
-    arms are in a safe position.}
+  \textbf{WARNING: Before starting a manual datum search, make sure
+    that both arms are in a safe position.}
 \end{warning}
+
+\subsubsection{Restricting a datum search to a subset of FPUs}
+\label{sec:restricteddatumsearch}
+\index{datum search!for a subset of FPUs} \index{restricting a command
+  to a subset of FPUs!example} \index{movements!of a subset of FPUs}
+In some cases, it can be necessary to move only a subset of FPUs to
+the datum position, leaving all the other FPUs untouched. This can be
+done by passing a \texttt{fpuset} keyword argument to the
+\texttt{findDatum()} method call, which contains a list of the FPUs
+which are to be moved, like this:
+\begin{minted}{python}
+  gd.findDatum(grid_state, fpuset=[3,5])
+\end{minted}
+Here, only FPUs 3 and 5 will be moved to the datum position.
+
+The \texttt{fpuset} can actually be passed to all movement commands
+including \texttt{executeMotion()}, and to all commands which act on a
+group of FPUs, like the \texttt{resetFPUs()}. A more detailed
+explanation can be found in section~\ref{sec:subsets} on
+page~\pageref{sec:subsets}.
+
 
 \subsection{Moving the FPU}
 \index{FPU!moving}
@@ -1004,10 +1046,9 @@ angles:
   \item Correspondingly, a \emph{clockwise} movement will have a
     \emph{negative} sign, and use negative step counts.
   \item Consequently, any position which is counter-clockwise from the
-    datum position will be denoted by a positive angle, and positive
-    step counts, and any position which is reached after rotating
-    clock-wise from the datum position, will have negative angles and
-    negative step counts.
+    datum position will be denoted by a positive angle, and any
+    position which is reached after rotating clock-wise from the datum
+    position, will have negative angles.
 \end{itemize}
 
 \subsubsection{Moving by an angle}
@@ -1067,6 +1108,28 @@ first FPU, the second element the alpha
 angle of the second FPU, and so on.
 
 See section~\ref{sec:genwf} for further details.
+
+\subsubsection{Restricting a movement to a subset of FPUs}
+\index{movements!of a sub-set of FPUs}
+\index{restricting!the executeMotion() command}
+A movement can be restricted to a subset of FPUs by issuing a
+\texttt{configMotion()} command which has all-zero entries for the FPUs
+which should not move. This avoids that a wavetable which was
+previously stored on the FPU becomes mistakenly activated.
+
+However a more convenient way to restrict the effect
+of the \texttt{executeMotion()} command to a
+subset of FPUs is to pass an \texttt{fpuset} parameter
+which contains a list of FPUs that should move,
+in exactly the same way as described for the \texttt{findDatum()}
+command in section~\ref{sec:restricteddatumsearch}
+on page~\pageref{sec:restricteddatumsearch}. As an example,
+the command
+\begin{minted}{python}
+  gd.executeMotion(grid_state, fpuset=[2,4,8,17])
+\end{minted}
+will move only FPUs 2,4,8, and 17, and ignore the states of the other
+FPUs.
 
 
 \subsubsection{Manually defining a waveform table}
@@ -1179,13 +1242,14 @@ actually execute them. These rules are currently as follows:
   
 \end{enumerate}
 
+\begin{sloppypar}
 If the \texttt{configMotion} method is called with an invalid
 waveform, a \texttt{InvalidWaveformException} is thrown, with a more
 specific error code and message. The error message should be specific
 enough to determine the reason of the validation failure.  A complete
 list of waveform error messages and codes is given in
 section~\ref{sec:errorcodes} on page~\pageref{sec:errorcodes} ff.
-
+\end{sloppypar}
 
 \subsubsection{Errors during movements}
 Movement operations can result in errors caused by collisions, limit
@@ -1194,6 +1258,8 @@ errors generate an exception of type \texttt{MovementError} during the
 movement. A detailed description of error handling is given in the
 sections~\ref{sec:errorhandling}. Section~\ref{sec:recovery} describes
 how to resolve collisions and limit switch breaches.
+
+
 
 
 
@@ -1209,7 +1275,7 @@ seconds. \footnote{Under the hood, this generates a \texttt{SIGINT}
   in an \texttt{ABORT\_MOTION} CAN message. Sending a SIGINT signal to
   python by other means would have the same effect.}
 
-If it is necessary to abort a movement from Python programmatically --
+If it is necessary to abort a movement from Python in a program --
 for example, from another Python thread -- this can be done using the
 \texttt{abortMotion()} method of the grid driver object.  Like all
 driver object methods, this method is thread-safe.
@@ -1316,7 +1382,7 @@ The detailed explanation for each error code is replicated in
 section~\ref{sec:errorcodes} on page~\pageref{sec:errorcodes}.
 
 \index{exceptions!handling of}
-Exceptions can be handled programmatically to support automatic
+Exceptions can be handled automatically to support automatic
 testing, and correct discovery of fault conditions, such as
 collisions. A full explanation on how to handle exceptions in Python can
 be found at \url{https://docs.python.org/2.7/tutorial/errors.html}.
@@ -1522,7 +1588,7 @@ software. The following section explains how this is achieved.
 \index{limit switch breach!effect}
 \index{collision!explanation}
 \index{limit switch breach!explanation}
-\subsubsection{detection of obstacles}
+\subsubsection{Detection of obstacles}
 
 Situations in which the movement of the hardware is obstructed are
 either collisions between FPUs or limit switch breaches of the alpha
@@ -1545,6 +1611,7 @@ accordingly, and the flag \texttt{was\_zeroed} is cleared.
 
 \subsubsection{Errors are turned into exceptions}
 
+\begin{sloppypar}
 If any movement operation or \texttt{findDatum()} command is going on,
 this command returns with the updated state information on the
 collision, and without further waiting for the movement to complete.
@@ -1555,6 +1622,7 @@ checked for and transformed into a Python exception of the class
 \texttt{AbortMotionError}, \texttt{StepTimingError}) allow to discern
 the cause of the error in \texttt{try \ldots except} clauses.  If the
 generated exception is not caught, this terminates the Python script.
+\end{sloppypar}
 
 \subsubsection{Collisions and limit switch breaches while the FPUs are not moving}
 \index{collisions!while FPUs are not moving} It is also possible that
@@ -1693,17 +1761,23 @@ differences for protocol version 1:
   observed to move the FPU in the correct direction,
   on order to prevent the risk of damage. Especially,
   a datum search must not be used after an alpha limit switch
-  breach.
+  breach. 
 
-\item The \texttt{findDatum()} method is only allowed if the beta arm
-  is at the datum position or in counter-clockwise direction of the
-  datum switch. Otherwise, it would damage the beta arm.
+\item The \texttt{findDatum()} method can only operate with automatic
+  direction selection if the FPU has been initialised before.
+  Otherwise, the search direction has to be passed manually.
+  Searching into the negative (clock-wise) direction is only allowed
+  if the beta arm is at the datum position or in counter-clockwise
+  direction of the datum switch. Otherwise, it would damage the beta
+  arm.  Equally, searching into the positive (anti-clockwise)
+  direction is only allowed if the beta arm is physically in a
+  clockwise direction of the datum switch.
 
 \item The current position and direction of movement of the FPUs is
-  not tracked during ongoing movements, and the driver cannot record
-  the last movement direction. This has the effect that the user needs
-  to verify manually in which direction the FPU was moving before
-  resolving a collision or limit switch breach.
+  not tracked during ongoing movements, and the driver cannot safely
+  record the last movement direction. This has the effect that the
+  user needs to verify manually in which direction the FPU was moving
+  before resolving a collision or limit switch breach.
 
 \item In protocol version 2, transitions and allowed commands are
   checked much stricter than in protocol 1.  This results in a
@@ -1830,7 +1904,7 @@ and a high-level resolution strategy.
 
 \section{Reference}
 
-\subsection{Retrieving version information}
+\subsection{Retrieving information about the driver version}
 \index{version information!retrieving!reference}
 \index{networking!CAN protocol!retrieving version}
 There are two attributes of the \texttt{FpuGridDriver} module
@@ -1846,10 +1920,13 @@ The attribute \texttt{FpuGridDriver.CAN\_PROTOCOL\_VERSION} displays
 the major version number of the CAN protocol against which the driver
 was compiled, it can be ``1'' or ``2''. This version number needs to
 match the version of the firmware which is running on the FPUs,
-otherwise the driver will not work. Protocol version 1 does not yet
-allow to retrieve the version of the firmware which is actually
-running on the FPUs. Therefore, the firmware version has to be tracked
-using other means.
+otherwise the driver will not work. The version numbers of the FPU
+firmware can be retrieved and checked using the
+\texttt{printFirmwareVersion()} and \texttt{minFirmwareVersion()}
+commands which are described in
+sections~\ref{sec:printfirmwareversion} and
+\ref{sec:minfirmwareversion} on
+page~\pageref{sec:printfirmwareversion}.
 
 
 \subsection{Driver initialisation}
@@ -1864,19 +1941,62 @@ The numbering of FPUs and buses and the way hardware addresses are
 mapped to FPU IDs are currently fixed. Future versions will allow for
 arbitrary numbering.
 
+\begin{sloppypar}
 If the running OS is lacking system resources, for example if the
 memory is exhausted, initializing the driver might return either a
 Python MemoryError exception, or an
 \texttt{fpu\_driver.SystemFailure} exception. In the latter case,
 the detailed resource which is lacking will be indicated in the error
 message, and in the log output.
-
+\end{sloppypar}
 
 
 
 
 \subsection{Commands and driver methods}
 \label{sec:commands}
+
+\subsubsection{Addressing a subset of FPUs}
+\label{sec:subsets}
+\index{addressing a subset of FPUs} In some situations, it is required
+to send commands only to a sub-set if fibre positioners. In the ICS,
+this is the case in certain recovery scenarios.  In the FPU
+verification system, the need for this arises when several FPUs are
+installed on the kinetic mount and connected to the same
+gateway. Here, we want to move and test only one FPU at a time. The
+normal mode of commands like \texttt{findDatum()} and
+\texttt{executeMotion()} would move all FPUs which are connected.
+
+To restrict the group-wise commands to a sub-set of FPUs, all
+corresponding commands have a parameter \texttt{fpuset}.  This
+parameter is by default an empty list, which has the effect that the
+command is sent to all FPUs. If the parameter is set to an integer
+list of FPU Ids, the command is sent only to the listed FPUs.
+For example, the command
+
+\begin{minted}{python}
+ gd.findDatum(gs, fpuset=[1,3,5,7,11])
+\end{minted}
+will send a \texttt{findDatum()} command only to the FPUs with the ids
+1,3,5,7, and 11.
+
+An invalid FPU Id will cause a \texttt{INVALID\_PARAMETER\_EXCEPTION}
+to be thrown.
+
+For details how subsets are handled in the \texttt{configMotion()}
+command, see section~\ref{sec:configmotion}.
+
+This feature requires a driver version >= 0.6.0 and works with all
+firmware versions (as long as the firmware supports the specific
+command mode).
+
+Note that using the \texttt{fpuset} parameter is not in all cases the
+best option if FPUs need to be handled independently. Alternative
+approaches are to instantiate separate driver objects which connect to
+different gateways. In such an set-up, each gateway will need an
+individual IP, and should also get an individual MAC address. This can
+be done within the same python program, or in different programs which
+can operate completely independently.
 
 
 \subsubsection{connect()}
@@ -1906,6 +2026,64 @@ It is possible that different driver instances are initialised at the
 same time, which connect to different gateways, that is, each instance
 controls its own grid, or group of FPUs.
 
+\subsubsection{getFirmwareVersion()}
+\label{sec:getfirmwareversion}
+\index{commands!getFirmwareVersion()}
+
+After a connection to an FPU grid is established, the command
+\begin{minted}{python}
+  gd.getFirmwareVersion(grid_state)
+\end{minted}
+retrieves the firmware version of the motion controllers of the
+attached FPUs and stores them in the grid state variable. The version
+information is stored in the strcut for each FPU in the fields
+\texttt{fw\_version\_major, fw\_version\_minor, fw\_version\_patch}.
+The firmware creation date is stored in the fields
+\texttt{fw\_date\_year, fw\_date\_month}, and \texttt{fw\_date\_day)}.
+
+The command can be restricted to a certain subset of FPUs
+by passing a list of integer FPU IDs to the parameter
+\texttt{fpuset}, like this:
+  
+\begin{minted}{python}
+  gd.getFirmwareVersion(grid_state, fpuset=[0,1,2,5,10])
+\end{minted}
+
+Note: Due to limitations in the CAN protocol version 1, this
+information is only available directly after the firmware version was
+retrieved.
+
+
+\subsubsection{printFirmwareVersion()}
+\index{commands!printFirmwareVersion()}
+\label{sec:printfirmwareversion}
+
+The method retrieves the version and creation data of each firmware on
+the FPUs motion controllers, and prints them in a list.
+
+As the \texttt{getFirmwareVersion()} method, the method accepts an
+\texttt{fpuset} keyword parameter which restricts the output to the fpu IDs
+listed in the parameter.
+
+\subsubsection{minFirmwareVersion()}
+\label{sec:minfirmwareversion}
+\index{commands!minFirmwareVersion()}
+\index{checking the firmware version}
+\index{firmware!checking version}
+The method retrieves the firmware version from the attached FPUs and
+returns a three-element tuple with the smallest firmware version.  The
+elements of the tuple are major version, minor version, and patch
+level.
+
+The method is designed to be used in scripts in combination with
+Python's \texttt{assert()} statement, and the property that Python
+tuples can be compared like strings. For example, the statement
+\begin{minted}{python}
+  assert(gd.minFirmwareVersion() >= (1,3,0))
+\end{minted}
+will either make sure that the firmware version is at least 1.3.0, or
+abort the running script.
+
 
 \subsubsection{getGridState()}
 \index{getGridState()!reference}
@@ -1932,6 +2110,7 @@ can however be useful to refresh its state by calling
 still be changing after the failed command has returned.
 
 \subsubsection{pingFPUs()}
+\begin{sloppypar}
 \index{pingFPUs()!reference} \index{networking!checking the connection!reference} The method
 \texttt{FpuGridDriver.pingFPUs(grid\_state)} connects to each FPU and
 refreshes the content of the \texttt{grid\_state} variable. If an FPU
@@ -1942,6 +2121,7 @@ EtherCAN gateway was lost, or
 \texttt{DE\_CAN\_COMMAND\_TIMEOUT\_ERROR}, if one or more FPUs failed
 to respond. The total count of timed out responses is available in the
 field \texttt{grid\_state.count\_timeout} field.
+\end{sloppypar}
 
 After the first \texttt{pingFPUs()} command, the positions of the FPUs
 can be displayed using the functions \texttt{list\_positions()} and
@@ -1950,6 +2130,7 @@ section~\ref{sec:listpositions} and ~\ref{sec:listangles} on
 page~\pageref{sec:listpositions} ff.
 
 \subsubsection{findDatum()}
+\label{sec:finddatum}
 \index{commands!findDatum()!reference}
 \index{findDatum()!reference}
 \index{findDatum()!Warnings}
@@ -1958,12 +2139,19 @@ page~\pageref{sec:listpositions} ff.
 \index{collisions!during datum search}
 \index{errors!during movements |see{movement errors}}
 \index{movement errors!during datum search}
-  
-The method \texttt{FpuGridDriver.findDatum(grid\_state)} moves the
-arms of the FPU to the datum position.  By default, this always moves
-both arms of all FPUs. The FPU automatically selects the required
-movement direction of the beta arm according to the step counter. This
-mode is the normal mode used in instrument operation.
+
+\paragraph{Automatic datum search}
+
+The method
+\begin{minted}{python}
+  FpuGridDriver.findDatum(grid_state)
+\end{minted}
+moves the arms of the FPUs to the datum position.  By default, this
+always moves both arms of all FPUs. The FPU automatically selects the
+required movement direction of the beta arm according to the step
+counter. This mode is the normal mode used in instrument operation. It
+requires that the FPUs have been initialised before, so that the step
+counter information is reliable.
 
 
 \paragraph{Initial datum search after powering on FPUs}
@@ -1978,11 +2166,13 @@ arm safely. Therefore, the command will result in a
 \texttt{DE\_PROTECTION\_ERROR} exception\footnote{If an old firmware
   version earlier than 1.2.0 is used, it can also cause a
   \texttt{DE\_FIRMWARE\_UNIMPLEMENTED} exception - in this case, you
-  need to upgrade the firmware}.
+  need to upgrade the firmware}. Also, if a collision has occurred, a
+new manual datum search is needed, as the information from the step
+counters became invalid.
 
-To datum the FPU in this case, the search direction needs to be passed
-by the operator (or the instrument control software). The direction
-needs to be defined for each FPU, like this:
+To datum the FPUs in this case, the search direction needs to be
+passed by the operator (or the instrument control software). The
+direction needs to be defined for each FPU, like this:
 
 
 
@@ -2010,7 +2200,7 @@ The value is one of the following constants:
   will fail if the FPU had a collision or a movement was interrupted
   in any other way.
   
-\item[\texttt{SKIP\_FPU}] The beta arm is not moved.
+\item[\texttt{SKIP\_FPU}] The FPU is not moved. This is the default.
   
 \end{description}
 
@@ -2020,13 +2210,14 @@ incorrectly -- correspond to the FPUs internal step counters, the
 software will generate a \texttt{PROTECTION\_ERROR} exception.  In
 this case, to override the software protection and execute the search
 as instructed, the operator needs to set an additional keyword
-argument, ``\texttt{check\_protection}, to the value \texttt{False}.
+argument, ``\texttt{check\_protection}'', to the value \texttt{False}.
 
 In this case, the commands looks like this:
 
 \begin{minted}{python}
   gd.findDatum(grid_state, search_modes={0 : SEARCH_CLOCKWISE,
-    1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE}, check_protection=False)
+               1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE},
+               check_protection=False)
 \end{minted}
 
 
@@ -2043,7 +2234,7 @@ In this case, the commands looks like this:
 \paragraph{Moving alpha and beta arms independently}
 
 For testing purposes, it is sometimes needed to move both arms
-separately.  In this case, , the keyword argument
+separately.  In this case, the keyword argument
 \texttt{selected\_arm} can be passed to move the arms individually
 like this:
 
@@ -2051,11 +2242,14 @@ like this:
   gd.findDatum(grid_state, selected_arm=DASEL_ALPHA)
 \end{minted}
 
+\begin{sloppypar}
 If the value of this parameter is \texttt{DASEL\_BOTH}, it shows the
-default behaviour, if it is \texttt{DASEL\_ALPHA}, only the alpha arm
+default behaviour. If it is \texttt{DASEL\_ALPHA}, only the alpha arm
 is datumed, if it is \texttt{DASEL\_BETA}, only the beta arm is
 datumed. This feature requires the FPU firmware to support the CAN
-protocol version 1.1, otherwise, the command always moves both arms.
+protocol version 1.1. Otherwise, a
+\texttt{DE\_FIRMWARE\_UNIMPLEMENTED} exception is thrown.
+\end{sloppypar}
 
 \index{safety!datum operation}
 \begin{warning}
@@ -2063,33 +2257,50 @@ protocol version 1.1, otherwise, the command always moves both arms.
   imperative that it is not in a physical limit breach position.}
 \end{warning}
 
-After a normal termination of the command, all FPUs will be in
-\texttt{AT\_DATUM} state. If one or both arms have not been
+\paragraph{Result state of a datum operation}
+
+After a normal termination of the command, all selected FPUs will be
+in \texttt{AT\_DATUM} state. If one or both arms have not been
 initialised, the final state is \texttt{UNINITIALIZED}.
 
-If there is any collision, limit switch breach, or step timing error
+\begin{sloppypar}
+If there was any collision, limit switch breach, or step timing error
 at firmware level, the movement of that FPU is stopped and the command
 returns an exception of type \texttt{FpuGridDriver.MovementError}. The
 sub-type of the exception indicates the cause of the error;
 section~\ref{sec:ExceptionsReference} on
 page~\pageref{sec:ExceptionsReference} lists the name of this
-sub-classes.
+sub-classes. In such a case, the ``initialised'' flags of the arms
+are cleared, as the step counter information cannot be longer deemed
+accurate, and a new manual datum search is needed to continue normal
+movements. If a new datum search is not possible, the
+\texttt{configMotion()} command can be used with the
+\texttt{check\_proetction} flag set to False.
+\end{sloppypar}
+
 
 The \texttt{findDatum()} command can be interrupted by the
 \texttt{<Control>-<C>} keyboard combination, which causes a
 \texttt{SIGINT} signal to be delivered to the Python process. A
-programmatic way to do the same is to send an \texttt{abortMotion()}
+programmable way to do the same is to send an \texttt{abortMotion()}
 command to the FPUs.  In both cases, FPUs which were moving will be in
-\texttt{ABORTED} state.
+\texttt{ABORTED} state. As in case of a collision, the ``initialised''
+flags of alpha and beta arms are cleared, and a new datum search will
+be required before normal movements can be resumed.
 
 
 
 
 \subsubsection{configMotion()}
+\label{sec:configmotion}
 \index{commands!configMotion()!reference}
 \index{configMotion()!reference}
 \paragraph{waveform table parameter}
-The method \texttt{FpuGridDriver.configMotion(wavetable, grid\_state)}
+
+The method
+\begin{minted}{python}
+  FpuGridDriver.configMotion(wavetable, grid_state)
+\end{minted}
 sends a dictionary of waveform tables to a set of FPUs. The dictionary
 keys are the IDs of the FPUs which are configured. The valid format
 for the input data is described in section~\ref{sec:waveform_rules} on
@@ -2104,38 +2315,63 @@ This requires that each FPU was moved to the datum position before, using
 the \texttt{findDatum()} method.
 
 \paragraph{Moving uninitialised FPUs}
+\index{datum!alpha arm at negative position}
+\index{alpha limit breach}
+\index{limit breach}
 \index{configMotion()!moving uninitialised FPUs}
 \index{movements!of uninitialised FPUs}
+
 In a number of situations, it can be necessary to move the FPU even if
-it was not initialised before, for example when the beta arm is at a
-negative physical position, which prohibits the datum operation. To do
-this, the keyword argument \texttt{check\_protection=False} needs to be
-passed, which skips the state check.
+it was not initialised before, for example when the alpha arm is in a
+limit breach position, which prohibits the datum operation (it would
+break the FPU). To do this, the keyword argument
+\texttt{check\_protection=False} needs to be passed, which skips the
+state check.
 
 
+\paragraph{Waveform validity checks}
 \index{waveforms!errors}
+\begin{sloppypar}
 If the passed waveform is not valid, an exception of type
 \texttt{InvalidWaveformException} is raised. In this case, the error
 symbol and text message provides a more detailed description of the
-failed check. 
-
-If an \texttt{fpuid} parameter in the keys of the waveform dictionary
+failed check. If an \texttt{fpuid} parameter in the keys of the waveform dictionary
 is not valid, an \texttt{InvalidParameter} exception is raised.
+\end{sloppypar}
+
+If an \texttt{fpuset} keyword parameter is passed with a list of FPU
+IDs, only FPUs will be configured which are both contained in the
+waveform table, and whose IDs are in the fpuset list. If
+\texttt{fpuset} is set to an empty list, all FPUs in the waveform
+table will be configured.
+
 
 \subsubsection{executeMotion()}
 \index{commands!executeMotion()!reference}
 \index{executeMotion()!reference}
 
-The method \texttt{FpuGridDriver.executeMotion(grid\_state)} starts
-the movement of all FPUs for which a valid wavetable was configured,
-and which are in either the state \texttt{READY\_FORWARD} or
-\texttt{READY\_BACKWARD}. The command blocks until this movement has
-completed, or until an error occurs. Depending on the individual FPU
-state, the movement will be forward or backward, where ``forward''
-means that increasing step numbers (positive differences)
-cause a anti-clockwise rotation.
+\paragraph{Moving FPUs}
 
+\begin{sloppypar}
+  The method
+  \begin{minted}{python}
+    FpuGridDriver.executeMotion(grid_state)}
+  \end{minted}
+  starts the movement of all FPUs for which a valid wavetable was
+  configured, and which are in either the state
+  \texttt{READY\_FORWARD} or \texttt{READY\_BACKWARD}. The command
+  blocks until this movement has completed, or until an error
+  occurs. Depending on the individual FPU state, the movement will be
+  forward or backward, where ``forward'' means that increasing step
+  numbers (positive differences) cause a anti-clockwise rotation.
+\end{sloppypar}
 
+As the \texttt{findDatum()} command, the \texttt{executeMotion()}
+command accepts an \texttt{fpuset} parameter, a list which will
+restrict the movement to only those FPUs whose IDs are elements of the
+list.
+
+\paragraph{Result state}
 If no error occurs, the \texttt{grid\_state} parameter contains the
 final new positions of the FPUs.
 
@@ -2173,6 +2409,7 @@ such a condition is resolved.
 \index{reverseMotion()!reference}
 \index{movements!reversing!reference}
 
+\begin{sloppypar}
 The method \texttt{FpuGridDriver.reverseMotion(fpu\_state)} requires
 that a valid waveform table is present and that FPUs are either in
 \texttt{READY\_FORWARD} or \texttt{RESTING} state
@@ -2181,11 +2418,13 @@ no effect). It configures the FPU so that on the next
 \texttt{executeMotion} command, the waveforms will be executed in
 reverse direction, and puts the FPUs into \texttt{READY\_BACKWARD}
 state. This is used to return FPUs close to the datum position.
+\end{sloppypar}
 
 Note that this command is not available after a collision, movement
 error, or \texttt{abortMotion} message -- the assumption is that the
-calibration of the FPU is not more exact after such an event, and a
-new \texttt{findDatum} command is needed to restore the calibrated
+calibration of the FPU is not more exact after such an event,
+therefore reversing the movement is ill-defined, and a new
+\texttt{findDatum} command is needed before to restore the calibrated
 state.
 
 
@@ -2194,6 +2433,7 @@ state.
 \index{repeatMotion!reference}
 \index{movements!repeating!reference}
 
+\begin{sloppypar}
 The method \texttt{FpuGridDriver.repeatMotion(fpu\_state)} requires
 that a valid waveform table is present and that FPUs are either in
 \texttt{READY\_BACKWARD} or \texttt{RESTING} state
@@ -2202,6 +2442,7 @@ no effect). It configures the FPU so that on the next
 \texttt{executeMotion} command, the waveforms will be executed in
 forward direction, and puts the FPUs into \texttt{READY\_FORWARD}
 state. 
+\end{sloppypar}
 
 Note that this command is, as the preceding one, not available after a
 collision, movement error, or \texttt{abortMotion} message -- the
@@ -2217,10 +2458,15 @@ restore the calibrated state.
 \index{movements!aborting!reference}
 
 
+\begin{sloppypar}
 The method \texttt{FpuGridDriver.abortMotion(fpu\_state)} terminates
-any movement and datum search operation, and puts any moving FPUs
-into \texttt{ABORTED} state. On an FPU which is not moving, it has no
-effect.
+any movement and datum search operation, and puts any moving FPUs into
+\texttt{ABORTED} state. On an FPU which is not moving, it has no
+effect.  The \texttt{abortMotion()} method is also automatically
+called if the key combination \verb+<Control>-<c>+ is called during a
+movement operation or a datum search, or if the Python process
+receives a \texttt{SIGINT} Unix signal.
+\end{sloppypar}
 
 Similar to other commands, the method is thread-safe, but it has a
 slightly different behaviour in that it pre-empts other commands: If
@@ -2228,11 +2474,6 @@ other driver methods are called while an operation is ongoing, they
 wait until the previous operation is completed. In contrary, the
 \texttt{abortMotion()} method cancels all ongoing operations, waits
 until all FPUs have send a confirmation, and returns.
-
-The \texttt{abortMotion()} method is also automatically called if the
-key combination \verb+<Control>-<c>+ is called during a movement
-operation or a datum search, or if the Python process receives a
-\texttt{SIGINT} Unix signal.
 
 After an \texttt{abortMotion()} command, FPUs which are in the state
 \texttt{ABORTED} will not be able to move again before this state is
@@ -2264,6 +2505,10 @@ alpha arm if it is in a limit breach position.
     operations and movements are safe.}
 \end{warning}
 
+As \texttt{findDatum()} and \texttt{executeMotion()}, the command
+accepts an \texttt{fpuset} key parameter which restricts the operation
+to the FPU IDs passed as a list.
+
 \subsubsection{freeBetaCollision()}
 \index{commands!freeBetaCollision()!reference}
 \index{freeBetaCollision()!reference}
@@ -2278,12 +2523,14 @@ of the beta arm without completely losing the step counter
 information. This is done by moving the FPU a small number of steps
 (about 10 steps) into a specified direction.
 
+\begin{sloppypar}
 The parameter \texttt{fpu\_id} identifies the FPU which shall be
 moved. The parameter \texttt{direction} can be one of
 \texttt{FpuGridDriver.REQD\_CLOCKWISE} or
 \texttt{FpuGridDriver.REQD\_ANTI\_CLOCKWISE}, and indicates the
 direction in which the FPU should be moved. The \texttt{grid\_state}
 variable is updated accordingly.
+\end{sloppypar}
 
 After resolving the collision, the command
 \texttt{enableBetaCollisionProtection()} needs to be called, to return
@@ -2307,6 +2554,40 @@ re-activates the collision protection, and allows to operate the FPU
 safely. If the collision has not been resolved successfully, another
 \texttt{CollisionError} exception is raised, and the FPU state is set
 again to \texttt{OBSTACLE\_ERROR}.
+
+\subsubsection{readRegister()}
+\label{sec:readregister}
+\index{commands!readRegister()}
+\index{reading memory from the FPU controller}
+\index{FPU controller!reading memory}
+
+The command
+
+\begin{minted}{python}
+  gd.readRegister(address, grid_state, fpuset=[])
+\end{minted}
+reads one byte of data from each FPU controller
+at the memory location \emph{address}. Here,
+\emph{address} is a 16-bit integer value
+which contains the memory bank value in the
+upper byte, and the address byte in the lower byte.
+
+The address value can be passed in hex notation,
+as in \texttt{0x0A31}. After a successful read,
+the value of the memory register for FPU \emph{k}
+is placed in
+
+\begin{minted}{python}
+  grid_state.FPU[k].register_value
+\end{minted}
+and the used address is placed in
+\verb+grid_state.FPU[k].register_address+.
+
+
+This value is overwritten by other operations and becomes invalid with
+the next method call which writes to the \texttt{gs} structure.  If
+the parameter \texttt{fpuset} is set to a non-empty list of FPU IDs,
+the operation is restricted to these FPUs.
 
 
 \subsection{Utility functions}
@@ -2357,6 +2638,17 @@ may not correspond to the current arm position.
 The function \texttt{list\_states(grid\_state)} lists the state of all
 FPUs. This allows, for example, to see quicker which FPUs have run into an error.
 
+\subsubsection{list\_deviations()}
+This command lists the counter deviations of each FPU after the last
+datum search, that is, the residual value of the alpha and beta step
+counters when the datum switch was hit.
+
+\subsubsection{list\_timeouts()}
+\index{time-outs!listing} This command lists the time-out count for
+each FPU. Note that the internally used values are unsigned 16-bit
+values which wrap around when they overflow -- you should not depend
+on the assumption they increase monotonically.
+
 
 \subsubsection{gen\_wf()}
 \label{sec:genwf}
@@ -2386,7 +2678,8 @@ can be used to examine the data structure).
 \verb+delta_alpha+, \verb+delta_beta+ parameters can also be either
 Python lists or Numpy vectors. In this case, either one of the
 parameters needs to be a scalar, or they need to be lists or numpy
-arrays of the same length. Either way, the element 0 of both vectors
+arrays of the same length. A scalar parameter gets extended to a
+vector of matching length. After this, the element 0 of both vectors
 contain the alpha/beta movement for FPU 0, element 1 the values for
 FPU 1, and so on.
 
@@ -2396,6 +2689,10 @@ still contain data for the FPUs which are not going to be moved -- the
 movement distance should just be set to zero for these FPUs.
 (Otherwise, an \texttt{executeMotion()} command could activate a
 waveform entry which is stale, and is not intended to be used.)
+Alternatively, the \texttt{fpuset} keyword of the
+\texttt{configMotion()} command can be used to specify a subset of FPUs
+which should move -- see section~\ref{sec:configmotion} on
+page~\pageref{sec:configmotion} for details.
 
 \paragraph{Moving both arms separately}
 
@@ -2649,6 +2946,45 @@ DE_STEP_TIMING_ERROR = 603,
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
+
+\subsection*{Changes in version 0.6.0}
+\begin{itemize}
+\item The \texttt{findDatum()} method now automatic moves the beta
+  arm into the correct direction if the FPU had been initialised before.
+
+\item If the FPU has not yet been initialised, it needs to be
+  initialised manually with a command such as
+  \begin{minted}{python}
+    gd.findDatum(grid_state, { 0 : SEARCH_CLOCKWISE,
+                 1 : SEARCH_CLOCKWISE,
+                 2 : SEARCH_ANTI_CLOCKWISE}
+  \end{minted}
+
+  For details, see sections~\ref{sec:initialsearch}
+  (page~\pageref{sec:initialsearch}) and~\ref{sec:finddatumreference}
+  (page~\pageref{sec:finddatumreference}).
+  
+\item All FPU commands which concern multiple FPUs, such as
+  \texttt{findDatum(),executeMotion(),resetFPUs()}, and so on, have an
+  additional \texttt{fpuset} keyword parameter. It can be set to a
+  list of FPU IDs to which the called command will be restricted. For
+  details, see section~\ref{sec:restricteddatumsearch} on
+  page~\pageref{sec:restricteddatumsearch}, and
+  section~\ref{sec:subsets} on page~\pageref{sec:subsets}.
+  
+\item The driver methods \texttt{getFirmwareVersion()},
+  \texttt{printFirmwareVersion()}, and \texttt{minFirmwareVersion()}
+  allow to retrieve, display, and check the version numbers of the FPU
+  firmware. For details, see sections~\ref{sec:getfirmwareversion}
+    --~\ref{sec:minfirmwareversion}.
+
+\item As a low-level debugging tool, the \texttt{readRegister()}
+  command allows to read bytes from the FPU controller memory.  It is
+  described in section~\ref{sec:readregister}.
+  
+\end{itemize}
+
+
 
 \subsection*{Changes in version 0.5.4}
 \begin{itemize}
