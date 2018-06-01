@@ -222,7 +222,27 @@ class GridDriver:
     
     def getFirmwareVersion(self, gs, fpuset=[]):
         return self._gd.getFirmwareVersion(gs, fpuset)
-    
+
+    def printFirmwareVersion(self, gs, fpuset=[]):
+        self.getFirmwareVersion(gs, fpuset)
+        for fpu_id, fpu in enumerate(gs.FPU):
+            if (fpuset == []) or (fpu_id in fpuset):
+                print("FPU %i firmware version: (%i,%i,%i) created %02i-%02i-%02i" % (
+                    fpu_id,
+                    fpu.fw_version_major, fpu.fw_version_minor, fpu.fw_version_patch,
+                    fpu.fw_date_year, fpu.fw_date_month, fpu.fw_date_day))
+
+    def minFirmwareVersion(self, gs, fpuset=[]):
+        self.getFirmwareVersion(gs, fpuset)
+        min_version = (255,255,255)
+        for fpu_id, fpu in enumerate(gs.FPU):
+            if (fpuset == []) or (fpu_id in fpuset):
+                version = (fpu.fw_version_major, fpu.fw_version_minor, fpu.fw_version_patch)
+                if version < min_version:
+                    min_version = version
+                    
+        return min_version
+                             
     def getCounterDeviation(self, gs, fpuset=[]):
         return self._gd.getCounterDeviation(gs, fpuset)
 
