@@ -3220,7 +3220,11 @@ scripts which can be used to test the module.
 The documentation source is managed along with the driver sources.  To
 generate the documentation for a specific earlier version of the
 driver, a \LaTeX{} distribution including the \texttt{minted} package
-and the Python pygments software needs to be installed.
+and the Python pygments software needs to be installed (package name
+\texttt{python-pygments} or \texttt{pygments}).  This is typically
+included in the \texttt{tex-live} package. Also, the \texttt{inkscape}
+package needs to be installed in order to generate the PDF version of
+the FPU state diagram.
 
 From the folder \texttt{fpu\_driver}, run the
 command

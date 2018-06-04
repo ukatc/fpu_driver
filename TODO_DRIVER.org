@@ -194,7 +194,7 @@ when the internal state struct is used.
 ** TODO add outstanding features for verification system
 *** DONE discern SocketFailure from FPUTimeoutError
 *** DONE extend spec to autoDatum and firmwareVersion flags
-*** TODO control direction of datum command and add automatic datum flag
+*** DONE control direction of datum command and add automatic datum flag
 **** TODO test denial of auto with firmware < 1.2
 **** DONE extend simfirmware to ignore beta, mirror flags
 **** DONE test DASEL_ALPHA, DASEL_BOTH
@@ -207,11 +207,12 @@ when the internal state struct is used.
 **** TODO document new exceptions for ProtectionError, TimeoutError
 **** TODO document changes to findDatum
 **** TODO document readRegister, getVersionInformation
+*** DONE add addressing a subset of FPUs 
+*** DONE rename *_BACKWARD to $_REVERSE
+*** DONE test AutoDatum
+*** TODO pack release 0.6.0
 *** TODO add reporting number of movements
 *** TODO add reporting of total number of steps
-*** TODO add addressing a subset of FPUs 
-*** TODO  test AutoDatum
-*** TODO pack release 0.6.0
 ** TODO make Thorlabs automation available to Python
 ** TODO  clean-up of version 1 code
 *** TODO Add state filtering to command precondition check

@@ -58,7 +58,10 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 git_version: force
 	echo '$(GIT_VERSION)' | cmp -s - $@ || echo '$(GIT_VERSION)' > $@
 
-tutorial:	doc/tutorial.tex
+doc/FPU-state1.pdf : doc/FPU-state1.svg
+	inkscape doc/FPU-state1.svg --export-pdf=doc/FPU-state1.pdf
+
+tutorial:	doc/tutorial.tex doc/FPU-state1.pdf
 	cd doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
 $(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS) 
