@@ -626,7 +626,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
                 return DE_PROTECTION_ERROR;
             }
 
-            if ((! beta_initialized) && (beta_mode == SEARCH_AUTO))
+            if (check_protection && (! beta_initialized) && (beta_mode == SEARCH_AUTO))
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum():"
                             " FPU %i beta arm is uninitialized "
