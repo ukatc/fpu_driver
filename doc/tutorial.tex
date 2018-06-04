@@ -558,6 +558,11 @@ statement from the \texttt{FpuGridDriver} module.  Here, ``clockwise''
 and ``anti-clockwise'' refer to the directions when looking from
 above. FPUs which do not get such an instruction will not move. 
 
+
+When the FPUs were actually initialised before, it is possible to use
+the ``automatic'' mode of the \texttt{findDatum()} command, by passing
+the \texttt{check\_protection} flag without a direction specification.
+
 \index{safety!datum operation}
 \begin{warning}
   \textbf{WARNING: When doing a manual datum search, always
@@ -2220,6 +2225,15 @@ In this case, the commands looks like this:
                check_protection=False)
 \end{minted}
 
+\paragraph{Unprotected automatic datum search}
+When the FPUs were actually initialised before, it is possible to use
+the ``automatic'' mode of the \texttt{findDatum()} command, by passing
+the \texttt{check\_protection} flag without a direction specification.
+This is intended make it easier to run automatic scripts, after
+running the \texttt{initializeGrid.py} script manually, which is
+described in section~\ref{sec:initializegrid} on
+page~\pageref{sec:initializegrid}.
+
 
 \index{safety!datum operation}
 \begin{warning}
@@ -2709,6 +2723,44 @@ alpha switch occur, for example caused by vibration.
 
 If one of the parameters is a NaN value, an \texttt{assertionError}
 exception is raised.
+
+\subsection{Helper scripts}
+
+\subsubsection{initializeGrid.py}
+\label{sec:initializegrid}
+\index{initializeGrid script}
+\index{initial datum operation}
+\index{datum search!initial search!utility}
+
+The script \texttt{initializeGrid.py} in the ``\texttt{python}''
+subfolder can be started with a configurable number of FPUs, by either
+setting the \texttt{NUM\_FPUS} environment variable, or passing the
+number with the ``\texttt{-N}'' option. It should be started by using
+Python's interactive option, like this:
+
+\begin{minted}{bash}
+  $ python -i initializeGrid.py -N 5
+\end{minted}
+
+Started this way, the script initialises the driver for that number of
+FPUs, sends them a ping command, and waits for input. It is then
+possible to define and send a \texttt{findDatum()} command with the
+right parameters, to move the FPUs manually to a safe datum position.
+
+After this, other automatic scripts can initialise the grid with the
+command
+
+\begin{minted}{python}
+  gd.findDatum(grid_state, check_protection=False)
+\end{minted}
+
+which allows to execute scripts without further interaction.  For CAN
+protocol version 1, the driver software cannot verify whether the FPUs
+have been initialised, so it is up to the user to check that the
+operation is safe.
+
+Further options to this script can be listed by using the
+\texttt{--help} option.
 
 
 \subsection{Errors}
