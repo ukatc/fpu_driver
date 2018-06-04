@@ -48,7 +48,7 @@ public:
     typedef  std::vector<t_waveform> t_wtable;
 
     typedef bool t_fpuset[MAX_NUM_POSITIONERS];
-    
+
     typedef E_DATUM_SEARCH_DIRECTION t_datum_search_flags[MAX_NUM_POSITIONERS];
 
     /* Maximum number of retries to initialize configure
@@ -104,7 +104,7 @@ public:
 
 
     E_DriverErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
-    
+
     E_DriverErrCode getFirmwareVersionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_DriverErrCode pingFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
@@ -142,8 +142,8 @@ public:
                                       t_fpuset const &fpuset);
 
     E_DriverErrCode getCounterDeviationAsync(t_grid_state& grid_state,
-                                             E_GridState& state_summary,
-                                             t_fpuset const &fpuset);
+            E_GridState& state_summary,
+            t_fpuset const &fpuset);
 
     E_DriverErrCode repeatMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
@@ -159,7 +159,7 @@ public:
     E_DriverErrCode unlockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
 
     E_DriverErrCode enableBetaCollisionProtectionAsync(t_grid_state& grid_state,
-                                                       E_GridState& state_summary);
+            E_GridState& state_summary);
 
     E_DriverErrCode freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
                                            t_grid_state& grid_state,
@@ -175,7 +175,7 @@ public:
                                       E_GridState& state_summary,
                                       t_fpuset const &fpuset);
 
-    
+
     E_GridState getGridState(t_grid_state& out_state) const;
 
     E_GridState waitForState(E_WaitTarget target,
@@ -197,7 +197,7 @@ protected:
     unsigned int log_repeat_count;
 
     void getFPUsetOpt(t_fpuset const * const fpuset_opt, t_fpuset &fpuset) const;
-    
+
     int countMoving(const t_grid_state &grid_state, t_fpuset const &fpuset) const;
 
     void getMinFirmwareVersion(t_fpuset const &fpuset,

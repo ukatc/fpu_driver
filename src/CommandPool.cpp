@@ -72,15 +72,15 @@ E_DriverErrCode CommandPool::initialize()
             switch (i)
             {
 
-                // waveform table
+            // waveform table
             case CCMD_CONFIG_MOTION   :
                 capacity = cap_wform;
                 break;
 
-                // these are broadcast commands. They require less
-                // instances in normal use, but when using FPU
-                // subsets, more instances are needed.
-                
+            // these are broadcast commands. They require less
+            // instances in normal use, but when using FPU
+            // subsets, more instances are needed.
+
             case CCMD_EXECUTE_MOTION    :
             case CCMD_REPEAT_MOTION     :
             case CCMD_REVERSE_MOTION    :
@@ -205,7 +205,7 @@ E_DriverErrCode CommandPool::initialize()
                     ptr.reset(new SetUStepLevelCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-                    
+
                 case CCMD_READ_REGISTER        :
                     ptr.reset(new ReadRegisterCommand());
                     pool[i].push_back(std::move(ptr));

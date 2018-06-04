@@ -110,7 +110,7 @@ public:
                               E_DATUM_SELECTION arm_selection=DASEL_BOTH,
                               bool check_protection=true,
                               t_fpuset const  * const fpuset=nullptr);
-    
+
     E_DriverErrCode startFindDatum(t_grid_state& grid_state,
                                    E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
                                    E_DATUM_SELECTION arm_selection=DASEL_BOTH,
@@ -122,7 +122,7 @@ public:
                                   t_fpuset const * const fpuset=nullptr);
 
     E_DriverErrCode configMotion(const t_wtable& waveforms,
-                                 t_grid_state& grid_state, 
+                                 t_grid_state& grid_state,
                                  t_fpuset const &fpuset,
                                  bool check_protection=true);
 
@@ -156,7 +156,7 @@ public:
     E_DriverErrCode readRegister(uint16_t read_address,
                                  t_grid_state& grid_state,
                                  t_fpuset const &fpuset);
-    
+
     E_DriverErrCode getFirmwareVersion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
     E_DriverErrCode lockFPU(int fpu_id, t_grid_state& grid_state);

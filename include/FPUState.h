@@ -110,7 +110,7 @@ typedef struct __attribute__((packed)) t_fpu_state
     E_MOVEMENT_DIRECTION direction_alpha;
     E_MOVEMENT_DIRECTION direction_beta;
     int8_t num_active_timeouts;
-    uint16_t register_address; 
+    uint16_t register_address;
     uint8_t register_value;  // single-byte response value for readRegister command
     uint8_t sequence_number; // number of last pending / received command
     unsigned int num_waveform_segments: 9; /* number of loaded waveform segements */

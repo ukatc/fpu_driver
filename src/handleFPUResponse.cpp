@@ -295,7 +295,7 @@ void handleFPUResponse(const GridDriverConfig config,
                             " command cancelled.\n",
                             get_realtime(),
                             fpu_id);
-                
+
             }
             else if (response_errcode == ER_COLLIDE)
             {
@@ -316,7 +316,7 @@ void handleFPUResponse(const GridDriverConfig config,
                     fpu.state = FPST_ABORTED;
                 }
                 fpu.waveform_valid = false;
-                
+
                 LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
                             "FPU # %i: executeMotion command got error status 'STBT_ABORT_WAVE'"
                             " command cancelled.\n",
@@ -347,7 +347,7 @@ void handleFPUResponse(const GridDriverConfig config,
                    "collision detected message received for FPU %i\n",
                    get_realtime(),
                    fpu_id);
-            
+
             LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
                         "FPU # %i: executeMotion command finished error status "
                         "'ER_COLLIDE (beta arm collision)'"
@@ -371,7 +371,7 @@ void handleFPUResponse(const GridDriverConfig config,
                    "limit switch breach message received for FPU %i\n",
                    get_realtime(),
                    fpu_id);
-            
+
             LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
                         "FPU # %i: executeMotion command finished error status "
                         "'ER_M1LIMIT' (alpha limit switch breach)"
@@ -388,13 +388,13 @@ void handleFPUResponse(const GridDriverConfig config,
             }
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
-            
+
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
-                        "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
-                        " movement aborted.\n",
-                        get_realtime(),
-                        fpu_id);
-            
+                   "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
+                   " movement aborted.\n",
+                   get_realtime(),
+                   fpu_id);
+
             LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
                         "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
                         " movement aborted.\n",
@@ -424,7 +424,7 @@ void handleFPUResponse(const GridDriverConfig config,
                         " movement aborted.\n",
                         get_realtime(),
                         fpu_id);
-            
+
             if (fpu.state != FPST_OBSTACLE_ERROR)
             {
                 fpu.state = FPST_ABORTED;
@@ -439,7 +439,7 @@ void handleFPUResponse(const GridDriverConfig config,
             // FIXME: Update step counter in protocol version 2
             // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
             if ( (fpu.state != FPST_OBSTACLE_ERROR) && (fpu.state != FPST_ABORTED))
-            {               
+            {
                 fpu.state = FPST_RESTING;
                 fpu.movement_complete = true;
             }
@@ -808,7 +808,7 @@ void handleFPUResponse(const GridDriverConfig config,
                "collision detection message received for FPU %i\n",
                get_realtime(),
                fpu_id);
-        
+
         LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
                     "FPU # %i: beta arm collision detection message received.\n",
                     get_realtime(),
@@ -862,7 +862,7 @@ void handleFPUResponse(const GridDriverConfig config,
                     "FPU # %i: alpha arm limit switch breach message received.\n",
                     get_realtime(),
                     fpu_id);
-        
+
         fpu.state = FPST_OBSTACLE_ERROR;
         fpu.at_alpha_limit = true;
         fpu.waveform_valid = false;
@@ -921,7 +921,7 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.state = FPST_UNINITIALIZED;
         }
         break;
-        
+
 
     case CCMD_NO_COMMAND      :
     default:

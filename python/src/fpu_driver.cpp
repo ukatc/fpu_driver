@@ -258,11 +258,11 @@ public:
           << " 'register_address' : " << std::hex << std::showbase << fpu.register_address
           << " 'register_value' : " << fpu.register_value << std::dec << std::noshowbase
           << " 'firmware_version' : " << fpu.fw_version_major
-                                      << "." << fpu.fw_version_minor
-                                      << "." << fpu.fw_version_patch 
+          << "." << fpu.fw_version_minor
+          << "." << fpu.fw_version_patch
           << " 'firmware_date' : " << fpu.fw_date_year
-                                    << "-" << fpu.fw_date_month
-                                    << "-" << fpu.fw_date_day 
+          << "-" << fpu.fw_date_month
+          << "-" << fpu.fw_date_day
           << " }";
         return s.str();
     }
@@ -412,7 +412,7 @@ void translate_driver_error(FPUDriverException const& e)
 
     case DE_PROTECTION_ERROR:
         PyErr_SetString(ProtectionErrorExceptionTypeObj, e.what());
-        break;        
+        break;
 
     case DE_FIRMWARE_UNIMPLEMENTED:
     case DE_OUT_OF_MEMORY:
@@ -643,7 +643,7 @@ void checkDriverError(E_DriverErrCode ecode)
         throw FPUDriverException("DE_PROTECTION_ERROR: Command might damage FPU, protection is enabled.",
                                  DE_PROTECTION_ERROR);
         break;
-        
+
     case DE_INVALID_PAR_VALUE:
         throw FPUDriverException("DE_INVALID_PAR_VALUE: The passed parameter value is invalid.",
                                  DE_INVALID_PAR_VALUE);
@@ -720,10 +720,10 @@ private:
 
 class WrapGridDriver : public GridDriver
 {
-    private:
+private:
     const GridDriverConfig config;
-    
-        void getFPUSet(const list& fpu_list, t_fpuset &fpuset) const
+
+    void getFPUSet(const list& fpu_list, t_fpuset &fpuset) const
     {
         if (len(fpu_list) == 0)
         {
@@ -742,8 +742,8 @@ class WrapGridDriver : public GridDriver
             {
                 int fpu_id = extract<int>(fpu_list[i]);
                 if ((fpu_id < 0)
-                    || (fpu_id >= MAX_NUM_POSITIONERS)
-                    || (fpu_id >= config.num_fpus))
+                        || (fpu_id >= MAX_NUM_POSITIONERS)
+                        || (fpu_id >= config.num_fpus))
                 {
                     throw FPUDriverException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
                                              DE_INVALID_FPU_ID);
@@ -803,7 +803,7 @@ public:
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
-        
+
         list fpu_id_list = dict_waveforms.keys();
         const int nkeys = len(fpu_id_list);
 
@@ -925,7 +925,7 @@ public:
         return ecode;
     }
 
-    
+
     E_DriverErrCode wrap_getCounterDeviation(WrapGridState& grid_state, list& fpu_list)
     {
         t_fpuset fpuset;
@@ -940,7 +940,7 @@ public:
     {
         list fpu_id_list = dict_modes.keys();
         const int nkeys = len(fpu_id_list);
-        
+
         if (nkeys == 0)
         {
             // default -- everything is SEARCH_AUTO
@@ -965,7 +965,7 @@ public:
 
 
             const int num_fpus = getNumFPUs();
-            
+
             if (nkeys > num_fpus )
             {
                 throw FPUDriverException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
@@ -1006,7 +1006,7 @@ public:
 
         t_datum_search_flags direction_flags;
         getDatumFlags(dict_modes, direction_flags, fpuset);
-        
+
         E_DriverErrCode ecode = findDatum(grid_state, direction_flags, arm_selection, check_protection, &fpuset);
         checkDriverError(ecode);
         return ecode;
@@ -1025,7 +1025,7 @@ public:
 
         t_datum_search_flags direction_flags;
         getDatumFlags(dict_modes, direction_flags, fpuset);
-        
+
         E_DriverErrCode ecode = startFindDatum(grid_state, direction_flags, arm_selection, check_protection, &fpuset);
         checkDriverError(ecode);
         return ecode;
@@ -1035,7 +1035,7 @@ public:
     {
         E_DriverErrCode estatus;
         bool finished = false;
-        
+
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
@@ -1422,7 +1422,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("SEARCH_AUTO",            SEARCH_AUTO)
     .value("SKIP_FPU",               SKIP_FPU)
     .export_values();
-    
+
     class_<WrapFPUState>("FPUState")
     .def_readonly("state", &WrapFPUState::state)
     .def_readonly("last_command", &WrapFPUState::last_command)

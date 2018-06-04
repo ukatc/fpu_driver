@@ -141,18 +141,18 @@ public:
             _anti_clockwise = false;
             _auto_datum = false;
             break;
-            
+
         case SEARCH_ANTI_CLOCKWISE:
             _anti_clockwise = true;
             _auto_datum = false;
             break;
-            
+
         case SEARCH_AUTO          :
             _anti_clockwise = false;
             _auto_datum = true;
             break;
 
-            // must not happen
+        // must not happen
         default:
         case SKIP_FPU             :
             assert(false);
@@ -165,12 +165,12 @@ public:
         // Note that this is not necessarily safe if
         // one of the switches is broken - old firmware ignoring
         // the arm selection can break the FPU then.
-        
+
         const uint8_t flags = ( (skip_alpha ? DATUM_SKIP_ALPHA : 0)
-                                       | (skip_beta ? DATUM_SKIP_BETA : 0)
-                                       | (_auto_datum ? MODE_DATUM_AUTO : 0)
-                                       | (_anti_clockwise ? MODE_DATUM_ANTI_CLOCKWISE : 0));
-        
+                                | (skip_beta ? DATUM_SKIP_BETA : 0)
+                                | (_auto_datum ? MODE_DATUM_AUTO : 0)
+                                | (_anti_clockwise ? MODE_DATUM_ANTI_CLOCKWISE : 0));
+
         can_buffer.message.data[1] = flags;
         buf_len += 8;
 

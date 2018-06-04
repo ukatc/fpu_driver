@@ -140,7 +140,7 @@ enum E_DriverErrCode
 
     // The operation can damage hardware and protection is enabled
     DE_PROTECTION_ERROR = 112,
-    
+
     // The driver state does not allows the operation
     DE_INVALID_DRIVER_STATE = 113,
 

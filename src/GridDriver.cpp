@@ -48,9 +48,9 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
 }
 
 E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
-                                           E_DATUM_SEARCH_DIRECTION * p_direction_flags,
-                                           E_DATUM_SELECTION arm_selection,
-                                           bool check_protection, t_fpuset const * const fpuset)
+        E_DATUM_SEARCH_DIRECTION * p_direction_flags,
+        E_DATUM_SELECTION arm_selection,
+        bool check_protection, t_fpuset const * const fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -82,9 +82,9 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
 }
 
 E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state,
-                                          double &max_wait_time,
-                                          bool &finished,
-                                          t_fpuset const * const fpuset)
+        double &max_wait_time,
+        bool &finished,
+        t_fpuset const * const fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -103,7 +103,7 @@ E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state,
 
 
 E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state& grid_state,
-                                         t_fpuset const &fpuset, bool check_protection)
+        t_fpuset const &fpuset, bool check_protection)
 
 {
     E_DriverErrCode estatus = DE_OK;
