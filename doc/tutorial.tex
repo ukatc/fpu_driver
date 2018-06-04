@@ -565,7 +565,7 @@ the \texttt{check\_protection} flag without a direction specification.
 
 \index{safety!datum operation}
 \begin{warning}
-  \textbf{WARNING: When doing a manual datum search, always
+  \textbf{WARNING: When doing a manually directed datum search, always
     double-check that the beta arm will correctly move to the datum
     position with the given direction. Otherwise, the command will
     damage the hardware.}
@@ -1349,7 +1349,7 @@ constructs and functions are explained in the Python Library
 Reference\footnote{see \url{https://docs/python.org/2.7/}}.
 
 
-\section{Error handling}
+\section{Error handling and exceptions}
 \label{sec:errorhandling}
 \index{exceptions}
 \index{errors!during movements!handling}
@@ -2226,13 +2226,16 @@ In this case, the commands looks like this:
 \end{minted}
 
 \paragraph{Unprotected automatic datum search}
-When the FPUs were actually initialised before, it is possible to use
-the ``automatic'' mode of the \texttt{findDatum()} command, by passing
-the \texttt{check\_protection} flag without a direction specification.
+\index{datum search!unprotected automatic mode} When the FPUs were
+actually initialised before, it is possible to use the ``automatic''
+mode of the \texttt{findDatum()} command, by passing the
+\texttt{check\_protection} flag without a direction specification.
 This is intended make it easier to run automatic scripts, after
 running the \texttt{initializeGrid.py} script manually, which is
 described in section~\ref{sec:initializegrid} on
-page~\pageref{sec:initializegrid}.
+page~\pageref{sec:initializegrid}. If FPUs do not have a valid
+initialisation, this will be reported by the firmware and result in a
+\texttt{DE\_PROTECTION\_ERROR} exception.
 
 
 \index{safety!datum operation}
@@ -2760,7 +2763,7 @@ have been initialised, so it is up to the user to check that the
 operation is safe.
 
 Further options to this script can be listed by using the
-\texttt{--help} option.
+\texttt{-\,-help} option.
 
 
 \subsection{Errors}
