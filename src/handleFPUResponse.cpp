@@ -270,7 +270,7 @@ void handleFPUResponse(const GridDriverConfig config,
                     || (response_errcode == ER_PARAM))
             {
                 if ((fpu.state == FPST_READY_FORWARD)
-                        || (fpu.state == FPST_READY_BACKWARD))
+                        || (fpu.state == FPST_READY_REVERSE))
                 {
                     fpu.state = FPST_RESTING;
                 }
@@ -592,7 +592,7 @@ void handleFPUResponse(const GridDriverConfig config,
             {
                 if (fpu.waveform_reversed)
                 {
-                    fpu.state = FPST_READY_BACKWARD;
+                    fpu.state = FPST_READY_REVERSE;
                 }
                 else
                 {
@@ -622,7 +622,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
         if ((response_errcode == 0)
                 && fpu.waveform_valid
-                && ( (fpu.state == FPST_RESTING) || (fpu.state == FPST_READY_BACKWARD)))
+                && ( (fpu.state == FPST_RESTING) || (fpu.state == FPST_READY_REVERSE)))
         {
             fpu.waveform_reversed = true;
             fpu.state = FPST_READY_FORWARD;
@@ -641,7 +641,7 @@ void handleFPUResponse(const GridDriverConfig config,
                 && ( (fpu.state == FPST_RESTING) || (fpu.state == FPST_READY_FORWARD)))
         {
             fpu.waveform_reversed = true;
-            fpu.state = FPST_READY_BACKWARD;
+            fpu.state = FPST_READY_REVERSE;
         }
 
 

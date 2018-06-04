@@ -74,9 +74,9 @@ E_GridState getGridStateSummary(const t_grid_state& grid_state)
         return GS_READY_FORWARD;
     }
 
-    if (grid_state.Counts[FPST_READY_BACKWARD] > 0)
+    if (grid_state.Counts[FPST_READY_REVERSE] > 0)
     {
-        return GS_READY_BACKWARD;
+        return GS_READY_REVERSE;
     }
 
     if (grid_state.Counts[FPST_MOVING] > 0)

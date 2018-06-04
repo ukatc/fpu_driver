@@ -93,8 +93,8 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
     case FPST_READY_FORWARD:
         out << "'READY_FORWARD'";
         break;
-    case FPST_READY_BACKWARD:
-        out << "'READY_BACKWARD'";
+    case FPST_READY_REVERSE:
+        out << "'READY_REVERSE'";
         break;
     case FPST_MOVING:
         out << "'MOVING'";
@@ -1235,7 +1235,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("FPST_AT_DATUM", FPST_AT_DATUM)
     .value("FPST_LOADING", FPST_LOADING)
     .value("FPST_READY_FORWARD", FPST_READY_FORWARD)
-    .value("FPST_READY_BACKWARD", FPST_READY_BACKWARD)
+    .value("FPST_READY_REVERSE", FPST_READY_REVERSE)
     .value("FPST_MOVING", FPST_MOVING)
     .value("FPST_RESTING", FPST_RESTING)
     .value("FPST_ABORTED", FPST_ABORTED)
@@ -1381,7 +1381,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("GS_AT_DATUM", GS_AT_DATUM     )
     .value("GS_LOADING", GS_LOADING         )
     .value("GS_READY_FORWARD", GS_READY_FORWARD   )
-    .value("GS_READY_BACKWARD", GS_READY_BACKWARD  )
+    .value("GS_READY_REVERSE", GS_READY_REVERSE  )
     .value("GS_MOVING", GS_MOVING          )
     .value("GS_FINISHED", GS_FINISHED        )
     .value("GS_COLLISION", GS_COLLISION       )

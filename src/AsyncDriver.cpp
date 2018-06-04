@@ -653,7 +653,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         if ( (fpu_state.state != FPST_UNINITIALIZED)
                 || (fpu_state.state != FPST_AT_DATUM)
                 || (fpu_state.state != FPST_READY_FORWARD)
-                || (fpu_state.state != FPST_READY_BACKWARD)
+                || (fpu_state.state != FPST_READY_REVERSE)
                 || (fpu_state.state != FPST_RESTING))
 
         {
@@ -1354,7 +1354,7 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
         
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
         if ((fpu_status == FPST_READY_FORWARD)
-            || (fpu_status == FPST_READY_BACKWARD))
+            || (fpu_status == FPST_READY_REVERSE))
         {
             if ( ! (grid_state.FPU_state[i].waveform_valid
                     && grid_state.FPU_state[i].waveform_ready))
@@ -1446,7 +1446,7 @@ int AsyncDriver::countMoving(const t_grid_state &grid_state, t_fpuset const &fpu
     // are masked out and will not move.  These must not be counted.
     
     int ready_count = (grid_state.Counts[FPST_READY_FORWARD]
-                       + grid_state.Counts[FPST_READY_BACKWARD]);
+                       + grid_state.Counts[FPST_READY_REVERSE]);
     
     if (ready_count >0)
     {
@@ -1994,7 +1994,7 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
     {
         t_fpu_state fpu = grid_state.FPU_state[i];
         if (((fpu.state == FPST_READY_FORWARD)
-             || (fpu.state == FPST_READY_BACKWARD)
+             || (fpu.state == FPST_READY_REVERSE)
              || (fpu.state == FPST_RESTING))
             && fpu.waveform_valid
             && fpuset[i])
@@ -2145,7 +2145,7 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
     {
         t_fpu_state fpu = grid_state.FPU_state[i];
         if (((fpu.state == FPST_READY_FORWARD)
-             || (fpu.state == FPST_READY_BACKWARD)
+             || (fpu.state == FPST_READY_REVERSE)
              || (fpu.state == FPST_RESTING))
             && fpu.waveform_valid
             && fpuset[i])
@@ -2890,8 +2890,8 @@ const char * str_fpu_state(const E_FPU_STATE state)
     case FPST_READY_FORWARD :
         return "READY_FORWARD";
         break;
-    case FPST_READY_BACKWARD:
-        return "READY_BACKWARD";
+    case FPST_READY_REVERSE:
+        return "READY_REVERSE";
         break;
     case FPST_MOVING        :
         return "MOVING";

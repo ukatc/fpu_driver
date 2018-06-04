@@ -731,7 +731,7 @@ READY\_FORWARD & The FPU has successfully been configured with a waveform
 and is ready to move in the forward
   direction of the waveform table.\\
 \hline
-READY\_BACKWARD& The FPU is ready to move backwards along the
+READY\_REVERSE& The FPU is ready to move in reverse direction along the
   waveform table.\\
 \hline
 MOVING        & The FPU is currently moving.\\
@@ -2359,7 +2359,7 @@ table will be configured.
   \end{minted}
   starts the movement of all FPUs for which a valid wavetable was
   configured, and which are in either the state
-  \texttt{READY\_FORWARD} or \texttt{READY\_BACKWARD}. The command
+  \texttt{READY\_FORWARD} or \texttt{READY\_REVERSE}. The command
   blocks until this movement has completed, or until an error
   occurs. Depending on the individual FPU state, the movement will be
   forward or backward, where ``forward'' means that increasing step
@@ -2396,7 +2396,7 @@ state of one FPU which was stopped, but might not contain the final
 positions and states of all FPUs.
 
 The command requires the FPUs to be in state \texttt{READY\_FORWARD}
-or \texttt{READY\_BACKWARD}, and on normal completion will leave FPUs
+or \texttt{READY\_REVERSE}, and on normal completion will leave FPUs
 in the state \texttt{RESTING}. In case of an error, the FPUs will be
 in state \texttt{ABORTED} or \texttt{OBSTACLE\_ERROR}.
 Section~\ref{sec:recovery} on page~\pageref{sec:recovery} explains how
@@ -2413,10 +2413,10 @@ such a condition is resolved.
 The method \texttt{FpuGridDriver.reverseMotion(fpu\_state)} requires
 that a valid waveform table is present and that FPUs are either in
 \texttt{READY\_FORWARD} or \texttt{RESTING} state
-(\texttt{READY\_BACKWARD} is accepted, too, but the command will have
+(\texttt{READY\_REVERSE} is accepted, too, but the command will have
 no effect). It configures the FPU so that on the next
 \texttt{executeMotion} command, the waveforms will be executed in
-reverse direction, and puts the FPUs into \texttt{READY\_BACKWARD}
+reverse direction, and puts the FPUs into \texttt{READY\_REVERSE}
 state. This is used to return FPUs close to the datum position.
 \end{sloppypar}
 
@@ -2436,7 +2436,7 @@ state.
 \begin{sloppypar}
 The method \texttt{FpuGridDriver.repeatMotion(fpu\_state)} requires
 that a valid waveform table is present and that FPUs are either in
-\texttt{READY\_BACKWARD} or \texttt{RESTING} state
+\texttt{READY\_REVERSE} or \texttt{RESTING} state
 (\texttt{READY\_FORWARD} is accepted, too, but the command will have
 no effect). It configures the FPU so that on the next
 \texttt{executeMotion} command, the waveforms will be executed in
