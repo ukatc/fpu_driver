@@ -5,12 +5,16 @@ positions and calls a measurement function at each position.
 """
 
 import time
+import os
+import readline
 import argparse
+
 import numpy
 from numpy import random, asarray, zeros, ones
 
 import FpuGridDriver
-from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST, GatewayAddress
+from FpuGridDriver import (TEST_GATEWAY_ADRESS_LIST, GatewayAddress,
+                           SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE)
 from fpu_commands import *
 
 
@@ -183,7 +187,11 @@ def initialize_FPU(args):
     # We monitor the FPU grid by a variable which is
     # called grid_state, and reflects the state of
     # all FPUs.
+
     grid_state = gd.getGridState()
+    
+    gd.pingFPUs(grid_state)
+    
 
     if args.resetFPU:
         print("resetting FPU")
@@ -192,8 +200,22 @@ def initialize_FPU(args):
 
     # Now, we issue a findDatum method. In order to know when and how
     # this command finished, we pass the grid_state variable.
+    
+    clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
+
+    while True:
+        print("setting datum parameters =", clockwise_pars)
+        print("type 'yes' if parameters are correct and safe, 'q' to exit, '<enter>' to abort")
+        resp = raw_input("?> ")
+        if resp == 'yes':
+            break
+        if resp == 'q':
+            exit(1)
+            
+        os.abort()
+    
     print("issuing findDatum:")
-    gd.findDatum(grid_state)
+    gd.findDatum(grid_state, clockwise_pars)
     print("findDatum finished")
 
     # We can use grid_state to display the starting position
