@@ -1267,16 +1267,17 @@ BOOST_PYTHON_MODULE(fpu_driver)
        be used by normal driver client code.
      */
     enum_<E_MOC_ERRCODE>("E_MOC_ERRCODE")
-    .value("_ER_OK",ER_OK)
-    .value("_ER_COLLIDE",ER_COLLIDE)
-    .value("_ER_INVALID",ER_INVALID)
-    .value("_ER_WAVENRDY",ER_WAVENRDY)
-    .value("_ER_WAVE2BIG",ER_WAVE2BIG)
-    .value("_ER_TIMING",ER_TIMING)
-    .value("_ER_M1LIMIT",ER_M1LIMIT)
-    .value("_ER_PARAM",ER_PARAM)
-    .value("_ER_OK_UNCONFIRMED",ER_OK_UNCONFIRMED)
-    .value("_ER_TIMEDOUT",ER_TIMEDOUT)
+    .value("_ER_OK", ER_OK)
+    .value("_ER_COLLIDE", ER_COLLIDE)
+    .value("_ER_INVALID", ER_INVALID)
+    .value("_ER_WAVENRDY", ER_WAVENRDY)
+    .value("_ER_WAVE2BIG", ER_WAVE2BIG)
+    .value("_ER_TIMING", ER_TIMING)
+    .value("_ER_M1LIMIT", ER_M1LIMIT)
+    .value("_ER_PARAM", ER_PARAM)
+    .value("_ER_AUTO", ER_AUTO)
+    .value("_ER_OK_UNCONFIRMED", ER_OK_UNCONFIRMED)
+    .value("_ER_TIMEDOUT", ER_TIMEDOUT)
     .export_values();
 
 

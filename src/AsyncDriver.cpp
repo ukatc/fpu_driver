@@ -679,6 +679,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
                     canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+
     LOG_CONTROL(LOG_INFO, "%18.6f : findDatum(): command successfully sent\n",
                 canlayer::get_realtime());
 
@@ -817,6 +818,23 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
     }
 
     finished = (num_moving == 0) && (! cancelled);
+
+
+    for(int i=0; i < config.num_fpus; i++)
+    {
+        if (! fpuset[i])
+        {
+            continue;
+        }
+        if ((grid_state.FPU_state[i].state == FPST_UNINITIALIZED)
+            && (grid_state.FPU_state[i].last_status == ER_AUTO))
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: DE_PROTECTION_ERROR, FPU denied automatic datum search\n",
+                        canlayer::get_realtime());
+            return DE_PROTECTION_ERROR;
+        }
+    }
+    
 
 #if (CAN_PROTOCOL_VERSION == 1)
     {

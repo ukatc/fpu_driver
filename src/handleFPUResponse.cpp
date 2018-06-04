@@ -705,6 +705,22 @@ void handleFPUResponse(const GridDriverConfig config,
                             timeout_list, count_pending);
             }
         }
+        else if (response_errcode == ER_AUTO)
+        {
+            remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+            
+            fpu.state = FPST_UNINITIALIZED;
+            fpu.alpha_was_zeroed = false;
+            fpu.beta_was_zeroed = false;
+            
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "error:"
+                   "FPU %i was not initialised, automatic datum search rejected\n",
+                   get_realtime(),
+                   fpu_id);
+            
+        }
+
         // we leave findDatum as pending command, because
         // we have to wait for the final response.
         fpu.last_updated = cur_time;

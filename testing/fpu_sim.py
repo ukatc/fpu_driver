@@ -114,6 +114,7 @@ class FPU:
         self.is_collided = False
         self.alpha_limit_breach = False
         self.at_datum = False
+        self.was_initialized = False
         self.wave_ready = False
         self.move_forward = True
         self.running_wave = False
@@ -252,6 +253,7 @@ class FPU:
         
         if (not new_switch) and old_switch:
             self.alpha_limit_breach = True
+            self.was_initialized = False
             limit_callback(self)
         
             if (newalpha + alpha_offset) < MIN_ALPHA_OFF:
@@ -277,10 +279,12 @@ class FPU:
         if ((newbeta + beta_offset) < MIN_BETA) and self.collision_protection_active :
             self.beta_steps = MIN_BETA
             self.is_collided = True
+            self.was_initialized = False
             collision_callback(self)
             raise BetaCollisionException("a beta arm collision was detected")
         elif ((newbeta + beta_offset) > MAX_BETA) and self.collision_protection_active:
             self.is_collided = True
+            self.was_initialized = False
             self.beta_steps = MAX_BETA
             collision_callback(self)
             raise BetaCollisionException("a beta arm collision was detected")
@@ -406,6 +410,7 @@ class FPU:
                     print("FPU #%i: beta datum reached" % self.fpu_id)
             if not (skip_alpha or skip_beta):
                 self.at_datum = True
+                self.was_initialized = True
                 print("FPU #%i: datum found" % self.fpu_id)
             else:
                 print("FPU #%i: partial datum operation finished" % self.fpu_id)
@@ -415,6 +420,7 @@ class FPU:
 
     def abortMotion(self, sleep):
         self.abort_wave = True
+        self.was_initialized = False
 
 
     def freeBetaCollision(self, direction):

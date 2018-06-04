@@ -91,6 +91,9 @@ ER_TIMING           = 0x07        #  step timing error (interrupt race condition
 ER_M1LIMIT          = 0x08        #  M1 Limit switch breached
 ER_M2LIMIT          = 0x09        #  no longer used
 ER_PARAM            = 0x10        #  parameter out of range
+ER_AUTO             = 0x11        #  FPU cannot datum automatically
+ER_OK_UNCONFIRMED   = 0x12        #  command will not be confirmed if OK
+ER_TIMEDOUT         = 0x13        #  command hit time-out
 
 
 # status flags
@@ -741,11 +744,38 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
     TX[6] = dummy1 = 0
     TX[7] = dummy2 = 0
 
+    flag_skip_alpha = False
+    flag_skip_beta = False
+    flag_auto_datum = False
+    flag_anti_clockwise = False
+    skip_flag = RX[1] # protocol 1 !
+    print("skip_flag= 0x%0x" % skip_flag)
+    
+    if skip_flag > 0:
+        if opts.fw_version > (1,0,0):
+            flag_skip_alpha = (skip_flag & DATUM_SKIP_ALPHA) > 0
+            flag_skip_beta = (skip_flag & DATUM_SKIP_BETA) > 0
+            
+            if opts.fw_version > (1,1,0):
+                flag_auto_datum = (skip_flag & DATUM_MODE_AUTO) > 0
+                flag_anti_clockwise = (skip_flag & DATUM_MODE_ANTI_CLOCKWISE) > 0
+            else:
+                print("WARNING: protocol version %r running, "
+                      +"ignoring mode selection flags", opts.fw_version)
+                skip_flag = skip_flag & 0x3
+        else:
+            print("WARNING: protocol version %r running,"
+                  + " ignoring arm and mode selection flags flags", opts.fw_version)
+            skip_flag = 0
+    
     
     if FPUGrid[fpu_id].is_collided:
         # only send an error message
         TX[3] = errflag = 0xff
         TX[4] = errcode = ER_COLLIDE
+    elif flag_auto_datum and (not FPUGrid[fpu_id].was_initialized):
+        TX[3] = errflag = 0xff
+        TX[4] = errcode = ER_AUTO # not initialized, reject automatic datum search
     else:
         # send confirmation and spawn findDatum method call
         TX[3] = errflag = 0
@@ -764,28 +794,6 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
 
             command_id = RX[0]
 
-            flag_skip_alpha = False
-            flag_skip_beta = False
-            flag_auto_datum = False
-            flag_anti_clockwise = False
-            skip_flag = RX[1] # protocol 1 !
-            print("skip_flag= 0x%0x" % skip_flag)
-            if skip_flag > 0:
-                if opts.fw_version > (1,0,0):
-                    flag_skip_alpha = (skip_flag & DATUM_SKIP_ALPHA) > 0
-                    flag_skip_beta = (skip_flag & DATUM_SKIP_BETA) > 0
-                    
-                    if opts.fw_version > (1,1,0):
-                        flag_auto_datum = (skip_flag & DATUM_MODE_AUTO) > 0
-                        flag_anti_clockwise = (skip_flag & DATUM_MODE_ANTI_CLOCKWISE) > 0
-                    else:
-                        print("WARNING: protocol version %r running, "
-                              +"ignoring mode selection flags", opts.fw_version)
-                        skip_flag = skip_flag & 0x3
-                else:
-                    print("WARNING: protocol version %r running,"
-                          + " ignoring arm and mode selection flags flags", opts.fw_version)
-                    skip_flag = 0
 
             # instantiate two objects which can send collision messages
             # if needed
