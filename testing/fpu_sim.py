@@ -100,7 +100,13 @@ class FPU:
         print("FPU %i initial offset: (%f, %f)" % (fpu_id, opts.alpha_offset, opts.beta_offset))
         self.aoff_steps = int(StepsPerDegreeAlpha * opts.alpha_offset)
         self.boff_steps = int(StepsPerDegreeBeta * opts.beta_offset)
-        self.serial_number = "UNKWN"
+        fname = "._FPU-%04i.sn" % self.fpu_id
+        try:
+            with open(fname,"r") as f:
+                self.serial_number = f.readline().strip("\n")
+                print("FPU %i: serial number set to %r" % (self.fpu_id, self.serial_number))
+        except:
+            self.serial_number = "UNKWN"
 
     def initialize(self, fpu_id):
         self.fpu_id = fpu_id
@@ -158,6 +164,11 @@ class FPU:
         print("FPU #%i: writing serial number '%s' to NVRAM" % (self.fpu_id, serial_number))
         assert(len(serial_number) <= 5)
         self.serial_number = serial_number
+        fname = "._FPU-%04i.sn" % self.fpu_id
+        with open(fname,"w") as f:
+            f.write("%s\n" % self.serial_number)
+            
+        
 
     def readSerialNumber(self):
         print("FPU #%i: reading serial number '%s' from NVRAM" % (self.fpu_id, self.serial_number))
