@@ -48,8 +48,10 @@ if CAN_PROTOCOL_VERSION == 1:
     # the next two are combined in version 2
     CCMD_GET_ERROR_ALPHA                  = 16 # get residue count at last datum hit
     CCMD_GET_ERROR_BETA                   = 17 # get residue count at last datum hit
-    
-    NUM_CAN_COMMANDS = 18
+
+    CCMD_READ_SERIAL_NUMBER               = 18 # read serial number from NVRAM
+    CCMD_WRITE_SERIAL_NUMBER              = 19 # write serial number to NVRAM
+    NUM_CAN_COMMANDS = 20
     
     # code 101 unused 
     # code 102 unused 
@@ -68,16 +70,18 @@ else:
     CCMD_FREE_ALPHA_LIMIT_BREACH          = 19 # untangle alpha arm
     CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    = 20 # re-enable limit switch
     CCMD_SET_TIME_STEP                    = 21 # set movement time interval
-    CCMD_SET_STEPS_PER_FRAME               = 22 # set minimum step frequency
+    CCMD_SET_STEPS_PER_FRAME              = 22 # set minimum step frequency
     CCMD_ENABLE_MOVE                      = 23 # set minimum step frequency
-
-    CMSG_FINISHED_MOTION               = 23 # executeMotion finished
-    CMSG_FINISHED_DATUM                = 24 # findDatum finished
-    CMSG_WARN_COLLISION_BETA           = 25 # collision at beta arm
-    CMSG_WARN_LIMIT_ALPHA              = 26 # limit switch at alpha arm
-    CMSG_WARN_TIMEOUT_DATUM            = 27 # datum search time out
+    CCMD_READ_SERIAL_NUMBER               = 24 # read serial number from NVRAM
+    CCMD_WRITE_SERIAL_NUMBER              = 25 # write serial number to NVRAM
+                                          
+    CMSG_FINISHED_MOTION                  = 26 # executeMotion finished
+    CMSG_FINISHED_DATUM                   = 27 # findDatum finished
+    CMSG_WARN_COLLISION_BETA              = 28 # collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA                 = 29 # limit switch at alpha arm
+    CMSG_WARN_TIMEOUT_DATUM               = 30 # datum search time out
     
-    NUM_CAN_COMMANDS = 24
+    NUM_CAN_COMMANDS = 30
 
 
 # error codes
@@ -1047,6 +1051,73 @@ def handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX
 
 
+def handle_readSerialNumber(fpu_id, fpu_adr_bus, bus_adr, RX):
+
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [0] * 8
+    TX[0] = fpu_adr_bus
+
+    command_id = RX[0]
+
+    TX[0] = tx0_fpu_adr_bus = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id])
+    sn = FPUGrid[fpu_id].readSerialNumber()
+    assert(len(sn) <= 5)
+    for k in range(len(sn)):
+        TX[3+k] = ord(sn[k])
+
+
+    return TH + TX 
+
+def handle_writeSerialNumber(fpu_id, fpu_adr_bus, bus_adr, RX):
+    command_id = RX[0]
+
+    # CAN header for gateway
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    serial_number = ""
+    chrs = RX[1:6]
+    for c in chrs:
+        if c == 0:
+            break
+        serial_number += chr(c)
+
+
+    try:
+        FPUGrid[fpu_id].writeSerialNumber(serial_number)
+        errflag = 0
+        ecode = 0
+    except RuntimeError:
+        errflag = 0xff
+        ecode = 1
+    
+    TX = [ 0 ] * 8
+    
+    TX[0] = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id])
+    TX[3] = errflag
+    TX[4] = ecode
+
+
+    
+    return TH + TX
+
+
 def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args):
     verbose = args.debug
     if command_id == CCMD_PING_FPU                         :
@@ -1104,6 +1175,12 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
         elif command_id == CCMD_GET_ERROR_BETA                   :
             resp = handle_GetErrorBeta(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
             
+        elif command_id == CCMD_READ_SERIAL_NUMBER               :
+            resp = handle_readSerialNumber(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+            
+        elif command_id == CCMD_WRITE_SERIAL_NUMBER               :
+            resp = handle_writeSerialNumber(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+            
         else:
             resp = handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     else:
@@ -1127,6 +1204,10 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
             pass
         elif command_id == CCMD_ENABLE_MOVE                      :
             pass        
+        elif command_id == CCMD_READ_SERIAL_NUMBER               :
+            pass            
+        elif command_id == CCMD_WRITE_SERIAL_NUMBER               :
+            pass
         else:
             resp = handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
