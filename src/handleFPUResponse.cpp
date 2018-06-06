@@ -939,6 +939,32 @@ void handleFPUResponse(const GridDriverConfig config,
         break;
 
 
+    case CCMD_WRITE_SERIAL_NUMBER:
+        fpu.ping_ok = true;
+
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        fpu.last_updated = cur_time;
+        break;
+        
+    case CCMD_READ_SERIAL_NUMBER  :
+        // clear time-out flag
+        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+        // ignore the error code, it is not set in protocol V1, for space reasons
+        //if (response_errcode == 0)
+        {
+            memset(fpu.serial_number, 0, sizeof(fpu.serial_number));
+            static_assert(DIGITS_SERIAL_NUMBER < sizeof(fpu.serial_number), "buffer overflow");
+            strncpy(fpu.serial_number, (char*) (data + 3), DIGITS_SERIAL_NUMBER);
+            
+            LOG_RX(LOG_VERBOSE, "%18.6f : RX : "
+               "Serial number for FPU %i is reported as %s\n",
+               get_realtime(),
+                   fpu_id,
+                   fpu.serial_number);
+        }
+        fpu.last_updated = cur_time;
+        break;
+        
     case CCMD_NO_COMMAND      :
     default:
         // invalid command, ignore

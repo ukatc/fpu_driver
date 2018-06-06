@@ -17,6 +17,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <cassert>
 #include <unistd.h>
+#include <string.h>
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -40,11 +41,13 @@
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/PingFPUCommand.h"
+#include "canlayer/commands/ReadRegisterCommand.h"
+#include "canlayer/commands/ReadSerialNumberCommand.h"
 #include "canlayer/commands/RepeatMotionCommand.h"
 #include "canlayer/commands/ResetFPUCommand.h"
 #include "canlayer/commands/ReverseMotionCommand.h"
 #include "canlayer/commands/SetUStepLevelCommand.h"
-#include "canlayer/commands/ReadRegisterCommand.h"
+#include "canlayer/commands/WriteSerialNumberCommand.h"
 
 
 namespace mpifps
@@ -3262,6 +3265,261 @@ E_DriverErrCode AsyncDriver::getFirmwareVersionAsync(t_grid_state& grid_state,
                 canlayer::get_realtime());
     return DE_OK;
 
+}
+
+E_DriverErrCode AsyncDriver::readSerialNumbersAsync(t_grid_state& grid_state,
+        E_GridState& state_summary, t_fpuset const &fpuset)
+{
+
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
+        return DE_NO_CONNECTION;
+    }
+
+
+
+    int num_skipped = 0;
+    unique_ptr<ReadSerialNumberCommand> can_command;
+    for (int i=0; i < config.num_fpus; i++)
+    {
+        if (!fpuset[i])
+        {
+            num_skipped++;
+            continue;
+        }
+        can_command = gateway.provideInstance<ReadSerialNumberCommand>();
+        assert(can_command);
+        bool broadcast = false;
+        can_command->parametrize(i, broadcast);
+        // send the command (the actual sending happens
+        // in the TX thread in the background).
+        CommandQueue::E_QueueState qstate;
+        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        qstate = gateway.sendCommand(i, cmd);
+        assert(qstate == CommandQueue::QS_OK);
+
+    }
+
+    // We do not expect the locked FPUs to respond.
+    // FIXME: This needs to be documented and checked
+    // with the firmware protocol.
+    int num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED] - num_skipped;
+
+    // fpus are now responding in parallel.
+    //
+    // As long as any fpus need to respond, wait for
+    // them to finish.
+    while ( (num_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        // as we do not effect any change on the grid,
+        // we need to wait for any response event,
+        // and filter out whether we are actually ready.
+
+        ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        double max_wait_time = -1;
+        bool cancelled = false;
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state, max_wait_time, cancelled);
+
+        // get fresh count of pending fpus.
+        // The reason we add the unsent command is that
+        // the Tx thread might not have had opportunity
+        // to send all the commands.
+        num_pending = (grid_state.count_pending + grid_state.num_queued);
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
+        return DE_NO_CONNECTION;
+    }
+
+
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
+
+        logGridState(config.logLevel, grid_state);
+
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+
+    logGridState(config.logLevel, grid_state);
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : readSerialNumbers(): retrieved serial numbers\n",
+                canlayer::get_realtime());
+    for(int i=0; i < config.num_fpus; i++)
+    {
+        const double t = canlayer::get_realtime(); 
+        if (fpuset[i])
+        {
+            LOG_CONTROL(LOG_INFO, "%18.6f : FPU %i : SN = %s\n",
+                        t, i, grid_state.FPU_state[i].serial_number);
+        }
+    }
+    return DE_OK;
+
+}
+
+
+E_DriverErrCode AsyncDriver::writeSerialNumberAsync(int fpu_id, const char serial_number[],
+        t_grid_state& grid_state,
+        E_GridState& state_summary)
+{
+    // first, get current state and time-out count of the grid
+    state_summary = gateway.getGridState(grid_state);
+
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
+        return DE_NO_CONNECTION;
+    }
+
+    if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+    {
+        // the FPU id is out of range
+        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_INVALID_FPU_ID, FPU id out of range\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_FPU_ID;
+    }
+
+    const int sn_len = strnlen(serial_number, LEN_SERIAL_NUMBER);
+    if (sn_len == LEN_SERIAL_NUMBER)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_INVALID_PAR_VALUE,"
+                    " serial number is too long (length %i, only %i characters allowed)\n",
+                    canlayer::get_realtime(), sn_len, LEN_SERIAL_NUMBER-1);
+        
+        return DE_INVALID_PAR_VALUE;
+    }
+    // check that we have ASCII printable chars only
+    for(int i = 0; i < sn_len; i++)
+    {
+        const char ch = serial_number[i];
+        if ((ch < 32) || (ch > 126))
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_INVALID_PAR_VALUE,"
+                        " only ASCII printable characters allowed\n",
+                        canlayer::get_realtime());
+            return DE_INVALID_PAR_VALUE;
+        }
+    }
+
+    t_fpuset fpuset;
+    for(int i = 0; i < config.num_fpus; i++)
+    {
+        fpuset[i]=true;
+    }
+    // get movement state
+    E_DriverErrCode ecode = pingFPUsAsync(grid_state, state_summary, fpuset);
+
+    if (ecode != DE_OK)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : pingFPUs failed, aborting writeSerialNumber() command \n",
+                    canlayer::get_realtime());
+        return ecode;
+    }
+
+    // get all existing numbers
+    ecode = readSerialNumbersAsync(grid_state, state_summary, fpuset);
+
+    if (ecode != DE_OK)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers failed, aborting writeSerialNumber() command \n",
+                    canlayer::get_realtime());
+        return ecode;
+    }
+
+    // make sure no FPU is moving or finding datum
+
+    if ((grid_state.Counts[FPST_MOVING] > 0)
+        || (grid_state.Counts[FPST_DATUM_SEARCH] > 0))
+    {
+        // We do not allow writing the serial number when there are
+        // moving FPUs, because it can take a long time.
+
+        logGridState(config.logLevel, grid_state);
+
+        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_STILL_BUSY, "
+                    "FPUs are moving, won't write serial number\n",
+                    canlayer::get_realtime());
+        return DE_STILL_BUSY;
+    }
+
+    // make sure no other FPU in the grid has a serial number equal to
+    // the one we are flashing
+    for (int i=0; i < config.num_fpus; i++)
+    {
+        if (i == fpu_id)
+        {
+            // we allow writing the same number again to the same FPU
+            continue;
+        }
+        if ( strncmp(grid_state.FPU_state[i].serial_number,
+                     serial_number,
+                     LEN_SERIAL_NUMBER) == 0)
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_DUPLICATE_SERIAL_NUMBER, "
+                        "Serial number is already used by another FPU in the grid\n",
+                        canlayer::get_realtime());
+            return DE_DUPLICATE_SERIAL_NUMBER;
+            
+        }
+    }
+
+
+    unique_ptr<WriteSerialNumberCommand> can_command;
+    can_command = gateway.provideInstance<WriteSerialNumberCommand>();
+    can_command->parametrize(fpu_id, serial_number);
+    unique_ptr<I_CAN_Command> cmd(can_command.release());
+    gateway.sendCommand(fpu_id, cmd);
+
+
+    int cnt_pending = 1;
+
+    while ( (cnt_pending > 0) && ((grid_state.driver_state == DS_CONNECTED)))
+    {
+        double max_wait_time = -1;
+        bool cancelled = false;
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state, max_wait_time, cancelled);
+
+        cnt_pending = (grid_state.count_pending + grid_state.num_queued);
+    }
+
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_NO_CONNECTION, connection was lost\n",
+                    canlayer::get_realtime());
+        return DE_NO_CONNECTION;
+    }
+
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+
+    logGridState(config.logLevel, grid_state);
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : writeSerialNumber(): FPU %i: serial number '%s' successfully written to FPU\n",
+                canlayer::get_realtime(), fpu_id, serial_number);
+
+    return DE_OK;
 }
 
 

@@ -36,11 +36,13 @@
 #include "canlayer/commands/GetStepsAlphaCommand.h"
 #include "canlayer/commands/GetStepsBetaCommand.h"
 #include "canlayer/commands/PingFPUCommand.h"
+#include "canlayer/commands/ReadRegisterCommand.h"
+#include "canlayer/commands/ReadSerialNumberCommand.h"
 #include "canlayer/commands/RepeatMotionCommand.h"
 #include "canlayer/commands/ResetFPUCommand.h"
 #include "canlayer/commands/ReverseMotionCommand.h"
 #include "canlayer/commands/SetUStepLevelCommand.h"
-#include "canlayer/commands/ReadRegisterCommand.h"
+#include "canlayer/commands/WriteSerialNumberCommand.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -113,7 +115,9 @@ E_DriverErrCode CommandPool::initialize()
             case CCMD_SET_USTEP_LEVEL   :
             case CCMD_FIND_DATUM        :
             case CCMD_RESET_STEPCOUNTER :
-            case CCMD_READ_REGISTER    :
+            case CCMD_READ_REGISTER     :
+            case CCMD_READ_SERIAL_NUMBER   :
+            case CCMD_WRITE_SERIAL_NUMBER  :
                 capacity = cap_individual;
                 break;
 
@@ -208,6 +212,16 @@ E_DriverErrCode CommandPool::initialize()
 
                 case CCMD_READ_REGISTER        :
                     ptr.reset(new ReadRegisterCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+
+                case CCMD_READ_SERIAL_NUMBER        :
+                    ptr.reset(new ReadSerialNumberCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+
+                case CCMD_WRITE_SERIAL_NUMBER        :
+                    ptr.reset(new WriteSerialNumberCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
 

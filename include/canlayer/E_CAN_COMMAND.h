@@ -50,7 +50,7 @@ enum E_CAN_COMMAND
     CCMD_READ_REGISTER                    = 6, // read register - unused
     CCMD_PING_FPU                         = 7, // check connectivity
     CCMD_RESET_FPU                        = 8, // reset MCU
-    CCMD_FIND_DATUM                  = 9, // "automatic" datum search
+    CCMD_FIND_DATUM                       = 9, // "automatic" datum search
     CCMD_RESET_STEPCOUNTER                = 10, // only for debugging
     CCMD_REPEAT_MOTION                    = 11, // re-use last waveform
     CCMD_REVERSE_MOTION                   = 12, // invert last waveform
@@ -60,10 +60,12 @@ enum E_CAN_COMMAND
 
 #if (CAN_PROTOCOL_VERSION == 1)
     // the next two are combined in version 2
-    CCMD_GET_ERROR_ALPHA                  = 16, // get residue count at last datum hit
-    CCMD_GET_ERROR_BETA                   = 17, // get residue count at last datum hit
+    CCMD_GET_ERROR_ALPHA                  = 16, // get residue alpha count at last datum hit
+    CCMD_GET_ERROR_BETA                   = 17, // get residue beta count at last datum hit
+    CCMD_READ_SERIAL_NUMBER               = 18, // read serial number from NVRAM
+    CCMD_WRITE_SERIAL_NUMBER              = 19, // write serial number to NVRAM
 
-    NUM_CAN_COMMANDS = 18,
+    NUM_CAN_COMMANDS = 20,
 #else
     // commands which are not yet implemented
     CCMD_GET_COUNTER_DEVIATION            = 16, // get alpha and beta residue count
@@ -74,8 +76,10 @@ enum E_CAN_COMMAND
     CCMD_SET_TICKS_PER_SEGMENT            = 21, // set movement time interval
     CCMD_SET_STEPS_PER_SEGMENT            = 22, // set minimum step frequency
     CCMD_ENABLE_MOVE                      = 23, // leave aborted state
+    CCMD_READ_SERIAL_NUMBER               = 24, // read serial number from NVRAM
+    CCMD_WRITE_SERIAL_NUMBER              = 25, // write serial number to NVRAM
 
-    NUM_CAN_COMMANDS = 24,
+    NUM_CAN_COMMANDS = 26,
 
 #endif
 
@@ -91,11 +95,11 @@ enum E_CAN_COMMAND
     CMSG_WARN_LIMIT_ALPHA    = 106, // limit switch at alpha arm
     CMSG_WARN_RACE           = 107, // step timing error
 #else
-    CMSG_FINISHED_MOTION     = 23, // executeMotion finished
-    CMSG_FINISHED_DATUM      = 24, // findDatum finished
-    CMSG_WARN_COLLISION_BETA = 25, // collision at beta arm
-    CMSG_WARN_LIMIT_ALPHA    = 26, // limit switch at alpha arm
-    CMSG_WARN_TIMEOUT_DATUM  = 27, // datum search time out
+    CMSG_FINISHED_MOTION     = 26, // executeMotion finished
+    CMSG_FINISHED_DATUM      = 27, // findDatum finished
+    CMSG_WARN_COLLISION_BETA = 28, // collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA    = 29, // limit switch at alpha arm
+    CMSG_WARN_TIMEOUT_DATUM  = 30, // datum search time out
 #endif
 
 };

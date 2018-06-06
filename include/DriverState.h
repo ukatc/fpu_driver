@@ -169,6 +169,8 @@ enum E_DriverErrCode
     // passed parameter value is invalid
     DE_INVALID_PAR_VALUE = 302,
 
+    // duplicate serial number
+    DE_DUPLICATE_SERIAL_NUMBER = 303,
 
     /***************************************/
     /* Connection failures */

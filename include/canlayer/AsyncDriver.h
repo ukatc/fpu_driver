@@ -205,6 +205,12 @@ protected:
                                uint8_t (&min_firmware_version)[3],
                                int &min_firmware_fpu) const;
 
+    E_DriverErrCode readSerialNumbersAsync(t_grid_state& grid_state,
+                                           E_GridState& state_summary, t_fpuset const &fpuset);
+
+    E_DriverErrCode writeSerialNumberAsync(int fpu_id, const char serial_number[],
+                                           t_grid_state& grid_state,
+                                           E_GridState& state_summary);
 private:
 
     int num_gateways;

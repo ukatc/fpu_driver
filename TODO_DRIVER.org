@@ -195,28 +195,30 @@ when the internal state struct is used.
 *** DONE discern SocketFailure from FPUTimeoutError
 *** DONE extend spec to autoDatum and firmwareVersion flags
 *** DONE control direction of datum command and add automatic datum flag
-**** TODO test denial of auto with firmware < 1.2
+**** DONE test denial of auto with firmware < 1.2
 **** DONE extend simfirmware to ignore beta, mirror flags
 **** DONE test DASEL_ALPHA, DASEL_BOTH
-**** TODO test SEARCH_AUTO, SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE
-**** TODO test protection flag (switch off denial)
+**** DONE test SEARCH_AUTO, SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE
+**** DONE test protection flag (switch off denial)
 **** DONE add readRegister command
 **** DONE add  readFirmwareVersion command
 **** DONE test firmware version in findDatum command
-**** TODO document orientation ~ steps in tutorial
-**** TODO document new exceptions for ProtectionError, TimeoutError
-**** TODO document changes to findDatum
-**** TODO document readRegister, getVersionInformation
+**** DONE document orientation ~ steps in tutorial
+**** DONE document new exceptions for ProtectionError, TimeoutError
+**** DONE document changes to findDatum
+**** DONE document readRegister, getVersionInformation
 *** DONE add addressing a subset of FPUs 
 *** DONE rename *_BACKWARD to $_REVERSE
 *** DONE test AutoDatum
-*** TODO pack release 0.6.0
+*** DONE pack release 0.6.0
+*** TODO add reading/writing serial number
 *** TODO add reporting number of movements
 *** TODO add reporting of total number of steps
 ** TODO make Thorlabs automation available to Python
 ** TODO  clean-up of version 1 code
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList
+*** TODO Unit test of TimeOutList
 *** TODO run short stress test of firmware with CAN command logging
 *** TODO Refactor duplicate code in command header encoding
 *** TODO split SBuffer in independent read buffer and write buffer ?   

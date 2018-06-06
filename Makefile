@@ -39,6 +39,8 @@ _DEPS = DriverState.h E_GridState.h FPUState.h GridDriver.h		\
 	canlayer/commands/ResetFPUCommand.h				\
 	canlayer/commands/ReverseMotionCommand.h			\
 	canlayer/commands/SetUStepLevelCommand.h			\
+	canlayer/commands/WriteSerialNumberCommand.h			\
+	canlayer/commands/ReadSerialNumberCommand.h			\
 	canlayer/sync_utils.h canlayer/time_utils.h
 
 

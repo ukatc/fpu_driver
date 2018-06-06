@@ -15,6 +15,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <string.h>
+#include <iostream>
+#include <string>
+#include <vector>
+
 #include <boost/python/class.hpp>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
@@ -23,12 +28,10 @@
 #include <boost/python/list.hpp>
 #include <boost/python/dict.hpp>
 #include <boost/python/tuple.hpp>
+#include <boost/python/str.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/exception_translator.hpp>
-#include <iostream>
-#include <string>
-#include <vector>
 
 #include "../../include/canlayer/E_CAN_COMMAND.h"
 #include "../../include/T_GridState.h"
@@ -66,6 +69,7 @@ using boost::python::extract;
 using boost::python::list;
 using boost::python::dict;
 using boost::python::tuple;
+using boost::python::str;
 
 
 std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
@@ -162,6 +166,7 @@ public:
     int fw_date_year;
     int fw_date_month;
     int fw_date_day;
+    std::string serial_number;
 
     WrapFPUState() {}
 
@@ -205,6 +210,8 @@ public:
         fw_date_month             =  fpu_state.firmware_date[1];
         fw_date_day               =  fpu_state.firmware_date[2];
 
+        assert(strlen(fpu_state.serial_number) < LEN_SERIAL_NUMBER);
+        serial_number = std::string(fpu_state.serial_number);
     }
 
     bool operator==(const  WrapFPUState &a) const
@@ -225,44 +232,45 @@ public:
         */
 
         s << "{ 'last_updated' : " << s.precision(10) << (1.0 * fpu.last_updated.tv_sec
-                + 1.0e-9 * fpu.last_updated.tv_nsec)
-          << " 'pending_command_set' : " << fpu.pending_command_set
-          << " 'pending_command_set' : " << fpu.pending_command_set
+                                                          + 1.0e-9 * fpu.last_updated.tv_nsec) << ", "
+          << " 'pending_command_set' : " << fpu.pending_command_set << ", "
+          << " 'pending_command_set' : " << fpu.pending_command_set << ", "
           << " 'state' : ";
-        s << fpu.state
-          << " 'last_command' : " << fpu.last_command
-          << " 'last_status' : " << fpu.last_status
-          << " 'alpha_steps' : " << fpu.alpha_steps
-          << " 'beta_steps' : " << fpu.beta_steps
-          << " 'alpha_deviation' : " << fpu.alpha_deviation
-          << " 'beta_deviation' : " << fpu.beta_deviation
-          << " 'timeout_count' : " << fpu.timeout_count
-          << " 'step_timing_errcount' : " << fpu.step_timing_errcount
-          << " 'direction_alpha' : " << fpu.direction_alpha
-          << " 'direction_beta' : " << fpu.direction_beta
-          << " 'num_waveform_segments' : " << fpu.num_waveform_segments
-          << " 'num_active_timeouts' : " << fpu.num_active_timeouts
-          << " 'sequence_number' : " << fpu.sequence_number
-          << " 'ping_ok' : " << fpu.ping_ok
-          << " 'movement_complete' : " << fpu.movement_complete
-          << " 'alpha_was_zeroed' : " << fpu.alpha_was_zeroed
-          << " 'beta_was_zeroed' : " << fpu.beta_was_zeroed
-          << " 'is_locked' : " << fpu.is_locked
-          << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active
-          << " 'beta_datum_switch_active' : " << fpu.beta_datum_switch_active
-          << " 'at_alpha_limit' : " << fpu.at_alpha_limit
-          << " 'beta_collision' : " << fpu.beta_collision
-          << " 'waveform_valid' : " << fpu.waveform_valid
-          << " 'waveform_ready' : " << fpu.waveform_ready
-          << " 'waveform_reversed' : " << fpu.waveform_reversed
-          << " 'register_address' : " << std::hex << std::showbase << fpu.register_address
-          << " 'register_value' : " << fpu.register_value << std::dec << std::noshowbase
-          << " 'firmware_version' : " << fpu.fw_version_major
-          << "." << fpu.fw_version_minor
-          << "." << fpu.fw_version_patch
-          << " 'firmware_date' : " << fpu.fw_date_year
+        s << fpu.state << ", "
+          << " 'last_command' : " << fpu.last_command << ", "
+          << " 'last_status' : " << fpu.last_status << ", "
+          << " 'alpha_steps' : " << fpu.alpha_steps << ", "
+          << " 'beta_steps' : " << fpu.beta_steps << ", "
+          << " 'alpha_deviation' : " << fpu.alpha_deviation << ", "
+          << " 'beta_deviation' : " << fpu.beta_deviation << ", "
+          << " 'timeout_count' : " << fpu.timeout_count << ", "
+          << " 'step_timing_errcount' : " << fpu.step_timing_errcount << ", "
+          << " 'direction_alpha' : " << fpu.direction_alpha << ", "
+          << " 'direction_beta' : " << fpu.direction_beta << ", "
+          << " 'num_waveform_segments' : " << fpu.num_waveform_segments << ", "
+          << " 'num_active_timeouts' : " << fpu.num_active_timeouts << ", "
+          << " 'sequence_number' : " << fpu.sequence_number << ", "
+          << " 'ping_ok' : " << fpu.ping_ok << ", "
+          << " 'movement_complete' : " << fpu.movement_complete << ", "
+          << " 'alpha_was_zeroed' : " << fpu.alpha_was_zeroed << ", "
+          << " 'beta_was_zeroed' : " << fpu.beta_was_zeroed << ", "
+          << " 'is_locked' : " << fpu.is_locked << ", "
+          << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active << ", "
+          << " 'beta_datum_switch_active' : " << fpu.beta_datum_switch_active << ", "
+          << " 'at_alpha_limit' : " << fpu.at_alpha_limit << ", "
+          << " 'beta_collision' : " << fpu.beta_collision << ", "
+          << " 'waveform_valid' : " << fpu.waveform_valid << ", "
+          << " 'waveform_ready' : " << fpu.waveform_ready << ", "
+          << " 'waveform_reversed' : " << fpu.waveform_reversed << ", "
+          << " 'register_address' : " << std::hex << std::showbase << fpu.register_address << ", "
+          << " 'register_value' : " << fpu.register_value << std::dec << std::noshowbase << ", "
+          << " 'firmware_version' : " << fpu.fw_version_major 
+          << "." << fpu.fw_version_minor 
+          << "." << fpu.fw_version_patch << ", "
+          << " 'firmware_date' : '" << fpu.fw_date_year
           << "-" << fpu.fw_date_month
-          << "-" << fpu.fw_date_day
+          << "-" << fpu.fw_date_day <<"', "
+          << " 'serial_number' : \"" << fpu.serial_number << "\", "
           << " }";
         return s.str();
     }
@@ -428,6 +436,7 @@ void translate_driver_error(FPUDriverException const& e)
 
     case DE_INVALID_FPU_ID :
     case DE_INVALID_PAR_VALUE :
+    case DE_DUPLICATE_SERIAL_NUMBER:
         PyErr_SetString(InvalidParameterExceptionTypeObj, e.what());
         break;
 
@@ -647,6 +656,11 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_INVALID_PAR_VALUE:
         throw FPUDriverException("DE_INVALID_PAR_VALUE: The passed parameter value is invalid.",
                                  DE_INVALID_PAR_VALUE);
+        break;
+
+    case DE_DUPLICATE_SERIAL_NUMBER:
+        throw FPUDriverException("DE_DUPLICATE_SERIAL_NUMBER: The passed serial number is already in use.",
+                                 DE_DUPLICATE_SERIAL_NUMBER);
         break;
 
     case DE_FIRMWARE_UNIMPLEMENTED:
@@ -1168,6 +1182,25 @@ public:
         return ecode;
     }
 
+    E_DriverErrCode wrap_readSerialNumbers(WrapGridState& grid_state, list& fpu_list)
+    {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = readSerialNumbers(grid_state, fpuset);
+        checkDriverError(ecode);
+        return ecode;
+    }
+
+    E_DriverErrCode wrap_writeSerialNumber(int fpu_id, str serial_number,
+                                           WrapGridState& grid_state)
+    {
+        std::string cpp_serial_number =  extract<std::string>(serial_number);
+
+        E_DriverErrCode ecode = writeSerialNumber(fpu_id, cpp_serial_number.c_str(), grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
 
 };
@@ -1366,6 +1399,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_INVALID_FPU_STATE", DE_INVALID_FPU_STATE)
     .value("DE_PROTECTION_ERROR", DE_PROTECTION_ERROR)
     .value("DE_INVALID_PAR_VALUE", DE_INVALID_PAR_VALUE)
+    .value("DE_DUPLICATE_SERIAL_NUMBER", DE_DUPLICATE_SERIAL_NUMBER)
     .value("DE_INVALID_CONFIG", DE_INVALID_CONFIG)
     .value("DE_INVALID_DRIVER_STATE", DE_INVALID_DRIVER_STATE)
     .value("DE_OUT_OF_MEMORY", DE_OUT_OF_MEMORY)
@@ -1457,6 +1491,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("fw_date_month", &WrapFPUState::fw_date_month)
     .def_readonly("fw_date_day", &WrapFPUState::fw_date_day)
     .def_readonly("register_value", &WrapFPUState::register_value)
+    .def_readonly("serial_number", &WrapFPUState::serial_number)
     .def("__repr__", &WrapFPUState::to_repr)
     ;
 
@@ -1525,6 +1560,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("enableBetaCollisionProtection", &WrapGridDriver::wrap_enableBetaCollisionProtection)
     .def("lockFPU", &WrapGridDriver::lockFPU)
     .def("unlockFPU", &WrapGridDriver::unlockFPU)
+    .def("writeSerialNumber", &WrapGridDriver::wrap_writeSerialNumber)
+    .def("readSerialNumbers", &WrapGridDriver::wrap_readSerialNumbers)
     .def_readonly("NumFPUs", &WrapGridDriver::getNumFPUs)
     ;
 

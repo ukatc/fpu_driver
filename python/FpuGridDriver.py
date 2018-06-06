@@ -246,6 +246,12 @@ class GridDriver:
     def getCounterDeviation(self, gs, fpuset=[]):
         return self._gd.getCounterDeviation(gs, fpuset)
 
+    def readSerialNumbers(self, gs, fpuset=[]):
+        return self._gd.readSerialNumbers(gs, fpuset)
+    
+    def writeSerialNumber(self, fpu_id, serial_number,  gs):
+        return self._gd.writeSerialNumber(fpu_id, serial_number, gs)
+    
     def configMotion(self, wavetable, gs, fpuset=[], check_protection=True):
         """ 
         Configures movement by sending a waveform table to a group of FPUs.

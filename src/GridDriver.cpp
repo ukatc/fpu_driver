@@ -430,6 +430,32 @@ E_DriverErrCode GridDriver::setUStepLevel(int ustep_level, t_grid_state& grid_st
     return status;
 }
 
+E_DriverErrCode GridDriver::writeSerialNumber(int fpu_id, const char serial_number[],
+                                              t_grid_state& grid_state)
+{
+    E_GridState state_summary;
+    E_DriverErrCode status;
+
+    pthread_mutex_lock(&command_creation_mutex);
+    status = writeSerialNumberAsync(fpu_id, serial_number, grid_state, state_summary);
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return status;
+}
+
+E_DriverErrCode GridDriver::readSerialNumbers(t_grid_state& grid_state, t_fpuset const &fpuset)
+{
+    E_GridState state_summary;
+    E_DriverErrCode status;
+
+    pthread_mutex_lock(&command_creation_mutex);
+    status = readSerialNumbersAsync(grid_state, state_summary, fpuset);
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return status;
+}
+
+
 
 int GridDriver::getNumFPUs() const
 {
