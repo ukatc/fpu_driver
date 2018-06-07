@@ -598,7 +598,7 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_FPUS_NOT_CALIBRATED:
         throw FPUDriverException("DE_FPUS_NOT_CALIBRATED: FPUs are lacking calibration by "
                                  "a findDatum operation. For engineering or recovery use, consider"
-                                 " to set the 'check_protection' keyword argument to False,"
+                                 " to set the 'soft_protection' keyword argument to False,"
                                  " to disable hardware safety checks.",
                                  DE_FPUS_NOT_CALIBRATED);
         break;
@@ -813,7 +813,7 @@ public:
     };
 
     E_DriverErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state,
-                                         list &fpu_list, bool check_protection=true)
+                                         list &fpu_list, bool soft_protection=true)
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
@@ -860,7 +860,7 @@ public:
             wform.steps = steps;
             wtable.push_back(wform);
         }
-        E_DriverErrCode ecode = configMotion(wtable, grid_state, fpuset, check_protection);
+        E_DriverErrCode ecode = configMotion(wtable, grid_state, fpuset, soft_protection);
         checkDriverError(ecode);
         return ecode;
 
@@ -1013,7 +1013,7 @@ public:
                                    dict &dict_modes,
                                    list& fpu_list,
                                    E_DATUM_SELECTION arm_selection=DASEL_BOTH,
-                                   bool check_protection=true)
+                                   bool soft_protection=true)
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
@@ -1021,7 +1021,7 @@ public:
         t_datum_search_flags direction_flags;
         getDatumFlags(dict_modes, direction_flags, fpuset);
 
-        E_DriverErrCode ecode = findDatum(grid_state, direction_flags, arm_selection, check_protection, &fpuset);
+        E_DriverErrCode ecode = findDatum(grid_state, direction_flags, arm_selection, soft_protection, &fpuset);
         checkDriverError(ecode);
         return ecode;
     }
@@ -1031,7 +1031,7 @@ public:
                                         dict& dict_modes,
                                         E_DATUM_SELECTION arm_selection,
                                         list& fpu_list,
-                                        bool check_protection=true)
+                                        bool soft_protection=true)
     {
 
         t_fpuset fpuset;
@@ -1040,7 +1040,7 @@ public:
         t_datum_search_flags direction_flags;
         getDatumFlags(dict_modes, direction_flags, fpuset);
 
-        E_DriverErrCode ecode = startFindDatum(grid_state, direction_flags, arm_selection, check_protection, &fpuset);
+        E_DriverErrCode ecode = startFindDatum(grid_state, direction_flags, arm_selection, soft_protection, &fpuset);
         checkDriverError(ecode);
         return ecode;
     }

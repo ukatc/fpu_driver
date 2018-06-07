@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{framed}
+\usepackage{gensymb}
 \usepackage{cmbright}
 %\usepackage{newcent} % thos one is good
 %\usepackage{mathpazo} % inot as good as charter
@@ -547,7 +548,7 @@ like this:
 \begin{minted}{python}
   gd.findDatum(grid_state, search_modes={0 : SEARCH_CLOCKWISE,
                1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE},
-               check_protection=False)
+               soft_protection=False)
 \end{minted}
 
 Here, the integer numbers (0, 1, 2, \ldots) correspond to FPU numbers,
@@ -561,7 +562,7 @@ above. FPUs which do not get such an instruction will not move.
 
 When the FPUs were actually initialised before, it is possible to use
 the ``automatic'' mode of the \texttt{findDatum()} command, by passing
-the \texttt{check\_protection} flag without a direction specification.
+the \texttt{soft\_protection} flag without a direction specification.
 
 \index{safety!datum operation}
 \begin{warning}
@@ -951,7 +952,7 @@ If the FPU had been powered off, the beta arm is in a positive range
 alpha arm is in a normal safe position, the following command will
 initialise the FPU with ID zero and move it to the datum position:
 \begin{minted}{python}
-  gd.findDatum(grid_state, {0: SEARCH_CLOCKWISE}, check_protection=False)
+  gd.findDatum(grid_state, {0: SEARCH_CLOCKWISE}, soft_protection=False)
 \end{minted}
 
 This instructs the FPU to move clock-wise, and enable the driver to do
@@ -1715,13 +1716,13 @@ steps are required:
 
   # move the FPU into the opposite direction
   waveform = gen_wf(-5, 0)
-  gd.configMotion(waveform, grid_state, check_protection=False)
+  gd.configMotion(waveform, grid_state, soft_protection=False)
   gd.executeMotion(grid_state)
   # A second limit switch breach exception will happen here!
 
   # reset the FPU again, to clear the second breach state
   gd.resetFPUs(grid_state)
-  gd.configMotion(waveform, grid_state, check_protection=False)
+  gd.configMotion(waveform, grid_state, soft_protection=False)
   gd.executeMotion(grid_state)
 
   gd.findDatum(grid_state)
@@ -1730,7 +1731,7 @@ steps are required:
   
 
 What these operations do is basically to clear the breach state, and
-to manually move the FPU.  The flag \texttt{check\_protection=False}
+to manually move the FPU.  The flag \texttt{soft\_protection=False}
 in line 10 is required because normally, the software does not accept
 a movement of an FPU which was not zeroed by a datum operation, and
 both the limit switch breach and the reset command clear the
@@ -2215,21 +2216,21 @@ incorrectly -- correspond to the FPUs internal step counters, the
 software will generate a \texttt{PROTECTION\_ERROR} exception.  In
 this case, to override the software protection and execute the search
 as instructed, the operator needs to set an additional keyword
-argument, ``\texttt{check\_protection}'', to the value \texttt{False}.
+argument, ``\texttt{soft\_protection}'', to the value \texttt{False}.
 
 In this case, the commands looks like this:
 
 \begin{minted}{python}
   gd.findDatum(grid_state, search_modes={0 : SEARCH_CLOCKWISE,
                1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE},
-               check_protection=False)
+               soft_protection=False)
 \end{minted}
 
 \paragraph{Unprotected automatic datum search}
 \index{datum search!unprotected automatic mode} When the FPUs were
 actually initialised before, it is possible to use the ``automatic''
 mode of the \texttt{findDatum()} command, by passing the
-\texttt{check\_protection} flag without a direction specification.
+\texttt{soft\_protection} flag without a direction specification.
 This is intended make it easier to run automatic scripts, after
 running the \texttt{initializeGrid.py} script manually, which is
 described in section~\ref{sec:initializegrid} on
@@ -2342,7 +2343,7 @@ In a number of situations, it can be necessary to move the FPU even if
 it was not initialised before, for example when the alpha arm is in a
 limit breach position, which prohibits the datum operation (it would
 break the FPU). To do this, the keyword argument
-\texttt{check\_protection=False} needs to be passed, which skips the
+\texttt{soft\_protection=False} needs to be passed, which skips the
 state check.
 
 
@@ -2511,7 +2512,7 @@ cleared, and the FPU state is set to \texttt{UNINITIALIZED}. This
 command is useful to get out of specific error states. 
 
 \index{safety!after reset}After a reset, an FPU can be arbitrarily
-moved if the flag \texttt{check\_protection=False} is passed to the
+moved if the flag \texttt{soft\_protection=False} is passed to the
 \texttt{configMotion} method. However the operator needs to be very
 careful that further commands will not damage the FPU by assuming that
 the FPU is in a position which is safe to move in a certain
@@ -2754,7 +2755,7 @@ After this, other automatic scripts can initialise the grid with the
 command
 
 \begin{minted}{python}
-  gd.findDatum(grid_state, check_protection=False)
+  gd.findDatum(grid_state, soft_protection=False)
 \end{minted}
 
 which allows to execute scripts without further interaction.  For CAN
@@ -3001,6 +3002,24 @@ DE_STEP_TIMING_ERROR = 603,
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
+
+\subsection*{Changes in version 0.7.0}
+\begin{itemize}
+\item The \texttt{readSerialNumbers()}, \texttt{writeSerialNumber()},
+  and \texttt{printSerialNumbers()} methods have been added.
+  
+\item The driver now logs alpha arm angles with a configurable offset
+  for the datum position. The default value is $-181.0\degree$.
+  The same value is used in the \texttt{list\_angles()} function.
+  
+\item Some information and warnings about hardware safety precautions
+  have been updated.
+  
+\item The \texttt{check\_protection} keyword has been replaced
+  with the \texttt{soft\_protection} keyword, to clarify
+  the difference between driver-level (software) and
+  hardware protection.
+\end{itemize}
 
 \subsection*{Changes in version 0.6.0}
 \begin{itemize}

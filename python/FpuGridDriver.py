@@ -6,6 +6,7 @@ from os import path
 import errno
 import time
 import signal
+from warnings import warn, filterwarnings
 
 import fpu_driver
 
@@ -103,6 +104,8 @@ def make_logdir(log_dir):
         
     return log_path
 
+filterwarnings("default", "keyword check_protection", DeprecationWarning)
+
 class GridDriver:
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
@@ -157,15 +160,21 @@ class GridDriver:
     def getGridState(self):
         return self._gd.getGridState()
 
-    def findDatumB(self, gs, search_modes={}, selected_arm=DASEL_BOTH, check_protection=True, fpuset=[]):
+    def findDatumB(self, gs, search_modes={}, selected_arm=DASEL_BOTH, soft_protection=True,
+                   check_protection=None, fpuset=[]):
         """Moves all FPUs to datum position. 
 
         This is a blocking variant of the findDatum command,
         it is not interruptible by Control-C."""
+        if check_protection != None:
+            warn("keyword check_protection is deprecated; use 'soft_protection=False' instead!",
+                 DeprecationWarning, 2)
+            soft_protection=check_protection
         
-        return self._gd.findDatum(gs, search_modes, fpuset, selected_arm, check_protection)
+        return self._gd.findDatum(gs, search_modes, fpuset, selected_arm, soft_protection)
 
-    def findDatum(self, gs, search_modes={}, selected_arm=DASEL_BOTH, check_protection=True, fpuset=[]):
+    def findDatum(self, gs, search_modes={}, selected_arm=DASEL_BOTH, soft_protection=True,
+                  check_protection=None, fpuset=[]):
         """Moves all FPUs to datum position. 
 
         If the program receives a SIGNINT, or Control-C is pressed, an
@@ -183,10 +192,15 @@ class GridDriver:
         If an beta arm is not datumed, automatic datum search will be refused.
         If a beta arm position appears not to be safe to be moved into
         the requested position, the manual datum search will be refused
-        unless check_protection is set to False.
+        unless soft_protection is set to False.
 
         """
-        rv = self._gd.startFindDatum(gs, search_modes, selected_arm, fpuset, check_protection)
+        if check_protection != None:
+            warn("keyword check_protection is deprecated; use 'soft_protection=False' instead!",
+                 DeprecationWarning, 2)
+            soft_protection=check_protection
+            
+        rv = self._gd.startFindDatum(gs, search_modes, selected_arm, fpuset, soft_protection)
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
             raise RuntimeError("can't search Datum, driver error code = %r" % rv)
         time.sleep(0.1)
@@ -250,11 +264,18 @@ class GridDriver:
 
     def readSerialNumbers(self, gs, fpuset=[]):
         return self._gd.readSerialNumbers(gs, fpuset)
+
+    def printSerialNumbers(self, gs, fpuset=[]):
+        self.readSerialNumbers(gs, fpuset=fpuset)
+        for i in range(self.config.num_fpus):
+            if (len(fpuset) == 0) or i in fpuset:
+                print("FPU %i : SN = %s" % (i, gs.FPU[i].serial_number))
+        
     
     def writeSerialNumber(self, fpu_id, serial_number,  gs):
         return self._gd.writeSerialNumber(fpu_id, serial_number, gs)
     
-    def configMotion(self, wavetable, gs, fpuset=[], check_protection=True):
+    def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None):
         """ 
         Configures movement by sending a waveform table to a group of FPUs.
         Call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
@@ -265,6 +286,11 @@ class GridDriver:
         the hardware).
 
         """
+        if check_protection != None:
+            warn("keyword check_protection is deprecated; use 'soft_protection=False' instead!",
+                 DeprecationWarning, 2)
+            soft_protection=check_protection
+
         wtable = wavetable.copy()
         if len(fpuset) > 0:
             kys = wtable.keys()
@@ -272,7 +298,7 @@ class GridDriver:
                 if not k in fpuset:
                     del wtable[k]
                 
-        return self._gd.configMotion(wtable, gs, fpuset, check_protection)
+        return self._gd.configMotion(wtable, gs, fpuset, soft_protection)
 
     def executeMotionB(self, gs, fpuset=[]):
         return self._gd.executeMotion(gs, fpuset)

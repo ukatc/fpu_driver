@@ -211,7 +211,7 @@ when the internal state struct is used.
 *** DONE rename *_BACKWARD to $_REVERSE
 *** DONE test AutoDatum
 *** DONE pack release 0.6.0
-*** TODO add reading/writing serial number
+*** DONE add reading/writing serial number
 *** TODO add reporting number of movements
 *** TODO add reporting of total number of steps
 ** TODO make Thorlabs automation available to Python

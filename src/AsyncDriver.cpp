@@ -343,7 +343,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         E_DATUM_SEARCH_DIRECTION * p_direction_flags,
         E_DATUM_SELECTION arm_selection,
-        bool check_protection,
+        bool soft_protection,
         t_fpuset const * const fpuset_opt)
 {
 
@@ -578,7 +578,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 
             E_DATUM_SEARCH_DIRECTION beta_mode = direction_flags[i];
 
-            if (check_protection && (beta_steps < BETA_DATUM_LIMIT) && (beta_mode == SEARCH_CLOCKWISE))
+            if (soft_protection && (beta_steps < BETA_DATUM_LIMIT) && (beta_mode == SEARCH_CLOCKWISE))
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum():"
                             " FPU %i: beta arm appears to be in unsafe negative position < -5 degree"
@@ -587,7 +587,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
                 return DE_PROTECTION_ERROR;
             }
 
-            if (check_protection && (beta_steps > 0) && (beta_mode == SEARCH_ANTI_CLOCKWISE))
+            if (soft_protection && (beta_steps > 0) && (beta_mode == SEARCH_ANTI_CLOCKWISE))
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum():"
                             " FPU %i: beta arm appears to be in positive position "
@@ -596,7 +596,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
                 return DE_PROTECTION_ERROR;
             }
 
-            if (check_protection && (! beta_initialized) && (beta_mode == SEARCH_AUTO))
+            if (soft_protection && (! beta_initialized) && (beta_mode == SEARCH_AUTO))
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum():"
                             " FPU %i beta arm is uninitialized "
@@ -1014,7 +1014,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         const t_wtable& waveforms,
         t_fpuset const &fpuset,
-        bool check_protection)
+        bool soft_protection)
 {
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: calling configMotion()\n",
@@ -1038,7 +1038,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
     // perform hardware protection checks unless
     // explicitly disabled.
-    if (check_protection)
+    if (soft_protection)
     {
         // check no FPUs have ongoing collisions
         // and has been initialized
@@ -1068,7 +1068,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                     && grid_state.FPU_state[i].beta_was_zeroed))
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_FPUS_NOT_CALIBRATED"
-                            " - FPU %i is not calibrated and check_protection flag was not cleared\n",
+                            " - FPU %i is not calibrated and soft_protection flag was not cleared\n",
                             canlayer::get_realtime(), i);
                 return DE_FPUS_NOT_CALIBRATED;
             }

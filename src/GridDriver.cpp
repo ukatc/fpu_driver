@@ -28,11 +28,11 @@ namespace mpifps
 E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
                                       E_DATUM_SEARCH_DIRECTION * p_direction_flags,
                                       E_DATUM_SELECTION arm_selection,
-                                      bool check_protection,
+                                      bool soft_protection,
                                       t_fpuset const * const fpuset)
 {
 
-    E_DriverErrCode estatus = startFindDatum(grid_state, p_direction_flags, arm_selection, check_protection, fpuset);
+    E_DriverErrCode estatus = startFindDatum(grid_state, p_direction_flags, arm_selection, soft_protection, fpuset);
 
     if (estatus != DE_OK)
     {
@@ -50,7 +50,7 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
 E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
         E_DATUM_SEARCH_DIRECTION * p_direction_flags,
         E_DATUM_SELECTION arm_selection,
-        bool check_protection, t_fpuset const * const fpuset)
+        bool soft_protection, t_fpuset const * const fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -64,7 +64,7 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
         estatus = startAutoFindDatumAsync(grid_state, state_summary,
                                           p_direction_flags,
                                           arm_selection,
-                                          check_protection,
+                                          soft_protection,
                                           fpuset);
 
         break;
@@ -103,7 +103,7 @@ E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state,
 
 
 E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state& grid_state,
-        t_fpuset const &fpuset, bool check_protection)
+        t_fpuset const &fpuset, bool soft_protection)
 
 {
     E_DriverErrCode estatus = DE_OK;
@@ -118,7 +118,7 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
 
     while (num_avaliable_retries > 0)
     {
-        estatus = configMotionAsync(grid_state, state_summary, cur_wtable, fpuset, check_protection);
+        estatus = configMotionAsync(grid_state, state_summary, cur_wtable, fpuset, soft_protection);
         if (estatus != DE_OK)
         {
             // if connection is lost or command invalid, quit.

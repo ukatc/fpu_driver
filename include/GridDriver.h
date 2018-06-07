@@ -108,13 +108,13 @@ public:
     E_DriverErrCode findDatum(t_grid_state& grid_state,
                               E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
                               E_DATUM_SELECTION arm_selection=DASEL_BOTH,
-                              bool check_protection=true,
+                              bool soft_protection=true,
                               t_fpuset const  * const fpuset=nullptr);
 
     E_DriverErrCode startFindDatum(t_grid_state& grid_state,
                                    E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
                                    E_DATUM_SELECTION arm_selection=DASEL_BOTH,
-                                   bool check_protection=true,
+                                   bool soft_protection=true,
                                    t_fpuset const * const fpuset=nullptr);
 
     E_DriverErrCode waitFindDatum(t_grid_state& grid_state,
@@ -124,7 +124,7 @@ public:
     E_DriverErrCode configMotion(const t_wtable& waveforms,
                                  t_grid_state& grid_state,
                                  t_fpuset const &fpuset,
-                                 bool check_protection=true);
+                                 bool soft_protection=true);
 
     E_DriverErrCode executeMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
