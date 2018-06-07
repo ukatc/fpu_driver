@@ -203,11 +203,17 @@ def initialize_FPU(args):
     
     clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
 
+    soft_protection=True
     while True:
         print("setting datum parameters =", clockwise_pars)
         print("type 'yes' if parameters are correct and safe, 'q' to exit, '<enter>' to abort")
+        print("type 'force' to set 'soft_protection=False' and skip safety checks")
         resp = raw_input("?> ")
         if resp == 'yes':
+            break
+        if resp == 'force':
+            soft_protection=False
+            print("software protection switched off.")
             break
         if resp == 'q':
             exit(1)
@@ -215,7 +221,7 @@ def initialize_FPU(args):
         os.abort()
     
     print("issuing findDatum:")
-    gd.findDatum(grid_state, clockwise_pars)
+    gd.findDatum(grid_state, clockwise_pars, soft_protection=soft_protection)
     print("findDatum finished")
 
     # We can use grid_state to display the starting position

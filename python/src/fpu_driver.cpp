@@ -234,7 +234,6 @@ public:
         s << "{ 'last_updated' : " << s.precision(10) << (1.0 * fpu.last_updated.tv_sec
                                                           + 1.0e-9 * fpu.last_updated.tv_nsec) << ", "
           << " 'pending_command_set' : " << fpu.pending_command_set << ", "
-          << " 'pending_command_set' : " << fpu.pending_command_set << ", "
           << " 'state' : ";
         s << fpu.state << ", "
           << " 'last_command' : " << fpu.last_command << ", "

@@ -31,7 +31,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 0.6.0 (document version \texttt{\input{../git_version}})}
+  module} \subtitle{For driver version 0.7.0 (document version \texttt{\input{../git_version}})}
 
 \author{Johannes Nix}
 
@@ -214,7 +214,7 @@ to a file system which has a lot of free space, for example:
 
 
 \subsection{Hardware configuration and addressing}
-\index{addressing FPUs}
+\index{addressing!FPUs}
 \index{indexing FPUs}
 \index{FPU IDs!configuration}
 \index{CAN ID}
@@ -259,52 +259,86 @@ elements: gateway number, bus number, and CAN ID.
   to the first bus on the first gateway}.
 
 
+\subsection{Software protection flag}
+\index{hardware protection}
+\index{soft\_protection flag}
+The FPU control chain uses a layered approach to make sure that fibre
+positioner units do not get damaged.  At the bottom layer, there is an
+electronic collision protection, which will switch off the motors and
+send a warning message if two FPUs touch each other. This protection
+level is called ``hardware protection''.
+
+\index{wear and tear} \index{avoiding hardware damage} \index{hardware
+  protection} However, even if a direct damage should be avoided by
+this protection, activating it involves that the motors are suddenly
+stopped, which decreases the precision and can significantly increase
+wear and tear, thus reducing the life time of the stopped
+FPU. Therefore, the hardware protection should be used only at an
+emergency level. Furthermore, the hardware protection does not cover
+all situations.
+
+For these two reasons, the driver software performs a number of
+additional checks which should ideally ensure that no collisions
+occur. These checks are performed every time an FPU is moved, or
+configured to move, and are named ``software protection''.
+
+In some situations, specifically if the hardware protection needs to
+be tested, it can be necessary to switch off and deactivate this
+protection. This can be done using the ``\texttt{soft\_protection}''
+keyword argument. Passing the value
+``\texttt{soft\_protection=False}'' will switch the software
+protection check off.
+
+
+
 \subsection{Communication protocol versions}
-\index{protocol!see{CAN protocol}}
-\index{CAN protocol versions}
-\index{CAN protocol versions! version 1 capabilities}
-The FPU driver sends commands to the fibre positioner units, which use
-a specific communication protocol. This protocol needs to match the
-FPUs firmware and its capabilities. The current version of the driver
-(version 0.6.x) uses ``communication protocol version 1'', which has
-some restrictions in functionality. For example, some edge cases
-cannot be checked, some operations might take longer, and some errors
-are not recognised or cannot as easily worked around.
+\index{protocol!see{CAN protocol}} \index{CAN protocol versions}
+\index{CAN protocol versions! version 1 capabilities} The FPU driver
+sends commands to the fibre positioner units, which use a specific
+communication protocol. This protocol needs to match the FPUs firmware
+and its capabilities. The current version of the driver (version
+0.6.x) uses ``communication protocol version 1'', which has some
+restrictions in functionality.
 
-There is a  significant difference which are visible to the users
-of the FPU driver module. 
-
-The difference is that cases in which the alpha arm of the FPU hits
-the limit switch need to be manually recovered from. This is explained
-in section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
+A significant difference in the hardware protection capabilities is
+that cases in which the alpha arm of the FPU hits the limit switch
+need to be manually recovered from. This is explained in
+section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 
 
 
 \begin{warning}
 \textbf{WARNING: Never issue a \texttt{findDatum()} command when the
   alpha arm is in a limit breach position (on the other side of the
-  limit switch)}.
+  limit switch). No hardware protection is active in this state.}.
 \end{warning}
 
 Another important point, is that when doing a first manual datum
-search after powering on an FPU , it is essential to make sure that
+search after powering on an FPU , it is important to make sure that
 the instructed search direction will move the beta arm to the datum
 position. The current version of the driver software does not allow
 any more to do a datum search of an uninitialised FPU without
 explicitly passing the required search direction.
 
+If the wrong direction is passed, this will cause a collision.  This
+incurs the risk to destroy the FPU if the collision detection is not
+verified to be working for this unit.  Otherwise, running into a
+collision is still highly undesirable because the lifetime and
+precision of the FPU will be reduced.
+
 \begin{warning}
   \textbf{WARNING: When using a manual \texttt{findDatum()} command,
-  make sure that the beta arm is moving into the right direction!}
+    make sure that the beta arm is moving into the right direction, to
+    avoid any collisions!}
 \end{warning}
 
 
-\index{datum search!independent operation of alpha and beta arms}
-A third practical difference is that the the FPU verification system
-requires the capability to datum the alpha and beta arms separately.
-This is supported by driver versions equal or newer than 0.5.2 and a
-firmware that supports the CAN protocol version 1.1 or later. Earlier
-firmware versions do not support this mode of operation.
+\index{datum search!independent operation of alpha and beta arms} The
+FPU verification system requires the additional capability to datum
+the alpha and beta arms separately.  This is supported by driver
+versions equal or newer than 0.5.2 and a firmware that supports the
+CAN protocol version 1.1 or later. Earlier firmware versions do not
+support this mode of operation.
 
 
 
@@ -569,7 +603,8 @@ the \texttt{soft\_protection} flag without a direction specification.
   \textbf{WARNING: When doing a manually directed datum search, always
     double-check that the beta arm will correctly move to the datum
     position with the given direction. Otherwise, the command will
-    damage the hardware.}
+    cause a collision, leading to increased wear and tear, or even to
+    hardware damage.}
 \end{warning}
 
 
@@ -627,43 +662,56 @@ issuing findDatum:
 findDatum finished
 the starting position (in degrees) is: [(0.0, 0.0)]
 >>> grid_state.FPU[0]
-{ 'last_updated' : 61547082.491 'pending_command_set' : 0
-  'pending_command_set' : 0 'state' : 'READY_FORWARD'
-  'last_command' : 1 'last_status' : 0 'alpha_steps' : 0
-  'beta_steps' : 0 'alpha_deviation' : 0 'beta_deviation' : 0
-  'timeout_count' : 0 'step_timing_errcount' : 0
-  'direction_alpha' : 0 'direction_beta' : 0
-  'num_waveform_segments' : 0 'num_active_timeouts' : 0
-  'sequence_number' : 0 'ping_ok' : 0 'movement_complete' : 0
-  'alpha_was_zeroed' : 1 'beta_was_zeroed' : 1 'is_locked' : 0
-  'alpha_datum_switch_active' : 0 'beta_datum_switch_active' : 0
-  'at_alpha_limit' : 0   'beta_collision' : 0 'waveform_valid' : 1
-  'waveform_ready' : 1 'waveform_reversed' : 0 }
+{ 'last_updated' : 61604074.942,  'pending_command_set' : 0,
+  'state' : 'READY_FORWARD',  'last_command' : 9,  'last_status' : 0,
+  'alpha_steps' : 0,  'beta_steps' : 0,
+  'alpha_deviation' : 0,  'beta_deviation' : 0,
+  'timeout_count' : 0,  'step_timing_errcount' : 0,
+  'direction_alpha' : 0,  'direction_beta' : 0,
+  'num_waveform_segments' : 0,  'num_active_timeouts' : 0,
+  'sequence_number' : 0,  'ping_ok' : 1,  'movement_complete' : 0,
+  'alpha_was_zeroed' : 1,  'beta_was_zeroed' : 1,
+  'is_locked' : 0,  'alpha_datum_switch_active' : 0,
+  'beta_datum_switch_active' : 0,
+  'at_alpha_limit' : 0,  'beta_collision' : 0,
+  'waveform_valid' : 1,  'waveform_ready' : 1,  'waveform_reversed' : 0,
+  'register_address' : 0,  'register_value' : 0x1,
+  'firmware_version' : 1.3.0,  'firmware_date' : '0-0-0',
+  'serial_number' : "102",  }
 >>> list_angles(grid_state)
-[(0.0, 0.0)]
+[(-181.0, 0.0)]
 >>> gd.executeMotion(grid_state)
 fpu_driver.E_DriverErrCode.DE_OK
 >>> grid_state.FPU[0]
-{ 'last_updated' : 61547154.98 'pending_command_set' : 0
-  'pending_command_set' : 0 'state' : 'RESTING'
-  'last_command' : 7 'last_status' : 0 'alpha_steps' : 5625
-  'beta_steps' : 1200 'alpha_deviation' : 0 'beta_deviation' : 0
-  'timeout_count' : 0 'step_timing_errcount' : 0
-  'direction_alpha' : 0 'direction_beta' : 0
-  'num_waveform_segments' : 0 'num_active_timeouts' : 0
-  'sequence_number' : 0 'ping_ok' : 1 'movement_complete' : 1
-  'alpha_was_zeroed' : 1 'beta_was_zeroed' : 1 'is_locked' : 0
-  'alpha_datum_switch_active' : 0 'beta_datum_switch_active' : 0
-  'at_alpha_limit' : 0 'beta_collision' : 0 'waveform_valid' : 1
-  'waveform_ready' : 0 'waveform_reversed' : 0 }
+{ 'last_updated' : 61604357.008,
+  'pending_command_set' : 0,
+  'state' : 'RESTING',  'last_command' : 7,  'last_status' : 0,
+  'alpha_steps' : 5125,  'beta_steps' : 1264,
+  'alpha_deviation' : 0,  'beta_deviation' : 0,
+  'timeout_count' : 0,  'step_timing_errcount' : 0,
+  'direction_alpha' : 0,  'direction_beta' : 0,
+  'num_waveform_segments' : 0,  'num_active_timeouts' : 0,
+  'sequence_number' : 0,  'ping_ok' : 1,
+  'movement_complete' : 1,
+  'alpha_was_zeroed' : 1,  'beta_was_zeroed' : 1,
+  'is_locked' : 0,  'alpha_datum_switch_active' : 0,
+  'beta_datum_switch_active' : 0,
+  'at_alpha_limit' : 0,  'beta_collision' : 0,
+  'waveform_valid' : 1,  'waveform_ready' : 0,
+  'waveform_reversed' : 0,
+  'register_address' : 0,  'register_value' : 0x1,
+  'firmware_version' : 1.3.0,  'firmware_date' : '0-0-0',
+  'serial_number' : "102",  }
+
 >>> list_angles(grid_state)
-[(45.0, 15.0)]
+>>> list_angles(gs)
+[(-136.00385502825844, 14.991475555234816), ]
 >>>
 \end{minted}
 
-In this listing, \verb+grid_state.FPU[0]+ displays the state parameters of
-FPU 0 (which is the only one we have because \texttt{NUM\_FPUS} was
-set to 1).
+In this listing, entering the expression \verb+grid_state.FPU[0]+
+displays the state parameters of FPU 0 (which is the only one we have
+because \texttt{NUM\_FPUS} was set to 1).
 
 \begin{sloppypar}
 Just to pin-point two of the more important bits of information, the
@@ -672,16 +720,19 @@ the current step counts of an FPU, and the fields
 ``\texttt{alpha\_datum\_switch\_active}'' and
 ``\texttt{beta\_datum\_switch\_active}'' contain the current position
 of the datum switches. The field ``\texttt{state}'' contains the
-current state of the FPU. One can see that after issuing the
-\texttt{executeMotion} command, the state of the FPU changes from
-\texttt{READY\_FORWARD} to \texttt{RESTING}. Actually, the output of
-the \texttt{list\_angles()} utility function mentioned before is
-normally (that is, if at least one datum search was completed) just a
-scaled version of the ``alpha\_steps'' and ``beta\_steps'' fields. The
-flags \texttt{alpha\_was\_zeroed} and \texttt{beta\_was\_zeroed} are
-set to \texttt{True} when the datum position was reached at least once
-since the driver was started, and no collisions, limit switch
-breaches, or abortMotion commands have happened since.
+current state of the FPU, ``\texttt{firmware\_version}'' contains the
+version of the FPU firmware, and ``\texttt{serial\_number}'' the serial
+number of the FPU, if it was stored in the firmware. One can see that
+after issuing the \texttt{executeMotion} command, the state of the FPU
+changes from \texttt{READY\_FORWARD} to \texttt{RESTING}. Actually,
+the output of the \texttt{list\_angles()} utility function mentioned
+before is normally (that is, if at least one datum search was
+completed) just a scaled version of the ``alpha\_steps'' and
+``beta\_steps'' fields. The flags \texttt{alpha\_was\_zeroed} and
+\texttt{beta\_was\_zeroed} are set to \texttt{True} when the datum
+position was reached at least once since the driver was started, and
+no collisions, limit switch breaches, or abortMotion commands have
+happened since.
 \end{sloppypar}
 
 \subsubsection*{Capturing interactive output}
@@ -986,7 +1037,8 @@ Both alpha and beta arm are moved to the datum position. The value
 likely to occur.
 \begin{warning}
   \textbf{WARNING: Before starting a manual datum search, make sure
-    that both arms are in a safe position.}
+    that both arms are in a safe position, to avoid collisions or
+    hardware damage.}
 \end{warning}
 
 \subsubsection{Restricting a datum search to a subset of FPUs}
@@ -1053,8 +1105,11 @@ angles:
     \emph{negative} sign, and use negative step counts.
   \item Consequently, any position which is counter-clockwise from the
     datum position will be denoted by a positive angle, and any
-    position which is reached after rotating clock-wise from the datum
+    position which is reached after rotating clock-wise from the zero
     position, will have negative angles.
+  \item The zero position itself is defined as the datum position for
+    the beta arm. For the alpha arm, the position is configurable. By
+    convention, the alpha datum position is at $-181.0\degree$.
 \end{itemize}
 
 \subsubsection{Moving by an angle}
@@ -1116,7 +1171,7 @@ angle of the second FPU, and so on.
 See section~\ref{sec:genwf} for further details.
 
 \subsubsection{Restricting a movement to a subset of FPUs}
-\index{movements!of a sub-set of FPUs}
+\index{movements!of a subset of FPUs}
 \index{restricting!the executeMotion() command}
 A movement can be restricted to a subset of FPUs by issuing a
 \texttt{configMotion()} command which has all-zero entries for the FPUs
@@ -1590,9 +1645,9 @@ and communicate such situations back to the higher layers of the
 software. The following section explains how this is achieved.
 
 \subsection{What happens when a collision or limit switch breach occurs}
-\index{collision!effect}
+\index{collisions!effect}
 \index{limit switch breach!effect}
-\index{collision!explanation}
+\index{collisions!explanation}
 \index{limit switch breach!explanation}
 \subsubsection{Detection of obstacles}
 
@@ -1731,28 +1786,35 @@ steps are required:
   
 
 What these operations do is basically to clear the breach state, and
-to manually move the FPU.  The flag \texttt{soft\_protection=False}
-in line 10 is required because normally, the software does not accept
-a movement of an FPU which was not zeroed by a datum operation, and
-both the limit switch breach and the reset command clear the
-\texttt{was\_zeroed} flag. However, in this state, we \emph{must not}
-use a datum operation, therefore it is necessary to override this
-software protection.
+to manually move the FPU.  The flag \texttt{soft\_protection=False} in
+line 10 is required because normally, the software does not accept a
+movement of an FPU which was not zeroed by a datum operation, and both
+the limit switch breach and the reset command clear the
+\texttt{was\_zeroed} flag\footnote{Until driver version 0.7.0, the
+  name of the flag was
+  ``\texttt{check\_protection}\index{check\_protection}}. However,
+  in this state, we \emph{must not} use a datum operation, therefore
+  it is necessary to override this software protection.
 
 After this, the FPU can be moved, but because moving it causes it to
 cross the limit switch a second time, another limit switch breach
 message is generated, and the FPU needs to be reset and moved manually
 for a second time.
 
-\textbf{It is very important that, when resolving such a limit switch
-  breach, the FPU is not moved into the same direction as it was
-  moving when triggering the breach.  Otherwise, the FPU would run
-  into the hard stop, and there is no further hardware or software
-  protection which could prevent damage in this case}.
+\index{limit switch breach}
+\index{dead zone}
+\textbf{After a limit breach, the alpha arm is in a
+  motor dead zone in which no hardware protection is possible.
+  Especially for protocol version 1, It is very important that, when
+  resolving such a limit switch breach, the FPU is not moved into the
+  same direction as it was moving when triggering the breach.
+  Otherwise, the FPU would run into the hard stop, and there is no
+  further protection which could prevent damage in this case}.
 
 \begin{warning}
-  \textbf{WARNING: When resolving an alpha arm limit switch
-    breach, make sure to move the alpha arm away from the hard stop.}
+  \textbf{WARNING: When resolving an alpha arm limit switch breach,
+    make sure to move the alpha arm away from the hard stop.  No
+    collision protection is active in this state!}
 \end{warning}
 
 \subsection{Limitations of CAN protocol version 1}
@@ -1761,13 +1823,12 @@ The following are the main limitations and functional
 differences for protocol version 1:
 
 \begin{itemize}
-\item There is no automatic recovery method for alpha
-  limit switch breaches. Limit switch breaches need
-  to be recovered manually, and it must be carefully
-  observed to move the FPU in the correct direction,
-  on order to prevent the risk of damage. Especially,
-  a datum search must not be used after an alpha limit switch
-  breach. 
+\item There is no automatic recovery method for alpha limit switch
+  breaches. Limit switch breaches place the alpha arm in a dead zone
+  and need to be recovered manually. Doing this, it must be carefully
+  observed to move the FPU in the correct direction, on order to
+  prevent the risk of damage. Especially, a datum search must never be
+  used after an alpha limit switch breach.
 
 \item The \texttt{findDatum()} method can only operate with automatic
   direction selection if the FPU has been initialised before.
@@ -1793,12 +1854,12 @@ differences for protocol version 1:
   collided FPUs.
   
 \item In some cases, protocol 1 is not able to detect lost messages,
-  so that state information might be stale.\footnote{For the case of
-    the \texttt{executeMotion()} command, a state update is performed
-    automatically if no error has occurred.} The FPU can lose messages
-  from the driver software when it is busy or overloaded. The driver
-  will normally not lose messages but the CAN protocol does not
-  guarantee that no messages are lost.
+  so that state information might be stale, and is generally
+  unreliable.\footnote{For the case of the \texttt{executeMotion()}
+    command, a state update is performed automatically if no error has
+    occurred.} The FPU can lose messages from the driver software when
+  it is busy or overloaded. The driver will normally not lose messages
+  but the CAN protocol does not guarantee that no messages are lost.
   
 
 \item It is not possible to lock or unlock FPUs, in order to exclude
@@ -1892,7 +1953,7 @@ management substantially less complex. The exception from this is the
 thread.
 
 \subsection{Waiting for movement operations to finish}
-\index{\texttt{waitForState()}}
+\index{waitForState()}
 \index{waiting for a command to finish}
 \index{movements!waiting for command completion}
 Finally, there exists a low-level driver method,
@@ -1956,7 +2017,29 @@ the detailed resource which is lacking will be indicated in the error
 message, and in the log output.
 \end{sloppypar}
 
+\label{sec:driverparams}
+The class constructor has several optional arguments. Arguments which
+control the logging are explained in section~\ref{sec:logging}.
+Additionally, the following keyword arguments can
+be passed:
 
+\begin{description}
+  \index{alpha\_datum\_offset}
+\item[\texttt{alpha\_datum\_offset}] This parameter defines the alpha
+  angle convention at the datum position. By default, it is set to
+  -181.0, this means that the alpha arm at the datum position will
+  have an alpha angle of $-181.0\degree$. This angle is primarily used
+  when waveform tables and movements are logged by the driver (see
+  also the keyword argument with the same name in the
+  \texttt{list\_angles()} utility function).
+
+\item[\texttt{SocketTimeOutSeconds}] The time-out value which defines
+  after how much time a socket connection is considered lost and the
+  connection is closed. This should only happen when there is a
+  networking problem in the connections to the EtherCAN gateways.
+  (The time-out threshold which defines the maximum waiting time for a
+  non-responding FPU is defined by the protocol).
+\end{description}
 
 
 \subsection{Commands and driver methods}
@@ -1964,7 +2047,7 @@ message, and in the log output.
 
 \subsubsection{Addressing a subset of FPUs}
 \label{sec:subsets}
-\index{addressing a subset of FPUs} In some situations, it is required
+\index{addressing!a subset of FPUs} In some situations, it is required
 to send commands only to a sub-set if fibre positioners. In the ICS,
 this is the case in certain recovery scenarios.  In the FPU
 verification system, the need for this arises when several FPUs are
@@ -2090,6 +2173,59 @@ tuples can be compared like strings. For example, the statement
 will either make sure that the firmware version is at least 1.3.0, or
 abort the running script.
 
+\subsubsection{readSerialNumbers()}
+\index{commands!readSerialNumbers()}
+\index{serial numbers!reading}
+
+The command
+\begin{minted}{python}
+  gd.readSerialNumbers(grid_state)
+\end{minted}
+reads the serial numbers of the FPUs and places them into the
+\texttt{grid\_state} variable into the field named
+\texttt{serial\_number}. For CAN protocol version 1, the serial number
+can be any sequence of up to five printable ASCII chars.
+
+This command requires an FPU firmware version of equal or larger than
+1.3.0.
+
+\subsubsection{printSerialNumbers()}
+\index{commands!printSerialNumbers()}
+\index{serial numbers!displaying}
+
+The command
+\begin{minted}{python}
+  gd.printSerialNumbers(grid_state, fpuset=[])
+\end{minted}
+reads and prints the serial numbers of the FPUs.  The \texttt{fpuset}
+parameter is a list of the FPU IDs which will be printed. By default,
+the numbers for all FPUs will be displayed.
+
+
+\subsubsection{writeSerialNumbers()}
+\index{commands!writeSerialNumber()}
+\index{serial numbers!writing}
+
+The command
+\begin{minted}{python}
+  gd.writeSerialNumbers(fpu_id, snstring, grid_state)
+\end{minted}
+sends the serial number in the string \texttt{snstring}
+to the FPU with ID \texttt{fpu\_id} and writes it
+to the FPU controller NVRAM.
+
+For CAN protocol version 1, the serial number can be any unique
+sequence of up to five printable ASCII characters, for example
+\texttt{"PT137"}.
+
+\begin{sloppypar}
+\index{DE\_DUPLICATE\_SERIAL\_NUMBER} The command will be rejected and
+will return the error value \texttt{DE\_DUPLICATE\_SERIAL\_NUMBER}
+when the serial number already is stored in another connected FPU in
+the grid.
+\end{sloppypar}
+
+
 
 \subsubsection{getGridState()}
 \index{getGridState()!reference}
@@ -2141,7 +2277,7 @@ page~\pageref{sec:listpositions} ff.
 \index{findDatum()!reference}
 \index{findDatum()!Warnings}
 \index{FPU!zeroing}
-\index{datum!flags|see{grid state}}
+\index{datum search!flags|see{grid state}}
 \index{collisions!during datum search}
 \index{errors!during movements |see{movement errors}}
 \index{movement errors!during datum search}
@@ -2230,10 +2366,12 @@ In this case, the commands looks like this:
 \index{datum search!unprotected automatic mode} When the FPUs were
 actually initialised before, it is possible to use the ``automatic''
 mode of the \texttt{findDatum()} command, by passing the
-\texttt{soft\_protection} flag without a direction specification.
-This is intended make it easier to run automatic scripts, after
-running the \texttt{initializeGrid.py} script manually, which is
-described in section~\ref{sec:initializegrid} on
+\texttt{soft\_protection} flag without a direction specification
+(until driver version 0.6.0, the flag was named
+\texttt{check\_protection}).\index{check\_protection} This
+is intended make it easier to run automatic scripts, after running the
+\texttt{initializeGrid.py} script manually, which is described in
+section~\ref{sec:initializegrid} on
 page~\pageref{sec:initializegrid}. If FPUs do not have a valid
 initialisation, this will be reported by the firmware and result in a
 \texttt{DE\_PROTECTION\_ERROR} exception.
@@ -2243,7 +2381,8 @@ initialisation, this will be reported by the firmware and result in a
 \begin{warning}
   \textbf{WARNING: When doing an initial datum command on uncalibrated
     FPUs, always double-check and make sure that the arms can move
-    into the instructed direction, to avoid damage.}
+    into the instructed direction, to avoid increased wear and tear or
+    damage.}
 \end{warning}
 
 
@@ -2333,7 +2472,7 @@ This requires that each FPU was moved to the datum position before, using
 the \texttt{findDatum()} method.
 
 \paragraph{Moving uninitialised FPUs}
-\index{datum!alpha arm at negative position}
+\index{datum search!alpha arm at negative position}
 \index{alpha limit breach}
 \index{limit breach}
 \index{configMotion()!moving uninitialised FPUs}
@@ -2472,7 +2611,7 @@ restore the calibrated state.
 \subsubsection{abortMotion()}
 \index{commands!abortMotion()!reference}
 \index{abortMotion()!reference}
-\index{aborting movements!reference}
+\index{aborting!movements!reference}
 \index{movements!aborting!reference}
 
 
@@ -2520,7 +2659,9 @@ direction. Especially, a datum search operation is not safe for the
 alpha arm if it is in a limit breach position.
 \begin{warning}
   \textbf{WARNING: After a reset, make sure that datum search
-    operations and movements are safe.}
+    operations and movements are safe. Depending on the physical state
+    of the FPU, both hardware collision protection and software
+    protection might not work.}
 \end{warning}
 
 As \texttt{findDatum()} and \texttt{executeMotion()}, the command
@@ -2530,7 +2671,7 @@ to the FPU IDs passed as a list.
 \subsubsection{freeBetaCollision()}
 \index{commands!freeBetaCollision()!reference}
 \index{freeBetaCollision()!reference}
-\index{collision handling!reference}
+\index{collisions!how to handle}
 
 The command
 \begin{minted}{python}
@@ -2563,7 +2704,7 @@ performed, possibly after first moving the beta arm to a safe sector.
 \subsubsection{enableBetaCollisionProtection()}
 \index{commands!enableBetaCollisionProtection()!reference}
 \index{enableBetaCollisionProtection()!reference}
-\index{collision handling!reference}
+\index{collisions!how to handle!reference}
 
 The command \texttt{FpuGridDriver.enableBetaCollisionProtection(fpuid,
   grid\_state)} resolves the collision state of one FPU by changing
@@ -2647,6 +2788,13 @@ keyword argument \texttt{show\_uninitialized} is passed with a value
 of \texttt{False}, instead of NaN values the values derived from the
 current counter positions are shown. In this case, the angles may or
 may not correspond to the current arm position.
+
+\index{alpha\_datum\_offset} The function accepts a second keyword
+argument, \texttt{alpha\_datum\_offset}, which sets the conventional
+value of the alpha angle when the alpha arm is at the datum position.
+To match the values which are used in the driver logs, it should have
+the same value as the driver parameter with the same name described in
+section~\ref{sec:driverparams}. The default value is $-181.0\degree$.
 
 \subsubsection{list\_states()}
 \label{sec:liststates}
@@ -3009,8 +3157,10 @@ commands, or alter otherwise visible behaviour of the driver.
   and \texttt{printSerialNumbers()} methods have been added.
   
 \item The driver now logs alpha arm angles with a configurable offset
-  for the datum position. The default value is $-181.0\degree$.
-  The same value is used in the \texttt{list\_angles()} function.
+  parameter for the datum position, named
+  \texttt{alpha\_datum\_offset}. The default value is
+  $-181.0\degree$.  The same parameter can be set in the
+  \texttt{list\_angles()} function.
   
 \item Some information and warnings about hardware safety precautions
   have been updated.
@@ -3019,6 +3169,13 @@ commands, or alter otherwise visible behaviour of the driver.
   with the \texttt{soft\_protection} keyword, to clarify
   the difference between driver-level (software) and
   hardware protection.
+  
+\item The EtherCAN and FPU simulator has been updated to CAN protocol
+  1.3.0, allowing to store FPU serial numbers in a file, and accepting
+  a further keyword argument \texttt{alpha\_datum\_offset}.
+  
+\item The \texttt{CalibrationPositioning.py} script has been updated
+  to use the new default range of alpha arm angle values between -180 and 180.
 \end{itemize}
 
 \subsection*{Changes in version 0.6.0}
@@ -3302,12 +3459,10 @@ the FPU state diagram.
 
 From the folder \texttt{fpu\_driver}, run the
 command
-
 \begin{minted}{bash}
   make tutorial
 \end{minted}
-
-To generate the documentation\footnote{If the document is generated
+to generate the documentation\footnote{If the document is generated
   from scratch, it is necessary to repeat this command three times to
   update the list of contents.}. The generated document has the path
 name \texttt{doc/tutorial.pdf}.
