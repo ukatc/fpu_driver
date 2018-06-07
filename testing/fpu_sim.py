@@ -27,6 +27,9 @@ FPUGrid = []
 # INS_POS_LOW2      = -180.000  # Lower travel limit of positioner beta arm (deg)
 # INS_POS_HIGH2     =  150.000  # Upper travel limit of positioner beta arm (deg)
 
+# The alpha values below are relative from the datum switch
+# (datum=zero).  (For displayed alpha angles, the conventional angle
+# at datum is added.)
 ALPHA_MIN_DEGREE = 0
 ALPHA_MAX_DEGREE = 360
 BETA_MIN_DEGREE = -180
@@ -97,9 +100,9 @@ class FPU:
     def __init__(self, fpu_id, opts):
         self.opts = opts
         self.initialize(fpu_id)
-        print("FPU %i initial offset: (%f, %f)" % (fpu_id, opts.alpha_offset, opts.beta_offset))
-        self.aoff_steps = int(StepsPerDegreeAlpha * opts.alpha_offset)
-        self.boff_steps = int(StepsPerDegreeBeta * opts.beta_offset)
+        print("FPU %i initial offset: (%f, %f)" % (fpu_id, opts.alpha_start, opts.beta_start))
+        self.aoff_steps = int(StepsPerDegreeAlpha * opts.alpha_start)
+        self.boff_steps = int(StepsPerDegreeBeta * opts.beta_start)
         fname = "._FPU-%04i.sn" % self.fpu_id
         try:
             with open(fname,"r") as f:
@@ -459,9 +462,10 @@ class FPU:
         else:
             self.beta_steps += UNTANGLE_STEPS
 
-        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha
+        d_offset = self.opts.alpha_datum_offset
+        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
         beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
-        
+
         print("freeBetaCollsion: moving FPU # %i from (%i,%i) to (%i, %i) = real (%5.2f,5.2f) deg" % (
             self.fpu_id, self.alpha_steps, old_beta_steps,
             self.alpha_steps, self.beta_steps,
@@ -531,7 +535,8 @@ class FPU:
 
             alpha_offset = self.aoff_steps
             beta_offset = self.boff_steps
-            alpha_real_deg =  (new_alpha + alpha_offset) / StepsPerDegreeAlpha
+            d_offset = self.opts.alpha_datum_offset # conventional angle at datum position
+            alpha_real_deg =  (new_alpha + alpha_offset) / StepsPerDegreeAlpha + d_offset
             beta_real_deg =  (new_beta + beta_offset) / StepsPerDegreeBeta
         
             if self.opts.verbosity > 0:

@@ -58,6 +58,7 @@ def list_angles(gs,
                 asteps_per_deg=StepsPerDegreeAlpha,
                 bsteps_per_deg=StepsPerDegreeBeta,
                 show_uninitialized=False,
+                alpha_datum_offset=-181.0,
                 num_fpus=None):
     """Show approximate angular positions for each FPU in the grid. 
        The optional second and third argument are the scaling factors,
@@ -68,7 +69,7 @@ def list_angles(gs,
     nan = float('NaN')
     tvalid = lambda zeroed : 1.0 if (zeroed or show_uninitialized) else nan
     # the following line uses Python3 float division
-    return [ (gs.FPU[i].alpha_steps / asteps_per_deg * tvalid(gs.FPU[i].alpha_was_zeroed),
+    return [ ((gs.FPU[i].alpha_steps / asteps_per_deg + alpha_datum_offset)* tvalid(gs.FPU[i].alpha_was_zeroed),
               gs.FPU[i].beta_steps / bsteps_per_deg * tvalid(gs.FPU[i].beta_was_zeroed)) for i in range(num_fpus)]
 
  

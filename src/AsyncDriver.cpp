@@ -1167,7 +1167,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                             "= (%+4i, %+4i) steps --> pos (%7.3f, %7.3f) degree)\n",
                             canlayer::get_realtime(),
                             step_index, fpu_id, step.alpha_steps, step.beta_steps,
-                            alpha_cur[fpu_id] / STEPS_PER_DEGREE_ALPHA,
+                            (alpha_cur[fpu_id] / STEPS_PER_DEGREE_ALPHA) + config.alpha_datum_offset,
                             beta_cur[fpu_id] / STEPS_PER_DEGREE_BETA);
 
                 gateway.sendCommand(fpu_id, cmd);
@@ -1270,7 +1270,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                     fpu_id,
                     alpha_cur[fpu_id],
                     beta_cur[fpu_id],
-                    alpha_cur[fpu_id] / STEPS_PER_DEGREE_ALPHA,
+                    (alpha_cur[fpu_id] / STEPS_PER_DEGREE_ALPHA) + config.alpha_datum_offset,
                     beta_cur[fpu_id] / STEPS_PER_DEGREE_BETA);
     }
 
@@ -2954,7 +2954,7 @@ void AsyncDriver::logGridState(const E_LogLevel logLevel, t_grid_state& grid_sta
                             str_fpu_state(fpu.state),
                             fpu.alpha_steps,
                             fpu.beta_steps,
-                            fpu.alpha_steps / STEPS_PER_DEGREE_ALPHA,
+                            (fpu.alpha_steps / STEPS_PER_DEGREE_ALPHA) + config.alpha_datum_offset,
                             fpu.beta_steps / STEPS_PER_DEGREE_BETA,
                             fpu.alpha_was_zeroed,
                             fpu.beta_was_zeroed,

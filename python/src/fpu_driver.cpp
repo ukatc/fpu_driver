@@ -1522,6 +1522,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
 
     class_<GridDriverConfig>("GridDriverConfig", init<>())
     .def_readwrite("num_fpus", &GridDriverConfig::num_fpus)
+    .def_readwrite("alpha_datum_offset", &GridDriverConfig::alpha_datum_offset)        
     .def_readwrite("logLevel", &GridDriverConfig::logLevel)
     .def_readwrite("SocketTimeOutSeconds", &GridDriverConfig::SocketTimeOutSeconds)
     .def_readwrite("TCP_IdleSeconds", &GridDriverConfig::TCP_IdleSeconds)

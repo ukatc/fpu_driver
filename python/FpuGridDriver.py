@@ -106,6 +106,7 @@ def make_logdir(log_dir):
 class GridDriver:
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
+                 alpha_datum_offset=-181.0,
                  logLevel=DEFAULT_LOGLEVEL,
                  log_dir=DEFAULT_LOGDIR,
                  control_logfile="_{start_timestamp}-fpu_control.log",
@@ -117,6 +118,7 @@ class GridDriver:
         config = fpu_driver.GridDriverConfig()
         config.num_fpus = nfpus
         config.SocketTimeOutSeconds = SocketTimeOutSeconds
+        config.alpha_datum_offset = alpha_datum_offset
         
         flags = os.O_CREAT | os.O_APPEND | os.O_WRONLY
         mode = 0o00644

@@ -56,6 +56,9 @@ public:
 
     int num_fpus;
 
+    // offset with which alpha arm angles are computed from step counts
+    double alpha_datum_offset;
+
     GridDriverConfig()
     {
         num_fpus = MAX_NUM_POSITIONERS;
@@ -71,6 +74,8 @@ public:
         fd_controllog = -1;
         fd_rxlog = -1;
         fd_txlog = -1;
+
+        alpha_datum_offset = -181.0;
     };
 
 };
