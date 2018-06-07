@@ -200,7 +200,13 @@ protected:
 
     int countMoving(const t_grid_state &grid_state, t_fpuset const &fpuset) const;
 
-    void getMinFirmwareVersion(t_fpuset const &fpuset,
+    E_DriverErrCode getMinFirmwareVersion(t_fpuset const &fpuset,
+                                          uint8_t (&min_firmware_version)[3],
+                                          int &min_firmware_fpu,
+                                          t_grid_state& grid_state,
+                                          E_GridState& state_summary);
+    
+    void getCachedMinFirmwareVersion(t_fpuset const &fpuset,
                                bool &was_retrieved,
                                uint8_t (&min_firmware_version)[3],
                                int &min_firmware_fpu) const;

@@ -468,47 +468,14 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     fw_version_check_needed |= ((arm_selection == DASEL_ALPHA)
                                 || (arm_selection == DASEL_NONE));
 
-    E_DriverErrCode ecode = DE_OK;
+    uint8_t min_firmware_version[3] = {0,0,0};
+    int min_firmware_fpu = -1;    
+
+    E_DriverErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
 
     if (fw_version_check_needed)
     {
-        // get a cached firmware version value
-        uint8_t min_firmware_version[3];
-        int min_firmware_fpu=-1;
-        bool successfully_retrieved;
-
-        // try to use cached value for FPU set
-        getMinFirmwareVersion(fpuset,
-                              successfully_retrieved,
-                              min_firmware_version,
-                              min_firmware_fpu);
-
-        if (! successfully_retrieved)
-        {
-            // we need to retrieve the firmware version first
-            ecode = getFirmwareVersionAsync(grid_state, state_summary, fpuset);
-            if (ecode != DE_OK)
-            {
-                LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: findDatum(): "
-                            "could not retrieve firmware versions - command cancelled\n",
-                            canlayer::get_realtime());
-                return ecode;
-            }
-
-            getMinFirmwareVersion(fpuset,
-                                  successfully_retrieved,
-                                  min_firmware_version,
-                                  min_firmware_fpu);
-
-            if (! successfully_retrieved)
-            {
-                LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: findDatum(): "
-                            "could not retrieve firmware versions - command cancelled\n",
-                            canlayer::get_realtime());
-                return ecode;
-            }
-        }
         int req_fw_major = 1;
         int req_fw_minor = 0;
         int req_fw_patch = 0;
@@ -3156,10 +3123,55 @@ E_DriverErrCode AsyncDriver::readRegisterAsync(uint16_t read_address,
 
 }
 
-void AsyncDriver::getMinFirmwareVersion(t_fpuset const &fpuset,
-                                        bool &was_retrieved,
-                                        uint8_t (&min_firmware_version)[3],
-                                        int &min_firmware_fpu) const
+// get minimum firmware version value, using cache when valid
+E_DriverErrCode AsyncDriver::getMinFirmwareVersion(t_fpuset const &fpuset,
+                                                   uint8_t (&min_firmware_version)[3],
+                                                   int &min_firmware_fpu,
+                                                   t_grid_state& grid_state,
+                                                   E_GridState& state_summary)
+{
+    
+    min_firmware_fpu=-1;
+    bool successfully_retrieved = false;
+
+    // try to use cached value for FPU set
+    getCachedMinFirmwareVersion(fpuset,
+                                successfully_retrieved,
+                                min_firmware_version,
+                                min_firmware_fpu);
+
+    if (! successfully_retrieved)
+    {
+        // we need to retrieve the firmware version first
+        E_DriverErrCode ecode = getFirmwareVersionAsync(grid_state, state_summary, fpuset);
+        if (ecode != DE_OK)
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: findDatum(): "
+                        "could not retrieve firmware versions - command cancelled\n",
+                        canlayer::get_realtime());
+            return ecode;
+        }
+
+        getCachedMinFirmwareVersion(fpuset,
+                              successfully_retrieved,
+                              min_firmware_version,
+                              min_firmware_fpu);
+
+        if (! successfully_retrieved)
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: findDatum(): "
+                        "could not retrieve firmware versions - command cancelled\n",
+                        canlayer::get_realtime());
+            return ecode;
+        }
+    }
+    return DE_OK;
+}
+
+void AsyncDriver::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
+                                              bool &was_retrieved,
+                                              uint8_t (&min_firmware_version)[3],
+                                              int &min_firmware_fpu) const
 {
 
     min_firmware_fpu = 0;
@@ -3281,6 +3293,25 @@ E_DriverErrCode AsyncDriver::readSerialNumbersAsync(t_grid_state& grid_state,
         LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error DE_NO_CONNECTION, connection was lost\n",
                     canlayer::get_realtime());
         return DE_NO_CONNECTION;
+    }
+
+    uint8_t min_firmware_version[3] = {0,0,0};
+    int min_firmware_fpu = -1;    
+
+    E_DriverErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
+
+    if (ecode != DE_OK)
+    {
+        return ecode;
+    }
+
+    if ((min_firmware_version[0] < 1)
+        ||(min_firmware_version[1] < 3))
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error DE_FIRMWARE_UNIMPLEMENTED "
+                    "- FPU firmware does not provide feature\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_UNIMPLEMENTED;
     }
 
 
@@ -3432,6 +3463,20 @@ E_DriverErrCode AsyncDriver::writeSerialNumberAsync(int fpu_id, const char seria
                     canlayer::get_realtime());
         return ecode;
     }
+
+    uint8_t min_firmware_version[3] = {0,0,0};
+    int min_firmware_fpu = -1;    
+    ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
+
+    if ((min_firmware_version[0] < 1)
+        ||(min_firmware_version[1] < 3))
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_FIRMWARE_UNIMPLEMENTED "
+                    "- FPU firmware does not provide feature\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_UNIMPLEMENTED;
+    }
+    
 
     // get all existing numbers
     ecode = readSerialNumbersAsync(grid_state, state_summary, fpuset);

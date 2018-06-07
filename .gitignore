@@ -4,6 +4,7 @@
 .\#*
 *.a
 *.so
+._*.sn
 GPATH
 GRTAGS
 GSYMS
