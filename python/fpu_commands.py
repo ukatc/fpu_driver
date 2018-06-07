@@ -93,6 +93,13 @@ def list_states(gs, num_fpus=None):
         num_fpus = len(gs.FPU)
     return [ gs.FPU[i].state for i in range(num_fpus)]
 
+def list_serial_numbers(gs, num_fpus=None):
+    """List serial number for each FPU in the grid. The optional second argument
+       is the number of FPUs shown."""
+    if num_fpus == None:
+        num_fpus = len(gs.FPU)
+    return [ gs.FPU[i].serial_number for i in range(num_fpus)]
+
 
 # these values are for version 1 firmware and default
 # section duration
