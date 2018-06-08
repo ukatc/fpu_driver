@@ -63,7 +63,7 @@ git_version: force
 doc/FPU-state1.pdf : doc/FPU-state1.svg
 	inkscape doc/FPU-state1.svg --export-pdf=doc/FPU-state1.pdf
 
-tutorial:	doc/tutorial.tex doc/FPU-state1.pdf
+tutorial:	doc/tutorial.tex doc/FPU-state1.pdf git_version
 	cd doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
 $(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS) 
