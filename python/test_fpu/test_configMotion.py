@@ -2,8 +2,7 @@ from __future__ import print_function
 
 import FpuGridDriver
 
-from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST
-from FpuGridDriver import REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
+from FpuGridDriver import *
 
 from fpu_commands import *
 

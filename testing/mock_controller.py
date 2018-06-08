@@ -753,7 +753,6 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
     flag_auto_datum = False
     flag_anti_clockwise = False
     skip_flag = RX[1] # protocol 1 !
-    print("skip_flag= 0x%0x" % skip_flag)
     
     if skip_flag > 0:
         if opts.fw_version > (1,0,0):
@@ -1120,6 +1119,10 @@ def handle_writeSerialNumber(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args):
     verbose = args.debug
+    if fpu_id >= args.NUM_FPUS:
+        print("Warning: command sent to non-existant FPU ID #%i (discarded)" % fpu_id)
+        return
+    
     if command_id == CCMD_PING_FPU                         :
         # resp = handle_pingFPU(fpu_id, cmd)
         resp = handle_pingFPU(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)

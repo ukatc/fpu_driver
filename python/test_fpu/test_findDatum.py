@@ -1,9 +1,7 @@
 from __future__ import print_function
 
 import FpuGridDriver
-from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST
-from FpuGridDriver import REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
-    SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU
+from FpuGridDriver import *
 
 from fpu_commands import *
 
@@ -26,7 +24,10 @@ gd.getPositions(gs)
 print("positions before:", list_positions(gs))
 
 print("finding Datum")
-gd.findDatum(gs)
+# Warning: only use the soft_protection flag if all FPUs are known to
+# be in a safe position - check documentation. Otherwise, this can
+# damage hardware!
+gd.findDatum(gs, soft_protection=False)
 
 print("set positions after:", list_positions(gs))
 

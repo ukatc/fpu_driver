@@ -27,3 +27,6 @@ gd.pingFPUs(gs)
 
 print("positions:", list_positions(gs))
 
+print("Serial numbers:")
+gd.printSerialNumbers(gs)
+

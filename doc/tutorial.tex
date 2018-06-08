@@ -31,7 +31,8 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 0.7.0 (document version \texttt{\input{../git_version}})}
+  module} \subtitle{For driver version 0.7
+  .0 (document version \texttt{\input{../git_version}})}
 
 \author{Johannes Nix}
 
@@ -1390,7 +1391,13 @@ achieved by the following method:
 gd.repeatMotion(grid_state)
 \end{minted}
 
-\subsection{Additional example scripts}
+\subsection{Example scripts}
+
+The script in file \texttt{python/CalibrationPositioning.py} might be
+used as a starting point for a larger movement control script. To
+initialise the FPUs at the start, it asks a confirmation question, and
+if affirmed, it moves the FPUs assuming all beta arms are in a
+positive or zero angular position.
 
 Section~\ref{sec:moreexamples} on page~\pageref{sec:moreexamples}
 describes a number of additional example scripts which can be used and
@@ -3266,6 +3273,7 @@ as needed. Here is an overview what each script does:
 
 \begin{description}
 \item[test\_pingFPU.py] issues a pingFPU command and reports the positions
+\item[test\_printSerialNumbers.py] retrieves and prints the serial numbers of all FPUs.
 \item[test\_getPositions.py] retrieves and lists the step counters of the FPUs
 \item[test\_configMotion.py] configures a movement by defining a wavetable as a Python literal
 \item[test\_executeMotion.py] configures and executes a movement

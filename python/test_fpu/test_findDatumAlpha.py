@@ -1,9 +1,7 @@
 from __future__ import print_function
 
 import FpuGridDriver
-from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST
-from FpuGridDriver import REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, \
-    DASEL_BOTH, DASEL_ALPHA, DASEL_BETA
+from FpuGridDriver import *
 
 from fpu_commands import *
 
