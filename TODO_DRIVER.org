@@ -212,8 +212,16 @@ when the internal state struct is used.
 *** DONE test AutoDatum
 *** DONE pack release 0.6.0
 *** DONE add reading/writing serial number
+*** TODO fix torn paragraph in state machine description
+*** TODO make wording of direction orientation more precise
+*** TODO update Steven's picture on FPU motor ranges
+*** TODO format serial number in printSerialNumbers() wird repr()
+*** DONE install LMDB on moons-pc01
+*** TODO read intro into LMDB usage
+*** TODO install eigen on moons-pc01
 *** TODO add reporting number of movements
 *** TODO add reporting of total number of steps
+** TODO Flash etherCAN gateways with different IPs and MACs
 ** TODO make Thorlabs automation available to Python
 ** TODO  clean-up of version 1 code
 *** TODO Add state filtering to command precondition check

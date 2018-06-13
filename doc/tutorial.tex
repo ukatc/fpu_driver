@@ -810,6 +810,14 @@ OBSTACLE\_ERROR& The FPU has either detected a collision of the
 \label{tab:fpustates}
 \end{table}
 
+\begin{figure}
+\index{FPU!states!allowed transitions}
+  \includegraphics[width=1\textwidth]{FPU-state1.pdf}
+  \caption{Allowed state transitions of a single FPU for CAN protocol
+    version 1, and the associated driver commands and CAN messages.}
+  \label{fig:states}
+\end{figure}
+
 
 Generally, each FPU is always in exactly one of 12 different states.
 Changes can be described by the concept of a ``finite state machine'':
@@ -820,21 +828,11 @@ the FPU, and some are reached as a result of errors.
 Table~\ref{tab:fpustates} on page~\pageref{tab:fpustates} lists the
 different states.
 
-\begin{figure}
-\index{FPU!states!allowed transitions}
-  \includegraphics[width=1\textwidth]{FPU-state1.pdf}
-  \caption{Allowed state transitions of a single FPU for CAN protocol
-    version 1, and the associated driver commands and CAN messages.}
-  \label{fig:states}
-\end{figure}
-
 
 \index{FPU!possible state transitions}
 Figure~\ref{fig:states} on page~\pageref{fig:states} shows, as a
 reference, the states of the FPU, and the possible state transitions
 and commands which are allowed in protocol version 1.
-
-
 
 
 \section{Common tasks}
@@ -849,6 +847,7 @@ and describes which commands can be used to perform them.
 \index{errors!connection}
 \index{connection,checking the}
 \index{troubleshooting!connection problems}
+\begin{samepage}
 At some points, it is of interest what the state of
 the connection to the CAN gateway and of the FPUs is.
 This can be achieved by the following commands:
@@ -856,13 +855,13 @@ This can be achieved by the following commands:
 grid_state = gd.getGridState()
 grid_state.driver_state  
 \end{minted}
-
 The return value is the connection state of the driver, which is
 \texttt{DS\_CONNECTED} if the connection is live.  In the case that the
 connection fails, it is still possible to retrieve state information
 on the FPUs, but it cannot be refreshed any more until the connection
 is re-established using the \texttt{connect()} method of the driver
 object.
+\end{samepage}
 
 \index{connection errors!example} Of course, it is possible that the
 connection between driver and EtherCAN gateway works, but that an FPU
