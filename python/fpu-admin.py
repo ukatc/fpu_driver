@@ -27,7 +27,7 @@ def flash_FPU(fpu_id, serial_number,mockup=True):
     else:
         gateway_address = [ FpuGridDriver.GatewayAddress(args.gateway_address, args.gateway_port) ]
 
-    print("connecting grid:", gd.connect(address_list=gateway_address))
+    print("connecting grid:", gd.connect(address_list=gateway_address, skip_check=True))
 
     grid_state = gd.getGridState()
     gd.pingFPUs(grid_state)

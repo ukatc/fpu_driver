@@ -7,6 +7,9 @@ import errno
 import time
 import signal
 from warnings import warn, filterwarnings
+# state tracking
+import lmdb
+from ast import literal_eval
 
 import fpu_driver
 
@@ -106,7 +109,7 @@ def make_logdir(log_dir):
 
 filterwarnings("default", "keyword check_protection", DeprecationWarning)
 
-class GridDriver:
+class UnprotectedGridDriver:
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
                  alpha_datum_offset=-181.0,
@@ -149,10 +152,14 @@ class GridDriver:
         os.close(self.config.fd_controllog)
         os.close(self.config.fd_txlog)
         os.close(self.config.fd_rxlog)
-        
 
-    def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST):
-        return self._gd.connect(address_list)
+    def post_connect_hook(self):
+        pass
+
+    def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST, skip_check=False):
+        rv = self._gd.connect(address_list)
+        self.post_connect_hook(skip_check=skip_check)
+        return rv
 
     def setUStepLevel(self, ustep_level,  gs, fpuset=[]):
         return self._gd.setUStepLevel(ustep_level, gs, fpuset)
@@ -355,3 +362,37 @@ class GridDriver:
 
     def repeatMotion(self, gs, fpuset=[]):
         return self._gd.repeatMotion(gs, fpuset)
+
+
+
+DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE")
+
+env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10)
+
+fpudb = env.open_db("fpu")
+
+class GridDriver(UnprotectedGridDriver):
+    
+    def post_connect_hook(self, skip_check=False):
+        grid_state = self.getGridState()
+        self.readSerialNumbers(grid_state)
+        apositions = {}
+        bpositions = {}
+        wtabs = {}
+        limits = {}
+        in_dicts = { 'apos' : apositions, 'bpos' : bpositions, 'wtab' : wtabs, 'limits' : limits }
+        print("reading serial numbers from DB....")
+        for fpu_id, fpu in enumerate(grid_state.FPU):
+            serial_number = fpu.serial_number
+            with env.begin(db=fpudb) as txn:
+                for subkey in ["apos", "bpos", "wtab", "limits"]:
+                    key = str((serial_number, subkey))
+                    val = txn.get(key)
+                          
+                    print(key,":", val)
+                    if val == None and (not skip_check):
+                        raise fpu_driver.ProtectionError("serial number {0!r} not found in position database"
+                                                         " - run fpu-admin.py to create entry".format(serial_number))
+                    in_dicts[subkey][fpu_id] = literal_eval(val)
+        print("state data: ", in_dicts)               
+                        
