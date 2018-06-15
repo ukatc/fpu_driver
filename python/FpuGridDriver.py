@@ -146,6 +146,7 @@ class UnprotectedGridDriver:
                  log_dir=log_path, timestamp=start_timestamp), flags, mode)
         
         self.config = config
+        self.last_wavetable = {}
 
         self._gd = fpu_driver.GridDriver(config)
 
@@ -237,8 +238,14 @@ class UnprotectedGridDriver:
     def pingFPUs(self, gs, fpuset=[]):
         return self._gd.pingFPUs(gs, fpuset)
 
+    def reset_hook(self, gs. fpuset=[]):
+        pass
+    
     def resetFPUs(self, gs, fpuset=[]):
-        return self._gd.resetFPUs(gs, fpuset)
+        old_state = copy.deepcopy(gs)
+        rval = self._gd.resetFPUs(gs, fpuset)
+        self.reset_hook(self, old_state, gs, fpuset=fpuset)
+        return rval
 
     def getPositions(self, gs, fpuset=[]):
         return self._gd.getPositions(gs, fpuset)
@@ -284,6 +291,12 @@ class UnprotectedGridDriver:
     
     def writeSerialNumber(self, fpu_id, serial_number,  gs):
         return self._gd.writeSerialNumber(fpu_id, serial_number, gs)
+
+    def pre_config_motion_hook(self, wtable, gs, fpuset):
+        pass
+    
+    def post_config_motion_hook(self, wtable, gs, fpuset):
+        pass
     
     def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None):
         """ 
@@ -307,9 +320,19 @@ class UnprotectedGridDriver:
             for k in kys:
                 if not k in fpuset:
                     del wtable[k]
-                
-        return self._gd.configMotion(wtable, gs, fpuset, soft_protection)
+                    
+        # check if wavetable is safe    
+        self.pre_config_motion_hook(wtable, gs, fpuset)
+        rval = self._gd.configMotion(wtable, gs, fpuset, soft_protection)
+        # remember wavetable
+        self.last_wavetable.update(wtable)
+        
+        self.post_config_motion_hook(wtable, gs, fpuset)
+        return rval
 
+    def getCurrentWaveTables(self):
+        return self.last_wavetable
+    
     def executeMotionB(self, gs, fpuset=[]):
         return self._gd.executeMotion(gs, fpuset)
     
@@ -417,12 +440,14 @@ class GridDriver(UnprotectedGridDriver):
         self.b_max_offsets = b_max_offsets
         
 
-        # query positions and compute offset, if FPUs are not initialized
-        self.pingFPUs(grid_state, record_positions=False)
-        self.update_offsets(grid_state)
+        # query positions and compute offsets, if FPUs have been resetted.
+        # This assumes that the stored positions are correct.
+        super(GridDriver,self).pingFPUs(grid_state, record_positions=False)
+        self.reset_hook(grid_state)
+        self.refreshPositions(grid_state, store=False)
 
 
-    def update_offsets(self, grid_state, recal=False):
+    def reset_hook(self, former_grid_state, new_state, fpuset=[]):
         """Updates the offset between the stored FPU positions and positions
         reported by ping. 
 
@@ -435,39 +460,82 @@ class GridDriver(UnprotectedGridDriver):
         This method needs to be run:
         - every time the driver is initialising, after the initial ping
         - after every resetFPU command
-        - after a findDatum command
 
         """
-        for fpu_id, fpu in enumerate(grid_state.FPU):
+        for fpu_id, fpu in enumerate(former_grid_state.FPU):
+            if fpuset!= None and (not (fpu_id in fpuset)):
+                continue
+
+            if ( (new_state.FPU[fpu_id].state != FPST_UNINITIALISED)
+                 or (new_state.FPU[fpu_id].alpha_steps != 0)
+                 or (new_state.FPU[fpu_id].beta_steps != 0)):
+                # fpu wasn't resetted successfully
+                continue
+            
             apos = fpu.alpha_steps / StepsPerDegreeAlpha
             bpos = fpu.beta_steps / StepsPerDegreeBeta
-            if fpu.alpha_was_zeroed:
-                self.a_max_offsets[fpu_id] = 0.0
-                self.a_min_offsets[fpu_id] = 0.0
-            else:
-                if recal:
-                    a_min_offsets[fpu_id] = apos - self.apositions[fpu_id][0]
-                    a_max_offsets[fpu_id] = apos - self.apositions[fpu_id][1]
+            a_min_offsets[fpu_id] += apos - self.apositions[fpu_id][0]
+            a_max_offsets[fpu_id] += apos - self.apositions[fpu_id][1]
                 
+
+
+            b_min_offsets[fpu_id] += bpos - self.bpositions[fpu_id][0]
+            b_max_offsets[fpu_id] += bpos - self.bpositions[fpu_id][1]
+                
+
+                
+    def refresh_positions(self, grid_state, store=True, fpuset=[]):
+        """Computes new current positions from step count
+        and offsets (if set), and stores them to database.
+        """
+        for fpu_id, fpu in enumerate(former_grid_state.FPU):
+            if fpuset!= None and (not (fpu_id in fpuset)):
+                continue
+            
+            apos = fpu.alpha_steps / StepsPerDegreeAlpha
+            bpos = fpu.beta_steps / StepsPerDegreeBeta
+            serial_number = fpu.serial_number
+            
             self.apositions[fpu_id] = (self.a_min_offsets[fpu_id] + apos,
                                        self.a_max_offsets[fpu_id] + apos)
-
-
-            if fpu.beta_was_zeroed:
-                self.b_max_offsets[fpu_id] = 0.0
-                self.b_min_offsets[fpu_id] = 0.0
-            else:
-                if recal:
-                    b_min_offsets[fpu_id] = bpos - self.bpositions[fpu_id][0]
-                    b_max_offsets[fpu_id] = bpos - self.bpositions[fpu_id][1]
-                
-            self.bpositions[fpu_id] = (self.b_min_offsets[fpu_id] + bpos
-,
+            self.bpositions[fpu_id] = (self.b_min_offsets[fpu_id] + bpos,
                                        self.b_max_offsets[fpu_id] + bpos)
+            if store:
+                with env.begin(db=fpudb) as txn:
+                    key = str( (serial_number, "apos"))
+                    val = str([alpha_pos, alpha_pos])
+                    txn.put(key, val)
+                    key = str( (serial_number, "bpos"))
+                    val = str([beta_pos, beta_pos])
 
-                
+    def pingFPUs(self, grid_state, fpuset=[]):
+        print("""super call to UnprotectedGridDriver.pingFPUs(). Make sure it
+        does now has weird results.""")
+        
+        super(GridDriver, self).pingFPUs(grid_state, fpuset=fpuset)
+        self.refresh_positions(grid_state, fpuset=fpuset)
 
             
+    def __del__(self):
+        # if connection is live, gets and stores
+        # the positions before exiting
+        grid_state = self.getGridState()
+        if grid_state.driver_state == DS_CONNECTED:
+            # fetch current positions
+            super(GridDriver,self).pingFPUs(grid_state, record_positions=False)
 
+        self.refresh_positions(grid_state)
+        super(GridDriver, self).__del()
         
         
+        
+    def pre_config_motion_hook(self, wtable, gs, fpuset):
+        # compute movement range for each FPU
+        # add to current known min / max position
+        # compare to allowed range
+        # if not in range, throw exception, or print warning,
+        # depending on protection state
+        pass
+    
+    def post_config_motion_hook(self, wtable, gs, fpuset):
+        pass

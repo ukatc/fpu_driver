@@ -2208,13 +2208,13 @@ parameter is a list of the FPU IDs which will be printed. By default,
 the numbers for all FPUs will be displayed.
 
 
-\subsubsection{writeSerialNumbers()}
+\subsubsection{writeSerialNumber()}
 \index{commands!writeSerialNumber()}
 \index{serial numbers!writing}
 
 The command
 \begin{minted}{python}
-  gd.writeSerialNumbers(fpu_id, snstring, grid_state)
+  gd.writeSerialNumber(fpu_id, snstring, grid_state)
 \end{minted}
 sends the serial number in the string \texttt{snstring}
 to the FPU with ID \texttt{fpu\_id} and writes it
@@ -3159,6 +3159,11 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 0.7.0}
 \begin{itemize}
+\item fixed spelling error in name of command \texttt{writeSerialNumber()}
+  
+\end{itemize}
+\subsection*{Changes in version 0.7.0}
+\begin{itemize}
 \item The \texttt{readSerialNumbers()}, \texttt{writeSerialNumber()},
   and \texttt{printSerialNumbers()} methods have been added.
   
@@ -3232,7 +3237,7 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 0.5.3}
 \begin{itemize}
-\item Added optional logging of commands and CAN messages, which
+\item Asdded optional logging of commands and CAN messages, which
   is enabled by default (described in section~\ref{sec:logging}).
 \end{itemize}
 
