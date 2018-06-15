@@ -212,15 +212,24 @@ when the internal state struct is used.
 *** DONE test AutoDatum
 *** DONE pack release 0.6.0
 *** DONE add reading/writing serial number
-*** TODO fix torn paragraph in state machine description
-*** TODO make wording of direction orientation more precise
-*** TODO update Steven's picture on FPU motor ranges
-*** TODO format serial number in printSerialNumbers() wird repr()
+*** TODO change datum reference default
+*** TODO add count of allowed freeBetaCollision attempts
+*** TODO separate out driver constants (gear ratios)
+*** DONE update Steven's picture on FPU motor ranges
+*** DONE format serial number in printSerialNumbers() with repr()
 *** DONE install LMDB on moons-pc01
-*** TODO read intro into LMDB usage
-*** TODO install eigen on moons-pc01
+*** DONE install eigen on moons-pc01
+*** DONE read intro into LMDB usage
+*** TODO add hook for ping
+*** TODO add hook for reset
+*** TODO add hook for findDatum
+*** TODO add hook for freeBetaCollision
+*** TODO add hook for configMotion
+*** TODO add hook for executeMotion
 *** TODO add reporting number of movements
 *** TODO add reporting of total number of steps
+*** TODO make wording of direction orientation more precise
+*** TODO fix torn paragraph in state machine description
 ** TODO Flash etherCAN gateways with different IPs and MACs
 ** TODO make Thorlabs automation available to Python
 ** TODO  clean-up of version 1 code

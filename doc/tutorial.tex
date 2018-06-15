@@ -206,7 +206,7 @@ in the user-specific home directory:
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
   export PYTHONPATH=$PYTHONPATH:$HOME/fpu_driver/python:.
 \end{minted}
-
+ 
 Further, it is recommended to set the default log directory to point
 to a file system which has a lot of free space, for example:
 \begin{minted}{bash}
@@ -3389,6 +3389,15 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 \end{verbatim}
 
 to your shell configuration (usually, \verb+$HOME/.bashrc+).
+Also, for building the Python module, it might be needed
+to add something like
+
+\begin{verbatim}
+export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/lib
+\end{verbatim}
+(if this is missing, the ``ld'' command will fail during building).
+
+
 
 If the boost libraries are installed to a non-default location, you
 should add the directory with the boost header files (by default

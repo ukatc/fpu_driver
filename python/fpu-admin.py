@@ -6,6 +6,7 @@ from sys import argv
 import argparse
 
 import lmdb
+from fpu_constants import *
 
 import FpuGridDriver
 
@@ -19,7 +20,7 @@ fpudb = env.open_db("fpu")
 
 def flash_FPU(fpu_id, serial_number,mockup=True):
     
-    gd = FpuGridDriver.GridDriver(fpu_id+1)
+    gd = FpuGridDriver.UnprotectedGridDriver(fpu_id+1)
 
     if mockup:
         gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
@@ -27,7 +28,7 @@ def flash_FPU(fpu_id, serial_number,mockup=True):
     else:
         gateway_address = [ FpuGridDriver.GatewayAddress(args.gateway_address, args.gateway_port) ]
 
-    print("connecting grid:", gd.connect(address_list=gateway_address, skip_check=True))
+    print("connecting grid:", gd.connect(address_list=gateway_address))
 
     grid_state = gd.getGridState()
     gd.pingFPUs(grid_state)
@@ -45,17 +46,17 @@ if __name__ == '__main__' :
     print(repr(argv))
     if len(argv) < 2:
         print("""usage:
-        init [serial_number] [alpha_pos] [beta_pos]
+        init <serial_number> <alpha_pos> <beta_pos>
         list
-        list1 [serial_number]
-        limits [serial_number] [alpha_min] [alpha_max] [beta_min] [beta_max]
+        list1 <serial_number>
+        limits <serial_number> <alpha_min> <alpha_max> <beta_min> <beta_max> [freebetatries]
         """)
               
     command = argv[1]
 
     if command == "init":
         if len(argv) != 5:
-            print("usage: init [serial_number] [alpha_pos] [beta_pos]")
+            print("usage: init <serial_number> <alpha_pos> <beta_pos>")
             exit(1)
             
         serial_number = argv[2]
@@ -68,21 +69,21 @@ if __name__ == '__main__' :
 
         with env.begin(write=True,db=fpudb) as txn:
             key = str( (serial_number, "apos"))
-            val = str((alpha_pos,alpha_pos))
+            val = str([alpha_pos,alpha_pos])
             txn.put(key, val)
             key = str( (serial_number, "bpos"))
-            val = str((beta_pos,beta_pos))
+            val = str([beta_pos,beta_pos])
             txn.put(key, val)
             key = str((serial_number, "wtab"))
-            val = str((max_waveform, min_waveform, waveform_reversed))
+            val = str([max_waveform, min_waveform, waveform_reversed])
             txn.put(key,val)
             key = str((serial_number, "limits"))
-            val = str((-180.0, 179.8, -180.0, 150.0))
+            val = str((ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE, BETA_MIN_DEGREE, BETA_MAX_DEGREE, DEFAULT_FREE_BETA_RETRIES))
             txn.put(key,val)
 
     if command == "flash":
         if len(argv) != 4:
-            print("usage: init [serial_number] [fpu_id")
+            print("usage: init <serial_number> <fpu_id>")
             exit(1)
         serial_number = argv[2]
         assert(len(serial_number) <= 5)
@@ -92,8 +93,8 @@ if __name__ == '__main__' :
 
             
     if command == "limits":
-        if len(argv) != 7:
-            print("usage: limits [amin] [amax] [bmin  [bmax]")
+        if (len(argv) < 7) or (len(argv) > 8):
+            print("usage: limits <amin> <amax>  <bmin> <bmax> [freebetatries]")
             exit(1)
             
         serial_number = argv[2]
@@ -101,11 +102,16 @@ if __name__ == '__main__' :
         alpha_max = float(argv[4])
         beta_min = float(argv[5])
         beta_max = float(argv[6])
+        if len(argv) == 8:
+            fbtries = int(argv[7])
+        else:
+            fbtries = 1
+        
 
 
         with env.begin(write=True,db=fpudb) as txn:
             key = str((serial_number, "limits"))
-            val = str((alpha_min, alpha_max, beta_min, beta_max))
+            val = str((alpha_min, alpha_max, beta_min, beta_max, fbtries))
             txn.put(key,val)
               
               
@@ -117,7 +123,7 @@ if __name__ == '__main__' :
 
     if command == "list1":
         if len(argv) != 3:
-            print("usage: list [serial_number]")
+            print("usage: list <serial_number>")
             exit(1)
         serial_number = argv[2]
         with env.begin(db=fpudb) as txn:

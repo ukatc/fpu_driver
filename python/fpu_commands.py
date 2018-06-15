@@ -12,32 +12,11 @@ from numpy import asarray, ones_like
     FPUs state."""
 
 
+from fpu_constants import *
+
 from fpu_driver import getGridStateSummary as gGSS
 
 
-AlphaGearRatio 	= 2050.175633 # actual gear ratio
-BetaGearRatio 	= 1517.662482 # actual gear ratio
-
-
-# There are 20 steps per revolution on the non-geared side, so:
-StepsPerRevolution = 20.0
-DegreePerRevolution = 360.0
-
-# Note that these numbers must not be confounded with actual calibrated values!
-
-StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
-StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
-
-ALPHA_MIN_DEGREE = 0
-ALPHA_MAX_DEGREE = 360
-BETA_MIN_DEGREE = -180
-BETA_MAX_DEGREE = 130
-
-MIN_ALPHA = ALPHA_MIN_DEGREE * StepsPerDegreeAlpha
-MAX_ALPHA = ALPHA_MAX_DEGREE * StepsPerDegreeAlpha
-
-MIN_BETA = BETA_MIN_DEGREE * StepsPerDegreeBeta 
-MAX_BETA = BETA_MAX_DEGREE * StepsPerDegreeBeta 
 
 
 def list_positions(gs, num_fpus=None, show_zeroed=True):

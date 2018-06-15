@@ -1,3 +1,4 @@
+
 #!/usr/bin/python
 
 from __future__ import print_function, division
@@ -10,6 +11,8 @@ from warnings import warn, filterwarnings
 # state tracking
 import lmdb
 from ast import literal_eval
+
+from fpu_constants import *
 
 import fpu_driver
 
@@ -112,7 +115,7 @@ filterwarnings("default", "keyword check_protection", DeprecationWarning)
 class UnprotectedGridDriver:
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
-                 alpha_datum_offset=-181.0,
+                 alpha_datum_offset=ALPHA_DATUM_OFFSET,
                  logLevel=DEFAULT_LOGLEVEL,
                  log_dir=DEFAULT_LOGDIR,
                  control_logfile="_{start_timestamp}-fpu_control.log",
@@ -156,9 +159,9 @@ class UnprotectedGridDriver:
     def post_connect_hook(self):
         pass
 
-    def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST, skip_check=False):
+    def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST):
         rv = self._gd.connect(address_list)
-        self.post_connect_hook(skip_check=skip_check)
+        self.post_connect_hook()
         return rv
 
     def setUStepLevel(self, ustep_level,  gs, fpuset=[]):
@@ -373,7 +376,7 @@ fpudb = env.open_db("fpu")
 
 class GridDriver(UnprotectedGridDriver):
     
-    def post_connect_hook(self, skip_check=False):
+    def post_connect_hook(self):
         grid_state = self.getGridState()
         self.readSerialNumbers(grid_state)
         apositions = {}
@@ -382,17 +385,89 @@ class GridDriver(UnprotectedGridDriver):
         limits = {}
         in_dicts = { 'apos' : apositions, 'bpos' : bpositions, 'wtab' : wtabs, 'limits' : limits }
         print("reading serial numbers from DB....")
+        a_min_offsets = []
+        a_max_offsets = []
+        b_min_offsets = []
+        b_max_offsets = []
         for fpu_id, fpu in enumerate(grid_state.FPU):
             serial_number = fpu.serial_number
+            a_min_offsets.append(0.0)
+            a_max_offsets.append(0.0)
+            b_min_offsets.append(0.0)
+            b_max_offsets.append(0.0)
+            
             with env.begin(db=fpudb) as txn:
                 for subkey in ["apos", "bpos", "wtab", "limits"]:
                     key = str((serial_number, subkey))
                     val = txn.get(key)
                           
                     print(key,":", val)
-                    if val == None and (not skip_check):
+                    if val == None: 
                         raise fpu_driver.ProtectionError("serial number {0!r} not found in position database"
                                                          " - run fpu-admin.py to create entry".format(serial_number))
                     in_dicts[subkey][fpu_id] = literal_eval(val)
-        print("state data: ", in_dicts)               
-                        
+        print("state data: ", in_dicts)
+        self.apositions = apositions
+        self.bpositions = bpositions
+        self.wtabs = wtabs
+        self.limits = limits
+        self.a_min_offsets = a_min_offsets
+        self.a_max_offsets = a_max_offsets
+        self.b_min_offsets = b_min_offsets
+        self.b_max_offsets = b_max_offsets
+        
+
+        # query positions and compute offset, if FPUs are not initialized
+        self.pingFPUs(grid_state, record_positions=False)
+        self.update_offsets(grid_state)
+
+
+    def update_offsets(self, grid_state, recal=False):
+        """Updates the offset between the stored FPU positions and positions
+        reported by ping. 
+
+        If the FPUs have been switched off and powered on again, or if
+        it has been resetted for another reason, the ping values
+        differ from the recorded valid values, until a successful
+        datum command has been run.  This defines an offset which must
+        be added every time in order to yield the correct position.
+
+        This method needs to be run:
+        - every time the driver is initialising, after the initial ping
+        - after every resetFPU command
+        - after a findDatum command
+
+        """
+        for fpu_id, fpu in enumerate(grid_state.FPU):
+            apos = fpu.alpha_steps / StepsPerDegreeAlpha
+            bpos = fpu.beta_steps / StepsPerDegreeBeta
+            if fpu.alpha_was_zeroed:
+                self.a_max_offsets[fpu_id] = 0.0
+                self.a_min_offsets[fpu_id] = 0.0
+            else:
+                if recal:
+                    a_min_offsets[fpu_id] = apos - self.apositions[fpu_id][0]
+                    a_max_offsets[fpu_id] = apos - self.apositions[fpu_id][1]
+                
+            self.apositions[fpu_id] = (self.a_min_offsets[fpu_id] + apos,
+                                       self.a_max_offsets[fpu_id] + apos)
+
+
+            if fpu.beta_was_zeroed:
+                self.b_max_offsets[fpu_id] = 0.0
+                self.b_min_offsets[fpu_id] = 0.0
+            else:
+                if recal:
+                    b_min_offsets[fpu_id] = bpos - self.bpositions[fpu_id][0]
+                    b_max_offsets[fpu_id] = bpos - self.bpositions[fpu_id][1]
+                
+            self.bpositions[fpu_id] = (self.b_min_offsets[fpu_id] + bpos
+,
+                                       self.b_max_offsets[fpu_id] + bpos)
+
+                
+
+            
+
+        
+        

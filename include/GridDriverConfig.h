@@ -75,7 +75,7 @@ public:
         fd_rxlog = -1;
         fd_txlog = -1;
 
-        alpha_datum_offset = -181.0;
+        alpha_datum_offset = ALPHA_DATUM_OFFSET;
     };
 
 };
