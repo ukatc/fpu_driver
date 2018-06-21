@@ -226,6 +226,8 @@ when the internal state struct is used.
 *** TODO add hook for freeBetaCollision
 *** TODO add hook for configMotion
 *** TODO add hook for executeMotion
+*** DONE Add reading the alpha limit switch state from register
+*** TODO Add ER_DATUMTO error code
 *** TODO add reporting number of movements
 *** TODO add reporting of total number of steps
 *** TODO make wording of direction orientation more precise

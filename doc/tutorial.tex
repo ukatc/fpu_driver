@@ -32,7 +32,7 @@
 
 \title{Tutorial for the MOONS FPU grid driver Python library
   module} \subtitle{For driver version 0.7
-  .0 (document version \texttt{\input{../git_version}})}
+  .2 (document version \texttt{\input{../git_version}})}
 
 \author{Johannes Nix}
 
@@ -306,6 +306,14 @@ that cases in which the alpha arm of the FPU hits the limit switch
 need to be manually recovered from. This is explained in
 section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 
+
+\begin{warning}
+  \textbf{WARNING: Before first issuing a \texttt{findDatum()}
+    command, make sure that both the datum switch and the alpha limit
+    switch work. A defective or incorrectly wired alpha limit switch
+    will cause the datum command to damage the hardware. The software
+    cannot protect against this.}
+\end{warning}
 
 
 \begin{warning}
@@ -833,6 +841,26 @@ different states.
 Figure~\ref{fig:states} on page~\pageref{fig:states} shows, as a
 reference, the states of the FPU, and the possible state transitions
 and commands which are allowed in protocol version 1.
+
+
+\subsection{Checking the switch states}
+\index{alpha limit switch!checking state}
+\index{limit switch!check the state}
+During initial testing, it is advisable to test the function
+of the switches -- especially the alpha limit switch --
+without performing a datum operation. The reason for this
+is that if the alpha limit switch should not work, the
+datum operation would probably damage the FPU irreparably.
+
+To test the switches, the FPU should be driven manually to a position
+where the corresponding switch is required to engage. At this point,
+the command
+
+\begin{minted}{python}
+  gd.getSwitchStates(grid_state, fpuset=[])
+\end{minted}
+
+should be used to verify that the switch is working.
 
 
 \section{Common tasks}
@@ -2256,6 +2284,30 @@ to a driver method. In case of movement errors such as collisions, it
 can however be useful to refresh its state by calling
 \texttt{getGridState()} again, because the state of the FPU grid might
 still be changing after the failed command has returned.
+
+\subsubsection{getSwitchStates()}
+\index{commands!getSwitchStates()}
+\index{alpha limit switch!querying state}
+\index{beta datum switch!querying state}
+
+The command
+\begin{minted}{python}
+  gd.getSwitchStates(grid_state, fpuset=[])
+\end{minted}
+reatrieves and prints the current state of the alpha limit switches
+and the beta limit switches of the FPUs.  The \texttt{fpuset}
+parameter is a list of the FPU which will be queried. By default, the
+numbers for all FPUs will be displayed.
+
+The result will look like that:
+\begin{minted}{python}
+  {0: {'beta_datum_active': True, 'alpha_limit_active': False},
+    1: {'beta_datum_active': False, 'alpha_limit_active': False},
+    2: {'beta_datum_active': False, 'alpha_limit_active': True},  }
+\end{minted}
+
+
+
 
 \subsubsection{pingFPUs()}
 \begin{sloppypar}
