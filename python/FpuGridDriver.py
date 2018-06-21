@@ -156,6 +156,22 @@ class GridDriver:
 
     def setUStepLevel(self, ustep_level,  gs, fpuset=[]):
         return self._gd.setUStepLevel(ustep_level, gs, fpuset)
+
+    def getSwitchStates(self, gs, fpuset=[]):
+        ADRESS_SWITCH=0x0060
+        
+        if len(fpuset) == 0:
+            fpuset = range(self.config.num_fpus)
+            
+        fv = self.minFirmwareVersion(gs, fpuset=fpuset)
+        if fv < (1,3,2):
+            raise  FPUDriverException("Not all addressed FPU's firmware implements reading the switch states")
+
+        self.readRegister(ADRESS_SWITCH, gs, fpuset=fpuset)
+        def getState(fpu):
+            return {'alpha_limit_active' : ((fpu.register_value & 1) == 1 ),
+                    'beta_datum_active' : (((fpu.register_value >> 1) & 1) == 1)  }
+        return dict([ (fpu_id, getState(gs.FPU[fpu_id]) )for fpu_id in fpuset])
     
     def getGridState(self):
         return self._gd.getGridState()

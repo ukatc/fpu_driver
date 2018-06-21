@@ -212,6 +212,8 @@ when the internal state struct is used.
 *** DONE test AutoDatum
 *** DONE pack release 0.6.0
 *** DONE add reading/writing serial number
+*** TODO Add reading the alpha limit switch state from register
+*** TODO Add ER_DATUMTO error code
 *** TODO add reporting number of movements
 *** TODO add reporting of total number of steps
 ** TODO make Thorlabs automation available to Python

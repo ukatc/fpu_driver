@@ -34,9 +34,10 @@ ALPHA_MIN_DEGREE = 0
 ALPHA_MAX_DEGREE = 360
 BETA_MIN_DEGREE = -180
 BETA_MAX_DEGREE = 130
+BETA_DATUM_SWITCH_MAX_DEGREE = 0
+BETA_DATUM_SWITCH_MIN_DEGREE = -10
 
-
-ALPHA_LIMIT_MIN_DEGREE = ALPHA_MIN_DEGREE -5
+ALPHA_LIMIT_MIN_DEGREE = ALPHA_MIN_DEGREE - 0.2 # this is the actual datum switch
 ALPHA_LIMIT_MAX_DEGREE = ALPHA_MAX_DEGREE + 5
 BETA_LIMIT_MIN_DEGREE  = BETA_MIN_DEGREE - 5
 BETA_LIMIT_MAX_DEGREE  = BETA_MAX_DEGREE + 5
@@ -160,6 +161,20 @@ class FPU:
             return self.firmware_month
         elif register_address == 5:
             return self.firmware_day
+        elif register_address == 0x0060:
+            if self.opts.fw_version < (1,3,2):
+                return 0
+            else:
+                alpha_switch_bit = self.alpha_switch_on(self.alpha_steps)
+                beta_angle = (self.beta_steps + self.boff_steps) / StepsPerDegreeBeta 
+                beta_switch_bit = ( beta_angle >= BETA_DATUM_SWITCH_MIN_DEGREE) and (
+                    beta_angle <= BETA_DATUM_SWITCH_MAX_DEGREE)
+                byte = 0
+                if alpha_switch_bit:
+                    byte |= 1
+                if beta_switch_bit:
+                    byte |= 2
+                return byte
         else:
             return 0xff
 
