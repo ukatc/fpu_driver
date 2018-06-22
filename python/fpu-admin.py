@@ -6,6 +6,8 @@ from sys import argv
 import argparse
 
 import lmdb
+from interval import Interval
+
 from fpu_constants import *
 
 import FpuGridDriver
@@ -49,7 +51,9 @@ if __name__ == '__main__' :
         init <serial_number> <alpha_pos> <beta_pos>
         list
         list1 <serial_number>
-        limits <serial_number> <alpha_min> <alpha_max> <beta_min> <beta_max> [freebetatries]
+        alimits <serial_number> <alpha_min> <alpha_max>
+        blimits <serial_number> <beta_min> <beta_max>
+        bretries <serial_number> <freebetatries>
         """)
               
     command = argv[1]
@@ -69,16 +73,25 @@ if __name__ == '__main__' :
 
         with env.begin(write=True,db=fpudb) as txn:
             key = str( (serial_number, "apos"))
-            val = str([alpha_pos,alpha_pos])
+            val = str(Interval(alpha_pos,alpha_pos))
             txn.put(key, val)
             key = str( (serial_number, "bpos"))
-            val = str([beta_pos,beta_pos])
+            val = str(Interval(beta_pos,beta_pos))
             txn.put(key, val)
             key = str((serial_number, "wtab"))
-            val = str([max_waveform, min_waveform, waveform_reversed])
+            val = str(Interval(min_waveform, max_waveform))
             txn.put(key,val)
-            key = str((serial_number, "limits"))
-            val = str((ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE, BETA_MIN_DEGREE, BETA_MAX_DEGREE, DEFAULT_FREE_BETA_RETRIES))
+            key = str((serial_number, "wf_reversed"))
+            val = str(waveform_reversed)
+            txn.put(key,val)
+            key = str((serial_number, "alimits"))
+            val = str(Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE))
+            txn.put(key,val)
+            key = str((serial_number, "blimits"))
+            val = str(Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE))
+            txn.put(key,val)
+            key = str((serial_number, "bretries"))
+            val = str(DEFAULT_FREE_BETA_RETRIES)
             txn.put(key,val)
 
     if command == "flash":
@@ -92,31 +105,52 @@ if __name__ == '__main__' :
         flash_FPU(fpu_id, serial_number)
 
             
-    if command == "limits":
-        if (len(argv) < 7) or (len(argv) > 8):
-            print("usage: limits <amin> <amax>  <bmin> <bmax> [freebetatries]")
+    if command == "alimits":
+        if len(argv) != 5 :
+            print("usage: alimits <amin> <amax>")
             exit(1)
             
         serial_number = argv[2]
         alpha_min = float(argv[3])
         alpha_max = float(argv[4])
-        beta_min = float(argv[5])
-        beta_max = float(argv[6])
-        if len(argv) == 8:
-            fbtries = int(argv[7])
-        else:
-            fbtries = 1
-        
+        with env.begin(write=True,db=fpudb) as txn:
+            key = str((serial_number, "alimits"))
+            val = str(Interval(alpha_min, alpha_max))
+            txn.put(key,val)
+            
+    elif command == "blimits":
+        if len(argv) != 5:
+            print("usage: blimits <bmin> <bmax>")
+            exit(1)
+            
+        serial_number = argv[2]
+        beta_min = float(argv[3])
+        beta_max = float(argv[4])        
 
 
         with env.begin(write=True,db=fpudb) as txn:
-            key = str((serial_number, "limits"))
-            val = str((alpha_min, alpha_max, beta_min, beta_max, fbtries))
+            key = str((serial_number, "blimits"))
+            val = str(Interval(beta_min, beta_max))
+            txn.put(key,val)
+              
+              
+    elif command == "bretries":
+        if len(argv) != 5:
+            print("usage: bretries <nretries>")
+            exit(1)
+            
+        serial_number = argv[2]
+        bretries = int(argv[3])
+        
+
+        with env.begin(write=True,db=fpudb) as txn:
+            key = str((serial_number, "retries"))
+            val = str(bretries)
             txn.put(key,val)
               
               
 
-    if command == "list":
+    elif command == "list":
         with env.begin(db=fpudb) as txn:
             for key, val in txn.cursor():
                 print(key, val)
@@ -127,7 +161,7 @@ if __name__ == '__main__' :
             exit(1)
         serial_number = argv[2]
         with env.begin(db=fpudb) as txn:
-            for subkey in ["apos", "bpos", "wtab", "limits"]:
+            for subkey in ["apos", "bpos", "wtab", "alimits", "blimits", "bretries"]:
                 key = str((serial_number, subkey))
                 val = txn.get(key)
                           

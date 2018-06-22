@@ -215,6 +215,7 @@ when the internal state struct is used.
 *** TODO change datum reference default
 *** TODO add count of allowed freeBetaCollision attempts
 *** TODO separate out driver constants (gear ratios)
+*** TODO change movement commands (findDatum,executeMotion,freeBetaCollision) so that the ping_ok field is cleared on confirmation
 *** DONE update Steven's picture on FPU motor ranges
 *** DONE format serial number in printSerialNumbers() with repr()
 *** DONE install LMDB on moons-pc01
