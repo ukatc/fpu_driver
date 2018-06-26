@@ -3,7 +3,7 @@
 from types import StringType, IntType, ListType, FloatType
 
 from ast import literal_eval
-from numpy import array, ndarray
+from numpy import array, ndarray, nan, Inf
 
 class Interval:
     def __init__(self, *source):
@@ -36,8 +36,11 @@ class Interval:
         self.iv = iv
 
     def __str__(self):
-        return repr(list(self.iv))
-    
+        if self.iv[0] == self.iv[1]:
+            return "[%g]" % self.iv[0]
+        else:
+            return str(list(self.iv))
+        
     def __repr__(self):
         return repr(list(self.iv))
 
@@ -96,3 +99,19 @@ class Interval:
         else:
             return False
         
+
+    def intersects(self, b):
+        """returns interval which contains all points
+        which are contained both in self and b.
+        """
+        if not isinstance(b, Interval):
+            b = Interval(b)
+        iv = b.iv
+
+        mi = max(iv[0], self.iv[0])
+        ma = min(iv[1], self.iv[1])
+        if mi > ma:
+            mi = nan
+            ma = nan
+        return Interval(mi,ma)
+    

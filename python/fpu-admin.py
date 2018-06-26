@@ -19,7 +19,6 @@ env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10)
 fpudb = env.open_db("fpu")
 
 
-
 def flash_FPU(fpu_id, serial_number,mockup=True):
     
     gd = FpuGridDriver.UnprotectedGridDriver(fpu_id+1)
@@ -40,7 +39,22 @@ def flash_FPU(fpu_id, serial_number,mockup=True):
     print(rval)
 
 
+def putInterval(txn, key, interval, offset=0):
+    """In theory, it is cleaner to only store
+    the relative values. But we want the DB content
+    to be human-readable, and easy to interpret,
+    and a uniform angle interpretation, 
+    so it is better to store posiitional values always 
+    along with the offset they refer to."""
+    val = repr([Interval(alpha_pos,alpha_pos), offset])
+    txn.put(key, val)
 
+            
+def getInterval(txn, key, offset=0):
+    val = repr([Interval(alpha_pos,alpha_pos), offset])
+    val = txn.get(key)
+    ivlist, stored_offset = literal_eval(val)
+    return Interval(ivlist) + (offset- stored_offset) 
 
 
 
@@ -48,24 +62,30 @@ if __name__ == '__main__' :
     print(repr(argv))
     if len(argv) < 2:
         print("""usage:
-        init <serial_number> <alpha_pos> <beta_pos>
+        init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]
         list
         list1 <serial_number>
-        alimits <serial_number> <alpha_min> <alpha_max>
+        alimits <serial_number> <alpha_min> <alpha_max> [<adatum_offset>]
         blimits <serial_number> <beta_min> <beta_max>
         bretries <serial_number> <freebetatries>
-        """)
+
+        Default alpha datum offset: %f 
+        """ % ALPHA_DATUM_OFFSET)
               
     command = argv[1]
 
     if command == "init":
-        if len(argv) != 5:
-            print("usage: init <serial_number> <alpha_pos> <beta_pos>")
+        if not (len(argv) in [5,6]):
+            print("usage: init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]")
             exit(1)
             
         serial_number = argv[2]
         alpha_pos = float(argv[3])
         beta_pos = float(argv[4])
+        if len(argv) == 6:
+            alpha_offset = float(argv[5])
+        else:
+            alpha_offset = ALPHA_DATUM_OFFSET
 
         max_waveform = 0
         min_waveform = 0
@@ -73,23 +93,23 @@ if __name__ == '__main__' :
 
         with env.begin(write=True,db=fpudb) as txn:
             key = str( (serial_number, "apos"))
-            val = str(Interval(alpha_pos,alpha_pos))
-            txn.put(key, val)
+            val = Interval(alpha_pos,alpha_pos)
+            putInterval(txn, key, val, alpha_offset)
             key = str( (serial_number, "bpos"))
-            val = str(Interval(beta_pos,beta_pos))
-            txn.put(key, val)
+            val = Interval(beta_pos,beta_pos)
+            putInterval(txn, key, val, BETA_DATUM_OFFSET)
             key = str((serial_number, "wtab"))
-            val = str(Interval(min_waveform, max_waveform))
+            val = repr(Interval(min_waveform, max_waveform))
             txn.put(key,val)
             key = str((serial_number, "wf_reversed"))
             val = str(waveform_reversed)
             txn.put(key,val)
             key = str((serial_number, "alimits"))
-            val = str(Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE))
-            txn.put(key,val)
+            val = Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE)
+            putInterval(txn, key, val, alpha_offset)
             key = str((serial_number, "blimits"))
-            val = str(Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE))
-            txn.put(key,val)
+            val = Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE)
+            putInterval(txn, key,val, BETA_DATUM_OFFSET)
             key = str((serial_number, "bretries"))
             val = str(DEFAULT_FREE_BETA_RETRIES)
             txn.put(key,val)
@@ -106,17 +126,22 @@ if __name__ == '__main__' :
 
             
     if command == "alimits":
-        if len(argv) != 5 :
-            print("usage: alimits <amin> <amax>")
+        if not (len(argv) in [5,6]) :
+            print("usage: alimits <amin> <amax> [<alpha_datum_offset>]")
             exit(1)
             
         serial_number = argv[2]
         alpha_min = float(argv[3])
         alpha_max = float(argv[4])
+        if len(argv) == 6:
+            alpha_offset = float(argv[5])
+        else:
+            alpha_offset = ALPHA_DATUM_OFFSET
+            
         with env.begin(write=True,db=fpudb) as txn:
             key = str((serial_number, "alimits"))
-            val = str(Interval(alpha_min, alpha_max))
-            txn.put(key,val)
+            val = Interval(alpha_min, alpha_max)
+            putInterval(txn, key, val, alpha_offset)
             
     elif command == "blimits":
         if len(argv) != 5:
@@ -130,8 +155,8 @@ if __name__ == '__main__' :
 
         with env.begin(write=True,db=fpudb) as txn:
             key = str((serial_number, "blimits"))
-            val = str(Interval(beta_min, beta_max))
-            txn.put(key,val)
+            val = Interval(beta_min, beta_max)
+            putInterval(txn, key, val, BETA_DATUM_OFFSET)
               
               
     elif command == "bretries":
