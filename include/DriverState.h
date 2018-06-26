@@ -148,7 +148,7 @@ enum E_DriverErrCode
     DE_FPUS_LOCKED = 114,
 
     // A previous movement was aborted.
-    DE_ABORTED_STATE = 115,
+    DE_IN_ABORTED_STATE = 115,
 
     /***************************************/
     /* setup errors */
@@ -244,6 +244,10 @@ enum E_DriverErrCode
 
     DE_STEP_TIMING_ERROR = 603,
 
+    /***************************************/
+    /* abort message */
+    // The movement has just been aborted.
+    DE_MOVEMENT_ABORTED = 604,
 };
 
 // this is a one-bit parameter to several commands

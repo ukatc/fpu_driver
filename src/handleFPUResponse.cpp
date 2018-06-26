@@ -72,7 +72,11 @@ void logErrorStatus(const GridDriverConfig config, int fpu_id, int err_code)
         break;
     case ER_PARAM    :
         err_msg = "parameter out of range"                       ;
+    case ER_AUTO    :
+        err_msg = "firmware cannot perform automatic datum search" ;
         break;
+    case ER_DATUMTO    :
+        err_msg = "hardware failure: datum search timed out";
 
     default:
     case ER_STALLX           :
@@ -234,6 +238,7 @@ void handleFPUResponse(const GridDriverConfig config,
             // in protocol version 1, we do not know the last movement direction
             fpu.direction_alpha = DIRST_UNKNOWN;
             fpu.direction_beta = DIRST_UNKNOWN;
+            fpu.ping_ok = false;
 
             // As an edge case, if the confirmation arrives extremely
             // large, then it is possible that the command has already
@@ -289,6 +294,7 @@ void handleFPUResponse(const GridDriverConfig config,
                 fpu.state = FPST_OBSTACLE_ERROR;
                 fpu.waveform_valid = false;
                 fpu.at_alpha_limit = true;
+		fpu.ping_ok = false;
 
                 LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
                             "FPU # %i: executeMotion command got error status 'ER_M1LIMIT'/'STBT_M1LIMIT'"
@@ -316,6 +322,7 @@ void handleFPUResponse(const GridDriverConfig config,
                     fpu.state = FPST_ABORTED;
                 }
                 fpu.waveform_valid = false;
+		fpu.ping_ok = false;
 
                 LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
                             "FPU # %i: executeMotion command got error status 'STBT_ABORT_WAVE'"
@@ -340,6 +347,7 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.waveform_valid = false;
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
+            fpu.ping_ok = false;
 
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -364,6 +372,7 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
             fpu.alpha_datum_switch_active = true;
+            fpu.ping_ok = false;
 
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -388,6 +397,7 @@ void handleFPUResponse(const GridDriverConfig config,
             }
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
+            fpu.ping_ok = false;
 
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
                    "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
@@ -432,6 +442,7 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.movement_complete = false;
             fpu.waveform_valid = false;
             fpu.step_timing_errcount++;
+            fpu.ping_ok = false;
 
         }
         else if (response_errcode == 0)
@@ -442,6 +453,7 @@ void handleFPUResponse(const GridDriverConfig config,
             {
                 fpu.state = FPST_RESTING;
                 fpu.movement_complete = true;
+		fpu.ping_ok = false;
             }
 
             // in protocol version 1, we do not know the last movement direction
@@ -478,6 +490,7 @@ void handleFPUResponse(const GridDriverConfig config,
         }
         remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
+	fpu.ping_ok = false;
 
         if (cmd_id == CMSG_WARN_RACE)
         {
@@ -688,6 +701,7 @@ void handleFPUResponse(const GridDriverConfig config,
             // in protocol version 1, we do not know the last movement direction
             fpu.direction_alpha = DIRST_UNKNOWN;
             fpu.direction_beta = DIRST_UNKNOWN;
+            fpu.ping_ok = false;
 
             // As an edge case, it is possible that the command has
             // already been removed by a time-out handler. In that
@@ -739,6 +753,7 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.waveform_valid = false;
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
+            fpu.ping_ok = false;
 
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -754,6 +769,7 @@ void handleFPUResponse(const GridDriverConfig config,
             fpu.waveform_valid = false;
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
+            fpu.ping_ok = false;
 
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -762,6 +778,33 @@ void handleFPUResponse(const GridDriverConfig config,
                    get_realtime(),
                    fpu_id);
         }
+        else if (response_errcode == ER_DATUMTO)
+        {
+	    // The datum operation was timed-out by the firmware.  The
+	    // only way this can regularly happen for the alpha arm is
+	    // if the motor is not moving, or the alpha switch is
+	    // broken. In the latter case, the alpha gearbox is
+	    // probably already destroyed.
+            fpu.state = FPST_ABORTED;
+            fpu.waveform_valid = false;
+            fpu.alpha_was_zeroed = false;
+            fpu.beta_was_zeroed = false;
+            fpu.ping_ok = false;
+
+            // FIXME: decrease log level in production system to keep responsivity at maximum
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "while waiting for end of datum command:"
+                   "hardware datum time-out message received for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
+	    
+            LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+			"while waiting for end of datum command:"
+			"hardware datum time-out message received for FPU %i\n"
+			"\a\a\aWARNING: HARDWARE DAMAGE LIKELY\n",
+			get_realtime(),
+			fpu_id);
+        }
         else if (response_status & STBT_ABORT_WAVE)
         {
             if (fpu.state != FPST_OBSTACLE_ERROR)
@@ -769,7 +812,8 @@ void handleFPUResponse(const GridDriverConfig config,
                 fpu.state = FPST_ABORTED;
             }
             fpu.waveform_valid = false;
-
+            fpu.ping_ok = false;
+	    
             LOG_RX(LOG_DEBUG, "%18.6f : RX : "
                    "while waiting for end of datum command:"
                    "movement abortion message received for FPU %i\n",
@@ -783,6 +827,7 @@ void handleFPUResponse(const GridDriverConfig config,
                 fpu.state = FPST_UNINITIALIZED;
                 fpu.alpha_was_zeroed = false;
                 fpu.beta_was_zeroed = false;
+		fpu.ping_ok = false;
             }
         }
         else
@@ -803,6 +848,7 @@ void handleFPUResponse(const GridDriverConfig config,
             if (fpu.beta_was_zeroed && fpu.alpha_was_zeroed)
             {
                 fpu.state = FPST_AT_DATUM;
+		fpu.ping_ok = true;
             }
             else
             {
@@ -849,6 +895,8 @@ void handleFPUResponse(const GridDriverConfig config,
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
+	fpu.ping_ok = false;
+
         // FIXME: Update step counter in protocol version 2
         //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
 
@@ -884,6 +932,7 @@ void handleFPUResponse(const GridDriverConfig config,
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
+	fpu.ping_ok = false;
 
         fpu.last_updated = cur_time;
         break;
@@ -914,6 +963,7 @@ void handleFPUResponse(const GridDriverConfig config,
 
         remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;
+	fpu.ping_ok = false;
         break;
 
     case CCMD_SET_USTEP_LEVEL:
@@ -940,7 +990,6 @@ void handleFPUResponse(const GridDriverConfig config,
 
 
     case CCMD_WRITE_SERIAL_NUMBER:
-        fpu.ping_ok = true;
 
         remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         fpu.last_updated = cur_time;

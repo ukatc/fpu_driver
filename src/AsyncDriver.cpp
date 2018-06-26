@@ -559,7 +559,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : FPUs are in aborted state - cancelling findDatum()operation \n",
                         canlayer::get_realtime());
-            return DE_ABORTED_STATE;
+            return DE_IN_ABORTED_STATE;
         }
     }
 
@@ -762,7 +762,7 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
             logGridState(config.logLevel, grid_state);
             fsync(config.fd_controllog);
 
-            return DE_ABORTED_STATE;
+            return DE_MOVEMENT_ABORTED;
         }
 
     }
@@ -1028,20 +1028,13 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     const unsigned long old_count_timeout = grid_state.count_timeout;
 #endif
 
-    // check driver is connected
-    if (grid_state.driver_state != DS_CONNECTED)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_NO_CONNECTION - no connection present\n",
-                    canlayer::get_realtime());
-        return DE_NO_CONNECTION;
-    }
 
     // perform hardware protection checks unless
     // explicitly disabled.
     if (soft_protection)
     {
         // check no FPUs have ongoing collisions
-        // and has been initialized
+        // and all have been initialized
         for (int i=0; i < config.num_fpus; i++)
         {
             E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
@@ -1061,7 +1054,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_ABORTED_STATE"
                             " - FPU %i is in aborted state\n",
                             canlayer::get_realtime(), i);
-                return DE_ABORTED_STATE;
+                return DE_IN_ABORTED_STATE;
             }
 
             if ( ! (grid_state.FPU_state[i].alpha_was_zeroed
@@ -1086,6 +1079,13 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     }
 
 
+    // check driver is connected
+    if (grid_state.driver_state != DS_CONNECTED)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_NO_CONNECTION - no connection present\n",
+                    canlayer::get_realtime());
+        return DE_NO_CONNECTION;
+    }
 
     unique_ptr<ConfigureMotionCommand> can_command;
     // loop over number of steps in the table
@@ -1319,7 +1319,7 @@ E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_ABORTED_STATE in FPU %i, FPUs are in aborted state\n",
                         canlayer::get_realtime(), i);
-            return DE_ABORTED_STATE;
+            return DE_IN_ABORTED_STATE;
         }
 
     }
@@ -1562,7 +1562,7 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
                 logGridState(config.logLevel, grid_state);
                 fsync(config.fd_controllog);
 
-                return DE_ABORTED_STATE;
+                return DE_MOVEMENT_ABORTED;
             }
 
         }
@@ -1950,14 +1950,21 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
     for (int i=0; i < config.num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
-        if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_OBSTACLE_ERROR))
+        if (fpu_status == FPST_OBSTACLE_ERROR)
         {
             logGridState(config.logLevel, grid_state);
             LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_UNRESOLVED_COLLISION for FPU %i,"
                         " collision needs to be resolvedfirst\n",
                         canlayer::get_realtime(), i);
             return DE_UNRESOLVED_COLLISION;
+        }
+        if (fpu_status == FPST_ABORTED)
+        {
+            logGridState(config.logLevel, grid_state);
+            LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_IN_ABORTED_STATE for FPU %i,"
+                        " aborted state needs to be resolved first\n",
+                        canlayer::get_realtime(), i);
+            return DE_IN_ABORTED_STATE;
         }
     }
 
@@ -2101,14 +2108,21 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
     for (int i=0; i < config.num_fpus; i++)
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
-        if ((fpu_status == FPST_ABORTED)
-                || (fpu_status == FPST_OBSTACLE_ERROR))
+        if (fpu_status == FPST_OBSTACLE_ERROR)
         {
             logGridState(config.logLevel, grid_state);
 
             LOG_CONTROL(LOG_ERROR, "%18.6f : reverseMotion():  error DE_UNRESOLVED_COLLISON for FPU %i\n",
                         canlayer::get_realtime(), i);
             return DE_UNRESOLVED_COLLISION;
+        }
+        if (fpu_status == FPST_ABORTED)
+        {
+            logGridState(config.logLevel, grid_state);
+
+            LOG_CONTROL(LOG_ERROR, "%18.6f : reverseMotion():  error DE_IN_ABORTED_STATE for FPU %i\n",
+                        canlayer::get_realtime(), i);
+            return DE_IN_ABORTED_STATE;
         }
     }
 

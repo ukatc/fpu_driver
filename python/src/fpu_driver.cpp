@@ -414,6 +414,7 @@ void translate_driver_error(FPUDriverException const& e)
     case DE_FPUS_LOCKED :
     case DE_INVALID_FPU_STATE :
     case DE_INVALID_DRIVER_STATE :
+    case DE_IN_ABORTED_STATE :
         PyErr_SetString(InvalidStateExceptionTypeObj, e.what());
         break;
 
@@ -421,13 +422,13 @@ void translate_driver_error(FPUDriverException const& e)
         PyErr_SetString(ProtectionErrorExceptionTypeObj, e.what());
         break;
 
-    case DE_FIRMWARE_UNIMPLEMENTED:
     case DE_OUT_OF_MEMORY:
     case DE_RESOURCE_ERROR:
     case DE_ASSERTION_FAILED:
         PyErr_SetString(SystemFailureExceptionTypeObj, e.what());
         break;
 
+    case DE_FIRMWARE_UNIMPLEMENTED:
     case DE_INSUFFICENT_NUM_GATEWAYS :
     case DE_INVALID_CONFIG :
         PyErr_SetString(SetupErrorExceptionTypeObj, e.what());
@@ -469,7 +470,7 @@ void translate_driver_error(FPUDriverException const& e)
     case DE_STEP_TIMING_ERROR:
         PyErr_SetString(TimingErrorExceptionTypeObj, e.what());
         break;
-    case DE_ABORTED_STATE:
+    case DE_MOVEMENT_ABORTED:
         PyErr_SetString(AbortMotionErrorExceptionTypeObj, e.what());
         break;
 
@@ -615,12 +616,20 @@ void checkDriverError(E_DriverErrCode ecode)
                                  DE_WAIT_TIMEOUT);
         break;
 
-    case DE_ABORTED_STATE :
-        throw FPUDriverException("DE_ABORTED_STATE: There are FPUs in aborted state,"
+    case DE_IN_ABORTED_STATE :
+        throw FPUDriverException("DE_IN_ABORTED_STATE: There are FPUs in aborted state,"
+                                 " because of a previous abortMotion command or a step timing error"
+                                 "- use the resetFPUs command to reset state.",
+                                 DE_IN_ABORTED_STATE);
+        break;
+
+    case DE_MOVEMENT_ABORTED :
+        throw FPUDriverException("DE_MOVEMENT_ABORTED: The FPU has entered the FPST_ABORTED state,"
                                  " because of an abortMotion command or a step timing error "
                                  "- use the resetFPUs command to reset state.",
-                                 DE_ABORTED_STATE);
+                                 DE_MOVEMENT_ABORTED);
         break;
+	
 
     case DE_FPUS_LOCKED :
         throw FPUDriverException("DE_FPUS_LOCKED: Some addressed FPUs are in locked state,"
@@ -1391,7 +1400,8 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_WAVEFORM_NOT_READY", DE_WAVEFORM_NOT_READY)
     .value("DE_NO_MOVABLE_FPUS", DE_NO_MOVABLE_FPUS)
     .value("DE_WAIT_TIMEOUT", DE_WAIT_TIMEOUT)
-    .value("DE_ABORTED_STATE", DE_ABORTED_STATE)
+    .value("DE_IN_ABORTED_STATE", DE_IN_ABORTED_STATE)
+    .value("DE_MOVEMENT_ABORTED", DE_MOVEMENT_ABORTED)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
     .value("DE_STEP_TIMING_ERROR", DE_STEP_TIMING_ERROR)
     .value("DE_INVALID_FPU_ID", DE_INVALID_FPU_ID)
