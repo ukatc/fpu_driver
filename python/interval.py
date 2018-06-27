@@ -3,11 +3,13 @@
 from types import StringType, IntType, ListType, FloatType
 
 from ast import literal_eval
-from numpy import array, ndarray, nan, Inf
+from numpy import array, ndarray, nan, Inf, isnan
 
 class Interval:
     def __init__(self, *source):
-        if len(source) == 1:
+        if len(source) == 0:
+            source = nan
+        elif len(source) == 1:
             source = source[0]
         else:
             assert(len(source)==2)
@@ -36,8 +38,10 @@ class Interval:
         self.iv = iv
 
     def __str__(self):
-        if self.iv[0] == self.iv[1]:
-            return "[%g]" % self.iv[0]
+        if isnan(self.iv[0]) and isnan(self.iv[1]):
+            return "[]"
+        elif self.iv[0] == self.iv[1]:
+            return "%g" % self.iv[0]
         else:
             return str(list(self.iv))
         
@@ -68,7 +72,20 @@ class Interval:
             b = Interval(b)
         iv = self.iv - b.iv
         return Interval(iv)
+
+
+    def __radd__(self, b):
+        if not isinstance(b, Interval):
+            b = Interval(b)
+        iv = b.iv + self.iv
+        return Interval(iv)
         
+    def __rsub__(self, b):
+        if not isinstance(b, Interval):
+            b = Interval(b)
+        iv = b.iv - self.iv 
+        return Interval(iv)
+    
     def __addi__(self, b):
         if not isinstance(b, Interval):
             b = Interval(b)

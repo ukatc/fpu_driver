@@ -6,7 +6,7 @@ from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
 
 from fpu_commands import *
 
-NUM_FPUS = 10
+NUM_FPUS = 3
 gateway_adr_list = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 

@@ -2,7 +2,7 @@
 from __future__ import print_function, division
 
 import os
-from sys import argv
+from sys import argv, exit
 import argparse
 
 import lmdb
@@ -46,7 +46,7 @@ def putInterval(txn, key, interval, offset=0):
     and a uniform angle interpretation, 
     so it is better to store posiitional values always 
     along with the offset they refer to."""
-    val = repr([Interval(alpha_pos,alpha_pos), offset])
+    val = repr([interval, offset])
     txn.put(key, val)
 
             
@@ -62,6 +62,7 @@ if __name__ == '__main__' :
     print(repr(argv))
     if len(argv) < 2:
         print("""usage:
+        flash <serial_number> <fpu_id>
         init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]
         list
         list1 <serial_number>
@@ -71,6 +72,7 @@ if __name__ == '__main__' :
 
         Default alpha datum offset: %f 
         """ % ALPHA_DATUM_OFFSET)
+        exit(1)
               
     command = argv[1]
 
@@ -116,7 +118,7 @@ if __name__ == '__main__' :
 
     if command == "flash":
         if len(argv) != 4:
-            print("usage: init <serial_number> <fpu_id>")
+            print("usage: flash <serial_number> <fpu_id>")
             exit(1)
         serial_number = argv[2]
         assert(len(serial_number) <= 5)
@@ -180,9 +182,9 @@ if __name__ == '__main__' :
             for key, val in txn.cursor():
                 print(key, val)
 
-    if command == "list1":
+    elif command == "list1":
         if len(argv) != 3:
-            print("usage: list <serial_number>")
+            print("usage: list1 <serial_number>")
             exit(1)
         serial_number = argv[2]
         with env.begin(db=fpudb) as txn:

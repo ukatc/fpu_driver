@@ -16,11 +16,17 @@ from fpu_constants import *
 
 import fpu_driver
 
-from fpu_driver import __version__, CAN_PROTOCOL_VERSION, GatewayAddress,  \
-    REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, FPUDriverException, MovementError, \
-    DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
-    LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_VERBOSE, LOG_TRACE_CAN_MESSAGES, \
-    SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU
+from fpu_driver import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  
+                        REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, 
+                        FPUDriverException, MovementError, CollisionError, LimitBreachError,
+                        AbortMotionError, StepTimingError, InvalidState, SystemFailure,
+                        InvalidParameter, SetupError, InvalidWaveformException, ConnectionFailure,
+                        SocketFailure, CommandTimeout, ProtectionError,                        
+                        DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, 
+                        LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_VERBOSE, LOG_TRACE_CAN_MESSAGES, 
+                        SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, FPST_UNINITIALIZED,
+                        FPST_LOCKED, FPST_DATUM_SEARCH, FPST_AT_DATUM, FPST_LOADING, FPST_READY_FORWARD,
+                        FPST_READY_REVERSE, FPST_MOVING, FPST_RESTING, FPST_ABORTED, FPST_OBSTACLE_ERROR )
 
 
 import fpu_commands as cmds
@@ -110,9 +116,16 @@ def make_logdir(log_dir):
         
     return log_path
 
+# enumeration which defines the strictness of checks
+class Range:
+    Error = "Error - path rejected"
+    Warn = "Warning - path unsafe"
+    Ignore = "Ignore - path unchecked"
+
+
 filterwarnings("default", "keyword check_protection", DeprecationWarning)
 
-class UnprotectedGridDriver:
+class UnprotectedGridDriver (object):
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
                  alpha_datum_offset=ALPHA_DATUM_OFFSET,
@@ -158,12 +171,12 @@ class UnprotectedGridDriver:
         os.close(self.config.fd_txlog)
         os.close(self.config.fd_rxlog)
 
-    def post_connect_hook(self):
+    def post_connect_hook(self, config):
         pass
 
     def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST):
         rv = self._gd.connect(address_list)
-        self.post_connect_hook()
+        self.post_connect_hook(self.config)
         return rv
 
     def setUStepLevel(self, ustep_level,  gs, fpuset=[]):
@@ -190,15 +203,15 @@ class UnprotectedGridDriver:
 
 
     def start_find_datum_hook(self, gs, search_modes,  selected_arm=None,
-                               fpuset=None, initial_positions={}):
+                               fpuset=[], initial_positions={}):
         pass
 
     def cancel_find_datum_hook(self, gs, search_modes,  selected_arm=None,
-                               fpuset=None, initial_positions={}):
+                               fpuset=[], initial_positions={}):
         pass
 
     def finish_find_datum_hook(self, gs, search_modes,  selected_arm=None,
-                               fpuset=None, initial_positions={}):
+                               fpuset=[], initial_positions={}):
         pass
     
     def findDatumB(self, gs, search_modes={}, selected_arm=DASEL_BOTH, soft_protection=True,
@@ -321,11 +334,11 @@ class UnprotectedGridDriver:
     def pingFPUs(self, gs, fpuset=[]):
         return self._gd.pingFPUs(gs, fpuset)
 
-    def reset_hook(self, gs. fpuset=[]):
+    def reset_hook(self, old_state, gs, fpuset=[]):
         pass
     
     def resetFPUs(self, gs, fpuset=[]):
-        old_state = copy.deepcopy(gs)
+        old_state = gd.getGridState()
         rval = self._gd.resetFPUs(gs, fpuset)
         self.last_wavetable = {}
         self.reset_hook(self, old_state, gs, fpuset=fpuset)
@@ -448,7 +461,7 @@ class UnprotectedGridDriver:
                     # which happens to have the same length.
                     if wtable.has_key(fpu_id):
                         if (fpu.state==FPST_READY_FORWARD) and (
-                                fpu.fpu.num_waveform_segments = len(wtable[fpu_id])):
+                                fpu.fpu.num_waveform_segments == len(wtable[fpu_id])):
                             self.last_wavetable[fpu_id] = wtable[fpu_id]
                 raise
             # remember wavetable
@@ -583,25 +596,31 @@ DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE")
 
 env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10)
 
-# enumeration which defines the strictness of checks
-class Range:
-    Error = "Error - path rejected"
-    Warn = "Warning - path unsafe"
-    Ignore = "Ignore - path unchecked"
-
+def get_duplicates(idlist):
+    duplicates = {} 
+    for n, id in enumerate(idlist):
+        if idlist.count(id) > 1:
+            duplicates[n] = id
+    return duplicates
     
 class GridDriver(UnprotectedGridDriver):
-    def __init__(*args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(GridDriver,self).__init__(*args, **kwargs)
         
         self.alpha_configured_range = {}
         self.beta_configured_range = {}
 
-        def post_connect_hook(self):
+    def post_connect_hook(self, config):
         self.fpudb = env.open_db("fpu")
         
         grid_state = self.getGridState()
         self.readSerialNumbers(grid_state)
+        # check for uniqueness
+        snumbers = [fpu.serial_number for fpu in grid_state.FPU]
+        if len(snumbers) > len(set(snumbers)):
+            duplicates = get_duplicates(snumbers)
+            raise ProtectionError("FPU serial numbers are not unique: " + repr(duplicates))
+        
         apositions = {}
         bpositions = {}
         wtabs = {}
@@ -615,15 +634,15 @@ class GridDriver(UnprotectedGridDriver):
         
         print("reading serial numbers from DB....")
         print("here is a wart: the alpha zero point should be stored, or the step counts independent")
-        a_offsets = []
-        b_offsets = []
+        a_caloffsets = []
+        b_caloffsets = []
         
-        alpha_datum_offset=float(kwargs.get("alpha_datum_offset", ALPHA_DATUM_OFFSET))
+        alpha_datum_offset=config.alpha_datum_offset
         
         for fpu_id, fpu in enumerate(grid_state.FPU):
             serial_number = fpu.serial_number
-            a_offsets.append(Interval(0.0))
-            b_offsets.append(Interval(0.0))
+            a_caloffsets.append(Interval(0.0))
+            b_caloffsets.append(Interval(0.0))
             
             with env.begin(db=self.fpudb) as txn:
                 for subkey in ["apos", "bpos", "wtab", "alimits", "blimits", "wf_reversed", "bretries"]:
@@ -657,17 +676,21 @@ class GridDriver(UnprotectedGridDriver):
         self.wf_reversed = wf_reversed
         self.alimits = alimits
         self.blimits = blimits
-        self.a_offsets = a_offsets
-        self.b_offsets = b_offsets
+        self.a_caloffsets = a_caloffsets
+        self.b_caloffsets = b_caloffsets
         self.wf_reversed = wf_reversed
         self.bretries = bretries
         
 
         # query positions and compute offsets, if FPUs have been resetted.
         # This assumes that the stored positions are correct.
-        super(GridDriver,self).pingFPUs(grid_state, record_positions=False)
-        self.reset_hook(grid_state)
-        self.refreshPositions(grid_state, store=False)
+        print("before reset:")
+        self.trackedAngles(grid_state)
+        super(GridDriver,self).pingFPUs(grid_state)
+        self.reset_hook(grid_state, grid_state)
+        print("after reset:")
+        self.trackedAngles(grid_state)
+        self.refresh_positions(grid_state, store=False)
 
 
     def alpha_angle(self, fpu):
@@ -676,7 +699,7 @@ class GridDriver(UnprotectedGridDriver):
     def beta_angle(self, fpu):
         return fpu.beta_steps / StepsPerDegreeBeta
 
-    def reset_hook(self, former_grid_state, new_state, fpuset=[]):
+    def reset_hook(self, old_state, new_state, fpuset=[]):
         """This is to be run after a reset or hardware power-on-reset.
         Updates the offset between the stored FPU positions and positions
         reported by ping. 
@@ -693,25 +716,50 @@ class GridDriver(UnprotectedGridDriver):
         - after every resetFPU command
 
         """
-        for fpu_id, fpu in enumerate(former_grid_state.FPU):
-            if fpuset!= None and (not (fpu_id in fpuset)):
+        for fpu_id, fpu in enumerate(new_state.FPU):
+            if (len(fpuset) > 0) and (fpu_id not in fpuset):
                 continue
 
-            if ( (new_state.FPU[fpu_id].state != FPST_UNINITIALISED)
-                 or (not new_state.FPU[fpu_id].ping_ok)
-                 or (new_state.FPU[fpu_id].alpha_steps != 0)
-                 or (new_state.FPU[fpu_id].beta_steps != 0)):
+            old_fpu = old_state.FPU[fpu_id]
+            
+            if ( (fpu.state != FPST_UNINITIALIZED)
+                 or (not fpu.ping_ok)
+                 or (fpu.alpha_steps != 0)
+                 or (fpu.beta_steps != 0)):
                 # fpu wasn't resetted successfully
                 # We do not set the offset to zero - the FPU 
                 # has been moved from a former reset
                 continue
                         
-                        
-            a_offsets[fpu_id] += self.alpha_angle(fpu) - self.apositions[fpu_id]
+            # these offsets are the difference between the calibrated
+            # angle and the uncalibrated angle - after a findDatum,
+            # they are set to zero
+            self.a_caloffsets[fpu_id] += self.apositions[fpu_id] - self.alpha_angle(fpu)
 
-            b_offsets[fpu_id] += self.beta_angle(fpu) - self.bpositions[fpu_id]
+            self.b_caloffsets[fpu_id] += self.bpositions[fpu_id] - self.beta_angle(fpu)
                         
-
+    def trackedAngles(self, gs, fpuset=[]):
+        """lists tracked angles, offset, and waveform span
+        for configured waveforms, for each FPU"""
+        
+        if len(fpuset) == 0:
+            fpuset = range(self.config.num_fpus)
+            
+        warange_dict = self.alpha_configured_range
+        wbrange_dict = self.beta_configured_range
+        for fi in fpuset:
+            fpu = gs.FPU[fi]
+            aangle = fpu.alpha_steps / StepsPerDegreeAlpha
+            bangle = fpu.beta_steps / StepsPerDegreeBeta
+            wf_arange = warange_dict.get(fi,Interval())
+            wf_brange = wbrange_dict.get(fi,Interval())
+            
+            print("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
+                  " stepcount= ({!s}, {!s}), last_wform_range=({!s},{!s})".
+                  format(fi, self.apositions[fi],self.bpositions[fi],
+                         self.a_caloffsets[fi], self.b_caloffsets[fi],
+                         aangle, bangle,
+                         wf_arange, wf_brange))
 
                 
     def refresh_positions(self, grid_state, store=True, fpuset=[]):
@@ -726,11 +774,11 @@ class GridDriver(UnprotectedGridDriver):
         it, so this might change.
 
         """
-        for fpu_id, fpu in enumerate(former_grid_state.FPU):
-            if fpuset!= None and (not (fpu_id in fpuset)):
+        for fpu_id, fpu in enumerate(grid_state.FPU):
+            if len(fpuset) > 0 and (fpu_id not in fpuset):
                 continue
 
-            if not (fpu.ping_ok or (fpu.state == FPST_AT_DATUM):
+            if not fpu.ping_ok:
                 # position is not known. This flag is set by a
                 # successful ping, and cleared by every movement as
                 # well as all movement time-outs
@@ -738,19 +786,19 @@ class GridDriver(UnprotectedGridDriver):
             
             # compute alpha and beta position intervals,
             # and store both to DB
-            self.apositions[fpu_id] = self.a_offsets[fpu_id] + self.alpha_angle(fpu)
-            self.bpositions[fpu_id] = self.b_offset[fpu_id] + self.beta_angle(fpu)
+            self.apositions[fpu_id] = self.a_caloffsets[fpu_id] + self.alpha_angle(fpu)
+            self.bpositions[fpu_id] = self.b_caloffsets[fpu_id] + self.beta_angle(fpu)
 
             if store:
                 serial_number = fpu.serial_number
-                with env.begin(db=self.fpudb) as txn:
+                with env.begin(db=self.fpudb, write=True) as txn:
                     key = str( (serial_number, "apos"))
                     # store the datum offsets along with each position
                     # (this allows to reconfigure the zero point later)
                     val = [self.apositions[fpu_id], self.config.alpha_datum_offset]
                     txn.put(key, repr(val))
                     key = str( (serial_number, "bpos"))
-                    val = [self.bpositions[fpu_id]), 0]
+                    val = [self.bpositions[fpu_id], 0]
                     txn.put(key, repr(val))
 
     def pingFPUs(self, grid_state, fpuset=[]):
@@ -795,7 +843,7 @@ class GridDriver(UnprotectedGridDriver):
         
         if not xlimits.contain(x):
             if wmode == Range.Error:
-                throw ProtectionException("For FPU %i, at step %i, arm %s, the wavetable steps outside the tracked safe limits" %(
+                raise ProtectionError("For FPU %i, at step %i, arm %s, the wavetable steps outside the tracked safe limits" %(
                     fpu_id, stepnum, arm_name))
                 
             elif wmode == Range.Warn:
@@ -898,7 +946,7 @@ class GridDriver(UnprotectedGridDriver):
         for fpu_id in fpu_id_list:
             serial_number = fpu.serial_number
             self.wv_reversed[fpu_id] = is_reversed
-            with env.begin(db=self.fpudb) as txn:
+            with env.begin(db=self.fpudb, write=True) as txn:
                 key = str( (serial_number, "wf_refersed"))
                 val = str(is_reversed)
                 txn.put(key, val)
@@ -938,7 +986,7 @@ class GridDriver(UnprotectedGridDriver):
         # save the changed waveform tables
         for fpu_id, wentry in wtable.items():
             serial_number = gs.FPU[fpu_id].serial_number
-            with env.begin(db=self.fpudb) as txn:
+            with env.begin(db=self.fpudb, write=True) as txn:
                 key = str( (serial_number, "wtabs"))
                 val = repr(wentry)
                 txn.put(key, val)
@@ -991,7 +1039,7 @@ class GridDriver(UnprotectedGridDriver):
                 self.bpositions[fpu_id] = self.configured_brange[fpu_id]
             
             serial_number = fpu.serial_number
-            with env.begin(db=self.fpudb) as txn:
+            with env.begin(db=self.fpudb, write=True) as txn:
                 key = str( (serial_number, "apos"))
                 val = [self.apositions[fpu_id], self.alpha_datum_offset]
                 txn.put(key, repr(val))
@@ -1014,7 +1062,7 @@ class GridDriver(UnprotectedGridDriver):
             self.bpositions[fpu_id] = bpos
             
             serial_number = fpu.serial_number
-            with env.begin(db=self.fpudb) as txn:
+            with env.begin(db=self.fpudb, write=True) as txn:
                 key = str( (serial_number, "apos"))
                 val = [apos, self.alpha_datum_offset]
                 txn.put(key, repr(val))
@@ -1055,7 +1103,7 @@ class GridDriver(UnprotectedGridDriver):
             if (len(fpuset) == 0) or (k in fpuset):
                 del self.configured_brange[k]
 
-    def allow_find_datum_hook(self,gs, search_modes, selected_arm=None, fpuset=None,
+    def allow_find_datum_hook(self,gs, search_modes, selected_arm=None, fpuset=[],
                               support_uninitialized_auto=True):
         """This function checks whether a datum search is safe, and throws an
         exception if not. It does that based on the stored
@@ -1123,10 +1171,10 @@ class GridDriver(UnprotectedGridDriver):
                     raise ProtectionError("Alpha arm of FPU %i is not in safe range"
                                           " for datum search" % fpu_id)
 
-    def finished_find_datum_hook(self, gs, search_modes, fpuset=None, was_cancelled=False):
+    def finished_find_datum_hook(self, gs, search_modes, fpuset=[], was_cancelled=False, initial_positions={}):
         print("driver: always clear ping_ok when movement commands are started")
         for fpu_id, fpu in enumerate(gs.FPU):
-            if fpuset!= None and (not (fpu_id in fpuset)):
+            if len(fpuset) > 0 and (not (fpu_id in fpuset)):
                 continue
 
             if (len(search_modes) != 0) and (not search_modes.kas_key(fpu_id)):
@@ -1135,9 +1183,9 @@ class GridDriver(UnprotectedGridDriver):
                                                                                 
             serial_number = fpu.serial_number
             # set position intervals to zero, and store in DB
-            with env.begin(db=self.fpudb) as txn:
+            with env.begin(db=self.fpudb, write=True) as txn:
                 if fpu.alpha_was_zeroed:
-                    self.a_offsets = Interval(0)
+                    self.a_caloffsets[fpu_id] = Interval(0)
                     if fpu.alpha_steps == 0:                        
                         self.apositions[fpu_id] = Interval(0.0)
                     key = str( (serial_number, "apos"))
@@ -1147,14 +1195,14 @@ class GridDriver(UnprotectedGridDriver):
                     ## If ping_ok is set, we assume that the step counter
                     ## is valid, and the offset is unchanged.
                     if fpu.ping_ok:
-                        self.apositions[fpu_id] = Interval(self.alpha_angle(fpu)) + self.a_offsets[fpu_id]
+                        self.apositions[fpu_id] = Interval(self.alpha_angle(fpu)) + self.a_caloffsets[fpu_id]
                         key = str( (serial_number, "apos"))
                         val = [self.apositions[fpu_id], self.config.alpha_datum_offset]
                         txn.put(key, repr(val))
 
                 
                 if fpu.beta_was_zeroed:
-                    self.b_offsets = Interval(0)
+                    self.b_caloffsets[fpu_id] = Interval(0)
                     if fpu.beta_steps == 0:                        
                         self.bpositions[fpu_id] = Interval(0.0)
                     key = str( (serial_number, "bpos"))
@@ -1163,17 +1211,17 @@ class GridDriver(UnprotectedGridDriver):
                 else:
                     ##TODO: check for valid step count, store state
                     if fpu.ping_ok:
-                        self.bpositions[fpu_id] = Interval(self.beta_angle(fpu)) + self.b_offsets[fpu_id]
+                        self.bpositions[fpu_id] = Interval(self.beta_angle(fpu)) + self.b_caloffsets[fpu_id]
                         key = str( (serial_number, "bpos"))
                         val = [self.bpositions[fpu_id], 0]
                         txn.put(key, repr(val))
         
 
-    def start_find_datum_hook(self, gs, search_modes,  selected_arm=None,fpuset=None, initial_positions={}):
+    def start_find_datum_hook(self, gs, search_modes,  selected_arm=None,fpuset=[], initial_positions={}):
         """This is run when an findDatum command is actually started.
         It updates the new range of possible positions to include the zero point of each arm."""
         for fpu_id, fpu in enumerate(gs.FPU):
-            if fpuset!= None and (not (fpu_id in fpuset)):
+            if len(fpuset) > 0 and (not (fpu_id in fpuset)):
                 continue
 
             if (len(search_modes) != 0) and (not search_modes.kas_key(fpu_id)):
@@ -1187,7 +1235,7 @@ class GridDriver(UnprotectedGridDriver):
             
             serial_number = fpu.serial_number
             # update stored intervals to include zero, and store in DB
-            with env.begin(db=self.fpudb) as txn:
+            with env.begin(db=self.fpudb, write=True) as txn:
                 if selected_arm in [DASEL_ALPHA, DASEL_BOTH]:
                     self.apositions[fpu_id].extend(0.0)
                     key = str( (serial_number, "apos"))
@@ -1202,7 +1250,7 @@ class GridDriver(UnprotectedGridDriver):
                 
 
     def cancel_find_datum_hook(self, gs, search_modes,  selected_arm=None,
-                               fpuset=None, initial_positions={}):
+                               fpuset=[], initial_positions={}):
 
         for fpu_id in initial_positions.keys():
             # get last stored positions
@@ -1210,7 +1258,7 @@ class GridDriver(UnprotectedGridDriver):
             
             serial_number = fpu.serial_number
             # revert stored intervals to old values
-            with env.begin(db=self.fpudb) as txn:
+            with env.begin(db=self.fpudb, write=True) as txn:
                 self.apositiions[fpu_id] = apos
                 key = str( (serial_number, "apos"))
                 val = [apos, self.config.alpha_datum_offset]
