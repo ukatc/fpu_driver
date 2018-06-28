@@ -82,7 +82,7 @@ def parse_args():
                         help='number of simulated FPUs')
 
     parser.add_argument('-O', '--alpha-datum-offset',  type=float, dest='alpha_datum_offset',
-                        default=-181.0,
+                        default=-180.0,
                         help=("""Conventional angle of datum position."""))
     
     parser.add_argument('-A', '--alpha-start',  type=float, dest='alpha_start',

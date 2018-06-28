@@ -109,7 +109,7 @@ filterwarnings("default", "keyword check_protection", DeprecationWarning)
 class GridDriver:
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
-                 alpha_datum_offset=-181.0,
+                 alpha_datum_offset=-180.0,
                  logLevel=DEFAULT_LOGLEVEL,
                  log_dir=DEFAULT_LOGDIR,
                  control_logfile="_{start_timestamp}-fpu_control.log",
