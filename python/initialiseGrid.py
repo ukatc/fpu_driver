@@ -67,6 +67,7 @@ if __name__ == '__main__':
     args = parse_args()
 
     gd, grid_state = initialize_FPU(args)
+    gs = grid_state # alias grid_state to short name
 
     print("issuing pingFPUs and getting positions:")
     gd.pingFPUs(grid_state)

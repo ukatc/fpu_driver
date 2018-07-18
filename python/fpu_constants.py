@@ -10,8 +10,8 @@ DegreePerRevolution = 360.0
 
 # Note that these numbers must not be confounded with actual calibrated values!
 
-StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
-StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
+StepsPerDegreeAlpha = float(StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
+StepsPerDegreeBeta = float(StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
 
 ALPHA_MIN_DEGREE = -180
 ALPHA_MAX_DEGREE = +179.6

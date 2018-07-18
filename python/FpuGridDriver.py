@@ -210,7 +210,7 @@ class UnprotectedGridDriver (object):
                                fpuset=[], initial_positions={}):
         pass
 
-    def finish_find_datum_hook(self, gs, search_modes,  selected_arm=None,
+    def finished_find_datum_hook(self, gs, search_modes,  selected_arm=None,
                                fpuset=[], initial_positions={}):
         pass
     
@@ -383,7 +383,7 @@ class UnprotectedGridDriver (object):
         self.readSerialNumbers(gs, fpuset=fpuset)
         for i in range(self.config.num_fpus):
             if (len(fpuset) == 0) or i in fpuset:
-                print("FPU %i : SN = %s" % (i, gs.FPU[i].serial_number))
+                print("FPU %i : SN = %r" % (i, gs.FPU[i].serial_number))
         
     
     def writeSerialNumber(self, fpu_id, serial_number,  gs):
@@ -606,9 +606,14 @@ def get_duplicates(idlist):
 class GridDriver(UnprotectedGridDriver):
     def __init__(self, *args, **kwargs):
         super(GridDriver,self).__init__(*args, **kwargs)
-        
-        self.alpha_configured_range = {}
-        self.beta_configured_range = {}
+
+        # position intervals which are being configured by configMotion
+        self.alpha_configuring_range = {}
+        self.beta_configuring_range = {}
+        # position intervals which have successfully been configured
+        # and will become valid with next executeMotion
+        self.configured_arange = {}
+        self.configured_brange = {}
 
     def post_connect_hook(self, config):
         self.fpudb = env.open_db("fpu")
@@ -633,7 +638,7 @@ class GridDriver(UnprotectedGridDriver):
                      'alimits' : alimits, 'blimits' : blimits, 'bretries' : bretries }
         
         print("reading serial numbers from DB....")
-        print("here is a wart: the alpha zero point should be stored, or the step counts independent")
+        print("FIXME: store and load reversed state and span of active waveforms")
         a_caloffsets = []
         b_caloffsets = []
         
@@ -678,7 +683,6 @@ class GridDriver(UnprotectedGridDriver):
         self.blimits = blimits
         self.a_caloffsets = a_caloffsets
         self.b_caloffsets = b_caloffsets
-        self.wf_reversed = wf_reversed
         self.bretries = bretries
         
 
@@ -745,12 +749,12 @@ class GridDriver(UnprotectedGridDriver):
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
             
-        warange_dict = self.alpha_configured_range
-        wbrange_dict = self.beta_configured_range
+        warange_dict = self.alpha_configuring_range
+        wbrange_dict = self.beta_configuring_range
         for fi in fpuset:
             fpu = gs.FPU[fi]
-            aangle = fpu.alpha_steps / StepsPerDegreeAlpha
-            bangle = fpu.beta_steps / StepsPerDegreeBeta
+            aangle = self.alpha_angle(fpu)
+            bangle = self.beta_angle(fpu)
             wf_arange = warange_dict.get(fi,Interval())
             wf_brange = wbrange_dict.get(fi,Interval())
             
@@ -815,7 +819,7 @@ class GridDriver(UnprotectedGridDriver):
         grid_state = self.getGridState()
         if grid_state.driver_state == DS_CONNECTED:
             # fetch current positions
-            super(GridDriver,self).pingFPUs(grid_state, record_positions=False)
+            super(GridDriver,self).pingFPUs(grid_state)
 
         self.refresh_positions(grid_state)
         super(GridDriver, self).__del__()
@@ -841,7 +845,7 @@ class GridDriver(UnprotectedGridDriver):
         # this is updated in the movement range
         new_range.combine(x)
         
-        if not xlimits.contain(x):
+        if not xlimits.contains(x):
             if wmode == Range.Error:
                 raise ProtectionError("For FPU %i, at step %i, arm %s, the wavetable steps outside the tracked safe limits" %(
                     fpu_id, stepnum, arm_name))
@@ -894,15 +898,15 @@ class GridDriver(UnprotectedGridDriver):
         # compare to allowed range
         # if not in range, throw exception, or print warning,
         # depending on protection setting
-        alpha_configured_range = {}
-        beta_configured_range = {}
+        alpha_configuring_range = {}
+        beta_configuring_range = {}
         for fpu_id, wt_row in wtable.items():
             fpu = gs.FPU[fpu_id]
  
             alimits= self.alimits[fpu_id]
             blimits= self.blimits[fpu_id]
 
-            alpha0 = self.apositions[fpu_id]
+            alpha0 = self.apositions[fpu_id] 
             beta0 = self.bpositions[fpu_id]
 
             wf_arange = Interval(alpha0)
@@ -913,7 +917,9 @@ class GridDriver(UnprotectedGridDriver):
 
             self.check_allowed_range(fpu_id, -1, "beta",  blimits, beta0, 
                                      wf_brange, wmode)
-            
+
+            asteps = 0
+            bsteps = 0
             for step_num, entry in enumerate(wt_row):
                 a, b = entry
                 asteps += a *sign
@@ -928,24 +934,25 @@ class GridDriver(UnprotectedGridDriver):
                                          blimits, beta_sect,
                                          wf_brange, wmode)
                 
-            alpha_configured_range[fpu_id] = wf_arange
-            beta_configured_range[fpu_id] = wf_brange
+            alpha_configuring_range[fpu_id] = wf_arange
+            beta_configuring_range[fpu_id] = wf_brange
 
         # this is the list of alpha/beta position intervals that
         # will become valid if and after an executeMotion is started,
         # and before the new positions can be retrieved via ping
-        self.alpha_configured_range.update(alpha_configured_range)
-        self.beta_configured_range.update(beta_configured_range)
+        self.alpha_configuring_range.update(alpha_configuring_range)
+        self.beta_configuring_range.update(beta_configuring_range)
 
     def pre_config_motion_hook(self, wtable, gs, fpuset, wmode=Range.Error):
         self.check_and_register_wtable(wtable, gs, fpuset, wmode, sign=1)
 
     # this can possibly be deleted
     # but do we want to store the full wavetable ?
-    def save_wtable_direction(self, fpu_id_list, is_reversed=False):
+    def save_wtable_direction(self, fpu_id_list, is_reversed=False, grid_state=None):
         for fpu_id in fpu_id_list:
+            fpu = grid_state.FPU[fpu_id]
             serial_number = fpu.serial_number
-            self.wv_reversed[fpu_id] = is_reversed
+            self.wf_reversed[fpu_id] = is_reversed
             with env.begin(db=self.fpudb, write=True) as txn:
                 key = str( (serial_number, "wf_refersed"))
                 val = str(is_reversed)
@@ -955,8 +962,8 @@ class GridDriver(UnprotectedGridDriver):
     def post_config_motion_hook(self, wtable, gs, fpuset, partial_config=False):
         # update ranges that will become valid once executeMotion is started
         if not partial_config:
-            self.configured_arange.update(self.alpha_configured_range)
-            self.configured_brange.update(self.beta_configured_range)
+            self.configured_arange.update(self.alpha_configuring_range)
+            self.configured_brange.update(self.beta_configuring_range)
         else:
             # In this case, not all waveforms were sent successfully.
             #
@@ -965,7 +972,7 @@ class GridDriver(UnprotectedGridDriver):
             # range of the affected waveforms. This covers both
             # the situation that the old wave table is used, and
             # the case that the new one is used.
-            for fpu_id, rentry in self.alpha_configured_range.items():
+            for fpu_id, rentry in self.alpha_configuring_range.items():
                 if gd.FPU[fpu_id].state == FPST_READY_FORWARD:
                     self.configured_arange[fpu_id].extend(rentry)
                 else:
@@ -973,7 +980,7 @@ class GridDriver(UnprotectedGridDriver):
                     del wtable[fpu_id]
                     
                 
-            for fpu_id, rentry in self.beta_configured_range.items():
+            for fpu_id, rentry in self.beta_configuring_range.items():
                 if gd.FPU[fpu_id].state == FPST_READY_FORWARD:
                     self.configured_brange[fpu_id].extend(rentry)
                 else:
@@ -982,7 +989,7 @@ class GridDriver(UnprotectedGridDriver):
                     if wtable.has_key(fpu_id):
                         del wtable[fpu_id]
 
-        self.save_wtable_direction(wtable.keys(), is_reversed=False)
+        self.save_wtable_direction(wtable.keys(), is_reversed=False, grid_state=gs)
         # save the changed waveform tables
         for fpu_id, wentry in wtable.items():
             serial_number = gs.FPU[fpu_id].serial_number
@@ -998,9 +1005,9 @@ class GridDriver(UnprotectedGridDriver):
         
     def post_repeat_motion_hook(self, wtable, gs, fpuset):
         # updateranges that become valid once executeMotion is started
-        self.configured_arange.update(self.alpha_configured_range)
-        self.configured_brange.update(self.beta_configured_range)
-        self.save_wtable_direction(wtable.keys(), is_reversed=False)
+        self.configured_arange.update(self.alpha_configuring_range)
+        self.configured_brange.update(self.beta_configuring_range)
+        self.save_wtable_direction(wtable.keys(), is_reversed=False, grid_state=gs)
 
     def pre_reverse_motion_hook(self, wtable, gs, fpuset, wmode=Range.Error):
         self.check_and_register_wtable(wtable, gs, fpuset, wmode, sign=-1)
@@ -1008,9 +1015,9 @@ class GridDriver(UnprotectedGridDriver):
         
     def post_reverse_motion_hook(self, wtable, gs, fpuset):
         # updateranges that become valid once executeMotion is started
-        self.configured_arange.update(self.alpha_configured_range)
-        self.configured_brange.update(self.beta_configured_range)
-        self.save_wtable_direction(wtable.keys(), is_reversed=True)
+        self.configured_arange.update(self.alpha_configuring_range)
+        self.configured_brange.update(self.beta_configuring_range)
+        self.save_wtable_direction(wtable.keys(), is_reversed=True, grid_state=gs)
         
 
     def start_execute_motion_hook(self, gs, fpuset, initial_positions={}):
@@ -1041,7 +1048,7 @@ class GridDriver(UnprotectedGridDriver):
             serial_number = fpu.serial_number
             with env.begin(db=self.fpudb, write=True) as txn:
                 key = str( (serial_number, "apos"))
-                val = [self.apositions[fpu_id], self.alpha_datum_offset]
+                val = [self.apositions[fpu_id], self.config.alpha_datum_offset]
                 txn.put(key, repr(val))
                 key = str( (serial_number, "bpos"))
                 val = [self.bpositions[fpu_id], 0]
@@ -1064,7 +1071,7 @@ class GridDriver(UnprotectedGridDriver):
             serial_number = fpu.serial_number
             with env.begin(db=self.fpudb, write=True) as txn:
                 key = str( (serial_number, "apos"))
-                val = [apos, self.alpha_datum_offset]
+                val = [apos, self.config.alpha_datum_offset]
                 txn.put(key, repr(val))
                 key = str( (serial_number, "bpos"))
                 val = [bpos, 0]
@@ -1187,7 +1194,7 @@ class GridDriver(UnprotectedGridDriver):
                 if fpu.alpha_was_zeroed:
                     self.a_caloffsets[fpu_id] = Interval(0)
                     if fpu.alpha_steps == 0:                        
-                        self.apositions[fpu_id] = Interval(0.0)
+                        self.apositions[fpu_id] = Interval(0.0) + self.config.alpha_datum_offset
                     key = str( (serial_number, "apos"))
                     val = [self.apositions[fpu_id], self.config.alpha_datum_offset]
                     txn.put(key, repr(val))
@@ -1237,7 +1244,7 @@ class GridDriver(UnprotectedGridDriver):
             # update stored intervals to include zero, and store in DB
             with env.begin(db=self.fpudb, write=True) as txn:
                 if selected_arm in [DASEL_ALPHA, DASEL_BOTH]:
-                    self.apositions[fpu_id].extend(0.0)
+                    self.apositions[fpu_id].extend(0.0 + self.config.alpha_datum_offset)
                     key = str( (serial_number, "apos"))
                     val = str(self.apositions[fpu_id])
                     txn.put(key, val)
