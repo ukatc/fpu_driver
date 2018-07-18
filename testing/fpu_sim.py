@@ -31,16 +31,16 @@ FPUGrid = []
 # (datum=zero).  (For displayed alpha angles, the conventional angle
 # at datum is added.)
 ALPHA_MIN_DEGREE = 0
-ALPHA_MAX_DEGREE = 360
-BETA_MIN_DEGREE = -180
-BETA_MAX_DEGREE = 130
-BETA_DATUM_SWITCH_MAX_DEGREE = 0
-BETA_DATUM_SWITCH_MIN_DEGREE = -10
+ALPHA_MAX_DEGREE = 358.8
+BETA_MIN_DEGREE = -179.3
+BETA_MAX_DEGREE = 150.3
+BETA_DATUM_SWITCH_MAX_DEGREE = -0.2
+BETA_DATUM_SWITCH_MIN_DEGREE = -5
 
 ALPHA_LIMIT_MIN_DEGREE = ALPHA_MIN_DEGREE - 0.2 # this is the actual datum switch
-ALPHA_LIMIT_MAX_DEGREE = ALPHA_MAX_DEGREE + 5
-BETA_LIMIT_MIN_DEGREE  = BETA_MIN_DEGREE - 5
-BETA_LIMIT_MAX_DEGREE  = BETA_MAX_DEGREE + 5
+ALPHA_LIMIT_MAX_DEGREE = ALPHA_MAX_DEGREE + 0.2
+BETA_LIMIT_MIN_DEGREE  = BETA_MIN_DEGREE - 0.1
+BETA_LIMIT_MAX_DEGREE  = BETA_MAX_DEGREE + 0.1
 
 AlphaGearRatio 	= 2050.175633 # actual gear ratio
 BetaGearRatio 	= 1517.662482 # actual gear ratio
@@ -55,9 +55,9 @@ DegreePerRevolution = 360.0
 StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
 StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
 
-ALPHA_SWITCH_WIDTH = 5
+ALPHA_SWITCH_WIDTH = 1
 
-ALPHA_CRASH_MARGIN = 15
+ALPHA_CRASH_MARGIN = 2
 
 
 ALPHA_ZERO = 0
@@ -73,7 +73,7 @@ MAX_ALPHA_CRASH = int((ALPHA_LIMIT_MAX_DEGREE + ALPHA_SWITCH_WIDTH + ALPHA_CRASH
 MIN_BETA = int(BETA_LIMIT_MIN_DEGREE * StepsPerDegreeBeta)
 MAX_BETA = int(BETA_LIMIT_MAX_DEGREE * StepsPerDegreeBeta)
 
-BETA_CRASH_MARGIN = 5
+BETA_CRASH_MARGIN = 0.5
 MIN_BETA_CRASH = int((BETA_LIMIT_MIN_DEGREE - BETA_CRASH_MARGIN) * StepsPerDegreeBeta)
 MAX_BETA_CRASH = int((BETA_LIMIT_MAX_DEGREE + BETA_CRASH_MARGIN) * StepsPerDegreeBeta)
 
@@ -134,6 +134,7 @@ class FPU:
         self.collision_protection_active = True
         self.ustep_level = 1
         self.step_timing_fault = False
+        self.alpha_switch_direction = 0
 
         fw_date = self.opts.fw_date
         
@@ -281,32 +282,59 @@ class FPU:
                   and (alpha_steps < MAX_ALPHA_OFF))))
                 
 
-    def move_alpha(self, newalpha, limit_callback):
+    def move_alpha(self, new_alpha, limit_callback):
 
+        if new_alpha == self.alpha_steps:
+            return
         old_switch = self.alpha_switch_on(self.alpha_steps)
-        new_switch = self.alpha_switch_on(newalpha)
+        new_switch = self.alpha_switch_on(new_alpha)
 
-        out_direction = (newalpha < MIN_ALPHA_ON) or (newalpha > MAX_ALPHA_ON)
+        out_direction = (new_alpha < MIN_ALPHA_ON) or (new_alpha > MAX_ALPHA_ON)
         alpha_offset = self.aoff_steps
 
-        self.alpha_steps = newalpha
+        cur_direction = np.sign(new_alpha - self.alpha_steps)
+
+        old_alpha = self.alpha_steps
+        self.alpha_steps = new_alpha
+        alpha_last_direction = self.alpha_switch_direction
+
+        if new_switch:
+            self.alpha_limit_breach = False
+
+        if new_switch and (not old_switch):
+            self.alpha_switch_direction = cur_direction
+        # an alpha reach is defined as:
+        # 1. we go off the switch
+        # 2. we are moving
+        # 3. direction is the same as during the last switch reak
         
-        if (not new_switch) and old_switch:
+        
+        if ((not new_switch)
+            and old_switch
+            and (cur_direction != 0)
+            and (cur_direction == alpha_last_direction)):
             self.alpha_limit_breach = True
             self.was_initialized = False
+            print("LIMIT BREACH detected: last pos = %f, new pos =%f"
+                  "alpha move: old switch = %r, new switch=%r"
+                  "last_dirction = %i, cur_direction=%i"
+                  % (old_alpha, new_alpha,
+                     old_switch, new_switch,
+                     alpha_last_direction, cur_direction))
+            
             limit_callback(self)
         
-            if (newalpha + alpha_offset) < MIN_ALPHA_OFF:
+            if (new_alpha + alpha_offset) < MIN_ALPHA_OFF:
                 self.alpha_steps = MIN_ALPHA_OFF
-                raise LimitBreachException("An alpha min limit breach occured")        
-            elif (newalpha + alpha_offset) > MAX_ALPHA_OFF:
+            elif (new_alpha + alpha_offset) > MAX_ALPHA_OFF:
                 self.alpha_steps = MAX_ALPHA_OFF
-                raise LimitBreachException("An alpha max limit breach occured")        
+
+            raise LimitBreachException("An alpha limit breach occured")        
         else:
-            if (newalpha + alpha_offset) < MIN_ALPHA_CRASH:
+            if (new_alpha + alpha_offset) < MIN_ALPHA_CRASH:
                 raise CrashException("An min alpha crash occured")        
-            if (newalpha + alpha_offset) > MAX_ALPHA_CRASH:
-                print("newalpha=",newalpha,
+            if (new_alpha + alpha_offset) > MAX_ALPHA_CRASH:
+                print("new_alpha=",new_alpha,
                       ", alpha_soffset=", alpha_offset,
                       ", MAX_ALPHA_CRASH=", MAX_ALPHA_CRASH)
                 raise CrashException("An max alpha crash occured")        
@@ -524,6 +552,7 @@ class FPU:
         latency_secs = random.uniform(0, 10) / 1000.
         sleep(latency_secs)
         
+        alpha_limit_breach = False
         section = -1
         for k in range(self.nwave_entries):
             section = k
@@ -555,9 +584,10 @@ class FPU:
             beta_real_deg =  (new_beta + beta_offset) / StepsPerDegreeBeta
         
             if self.opts.verbosity > 0:
-                print("section %i: moving FPU %i by (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg" % (
+                alpha_swon = self.alpha_switch_on(new_alpha)
+                print("section %i: moving FPU %i by (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg, alpha_switch_on=%r" % (
                     n, self.fpu_id, delta_alpha, delta_beta, new_alpha, new_beta,
-                    alpha_real_deg, beta_real_deg))
+                    alpha_real_deg, beta_real_deg, alpha_swon))
             
             frame_time = 0.25
             sleep(frame_time)
@@ -575,6 +605,7 @@ class FPU:
             try:
                 self.move_alpha(new_alpha, limit_callback)
             except LimitBreachException:
+                alpha_limit_breach = True
                 print("Alpha limit breach for FPU  %i" % self.fpu_id)
                 break
             
@@ -588,7 +619,7 @@ class FPU:
         if self.abort_wave:
             print("FPU %i, section %i: MOVEMENT ABORTED at (%i, %i)" % (self.fpu_id, section,
                                                             new_alpha, new_beta))
-        elif self.alpha_limit_breach:
+        elif alpha_limit_breach:
             print("FPU %i, section %i: limit switch breach, movement cancelled at (%i, %i)" % (self.fpu_id, section,
                                                                                    self.alpha_steps, self.beta_steps))
         elif self.is_collided:

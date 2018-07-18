@@ -37,7 +37,7 @@ def list_angles(gs,
                 asteps_per_deg=StepsPerDegreeAlpha,
                 bsteps_per_deg=StepsPerDegreeBeta,
                 show_uninitialized=False,
-                alpha_datum_offset=-181.0,
+                alpha_datum_offset=-180.0,
                 num_fpus=None):
     """Show approximate angular positions for each FPU in the grid. 
        The optional second and third argument are the scaling factors,

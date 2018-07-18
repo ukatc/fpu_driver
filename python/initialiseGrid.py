@@ -75,8 +75,8 @@ if __name__ == '__main__':
 
 
 
-    clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(NUM_FPUS)])
-    acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(NUM_FPUS)])
+    clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
+    acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(args.N)])
 
     print("""If all FPUs are with the beta arm at zero or in 
     a positive direction, you can issue now:
