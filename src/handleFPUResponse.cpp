@@ -667,6 +667,7 @@ void handleFPUResponse(const GridDriverConfig config,
         if (response_errcode == 0)
         {
             initialize_fpu(fpu);
+	    fpu.state = FPST_UNINITIALIZED; // instead of unknown - we known the step count is zero
             update_status_flags(fpu, response_status);
 
             if (fpu.pending_command_set != 0)
@@ -685,6 +686,7 @@ void handleFPUResponse(const GridDriverConfig config,
             }
         }
         fpu.last_updated = cur_time;
+	fpu.ping_ok = true; // we known the current step counter
 
         // in protocol version 1, we do not know the last movement direction
         fpu.direction_alpha = DIRST_UNKNOWN;

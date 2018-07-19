@@ -1462,9 +1462,9 @@ Exceptions fall roughly into the following categories:
 
 \begin{description}
   \item[SetupError] An invalid configuration 
-  \item[InvalidParameter] Invalid parameters to a command, for example addressing an FPU
+  \item[InvalidParameterError] Invalid parameters to a command, for example addressing an FPU
     ID which is not existent or not configured.
-  \item[InvalidState] Issuing a command which is invalid at the current state of
+  \item[InvalidStateException] Issuing a command which is invalid at the current state of
     an FPU, or of the driver as a whole.
   \item[MovementError] Errors which result from collisions, limit switch breaches,
     or abortions of movements.
@@ -2551,7 +2551,7 @@ If the passed waveform is not valid, an exception of type
 \texttt{InvalidWaveformException} is raised. In this case, the error
 symbol and text message provides a more detailed description of the
 failed check. If an \texttt{fpuid} parameter in the keys of the waveform dictionary
-is not valid, an \texttt{InvalidParameter} exception is raised.
+is not valid, an \texttt{InvalidParameterError} exception is raised.
 \end{sloppypar}
 
 If an \texttt{fpuset} keyword parameter is passed with a list of FPU
@@ -2994,10 +2994,10 @@ The hierarchy of exceptions used by the Python module is as follows:
             LimitBreachError         // alpha limit breach detected
             AbortMotionError         // AbortMotion message was sent
             StepTimingError          // internal FPU error
-        InvalidState                 // command does not match driver state
+        InvalidStateException        // command does not match driver state
             ProtectionError          // unsafe command called
         SystemFailure                // system ressource error
-        InvalidParameter             // parameters for command not valid
+        InvalidParameterError        // parameters for command not valid
             SetupError               // system set-up not allowed
             InvalidWaveformException // waveform does not match specs
         ConnectionFailure            // connection problem

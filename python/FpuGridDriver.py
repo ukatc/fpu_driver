@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from __future__ import print_function, division
+import pdb
 import os
 from os import path
 import errno
@@ -16,11 +17,12 @@ from fpu_constants import *
 
 import fpu_driver
 
+
 from fpu_driver import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  
                         REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, 
                         FPUDriverException, MovementError, CollisionError, LimitBreachError,
-                        AbortMotionError, StepTimingError, InvalidState, SystemFailure,
-                        InvalidParameter, SetupError, InvalidWaveformException, ConnectionFailure,
+                        AbortMotionError, StepTimingError, InvalidStateException, SystemFailure,
+                        InvalidParameterError, SetupError, InvalidWaveformException, ConnectionFailure,
                         SocketFailure, CommandTimeout, ProtectionError,                        
                         DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, 
                         LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_VERBOSE, LOG_TRACE_CAN_MESSAGES, 
@@ -225,16 +227,21 @@ class UnprotectedGridDriver (object):
                  DeprecationWarning, 2)
             soft_protection=check_protection
 
+        count_protection = soft_protection
         if soft_protection:
-            # check whether datum search is safe
+            search_modes = search_modes.copy()
+            # check whether datum search is safe, adjusting search_modes
             self.allow_find_datum_hook(gs, search_modes, selected_arm=selected_arm,
                                        fpuset=fpuset, support_uninitialized_auto=support_uninitialized_auto)
+            if (SEARCH_CLOCKWISE in search_modes) or (SEARCH_ANTI_CLOCKWISE in search_modes):
+                print("overriding protection flag")
+                count_protection = False
 
         initial_positions = {}
         self.start_find_datum_hook(gs, fpuset, initial_positions=initial_positions)
         try:
             try:
-                rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, soft_protection)
+                rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, count_protection)
             except (RuntimeError,
                     InvalidParameterException,
                     SetupErrorException,
@@ -275,29 +282,38 @@ class UnprotectedGridDriver (object):
         unless soft_protection is set to False.
 
         """
+
         if check_protection != None:
             warn("keyword check_protection is deprecated; use 'soft_protection=False' instead!",
                  DeprecationWarning, 2)
             soft_protection=check_protection
 
+        count_protection = soft_protection
         if soft_protection:
+            search_modes = search_modes.copy()
+            # check whether datum search is safe, adjusting search_modes
             self.allow_find_datum_hook(gs, search_modes, selected_arm=selected_arm,
                                        fpuset=fpuset, support_uninitialized_auto=support_uninitialized_auto)
+            if (SEARCH_CLOCKWISE in search_modes) or (SEARCH_ANTI_CLOCKWISE in search_modes):
+                print("overriding protection flag")
+                count_protection = False
+                
         initial_positions = {}
         self.start_find_datum_hook(gs,fpuset, initial_positions=initial_positions)
         try:
-            rv = self._gd.startFindDatum(gs, search_modes, selected_arm, fpuset, soft_protection)
+            rv = self._gd.startFindDatum(gs, search_modes, selected_arm, fpuset, count_protection)
             if rv != fpu_driver.E_DriverErrCode.DE_OK:
                 raise RuntimeError("can't search Datum, driver error code = %r" % rv)
             
         except (RuntimeError,
-                InvalidParameterException,
-                SetupErrorException,
+                InvalidParameterError,
+                SetupError,
                 InvalidStateException,
-                ProtectionErrorException) as e:
+                ProtectionError) as e:
             # we cancel the datum search altogether, so we can reset
             # positions to old value
             self.cancel_find_datum_hook(gs, fpuset,initial_positions=initial_positions)
+            raise
             
 
         time.sleep(0.1)
@@ -701,6 +717,7 @@ class GridDriver(UnprotectedGridDriver):
         self.refresh_positions(grid_state, store=False)
 
 
+
     def alpha_angle(self, fpu):
         return fpu.alpha_steps / StepsPerDegreeAlpha + self.config.alpha_datum_offset
 
@@ -737,6 +754,9 @@ class GridDriver(UnprotectedGridDriver):
                 # fpu wasn't resetted successfully
                 # We do not set the offset to zero - the FPU 
                 # has been moved from a former reset
+                print("skipping FPU #", fpu_id)
+                print("state = %s, ping_ok=%i, asteps =%i, bsteps =%i" %
+                      (fpu.state, fpu.ping_ok, fpu.alpha_steps, fpu.beta_steps))
                 continue
                         
             # these offsets are the difference between the calibrated
@@ -1125,9 +1145,10 @@ class GridDriver(UnprotectedGridDriver):
 
         # get fresh ping data
         super(GridDriver, self).pingFPUs(gs, fpuset=fpuset)
+        pdb.set_trace()
 
-        cw_range = Interval(-Inf, 0)
         acw_range = Interval(0, Inf)
+        cw_range = Interval(-Inf, 0)
         for fpu_id, fpu in enumerate(gs.FPU):
             if len(fpuset) != 0 and (fpu_id not in fpuset):
                 continue
@@ -1138,8 +1159,10 @@ class GridDriver(UnprotectedGridDriver):
             if (selected_arm in [DASEL_BETA, DASEL_BOTH]):
                 blim = self.blimits[fpu_id]
                 bpos = self.bpositions[fpu_id]
-                beta_clockwise_range = blim.intersects(cw_range)
-                beta_anti_clockwise_range = blim.intersects(acw_range)
+                search_beta_clockwise_range = blim.intersects(acw_range)
+                search_beta_anti_clockwise_range = blim.intersects(cw_range)
+                print("search_beta_clockwise_range=", search_beta_clockwise_range)
+                print("search_beta_anti_clockwise_range=", search_beta_anti_clockwise_range)
                 
                 if search_modes[fpu_id] == SEARCH_AUTO :
 
@@ -1150,9 +1173,9 @@ class GridDriver(UnprotectedGridDriver):
                             # to set the correct direction.
 
 
-                            if beta_clockwise_range.contains(bpos) :
+                            if search_beta_clockwise_range.contains(bpos) :
                                 search_modes[fpu_id] = SEARCH_CLOCKWISE
-                            elif beta_anti_clockwise_range.contains(bpos):
+                            elif search_beta_anti_clockwise_range.contains(bpos):
                                 search_modes[fpu_id] = SEARCH_ANTI_CLOCKWISE
                             else:
                                 raise ProtectionError("No automatic datum search possible - lacks"
@@ -1168,12 +1191,12 @@ class GridDriver(UnprotectedGridDriver):
                                                   " for datum search (angle=%r, range=%r)" % (fpu_id, bpos, blim))
                         
                 elif search_modes[fpu_id] == SEARCH_CLOCKWISE:
-                    if not beta_clockwise_range.contains(bpos):
-                        raise ProtectionError("beta arm of FPU %i is outside of safe clockwise search range (angle=%r)" % bpos)
+                    if not search_beta_clockwise_range.contains(bpos):
+                        raise ProtectionError("beta arm of FPU %i is outside of safe clockwise search range (angle=%r)" % (fpu_id, bpos))
                     
                 elif search_modes[fpu_id] == SEARCH_ANTI_CLOCKWISE:
-                    if not beta_anti_clockwise_range.contains(bpos):
-                        raise ProtectionError("beta arm of FPU %i is outside of safe anti-clockwise search range (angle=%r)" % bpos)
+                    if not search_beta_anti_clockwise_range.contains(bpos):
+                        raise ProtectionError("beta arm of FPU %i is outside of safe anti-clockwise search range (angle=%r)" % (fpu_id, bpos))
                     
             # check alpha arm
             if (selected_arm in [DASEL_ALPHA, DASEL_BOTH]):
@@ -1182,9 +1205,9 @@ class GridDriver(UnprotectedGridDriver):
                 if not alim.contains(apos):
                     raise ProtectionError("Alpha arm of FPU %i is not in safe range"
                                           " for datum search (angle=%r, range=%r)" % (fpu_id, apos, alim))
-
+            print("allow_find_datum_hook(): fpu_id=%i, bpos=%s, search_mode=%r", fpu_id, bpos, search_modes[fpu_id])
+            
     def finished_find_datum_hook(self, gs, search_modes, fpuset=[], was_cancelled=False, initial_positions={}):
-        print("driver: always clear ping_ok when movement commands are started")
         for fpu_id, fpu in enumerate(gs.FPU):
             if len(fpuset) > 0 and (not (fpu_id in fpuset)):
                 continue
@@ -1267,11 +1290,12 @@ class GridDriver(UnprotectedGridDriver):
         for fpu_id in initial_positions.keys():
             # get last stored positions
             apos, bpos = initial_positions[fpu_id] 
-            
+
+            fpu = gs.FPU[fpu_id]
             serial_number = fpu.serial_number
             # revert stored intervals to old values
             with env.begin(db=self.fpudb, write=True) as txn:
-                self.apositiions[fpu_id] = apos
+                self.apositions[fpu_id] = apos
                 key = str( (serial_number, "apos"))
                 val = [apos, self.config.alpha_datum_offset]
                 txn.put(key, repr(val))

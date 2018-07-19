@@ -77,40 +77,40 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
     switch(s)
     {
     case FPST_UNKNOWN:
-        out << "'UNKNOWN'";
+        out << "'FPST_UNKNOWN'";
         break;
     case FPST_UNINITIALIZED:
-        out << "'UNINITIALIZED'";
+        out << "'FPST_UNINITIALIZED'";
         break;
     case FPST_LOCKED:
-        out << "'LOCKED'";
+        out << "'FPST_LOCKED'";
         break;
     case FPST_DATUM_SEARCH:
-        out << "'DATUM_SEARCH'";
+        out << "'FPST_DATUM_SEARCH'";
         break;
     case FPST_AT_DATUM:
-        out << "'AT_DATUM'";
+        out << "'FPST_AT_DATUM'";
         break;
     case FPST_LOADING:
-        out << "'LOADING'";
+        out << "'FPST_LOADING'";
         break;
     case FPST_READY_FORWARD:
-        out << "'READY_FORWARD'";
+        out << "'FPST_READY_FORWARD'";
         break;
     case FPST_READY_REVERSE:
-        out << "'READY_REVERSE'";
+        out << "'FPST_READY_REVERSE'";
         break;
     case FPST_MOVING:
-        out << "'MOVING'";
+        out << "'FPST_MOVING'";
         break;
     case FPST_RESTING:
-        out << "'RESTING'";
+        out << "'FPST_RESTING'";
         break;
     case FPST_ABORTED:
-        out << "'ABORTED'";
+        out << "'FPST_ABORTED'";
         break;
     case FPST_OBSTACLE_ERROR:
-        out << "'OBSTACLE_ERROR'";
+        out << "'FPST_OBSTACLE_ERROR'";
         break;
     }
     return out;
@@ -1248,9 +1248,9 @@ BOOST_PYTHON_MODULE(fpu_driver)
     LimitBreachErrorExceptionTypeObj = FPUDriverExceptionClass("LimitBreachError", MovementErrorExceptionTypeObj);
     AbortMotionErrorExceptionTypeObj = FPUDriverExceptionClass("AbortMotionError", MovementErrorExceptionTypeObj);
     TimingErrorExceptionTypeObj = FPUDriverExceptionClass("StepTimingError", MovementErrorExceptionTypeObj);
-    InvalidStateExceptionTypeObj = FPUDriverExceptionClass("InvalidState", FPUDriverExceptionTypeObj);
+    InvalidStateExceptionTypeObj = FPUDriverExceptionClass("InvalidStateException", FPUDriverExceptionTypeObj);
     SystemFailureExceptionTypeObj = FPUDriverExceptionClass("SystemFailure", FPUDriverExceptionTypeObj);
-    InvalidParameterExceptionTypeObj  = FPUDriverExceptionClass("InvalidParameter", FPUDriverExceptionTypeObj);
+    InvalidParameterExceptionTypeObj  = FPUDriverExceptionClass("InvalidParameterError", FPUDriverExceptionTypeObj);
     SetupErrorExceptionTypeObj  = FPUDriverExceptionClass("SetupError", InvalidParameterExceptionTypeObj);
     InvalidWaveformExceptionTypeObj = FPUDriverExceptionClass("InvalidWaveformException", InvalidParameterExceptionTypeObj);
     ConnectionFailureExceptionTypeObj = FPUDriverExceptionClass("ConnectionFailure", FPUDriverExceptionTypeObj);
