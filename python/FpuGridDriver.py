@@ -338,10 +338,10 @@ class UnprotectedGridDriver (object):
         pass
     
     def resetFPUs(self, gs, fpuset=[]):
-        old_state = gd.getGridState()
+        old_state = self.getGridState()
         rval = self._gd.resetFPUs(gs, fpuset)
         self.last_wavetable = {}
-        self.reset_hook(self, old_state, gs, fpuset=fpuset)
+        self.reset_hook(old_state, gs, fpuset=fpuset)
         return rval
 
     def getPositions(self, gs, fpuset=[]):
@@ -438,8 +438,12 @@ class UnprotectedGridDriver (object):
                 if k not in fpuset:
                     del wtable[k]
                     
-        # check whether wavetable is safe, and if so, register it    
-        self.pre_config_motion_hook(wtable, gs, fpuset)
+        # check whether wavetable is safe, and if so, register it
+        if soft_protection:
+            wmode=Range.Error
+        else:
+            wmode=Range.Warn
+        self.pre_config_motion_hook(wtable, gs, fpuset, wmode=wmode)
         self.wavetables_incomplete = False
         update_config = False
         try:
@@ -759,7 +763,7 @@ class GridDriver(UnprotectedGridDriver):
             wf_brange = wbrange_dict.get(fi,Interval())
             
             print("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
-                  " stepcount= ({!s}, {!s}), last_wform_range=({!s},{!s})".
+                  " stepcount angle= ({!s}, {!s}), last_wform_range=({!s},{!s})".
                   format(fi, self.apositions[fi],self.bpositions[fi],
                          self.a_caloffsets[fi], self.b_caloffsets[fi],
                          aangle, bangle,
@@ -847,11 +851,12 @@ class GridDriver(UnprotectedGridDriver):
         
         if not xlimits.contains(x):
             if wmode == Range.Error:
-                raise ProtectionError("For FPU %i, at step %i, arm %s, the wavetable steps outside the tracked safe limits" %(
-                    fpu_id, stepnum, arm_name))
+                raise ProtectionError("For FPU %i, at step %i, arm %s, the wavetable steps outside the tracked safe limits (angle=%r, limits=%r)" %(
+                    fpu_id, stepnum, arm_name, x, xlimits))
                 
             elif wmode == Range.Warn:
-                print("Warning: wavetable defines unsafe path")
+                print("Warning: wavetable defines unsafe path for FPU %i, at step %i, arm %s  (angle=%r, limits=%r)" %(
+                    fpu_id, stepnum, arm_name, x, xlimits))
 
     """The complexity of the wave table data flow which follows merits a bit of 
     explanation.
@@ -1160,15 +1165,15 @@ class GridDriver(UnprotectedGridDriver):
                         if not blim.contains(bpos):
                             # arm is completely out of range, probably needs manual move
                             raise ProtectionError("Beta arm of FPU %i is not in safe range"
-                                                  " for datum search" % fpu_id)
+                                                  " for datum search (angle=%r, range=%r)" % (fpu_id, bpos, blim))
                         
                 elif search_modes[fpu_id] == SEARCH_CLOCKWISE:
                     if not beta_clockwise_range.contains(bpos):
-                        raise ProtectionError("beta arm of FPU %i is outside of safe clockwise search range")
+                        raise ProtectionError("beta arm of FPU %i is outside of safe clockwise search range (angle=%r)" % bpos)
                     
                 elif search_modes[fpu_id] == SEARCH_ANTI_CLOCKWISE:
                     if not beta_anti_clockwise_range.contains(bpos):
-                        raise ProtectionError("beta arm of FPU %i is outside of safe anti-clockwise search range")
+                        raise ProtectionError("beta arm of FPU %i is outside of safe anti-clockwise search range (angle=%r)" % bpos)
                     
             # check alpha arm
             if (selected_arm in [DASEL_ALPHA, DASEL_BOTH]):
@@ -1176,7 +1181,7 @@ class GridDriver(UnprotectedGridDriver):
                 apos = self.apositions[fpu_id]
                 if not alim.contains(apos):
                     raise ProtectionError("Alpha arm of FPU %i is not in safe range"
-                                          " for datum search" % fpu_id)
+                                          " for datum search (angle=%r, range=%r)" % (fpu_id, apos, alim))
 
     def finished_find_datum_hook(self, gs, search_modes, fpuset=[], was_cancelled=False, initial_positions={}):
         print("driver: always clear ping_ok when movement commands are started")
