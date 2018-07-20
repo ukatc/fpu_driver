@@ -10,13 +10,13 @@ import signal
 from warnings import warn, filterwarnings
 # state tracking
 import lmdb
-from ast import literal_eval
 from interval import Interval, Inf, nan
 
 from fpu_constants import *
+from protectiondb import ProtectionDB
 
 import fpu_driver
-
+import fpu_commands
 
 from fpu_driver import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  
                         REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, 
@@ -162,6 +162,8 @@ class UnprotectedGridDriver (object):
         
         self.config = config
         self.last_wavetable = {}
+        self.wf_reversed = {}
+
         self.wavetables_incomplete = False
 
         self._gd = fpu_driver.GridDriver(config)
@@ -411,23 +413,22 @@ class UnprotectedGridDriver (object):
         
         
     def post_config_motion_hook(self, wtable, gs, fpuset):
-        pass
+        self.set_wtable_reversed(fpuset, False)
 
         
     def pre_repeat_motion_hook(self, wtable, gs, fpuset, wmode=Range.Error):
-        pass
-        
+        pass        
         
     def post_repeat_motion_hook(self, wtable, gs, fpuset):
-        pass
+        self.set_wtable_reversed(fpuset, False)
 
     def pre_reverse_motion_hook(self, wtable, gs, fpuset, wmode=Range.Error):
         pass
         
         
     def post_reverse_motion_hook(self, wtable, gs, fpuset):
-        pass
-    
+        self.set_wtable_reversed(fpuset, True)
+
     
     def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None):
         """ 
@@ -500,6 +501,15 @@ class UnprotectedGridDriver (object):
                   "waveforms displayed may not be valid.")
         return self.last_wavetable.copy()
     
+    def getReversed(self):
+        return self.wf_reversed.copy()
+    
+    def set_wtable_reversed(self, fpu_id_list, is_reversed=False):
+        if len(fpu_id_list) == 0:
+            fpu_id_list = range(self.config.num_fpus)
+        for fpu_id in fpu_id_list:
+            self.wf_reversed[fpu_id] = is_reversed
+                
     def start_execute_motion_hook(self, gs, fpuset, initial_positions={}):
         pass
     
@@ -610,6 +620,15 @@ class UnprotectedGridDriver (object):
         self.post_repeat_motion_hook(wtable, gs, fpuset)
         return rv
 
+    def countedAngles(self, gs, fpuset=[], show_uninitialized=False):
+        if len(fpuset) == 0:
+            fpuset = range(self.config.num_fpus)
+            
+        self.pingFPUs(gs, fpuset=fpuset)
+        
+        angles = fpu_commands.list_angles(gs, show_uninitialized=show_uninitialized,
+                                          alpha_datum_offset=self.config.alpha_datum_offset)
+        return [angles[k] for k in fpuset ]
 
 
 DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE")
@@ -636,7 +655,7 @@ class GridDriver(UnprotectedGridDriver):
         self.configured_brange = {}
 
     def post_connect_hook(self, config):
-        self.fpudb = env.open_db("fpu")
+        self.fpudb = env.open_db(ProtectionDB.dbname)
         
         grid_state = self.getGridState()
         self.readSerialNumbers(grid_state)
@@ -653,9 +672,10 @@ class GridDriver(UnprotectedGridDriver):
         alimits = {}
         blimits = {}
         bretries = {}
-        in_dicts = { 'apos' : apositions, 'bpos' : bpositions,
-                     'wtab' : wtabs, 'wf_reversed' : wf_reversed,
-                     'alimits' : alimits, 'blimits' : blimits, 'bretries' : bretries }
+        in_dicts = { ProtectionDB.alpha_positions : apositions,
+                     ProtectionDB.beta_positions : bpositions,
+                     ProtectionDB.waveform_table : wtabs, ProtectionDB.waveform_reversed : wf_reversed,
+                     ProtectionDB.alpha_limits : alimits, ProtectionDB.beta_limits : blimits, ProtectionDB.free_beta_retries : bretries }
         
         print("reading serial numbers from DB....")
         print("FIXME: store and load reversed state and span of active waveforms")
@@ -665,34 +685,29 @@ class GridDriver(UnprotectedGridDriver):
         alpha_datum_offset=config.alpha_datum_offset
         
         for fpu_id, fpu in enumerate(grid_state.FPU):
-            serial_number = fpu.serial_number
             a_caloffsets.append(Interval(0.0))
             b_caloffsets.append(Interval(0.0))
             
             with env.begin(db=self.fpudb) as txn:
-                for subkey in ["apos", "bpos", "wtab", "alimits", "blimits", "wf_reversed", "bretries"]:
-                    key = str((serial_number, subkey))
-                    val = txn.get(key)
+                for subkey in [ ProtectionDB.alpha_positions,
+                                ProtectionDB.beta_positions,
+                                ProtectionDB.waveform_table,
+                                ProtectionDB.waveform_reversed,
+                                ProtectionDB.alpha_limits,
+                                ProtectionDB.beta_limits,
+                                ProtectionDB.free_beta_retries]:
+                    
+                    val = ProtectionDB.getField(txn, fpu, subkey)
                           
-                    print(key,":", val)
+                    print(repr(subkey),":", repr(val))
                     if val == None: 
                         raise fpu_driver.ProtectionError("serial number {0!r} not found in position database"
-                                                         " - run fpu-admin.py to create entry".format(serial_number))
-                    if subkey in ["wf_reversed", "bretries"]:
-                        in_dicts[subkey][fpu_id] = literal_eval(val)
+                                                         " - run fpu-admin.py to create entry".format(fpu.serial_number))
                     else:
-                        # assign interval object
-                        
-                        # The code below allows changing offsets for
-                        # the alpha datum position (the position data
-                        # is stored along with the offset to be both
-                        # relative and human-readable).
-                        ivlist, stored_offset = literal_eval(val)
-                        if subkey in ["apos", "alimits"]:
-                            offset = alpha_datum_offset
+                        if subkey in [ProtectionDB.alpha_positions, ProtectionDB.alpha_limits]:
+                            in_dicts[subkey][fpu_id] = val + alpha_datum_offset
                         else:
-                            offset = 0
-                        in_dicts[subkey][fpu_id] = Interval(ivlist) + (offset - stored_offset) 
+                            in_dicts[subkey][fpu_id] = val
                         
         print("state data: ", in_dicts)
         self.apositions = apositions
@@ -715,7 +730,6 @@ class GridDriver(UnprotectedGridDriver):
         print("after reset:")
         self.trackedAngles(grid_state)
         self.refresh_positions(grid_state, store=False)
-
 
 
     def alpha_angle(self, fpu):
@@ -789,6 +803,17 @@ class GridDriver(UnprotectedGridDriver):
                          aangle, bangle,
                          wf_arange, wf_brange))
 
+    def update_apos(self, txn, fpu, fpu_id, new_apos, store=True):
+        self.apositions[fpu_id] = new_apos
+        if store:
+            ProtectionDB.put_alpha_position(txn, fpu, new_apos, self.config.alpha_datum_offset)
+        
+    def update_bpos(self, txn, fpu, fpu_id, new_bpos, store=True):
+        self.bpositions[fpu_id] = new_bpos
+        if store:
+            ProtectionDB.put_beta_position(txn, fpu, new_bpos)
+        
+        
                 
     def refresh_positions(self, grid_state, store=True, fpuset=[]):
         """This is to be run after any movement.
@@ -802,37 +827,26 @@ class GridDriver(UnprotectedGridDriver):
         it, so this might change.
 
         """
-        for fpu_id, fpu in enumerate(grid_state.FPU):
-            if len(fpuset) > 0 and (fpu_id not in fpuset):
-                continue
+        
+        with env.begin(db=self.fpudb, write=True) as txn:
+            for fpu_id, fpu in enumerate(grid_state.FPU):
+                if len(fpuset) > 0 and (fpu_id not in fpuset):
+                    continue
 
-            if not fpu.ping_ok:
-                # position is not known. This flag is set by a
-                # successful ping, and cleared by every movement as
-                # well as all movement time-outs
-                continue
+                if not fpu.ping_ok:
+                    # position is not known. This flag is set by a
+                    # successful ping or datum response, and cleared by
+                    # every movement as well as all movement time-outs
+                    continue
             
-            # compute alpha and beta position intervals,
-            # and store both to DB
-            self.apositions[fpu_id] = self.a_caloffsets[fpu_id] + self.alpha_angle(fpu)
-            self.bpositions[fpu_id] = self.b_caloffsets[fpu_id] + self.beta_angle(fpu)
+                # compute alpha and beta position intervals,
+                # and store both to DB
+                self.update_apos(txn, fpu, fpu_id, self.a_caloffsets[fpu_id] + self.alpha_angle(fpu), store=store)
+                self.update_bpos(txn, fpu, fpu_id,  self.b_caloffsets[fpu_id] + self.beta_angle(fpu), store=store)
 
-            if store:
-                serial_number = fpu.serial_number
-                with env.begin(db=self.fpudb, write=True) as txn:
-                    key = str( (serial_number, "apos"))
-                    # store the datum offsets along with each position
-                    # (this allows to reconfigure the zero point later)
-                    val = [self.apositions[fpu_id], self.config.alpha_datum_offset]
-                    txn.put(key, repr(val))
-                    key = str( (serial_number, "bpos"))
-                    val = [self.bpositions[fpu_id], 0]
-                    txn.put(key, repr(val))
+                    
 
     def pingFPUs(self, grid_state, fpuset=[]):
-        print("""Uses super call to UnprotectedGridDriver.pingFPUs(). Make sure this
-        hasn't any weird results.""")
-        
         super(GridDriver, self).pingFPUs(grid_state, fpuset=fpuset)
         self.refresh_positions(grid_state, fpuset=fpuset)
 
@@ -882,14 +896,14 @@ class GridDriver(UnprotectedGridDriver):
     explanation.
     Generally, the protection wrapper tries to track the position of each 
     FPU as it is moved. When a ping returns, the new position can
-    generally be updated.
+    generally be updated to that point.
     
     However, when a movement is started, there is no way to know the
     exact position before the movement finished regularly, or the next
     successful ping returns. When an abortMotion message is sent, or a
     collision occurs, the position is not known.
     
-    The solution I try here is to track not the position, but the
+    The solution used here is to track not the position, but the
     worst-case minimum and maximum position. In other words, for each
     of the alpha and beta coordinate, an /interval/ of positions is
     tracked.  When a deterministic movement is added to the current
@@ -900,20 +914,20 @@ class GridDriver(UnprotectedGridDriver):
     of length zero.
 
     If a configMotion command is issued, this defines a tentative
-    requested interval, which becomes valid once the corresponding
+    future interval, which becomes valid once the corresponding
     movement is started.  If a reverseMotion is issued, this generates
     an interval with the opposite sign of movements.
 
     Tracking the region of uncertainty is not always required, as ping
-    commands can be used to narrow the possible range of possitions
-    down. But doing this has, first, the disadvantage
-    thatspecial-casing is needed for handling an abortMotion or
-    collision situation. Yet these are situations which need to be
-    handled robustly. And second, tracking the known state of
+    commands can often be used to narrow the possible range of
+    possitions down. But doing this has, first, the disadvantage that
+    special-casing is needed for handling an abortMotion or collision
+    situation. Yet exactle these are situations which need to be
+    handled very robustly. And second, tracking the known state of
     positions during start-up also requires special-casing, which
-    appears to require a lot of fiddly state handling. This could be
-    error-prone, and the solution to track intervals is much more
-    general and clean.
+    would require a lot of fiddly state handling. This could be
+    error-prone, and the solution to track intervals is therefore much
+    more general and clean.
 
     """
         
@@ -974,14 +988,12 @@ class GridDriver(UnprotectedGridDriver):
     # this can possibly be deleted
     # but do we want to store the full wavetable ?
     def save_wtable_direction(self, fpu_id_list, is_reversed=False, grid_state=None):
-        for fpu_id in fpu_id_list:
-            fpu = grid_state.FPU[fpu_id]
-            serial_number = fpu.serial_number
-            self.wf_reversed[fpu_id] = is_reversed
-            with env.begin(db=self.fpudb, write=True) as txn:
-                key = str( (serial_number, "wf_refersed"))
-                val = str(is_reversed)
-                txn.put(key, val)
+        with env.begin(db=self.fpudb, write=True) as txn:
+            for fpu_id in fpu_id_list:
+                fpu = grid_state.FPU[fpu_id]
+                
+                self.wf_reversed[fpu_id] = is_reversed
+                ProtectionDB.store_reversed(txn, fpu, is_reversed)
         
         
     def post_config_motion_hook(self, wtable, gs, fpuset, partial_config=False):
@@ -1016,12 +1028,10 @@ class GridDriver(UnprotectedGridDriver):
 
         self.save_wtable_direction(wtable.keys(), is_reversed=False, grid_state=gs)
         # save the changed waveform tables
-        for fpu_id, wentry in wtable.items():
-            serial_number = gs.FPU[fpu_id].serial_number
-            with env.begin(db=self.fpudb, write=True) as txn:
-                key = str( (serial_number, "wtabs"))
-                val = repr(wentry)
-                txn.put(key, val)
+        with env.begin(db=self.fpudb, write=True) as txn:
+            for fpu_id, wentry in wtable.items():
+                fpu = gs.FPU[fpu_id]
+                ProtectionDB.storeWaveform(txn, fpu, wentry)
 
         
     def pre_repeat_motion_hook(self, wtable, gs, fpuset, wmode=Range.Error):
@@ -1057,28 +1067,19 @@ class GridDriver(UnprotectedGridDriver):
         called.
 
         """
-        for fpu_id, fpu in enumerate(gs.FPU):
-            if len(fpuset) != 0 and (fpu_id not in fpuset):
-                continue
-            
-            initial_positions[fpu_id] = (self.apositions[fpu_id],
-                                         self.bpositions[fpu_id])
-            # copy configured alpha and beta position intervals, and
-            # store both to DB
-            if self.configured_arange.has_key(fpu_id):
-                self.apositions[fpu_id] = self.configured_arange[fpu_id]
-            if self.configured_brange.has_key(fpu_id):
-                self.bpositions[fpu_id] = self.configured_brange[fpu_id]
-            
-            serial_number = fpu.serial_number
-            with env.begin(db=self.fpudb, write=True) as txn:
-                key = str( (serial_number, "apos"))
-                val = [self.apositions[fpu_id], self.config.alpha_datum_offset]
-                txn.put(key, repr(val))
-                key = str( (serial_number, "bpos"))
-                val = [self.bpositions[fpu_id], 0]
-                txn.put(key, repr(val))
-
+        with env.begin(db=self.fpudb, write=True) as txn:
+            for fpu_id, fpu in enumerate(gs.FPU):
+                if len(fpuset) != 0 and (fpu_id not in fpuset):
+                    continue
+                
+                initial_positions[fpu_id] = (self.apositions[fpu_id],
+                                             self.bpositions[fpu_id])
+                # copy configured alpha and beta position intervals, and
+                # store both to DB
+                if self.configured_arange.has_key(fpu_id):
+                    self.update_apos(txn, fpu, fpu_id, self.configured_arange[fpu_id])
+                    self.update_bpos(txn, fpu, fpu_id,  self.configured_brange[fpu_id])
+    
 
     def cancel_execute_motion_hook(self, gs, fpuset, initial_positions=None):
         """This hook cancel registering an executeMotion command which was
@@ -1086,42 +1087,34 @@ class GridDriver(UnprotectedGridDriver):
 
         """
         
-        for fpu_id in initial_positions.keys():
-            if (len(fpuset) != 0) and (fpu_id not in fpuset):
-                continue
-            apos, bpos = initial_positions[fpu_id]
-            self.apositions[fpu_id] = apos
-            self.bpositions[fpu_id] = bpos
-            
-            serial_number = fpu.serial_number
-            with env.begin(db=self.fpudb, write=True) as txn:
-                key = str( (serial_number, "apos"))
-                val = [apos, self.config.alpha_datum_offset]
-                txn.put(key, repr(val))
-                key = str( (serial_number, "bpos"))
-                val = [bpos, 0]
-                txn.put(key, repr(val))
-                
+        with env.begin(db=self.fpudb, write=True) as txn:
+            for fpu_id in initial_positions.keys():
+                if (len(fpuset) != 0) and (fpu_id not in fpuset):
+                    continue
+                apos, bpos = initial_positions[fpu_id]
+                self.update_apos(txn, fpu, fpu_id, apos)
+                self.update_bpos(txn, fpu, fpu_id,  bpos)
+                                
     
     def post_execute_motion_hook(self, gs, fpuset):
         """This runs after both an executeMotion has run, and *also*
         a ping has returned successfully."""
 
         # What do we here if FPUs are still moving
-        # (this would happen in case of an errror)?
+        # (this would happen in case of an error)?
         # Solution for now: wait.
         while True:
             if (gs.Counts[FPST_MOVING] > 0)or (gs.Counts[FPST_DATUM_SEARCH] > 0):
                 print("waiting for movement to finish in order to retrieve reached positions..")
-                sleep(0.5)
+                time.sleep(0.5)
                 super(GridDriver, self).pingFPUs(gs, fpuset=fpuset)
             else:
                 break
         # The assumption here is that the offsets did not change, even
-        # if the waveform was aborted. This might not be correct in a
-        # sense valid for science measurements, because collisions
-        # would compromise the precision of step counts, but for
-        # protection purposes this should be OK.
+        # if the waveform execution was aborted. This might not be
+        # correct in a sense valid for science measurements, because
+        # collisions would compromise the precision of step counts,
+        # but for protection purposes this should be OK.
         #
         # Thus, use the step counter positions to update the location
         self.refresh_positions(gs, fpuset=fpuset)
@@ -1145,7 +1138,6 @@ class GridDriver(UnprotectedGridDriver):
 
         # get fresh ping data
         super(GridDriver, self).pingFPUs(gs, fpuset=fpuset)
-        pdb.set_trace()
 
         acw_range = Interval(0, Inf)
         cw_range = Interval(-Inf, 0)
@@ -1208,99 +1200,73 @@ class GridDriver(UnprotectedGridDriver):
             print("allow_find_datum_hook(): fpu_id=%i, bpos=%s, search_mode=%r", fpu_id, bpos, search_modes[fpu_id])
             
     def finished_find_datum_hook(self, gs, search_modes, fpuset=[], was_cancelled=False, initial_positions={}):
-        for fpu_id, fpu in enumerate(gs.FPU):
-            if len(fpuset) > 0 and (not (fpu_id in fpuset)):
-                continue
-
-            if (len(search_modes) != 0) and (not search_modes.kas_key(fpu_id)):
-                continue
+        with env.begin(db=self.fpudb, write=True) as txn:
+            for fpu_id, fpu in enumerate(gs.FPU):
+                if len(fpuset) > 0 and (not (fpu_id in fpuset)):
+                    continue
             
-                                                                                
-            serial_number = fpu.serial_number
-            # set position intervals to zero, and store in DB
-            with env.begin(db=self.fpudb, write=True) as txn:
+                if (len(search_modes) != 0) and (not search_modes.kas_key(fpu_id)):
+                    continue
+                
+                                                                                    
+                # set position intervals to zero, and store in DB
                 if fpu.alpha_was_zeroed:
                     self.a_caloffsets[fpu_id] = Interval(0)
-                    if fpu.alpha_steps == 0:                        
-                        self.apositions[fpu_id] = Interval(0.0) + self.config.alpha_datum_offset
-                    key = str( (serial_number, "apos"))
-                    val = [self.apositions[fpu_id], self.config.alpha_datum_offset]
-                    txn.put(key, repr(val))
+                    if fpu.alpha_steps == 0:
+                        self.update_apos(txn, fpu, fpu_id, Interval(0.0) + self.config.alpha_datum_offset)
                 else:
-                    ## If ping_ok is set, we assume that the step counter
-                    ## is valid, and the offset is unchanged.
+                    ## If ping_ok is set, we assume that even if the
+                    ## datum operation itself did not succeed, the
+                    ## step counter was successfully retrieved by a
+                    ## subsequent ping, and the offset is unchanged.
                     if fpu.ping_ok:
-                        self.apositions[fpu_id] = Interval(self.alpha_angle(fpu)) + self.a_caloffsets[fpu_id]
-                        key = str( (serial_number, "apos"))
-                        val = [self.apositions[fpu_id], self.config.alpha_datum_offset]
-                        txn.put(key, repr(val))
+                        self.update_apos(txn, fpu, fpu_id, Interval(self.alpha_angle(fpu)) + self.a_caloffsets[fpu_id])
 
                 
                 if fpu.beta_was_zeroed:
                     self.b_caloffsets[fpu_id] = Interval(0)
                     if fpu.beta_steps == 0:                        
-                        self.bpositions[fpu_id] = Interval(0.0)
-                    key = str( (serial_number, "bpos"))
-                    val = [self.bpositions[fpu_id], 0]
-                    txn.put(key, repr(val))
+                        self.update_bpos(txn, fpu, fpu_id,  Interval(0.0))
                 else:
-                    ##TODO: check for valid step count, store state
                     if fpu.ping_ok:
-                        self.bpositions[fpu_id] = Interval(self.beta_angle(fpu)) + self.b_caloffsets[fpu_id]
-                        key = str( (serial_number, "bpos"))
-                        val = [self.bpositions[fpu_id], 0]
-                        txn.put(key, repr(val))
+                        self.update_bpos(txn, fpu, fpu_id,  Interval(self.beta_angle(fpu)) + self.b_caloffsets[fpu_id])
         
 
     def start_find_datum_hook(self, gs, search_modes,  selected_arm=None,fpuset=[], initial_positions={}):
         """This is run when an findDatum command is actually started.
         It updates the new range of possible positions to include the zero point of each arm."""
-        for fpu_id, fpu in enumerate(gs.FPU):
-            if len(fpuset) > 0 and (not (fpu_id in fpuset)):
-                continue
-
-            if (len(search_modes) != 0) and (not search_modes.kas_key(fpu_id)):
-                continue
-
-            # record initial position intervals so that the
-            # known range can be restored if the datum search is
-            # rejected
-            initial_positions[fpu_id] = (self.apositions[fpu_id],
-                                         self.bpositions[fpu_id])
+        with env.begin(db=self.fpudb, write=True) as txn:
+            for fpu_id, fpu in enumerate(gs.FPU):
+                if len(fpuset) > 0 and (not (fpu_id in fpuset)):
+                    continue
             
-            serial_number = fpu.serial_number
-            # update stored intervals to include zero, and store in DB
-            with env.begin(db=self.fpudb, write=True) as txn:
+                if (len(search_modes) != 0) and (not search_modes.kas_key(fpu_id)):
+                    continue
+            
+                # record initial position intervals so that the
+                # known range can be restored if the datum search is
+                # rejected
+                initial_positions[fpu_id] = (self.apositions[fpu_id],
+                                             self.bpositions[fpu_id])
+                
+                # update stored intervals to include zero, and store in DB
                 if selected_arm in [DASEL_ALPHA, DASEL_BOTH]:
-                    self.apositions[fpu_id].extend(0.0 + self.config.alpha_datum_offset)
-                    key = str( (serial_number, "apos"))
-                    val = str(self.apositions[fpu_id])
-                    txn.put(key, val)
+                    self.update_apos(txn, fpu, fpu_id, self.apositions[fpu_id].extend(0.0 + self.config.alpha_datum_offset))
+                    
                 if selected_arm in [DASEL_BETA, DASEL_BOTH]:
-                    self.bpositions[fpu_id].extend(0.0)
-                    key = str( (serial_number, "bpos"))
-                    val = str(self.bpositions[fpu_id])
-                    txn.put(key, val)
+                    self.update_bpos(txn, fpu, fpu_id,  self.bpositions[fpu_id].extend(0.0))
 
                 
 
     def cancel_find_datum_hook(self, gs, search_modes,  selected_arm=None,
                                fpuset=[], initial_positions={}):
 
-        for fpu_id in initial_positions.keys():
-            # get last stored positions
-            apos, bpos = initial_positions[fpu_id] 
-
-            fpu = gs.FPU[fpu_id]
-            serial_number = fpu.serial_number
-            # revert stored intervals to old values
-            with env.begin(db=self.fpudb, write=True) as txn:
-                self.apositions[fpu_id] = apos
-                key = str( (serial_number, "apos"))
-                val = [apos, self.config.alpha_datum_offset]
-                txn.put(key, repr(val))
-
-                self.bpositions[fpu_id] = bpos
-                key = str( (serial_number, "bpos"))
-                val = [bpos, 0]
-                txn.put(key, repr(val))
+        with env.begin(db=self.fpudb, write=True) as txn:
+            for fpu_id in initial_positions.keys():
+                # get last stored positions
+                apos, bpos = initial_positions[fpu_id] 
+            
+                fpu = gs.FPU[fpu_id]
+                # revert stored intervals to old values
+                self.update_apos(txn, fpu, fpu_id, apos)
+                self.update_bpos(txn, fpu, fpu_id, bpos)

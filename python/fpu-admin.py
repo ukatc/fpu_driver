@@ -7,6 +7,7 @@ import argparse
 
 import lmdb
 from interval import Interval
+from protectiondb import ProtectionDB as pdb
 
 from fpu_constants import *
 
@@ -39,23 +40,6 @@ def flash_FPU(fpu_id, serial_number,mockup=True):
     print(rval)
 
 
-def putInterval(txn, key, interval, offset=0):
-    """In theory, it is cleaner to only store
-    the relative values. But we want the DB content
-    to be human-readable, and easy to interpret,
-    and a uniform angle interpretation, 
-    so it is better to store posiitional values always 
-    along with the offset they refer to."""
-    val = repr([interval, offset])
-    txn.put(key, val)
-
-            
-def getInterval(txn, key, offset=0):
-    val = repr([Interval(alpha_pos,alpha_pos), offset])
-    val = txn.get(key)
-    ivlist, stored_offset = literal_eval(val)
-    return Interval(ivlist) + (offset- stored_offset) 
-
 
 
 if __name__ == '__main__' :
@@ -81,7 +65,7 @@ if __name__ == '__main__' :
             print("usage: init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]")
             exit(1)
             
-        serial_number = argv[2]
+        sn = serial_number = argv[2]
         alpha_pos = float(argv[3])
         beta_pos = float(argv[4])
         if len(argv) == 6:
@@ -94,27 +78,14 @@ if __name__ == '__main__' :
         waveform_reversed = False
 
         with env.begin(write=True,db=fpudb) as txn:
-            key = str( (serial_number, "apos"))
-            val = Interval(alpha_pos,alpha_pos)
-            putInterval(txn, key, val, alpha_offset)
-            key = str( (serial_number, "bpos"))
-            val = Interval(beta_pos,beta_pos)
-            putInterval(txn, key, val, BETA_DATUM_OFFSET)
-            key = str((serial_number, "wtab"))
-            val = repr(Interval(min_waveform, max_waveform))
-            txn.put(key,val)
-            key = str((serial_number, "wf_reversed"))
-            val = str(waveform_reversed)
-            txn.put(key,val)
-            key = str((serial_number, "alimits"))
-            val = Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE)
-            putInterval(txn, key, val, alpha_offset)
-            key = str((serial_number, "blimits"))
-            val = Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE)
-            putInterval(txn, key,val, BETA_DATUM_OFFSET)
-            key = str((serial_number, "bretries"))
-            val = str(DEFAULT_FREE_BETA_RETRIES)
-            txn.put(key,val)
+
+            pdb.putInterval(txn, sn, pdb.alpha_positions, Interval(alpha_pos,alpha_pos), alpha_offset)
+            pdb.putInterval(txn, sn, pdb.beta_positions, Interval(beta_pos,beta_pos), BETA_DATUM_OFFSET)
+            pdb.putField(txn, sn, pdb.waveform_table, [])
+            pdb.putField(txn, sn, pdb.waveform_reversed, waveform_reversed)
+            pdb.putInterval(txn, sn, pdb.alpha_limits, Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE), alpha_offset)
+            pdb.putInterval(txn, sn, pdb.beta_limits, Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE), BETA_DATUM_OFFSET)
+            pdb.putField(txn, sn, pdb.free_beta_retries, str(DEFAULT_FREE_BETA_RETRIES))
 
     if command == "flash":
         if len(argv) != 4:
@@ -129,7 +100,7 @@ if __name__ == '__main__' :
             
     if command == "alimits":
         if not (len(argv) in [5,6]) :
-            print("usage: alimits <amin> <amax> [<alpha_datum_offset>]")
+            print("usage: alimits <serial_number> <amin> <amax> [<alpha_datum_offset>]")
             exit(1)
             
         serial_number = argv[2]
@@ -141,13 +112,12 @@ if __name__ == '__main__' :
             alpha_offset = ALPHA_DATUM_OFFSET
             
         with env.begin(write=True,db=fpudb) as txn:
-            key = str((serial_number, "alimits"))
             val = Interval(alpha_min, alpha_max)
-            putInterval(txn, key, val, alpha_offset)
+            pdb.putInterval(txn, serial_number, pdb.alpha_limits, val, alpha_offset)
             
     elif command == "blimits":
         if len(argv) != 5:
-            print("usage: blimits <bmin> <bmax>")
+            print("usage: blimits <serial_number> <bmin> <bmax>")
             exit(1)
             
         serial_number = argv[2]
@@ -156,14 +126,13 @@ if __name__ == '__main__' :
 
 
         with env.begin(write=True,db=fpudb) as txn:
-            key = str((serial_number, "blimits"))
             val = Interval(beta_min, beta_max)
-            putInterval(txn, key, val, BETA_DATUM_OFFSET)
+            pdb.putInterval(txn, serial_number, pdb.beta_limits, val, BETA_DATUM_OFFSET)
               
               
     elif command == "bretries":
-        if len(argv) != 5:
-            print("usage: bretries <nretries>")
+        if len(argv) != 4:
+            print("usage: bretries <serial_number> <nretries>")
             exit(1)
             
         serial_number = argv[2]
@@ -171,9 +140,8 @@ if __name__ == '__main__' :
         
 
         with env.begin(write=True,db=fpudb) as txn:
-            key = str((serial_number, "retries"))
             val = str(bretries)
-            txn.put(key,val)
+            pdb.putField(txn, serial_number, pdb.free_beta_retries, val)
               
               
 
@@ -188,9 +156,16 @@ if __name__ == '__main__' :
             exit(1)
         serial_number = argv[2]
         with env.begin(db=fpudb) as txn:
-            for subkey in ["apos", "bpos", "wtab", "alimits", "blimits", "bretries"]:
+            for subkey in [ pdb.alpha_positions,
+                            pdb.beta_positions ,
+                            # pdb.waveform_table ,
+                            pdb.waveform_reversed, 
+                            pdb.alpha_limits ,
+                            pdb.beta_limits ,
+                            pdb.free_beta_retries ]:
+                
                 key = str((serial_number, subkey))
-                val = txn.get(key)
+                val = pdb.getRawField(txn,serial_number,subkey)
                           
                 print(key,":", val)
                 
