@@ -236,7 +236,6 @@ class UnprotectedGridDriver (object):
             self.allow_find_datum_hook(gs, search_modes, selected_arm=selected_arm,
                                        fpuset=fpuset, support_uninitialized_auto=support_uninitialized_auto)
             if (SEARCH_CLOCKWISE in search_modes) or (SEARCH_ANTI_CLOCKWISE in search_modes):
-                print("overriding protection flag")
                 count_protection = False
 
         initial_positions = {}
