@@ -114,7 +114,7 @@ public:
     E_DriverErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
                                             E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
                                             E_DATUM_SELECTION arm_selection=DASEL_BOTH,
-                                            bool soft_protection=true,
+                                            bool count_protection=true,
                                             t_fpuset const * const fpuset_opt=nullptr);
 
     E_DriverErrCode waitAutoFindDatumAsync(t_grid_state& grid_state,
@@ -127,7 +127,8 @@ public:
                                       E_GridState& state_summary,
                                       const t_wtable& waveforms,
                                       t_fpuset const &fpuset,
-                                      bool soft_protection=true);
+                                      bool soft_protection=true,
+				      bool allow_uninitialized=false);
 
     E_DriverErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 

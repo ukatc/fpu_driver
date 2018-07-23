@@ -50,7 +50,7 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
 E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
         E_DATUM_SEARCH_DIRECTION * p_direction_flags,
         E_DATUM_SELECTION arm_selection,
-        bool soft_protection, t_fpuset const * const fpuset)
+        bool count_protection, t_fpuset const * const fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -64,7 +64,7 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
         estatus = startAutoFindDatumAsync(grid_state, state_summary,
                                           p_direction_flags,
                                           arm_selection,
-                                          soft_protection,
+                                          count_protection,
                                           fpuset);
 
         break;
@@ -103,7 +103,9 @@ E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state,
 
 
 E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state& grid_state,
-        t_fpuset const &fpuset, bool soft_protection)
+					 t_fpuset const &fpuset,
+					 bool soft_protection,
+					 bool allow_uninitialized)
 
 {
     E_DriverErrCode estatus = DE_OK;
@@ -118,7 +120,7 @@ E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state
 
     while (num_avaliable_retries > 0)
     {
-        estatus = configMotionAsync(grid_state, state_summary, cur_wtable, fpuset, soft_protection);
+        estatus = configMotionAsync(grid_state, state_summary, cur_wtable, fpuset, soft_protection, allow_uninitialized);
         if (estatus != DE_OK)
         {
             // if connection is lost or command invalid, quit.
