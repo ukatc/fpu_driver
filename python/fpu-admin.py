@@ -86,6 +86,8 @@ if __name__ == '__main__' :
             pdb.putInterval(txn, sn, pdb.alpha_limits, Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE), alpha_offset)
             pdb.putInterval(txn, sn, pdb.beta_limits, Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE), BETA_DATUM_OFFSET)
             pdb.putField(txn, sn, pdb.free_beta_retries, str(DEFAULT_FREE_BETA_RETRIES))
+            pdb.putField(txn, sn, pdb.beta_retry_count_cw, str(0))
+            pdb.putField(txn, sn, pdb.beta_retry_count_acw, str(0))
 
     if command == "flash":
         if len(argv) != 4:
@@ -162,7 +164,9 @@ if __name__ == '__main__' :
                             pdb.waveform_reversed, 
                             pdb.alpha_limits ,
                             pdb.beta_limits ,
-                            pdb.free_beta_retries ]:
+                            pdb.free_beta_retries,
+                            pdb.beta_retry_count_cw,
+                            pdb.beta_retry_count_acw]:
                 
                 key = str((serial_number, subkey))
                 val = pdb.getRawField(txn,serial_number,subkey)

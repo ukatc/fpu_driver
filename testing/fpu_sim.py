@@ -509,12 +509,12 @@ class FPU:
         alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
         beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
 
-        print("freeBetaCollsion: moving FPU # %i from (%i,%i) to (%i, %i) = real (%5.2f,5.2f) deg" % (
+        print("freeBetaCollsion: moving FPU # %i from (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg" % (
             self.fpu_id, self.alpha_steps, old_beta_steps,
             self.alpha_steps, self.beta_steps,
             alpha_real_deg, beta_real_deg))
         
-        if ((self.beta_steps + beta_ffset) >= MAX_BETA) or (
+        if ((self.beta_steps + beta_offset) >= MAX_BETA) or (
                 (self.beta_steps + beta_offset) <= MIN_BETA):
             self.is_collided = True
             print("FPU #%i: collision ongoing" % self.fpu_id)

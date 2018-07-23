@@ -12,6 +12,8 @@ class ProtectionDB:
     alpha_limits = 'alimits'
     beta_limits = 'blimits'
     free_beta_retries = 'bretries'
+    beta_retry_count_cw = 'beta_retry_count_cw'
+    beta_retry_count_acw = 'beta_retry_count_acw'
     
     @classmethod
     def getRawField(cls, txn, serial_number, subkey):
@@ -27,8 +29,10 @@ class ProtectionDB:
         if data == None:
             return None
         val = literal_eval(data)
-        if subkey in [cls.waveform_table, cls.waveform_reversed, cls.free_beta_retries, ]:
+        if subkey in [cls.waveform_table, cls.waveform_reversed]:
             return val
+        elif subkey in [cls.free_beta_retries, cls.beta_retry_count_cw, cls.beta_retry_count_acw]:
+            return int(val)
         else:
             # return position span as interval object
             
@@ -82,6 +86,18 @@ class ProtectionDB:
         val = repr(wentry)
         txn.put(key, val)
 
+    @classmethod
+    def store_bretry_count(cls, txn, fpu, clockwise, cnt):
+        serial_number = fpu.serial_number
+        assert(serial_number != "@@@@@")
+
+        if clockwise :
+            key = str( (serial_number, cls.beta_retry_count_cw))
+        else:
+            key = str( (serial_number, cls.beta_retry_count_acw))
+
+        val = str(cnt)
+        txn.put(key, val)
 
 
     @staticmethod

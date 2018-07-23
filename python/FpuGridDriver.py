@@ -607,8 +607,21 @@ class UnprotectedGridDriver (object):
     def abortMotion(self, gs, fpuset=[]):
         return self._gd.abortMotion(gs, fpuset)
 
-    def freeBetaCollision(self, fpu_id, direction,  gs):
-        return self._gd.freeBetaCollision(fpu_id, direction, gs)
+    def pre_free_beta_collision_hook(self, fpu_id,direction, gs):
+        pass
+
+    def post_free_beta_collision_hook(self, fpu_id,direction, gs):
+        pass
+    
+    def freeBetaCollision(self, fpu_id, direction,  gs, soft_protection=True):
+
+        if soft_protection:
+            self.pre_free_beta_collision_hook(fpu_id,direction, gs)
+            
+        rv = self._gd.freeBetaCollision(fpu_id, direction, gs)
+        
+        self.post_free_beta_collision_hook(fpu_id, direction, gs)
+        return rv
     
     def enableBetaCollisionProtection(self, gs):
         return self._gd.enableBetaCollisionProtection(gs)
@@ -690,11 +703,16 @@ class GridDriver(UnprotectedGridDriver):
         wf_reversed = {}
         alimits = {}
         blimits = {}
-        bretries = {}
+        maxbretries = {}
+        bretries_cw = {}
+        bretries_acw = {}
         in_dicts = { ProtectionDB.alpha_positions : apositions,
                      ProtectionDB.beta_positions : bpositions,
                      ProtectionDB.waveform_table : wtabs, ProtectionDB.waveform_reversed : wf_reversed,
-                     ProtectionDB.alpha_limits : alimits, ProtectionDB.beta_limits : blimits, ProtectionDB.free_beta_retries : bretries }
+                     ProtectionDB.alpha_limits : alimits, ProtectionDB.beta_limits : blimits,
+                     ProtectionDB.free_beta_retries : maxbretries,
+                     ProtectionDB.beta_retry_count_cw : bretries_cw,
+                     ProtectionDB.beta_retry_count_acw : bretries_acw }
         
         print("reading serial numbers from DB....")
         print("FIXME: store and load reversed state and span of active waveforms")
@@ -714,7 +732,9 @@ class GridDriver(UnprotectedGridDriver):
                                 ProtectionDB.waveform_reversed,
                                 ProtectionDB.alpha_limits,
                                 ProtectionDB.beta_limits,
-                                ProtectionDB.free_beta_retries]:
+                                ProtectionDB.free_beta_retries,
+                                ProtectionDB.beta_retry_count_cw,
+                                ProtectionDB.beta_retry_count_acw]:
                     
                     val = ProtectionDB.getField(txn, fpu, subkey)
                           
@@ -737,7 +757,9 @@ class GridDriver(UnprotectedGridDriver):
         self.blimits = blimits
         self.a_caloffsets = a_caloffsets
         self.b_caloffsets = b_caloffsets
-        self.bretries = bretries
+        self.maxbretries = maxbretries
+        self.bretries_cw = bretries_cw
+        self.bretries_acw = bretries_acw
         
 
         # query positions and compute offsets, if FPUs have been resetted.
@@ -849,7 +871,9 @@ class GridDriver(UnprotectedGridDriver):
                 # and store both to DB
                 self.update_apos(txn, fpu, fpu_id, self.a_caloffsets[fpu_id] + self.alpha_angle(fpu), store=store)
                 self.update_bpos(txn, fpu, fpu_id,  self.b_caloffsets[fpu_id] + self.beta_angle(fpu), store=store)
-
+                
+        env.sync()
+ 
                     
 
     def pingFPUs(self, grid_state, fpuset=[]):
@@ -1085,7 +1109,9 @@ class GridDriver(UnprotectedGridDriver):
                 if self.configured_arange.has_key(fpu_id):
                     self.update_apos(txn, fpu, fpu_id, self.configured_arange[fpu_id])
                     self.update_bpos(txn, fpu, fpu_id,  self.configured_brange[fpu_id])
-    
+                    
+        env.sync()
+     
 
     def cancel_execute_motion_hook(self, gs, fpuset, initial_positions=None):
         """This hook cancel registering an executeMotion command which was
@@ -1100,6 +1126,8 @@ class GridDriver(UnprotectedGridDriver):
                 apos, bpos = initial_positions[fpu_id]
                 self.update_apos(txn, fpu, fpu_id, apos)
                 self.update_bpos(txn, fpu, fpu_id,  bpos)
+                
+        env.sync()
                                 
     
     def post_execute_motion_hook(self, gs, fpuset):
@@ -1234,6 +1262,9 @@ class GridDriver(UnprotectedGridDriver):
                 else:
                     if fpu.ping_ok:
                         self.update_bpos(txn, fpu, fpu_id,  Interval(self.beta_angle(fpu)) + self.b_caloffsets[fpu_id])
+
+        env.sync()
+ 
         
 
     def start_find_datum_hook(self, gs, search_modes,  selected_arm=None,fpuset=[], initial_positions={}):
@@ -1259,7 +1290,9 @@ class GridDriver(UnprotectedGridDriver):
                     
                 if selected_arm in [DASEL_BETA, DASEL_BOTH]:
                     self.update_bpos(txn, fpu, fpu_id,  self.bpositions[fpu_id].extend(0.0))
-
+                    
+        env.sync()
+ 
                 
 
     def cancel_find_datum_hook(self, gs, search_modes,  selected_arm=None,
@@ -1274,3 +1307,38 @@ class GridDriver(UnprotectedGridDriver):
                 # revert stored intervals to old values
                 self.update_apos(txn, fpu, fpu_id, apos)
                 self.update_bpos(txn, fpu, fpu_id, bpos)
+                
+        env.sync()
+ 
+
+    def pre_free_beta_collision_hook(self, fpu_id, direction, grid_state):
+        
+        if direction == REQD_CLOCKWISE:
+            brcnt = self.bretries_cw[fpu_id]
+        else:
+            brcnt = self.bretries_acw[fpu_id]
+            
+        if brcnt >= self.maxbretries[fpu_id]:
+            raise ProtectionError("Retry count for FPU %i is already %i, exceeds safe maximum" % (fpu_id, brcnt))
+        
+        
+    def post_free_beta_collision_hook(self, fpu_id, direction, grid_state):
+        
+        clockwise = (direction == REQD_CLOCKWISE)
+        
+        if clockwise:
+            self.bretries_cw[fpu_id] += 1
+            cnt = self.bretries_cw[fpu_id]
+        else:
+            self.bretries_acw[fpu_id] += 1
+            cnt = self.bretries_acw[fpu_id]
+
+
+        fpu = grid_state.FPU[fpu_id]
+        
+        with env.begin(db=self.fpudb, write=True) as txn:
+            ProtectionDB.store_bretry_count(txn, fpu, clockwise, cnt)
+
+        fpuset = [fpu_id]
+        super(GridDriver, self).pingFPUs(grid_state, fpuset=fpuset)
+        self.refresh_positions(grid_state, fpuset=fpuset)
