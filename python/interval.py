@@ -48,18 +48,14 @@ class Interval:
     def __repr__(self):
         return repr(list(self.iv))
 
+    def copy(self):
+        return Interval(self.iv)
+
     def min(self):
         return self.iv[0]
 
     def max(self):
         return self.iv[1]
-
-    def extend(self, x):
-        if x < self.iv[0]:
-            self.iv[0] = x
-        elif x> self.iv[1]:
-            self.iv[1] = x
-            
     
     def __add__(self, b):
         if not isinstance(b, Interval):
@@ -100,6 +96,7 @@ class Interval:
         self.iv = self.iv - iv
 
     def combine(self, b):
+        """mutating combine intervals and return result."""
         if not isinstance(b, Interval):
             b = Interval(b)
 
@@ -107,6 +104,30 @@ class Interval:
         self.iv[0] = min(self.iv[0],iv[0])
         self.iv[1] = max(self.iv[1], iv[1])
 
+        return self
+        
+    def extend(self, x):
+        """mutating extend interval with scalar, and return result."""
+        if x < self.iv[0]:
+            self.iv[0] = x
+        elif x> self.iv[1]:
+            self.iv[1] = x
+            
+        return self
+            
+
+    def iextend(self, x):
+        """immutable extend interval, returning result 
+        but not changing object."""
+        iv = self.copy()
+        return iv.extend(x)
+
+    def icombine(self,b):
+        """immutable combining interval, returning result and
+        not changing object."""
+        iv = self.copy()
+        return iv.combine(b)
+    
     def contains(self, b):
         if not isinstance(b, Interval):
             b = Interval(b)

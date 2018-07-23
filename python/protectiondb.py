@@ -48,6 +48,7 @@ class ProtectionDB:
         # store the datum offsets along with each position
         # (this allows to reconfigure the zero point later)
         serial_number = fpu.serial_number
+        assert(serial_number != "@@@@@")
         key = str( (serial_number, cls.alpha_positions))
         
         val = [apos, aoffset]
@@ -58,6 +59,7 @@ class ProtectionDB:
         # store the datum offsets along with each position
         # (this allows to reconfigure the zero point later)
         serial_number = fpu.serial_number
+        assert(serial_number != "@@@@@")
 
         key = str( (serial_number, cls.beta_positions))
         val = [bpos, 0]
@@ -67,6 +69,7 @@ class ProtectionDB:
     @classmethod
     def store_reversed(cls, txn, fpu, is_reversed):
         serial_number = fpu.serial_number
+        assert(serial_number != "@@@@@")
         key = str( (serial_number, cls.waveform_reversed))
         val = str(is_reversed)
         txn.put(key, val)
@@ -74,6 +77,7 @@ class ProtectionDB:
     @classmethod
     def storeWaveform(cls, txn, fpu, wentry):
         serial_number = fpu.serial_number
+        assert(serial_number != "@@@@@")
         key = str( (serial_number, cls.waveform_table))
         val = repr(wentry)
         txn.put(key, val)
@@ -90,12 +94,14 @@ class ProtectionDB:
         and a uniform angle interpretation, 
         so it is better to store positional values always 
         along with the offset they refer to."""
+        assert(serial_number != "@@@@@")
         key = str( (serial_number, subkey))
         val = repr([interval, offset])
         txn.put(key, val)
 
     @staticmethod
     def putField(txn, serial_number, subkey, val):
+        assert(serial_number != "@@@@@")
         key = str( (serial_number, subkey))
         txn.put(key, repr(val))
         

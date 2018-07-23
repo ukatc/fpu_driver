@@ -542,7 +542,7 @@ class UnprotectedGridDriver (object):
         time.sleep(0.1)
         try:
             rv = self._gd.startExecuteMotion(gs, fpuset)
-        except InvalidState as e:
+        except InvalidStateException as e:
             self.cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
             raise
         if rv != fpu_driver.E_DriverErrCode.DE_OK:
@@ -754,6 +754,7 @@ class GridDriver(UnprotectedGridDriver):
         - after every resetFPU command
 
         """
+        self.readSerialNumbers(new_state, fpuset=fpuset)
         for fpu_id, fpu in enumerate(new_state.FPU):
             if (len(fpuset) > 0) and (fpu_id not in fpuset):
                 continue
@@ -775,9 +776,9 @@ class GridDriver(UnprotectedGridDriver):
             # these offsets are the difference between the calibrated
             # angle and the uncalibrated angle - after a findDatum,
             # they are set to zero
-            self.a_caloffsets[fpu_id] += self.apositions[fpu_id] - self.alpha_angle(fpu)
+            self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - self.alpha_angle(fpu)
 
-            self.b_caloffsets[fpu_id] += self.bpositions[fpu_id] - self.beta_angle(fpu)
+            self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - self.beta_angle(fpu)
                         
     def trackedAngles(self, gs, fpuset=[]):
         """lists tracked angles, offset, and waveform span
