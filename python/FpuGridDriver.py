@@ -261,8 +261,9 @@ class UnprotectedGridDriver (object):
         
         return rv
     
-    def findDatum(self, gs, search_modes={}, selected_arm=DASEL_BOTH, soft_protection=True,
-                  check_protection=None, fpuset=[], support_uninitialized_auto=True):
+    def findDatum(self, gs, search_modes={}, selected_arm=DASEL_BOTH, fpuset=[],
+                  soft_protection=True, count_protection=True, check_protection=None,
+                  support_uninitialized_auto=True):
         """Moves all FPUs to datum position. 
 
         If the program receives a SIGNINT, or Control-C is pressed, an
@@ -271,13 +272,25 @@ class UnprotectedGridDriver (object):
         The parameter selected_arm (DASEL_BOTH, DASEL_ALPHA, DASEL_BETA) 
         controls which arms are moved.
 
-        The dictionary fpu_modes has integer FPU IDs as keys, and 
-        each value is one of SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU,
-        which controls whether the datum search moves clockwise (decreasing step count),
-        anti-clockwise (increasing step count), automatically, or skips the FPU.
-        The default mode is automatically.
+        The dictionary fpu_modes has integer FPU IDs as keys, and each
+        value is one of SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE,
+        SEARCH_AUTO, SKIP_FPU, which controls whether the datum search
+        moves clockwise (decreasing step count), anti-clockwise
+        (increasing step count), automatically, or skips the FPU.  The
+        default mode is SEARCH_AUTO.
 
-        If an beta arm is not datumed, automatic datum search will be refused.
+        It is critical that the search direction for the beta arm is
+        always set correctly, otherwise a beta arm collision will
+        happen which could degrade the FPU (or even destroy the FPU,
+        if the collision detection does not work).  If a beta arm was
+        datumed, the FPU will move in the direction corresponding to
+        its internal step count.  If an beta arm is not datumed,
+        automatic datum search will use the position database value,
+        unless support_uninitialized_auto is set to False.  In
+        addition, manually set search directions will be checked using
+        the step count value for the beta arm, unless count_protection
+        is set to False.
+        
         If a beta arm position appears not to be safe to be moved into
         the requested position, the manual datum search will be refused
         unless soft_protection is set to False.
@@ -289,15 +302,22 @@ class UnprotectedGridDriver (object):
                  DeprecationWarning, 2)
             soft_protection=check_protection
 
-        count_protection = soft_protection
         if soft_protection:
-            search_modes = search_modes.copy()
+            orig_search_modes = search_modes
+            search_modes = orig_search_modes.copy()
             # check whether datum search is safe, adjusting search_modes
             self.allow_find_datum_hook(gs, search_modes, selected_arm=selected_arm,
                                        fpuset=fpuset, support_uninitialized_auto=support_uninitialized_auto)
-            if (SEARCH_CLOCKWISE in search_modes) or (SEARCH_ANTI_CLOCKWISE in search_modes):
-                print("overriding protection flag")
-                count_protection = False
+            # We might need to disable the stepcount-based check if
+            # (and only if) the step counter does not agree with the
+            # database Check whether a movement against the step count
+            # is needed.
+            for k, m in search_modes.items():
+                fpu = gs.FPU[k]
+                if ( (m in [SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE ])
+                     and (orig_search_modes.get(k, SEARCH_AUTO)  == SEARCH_AUTO)):
+                    print("beta arm %i not initialized: overriding count_protection flag" % k)
+                    count_protection = False
                 
         initial_positions = {}
         self.start_find_datum_hook(gs,fpuset, initial_positions=initial_positions)
@@ -429,7 +449,7 @@ class UnprotectedGridDriver (object):
         self.set_wtable_reversed(fpuset, True)
 
     
-    def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None):
+    def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None,  allow_uninitialized=False):
         """ 
         Configures movement by sending a waveform table to a group of FPUs.
         Call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
@@ -464,7 +484,7 @@ class UnprotectedGridDriver (object):
         update_config = False
         try:
             try:
-                rval = self._gd.configMotion(wtable, gs, fpuset, soft_protection)
+                rval = self._gd.configMotion(wtable, gs, fpuset, soft_protection, allow_uninitialized)
                 update_config = True
                 
             except (SocketFailure, CommandTimeout) as e:
@@ -757,20 +777,6 @@ class GridDriver(UnprotectedGridDriver):
         self.readSerialNumbers(new_state, fpuset=fpuset)
         for fpu_id, fpu in enumerate(new_state.FPU):
             if (len(fpuset) > 0) and (fpu_id not in fpuset):
-                continue
-
-            old_fpu = old_state.FPU[fpu_id]
-            
-            if ( (fpu.state != FPST_UNINITIALIZED)
-                 or (not fpu.ping_ok)
-                 or (fpu.alpha_steps != 0)
-                 or (fpu.beta_steps != 0)):
-                # fpu wasn't resetted successfully
-                # We do not set the offset to zero - the FPU 
-                # has been moved from a former reset
-                print("skipping FPU #", fpu_id)
-                print("state = %s, ping_ok=%i, asteps =%i, bsteps =%i" %
-                      (fpu.state, fpu.ping_ok, fpu.alpha_steps, fpu.beta_steps))
                 continue
                         
             # these offsets are the difference between the calibrated
@@ -1153,8 +1159,6 @@ class GridDriver(UnprotectedGridDriver):
                 bpos = self.bpositions[fpu_id]
                 search_beta_clockwise_range = blim.intersects(acw_range)
                 search_beta_anti_clockwise_range = blim.intersects(cw_range)
-                print("search_beta_clockwise_range=", search_beta_clockwise_range)
-                print("search_beta_anti_clockwise_range=", search_beta_anti_clockwise_range)
                 
                 if search_modes[fpu_id] == SEARCH_AUTO :
 
@@ -1171,7 +1175,8 @@ class GridDriver(UnprotectedGridDriver):
                                 search_modes[fpu_id] = SEARCH_ANTI_CLOCKWISE
                             else:
                                 raise ProtectionError("No automatic datum search possible - lacks"
-                                                      " knowledge on position for FPU %i." % fpu_id)
+                                                      " knowledge on position for FPU %i (consider to move the FPU"
+                                                      " into an unambigous range)."% fpu_id)
                         else:
                             raise ProtectionError(("FPU %i not initialized, support_uninitialized_auto not"
                                                    + " set, cannot do protected automatic search") % fpu_id)
@@ -1197,7 +1202,6 @@ class GridDriver(UnprotectedGridDriver):
                 if not alim.contains(apos):
                     raise ProtectionError("Alpha arm of FPU %i is not in safe range"
                                           " for datum search (angle=%r, range=%r)" % (fpu_id, apos, alim))
-            print("allow_find_datum_hook(): fpu_id=%i, bpos=%s, search_mode=%r", fpu_id, bpos, search_modes[fpu_id])
             
     def finished_find_datum_hook(self, gs, search_modes, fpuset=[], was_cancelled=False, initial_positions={}):
         with env.begin(db=self.fpudb, write=True) as txn:
