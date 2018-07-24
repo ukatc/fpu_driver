@@ -128,11 +128,12 @@ class Interval:
         iv = self.copy()
         return iv.combine(b)
     
-    def contains(self, b):
+    def contains(self, b, tolerance=0):
+        assert(tolerance >= 0)
         if not isinstance(b, Interval):
             b = Interval(b)
         iv = b.iv
-        if (self.iv[0] <= iv[0]) and (self.iv[1] >= iv[1]):
+        if ((self.iv[0] - tolerance) <= iv[0]) and ((self.iv[1] + tolerance) >= iv[1]):
             return True
         else:
             return False
