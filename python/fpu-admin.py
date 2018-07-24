@@ -2,6 +2,8 @@
 from __future__ import print_function, division
 
 import os
+from ast import literal_eval
+
 from sys import argv, exit
 import argparse
 
@@ -66,8 +68,18 @@ if __name__ == '__main__' :
             exit(1)
             
         sn = serial_number = argv[2]
-        alpha_pos = float(argv[3])
-        beta_pos = float(argv[4])
+        try:
+            alpha_pos = float(argv[3])
+            aint = Interval(alpha_pos,alpha_pos)
+        except ValueError:
+            aint = Interval(literal_eval(argv[3]))
+            
+        try:
+            beta_pos = float(argv[4])
+            bint = Interval(beta_pos,beta_pos)
+        except ValueError:
+            bint = Interval(literal_eval(argv[4]))
+
         if len(argv) == 6:
             alpha_offset = float(argv[5])
         else:
@@ -79,15 +91,15 @@ if __name__ == '__main__' :
 
         with env.begin(write=True,db=fpudb) as txn:
 
-            pdb.putInterval(txn, sn, pdb.alpha_positions, Interval(alpha_pos,alpha_pos), alpha_offset)
-            pdb.putInterval(txn, sn, pdb.beta_positions, Interval(beta_pos,beta_pos), BETA_DATUM_OFFSET)
+            pdb.putInterval(txn, sn, pdb.alpha_positions, aint, alpha_offset)
+            pdb.putInterval(txn, sn, pdb.beta_positions, bint, BETA_DATUM_OFFSET)
             pdb.putField(txn, sn, pdb.waveform_table, [])
             pdb.putField(txn, sn, pdb.waveform_reversed, waveform_reversed)
             pdb.putInterval(txn, sn, pdb.alpha_limits, Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE), alpha_offset)
             pdb.putInterval(txn, sn, pdb.beta_limits, Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE), BETA_DATUM_OFFSET)
-            pdb.putField(txn, sn, pdb.free_beta_retries, str(DEFAULT_FREE_BETA_RETRIES))
-            pdb.putField(txn, sn, pdb.beta_retry_count_cw, str(0))
-            pdb.putField(txn, sn, pdb.beta_retry_count_acw, str(0))
+            pdb.putField(txn, sn, pdb.free_beta_retries, DEFAULT_FREE_BETA_RETRIES)
+            pdb.putField(txn, sn, pdb.beta_retry_count_cw, 0)
+            pdb.putField(txn, sn, pdb.beta_retry_count_acw, 0)
 
     if command == "flash":
         if len(argv) != 4:

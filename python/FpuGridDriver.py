@@ -583,6 +583,7 @@ class UnprotectedGridDriver (object):
                             was_aborted = True
                             break
                         is_ready = (rv != fpu_driver.E_DriverErrCode.DE_WAIT_TIMEOUT)
+                        
             except MovementError:
                 refresh_state = True
                 raise
@@ -1124,6 +1125,7 @@ class GridDriver(UnprotectedGridDriver):
                 if (len(fpuset) != 0) and (fpu_id not in fpuset):
                     continue
                 apos, bpos = initial_positions[fpu_id]
+                fpu = gs.FPU[fpu_id]
                 self.update_apos(txn, fpu, fpu_id, apos)
                 self.update_bpos(txn, fpu, fpu_id,  bpos)
                 
@@ -1259,6 +1261,13 @@ class GridDriver(UnprotectedGridDriver):
                     self.b_caloffsets[fpu_id] = Interval(0)
                     if fpu.beta_steps == 0:                        
                         self.update_bpos(txn, fpu, fpu_id,  Interval(0.0))
+
+                        if self.bretries_acw[fpu_id] > 0:
+                            clockwise = False
+                            ProtectionDB.store_bretry_count(txn, fpu, clockwise, 0)
+                        if self.bretries_cw[fpu_id] > 0:
+                            clockwise = True
+                            ProtectionDB.store_bretry_count(txn, fpu, clockwise, 0)
                 else:
                     if fpu.ping_ok:
                         self.update_bpos(txn, fpu, fpu_id,  Interval(self.beta_angle(fpu)) + self.b_caloffsets[fpu_id])

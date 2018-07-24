@@ -15,24 +15,49 @@ class ProtectionDB:
     beta_retry_count_cw = 'beta_retry_count_cw'
     beta_retry_count_acw = 'beta_retry_count_acw'
     
-    @classmethod
-    def getRawField(cls, txn, serial_number, subkey):
+    @staticmethod
+    def putField(txn, serial_number, subkey, val):
+        assert(serial_number != "@@@@@")
+        key = str( (serial_number, subkey))
+        txn.put(key, repr(val))
+        
+    @staticmethod
+    def putInterval(txn, serial_number, subkey, interval, offset=0):
+        """Stores a position interval.
+        
+        In theory, it is cleaner to only store
+        the relative values. But we want the DB content
+        to be human-readable, and easy to interpret,
+        and a uniform angle interpretation, 
+        so it is better to store positional values always 
+        along with the offset they refer to."""
+        
+        val = [interval, offset]
+        ProtectionDB.putField(txn, serial_number, subkey, val)
+        
+    @staticmethod
+    def getRawField(txn, serial_number, subkey):
         key = str((serial_number, subkey))
-        data = txn.get(key)
-        return data
-
-    
-    @classmethod
-    def getField(cls, txn, fpu, subkey):
-        key = str((fpu.serial_number, subkey))
         data = txn.get(key)
         if data == None:
             return None
         val = literal_eval(data)
-        if subkey in [cls.waveform_table, cls.waveform_reversed]:
+        return val
+
+    
+    @classmethod
+    def getField(cls, txn, fpu, subkey):
+        val = cls.getRawField(txn, fpu.serial_number, subkey)
+        
+        if val == None:
+            return None
+
+        if subkey in [cls.waveform_table,
+                      cls.waveform_reversed,
+                      cls.free_beta_retries,
+                      cls.beta_retry_count_cw,
+                      cls.beta_retry_count_acw]:
             return val
-        elif subkey in [cls.free_beta_retries, cls.beta_retry_count_cw, cls.beta_retry_count_acw]:
-            return int(val)
         else:
             # return position span as interval object
             
@@ -51,75 +76,33 @@ class ProtectionDB:
         
         # store the datum offsets along with each position
         # (this allows to reconfigure the zero point later)
-        serial_number = fpu.serial_number
-        assert(serial_number != "@@@@@")
-        key = str( (serial_number, cls.alpha_positions))
+        cls.putInterval(txn, fpu.serial_number, cls.alpha_positions, apos, aoffset)
         
-        val = [apos, aoffset]
-        txn.put(key, repr(val))
-
     @classmethod
     def put_beta_position(cls, txn, fpu, bpos):
         # store the datum offsets along with each position
         # (this allows to reconfigure the zero point later)
-        serial_number = fpu.serial_number
-        assert(serial_number != "@@@@@")
 
-        key = str( (serial_number, cls.beta_positions))
-        val = [bpos, 0]
-        txn.put(key, repr(val))
-
+        cls.putInterval(txn, fpu.serial_number, cls.beta_positions, bpos, 0)
 
     @classmethod
     def store_reversed(cls, txn, fpu, is_reversed):
-        serial_number = fpu.serial_number
-        assert(serial_number != "@@@@@")
-        key = str( (serial_number, cls.waveform_reversed))
-        val = str(is_reversed)
-        txn.put(key, val)
-
+        cls.putField(txn, fpu.serial_number, cls.waveform_reversed, is_reversed)
+        
     @classmethod
     def storeWaveform(cls, txn, fpu, wentry):
-        serial_number = fpu.serial_number
-        assert(serial_number != "@@@@@")
-        key = str( (serial_number, cls.waveform_table))
-        val = repr(wentry)
-        txn.put(key, val)
+        cls.putField(txn, fpu.serial_number, cls.waveform_table, wentry)
 
     @classmethod
     def store_bretry_count(cls, txn, fpu, clockwise, cnt):
-        serial_number = fpu.serial_number
-        assert(serial_number != "@@@@@")
 
         if clockwise :
-            key = str( (serial_number, cls.beta_retry_count_cw))
+            subkey = cls.beta_retry_count_cw
         else:
-            key = str( (serial_number, cls.beta_retry_count_acw))
+            subkey = cls.beta_retry_count_acw
 
-        val = str(cnt)
-        txn.put(key, val)
+        cls.putField(txn, fpu.serial_number, subkey, cnt)
 
-
-    @staticmethod
-    def putInterval(txn, serial_number, subkey, interval, offset=0):
-        """Stores a position interval.
-        
-        In theory, it is cleaner to only store
-        the relative values. But we want the DB content
-        to be human-readable, and easy to interpret,
-        and a uniform angle interpretation, 
-        so it is better to store positional values always 
-        along with the offset they refer to."""
-        assert(serial_number != "@@@@@")
-        key = str( (serial_number, subkey))
-        val = repr([interval, offset])
-        txn.put(key, val)
-
-    @staticmethod
-    def putField(txn, serial_number, subkey, val):
-        assert(serial_number != "@@@@@")
-        key = str( (serial_number, subkey))
-        txn.put(key, repr(val))
         
             
             
