@@ -1449,7 +1449,7 @@ int AsyncDriver::countMoving(const t_grid_state &grid_state, t_fpuset const &fpu
         {
             const t_fpu_state &fpu = grid_state.FPU_state[i];
             if ((fpu.state == FPST_READY_FORWARD)
-                    || (fpu.state == FPST_READY_FORWARD))
+                    || (fpu.state == FPST_READY_REVERSE))
             {
                 if (fpuset[i])
                 {
