@@ -11,6 +11,7 @@ from __future__ import print_function
 import numpy as np
 import random
 import time
+import signal
 
 MAX_WAVE_ENTRIES = 128
 
@@ -634,10 +635,36 @@ class FPU:
         self.running_wave = False
         self.wave_ready = False
             
-            
+class SignalHandler(object):
+    """Context manager for handling a signal
+    while waiting for command completion.
+    """
 
+    def __init__(self, sig=signal.SIGINT):
+        self.sig = sig
+
+    def __enter__(self):
+
+        self.interrupted = False
+        self.released = False
+
+        self.original_handler = signal.getsignal(self.sig)
+
+        def handler(signum, frame):
+            self.release()
+            self.interrupted = True
+
+
+        return self
+
+def handler(signum, frame):
+    print("resetting FPUs")
+    for fpu_id, fpu in enumerate(FPUGrid):
+        fpu.resetFPU(fpu_id, time.sleep)
+    
 def init_FPUGrid(options, num_fpus):        
     FPUGrid[:] = [FPU(i, options) for i in range(num_fpus) ]
+    signal.signal(signal.SIGHUP, handler)
     
         
         

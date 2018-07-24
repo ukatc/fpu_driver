@@ -867,11 +867,21 @@ class GridDriver(UnprotectedGridDriver):
                     # successful ping or datum response, and cleared by
                     # every movement as well as all movement time-outs
                     continue
+
+                new_alpha = self.a_caloffsets[fpu_id] + self.alpha_angle(fpu)
+                new_beta = self.b_caloffsets[fpu_id] + self.beta_angle(fpu)
+                if ((not self.apositions[fpu_id].contains(new_alpha))
+                    or (not self.bpositions[fpu_id].contains(new_beta))) :
+                    
+                    print("""FATAL ERROR: RECEIVED FPU POSITION OUTSIDE OF TRACKED RANGE. 
+FPU was likely moved or power-cycled circumventing the running driver. 
+Emergency exit: Position database needs to be re-initialized.""")
+                    os.abort()
             
                 # compute alpha and beta position intervals,
                 # and store both to DB
-                self.update_apos(txn, fpu, fpu_id, self.a_caloffsets[fpu_id] + self.alpha_angle(fpu), store=store)
-                self.update_bpos(txn, fpu, fpu_id,  self.b_caloffsets[fpu_id] + self.beta_angle(fpu), store=store)
+                self.update_apos(txn, fpu, fpu_id, new_alpha, store=store)
+                self.update_bpos(txn, fpu, fpu_id, new_beta, store=store)
                 
         env.sync()
  
@@ -916,7 +926,8 @@ class GridDriver(UnprotectedGridDriver):
         
         if not xlimits.contains(x):
             if wmode == Range.Error:
-                raise ProtectionError("For FPU %i, at step %i, arm %s, the wavetable steps outside the tracked safe limits (angle=%r, limits=%r)" %(
+                raise ProtectionError("For FPU %i, at step %i, arm %s, the wavetable"
+                                      " steps outside the tracked safe limits (angle=%r, limits=%r)" %(
                     fpu_id, stepnum, arm_name, x, xlimits))
                 
             elif wmode == Range.Warn:
@@ -1098,6 +1109,8 @@ class GridDriver(UnprotectedGridDriver):
         called.
 
         """
+        self.pingFPUs(gs, fpuset=fpuset)
+        
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
                 if len(fpuset) != 0 and (fpu_id not in fpuset):
@@ -1173,7 +1186,9 @@ class GridDriver(UnprotectedGridDriver):
         """
 
         # get fresh ping data
-        super(GridDriver, self).pingFPUs(gs, fpuset=fpuset)
+        self.pingFPUs(gs, fpuset=fpuset)
+        
+        # super(GridDriver, self).pingFPUs(gs, fpuset=fpuset)
 
         acw_range = Interval(0, Inf)
         cw_range = Interval(-Inf, 0)
@@ -1193,6 +1208,11 @@ class GridDriver(UnprotectedGridDriver):
                 if search_modes[fpu_id] == SEARCH_AUTO :
 
                     if not fpu.beta_was_zeroed :
+                        if not blim.contains(bpos):
+                            # arm is completely out of range, probably needs manual move
+                            raise ProtectionError("Beta arm of FPU %i is not in safe range"
+                                                  " for datum search (angle=%r, range=%r)" % (fpu_id, bpos, blim))
+
                         if support_uninitialized_auto:
                             # operator wants auto search but hardware is not
                             # initialized. If possible, we use the database value
@@ -1204,8 +1224,8 @@ class GridDriver(UnprotectedGridDriver):
                             elif search_beta_anti_clockwise_range.contains(bpos):
                                 search_modes[fpu_id] = SEARCH_ANTI_CLOCKWISE
                             else:
-                                raise ProtectionError("No automatic datum search possible - lacks"
-                                                      " knowledge on position for FPU %i (consider to move the FPU"
+                                raise ProtectionError("No directed datum search possible - "
+                                                      " position for FPU %i ambiguous (consider to move the FPU"
                                                       " into an unambigous range)."% fpu_id)
                         else:
                             raise ProtectionError(("FPU %i not initialized, support_uninitialized_auto not"
@@ -1219,11 +1239,16 @@ class GridDriver(UnprotectedGridDriver):
                         
                 elif search_modes[fpu_id] == SEARCH_CLOCKWISE:
                     if not search_beta_clockwise_range.contains(bpos):
-                        raise ProtectionError("beta arm of FPU %i is outside of safe clockwise search range (angle=%r)" % (fpu_id, bpos))
+                        raise ProtectionError("Beta arm of FPU %i is outside of"
+                                              " safe clockwise search range (angle=%r, range=%r)" % (fpu_id, bpos,
+                                                                                                     search_beta_clockwise_range))
                     
                 elif search_modes[fpu_id] == SEARCH_ANTI_CLOCKWISE:
                     if not search_beta_anti_clockwise_range.contains(bpos):
-                        raise ProtectionError("beta arm of FPU %i is outside of safe anti-clockwise search range (angle=%r)" % (fpu_id, bpos))
+                        raise ProtectionError("Beta arm of FPU %i is outside of"
+                                              " safe anti-clockwise search range"
+                                              " (angle=%r, range=%r)" % (fpu_id, bpos,
+                                                                         search_beta_anti_clockwise_range))
                     
             # check alpha arm
             if (selected_arm in [DASEL_ALPHA, DASEL_BOTH]):
