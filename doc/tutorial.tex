@@ -31,8 +31,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 0.7
-  .2 (document version \texttt{\input{../git_version}})}
+  module} \subtitle{For driver version 0.9.0 (document version \texttt{\input{../git_version}})}
 
 \author{Johannes Nix}
 
@@ -49,6 +48,7 @@
 \verb+[1] VLT-TRE-MON-14620-1018+, &  FPU Verification Requirements \\
 \verb+[2] VLT-TRE-MON-14620-3017+, & MOONS Fibre Positioner Verification Software Design \\
 \verb+[3] VLT-TRE-MON-14620-3016+, & Fibre Positioner Communication Protocol\\
+\verb+[4] FPUMovementSafetySpecification+ & Specification of safety levels for FPU movements\\
 \hline
 \end{tabular}
 
@@ -191,6 +191,7 @@ further details.
 \index{driver!configuration}
 \index{setup!environment variables}
 \index{environment variables}
+
 For the Python module to work, the directory \texttt{/user/local/lib}
 needs to be added to the environment variable
 \texttt{LD\_LIBRARY\_PATH}.
@@ -206,6 +207,15 @@ in the user-specific home directory:
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
   export PYTHONPATH=$PYTHONPATH:$HOME/fpu_driver/python:.
 \end{minted}
+
+To run administrative Python scripts, it is also recommended to
+include the above directory in the PATH environment variable, like
+this:
+
+\begin{minted}{bash}
+  export PATH=$PATH:$HOME/fpu_driver/python
+\end{minted}
+
  
 Further, it is recommended to set the default log directory to point
 to a file system which has a lot of free space, for example:
@@ -213,6 +223,23 @@ to a file system which has a lot of free space, for example:
   export FPU_DRIVER_DEFAULT_LOGDIR=/moonsdata/logfiles
 \end{minted}
 
+This version of the driver uses a position database, which tracks
+positions and state of FPUs at any point in time. Importantly, this
+database needs to be \emph{global} for the workstation on which the
+driver software is running. To configure it, the environment variable
+\texttt{FPU_DATABASE} needs to be set in the configuration file
+\texttt{/etc/profile} as follows:
+
+\begin{minted}{bash}
+  FPU_DATABASE=/var/run/fpudb
+  export FPU_DATABASE
+\end{minted}
+
+The directory specified has to be created to be writable by any user
+which runs an FPU driver. It is therefore necessary to set up any user
+which runs the FPU driver to belong to the same user group, and make
+the directory writable by any member of this group, using the Unix
+``chmod'' command.
 
 \subsection{Hardware configuration and addressing}
 \index{addressing!FPUs}
@@ -260,6 +287,60 @@ elements: gateway number, bus number, and CAN ID.
   to the first bus on the first gateway}.
 
 
+\subsection{Configuring serial numbers and setting initial positions}
+\label{sec:setinitialposition}
+Before any FPU can be used with the driver, two commands
+need to be performed to configure it:
+
+\begin{enumerate}
+\item The serial number of the FPU needs to be flashed to the
+  NVRAM of the FPU motion controller. This allows the software
+  to recognise the FPU.
+\item The initial position of the alpha and beta arm needs to
+  be stored in the FPU database.
+\end{enumerate}
+
+To do this, the FPU needs to be connected to the EtherCAN gateway with
+a known logical ID, determined by the CAN bus ID explained above.
+
+Let's assume that the serial number is represented by the shell
+variable \texttt{serialnumber}, the logical FPU id by the variable
+\texttt{fpu\_id}, the initial alpha arm position by
+\texttt{alpha\_position}, and the beta arm position by
+\texttt{beta\_position}.
+
+Then, the following two commands need to be issued:
+
+\begin{minted}{bash}
+  fpu-admin flash ${serialnumber} ${fpu_id}
+  fpu-admin init ${alpha_position} ${beta_position}
+\end{minted}
+
+The first command writes the serial number to the NVRAM of the FPU
+controller. This needs to be done only once (except when the
+electronics PCB of that FPU is replaced by another one. The serial
+number must never be used for another FPU.
+
+The second command stores the position of the FPU in the position
+database. It has to be repeated whenever there the stored position is
+not correct.
+
+The database record can be viewed and verified by using the command
+
+\begin{minted}{bash}
+  fpu-admin list1 ${serialnumber}
+\end{minted}
+
+\subsection{Database maintenance}
+
+The position database is required to operate the FPUs and will also
+hold some data gathered during calibration of the FPUs. It is
+therefore quite important to back it up regularly. When the driver is
+not running, it can be simply backed up by copying the content of the
+directory defined in the $FPU_DATABASE environment variable. (It is
+also possible to back it up while it is being used.  In this case, the
+appropriate live backup tools for LMDB need to be used.)
+
 \subsection{Software protection flag}
 \index{hardware protection}
 \index{soft\_protection flag}
@@ -275,20 +356,27 @@ this protection, activating it involves that the motors are suddenly
 stopped, which decreases the precision and can significantly increase
 wear and tear, thus reducing the life time of the stopped
 FPU. Therefore, the hardware protection should be used only at an
-emergency level. Furthermore, the hardware protection does not cover
-all situations.
+emergency level. Furthermore, some situations are not covered by it,
+specifically if the FPU arms are moved into the dead zones.
 
-For these two reasons, the driver software performs a number of
-additional checks which should ideally ensure that no collisions
-occur. These checks are performed every time an FPU is moved, or
-configured to move, and are named ``software protection''.
+For these two reasons, the driver software performs comprehensive
+additional checks which should ideally ensure that no out-of-range
+movements occur. These checks are performed every time an FPU is
+moved, or configured to move, and are named ``software protection''.
+For all normal movements of FPUs, this protection should be left
+active.
 
 In some situations, specifically if the hardware protection needs to
 be tested, it can be necessary to switch off and deactivate this
-protection. This can be done using the ``\texttt{soft\_protection}''
-keyword argument. Passing the value
+software protection layer. This can be done using the
+``\texttt{soft\_protection}'' keyword argument when calling the
+corresponding driver methods. Passing the value
 ``\texttt{soft\_protection=False}'' will switch the software
-protection check off.
+protection check off. When this is done, the entire responsibility
+with operating the FPUs safely is with the user. It is highly
+recommended to refer to additional documentation (especially
+FPUMovementSafetySpecification.docx, and additional hardware and
+firmware documentation), to assess which operations are safe.
 
 
 
@@ -298,7 +386,7 @@ protection check off.
 sends commands to the fibre positioner units, which use a specific
 communication protocol. This protocol needs to match the FPUs firmware
 and its capabilities. The current version of the driver (version
-0.6.x) uses ``communication protocol version 1'', which has some
+0.9.x) uses ``communication protocol version 1'', which has some
 restrictions in functionality.
 
 A significant difference in the hardware protection capabilities is
@@ -309,45 +397,17 @@ section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 
 \begin{warning}
   \textbf{WARNING: Before first issuing a \texttt{findDatum()}
-    command, make sure that both the datum switch and the alpha limit
-    switch work. A defective or incorrectly wired alpha limit switch
-    will cause the datum command to damage the hardware. The software
-    cannot protect against this.}
+    command, make positively sure that both the alpha arm datum switch
+    and the beta datum switch work. Especially for the alpha arms,
+    defective datum switches will likely cause the datum command to
+    damage the hardware. The software cannot protect against this.}
 \end{warning}
 
 
-\begin{warning}
-\textbf{WARNING: Never issue a \texttt{findDatum()} command when the
-  alpha arm is in a limit breach position (on the other side of the
-  limit switch). No hardware protection is active in this state.}.
-\end{warning}
-
-Another important point, is that when doing a first manual datum
-search after powering on an FPU , it is important to make sure that
-the instructed search direction will move the beta arm to the datum
-position. The current version of the driver software does not allow
-any more to do a datum search of an uninitialised FPU without
-explicitly passing the required search direction.
-
-If the wrong direction is passed, this will cause a collision.  This
-incurs the risk to destroy the FPU if the collision detection is not
-verified to be working for this unit.  Otherwise, running into a
-collision is still highly undesirable because the lifetime and
-precision of the FPU will be reduced.
-
-\begin{warning}
-  \textbf{WARNING: When using a manual \texttt{findDatum()} command,
-    make sure that the beta arm is moving into the right direction, to
-    avoid any collisions!}
-\end{warning}
-
-
-\index{datum search!independent operation of alpha and beta arms} The
-FPU verification system requires the additional capability to datum
-the alpha and beta arms separately.  This is supported by driver
-versions equal or newer than 0.5.2 and a firmware that supports the
-CAN protocol version 1.1 or later. Earlier firmware versions do not
-support this mode of operation.
+The functionality described in this document is supported by driver
+versions equal or newer than 0.9.0 and an FPU  firmware that supports the
+CAN protocol version 1.3 or later. Earlier firmware versions do not
+support all described features.
 
 
 
@@ -367,9 +427,11 @@ driver usage, and explains the underlying concepts
 step by step.
 
 Importantly, the example assumes that the FPUs have been powered on
-before, and have already performed an initial datum search.
-Section~\ref{sec:initialsearch} and ~\ref{sec:refinitialsearch} give
-more information about how to do this.
+before, and the datum switches have been verified to work
+reliably. Section~\ref{sec:datumswitchcheck} on
+page~\pageref{sec:datumswitchcheck} explains how the basic functioning
+of the datum switches can be verified.
+
 
 \index{waveforms!example}
 \index{driver!initialisation!example}
@@ -526,11 +588,9 @@ the FPUs:
 
   Keep in mind that this requires both the alpha arm to be in a safe
   positions -- the alpha arm must be inside its operating range (it
-  must not have passed the limit switch). If the software needs
-  additional information to perform a safe datum search, an automatic
-  search is not possible, and a \texttt{DE\_PROTECTION\_ERROR}
-  exception is returned. How to do a manual datum search is described
-  in the next section (section~\ref{sec:initialsearch}).
+  must not have passed the limit switch). If a datum search is not
+  possible because the arm positions do not allow that, a
+  \texttt{DE\_PROTECTION\_ERROR} exception is returned.
 
   \index{waveforms!configuring}
 \item[\texttt{configMotion()}] is a method which sends a table with
@@ -568,53 +628,6 @@ data, and displaying information about the FPU state:
 
 
 \end{description}
-
-
-\subsection{Initial datum search}
-\label{sec:initialsearch}
-\index{datum search!initial} \index{DE\_PROTECTION\_ERROR} As
-mentioned above, the listed example relies on the fact that the FPUs
-already have been powered on, and a successful datum search was
-performed before. Based on a valid datum search, the FPU firmware can
-decide in which direction the beta arm can be moved. This mode of
-operation is called ``automatic'' datum search.
-
-However, when an FPU was just powered on, it lacks this information,
-so it cannot perform an automatic search. In this case, attempting to
-start an automatic datum search would result in a
-\texttt{DE\_PROTECTION\_ERROR} exception. Instead, the operator needs
-to instruct the hardware in which direction it must move. This is done
-by passing additional parameters to the \texttt{findDatum()} command,
-like this:
-
-
-\begin{minted}{python}
-  gd.findDatum(grid_state, search_modes={0 : SEARCH_CLOCKWISE,
-               1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE},
-               soft_protection=False)
-\end{minted}
-
-Here, the integer numbers (0, 1, 2, \ldots) correspond to FPU numbers,
-and the symbols \texttt{SEARCH\_CLOCKWISE} and
-\texttt{SEARCH\_ANTI\_CLOCKWISE} instruct this FPU in which direction
-it should move. These symbols needs to be imported by an ``import''
-statement from the \texttt{FpuGridDriver} module.  Here, ``clockwise''
-and ``anti-clockwise'' refer to the directions when looking from
-above. FPUs which do not get such an instruction will not move. 
-
-
-When the FPUs were actually initialised before, it is possible to use
-the ``automatic'' mode of the \texttt{findDatum()} command, by passing
-the \texttt{soft\_protection} flag without a direction specification.
-
-\index{safety!datum operation}
-\begin{warning}
-  \textbf{WARNING: When doing a manually directed datum search, always
-    double-check that the beta arm will correctly move to the datum
-    position with the given direction. Otherwise, the command will
-    cause a collision, leading to increased wear and tear, or even to
-    hardware damage.}
-\end{warning}
 
 
 \subsection{Interactive inspection of the FPU state}
@@ -863,6 +876,70 @@ the command
 should be used to verify that the switch is working.
 
 
+\section{Checking the datum and limit switches}
+\label{sec:datumswitchcheck}
+
+The following section describes how to check that the datum and limit
+switches of an FPU are working.  The proper function of the switches
+is required in order to avoid that the \texttt{findDatum()} command
+damages the FPU by performing out-of-bounds movements and driving the
+alpha arm of the FPU into the hard stop.  It also avoids that the beta
+arm becomes involved in unneeded collisions which could permanently
+degrade the precision of positioning operations.
+
+This test is not exhaustive, as it does not check for reliability of
+the hardware. However, to avoid damage it is highly recommended to
+perform it when first putting a new FPU into operation.
+
+To perform this test, it is necessary to know the safe operation
+ranges of the alpha and beta arm. These ranges depend on hardware and
+FPU firmware and are still somewhat subject to change.  As of July
+2018, the currently known limits are described in document [4],
+``FPUMovementSafetySpecification'', but may change at a later time.
+
+To check whether the datum switches work, perform the following
+steps:
+
+\begin{enumerate}
+  \item If the driver is connected, disconnect it
+  \item Make sure that the FPU database contains the
+    correct alpha and beta arm positions for the FPU
+    which is examined. This can be done using the
+    command
+    \begin{minted{bash}
+        fpu-admin ${serialnumber} list1
+    \end{minted}
+
+    If the positions are not correct, proceed as described in
+    section~\ref{sec:setinitialposition} on
+    page~\pageref{sec:setinitialposition}.
+
+  \item Connect the driver and run a ping command.
+
+  \item Move the FPU so that it is within the normal
+    range, not touching the datum switches.
+    
+    As a normal movement configuration requires
+    that a datum search has been performed before,
+    it is necessary to pass the \texttt{allow_uninitialized=True}
+    flag to the configureMotion command:
+
+    \begin{minted}{python}
+      w = gen_wf(5,5)
+      gd.configMotion(w, gs, allow_uninitialized=True)
+      gd.executeMotion(gs)
+    \end{minted}
+
+  \item Verify that both switches are off:
+    
+    \begin{minted}{python}
+      gd.getswitchStates(gs)
+    \end{minted}
+
+    
+    
+\end{enumerate}
+
 \section{Common tasks}
 
 The following sections describe several common tasks
@@ -1015,14 +1092,8 @@ This is done by the command
   gd.findDatum(grid_state)
 \end{minted}
 
-It is also highly recommend to move the FPUs to the datum position
-before powering off. Doing this avoids to have the FPU in an ambiguous
-state which might easily lead to hardware damage.
-
-\begin{warning}
-  \textbf{Whenever possible without risk of damage, issue a datum
-    search command before powering off the FPU.}
-\end{warning}
+It is also recommend to move the FPUs to the datum position
+before powering off. 
 
 \paragraph{Manual datum search}
 
@@ -1060,14 +1131,6 @@ Both alpha and beta arm are moved to the datum position. The value
   version, or rise an exception of the class
   \texttt{DE\_FIRMWARE\_UNIMPLEMENTED}.}.
 
-\textbf{Important:} When doing a datum search, the alpha arm must
-\textbf{not} be in a limit breach state, otherwise hardware damage is
-likely to occur.
-\begin{warning}
-  \textbf{WARNING: Before starting a manual datum search, make sure
-    that both arms are in a safe position, to avoid collisions or
-    hardware damage.}
-\end{warning}
 
 \subsubsection{Restricting a datum search to a subset of FPUs}
 \label{sec:restricteddatumsearch}
@@ -1687,11 +1750,12 @@ software. The following section explains how this is achieved.
 
 Situations in which the movement of the hardware is obstructed are
 either collisions between FPUs or limit switch breaches of the alpha
-arm. Limit switch breaches are detected when the alpha arm detects a
-transition where the limit switch is on and goes off. All other cases
-of obstruction are considered collisions, which is detected by
-electrical circuits that protect the beta arm. This includes movements
-where the beta arm is moved out of its allowed range.
+arm. For hardware protocol versions <= 1.3, limit switch breaches are
+detected when the alpha arm detects a transition where the limit
+switch is on and goes off. All other cases of obstruction are
+considered collisions, which is detected by electrical circuits that
+protect the beta arm. This includes movements where the beta arm is
+moved out of its allowed range.
 
 When a collision or limit switch breach occurs, the FPU electronic
 hardware stops any movement, and sends a message to the driver. On
@@ -1805,14 +1869,13 @@ steps are required:
 
   # move the FPU into the opposite direction
   waveform = gen_wf(-5, 0)
-  gd.configMotion(waveform, grid_state, soft_protection=False)
+  gd.configMotion(waveform, grid_state, soft_protection=False,
+                  allow_uninitialized=True)
   gd.executeMotion(grid_state)
   # A second limit switch breach exception will happen here!
 
   # reset the FPU again, to clear the second breach state
   gd.resetFPUs(grid_state)
-  gd.configMotion(waveform, grid_state, soft_protection=False)
-  gd.executeMotion(grid_state)
 
   gd.findDatum(grid_state)
   
@@ -1821,29 +1884,22 @@ steps are required:
 
 What these operations do is basically to clear the breach state, and
 to manually move the FPU.  The flag \texttt{soft\_protection=False} in
-line 10 is required because normally, the software does not accept a
-movement of an FPU which was not zeroed by a datum operation, and both
-the limit switch breach and the reset command clear the
-\texttt{was\_zeroed} flag\footnote{Until driver version 0.7.0, the
-  name of the flag was
-  ``\texttt{check\_protection}\index{check\_protection}}. However,
-  in this state, we \emph{must not} use a datum operation, therefore
-  it is necessary to override this software protection.
+line 10 is required because the starting point of the movement
+is not in the safe range of angles.
 
 After this, the FPU can be moved, but because moving it causes it to
-cross the limit switch a second time, another limit switch breach
-message is generated, and the FPU needs to be reset and moved manually
-for a second time.
+cross the limit switch a second time, for hardware protocol versions
+<= 1.3, another limit switch breach message is generated, and the FPU
+needs to be reset and moved manually for a second time.
 
-\index{limit switch breach}
-\index{dead zone}
-\textbf{After a limit breach, the alpha arm is in a
-  motor dead zone in which no hardware protection is possible.
-  Especially for protocol version 1, It is very important that, when
-  resolving such a limit switch breach, the FPU is not moved into the
-  same direction as it was moving when triggering the breach.
-  Otherwise, the FPU would run into the hard stop, and there is no
-  further protection which could prevent damage in this case}.
+\index{limit switch breach} \index{dead zone} \textbf{After a limit
+  breach, the alpha arm is in a dead zone in which no hardware
+  protection is possible.  Especially for protocol versions <= 1.3, it
+  is very important that, when resolving such a limit switch breach,
+  the FPU is not moved into the same direction as it was moving when
+  triggering the breach.  Otherwise, the FPU would run into the hard
+  stop, and there is no further protection which could prevent damage
+  in this case}.
 
 \begin{warning}
   \textbf{WARNING: When resolving an alpha arm limit switch breach,
@@ -1864,22 +1920,6 @@ differences for protocol version 1:
   prevent the risk of damage. Especially, a datum search must never be
   used after an alpha limit switch breach.
 
-\item The \texttt{findDatum()} method can only operate with automatic
-  direction selection if the FPU has been initialised before.
-  Otherwise, the search direction has to be passed manually.
-  Searching into the negative (clock-wise) direction is only allowed
-  if the beta arm is at the datum position or in counter-clockwise
-  direction of the datum switch. Otherwise, it would damage the beta
-  arm.  Equally, searching into the positive (anti-clockwise)
-  direction is only allowed if the beta arm is physically in a
-  clockwise direction of the datum switch.
-
-\item The current position and direction of movement of the FPUs is
-  not tracked during ongoing movements, and the driver cannot safely
-  record the last movement direction. This has the effect that the
-  user needs to verify manually in which direction the FPU was moving
-  before resolving a collision or limit switch breach.
-
 \item In protocol version 2, transitions and allowed commands are
   checked much stricter than in protocol 1.  This results in a
   somewhat reduced flexibility, however the stricter checking also
@@ -1888,12 +1928,8 @@ differences for protocol version 1:
   collided FPUs.
   
 \item In some cases, protocol 1 is not able to detect lost messages,
-  so that state information might be stale, and is generally
-  unreliable.\footnote{For the case of the \texttt{executeMotion()}
-    command, a state update is performed automatically if no error has
-    occurred.} The FPU can lose messages from the driver software when
-  it is busy or overloaded. The driver will normally not lose messages
-  but the CAN protocol does not guarantee that no messages are lost.
+  so that state information might be stale. Also, the FPU can lose
+  messages from the driver software when it is busy or overloaded. 
   
 
 \item It is not possible to lock or unlock FPUs, in order to exclude
@@ -2347,103 +2383,9 @@ The method
   FpuGridDriver.findDatum(grid_state)
 \end{minted}
 moves the arms of the FPUs to the datum position.  By default, this
-always moves both arms of all FPUs. The FPU automatically selects the
-required movement direction of the beta arm according to the step
-counter. This mode is the normal mode used in instrument operation. It
-requires that the FPUs have been initialised before, so that the step
-counter information is reliable.
-
-
-\paragraph{Initial datum search after powering on FPUs}
-\label{sec:refinitialsearch}
-
-\index{DE\_FIRMWARE\_UNIMPLEMENTED!caused by automatic datum search}
-\index{DE\_PROTECTION\_ERROR!caused by unsafe datum search} Because
-the ``automatic'' datum search relies on the internal step counters of
-the FPUs, it cannot be used when an FPU was just powered on - the FPU
-firmware lacks the information to perform the datum search of the beta
-arm safely. Therefore, the command will result in a
-\texttt{DE\_PROTECTION\_ERROR} exception\footnote{If an old firmware
-  version earlier than 1.2.0 is used, it can also cause a
-  \texttt{DE\_FIRMWARE\_UNIMPLEMENTED} exception - in this case, you
-  need to upgrade the firmware}. Also, if a collision has occurred, a
-new manual datum search is needed, as the information from the step
-counters became invalid.
-
-To datum the FPUs in this case, the search direction needs to be
-passed by the operator (or the instrument control software). The
-direction needs to be defined for each FPU, like this:
-
-
-
-\begin{minted}{python}
-  gd.findDatum(grid_state, search_modes={0 : SEARCH_CLOCKWISE,
-    1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE})
-\end{minted}
-
-Here, the passed parameter is a Python dictionary. The key of
-each entry in the dictionary is the FPU id, starting from zero.
-The value is one of the following constants:
-
-\begin{description}
-\item[\texttt{SEARCH\_CLOCKWISE}] the beta arm is moved into clock-wise
-  direction (when looking from above), corresponding to decreasing step
-  counts and angle coordinates.
-  
-\item[\texttt{SEARCH\_ANTI\_CLOCKWISE}] the beta arm is moved into
-  anti-clockwise direction (when looking from above), corresponding to
-  an increasing step count.
-  
-\item[\texttt{SEARCH\_AUTO}] The beta arm is moved according to its
-  internal step counter. This is only possible if the step counter was
-  zeroed before, by another datum operation. Also, an automatic search
-  will fail if the FPU had a collision or a movement was interrupted
-  in any other way.
-  
-\item[\texttt{SKIP\_FPU}] The FPU is not moved. This is the default.
-  
-\end{description}
-
-
-If the movement direction of the datum search does not -- correctly or
-incorrectly -- correspond to the FPUs internal step counters, the
-software will generate a \texttt{PROTECTION\_ERROR} exception.  In
-this case, to override the software protection and execute the search
-as instructed, the operator needs to set an additional keyword
-argument, ``\texttt{soft\_protection}'', to the value \texttt{False}.
-
-In this case, the commands looks like this:
-
-\begin{minted}{python}
-  gd.findDatum(grid_state, search_modes={0 : SEARCH_CLOCKWISE,
-               1: SEARCH_ANTI_CLOCKWISE, 2 : SEARCH_CLOCKWISE},
-               soft_protection=False)
-\end{minted}
-
-\paragraph{Unprotected automatic datum search}
-\index{datum search!unprotected automatic mode} When the FPUs were
-actually initialised before, it is possible to use the ``automatic''
-mode of the \texttt{findDatum()} command, by passing the
-\texttt{soft\_protection} flag without a direction specification
-(until driver version 0.6.0, the flag was named
-\texttt{check\_protection}).\index{check\_protection} This
-is intended make it easier to run automatic scripts, after running the
-\texttt{initializeGrid.py} script manually, which is described in
-section~\ref{sec:initializegrid} on
-page~\pageref{sec:initializegrid}. If FPUs do not have a valid
-initialisation, this will be reported by the firmware and result in a
-\texttt{DE\_PROTECTION\_ERROR} exception.
-
-
-\index{safety!datum operation}
-\begin{warning}
-  \textbf{WARNING: When doing an initial datum command on uncalibrated
-    FPUs, always double-check and make sure that the arms can move
-    into the instructed direction, to avoid increased wear and tear or
-    damage.}
-\end{warning}
-
-
+always moves both arms of all FPUs. The FPU driver automatically
+selects the required movement direction of the beta arm according to
+the step counter.
 
 
 \paragraph{Moving alpha and beta arms independently}
@@ -2466,11 +2408,6 @@ protocol version 1.1. Otherwise, a
 \texttt{DE\_FIRMWARE\_UNIMPLEMENTED} exception is thrown.
 \end{sloppypar}
 
-\index{safety!datum operation}
-\begin{warning}
-\textbf{WARNING: When the alpha arm receives a datum command, it is
-  imperative that it is not in a physical limit breach position.}
-\end{warning}
 
 \paragraph{Result state of a datum operation}
 
@@ -2707,20 +2644,6 @@ the counter to zero\footnote{In protocol version 2, there are
 power-on state. All step counters are reset to zero, the datum flag is
 cleared, and the FPU state is set to \texttt{UNINITIALIZED}. This
 command is useful to get out of specific error states. 
-
-\index{safety!after reset}After a reset, an FPU can be arbitrarily
-moved if the flag \texttt{soft\_protection=False} is passed to the
-\texttt{configMotion} method. However the operator needs to be very
-careful that further commands will not damage the FPU by assuming that
-the FPU is in a position which is safe to move in a certain
-direction. Especially, a datum search operation is not safe for the
-alpha arm if it is in a limit breach position.
-\begin{warning}
-  \textbf{WARNING: After a reset, make sure that datum search
-    operations and movements are safe. Depending on the physical state
-    of the FPU, both hardware collision protection and software
-    protection might not work.}
-\end{warning}
 
 As \texttt{findDatum()} and \texttt{executeMotion()}, the command
 accepts an \texttt{fpuset} key parameter which restricts the operation
@@ -3209,7 +3132,18 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
-\subsection*{Changes in version 0.7.0}
+\subsection*{Changes in version 0.9.0}
+\begin{itemize}
+\item Fixed bug in code which waited for a reverse movement
+  to complete, causing the command to return prematurely.
+
+\item Added protection wrapper code which disables most unsafe
+  movements unless explicitly enabled by a flag.
+  
+\end{itemize}
+
+
+\subsection*{Changes in version 0.7.1}
 \begin{itemize}
 \item fixed spelling error in name of command \texttt{writeSerialNumber()}
   
@@ -3245,18 +3179,6 @@ commands, or alter otherwise visible behaviour of the driver.
 \begin{itemize}
 \item The \texttt{findDatum()} method now automatic moves the beta
   arm into the correct direction if the FPU had been initialised before.
-
-\item If the FPU has not yet been initialised, it needs to be
-  initialised manually with a command such as
-  \begin{minted}{python}
-    gd.findDatum(grid_state, { 0 : SEARCH_CLOCKWISE,
-                 1 : SEARCH_CLOCKWISE,
-                 2 : SEARCH_ANTI_CLOCKWISE}
-  \end{minted}
-
-  For details, see sections~\ref{sec:initialsearch}
-  (page~\pageref{sec:initialsearch}) and~\ref{sec:finddatumreference}
-  (page~\pageref{sec:finddatumreference}).
   
 \item All FPU commands which concern multiple FPUs, such as
   \texttt{findDatum(),executeMotion(),resetFPUs()}, and so on, have an
