@@ -771,12 +771,8 @@ class GridDriver(UnprotectedGridDriver):
 
         # query positions and compute offsets, if FPUs have been resetted.
         # This assumes that the stored positions are correct.
-        print("before reset:")
-        self.trackedAngles(grid_state)
         super(GridDriver,self).pingFPUs(grid_state)
         self._reset_hook(grid_state, grid_state)
-        print("after reset:")
-        self.trackedAngles(grid_state)
         self._refresh_positions(grid_state, store=False)
 
 
