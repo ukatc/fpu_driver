@@ -725,8 +725,6 @@ class GridDriver(UnprotectedGridDriver):
                      ProtectionDB.beta_retry_count_cw : bretries_cw,
                      ProtectionDB.beta_retry_count_acw : bretries_acw }
         
-        print("reading serial numbers from DB....")
-        print("FIXME: store and load reversed state and span of active waveforms")
         a_caloffsets = []
         b_caloffsets = []
         
@@ -749,7 +747,6 @@ class GridDriver(UnprotectedGridDriver):
                     
                     val = ProtectionDB.getField(txn, fpu, subkey)
                           
-                    print(repr(subkey),":", repr(val))
                     if val == None: 
                         raise fpu_driver.ProtectionError("serial number {0!r} not found in position database"
                                                          " - run fpu-admin.py to create entry".format(fpu.serial_number))
