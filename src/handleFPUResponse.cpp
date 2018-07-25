@@ -50,8 +50,6 @@ void logErrorStatus(const GridDriverConfig config, int fpu_id, int err_code)
         err_msg = "(no error)";
         break;
 
-
-
     case ER_COLLIDE  :
         err_msg = "FPU collision detected"                       ;
         break;
@@ -72,11 +70,13 @@ void logErrorStatus(const GridDriverConfig config, int fpu_id, int err_code)
         break;
     case ER_PARAM    :
         err_msg = "parameter out of range"                       ;
+	break;
     case ER_AUTO    :
         err_msg = "firmware cannot perform automatic datum search" ;
         break;
     case ER_DATUMTO    :
         err_msg = "hardware failure: datum search timed out";
+	break;
 
     default:
     case ER_STALLX           :
