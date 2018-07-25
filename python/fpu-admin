@@ -46,8 +46,9 @@ def flash_FPU(fpu_id, serial_number,mockup=True):
 
 if __name__ == '__main__' :
     print(repr(argv))
-    if len(argv) < 2:
+    if (len(argv) < 2) or (len(argv) == 2) and argv[1] in ["-h", "-?", "--help", "help"]:
         print("""usage:
+        help
         flash <serial_number> <fpu_id>
         init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]
         list
