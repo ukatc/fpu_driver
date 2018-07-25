@@ -73,19 +73,20 @@ if __name__ == '__main__':
     print("issuing pingFPUs and getting positions:")
     gd.pingFPUs(grid_state)
 
-    print("positions:", list_positions(grid_state))
+    print("tracked positions:")
+
+    gd.trackedAngles(grid_state)
 
 
 
     clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
     acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(args.N)])
 
-    print("""If all FPUs are with the beta arm at zero or in 
-    a positive direction, you can issue now:
+    print("""If all FPUs are shown with correct positions, you can issue now:
 
-    gd.findDatum(grid_state, clockwise_pars)
+    gd.findDatum(grid_state)
 
-    to initialise the grid.""")
+    to move the FPUs to datum and initialise the grid.""")
           
 
     

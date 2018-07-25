@@ -183,7 +183,7 @@ Previous versions of the driver required to change macros in the C
 source code to enable low-level logging of CAN commands.  With driver
 version 0.5.3, a comprehensive log of sent and received CAN messages
 is enabled by default. See section~\ref{sec:logging} on
-page~/\pageref{sec:logging} for the location of these logs, and any
+page~\pageref{sec:logging} for the location of these logs, and any
 further details.
 
 
@@ -208,9 +208,9 @@ in the user-specific home directory:
   export PYTHONPATH=$PYTHONPATH:$HOME/fpu_driver/python:.
 \end{minted}
 
-To run administrative Python scripts, it is also recommended to
-include the above directory in the PATH environment variable, like
-this:
+To run the \texttt{fpu-admin} Python script, which manages the FPU
+position database, it is also recommended to include the above
+directory in the PATH environment variable, like this:
 
 \begin{minted}{bash}
   export PATH=$PATH:$HOME/fpu_driver/python
@@ -239,7 +239,7 @@ The directory specified has to be created to be writable by any user
 which runs an FPU driver. It is therefore necessary to set up any user
 which runs the FPU driver to belong to the same user group, and make
 the directory writable by any member of this group, using the Unix
-``chmod'' command.
+``chmod'' and ``chgrp'' commands.
 
 \subsection{Hardware configuration and addressing}
 \index{addressing!FPUs}
@@ -250,7 +250,8 @@ the directory writable by any member of this group, using the Unix
 \index{FPU!hardware configuration}
 \index{networking!FPU addressing}
 Messages to an individual FPU are sent using a logical number, the FPU
-ID, which starts at 0 and goes up to a maximum value.
+ID, which starts at 0 and goes up to a maximum value. Gaps in the
+sequence of used logical numbers are not supported.
 
 The messages from the driver to FPUs are transported by two layers of
 hardware.
@@ -270,7 +271,7 @@ From the selected gateway, the messages are then forwarded to up to
 five CAN buses. Each bus connected to a gateway is identified with a
 number as well, and is connected to up to 72 (currently, 67) FPUs.
 \index{DIP switch} To identify each FPU in a setup with many FPUs,
-they have to use a CAN ID which is unique on each bus, ans is
+they have to use a CAN ID which is unique on each bus, and is
 different from zero. This ID is physically configured by manually
 toggling a DIP switch in the FPU's electronics board. The current
 driver uses a fixed continuous mapping (basically, array indexing)
@@ -301,7 +302,8 @@ need to be performed to configure it:
 \end{enumerate}
 
 To do this, the FPU needs to be connected to the EtherCAN gateway with
-a known logical ID, determined by the CAN bus ID explained above.
+a known logical ID, determined by the CAN bus ID explained
+above. Also, the gateway needs to be connected to the workstation.
 
 Let's assume that the serial number is represented by the shell
 variable \texttt{serialnumber}, the logical FPU id by the variable
@@ -322,8 +324,8 @@ electronics PCB of that FPU is replaced by another one. The serial
 number must never be used for another FPU.
 
 The second command stores the position of the FPU in the position
-database. It has to be repeated whenever there the stored position is
-not correct.
+database. It has to be repeated whenever it happens that the stored
+position is not matching the actual position.
 
 The database record can be viewed and verified by using the command
 
@@ -366,6 +368,11 @@ directory defined in the \verb+$FPU_DATABASE+ environment
 variable. (It is also possible to back it up while it is being used.
 In this case, the appropriate live backup tool for LMDB, \texttt{mdb\_copy} need to be
 used.)
+
+The database can be used by several driver instances at once, each of
+them controlling different FPUs. When the involved drivers are not
+running, FPUs can be switched from one gateway to another one - the
+information in the database will remain valid.
 
 \subsection{Software protection flag}
 \index{hardware protection}
@@ -412,7 +419,7 @@ firmware documentation), to assess which operations are safe.
 sends commands to the fibre positioner units, which use a specific
 communication protocol. This protocol needs to match the FPUs firmware
 and its capabilities. The current version of the driver (version
-0.9.x) uses ``communication protocol version 1'', which has some
+1.0.x) uses ``communication protocol version 1.3'', which has some
 restrictions in functionality.
 
 A significant difference in the hardware protection capabilities is
@@ -432,7 +439,7 @@ section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 
 
 The functionality described in this document is supported by driver
-versions equal or newer than 0.9.0 and an FPU  firmware that supports the
+versions equal or newer than 1.0.0 and an FPU  firmware that supports the
 CAN protocol version 1.3 or later. Earlier firmware versions do not
 support all described features.
 
@@ -550,7 +557,7 @@ configurations:
 
 In line 10 of the example script, the used number of FPUs is set to
 one, and in line 11, the FPU grid driver is initialised with that
-value. The returned object, which is referenced by the Python variable
+value. The returned object, which is here referenced by the Python variable
 ``\texttt{gd}'', is always required to access the FPUs.
 
 \subsection{Driver methods}
@@ -571,8 +578,9 @@ on~\pageref{sec:connect} explains the default parameters which are
 used.
 
 As can be seen in the example, the methods have return values.  In
-case of serious errors, the methods raise a Python exception. The
-Python program does not need to explicitly disconnect and
+case of serious errors, the methods raise a Python exception.
+
+The Python program does not need to explicitly disconnect and
 de-initialise the driver, this happens automatically when the program
 terminates\footnote{However if required, you can use the statements
   \texttt{gd.disconnect()} and \texttt{del gd}, which disconnects and
@@ -599,8 +607,9 @@ grid state data is assigned to the variable named
 returns immediately, as it just takes a snapshot of the state
 data. Because \texttt{grid\_state} is used so frequently, a short-hand
 alternative name which many of the example scripts use is the name
-\texttt{gs}.  Technically, these names are simply Python variable
-names, which can be arbitrarily chosen by the user.
+\texttt{gs}.  Using the name ``gs'' is a mere convention: Technically,
+these names are simply Python variable names, which can be arbitrarily
+chosen by the author of a script.
 
 \subsection{Moving the FPU around}
 \index{movements!example}
@@ -613,11 +622,9 @@ the FPUs:
   position. After this, the internal step counters are set to zero,
   both for the alpha and for the beta arm.
 
-  Keep in mind that this requires both the alpha arm to be in a safe
-  positions -- the alpha arm must be inside its operating range (it
-  must not have passed the limit switch). If a datum search is not
-  possible because the arm positions do not allow that, a
-  \texttt{DE\_PROTECTION\_ERROR} exception is returned.
+  If a datum search is not possible because the arm positions do not
+  allow to do that safely, a \texttt{DE\_PROTECTION\_ERROR} exception
+  is returned.
 
   \index{waveforms!configuring}
 \item[\texttt{configMotion()}] is a method which sends a table with
@@ -909,7 +916,10 @@ the command
   gd.getSwitchStates(grid_state, fpuset=[])
 \end{minted}
 
-should be used to verify that the switch is working.
+should be used to verify that the switch is
+working. Section~\ref{sec:datumswitchcheck} on
+page~\pageref{sec:datumswitchcheck} explains in detail how this is
+done.
 
 \section{Rules to maintain integrity of the software protection}
 
@@ -923,7 +933,10 @@ valid. These conditions are as follows:
   \item Never use the same serial number for more than one FPU.
   \item Never move FPUs circumventing the driver. If FPUs are moved
     outside of the driver, their positions need to be configured
-    newly.
+    newly. Before correcting the store positions. If any driver instance
+    was controlling such an FPU, exit the driver, correct the position,
+    and only after that re-start the driver.
+    
   \item Never power-cycle an FPU while the driver is connected. If an
     FPU needs to be re-started, exit the program which uses the
     driver, restart the FPU, and start up the program again. This
@@ -944,18 +957,21 @@ allowed, and designed to include the following error conditions:
 \item Moving an FPU using \texttt{findDatum()} or \texttt{executeMotion()}.
 \item Reversing movements.
 \item Movements which change direction multiple times.
-\item Resetting FPUs.
+\item Resetting FPUs, using the resetFPUs command.
 \item Cancelling movements using \verb+<Ctrl>-<c>+ or \texttt{abortMotion()}.
 \item Exiting and re-starting the driver program.
-\item trying to configure invalid waveforms.
+\item Power-cycling FPUs while the driver program is not running.
+\item Controlling multiple FPU grids by different driver instances.
+\item Trying to configure invalid waveforms.
 \item Running into limit switch breaches and collisions of the arms.
 \item Resuming protected operations after temporarily disabling the
   protection flag.
 \item Recovering from beta collisions.
-\item Loss of connectivity on the CAN bus.
+\item Temporary or permanent loss of connectivity on the CAN bus.
 \item Loss of the Ethernet connection to the EtherCAN gateways.
 \item As of protocol v1, manual recovery of limit switch breaches.
-\item Power-cycling an FPU while the driver program is not running.
+\item Disconnecting an FPU from one EtherCAN gateway, and connecting
+  it to another gateway connected to the same host workstation. 
 \item Hard power-off or loss of power of the workstation which hosts
   the driver program or the database (note that this can disrupt other
   software which is not designed for that)\footnote{The hosting
@@ -967,37 +983,42 @@ allowed, and designed to include the following error conditions:
 \label{sec:datumswitchcheck}
 
 The following section describes how to check that the datum and limit
-switches of an FPU are working.  The proper function of the switches
-is required in order to avoid that the \texttt{findDatum()} command
-damages the FPU by performing out-of-bounds movements and driving the
-alpha arm of the FPU into the hard stop.  It also avoids that the beta
-arm becomes involved in unneeded collisions which could permanently
-degrade the precision of positioning operations.
+switches of an FPU are working.
+\paragraph{Why datum switches need to be tested}
+
+The proper function of the switches is required in order to avoid that
+the \texttt{findDatum()} command damages the FPU by performing
+out-of-bounds movements and driving the alpha arm of the FPU into the
+hard stop.  It also avoids that the beta arm becomes involved in
+unneeded collisions which could permanently degrade the precision of
+positioning operations.
 
 Passing the following test is necessary but not sufficient, as it does
 not check for reliability of the hardware or its dynamic
 properties. To avoid damage it is highly recommended to perform it
 when first putting a new FPU into operation.
 
-To perform this test, it is necessary to know the exact safe operation
-ranges of the alpha and beta arm. These values depend on hardware and
-FPU firmware revisions and are still somewhat subject to change.  As
-of July 2018, the currently known limits are described in document
-[4], ``FPUMovementSafetySpecification.docx'', but are planned to be
+\paragraph{Required information} To begin this test, it is necessary
+to know the exact safe operation ranges of the alpha and beta
+arm. These values depend on hardware and FPU firmware revisions and
+are still somewhat subject to change.  As of July 2018, the currently
+known limits are described in document [4],
+``FPUMovementSafetySpecification.docx'', but are planned to be
 changed.  The following description assumes that the position after
 performing a datum operation is (-180, 0) degrees, that both switches
 are off at positions (-175, 5.0), and both switches on at positions
 (-180.2, -0.2).
 
+\paragraph{Test procedure}
 To check whether the datum switches work, perform the following
 steps:
 
 \begin{enumerate}
-  \item If the driver is connected, disconnect it
-  \item Make sure that the FPU database contains the
-    correct alpha and beta arm positions for the FPU
-    which is examined. This can be done using the
-    command
+\item If the driver is connected, disconnect it.
+  
+  \item Make sure that the FPU database contains the correct alpha and
+    beta arm positions for the FPU which is examined. Do this using
+    the command
     \begin{minted}{bash}
         fpu-admin ${serialnumber} list1
     \end{minted}
@@ -1023,7 +1044,7 @@ steps:
     page~\pageref{sec:setinitialposition}. The further explanation
     assumes that the FPU position is at the numbers shown above.
 
-  \item Connect the driver and run a ping command.
+  \item Connect the driver and run a \texttt{pingFPUs()} command.
 
   \item Move the FPU so that it is within the normal range, and with
     certainty not touching the datum switches.
@@ -1149,10 +1170,14 @@ page~\pageref{sec:errors}.
 
 \paragraph{Recovery form connection errors}
 If the connection to a gateway is lost, the \texttt{connect()} method
-of the driver needs to be called again.
+of the driver needs to be called again to re-establish it.
 
 If a specific FPU does not respond, each command to it will result in
 a time-out, until it responds again. Other FPUs will be unaffected.
+Failures to respond can be caused by cabling problems. Another very
+likely cause of error are hardware failures which prevent FPU
+operations from completing. In this case, the involved FPUs are
+probably broken.
 
 
 
@@ -1255,8 +1280,13 @@ initialise the FPU with ID zero and move it to the datum position:
 This instructs the FPU to move clock-wise, and enable the driver to do
 this without checking the current position. Analogously, the constant
 \texttt{SEARCH\_ANTI\_CLOCKWISE} can be passed to move the FPU into
-the negative direction. A detailed description of all possible
-parameters for the datum search can be found in
+the negative direction.
+
+Such a manual search was required to be performed in earlier versions
+of the driver < 1.0.0. For current driver versions, while still
+possible, this is not necessary any more since the position database
+keeps track of the actual positions.  A detailed description of all
+possible parameters for the datum search can be found in
 section~\ref{sec:finddatum} on page~\pageref{sec:finddatum}.
 
 
@@ -1409,8 +1439,10 @@ angle of the second FPU, and so on.
 See section~\ref{sec:genwf} for further details.
 
 \subsubsection{Restricting a movement to a subset of FPUs}
-\index{movements!of a subset of FPUs}
-\index{restricting!the executeMotion() command}
+\index{movements!of a subset of FPUs} \index{restricting!the
+  executeMotion() command} In the verification system, it is necessary
+to move FPUs selectively.
+
 A movement can be restricted to a subset of FPUs by issuing a
 \texttt{configMotion()} command which has all-zero entries for the FPUs
 which should not move. This avoids that a wavetable which was
@@ -1574,10 +1606,10 @@ seconds. \footnote{Under the hood, this generates a \texttt{SIGINT}
   in an \texttt{ABORT\_MOTION} CAN message. Sending a SIGINT signal to
   python by other means would have the same effect.}
 
-If it is necessary to abort a movement from Python in a program --
-for example, from another Python thread -- this can be done using the
-\texttt{abortMotion()} method of the grid driver object.  Like all
-driver object methods, this method is thread-safe.
+If it is necessary to abort a movement from Python in a program -- for
+example, from another Python thread -- this can be done using the
+\texttt{abortMotion()} method of the grid driver object.  This method
+is thread-safe.
 
 For other driver methods, a \verb+<Control>-<c>+ normally aborts the
 current Python script when the method returns.\footnote{
@@ -1629,12 +1661,6 @@ gd.repeatMotion(grid_state)
 \end{minted}
 
 \subsection{Example scripts}
-
-The script in file \texttt{python/CalibrationPositioning.py} might be
-used as a starting point for a larger movement control script. To
-initialise the FPUs at the start, it asks a confirmation question, and
-if affirmed, it moves the FPUs assuming all beta arms are in a
-positive or zero angular position.
 
 Section~\ref{sec:moreexamples} on page~\pageref{sec:moreexamples}
 describes a number of additional example scripts which can be used and
@@ -2522,7 +2548,7 @@ page~\pageref{sec:listpositions} ff.
 The driver method
 
 \begin{minted}{python}
-  FpuGridDriver.countedAngles(grid\_state, fpuset=[], show_uninitialized=False)
+  FpuGridDriver.countedAngles(grid_state, fpuset=[], show_uninitialized=False)
 \end{minted}
 retrieves the current step counts and shows approximate current angle
 of both arms, in units of degrees. The angles are computed by
@@ -2559,7 +2585,7 @@ IDs.
 The driver method
 
 \begin{minted}{python}
-  FpuGridDriver.trackedAngles(grid\_state, fpuset=[])
+  FpuGridDriver.trackedAngles(grid_state, fpuset=[])
 \end{minted}
 
 displays the current tracked positions of FPUs, 
@@ -2578,7 +2604,8 @@ An example output of the command looks like this:
 
 \begin{minted}{python}
   >>> gd.trackedAngles(gs)
-  FPU #0: angle = (-180, 0), offsets = (0, 0), stepcount angle= (-180.0, 0.0), \
+  FPU #0: angle = (-180, 0), offsets = (0, 0),
+                  stepcount angle= (-180.0, 0.0), 
                   last_wform_range=([],[])
 \end{minted}
 
@@ -2594,9 +2621,9 @@ and beta = 20 degrees, the output looks like this:
   >>> gd.executeMotion(gs)
   fpu_driver.E_DriverErrCode.DE_OK
   >>> gd.trackedAngles(gs)
-  FPU #0: angle = (-170.009, 19.9965), offsets = (0, 0), \
-                     stepcount angle= (-170.008660882, 19.99654097), \
-                     last_wform_range=([-180.0, -170.00866088237231],[0.0, 19.996540970036314])
+  FPU #0: angle = (-170.009, 19.9965), offsets = (0, 0), 
+         stepcount angle= (-170.00, 19.99), 
+         last_wform_range=([-180.0, -170.00],[0.0, 19.99])
 >>>
 \end{minted}
 
@@ -2642,7 +2669,8 @@ IDs.
 The full signature of the \texttt{findDatum()} method is
 
 \begin{minted}{python}
-    FpuGridDriver.findDatum(grid_state, search_modes={}, selected_arm=DASEL_BOTH, fpuset=[],
+  FpuGridDriver.findDatum(grid_state, search_modes={},
+                            selected_arm=DASEL_BOTH, fpuset=[],
                             soft_protection=True, count_protection=True, 
                             support_uninitialized_auto=True)
 \end{minted}
@@ -2779,16 +2807,20 @@ be required before normal movements can be resumed.
 \label{sec:configmotion}
 \index{commands!configMotion()!reference}
 \index{configMotion()!reference}
-\paragraph{waveform table parameter}
 
 The method
 \begin{minted}{python}
-  FpuGridDriver.configMotion(wavetable, grid_state, fpuset=[], soft_protection=True,
+  FpuGridDriver.configMotion(wavetable, grid_state, fpuset=[],
+                             soft_protection=True,
                              allow_uninitialized=False)
 \end{minted}
-sends a dictionary of waveform tables to a set of FPUs. The dictionary
-keys are the IDs of the FPUs which are configured. The valid format
-for the input data is described in section~\ref{sec:waveform_rules} on
+sends a dictionary of waveform tables to a set of FPUs.
+
+\paragraph{waveform table parameter}
+
+The dictionary keys of \texttt{wavetable} are the IDs of the FPUs
+which are configured. The valid format for the input data is described
+in section~\ref{sec:waveform_rules} on
 page~\pageref{sec:waveform_rules}, and the function \texttt{gen\_wf()}
 can be used to generate a suitable waveform table. (The
 \texttt{gen\_wf()} function is described in section~\ref{sec:genwf} on
@@ -2822,20 +2854,20 @@ To do this, the current positions are augmented by the interval within
 which the waveform table will move the FPUs. The resulting interval is
 checked against the safe ranges. If the interval exceeds the safe
 range of movements, a \texttt{ProtectionError} exception is raised,
-and the movement is not configured.
+and the movement is not configured.  The software protection can be
+switched off by passing the keyword parameter
+\texttt{soft\_protection=False}. This is normally only needed when
+checking the working of the datum switches, as described in
+section~\ref{sec:datumswitchcheck} on
+page~\pageref{sec:datumswitchcheck}. \emph{If the software protection
+  is switched off, it is the sole responsibility of the user to make
+  sure that the FPU is not damaged by movement operations.}
 
 The last waveform that was successfully configured is stored. Both a
 \texttt{repeatMotion()} and a \texttt{reverseMotion()} command repeat
 these checks, using the stored waveform and the tracked position of
 the FPUs.
 
-The software protection can be switched off by passing the keyword
-parameter \texttt{soft\_protection=False}. This is normally only
-needed when checking the working of the datum switches, as described
-in section~\ref{sec:datumswitchcheck} on
-page~\pageref{sec:datumswitchcheck}. \emph{If the software protection
-  is switched off, it is the sole responsibility of the user to make
-  sure that the FPU is not damaged by movement operations.}
 
 Whether the protection check was switched off or not, the
 \texttt{trackedAngles()} method shows the current positions of the FPU
@@ -2960,7 +2992,9 @@ state. This is used to return FPUs close to the datum position.
 
 Similar to the \texttt{configMotion()} command, the command checks
 that the movement remains in a safe range of angles for each
-FPU. Using the keyword parameter \texttt{soft\_protection=False}, this
+FPU.
+
+Using the keyword parameter \texttt{soft\_protection=False}, this
 check can be disabled, leaving the responsibility to avoid damage of
 the FPUs with the user.
 
@@ -2997,7 +3031,9 @@ state.
 
 Similar to the \texttt{configMotion()} command, the command checks
 that the movement remains in a safe range of angles for each
-FPU. Using the keyword parameter \texttt{soft\_protection=False}, this
+FPU.
+
+Using the keyword parameter \texttt{soft\_protection=False}, this
 check can be disabled, leaving the responsibility to avoid damage of
 the FPUs with the user.
 
@@ -3061,7 +3097,8 @@ to the FPU IDs passed as a list.
 
 The command
 \begin{minted}{python}
-  FpuGridDriver.freeBetaCollision(fpu_id, direction, fpu_state, soft_protection=True)
+  FpuGridDriver.freeBetaCollision(fpu_id, direction, fpu_state,
+                                  soft_protection=True)
 \end{minted}
 allows to conveniently resolve a collision
 of the beta arm without completely losing the step counter
@@ -3284,7 +3321,8 @@ exception is raised.
 \index{datum search!initial search!utility}
 
 The script \texttt{initializeGrid.py} in the ``\texttt{python}''
-subfolder can be started with a configurable number of FPUs, by either
+subfolder is intended as a template for more specific control scripts.
+It can be started with a configurable number of FPUs, by either
 setting the \texttt{NUM\_FPUS} environment variable, or passing the
 number with the ``\texttt{-N}'' option. It should be started by using
 Python's interactive option, like this:
@@ -3294,21 +3332,10 @@ Python's interactive option, like this:
 \end{minted}
 
 Started this way, the script initialises the driver for that number of
-FPUs, sends them a ping command, and waits for input. It is then
-possible to define and send a \texttt{findDatum()} command with the
-right parameters, to move the FPUs manually to a safe datum position.
-
-After this, other automatic scripts can initialise the grid with the
-command
-
-\begin{minted}{python}
-  gd.findDatum(grid_state, soft_protection=False)
-\end{minted}
-
-which allows to execute scripts without further interaction.  For CAN
-protocol version 1, the driver software cannot verify whether the FPUs
-have been initialised, so it is up to the user to check that the
-operation is safe.
+FPUs, sends them a ping command, shows the tracked positions from the
+FPU database, and returns control to the command line, waiting for
+input. One can then inspect the tracked angles and send a
+\texttt{findDatum()} command, if the shown positions are correct.
 
 Further options to this script can be listed by using the
 \texttt{-\,-help} option.
@@ -3550,14 +3577,45 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
-\subsection*{Changes in version 0.9.0}
+\subsection*{Changes in version 1.0.0}
 \begin{itemize}
-\item Fixed bug in code which waited for a reverse movement
-  to complete, causing the command to return prematurely.
-
-\item Added protection wrapper code which disables most unsafe
+\item Added protection layer which disables most unsafe
   movements unless explicitly enabled by a flag.
+
+\item Passing explicit direction parameters to the initial
+  \texttt{findDatum()} command is no longer required, as they can be
+  safely derived from positions stored in LMDB.
+
+\item The \texttt{soft\_protection} parameter for \texttt{findDatum()}
+  has been split into \texttt{soft\_protection}, which checks against
+  the position database, and \texttt{count\_protection} which falls
+  back to checking the step count of an initialised FPU.
+
+\item Movements configured using \texttt{configMotion()} are checked
+  to make sure they are always within a safe range of angles.
   
+\item The \texttt{configMotion()} command has an additional parameter
+  \texttt{allow\_uninitialized}, now needed to configure movements
+  where no datum command was completed before.
+
+\item The \texttt{list\_angles()} function has been replaced
+  by a more powerful \texttt{countedAngles()} method.
+
+\item It is now possible to view the last configured waveform.
+ 
+\item The EtherCAN simulator has been updated to include new
+  information on safe operational ranges of the FPU hardware and
+  current firmware.
+  
+\item Fixed bug in code which should have waited for a reverse
+  movement to complete, causing the command to return prematurely.
+  
+\end{itemize}
+
+\subsection*{Changes in version 0.7.2}
+\begin{itemize}
+\item added \texttt{getswitchStates()} command to read out
+  the datum switch states.  
 \end{itemize}
 
 
@@ -3599,7 +3657,7 @@ commands, or alter otherwise visible behaviour of the driver.
   arm into the correct direction if the FPU had been initialised before.
   
 \item All FPU commands which concern multiple FPUs, such as
-  \texttt{findDatum(),executeMotion(),resetFPUs()}, and so on, have an
+  \texttt{findDatum(), executeMotion(), resetFPUs()}, and so on, have an
   additional \texttt{fpuset} keyword parameter. It can be set to a
   list of FPU IDs to which the called command will be restricted. For
   details, see section~\ref{sec:restricteddatumsearch} on
@@ -3607,7 +3665,8 @@ commands, or alter otherwise visible behaviour of the driver.
   section~\ref{sec:subsets} on page~\pageref{sec:subsets}.
   
 \item The driver methods \texttt{getFirmwareVersion()},
-  \texttt{printFirmwareVersion()}, and \texttt{minFirmwareVersion()}
+  \texttt{printFirmwareVersion()}, and \\
+  \texttt{minFirmwareVersion()}
   allow to retrieve, display, and check the version numbers of the FPU
   firmware. For details, see sections~\ref{sec:getfirmwareversion}
     --~\ref{sec:minfirmwareversion}.
@@ -3706,6 +3765,8 @@ as needed. Here is an overview what each script does:
 \item gcc-4.9 (essentially, with support for C++11)
 \item Linux-2.6 or newer (requiring support for eventfd)
 \item glibc-2.3.2 (epoll support)
+\item liblmdb0 (Lightning Memory database, aka LMDB)
+\item lmdb-utils (contains backup utility for LMDB)
 \end{itemize}
 
 These should be available on all current Linux systems.
@@ -3715,6 +3776,7 @@ These should be available on all current Linux systems.
 \begin{itemize}
 \item Python-2.7
 \item boost-1-66 , which can be downloaded from \url{http://www.boost.org/users/download/}
+\item python-lmdb
 \item git-2.1 (not mandatory\footnote{Git is used to automatically add a version
   string to the python module. If needed, it can be substituted in the
   makefile, by replacing the definition \texttt{GIT\_VERSION} by a
