@@ -7,6 +7,7 @@ from numpy import array, ndarray, nan, Inf, isnan
 
 class Interval:
     def __init__(self, *source):
+        self.strformat = "%.3f"
         if len(source) == 0:
             source = nan
         elif len(source) == 1:
@@ -41,9 +42,10 @@ class Interval:
         if isnan(self.iv[0]) and isnan(self.iv[1]):
             return "[]"
         elif self.iv[0] == self.iv[1]:
-            return "%g" % self.iv[0]
+            return self.strformat % self.iv[0]
         else:
-            return str(list(self.iv))
+            f = self.strformat
+            return ("[" + f + ", " + f + "]") % (self.iv[0], self.iv[1])
         
     def __repr__(self):
         return repr(list(self.iv))
