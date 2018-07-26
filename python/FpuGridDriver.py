@@ -872,8 +872,8 @@ class GridDriver(UnprotectedGridDriver):
 
                 new_alpha = self.a_caloffsets[fpu_id] + self._alpha_angle(fpu)
                 new_beta = self.b_caloffsets[fpu_id] + self._beta_angle(fpu)
-                if ((not self.apositions[fpu_id].contains(new_alpha, tolerance=0.05))
-                    or (not self.bpositions[fpu_id].contains(new_beta, tolerance=0.05))) :
+                if ((not self.apositions[fpu_id].contains(new_alpha, tolerance=0.25))
+                    or (not self.bpositions[fpu_id].contains(new_beta, tolerance=0.25))) :
                     
                     print("""FATAL ERROR: RECEIVED FPU POSITION OUTSIDE OF TRACKED RANGE. 
 FPU was likely moved or power-cycled circumventing the running driver. 
