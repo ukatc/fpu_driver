@@ -115,7 +115,7 @@ first part represents a tutorial aiming at explaining quickly how to
 use the software. In section~\ref{sec:settingup}, it is explained how
 the driver module is configured. Then, in
 section~\ref{sec:minimalexample}, a minimal example is presented. As
-additional required knownledge, in section~\ref{sec:protectionrules}
+additional required knowledge, in section~\ref{sec:protectionrules}
 the rules for using the software protection layer, and in
 section~\ref{sec:datumswitchcheck}, a procedure to verify that the
 datum switches are working at all are explained. It is recommended to
@@ -125,12 +125,12 @@ datum operation.
 
 The second part forms a manual which provides more complete
 information on how to operate the FPUs, and how to solve
-probles. Section~\ref{sec:commontasks} explains how to perform common
-tasks. Section~\ref{sec:errorhandling} expolains how errors are
+problems. Section~\ref{sec:commontasks} explains how to perform common
+tasks. Section~\ref{sec:errorhandling} explains how errors are
 handled, and can be processed in scripts. Section~\ref{sec:logging}
 details how comprehensive logs of the commands send to each FPU can be
 accessed and interpreted. section~\ref{sec:recovery} explains how
-collisions and limit switch breaches are handled. The final sectuion
+collisions and limit switch breaches are handled. The final section
 of that part, section~\ref{sec:multifpu}, explains how multiple FPUs
 can be handled, especially in complex recovery scenarios.
 
@@ -370,10 +370,22 @@ electronics PCB of that FPU is replaced by another PCB). The serial
 number must never be used for another FPU.
 
 The second command stores the position of the FPU in the position
-database. Importantly, it has to be repeated whenever it happens that
-the stored position is not matching the actual position. This can only
-happen if the FPU is moved by something else than the FPU driver
-(or by an earlier version of it).
+database. The position has to be qualitatively correct whether the
+alpha arm is in the safe zone and whether the beta arm needs to move
+into a clock-wise or anti-clockwise direction to datum. It is also
+possible to specify position ranges as measurement uncertainty
+intervals in the form of Python list literals, enclosed in double
+quotes:
+
+\begin{minted}{bash}
+  fpu-admin init ${serialnumber} "[0, 1.5]" "[3, 6.5]"
+\end{minted}
+
+
+Importantly, storing the position has to be repeated when it should
+occur that the stored position is not matching the actual
+position. This can only happen if the FPU is moved by something else
+than the FPU driver. 
 
 The database record can be viewed and verified by using the command
 
@@ -420,11 +432,12 @@ per-FPU basis if required.
 The position database is required to operate the FPUs and will also
 hold some data gathered during calibration of the FPUs. It is
 therefore quite important to back it up regularly. When the driver is
-not running, it can be simply backed up by copying the content of the
+not running, it can be backed up by copying the content of the
 directory defined in the \verb+$FPU_DATABASE+ environment
-variable. (It is also possible to back it up while it is being used.
-In this case, the appropriate live backup tool for LMDB, \texttt{mdb\_copy} need to be
-used.)
+variable. For this, the appropriate live backup tool for LMDB,
+\texttt{mdb\_copy} should to be used. \texttt{mdb\_copy} can also
+back-up a database which is in use, for example during long-running
+lifetime tests.
 
 The database can be used by several driver instances at once, each of
 them controlling different FPUs. When the involved drivers are not
@@ -456,11 +469,11 @@ moved, or configured to move, and are named ``software protection''.
 For all normal movements of FPUs, this protection should be left
 active.
 
-In some situations, specifically if the hardware protection needs to
-be tested, it can be necessary to switch off and deactivate this
-software protection layer. This can be done using the
-``\texttt{soft\_protection}'' keyword argument when calling the
-corresponding driver methods. Passing the value
+In some situations, specifically if the hardware protection or the
+alpha datum switch needs to be tested, it can be necessary to switch
+off and deactivate this software protection layer. This can be done
+using the ``\texttt{soft\_protection}'' keyword argument when calling
+the corresponding driver methods. Passing the value
 ``\texttt{soft\_protection=False}'' will switch the software
 protection check off. When this is done, the entire responsibility
 with operating the FPUs safely is with the user. It is highly
@@ -491,7 +504,7 @@ CAN protocol version 1.3 or later. Earlier firmware versions do not
 support all described features.
 
 The next sections are intended as a tutorial on how to control and
-operate FPUs. As usual, the operations are presented that the most
+operate FPUs. As usual, the operations are presented so that the most
 basic concepts are introduced first, and more difficult commands and
 concepts which build on that later. For this reason, it is first shown
 in section~\ref{sec:minimalexample} how to perform basic movements,
@@ -981,16 +994,22 @@ conditions are as follows:
 \begin{itemize}
   \item Never use the same serial number for more than one FPU.
   \item Never move FPUs circumventing the driver. If FPUs are moved
-    outside of the driver, their positions need to be configured
-    newly. If any driver instance is controlling such an FPU, before
-    correcting the stored positions: exit the driver, and only after
-    correcting re-start the driver.
+    outside of the driver, their positions need to be stored in the
+    database again, using the \texttt{fpu-admin} tool. If any driver
+    instance is controlling such an FPU, before correcting the stored
+    positions: exit the driver, and only after correcting re-start the
+    driver.
     
-  \item Never power-cycle an FPU while the driver is connected. If an
-    FPU needs to be re-started, exit the program which uses the
-    driver, restart the FPU, and start up the program again. This
-    ensures that the driver correctly interprets the changed step
-    count which is caused by the firmware reset.
+  \item Do not use any old versions of the driver prior to version
+    1.0.0, which do not update the position database.
+    
+  \item Never power-cycle (turn off and on again) an FPU while the
+    driver is connected. If an FPU needs to be re-started, exit the
+    program which uses the driver, restart the FPU, and start up the
+    program again.  Alternatively, one can use the
+    \texttt{resetFPUs()} command of the driver. This ensures that the
+    driver correctly interprets the changed step count which is caused
+    by the firmware reset.
   \item When first using an FPU which was newly connected to a
     gateway, always use the \texttt{trackedAngles()} method to check
     that it shows the correct position, before moving the FPU.
@@ -1016,10 +1035,12 @@ allowed, and designed to include the following error conditions:
 \item Running into limit switch breaches and collisions of the arms.
 \item Resuming protected operations after temporarily disabling the
   protection flag.
-\item Recovering from beta collisions.
+\item Recovering from beta collisions, using the
+  \texttt{freeBetaCollision()} command.
 \item Temporary or permanent loss of connectivity on the CAN bus.
 \item Loss of the Ethernet connection to the EtherCAN gateways.
-\item As of protocol v1, manual recovery of limit switch breaches.
+\item As of protocol v1, manual recovery of alpha arm limit switch
+  breaches.
 \item Disconnecting an FPU from one EtherCAN gateway, and connecting
   it to another gateway connected to the same host workstation. 
 \item Hard power-off or loss of power of the workstation which hosts
@@ -1032,11 +1053,11 @@ allowed, and designed to include the following error conditions:
 \section{Checking the datum and limit switches}
 \label{sec:datumswitchcheck}
 
-During initial testing, it is advisable to test the function
-of the switches -- especially the alpha limit switch --
-without performing a datum operation. The reason for this
-is that if the alpha limit switch should not work, the
-datum operation would probably damage the FPU irreparably.
+During initial testing of each FPU, it is advisable to test the
+function of the switches -- especially the alpha limit switch --
+without performing a datum operation. The reason for this is that if
+the alpha limit switch should not work, the datum operation would
+probably damage the FPU irreparably.
 
 The following section describes how to check that the datum and limit
 switches of an FPU are working.
@@ -1126,12 +1147,12 @@ To test the datum switches, perform the following steps:
   \end{minted}
   
 \item Now, move the FPU so that it just activates the datum
-    switches. This depends on firmware version and offsets used.  In
-    addition to the options used in the first movement, it is now
-    necessary to disable the protection layer by passing the
-    ``\texttt{soft\_protection=False}'' keyword argument.  With
-    firmware version 1.3 and an initial position of (-180, 0), this will
-    be reached by using the command
+  switches. The movement interval needed depends on firmware version
+  and offsets used.  In addition to the options used in the first
+  movement, it is now necessary to disable the protection layer by
+  passing the ``\texttt{soft\_protection=False}'' keyword argument.
+  With firmware version 1.3 and an initial position of (-180, 0), this
+  will be reached by using the command
 
     \begin{minted}{python}
       w = gen_wf(-5.2,-5.2)
@@ -1278,7 +1299,8 @@ angle. The scaled values are displayed by the driver method
 \end{minted}
 This method applies an offset to the step counts so that the alpha
 datum position results in a value of -180 degree, and the beta datum
-position of 0 degree.
+position of 0 degree. This offset is a convention which is used in all
+of the MOONS project to describe arm positions.
 
 
 \index{countedAngles()!showing uninitialised angles}
@@ -1291,15 +1313,16 @@ uninitialised values are needed, the option
 ``\texttt{show\_uninitialized=True}'' can be used.
 
 
-One can wonder how this angle is calibrated and what is the relative
-position to the datum position. The answer is, these values are not
-calibrated - \texttt{countedAngles()} shows only an approximately
-scaled value, with a scaling factor derived from the gear ratio.
-Also, the displayed values are only relative to the datum position,
-which is defined to have the step counter values (0,0). If the datum
-position was not searched at least once before, both values are
-probably meaningless, and this is why \texttt{countedAngles()} returns
-a pair of NaN values.
+One can wonder how this angle is calibrated in respect to motor and
+gear non-linearities, and what is the relative position to the datum
+position. The answer is, these values are not calibrated -
+\texttt{countedAngles()} shows only an approximately scaled value,
+with a scaling factor derived from the gear ratio.  Also, the
+displayed values are only relative to the datum position, which is
+defined to have the step counter values (0,0). If the datum position
+was not searched at least once before, both values are probably
+meaningless, and this is why \texttt{countedAngles()} returns a pair
+of NaN values.
 
 
 
@@ -1342,11 +1365,12 @@ this without checking the current position. Analogously, the constant
 \texttt{SEARCH\_ANTI\_CLOCKWISE} can be passed to move the FPU into
 the negative direction.
 
-Such a manual search was required to be performed in earlier versions
-of the driver < 1.0.0. For current driver versions, while still
-possible, this is not necessary any more since the position database
-keeps track of the actual positions.  A detailed description of all
-possible parameters for the datum search can be found in
+Such a manual search was required to be performed in previous versions
+of the driver, earlier than version 1.0.0. For current driver
+versions, while still possible, this is not necessary any more since
+the position database keeps track of the actual positions, when the
+system is powered off.  A detailed description of all possible
+parameters for the datum search can be found in
 section~\ref{sec:finddatum} on page~\pageref{sec:finddatum}.
 
 
@@ -1427,8 +1451,9 @@ angles:
 \index{clockwise}
 \index{counter-clockwise}
 \begin{itemize}
-  \item When looking from above, a \emph{counter-clockwise} movement
-    will have a \emph{positive} sign, and use positive step counts.
+  \item When looking from above (from the direction of the incoming
+    light in the telescope), a \emph{counter-clockwise} movement will
+    have a \emph{positive} sign, and use positive step counts.
   \item Correspondingly, a \emph{clockwise} movement will have a
     \emph{negative} sign, and use negative step counts.
   \item Consequently, any position which is counter-clockwise from the
@@ -2223,7 +2248,7 @@ In addition, there is a function with the name
 states of the set of FPUs to a single value. Such a mapping reduces
 the dimensionality of the input data, and therefore there is more than
 one way to define it. The idea followed here is simply to define an
-ordering of all state enumeration values, for example
+ordering of all state enumeration values. The used ordering is
 \begin{quote}
 \begin{verbatim}
   UNINITIALIZED < OBSTACLE_ERROR < ABORTED < DATUM_SEARCH
@@ -3059,12 +3084,6 @@ Using the keyword parameter \texttt{soft\_protection=False}, this
 check can be disabled, leaving the responsibility to avoid damage of
 the FPUs with the user.
 
-Note that this command is, as the preceding one, not available after a
-collision, movement error, or \texttt{abortMotion} message -- the
-assumption is that the calibration of the FPU is not more exact after
-such an event, and a new \texttt{findDatum} command is needed to
-restore the calibrated state.
-
 
 Note that this command is not available after a collision, movement
 error, or \texttt{abortMotion} message -- the assumption is that the
@@ -3676,7 +3695,7 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 0.7.2}
 \begin{itemize}
-\item added \texttt{getswitchStates()} command to read out
+\item added \texttt{getSwitchStates()} command to read out
   the datum switch states.  
 \end{itemize}
 
