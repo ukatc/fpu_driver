@@ -21,6 +21,10 @@ env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10)
 
 fpudb = env.open_db("fpu")
 
+if os.environ.get("MOCKUP","") != "":
+    is_mockup = True
+else:
+    is_mockup = False
 
 def flash_FPU(fpu_id, serial_number,mockup=True):
     
@@ -30,7 +34,7 @@ def flash_FPU(fpu_id, serial_number,mockup=True):
         gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                             for p in [4700, 4701, 4702] ]
     else:
-        gateway_address = [ FpuGridDriver.GatewayAddress(args.gateway_address, args.gateway_port) ]
+        gateway_address = [ FpuGridDriver.GatewayAddress("192.168.0.10", 4700) ]
 
     print("connecting grid:", gd.connect(address_list=gateway_address))
 
@@ -110,7 +114,7 @@ if __name__ == '__main__' :
         assert(len(serial_number) <= 5)
         fpu_id = int(argv[3])
         
-        flash_FPU(fpu_id, serial_number)
+        flash_FPU(fpu_id, serial_number, mockup=is_mockup)
 
             
     if command == "alimits":
