@@ -1,6 +1,11 @@
 % -*- mode: latex; eval: (flyspell-mode 1) -*-
 \documentclass[11pt,a4paper]{scrartcl}
 
+\usepackage{draftwatermark}
+\SetWatermarkText{draft}
+\SetWatermarkScale{2}
+\SetWatermarkColor[gray]{0.9}
+
 \usepackage{minted}
 \usepackage{hyperref}
 \usepackage{graphicx}
@@ -31,7 +36,8 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 0.9.0 (document version \texttt{\input{../git_version}})}
+  module} \subtitle{For driver version 0.9.0-beta (document version \texttt{\input{../git_version}})
+DRAFT - DO NOT USE THIS VERSION FOR ENGINEERING PURPOSES.}
 
 \author{Johannes Nix}
 
@@ -82,7 +88,7 @@ possible states of the hardware.
 
 
 
-\subsection{Required knowledge}
+\subsection{Required knowledge and order of presentation}
 \index{Python!introduction}
 \index{Python!further information}
 
@@ -104,7 +110,44 @@ system. This is explained, for example, in
 ``\href{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}{getting
   a git repository}\footnote{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}''.
 
+The order of presentation is divided in three parts, as follows: The
+first part represents a tutorial aiming at explaining quickly how to
+use the software. In section~\ref{sec:settingup}, it is explained how
+the driver module is configured. Then, in
+section~\ref{sec:minimalexample}, a minimal example is presented. As
+additional required knownledge, in section~\ref{sec:protectionrules}
+the rules for using the software protection layer, and in
+section~\ref{sec:datumswitchcheck}, a procedure to verify that the
+datum switches are working at all are explained. It is recommended to
+read all of these sections before starting to operate the FPUs, and
+make sure that the datum switches work before using any
+datum operation.
+
+The second part forms a manual which provides more complete
+information on how to operate the FPUs, and how to solve
+probles. Section~\ref{sec:commontasks} explains how to perform common
+tasks. Section~\ref{sec:errorhandling} expolains how errors are
+handled, and can be processed in scripts. Section~\ref{sec:logging}
+details how comprehensive logs of the commands send to each FPU can be
+accessed and interpreted. section~\ref{sec:recovery} explains how
+collisions and limit switch breaches are handled. The final sectuion
+of that part, section~\ref{sec:multifpu}, explains how multiple FPUs
+can be handled, especially in complex recovery scenarios.
+
+The third part is the reference part, Section~\ref{sec:reference},
+lists all available commands with a comprehensive list of all their
+options, and also documents the hierarchy of exceptions.
+Additionally, section~\ref{sec:changelog} contains a detailed reverse
+chronological list of changes to commands.
+
+Finally, there is an Appendix part. It lists additional examples
+(section~\ref{sec:moreexamples}), gives a full list of software
+dependencies and how to install the software from scratch
+(section~\ref{sec:installationfromscratch}), and explains how to run
+the test gateway (section~\ref{sec:runningthegateway}).
+
 \section{Setting up the library module}
+\label{sec:settingup}
 \index{driver!building}
 
 This section deals with retrieving, installing and configuring the
@@ -309,7 +352,10 @@ Let's assume that the serial number is represented by the shell
 variable \texttt{serialnumber}, the logical FPU id by the variable
 \texttt{fpu\_id}, the initial alpha arm position by
 \texttt{alpha\_position}, and the beta arm position by
-\texttt{beta\_position}.
+\texttt{beta\_position}. The angular positions are given in degrees,
+and with the coordinate offsets used in the instrument. By default,
+this means the alpha datum position is at -180 degrees, and the beta
+datum position at zero degrees.
 
 Then, the following two commands need to be issued:
 
@@ -320,12 +366,14 @@ Then, the following two commands need to be issued:
 
 The first command writes the serial number to the NVRAM of the FPU
 controller. This needs to be done only once (except when the
-electronics PCB of that FPU is replaced by another one. The serial
+electronics PCB of that FPU is replaced by another PCB). The serial
 number must never be used for another FPU.
 
 The second command stores the position of the FPU in the position
-database. It has to be repeated whenever it happens that the stored
-position is not matching the actual position.
+database. Importantly, it has to be repeated whenever it happens that
+the stored position is not matching the actual position. This can only
+happen if the FPU is moved by something else than the FPU driver
+(or by an earlier version of it).
 
 The database record can be viewed and verified by using the command
 
@@ -333,15 +381,20 @@ The database record can be viewed and verified by using the command
   fpu-admin list1 ${serialnumber}
 \end{minted}
 
-This should show data similar to the following output:
+Assuming the initial positions were alpha = -179 degrees and beta = 1
+degrees, this should show data similar to the following output:
 
 \begin{minted}{python}
-  ['./fpu-admin', 'list1', 'PT01']
-  ('PT01', 'apos') : [[-180.0, -180.0], -180.0]
-  ('PT01', 'bpos') : [[0.0, 0.0], 0]
-  ('PT01', 'wf_reversed') : False
-  ('PT01', 'alimits') : [[-180.0, 179.6], -180.0]
-  ('PT01', 'blimits') : [[-179.3, 150.3], 0.0]
+jnix@nippes:~/MOONS/fpu_driver/python$ ./fpu-admin list1 PT01
+['./fpu-admin', 'list1', 'PT01']
+('PT01', 'apos') : [[-179.0, -179.0], -180.0]
+('PT01', 'bpos') : [[1.0, 1.0], 0.0]
+('PT01', 'wf_reversed') : False
+('PT01', 'alimits') : [[-180.0, 179.6], -180.0]
+('PT01', 'blimits') : [[-179.3, 150.3], 0.0]
+('PT01', 'bretries') : 3
+('PT01', 'beta_retry_count_cw') : 0
+('PT01', 'beta_retry_count_acw') : 0
   ....
 \end{minted}
 
@@ -356,6 +409,10 @@ reason is simple: The database is designed so that it can, if
 required, represent uncertainty around the arm positions, in which
 case the number pairs would represent start and end of an interval of
 possible positions.
+
+The intervals ``alimits'' and ``blimits'' describe the ranges which
+are considered safe by the software. They can be adjusted on an
+per-FPU basis if required.
 
 
 \subsection{Database maintenance}
@@ -428,6 +485,20 @@ need to be manually recovered from. This is explained in
 section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 
 
+The functionality described in this document is supported by driver
+versions equal or newer than 1.0.0 and an FPU  firmware that supports the
+CAN protocol version 1.3 or later. Earlier firmware versions do not
+support all described features.
+
+The next sections are intended as a tutorial on how to control and
+operate FPUs. As usual, the operations are presented that the most
+basic concepts are introduced first, and more difficult commands and
+concepts which build on that later. For this reason, it is first shown
+in section~\ref{sec:minimalexample} how to perform basic movements,
+before explaining in section~\ref{sec:datumswitchcheck} how the switch
+operation is tested. Nevertheless, it is highly recommended to test
+the switch operation before doing any further operations with the FPU.
+
 \begin{warning}
   \textbf{WARNING: Before first issuing a \texttt{findDatum()}
     command, make positively sure that both the alpha arm datum switch
@@ -436,13 +507,6 @@ section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
     damage the hardware. The driver software cannot protect against
     this.}
 \end{warning}
-
-
-The functionality described in this document is supported by driver
-versions equal or newer than 1.0.0 and an FPU  firmware that supports the
-CAN protocol version 1.3 or later. Earlier firmware versions do not
-support all described features.
-
 
 
 \section{A minimal example}
@@ -463,8 +527,11 @@ step by step.
 Importantly, the example assumes that the FPUs have been powered on
 before, and the datum switches have been verified to work
 reliably. Section~\ref{sec:datumswitchcheck} on
-page~\pageref{sec:datumswitchcheck} explains how the basic functioning
-of the datum switches can be verified.
+page~\pageref{sec:datumswitchcheck} explains how the proper operation
+of the datum switches can be verified. This check should be always
+done \emph{before} any \texttt{findDatum()} command is sent, because
+non-working or damaged switches can lead to immediate damage of the
+FPU.
 
 
 \index{waveforms!example}
@@ -899,49 +966,31 @@ reference, the states of the FPU, and the possible state transitions
 and commands which are allowed in protocol version 1.
 
 
-\subsection{Checking the switch states}
-\index{alpha limit switch!checking state}
-\index{limit switch!check the state}
-During initial testing, it is advisable to test the function
-of the switches -- especially the alpha limit switch --
-without performing a datum operation. The reason for this
-is that if the alpha limit switch should not work, the
-datum operation would probably damage the FPU irreparably.
-
-To test the switches, the FPU should be driven manually to a position
-where the corresponding switch is required to engage. At this point,
-the command
-
-\begin{minted}{python}
-  gd.getSwitchStates(grid_state, fpuset=[])
-\end{minted}
-
-should be used to verify that the switch is
-working. Section~\ref{sec:datumswitchcheck} on
-page~\pageref{sec:datumswitchcheck} explains in detail how this is
-done.
-
 \section{Rules to maintain integrity of the software protection}
+\label{sec:protectionrules}
 
 The software protection makes it easier to ensure that the FPUs are
 not damaged by out-of-bounds movements or operations that are not
-supported by the firmware. It relies on a few conditions that must be
-strictly observed at all times to keep the tracked positions
-valid. These conditions are as follows:
+supported by the firmware.
+
+\subsection{Rules to observe}
+The protection relies on a few conditions that must be strictly
+observed at all times to keep the tracked positions valid. These
+conditions are as follows:
 
 \begin{itemize}
   \item Never use the same serial number for more than one FPU.
   \item Never move FPUs circumventing the driver. If FPUs are moved
     outside of the driver, their positions need to be configured
-    newly. Before correcting the store positions. If any driver instance
-    was controlling such an FPU, exit the driver, correct the position,
-    and only after that re-start the driver.
+    newly. If any driver instance is controlling such an FPU, before
+    correcting the stored positions: exit the driver, and only after
+    correcting re-start the driver.
     
   \item Never power-cycle an FPU while the driver is connected. If an
     FPU needs to be re-started, exit the program which uses the
     driver, restart the FPU, and start up the program again. This
     ensures that the driver correctly interprets the changed step
-    count which is caused by the reset.
+    count which is caused by the firmware reset.
   \item When first using an FPU which was newly connected to a
     gateway, always use the \texttt{trackedAngles()} method to check
     that it shows the correct position, before moving the FPU.
@@ -950,6 +999,7 @@ valid. These conditions are as follows:
     before using a \texttt{findDatum()} command.
 \end{itemize}
 
+\subsection{Allowed operations and covered cases}
 If the above conditions are observed, the following operations are
 allowed, and designed to include the following error conditions:
 
@@ -982,91 +1032,100 @@ allowed, and designed to include the following error conditions:
 \section{Checking the datum and limit switches}
 \label{sec:datumswitchcheck}
 
+During initial testing, it is advisable to test the function
+of the switches -- especially the alpha limit switch --
+without performing a datum operation. The reason for this
+is that if the alpha limit switch should not work, the
+datum operation would probably damage the FPU irreparably.
+
 The following section describes how to check that the datum and limit
 switches of an FPU are working.
-\paragraph{Why datum switches need to be tested}
 
-The proper function of the switches is required in order to avoid that
-the \texttt{findDatum()} command damages the FPU by performing
-out-of-bounds movements and driving the alpha arm of the FPU into the
-hard stop.  It also avoids that the beta arm becomes involved in
-unneeded collisions which could permanently degrade the precision of
-positioning operations.
+\subsection{How to retrieve the switch state}
+\index{alpha limit switch!checking state}
+\index{limit switch!check the state}
 
-Passing the following test is necessary but not sufficient, as it does
-not check for reliability of the hardware or its dynamic
-properties. To avoid damage it is highly recommended to perform it
-when first putting a new FPU into operation.
 
-\paragraph{Required information} To begin this test, it is necessary
-to know the exact safe operation ranges of the alpha and beta
-arm. These values depend on hardware and FPU firmware revisions and
-are still somewhat subject to change.  As of July 2018, the currently
-known limits are described in document [4],
-``FPUMovementSafetySpecification.docx'', but are planned to be
-changed.  The following description assumes that the position after
-performing a datum operation is (-180, 0) degrees, that both switches
-are off at positions (-175, 5.0), and both switches on at positions
-(-180.2, -0.2).
+To test the switches, the FPU needs to be be driven manually to a
+position where the corresponding switch is required to engage. At this
+point, one can use the command
 
-\paragraph{Test procedure}
-To check whether the datum switches work, perform the following
-steps:
+\begin{minted}{python}
+  gd.getSwitchStates(grid_state, fpuset=[])
+\end{minted}
+
+to retrieve the state of the switches.
+
+
+\subsection{Required information}
+
+To begin this test, it is necessary to know the exact safe operation
+ranges of the alpha and beta arm. These values depend on hardware and
+FPU firmware revisions and are currently still subject to change.
+They are described in document
+[4],~``FPUMovementSafetySpecification.docx''.  The following
+description assumes that the position after performing a datum
+operation is (-180, 0) degrees, that both switches are off at
+positions (-175, 5.0), and both switches on at positions (-180.2,
+-0.2).
+
+\subsection{Test procedure, explained step-by-step}
+To test the datum switches, perform the following steps:
 
 \begin{enumerate}
-\item If the driver is connected, disconnect it.
+\item If the driver is connected, disconnect it first.
   
-  \item Make sure that the FPU database contains the correct alpha and
-    beta arm positions for the FPU which is examined. Do this using
-    the command
-    \begin{minted}{bash}
-        fpu-admin ${serialnumber} list1
-    \end{minted}
+\item Make sure that the FPU database contains the correct alpha and
+  beta arm positions for the FPU which is examined. Do this using
+  the command
+  \begin{minted}{bash}
+    fpu-admin ${serialnumber} list1
+  \end{minted}
 
-    The result should look like that:
+  The result should look like that:
 
-    \begin{minted}{python}
-      ['./fpu-admin', 'list1', 'PT01']
-      ('PT01', 'apos') : [[-180.0, -180.0], -180.0]
-      ('PT01', 'bpos') : [[0.0, 0.0], 0]
-      ('PT01', 'wf_reversed') : False
-      ('PT01', 'alimits') : [[-180.0, 179.6], -180.0]
-      ('PT01', 'blimits') : [[-179.3, 150.3], 0.0]
-      ....
-    \end{minted}
+  \begin{minted}{python}
+    ['./fpu-admin', 'list1', 'PT01']
+    ('PT01', 'apos') : [[-180.0, -180.0], -180.0]
+    ('PT01', 'bpos') : [[0.0, 0.0], 0]
+    ('PT01', 'wf_reversed') : False
+    ('PT01', 'alimits') : [[-180.0, 179.6], -180.0]
+    ('PT01', 'blimits') : [[-179.3, 150.3], 0.0]
+    ....
+  \end{minted}
 
-    This indicates that the alpha arm is at position -180 degrees,
-    using a datum offset of -180 degrees, and the beta arm is at 0
-    degrees.
+  This indicates that the alpha arm is at position -180 degrees,
+  using a datum offset of -180 degrees, and the beta arm is at 0
+  degrees.
+  
+  If the positions are not correct, proceed as described in
+  section~\ref{sec:setinitialposition} on
+  page~\pageref{sec:setinitialposition}. The further explanation
+  assumes that the FPU position is at the numbers shown above.
 
-    If the positions are not correct, proceed as described in
-    section~\ref{sec:setinitialposition} on
-    page~\pageref{sec:setinitialposition}. The further explanation
-    assumes that the FPU position is at the numbers shown above.
-
-  \item Connect the driver and run a \texttt{pingFPUs()} command.
-
-  \item Move the FPU so that it is within the normal range, and with
-    certainty not touching the datum switches.
+\item Connect the driver and run a \texttt{pingFPUs()} command.
+  
+\item Move the FPU so that it is within the normal range, and with
+  certainty not touching the datum switches.
+  
+  As a normal movement configuration requires
+  that a datum search has been performed before,
+  it is necessary to pass the \texttt{allow\_uninitialized=True}
+  flag to the configMotion command:
+  
+  \begin{minted}{python}
+    w = gen_wf(5,5)
+    gd.configMotion(w, gs, allow_uninitialized=True)
+    gd.executeMotion(gs)
+  \end{minted}
+  
+\item Verify that both switches are off:
     
-    As a normal movement configuration requires
-    that a datum search has been performed before,
-    it is necessary to pass the \texttt{allow\_uninitialized=True}
-    flag to the configMotion command:
-
-    \begin{minted}{python}
-      w = gen_wf(5,5)
-      gd.configMotion(w, gs, allow_uninitialized=True)
-      gd.executeMotion(gs)
-    \end{minted}
-
-  \item Verify that both switches are off:
-    
-    \begin{minted}{python}
-      gd.getSwitchStates(gs)
-    \end{minted}
-
-  \item Now, move the FPU so that it just activates the datum
+  \begin{minted}{python}
+    gd.getSwitchStates(gs)
+  \end{minted}
+  
+\item Now, move the FPU so that it just activates the datum
     switches. This depends on firmware version and offsets used.  In
     addition to the options used in the first movement, it is now
     necessary to disable the protection layer by passing the
@@ -1083,7 +1142,7 @@ steps:
     The FPU should now be at an absolute position of (-180.2, -0.2), and
     touching both switches.
 
-    \item Now, verify that both switches are on:
+  \item Now, verify that both switches are on:
     \begin{minted}{python}
       gd.getSwitchStates(gs)
     \end{minted}
@@ -1103,6 +1162,7 @@ be a hardware failure, which makes the FPU unusable until it is
 resolved.
 
 \section{Common tasks}
+\label{sec:commontasks}
 
 The following sections describe several common tasks
 and describes which commands can be used to perform them.
@@ -2115,6 +2175,7 @@ differences for protocol version 1:
 \end{itemize}
 
 \section{Outline on management of multiple FPUs}
+\label{sec:multifpu}
 \index{FPU!controlling multiple}
 \index{grid state!overall state}
 \index{multiple FPUs}
@@ -2213,6 +2274,7 @@ and a high-level resolution strategy.
 
 
 \section{Reference}
+\label{sec:reference}
 
 \subsection{Retrieving information about the driver version}
 \index{version information!retrieving!reference}
@@ -2604,9 +2666,8 @@ An example output of the command looks like this:
 
 \begin{minted}{python}
   >>> gd.trackedAngles(gs)
-  FPU #0: angle = (-180, 0), offsets = (0, 0),
-                  stepcount angle= (-180.0, 0.0), 
-                  last_wform_range=([],[])
+  FPU 0: angle = (-180, 0), offsets = (0, 0), stepcount angle= (-180.0,
+           0.0), last_wform_range=([],[])
 \end{minted}
 
 Here,the current actual angle is at position alpha=-180, beta=0
@@ -2621,7 +2682,7 @@ and beta = 20 degrees, the output looks like this:
   >>> gd.executeMotion(gs)
   fpu_driver.E_DriverErrCode.DE_OK
   >>> gd.trackedAngles(gs)
-  FPU #0: angle = (-170.009, 19.9965), offsets = (0, 0), 
+  FPU 0: angle = (-170.009, 19.9965), offsets = (0, 0), 
          stepcount angle= (-170.00, 19.99), 
          last_wform_range=([-180.0, -170.00],[0.0, 19.99])
 >>>
@@ -2636,9 +2697,9 @@ look as follows:
 >>> gd.resetFPUs(gs)
 fpu_driver.E_DriverErrCode.DE_OK
 >>> gd.trackedAngles(gs)
-FPU #0: angle = (-170.009, 19.9965), offsets = (9.99134, 19.9965), \
+FPU #0: angle = (-170.0, 19.9), offsets = (9.94, 19.99), \
                stepcount angle= (-180.0, 0.0), \
-               last_wform_range=([-180.0, -170.00866088237231],[0.0, 19.996540970036314])
+               last_wform_range=([-180.0, -170.0],[0.0, 19.9])
 >>>
 \end{minted}
 
@@ -2894,7 +2955,7 @@ waveform table, and whose IDs are in the fpuset list. If
 table will be configured.
 
 
-\subsection{getCurrentWaveTables()}
+\subsubsection{getCurrentWaveTables()}
 \index{commands!getCurrentWaveTables()} The method
 \texttt{getCurrentWaveTables()} retrieves the currently valid, or the
 last configured waveform tables as a dictionary for each FPU.
@@ -3572,6 +3633,7 @@ DE_STEP_TIMING_ERROR = 603,
 \end{verbatim}
 
 \section{Changelog}
+\label{sec:changelog}
 
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
@@ -3943,7 +4005,8 @@ to generate the documentation\footnote{If the document is generated
 name \texttt{doc/tutorial.pdf}.
 
 
-\section{Running the test gateway simulator} 
+\section{Running the test gateway simulator}
+\label{sec:runningthegateway}
 \index{EtherCAN simulator}
 \subsection{Running the gateway simulator normally}
 In the sub-directory /testing, the package contains a mock-up test
