@@ -64,6 +64,12 @@ if __name__ == '__main__' :
         Default alpha datum offset: %f 
         """ % ALPHA_DATUM_OFFSET)
         exit(1)
+
+    if "--mockup" in argv:
+        is_mockup = True
+        n = argv.index("--mockup")
+        del argv[n]
+        
               
     command = argv[1]
 
