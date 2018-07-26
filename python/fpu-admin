@@ -55,10 +55,11 @@ if __name__ == '__main__' :
         help
         flash <serial_number> <fpu_id>
         init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]
+        init <serial_number> "[" <apos_min>, <apos_max> "]", "[" <bpos_min>, <bpos_max> "]" [<adatum_offset>]
         list
         list1 <serial_number>
-        alimits <serial_number> <alpha_min> <alpha_max> [<adatum_offset>]
-        blimits <serial_number> <beta_min> <beta_max>
+        alimits <serial_number> <alpha_limit__min> <alpha_limit_max> [<adatum_offset>]
+        blimits <serial_number> <beta_limit_min> <beta_limit_max>
         bretries <serial_number> <freebetatries>
 
         Default alpha datum offset: %f 
