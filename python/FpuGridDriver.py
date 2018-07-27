@@ -1371,9 +1371,19 @@ Emergency exit: Position database needs to be re-initialized.""")
 
 
         fpu = grid_state.FPU[fpu_id]
+
+        if direction == REQD_CLOCKWISE:
+            diff = - FREE_BETA_STEPCOUNT
+        else:
+            diff = FREE_BETA_STEPCOUNT
+
+        bpos = self.bpositions[fpu_id]
+        new_bpos = bpos + diff / StepsPerDegreeBeta
         
         with env.begin(db=self.fpudb, write=True) as txn:
             ProtectionDB.store_bretry_count(txn, fpu, clockwise, cnt)
+            self._update_bpos(txn, fpu, fpu_id,  bpos.combine(new_bpos))
+
 
         fpuset = [fpu_id]
         super(GridDriver, self).pingFPUs(grid_state, fpuset=fpuset)
