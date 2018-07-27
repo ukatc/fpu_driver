@@ -1340,7 +1340,7 @@ FPU was likely moved or power-cycled circumventing the running driver.
                         self._update_bpos(txn, fpu, fpu_id,  bpos.extend(0.0))
                     else:
                         
-                        m = search_modes[fpu_id]
+                        m = search_modes.get(fpu_id, SEARCH_AUTO)
                         if m == SEARCH_CLOCKWISE:
                             new_range = bpos.extend(BETA_MIN_HWPROT_DEGREE)
                         elif m == SEARCH_ANTI_CLOCKWISE:
