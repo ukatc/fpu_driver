@@ -448,6 +448,7 @@ class FPU:
                     self.move_alpha(new_alpha, limit_callback)
             except LimitBreachException:
                 print("Alpha limit breach for FPU  %i" % self.fpu_id)
+                self.abort_wave = True
                 break
             
             try:
@@ -458,6 +459,8 @@ class FPU:
                         self.move_beta(new_beta, collision_callback)
             except BetaCollisionException:
                 print("Beta collision for FPU  %i" % self.fpu_id)
+                self.abort_wave = True
+                self.is_collided = True
                 break
 
             #print("FPU# %i: skip_alpha=%r, skip_beta=%r, beta_sign=%f" % (self.fpu_id, skip_alpha, skip_beta, beta_sign))

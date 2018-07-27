@@ -656,7 +656,7 @@ void checkDriverError(E_DriverErrCode ecode)
         break;
 
     case DE_PROTECTION_ERROR:
-        throw FPUDriverException("DE_PROTECTION_ERROR: Command might damage FPU, protection is enabled.",
+        throw FPUDriverException("DE_PROTECTION_ERROR: Command might damage FPU, step count protection is enabled.",
                                  DE_PROTECTION_ERROR);
         break;
 

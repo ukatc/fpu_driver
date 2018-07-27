@@ -206,8 +206,7 @@ class UnprotectedGridDriver (object):
         return self._gd.getGridState()
 
 
-    def _start_find_datum_hook(self, gs, search_modes,  selected_arm=None,
-                               fpuset=[], initial_positions={}):
+    def _start_find_datum_hook(self, gs, search_modes=None,  selected_arm=None, fpuset=[], initial_positions={}, soft_protection=None):
         pass
 
     def _cancel_find_datum_hook(self, gs, search_modes,  selected_arm=None,
@@ -239,7 +238,9 @@ class UnprotectedGridDriver (object):
                 count_protection = False
 
         initial_positions = {}
-        self._start_find_datum_hook(gs, fpuset, initial_positions=initial_positions)
+                               
+        self._start_find_datum_hook(gs, search_modes=search_modes, selected_arm=selected_arm,
+                                    fpuset=fpuset, initial_positions=initial_positions, soft_protection=soft_protection)
         try:
             try:
                 rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, count_protection)
@@ -320,7 +321,8 @@ class UnprotectedGridDriver (object):
                     count_protection = False
                 
         initial_positions = {}
-        self._start_find_datum_hook(gs,fpuset, initial_positions=initial_positions)
+        self._start_find_datum_hook(gs, search_modes=search_modes, selected_arm=selected_arm, fpuset=fpuset,
+                                    initial_positions=initial_positions, soft_protection=soft_protection)
         try:
             rv = self._gd.startFindDatum(gs, search_modes, selected_arm, fpuset, count_protection)
             if rv != fpu_driver.E_DriverErrCode.DE_OK:
@@ -875,9 +877,10 @@ class GridDriver(UnprotectedGridDriver):
                 if ((not self.apositions[fpu_id].contains(new_alpha, tolerance=0.25))
                     or (not self.bpositions[fpu_id].contains(new_beta, tolerance=0.25))) :
                     
-                    print("""FATAL ERROR: RECEIVED FPU POSITION OUTSIDE OF TRACKED RANGE. 
+                    print("""FATAL ERROR: RECEIVED FPU POSITION = (%r, %r) OUTSIDE OF TRACKED RANGE = (%r, %r). 
 FPU was likely moved or power-cycled circumventing the running driver. 
-Emergency exit: Position database needs to be re-initialized.""")
+                    Emergency exit: Position database needs to be re-initialized.""" % (
+                        new_alpha, new_beta, self.apositions[fpu_id], self.bpositions[fpu_id]))
                     os.abort()
             
                 # compute alpha and beta position intervals,
@@ -1302,16 +1305,16 @@ Emergency exit: Position database needs to be re-initialized.""")
         env.sync()
  
         
-
-    def _start_find_datum_hook(self, gs, search_modes,  selected_arm=None,fpuset=[], initial_positions={}):
+    def _start_find_datum_hook(self, gs, search_modes=None,  selected_arm=None, fpuset=[], initial_positions={}, soft_protection=None):
         """This is run when an findDatum command is actually started.
         It updates the new range of possible positions to include the zero point of each arm."""
+
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
                 if len(fpuset) > 0 and (not (fpu_id in fpuset)):
                     continue
             
-                if (len(search_modes) != 0) and (not search_modes.kas_key(fpu_id)):
+                if (len(search_modes) != 0) and (not search_modes.has_key(fpu_id)):
                     continue
             
                 # record initial position intervals so that the
@@ -1322,10 +1325,34 @@ Emergency exit: Position database needs to be re-initialized.""")
                 
                 # update stored intervals to include zero, and store in DB
                 if selected_arm in [DASEL_ALPHA, DASEL_BOTH]:
-                    self._update_apos(txn, fpu, fpu_id, self.apositions[fpu_id].extend(0.0 + self.config.alpha_datum_offset))
+                    if soft_protection:
+                        self._update_apos(txn, fpu, fpu_id, self.apositions[fpu_id].extend(0.0 + self.config.alpha_datum_offset))
+                    else:
+                        protection_interval = Interval(ALPHA_MIN_HARDSTOP_DEGREE, ALPHA_MAX_HARDSTOP_DEGREE)
+                        apos = self.apositions[fpu_id]
+                        new_range = apos.combine(protection_interval)
+                        self._update_apos(txn, fpu, fpu_id, new_range)
+
                     
                 if selected_arm in [DASEL_BETA, DASEL_BOTH]:
-                    self._update_bpos(txn, fpu, fpu_id,  self.bpositions[fpu_id].extend(0.0))
+                    bpos = self.bpositions[fpu_id]
+                    if soft_protection:
+                        self._update_bpos(txn, fpu, fpu_id,  bpos.extend(0.0))
+                    else:
+                        
+                        m = search_modes[fpu_id]
+                        if m == SEARCH_CLOCKWISE:
+                            new_range = bpos.extend(BETA_MIN_HWPROT_DEGREE)
+                        elif m == SEARCH_ANTI_CLOCKWISE:
+                            new_range = bpos.extend(BETA_MAX_HWPROT_DEGREE)
+                        else:
+                            protection_interval = Interval(BETA_MIN_HWPROT_DEGREE, BETA_MAX_HWPROT_DEGREE)
+                            new_range = bpos.combine(protection_interval)
+
+
+                        self._update_bpos(txn, fpu, fpu_id,  new_range)                                                               
+                        
+                
                     
         env.sync()
  
@@ -1334,6 +1361,7 @@ Emergency exit: Position database needs to be re-initialized.""")
     def _cancel_find_datum_hook(self, gs, search_modes,  selected_arm=None,
                                fpuset=[], initial_positions={}):
 
+        print("canceling findDatum, resetting tracked positions...")
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id in initial_positions.keys():
                 # get last stored positions
