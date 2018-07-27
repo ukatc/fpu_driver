@@ -34,6 +34,7 @@
 }{\end{framed}}
 
 
+\pagestyle{headings}
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
@@ -1049,6 +1050,52 @@ allowed, and designed to include the following error conditions:
     workstation needs to use a journaling file system, such as ext4 or
     ZFS, and should not use disk encryption.}.
 \end{itemize}
+
+\subsection{Handling ambiguos positions}
+\index{ambiguous positions}
+\index{ProtectionError!due to ambiguous position}
+When movements are interrupted, due to errors like collisions, or
+due to \texttt{abortMotion} messages, it is possible that
+positions become ambiguous. It can happen that such an ambiguous position
+prevents the software protetcion from allowing a movement.
+For example, if the beta arm is only known to be in a range
+between -10.0 and +10.0 degrees, the software protection
+cannot decide whether it should be moved clock-wise or
+anti-clockwise. In this case, an error is thrown.
+
+There are three ways to handle such a distuation:
+
+\begin{enumerate}
+\item The easiest approach is to move the FPU so that its range of
+  possible location does not prevent the \texttt{findDatum()} command
+  any more to move in a unambigous direction. For example, if in the
+  case given above, the FPU is moved by 15 degrees anti-clockwise, its
+  new position will still be ambiguous, but it will be in the range
+  from +5.0 to +25.0 degrees. If the FPU is not in initialized state,
+  it will be necessary to pass the keyword parameter
+  \texttt{allow\_uninitialized=True} to the corresnponding
+  \texttt{configMotion()} command. However, it is not at all necessary
+  to disable the software protection.
+
+  Now, the findDatum command will simply perform an clock-wise datum
+  search, without needing any further information.
+
+\item Alternatively, in a few cases, it can be necessary to exit the
+  driver, measure the position, and assign a new position to the FPU,
+  using the \texttt{fpu-admin init} command.
+
+  \index{software protection!disabling}
+  \index{hardware protection!testing}
+\item In theory, it is also possible to disable the software
+  protection.  This is almost never a good idea. Disabling the
+  software protection should only be done when it is necessary to move
+  the FPU outside of its safe range of positions. This is only needed
+  when explicitly testing hardware protection functions.
+\end{enumerate}
+
+The next section explains how to test the proper functioning of the
+datum switch hardware in a safe way.
+
 
 \section{Checking the datum and limit switches}
 \label{sec:datumswitchcheck}
