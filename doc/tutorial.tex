@@ -225,9 +225,11 @@ is given in the text file ``\texttt{doc/INSTALL}''.
 
 Previous versions of the driver required to change macros in the C
 source code to enable low-level logging of CAN commands.  With driver
-version 0.5.3, a comprehensive log of sent and received CAN messages
-is enabled by default. See section~\ref{sec:logging} on
-page~\pageref{sec:logging} for the location of these logs, and any
+version 0.5.3, a very comprehensive log of sent and received CAN
+messages is enabled by default. For long running tests, the logging
+might need to be set to a lower level of detail in order to keep the
+used disk space in reasonable limits.  See section~\ref{sec:logging}
+on page~\pageref{sec:logging} for the location of these logs, and any
 further details.
 
 
@@ -267,6 +269,8 @@ to a file system which has a lot of free space, for example:
   export FPU_DRIVER_DEFAULT_LOGDIR=/moonsdata/logfiles
 \end{minted}
 
+\index{software protection!configuration}
+\index{software protection!access permissions}
 This version of the driver uses a position database, which tracks
 positions and state of FPUs at any point in time. Importantly, this
 database needs to be \emph{global} for the workstation on which the
@@ -274,11 +278,15 @@ driver software is running. To configure it, the environment variable
 \texttt{FPU\_DATABASE} needs to be set in the configuration file
 \texttt{/etc/profile} as follows:
 
+\index{software protection!environment variables}
+\index{LMDB database!environment setup}
+%
 \begin{minted}{bash}
   FPU_DATABASE=/var/run/fpudb
   export FPU_DATABASE
 \end{minted}
 
+\index{LMDB database!access permissions}
 The directory specified has to be created to be writable by any user
 which runs an FPU driver. It is therefore necessary to set up any user
 which runs the FPU driver to belong to the same user group, and make
@@ -334,6 +342,9 @@ elements: gateway number, bus number, and CAN ID.
 
 \subsection{Configuring serial numbers and setting initial positions}
 \label{sec:setinitialposition}
+\index{software protection!configuration and setup}
+\index{LMDB database!initialisation}
+
 Before any FPU can be used with the driver, two commands
 need to be performed to configure it:
 
@@ -362,7 +373,7 @@ Then, the following two commands need to be issued:
 
 \begin{minted}{bash}
   fpu-admin flash ${serialnumber} ${fpu_id}
-  fpu-admin init ${alpha_position} ${beta_position}
+  fpu-admin init ${serialnumber}${alpha_position} ${beta_position}
 \end{minted}
 
 The first command writes the serial number to the NVRAM of the FPU
@@ -377,7 +388,8 @@ into a clock-wise or anti-clockwise direction to datum. It is also
 possible to specify position ranges as measurement uncertainty
 intervals in the form of Python list literals, enclosed in double
 quotes:
-
+\index{software protection!handling ambiguous positions}
+\index{ambiguous positions} 
 \begin{minted}{bash}
   fpu-admin init ${serialnumber} "[0, 1.5]" "[3, 6.5]"
 \end{minted}
@@ -385,8 +397,8 @@ quotes:
 
 Importantly, storing the position has to be repeated when it should
 occur that the stored position is not matching the actual
-position. This can only happen if the FPU is moved by something else
-than the FPU driver. 
+position. Apart from driver bugs, this can only happen if the FPU is
+moved by something else than the FPU driver.
 
 The database record can be viewed and verified by using the command
 
@@ -419,9 +431,9 @@ number indicates the offset of the datum position, which is by default
 -180 degrees for the alpha arm, and 0 degrees for the beta arm. One
 could ask why the arm positions are represented as a number pair. The
 reason is simple: The database is designed so that it can, if
-required, represent uncertainty around the arm positions, in which
-case the number pairs would represent start and end of an interval of
-possible positions.
+required, represent uncertainty around the arm positions as an
+position interval. In that case, the number pairs would represent
+start and end of an interval of possible positions.
 
 The intervals ``alimits'' and ``blimits'' describe the ranges which
 are considered safe by the software. They can be adjusted on an
@@ -429,16 +441,15 @@ per-FPU basis if required.
 
 
 \subsection{Database maintenance}
-
+\index{LMDB database!maintenance, backup}
 The position database is required to operate the FPUs and will also
 hold some data gathered during calibration of the FPUs. It is
-therefore quite important to back it up regularly. When the driver is
-not running, it can be backed up by copying the content of the
-directory defined in the \verb+$FPU_DATABASE+ environment
-variable. For this, the appropriate live backup tool for LMDB,
-\texttt{mdb\_copy} should to be used. \texttt{mdb\_copy} can also
-back-up a database which is in use, for example during long-running
-lifetime tests.
+therefore quite important to back it up regularly.  It can be backed
+up by copying the content of the directory defined in the
+\verb+$FPU_DATABASE+ environment variable. For this, the dedicated
+backup tool for LMDB, \texttt{mdb\_copy} should to be
+used. \texttt{mdb\_copy} can also back-up a database which is in use,
+for example during long-running lifetime tests.
 
 The database can be used by several driver instances at once, each of
 them controlling different FPUs. When the involved drivers are not
@@ -446,7 +457,8 @@ running, FPUs can be switched from one gateway to another one - the
 information in the database will remain valid.
 
 \subsection{Software protection flag}
-\index{hardware protection}
+\label{sec:protectionintro}
+\index{hardware protection!function}
 \index{soft\_protection flag}
 The FPU control chain uses a layered approach to make sure that fibre
 positioner units do not get damaged.  At the bottom layer, there is an
@@ -454,13 +466,14 @@ electronic collision protection, which will switch off the motors and
 send a warning message if two FPUs touch each other. This protection
 level is called ``hardware protection''.
 
-\index{wear and tear} \index{avoiding hardware damage} \index{hardware
-  protection} However, even if a direct damage should be avoided by
-this protection, activating it involves that the motors are suddenly
-stopped, which decreases the precision and can significantly increase
-wear and tear, thus reducing the life time of the stopped
-FPU. Therefore, the hardware protection should be used only at an
-emergency level. Furthermore, some situations are not covered by it,
+\index{wear and tear} \index{avoiding hardware damage}
+
+However, even if a direct damage should be avoided by this protection,
+activating it involves that the motors are suddenly stopped, which
+decreases the precision and can significantly increase wear and tear,
+thus reducing the life time of the stopped FPU. Therefore, the
+hardware protection should be used only at an emergency
+level. Furthermore, some situations are not covered by it,
 specifically if the FPU arms are moved into the dead zones.
 
 For these two reasons, the driver software performs comprehensive
@@ -485,7 +498,8 @@ firmware documentation), to assess which operations are safe.
 
 
 \subsection{Communication protocol versions}
-\index{protocol!see{CAN protocol}} \index{CAN protocol versions}
+\index{protocol!see{\ CAN protocol}} \index{CAN protocol!versions}
+\index{protocol!versions}
 \index{CAN protocol versions! version 1 capabilities} The FPU driver
 sends commands to the fibre positioner units, which use a specific
 communication protocol. This protocol needs to match the FPUs firmware
@@ -510,8 +524,9 @@ basic concepts are introduced first, and more difficult commands and
 concepts which build on that later. For this reason, it is first shown
 in section~\ref{sec:minimalexample} how to perform basic movements,
 before explaining in section~\ref{sec:datumswitchcheck} how the switch
-operation is tested. Nevertheless, it is highly recommended to test
-the switch operation before doing any further operations with the FPU.
+operation is tested. Nevertheless, it is highly recommended to have
+test the switch operation tested before doing any further operations
+with the FPU.
 
 \begin{warning}
   \textbf{WARNING: Before first issuing a \texttt{findDatum()}
@@ -533,7 +548,7 @@ the switch operation before doing any further operations with the FPU.
 \index{configMotion()!example}
 \index{executeMotion()!example}
 \index{findDatum()!example}
-\index{version information!retrieving!example}
+\index{version information!retrieving driver and CAN protocol version!example}
 The following listing shows a minimal example of the
 driver usage, and explains the underlying concepts
 step by step.
@@ -670,7 +685,7 @@ terminates\footnote{However if required, you can use the statements
 
 
 \subsection{Grid state variable}
-\index{grid\_state!introduction} Almost all commands to the driver
+\index{grid\_state variable!introduction} Almost all commands to the driver
 receive and return a snapshot of the current state of the used FPU
 (or, if there are several, of all FPUs). That snapshot is passed in a
 variable called \texttt{grid\_state}. This variable contains all the
@@ -982,6 +997,8 @@ and commands which are allowed in protocol version 1.
 
 \section{Rules to maintain integrity of the software protection}
 \label{sec:protectionrules}
+\index{software protection!limitations}
+\index{software protection!usage rules}
 
 The software protection makes it easier to ensure that the FPUs are
 not damaged by out-of-bounds movements or operations that are not
@@ -1020,6 +1037,7 @@ conditions are as follows:
 \end{itemize}
 
 \subsection{Allowed operations and covered cases}
+\index{software protection!allowed operations and conditions}
 If the above conditions are observed, the following operations are
 allowed, and designed to include the following error conditions:
 
@@ -1051,31 +1069,34 @@ allowed, and designed to include the following error conditions:
     ZFS, and should not use disk encryption.}.
 \end{itemize}
 
-\subsection{Handling ambiguos positions}
+\subsection{Handling ambiguous positions}
+\index{software protection!handling ambiguous positions}
+\index{ambiguous positions|see{software protection}}
 \index{ambiguous positions}
-\index{ProtectionError!due to ambiguous position}
-When movements are interrupted, due to errors like collisions, or
-due to \texttt{abortMotion} messages, it is possible that
-positions become ambiguous. It can happen that such an ambiguous position
-prevents the software protetcion from allowing a movement.
-For example, if the beta arm is only known to be in a range
-between -10.0 and +10.0 degrees, the software protection
-cannot decide whether it should be moved clock-wise or
-anti-clockwise. In this case, an error is thrown.
+\index{ProtectionError!due to ambiguous  position}
+%
+When movements are interrupted, due to errors like
+collisions, or due to \texttt{abortMotion} messages, it is possible
+that positions become ambiguous. It can happen that such an ambiguous
+position prevents the software protection from allowing a new
+movement.  For example, if the beta arm is only known to be in a range
+between -10.0 and +10.0 degrees, the software protection cannot decide
+whether it should be moved clock-wise or anti-clockwise. In this case,
+an error is thrown.
 
-There are three ways to handle such a distuation:
+There are three ways to handle such a situation:
 
 \begin{enumerate}
 \item The easiest approach is to move the FPU so that its range of
   possible location does not prevent the \texttt{findDatum()} command
-  any more to move in a unambigous direction. For example, if in the
+  any more to move in a unambiguous direction. For example, if in the
   case given above, the FPU is moved by 15 degrees anti-clockwise, its
   new position will still be ambiguous, but it will be in the range
-  from +5.0 to +25.0 degrees. If the FPU is not in initialized state,
-  it will be necessary to pass the keyword parameter
-  \texttt{allow\_uninitialized=True} to the corresnponding
+  from +5.0 to +25.0 degrees. (When the FPU is not in initialized
+  state, it will be necessary to pass the keyword parameter
+  \texttt{allow\_uninitialized=True} to the corresponding
   \texttt{configMotion()} command. However, it is not at all necessary
-  to disable the software protection.
+  to disable the software protection.)
 
   Now, the findDatum command will simply perform an clock-wise datum
   search, without needing any further information.
@@ -1099,6 +1120,9 @@ datum switch hardware in a safe way.
 
 \section{Checking the datum and limit switches}
 \label{sec:datumswitchcheck}
+\index{limit switch!testing}
+\index{datum switch!testing}
+\index{hardware protection!testing}
 
 During initial testing of each FPU, it is advisable to test the
 function of the switches -- especially the alpha limit switch --
@@ -1203,7 +1227,8 @@ To test the datum switches, perform the following steps:
 
     \begin{minted}{python}
       w = gen_wf(-5.2,-5.2)
-      gd.configMotion(w, gs, allow_uninitialized=True, soft_protection=False)
+      gd.configMotion(w, gs, allow_uninitialized=True,
+                      soft_protection=False)
       gd.executeMotion(gs)
     \end{minted}
 
@@ -1219,7 +1244,8 @@ To test the datum switches, perform the following steps:
     the command
     \begin{minted}{python}
       w = gen_wf(5.2,5.2)
-      gd.configMotion(w, gs, allow_uninitialized=True, soft_protection=False)
+      gd.configMotion(w, gs, allow_uninitialized=True,
+                      soft_protection=False)
       gd.executeMotion(gs)
     \end{minted}
         
@@ -1340,6 +1366,7 @@ in python, it is passed like this:
 Often, it is more practical to know the value scaled to an approximate
 angle. The scaled values are displayed by the driver method
 \index{list\_angles()!example}
+\index{list\_angles()!|see{also countedAngles() method}}
 \index{countedAngles()!example}
 \begin{minted}{python}
   gd.countedAngles(grid_state)
@@ -1376,7 +1403,7 @@ of NaN values.
 
 \subsection{Moving the FPU to the datum position}
 \label{sec:finddatumreference}
-\index{calibration of arm positions|see{datum}}
+\index{calibration of arm positions|see{datum search}}
 \index{FPU!datum}
 \index{commands!findDatum()!extended example}
 \index{datum search!command}
@@ -2349,7 +2376,7 @@ and a high-level resolution strategy.
 \label{sec:reference}
 
 \subsection{Retrieving information about the driver version}
-\index{version information!retrieving!reference}
+\index{version information!retrieving driver and CAN protocol version!reference}
 \index{networking!CAN protocol!retrieving version}
 There are two attributes of the \texttt{FpuGridDriver} module
 which allow to retrieve version information:
@@ -2496,6 +2523,7 @@ controls its own grid, or group of FPUs.
 \subsubsection{getFirmwareVersion()}
 \label{sec:getfirmwareversion}
 \index{commands!getFirmwareVersion()}
+\index{version information!retrieving FPU firmware versions}
 
 After a connection to an FPU grid is established, the command
 \begin{minted}{python}
@@ -2537,6 +2565,7 @@ listed in the parameter.
 \index{commands!minFirmwareVersion()}
 \index{checking the firmware version}
 \index{firmware!checking version}
+\index{version information!checking minimum firmware versions}
 The method retrieves the firmware version from the attached FPUs and
 returns a three-element tuple with the smallest firmware version.  The
 elements of the tuple are major version, minor version, and patch
@@ -2697,13 +2726,13 @@ instead of NaN values the values derived from the current counter
 positions are shown. In this case, the angles may or may not
 correspond to the current arm position.
 
-The only differences to the utility function \texttt{list\_angles()}
-are that the method always retrieves the current angles, and also
-always uses the same alpha datum offset with which the driver was
-configured upon initialisation. Therefore, when it is intended to
-evaluate angles from a previously retrieved \texttt{grid\_state}
-structure \emph{without} modifying it, the function
-\texttt{list\_angles()} needs to be used.
+The differences to the utility function \texttt{list\_angles()} are
+that the method always retrieves the current angles, and also always
+uses the same alpha datum offset with which the driver was configured
+upon initialisation. Therefore, when it is intended to evaluate angles
+from a previously retrieved \texttt{grid\_state} structure
+\emph{without} modifying it, the function \texttt{list\_angles()}
+needs to be used.
 
 The command accepts an \texttt{fpuset} keyword argument which, when
 set, causes it to retrieve and list only values for the passed FPU
@@ -2715,6 +2744,12 @@ IDs.
 \index{methods!trackedAngles()}
 \index{trackedAngles()!reference}
 \index{tracking FPU positions}
+\index{trackedAngles()!software protection}
+\index{software protection!trackedAngles() command}
+\index{software protection!tracking positions}
+\index{tracking FPU positions}
+\index{tracking FPU positions|see{also: trackedAngles()}}
+\index{FPU!positions!tracking}
 
 The driver method
 
@@ -2729,10 +2764,10 @@ an intended movement command will be within the safe range
 of movements, and to view  in which position FPUs have
 been left when they were powered off.
 
-In addition, the command shows also the interval of absolute angle
+In addition, the method call shows also the interval of absolute angle
 positions which the currently configured movement, or the last
 configured movement will touch. If a \texttt{reverseMotion()} command
-is issued, this ranges are updated accordingly.
+is issued, these ranges are updated accordingly.
 
 An example output of the command looks like this:
 
@@ -2820,8 +2855,8 @@ The method
 moves the arms of the FPUs to the datum position.  By default, this
 always moves both arms of all FPUs. The FPU driver automatically
 selects the required movement direction of the beta arm according to
-the step counter. The latter behaviour can be disabled by setting the
-keyword parameter \texttt{support\_uninitialized\_auto}, which is
+the tracked position. The latter behaviour can be disabled by setting
+the keyword parameter \texttt{support\_uninitialized\_auto}, which is
 enabled by default, to \texttt{False}.
 
 \paragraph{Datuming a subset of FPUs}
@@ -2851,20 +2886,28 @@ protocol version 1.1. Otherwise, a
 \end{sloppypar}
 
 \paragraph{Software protection}
+\index{findDatum()!software protection}
+\index{software protection!in findDatum() command}
+\index{software protection!disabling!in findDatum() command}
 The command will check with the FPU position database whether a datum
 search is possible and in which direction the FPU beta arms need to be
 moved. If a datum operation is not safe, a \texttt{ProtectionError}
 exception is thrown, and the command is aborted without moving any
 FPU.
 
+\index{software protection!handling ambiguous positions}
+\index{ambiguous positions|see{software protection}}
+\index{ambiguous positions} \index{ProtectionError!due to ambiguous
+  position}
 In some error conditions, it is possible that the arm positions end up
 to be ambiguous, so that the needed direction for the arm movement is
-not clear. In this case, it is perhaps easiest to update the position
-database with the true position, as described in
+not clear. In this case, it is perhaps easiest to look at the output
+of the \texttt{trackedAngles()} command, and move the FPU so that all
+possible arm positions are at the same side of the datum switch.
+Alternatively, it might be necessary to update the position database
+with the true position, as described in
 section~\ref{sec:setinitialposition} on
-page~\pageref{sec:setinitialposition}. Alternatively, it may also be
-feasible to move the FPU so that all possible arm positions are at the
-same side of the datum switch.
+page~\pageref{sec:setinitialposition}.
 
 
 
@@ -2967,7 +3010,7 @@ the \texttt{findDatum()} method.
 \paragraph{Moving uninitialised FPUs}
 \index{datum search!alpha arm at negative position}
 \index{alpha limit breach}
-\index{limit breach}
+\index{limit switch!breach}
 \index{configMotion()!moving uninitialised FPUs}
 \index{movements!of uninitialised FPUs}
 
@@ -2978,7 +3021,10 @@ the keyword argument \texttt{allow\_uninitiallized=True} needs to be passed,
 which skips the state check.
 
 \paragraph{Software protection}
-\index{software protection} Before accepting a waveform and sending it
+\index{configMotion()!software protection}
+\index{software protection!in configMotion() command}
+\index{software protection!disabling!in configMotion() command}
+\index{software protection!checking waveforms} Before accepting a waveform and sending it
 to the FPUs, the command checks that during all movements the FPU arms
 are kept in a safe range of angles, so that they will not hit the hard
 stops, and do not run into dead zones.
@@ -3030,7 +3076,8 @@ table will be configured.
 \subsubsection{getCurrentWaveTables()}
 \index{commands!getCurrentWaveTables()} The method
 \texttt{getCurrentWaveTables()} retrieves the currently valid, or the
-last configured waveform tables as a dictionary for each FPU.
+last configured waveform tables as a dictionary, one entry for each
+FPU.
 
 
 \subsection{getReversed()}
@@ -3066,6 +3113,7 @@ restrict the movement to only those FPUs whose IDs are elements of the
 list.
 
 \paragraph{Software protection}
+\index{software protection!executeMotion command}
 The \texttt{executeMotion} command does not implement further software
 protection checks itself, because all needed checks are done when the
 movement is configured using the \texttt{configMotion()},
@@ -3707,36 +3755,44 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 1.0.0}
 \begin{itemize}
-\item Added protection layer which disables most unsafe
-  movements unless explicitly enabled by a flag.
+\item Added protection layer which disables most unsafe movements
+  unless explicitly enabled by switching off a flag. This is described
+  in the sections~ref{sec:setinitialposition}
+  and~\ref{sec:protectionintro}.
 
 \item Passing explicit direction parameters to the initial
   \texttt{findDatum()} command is no longer required, as they can be
-  safely derived from positions stored in LMDB.
+  safely derived from positions stored in LMDB. 
 
 \item The \texttt{soft\_protection} parameter for \texttt{findDatum()}
   has been split into \texttt{soft\_protection}, which checks against
   the position database, and \texttt{count\_protection} which falls
-  back to checking the step count of an initialised FPU.
+  back to checking the step count of an initialised FPU. For further
+  information, see section~\ref{sec:finddatum}.
 
 \item Movements configured using \texttt{configMotion()} are checked
-  to make sure they are always within a safe range of angles.
+  to make sure they are always within a safe range of angles.  
   
 \item The \texttt{configMotion()} command has an additional parameter
   \texttt{allow\_uninitialized}, now needed to configure movements
-  where no datum command was completed before.
+  where no datum command was completed before. Details of this are
+  described in section~\ref{sec:configmotion}.
 
-\item The \texttt{list\_angles()} function has been replaced
-  by a more powerful \texttt{countedAngles()} method.
+\item The \texttt{list\_angles()} function has been replaced by a more
+  powerful \texttt{countedAngles()} method. see
+  section~\ref{sec:countedangles} for details.
 
-\item It is now possible to view the last configured waveform.
+\item It is now possible to view the last configured waveforms and
+  their direction, using the \texttt{getCurrentWaveTables()} and
+  \texttt{getReversed()} commands.
  
 \item The EtherCAN simulator has been updated to include new
   information on safe operational ranges of the FPU hardware and
   current firmware.
   
 \item Fixed bug in code which should have waited for a reverse
-  movement to complete, causing the command to return prematurely.
+  movement to complete, causing the \texttt{executeMotion()} command
+  to return prematurely to the Python command line.
   
 \end{itemize}
 
@@ -3782,14 +3838,14 @@ commands, or alter otherwise visible behaviour of the driver.
 \subsection*{Changes in version 0.6.0}
 \begin{itemize}
 \item The \texttt{findDatum()} method now automatic moves the beta
-  arm into the correct direction if the FPU had been initialised before.
+  arm into the correct direction if the FPU has been initialised before.
   
 \item All FPU commands which concern multiple FPUs, such as
-  \texttt{findDatum(), executeMotion(), resetFPUs()}, and so on, have an
-  additional \texttt{fpuset} keyword parameter. It can be set to a
-  list of FPU IDs to which the called command will be restricted. For
-  details, see section~\ref{sec:restricteddatumsearch} on
-  page~\pageref{sec:restricteddatumsearch}, and
+  \texttt{findDatum(), executeMotion(), resetFPUs()}, and so on, now
+  have an additional \texttt{fpuset} keyword parameter. It can be set
+  to a list of FPU IDs to which the called command will be
+  restricted. For details, see section~\ref{sec:restricteddatumsearch}
+  on page~\pageref{sec:restricteddatumsearch}, and
   section~\ref{sec:subsets} on page~\pageref{sec:subsets}.
   
 \item The driver methods \texttt{getFirmwareVersion()},
@@ -3809,14 +3865,17 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 0.5.4}
 \begin{itemize}
-\item Fixed bug which caused \texttt{OBSTACLE\_ERROR} state to be overwritten by \texttt{ABORTED}.
+\item Fixed bug in C++ driver which caused \texttt{OBSTACLE\_ERROR}
+  state to be overwritten by \texttt{ABORTED} message after an FPU
+  detected a collision.
 \item Corrections to the documentation of keyword arguments \texttt{findDatum()}.
-\item Collision or limit switch breach messages received are now logged to standard error.
+\item Collision or limit switch breach messages received are now
+  additionally logged to standard error, so that they are not overlooked.
 \end{itemize}
 
 \subsection*{Changes in version 0.5.3}
 \begin{itemize}
-\item Asdded optional logging of commands and CAN messages, which
+\item Added optional logging of commands and CAN messages, which
   is enabled by default (described in section~\ref{sec:logging}).
 \end{itemize}
 
@@ -4124,7 +4183,7 @@ simulated FPUs respond to broadcast commands, which is reported by the
 driver, and recorded in the logs. Simulating too few FPUs results in
 CAN timeout errors.
 
-\index{aborting movements|see{abortMotion}}
+\index{aborting!movements|see{abortMotion}}
 \printindex
 
 \end{document}
