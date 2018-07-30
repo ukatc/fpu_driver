@@ -203,7 +203,6 @@ def initialize_FPU(args):
     # this command finished, we pass the grid_state variable.
         
     print("issuing findDatum:")
-    #gd.findDatum(grid_state, clockwise_pars, soft_protection=soft_protection)
     gd.findDatum(grid_state)
     print("findDatum finished")
 
