@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from __future__ import print_function, division
+import sys
 import threading
 
 import pdb
@@ -392,6 +393,13 @@ class UnprotectedGridDriver (object):
             old_state = self.getGridState()
             rval = self._gd.resetFPUs(gs, fpuset)
             self.last_wavetable = {}
+            msg = "waiting for FPUs to become active.... %s"
+            w = "|/-\\"
+            for k in range(24):
+                time.sleep(0.1)
+                print(msg % w[k%4], end="\r")
+                sys.stdout.flush()
+            print(msg % "OK")
             self._reset_hook(old_state, gs, fpuset=fpuset)
             
         return rval
