@@ -31,7 +31,8 @@ from fpu_driver import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,
                         LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_VERBOSE, LOG_TRACE_CAN_MESSAGES, 
                         SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, FPST_UNINITIALIZED,
                         FPST_LOCKED, FPST_DATUM_SEARCH, FPST_AT_DATUM, FPST_LOADING, FPST_READY_FORWARD,
-                        FPST_READY_REVERSE, FPST_MOVING, FPST_RESTING, FPST_ABORTED, FPST_OBSTACLE_ERROR, DS_CONNECTED )
+                        FPST_READY_REVERSE, FPST_MOVING, FPST_RESTING, FPST_ABORTED, FPST_OBSTACLE_ERROR, DS_CONNECTED,
+                        _ER_TIMEDOUT, _ER_DATUMTO)
 
 
 import fpu_commands as cmds
@@ -130,6 +131,16 @@ class Range:
 
 filterwarnings("default", "keyword check_protection", DeprecationWarning)
 
+def sign(x):
+    if x == 0:
+        return 0
+    elif x < 0:
+        return -1
+    elif x > 0:
+        return 1
+    else:
+        raise AssertionError("a NaN value was probably passed here")
+
 class UnprotectedGridDriver (object):
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
@@ -220,7 +231,7 @@ class UnprotectedGridDriver (object):
                                fpuset=[], initial_positions={}):
         pass
 
-    def _finished_find_datum_hook(self, gs, search_modes,  selected_arm=None,
+    def _finished_find_datum_hook(self, gs, prev_gs, datum_gs, search_modes=None,  
                                fpuset=[], initial_positions={}):
         pass
     
@@ -231,6 +242,9 @@ class UnprotectedGridDriver (object):
         This is a blocking variant of the findDatum command,
         it is not interruptible by Control-C."""
 
+        if len(fpuset) == 0:
+            fpuset = range(self.config.num_fpus)
+            
         with self.lock:
 
             if check_protection != None:
@@ -251,6 +265,7 @@ class UnprotectedGridDriver (object):
                                    
             self._start_find_datum_hook(gs, search_modes=search_modes, selected_arm=selected_arm,
                                         fpuset=fpuset, initial_positions=initial_positions, soft_protection=soft_protection)
+            prev_gs = self._gd.getGridState()
             try:
                 try:
                     rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, count_protection)
@@ -264,11 +279,14 @@ class UnprotectedGridDriver (object):
                     self._cancel_find_datum_hook(gs, fpuset, initial_positions=initial_positions)
                     was_cancelled = True
             finally:
+                datum_gs = self.getGridState()
                 if was_cancelled or (rv != fpu_driver.E_DriverErrCode.DE_OK):
                     self.pingFPUs(gs, fpuset=fpuset)
-                    
-                self._finished_find_datum_hook(gs, fpuset, was_cancelled=was_cancelled,
-                                              initial_positions=initial_positions)
+
+                self._gd.getCounterDeviation(gs, fpuset)
+                self._finished_find_datum_hook(gs, prev_gs, datum_gs, search_modes=search_modes, fpuset=fpuset,
+                                               was_cancelled=was_cancelled,
+                                               initial_positions=initial_positions)
             
             return rv
         
@@ -307,6 +325,8 @@ class UnprotectedGridDriver (object):
         unless soft_protection is set to False.
 
         """
+        if len(fpuset) == 0:
+            fpuset = range(self.config.num_fpus)
 
         with self.lock:
 
@@ -335,6 +355,9 @@ class UnprotectedGridDriver (object):
             initial_positions = {}
             self._start_find_datum_hook(gs, search_modes=search_modes, selected_arm=selected_arm, fpuset=fpuset,
                                         initial_positions=initial_positions, soft_protection=soft_protection)
+            
+            prev_gs = self._gd.getGridState()
+            
             try:
                 rv = self._gd.startFindDatum(gs, search_modes, selected_arm, fpuset, count_protection)
                 if rv != fpu_driver.E_DriverErrCode.DE_OK:
@@ -369,11 +392,14 @@ class UnprotectedGridDriver (object):
                         is_ready = (rv != fpu_driver.E_DriverErrCode.DE_WAIT_TIMEOUT)
                         finished_ok = (rv == fpu_driver.E_DriverErrCode.DE_OK)
             finally:
+                datum_gs = self._gd.getGridState()
                 if not finished_ok:
                     self.pingFPUs(gs, fpuset=fpuset)
     
-                self._finished_find_datum_hook(gs, fpuset, was_cancelled=(not finished_ok),
-                                              initial_positions=initial_positions)
+                self._gd.getCounterDeviation(gs, fpuset)
+                self._finished_find_datum_hook(gs, prev_gs, datum_gs, search_modes=search_modes,
+                                               fpuset=fpuset, was_cancelled=(not finished_ok),
+                                               initial_positions=initial_positions)
      
             if was_aborted:
                 print("findDatumw as aborted by SIGINT, movement stopped")
@@ -569,14 +595,18 @@ class UnprotectedGridDriver (object):
     def _cancel_execute_motion_hook(self, gs, fpuset,initial_positions=None):
         pass
     
-    def _post_execute_motion_hook(self, gs, fpuset):
+    def _post_execute_motion_hook(self, gs, oldgs, fpuset):
         pass
     
 
     def executeMotionB(self, gs, fpuset=[]):
+        if len(fpuset) == 0:
+            fpuset = range(self.config.num_fpus)
+            
         with self.lock:
             initial_positions = {}
             self._start_execute_motion_hook(gs, fpuset=fpuset, initial_positions=initial_positions)
+            prevgs = self._gd.getGridState() # get last FPU states and timeout counters
             try:
                 try:
                     rv = self._gd.executeMotion(gs, fpuset)
@@ -585,17 +615,21 @@ class UnprotectedGridDriver (object):
                     raise
             finally:
                 self.pingFPUs(gs, fpuset)
-                self._post_execute_motion_hook(gs, fpuset)
+                self._post_execute_motion_hook(gs, prevgs, fpuset)
                 
         return rv
 
     def executeMotion(self, gs, fpuset=[]):
+        if len(fpuset) == 0:
+            fpuset = range(self.config.num_fpus)
+            
         with self.lock:
             # wait a short moment to avoid spurious collision.
             time.sleep(0.5)
             initial_positions={}
             self._start_execute_motion_hook(gs, fpuset=fpuset, initial_positions=initial_positions)
             time.sleep(0.1)
+            prevgs = self._gd.getGridState() # get last FPU states and timeout counters
             try:
                 rv = self._gd.startExecuteMotion(gs, fpuset)
             except InvalidStateException as e:
@@ -634,7 +668,7 @@ class UnprotectedGridDriver (object):
                     # (this is only needed for protocol version 1)
                     self.pingFPUs(gs, fpuset)
                     # the following hook will narrow down the recorded intervals of positions
-                    self._post_execute_motion_hook(gs, fpuset)
+                    self._post_execute_motion_hook(gs, prevgs, fpuset)
                                 
             if was_aborted:
                 raise MovementError("executeMotion was aborted by SIGINT")
@@ -715,7 +749,7 @@ class UnprotectedGridDriver (object):
         return [angles[k] for k in fpuset ]
 
 
-DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "")
+DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "/var/run/fpudb")
 
 if DATABASE_FILE_NAME != "":
     env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10)
@@ -765,13 +799,15 @@ class GridDriver(UnprotectedGridDriver):
         maxbretries = {}
         bretries_cw = {}
         bretries_acw = {}
+        counters = {}
         in_dicts = { ProtectionDB.alpha_positions : apositions,
                      ProtectionDB.beta_positions : bpositions,
                      ProtectionDB.waveform_table : wtabs, ProtectionDB.waveform_reversed : wf_reversed,
                      ProtectionDB.alpha_limits : alimits, ProtectionDB.beta_limits : blimits,
                      ProtectionDB.free_beta_retries : maxbretries,
                      ProtectionDB.beta_retry_count_cw : bretries_cw,
-                     ProtectionDB.beta_retry_count_acw : bretries_acw }
+                     ProtectionDB.beta_retry_count_acw : bretries_acw,
+                     ProtectionDB.counters : counters}
         
         a_caloffsets = []
         b_caloffsets = []
@@ -791,7 +827,8 @@ class GridDriver(UnprotectedGridDriver):
                                 ProtectionDB.beta_limits,
                                 ProtectionDB.free_beta_retries,
                                 ProtectionDB.beta_retry_count_cw,
-                                ProtectionDB.beta_retry_count_acw]:
+                                ProtectionDB.beta_retry_count_acw,
+                                ProtectionDB.counters ]:
                     
                     val = ProtectionDB.getField(txn, fpu, subkey)
                           
@@ -815,6 +852,7 @@ class GridDriver(UnprotectedGridDriver):
         self.maxbretries = maxbretries
         self.bretries_cw = bretries_cw
         self.bretries_acw = bretries_acw
+        self.counters = counters
         
 
         # query positions and compute offsets, if FPUs have been resetted.
@@ -1151,6 +1189,73 @@ FPU was likely moved or power-cycled circumventing the running driver.
         self.configured_brange.update(self.beta_configuring_range)
         self._save_wtable_direction(wtable.keys(), is_reversed=True, grid_state=gs)
         
+    def update_counters_execute_motion(self, fpu_counters, wtable, is_reversed):
+        sum_beta_steps = 0
+        sum_alpha_steps = 0
+        alpha_reversals = 0
+        beta_reversals = 0
+        alpha_starts = 0
+        beta_starts = 0
+        alpha_sign = 0
+        beta_sign = 0
+        last_asteps = 0
+        last_bsteps = 0
+
+        if is_reversed:
+            rsign = -1
+        else:
+            rsign = 1
+        
+        alpha_lsign = fpu_counters["sign_alpha_last_direction"]
+        beta_lsign = fpu_counters["sign_beta_last_direction"]
+
+        for asteps, bsteps in wtable:
+            asteps *= rsign
+            bsteps *= rsign
+            
+            sum_alpha_steps = abs(asteps)
+            sum_beta_steps = abs(bsteps)
+
+            alpha_sign = sign(asteps)
+            if alpha_sign != 0:
+                alpha_nzsign = alpha_sign
+                
+                if alpha_lsign != alpha_nzsign:
+                    if alpha_lsign != 0:
+                        alpha_reversals += 1
+                    alpha_lsign = alpha_nzsign
+                    
+            beta_sign = sign(bsteps)
+            if beta_sign != 0:
+                beta_nzsign = beta_sign
+                
+                if beta_lsign != beta_nzsign:
+                    if beta_lsign != 0:
+                        beta_reversals += 1
+                    beta_lsign = beta_nzsign
+                    
+            if (last_asteps == 0) and (asteps != 0):
+                alpha_starts += 1
+                
+            if (last_bsteps == 0) and (bsteps != 0):
+                beta_starts += 1
+
+            last_asteps = asteps
+            last_bsteps = bsteps
+            
+        # update sums for that FPU
+
+        fpu_counters["executed_waveforms" ] += 1
+        fpu_counters["total_beta_steps" ] += sum_beta_steps
+        fpu_counters["total_alpha_steps" ] += sum_alpha_steps
+        fpu_counters["alpha_direction_reversals" ] += alpha_reversals
+        fpu_counters["beta_direction_reversals" ] += beta_reversals
+        fpu_counters["sign_alpha_last_direction" ] = alpha_lsign
+        fpu_counters["sign_beta_last_direction" ] =  beta_lsign
+        fpu_counters["alpha_starts" ] += alpha_starts
+        fpu_counters["beta_starts" ] += beta_starts
+
+        
 
     def _start_execute_motion_hook(self, gs, fpuset, initial_positions={}):
         """This runs before executeMotion command is started. After that
@@ -1178,6 +1283,9 @@ FPU was likely moved or power-cycled circumventing the running driver.
                 if self.configured_arange.has_key(fpu_id):
                     self._update_apos(txn, fpu, fpu_id, self.configured_arange[fpu_id])
                     self._update_bpos(txn, fpu, fpu_id,  self.configured_brange[fpu_id])
+
+                    self.update_counters_execute_motion(self.counters[fpu_id], self.last_wavetable[fpu_id], self.wf_reversed[fpu_id])
+                    ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
                     
         env.sync()
      
@@ -1198,9 +1306,26 @@ FPU was likely moved or power-cycled circumventing the running driver.
                 self._update_bpos(txn, fpu, fpu_id,  bpos)
                 
         env.sync()
-                                
+
+
+    def update_error_counters(self, fpu_counters, fpu, prev_fpu):
+        if fpu.beta_collision:
+            fpu_counters["collisions"]  += 1
+        if (fpu.state == FPST_OBSTACLE_ERROR) and fpu.at_alpha_limit:
+             fpu_counters["limit_breaches"] += 1
+
+        if fpu.timeout_count != prev_fpu.timeout_count:
+            fpu_counters["can_timeout"] += 1
+            
+        if fpu.last_status == _ER_DATUMTO:
+            fpu_counters["datum_timeout"] += 1
+            
+        if (fpu.last_status == _ER_TIMEDOUT) and (fpu.last_cmd == CCMD_EXECUTE_MOTION):
+            fpu_counters["movement_timeout"] += 1
+        
+        
     
-    def _post_execute_motion_hook(self, gs, fpuset):
+    def _post_execute_motion_hook(self, gs, oldgs, fpuset):
         """This runs after both an executeMotion has run, and *also*
         a ping has returned successfully."""
 
@@ -1208,7 +1333,7 @@ FPU was likely moved or power-cycled circumventing the running driver.
         # (this would happen in case of an error)?
         # Solution for now: wait.
         while True:
-            if (gs.Counts[FPST_MOVING] > 0)or (gs.Counts[FPST_DATUM_SEARCH] > 0):
+            if (gs.Counts[FPST_MOVING] > 0) or (gs.Counts[FPST_DATUM_SEARCH] > 0):
                 print("waiting for movement to finish in order to retrieve reached positions..")
                 time.sleep(0.5)
                 super(GridDriver, self).pingFPUs(gs, fpuset=fpuset)
@@ -1222,6 +1347,15 @@ FPU was likely moved or power-cycled circumventing the running driver.
         #
         # Thus, use the step counter positions to update the location
         self._refresh_positions(gs, fpuset=fpuset)
+
+        with env.begin(db=self.fpudb, write=True) as txn:
+            for fpu_id in fpuset:
+                
+                fpu = gs.FPU[fpu_id]
+                prev_fpu = oldgs.FPU[fpu_id]
+                self.update_error_counters(self.counters[fpu_id], fpu, prev_fpu)
+                ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
+
         
         # clear wavetable spans for the addressed FPUs - they are not longer valid
         for k in self.configured_arange.keys():
@@ -1313,13 +1447,14 @@ FPU was likely moved or power-cycled circumventing the running driver.
                     raise ProtectionError("Alpha arm of FPU %i is not in safe range"
                                           " for datum search (angle=%r, range=%r)" % (fpu_id, apos, alim))
             
-    def _finished_find_datum_hook(self, gs, search_modes, fpuset=[], was_cancelled=False, initial_positions={}):
+    def _finished_find_datum_hook(self, gs, prev_gs, datum_gs, search_modes=None, fpuset=[],
+                                  was_cancelled=False, initial_positions={}):
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
                 if len(fpuset) > 0 and (not (fpu_id in fpuset)):
                     continue
             
-                if (len(search_modes) != 0) and (not search_modes.kas_key(fpu_id)):
+                if (len(search_modes) != 0) and (not search_modes.has_key(fpu_id)):
                     continue
                 
                                                                                     
@@ -1352,8 +1487,35 @@ FPU was likely moved or power-cycled circumventing the running driver.
                     if fpu.ping_ok:
                         self._update_bpos(txn, fpu, fpu_id,  Interval(self._beta_angle(fpu)) + self.b_caloffsets[fpu_id])
 
+                
+                prev_fpu = prev_gs.FPU[fpu_id]
+                datum_fpu = datum_gs.FPU[fpu_id]
+                # this passes prev_fpu and fpu, to deduce the time out counts
+                self.update_error_counters(self.counters[fpu_id], fpu, prev_fpu)
+                # this passes fpu and datum_fpu, to get the counter deviations
+                self.update_counters_find_datum(self.counters[fpu_id], fpu, datum_fpu)
+                ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
+                        
         env.sync()
- 
+
+    def update_counters_find_datum(self, fpu_counters, fpu, datum_fpu):
+        
+        fpu_counters["datum_count" ] += 1
+        # discard error states
+        if (datum_fpu.last_status == 0) and (fpu.last_status == 0):
+            if fpu.alpha_was_zeroed:
+                fpu_counters["alpha_aberration_count" ] += 1
+                fpu_counters["datum_sum_alpha_aberration"] += fpu.alpha_deviation
+                fpu_counters["datum_sqsum_alpha_aberration"] += (fpu.alpha_deviation ** 2)
+            
+            if fpu.beta_was_zeroed:
+                fpu_counters["beta_aberration_count" ] += 1
+                fpu_counters["datum_sum_beta_aberration"] += fpu.beta_deviation
+                fpu_counters["datum_sqsum_beta_aberration"] += (fpu.beta_deviation ** 2)
+            
+            
+
+        
         
     def _start_find_datum_hook(self, gs, search_modes=None,  selected_arm=None, fpuset=[], initial_positions={}, soft_protection=None):
         """This is run when an findDatum command is actually started.

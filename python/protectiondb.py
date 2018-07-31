@@ -3,6 +3,37 @@ from ast import literal_eval
 from interval import Interval, Inf, nan
 
 
+INIT_COUNTERS = {
+    # updated on executeMotion
+    # aborted movements are not subtracted
+    "total_beta_steps" : 0,           # total step count for beta arm
+    "total_alpha_steps" : 0,          # total step count for alpha arm
+    "executed_waveforms" : 0,         # number of waveform tables executed
+    "alpha_direction_reversals" : 0,  # number of times alpha arm movement was reversed
+    "beta_direction_reversals" : 0,   # number of times alpha arm movement was reversed
+    "sign_alpha_last_direction" : 0,  # sign of last alpha arm movement
+    "sign_beta_last_direction" : 0,   # sign of last alpha arm movement
+    "alpha_starts" : 0,               # number of times alpha arm started to move
+    "beta_starts" : 0,                # number of times alpha arm started to move
+
+    # updated on finish of executeMotion / findDatum:
+    "collisions" : 0,
+    "limit_breaches" : 0,
+    "can_timeout" : 0,
+    "datum_timeout" : 0,
+    "movement_timeout" : 0,
+
+    # updated on finish of findDatum:
+    "datum_count" : 0,
+    "alpha_aberration_count" : 0,
+    "beta_aberration_count" : 0,
+    "datum_sum_alpha_aberration" : 0,   # sum of residual count on alpha datum
+    "datum_sum_beta_aberration" : 0,    # sum of residual count on beta datum
+    "datum_sqsum_alpha_aberration" : 0, # square sum of above
+    "datum_sqsum_beta_aberration" : 0,  # square sum of above
+}
+
+
 class ProtectionDB:
     dbname = "fpu"
     alpha_positions = 'apos'
@@ -14,6 +45,7 @@ class ProtectionDB:
     free_beta_retries = 'bretries'
     beta_retry_count_cw = 'beta_retry_count_cw'
     beta_retry_count_acw = 'beta_retry_count_acw'
+    counters = 'counters'
     
     @staticmethod
     def putField(txn, serial_number, subkey, val):
@@ -48,6 +80,12 @@ class ProtectionDB:
     @classmethod
     def getField(cls, txn, fpu, subkey):
         val = cls.getRawField(txn, fpu.serial_number, subkey)
+        
+        if subkey == cls.counters:
+            rval = INIT_COUNTERS
+            if val != None:
+                rval.update(val)
+            return rval
         
         if val == None:
             return None
@@ -105,5 +143,11 @@ class ProtectionDB:
 
         
             
+    @classmethod
+    def put_counters(cls, txn, fpu, counter_vals):
+        # store the datum offsets along with each position
+        # (this allows to reconfigure the zero point later)
+
+        cls.putField(txn, fpu.serial_number, cls.counters, counter_vals)
             
     

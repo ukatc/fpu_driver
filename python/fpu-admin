@@ -10,6 +10,7 @@ import argparse
 import lmdb
 from interval import Interval
 from protectiondb import ProtectionDB as pdb
+from protectiondb import INIT_COUNTERS
 
 from fpu_constants import *
 
@@ -70,6 +71,12 @@ if __name__ == '__main__' :
         is_mockup = True
         n = argv.index("--mockup")
         del argv[n]
+
+    re_initialize = False
+    if "--reinitialize" in argv:
+        re_initialize = True
+        n = argv.index("--reinitialize")
+        del argv[n]
         
               
     command = argv[1]
@@ -101,7 +108,17 @@ if __name__ == '__main__' :
         min_waveform = 0
         waveform_reversed = False
 
+        init_counters = INIT_COUNTERS.copy()
+        
         with env.begin(write=True,db=fpudb) as txn:
+            if re_initialize:
+                counters = None
+            else:
+                counters =  pdb.getRawField(txn,serial_number,subkey)
+                
+            if counters != None:
+                init_counters.update(counters)
+            
 
             pdb.putInterval(txn, sn, pdb.alpha_positions, aint, alpha_offset)
             pdb.putInterval(txn, sn, pdb.beta_positions, bint, BETA_DATUM_OFFSET)
@@ -112,6 +129,7 @@ if __name__ == '__main__' :
             pdb.putField(txn, sn, pdb.free_beta_retries, DEFAULT_FREE_BETA_RETRIES)
             pdb.putField(txn, sn, pdb.beta_retry_count_cw, 0)
             pdb.putField(txn, sn, pdb.beta_retry_count_acw, 0)
+            pdb.putField(txn, sn, pdb.counters, init_counters)
 
     if command == "flash":
         if len(argv) != 4:
@@ -190,7 +208,8 @@ if __name__ == '__main__' :
                             pdb.beta_limits ,
                             pdb.free_beta_retries,
                             pdb.beta_retry_count_cw,
-                            pdb.beta_retry_count_acw]:
+                            pdb.beta_retry_count_acw,
+                            pdb.counters]:
                 
                 key = str((serial_number, subkey))
                 val = pdb.getRawField(txn,serial_number,subkey)
