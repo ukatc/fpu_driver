@@ -121,10 +121,11 @@ enum E_MOC_ERRCODE
     ER_M1LIMIT        = 0x08,   // M1 Limit switch breached
     ER_M2LIMIT        = 0x09,   // no longer used
     ER_PARAM          = 0x10,   // parameter out of range
-    ER_AUTO           = 0x11,   // FPU cannot datum automatically
+    ER_AUTO           = 0x11,   // FPU step counters not initialized, cannot datum automatically
     ER_DATUMTO        = 0x12,   // hardware error: datum search timed out by firmware
-    ER_OK_UNCONFIRMED = 0x13,   // command will not be confirmed if OK
-    ER_TIMEDOUT       = 0x14,   // command hit driver time-out
+    ER_DATUM_LIMIT    = 0x13,   // datum search denied, limit switch is active
+    ER_OK_UNCONFIRMED = 0x14,   // command will not be confirmed if OK
+    ER_TIMEDOUT       = 0x15,   // command hit driver time-out
 };
 
 

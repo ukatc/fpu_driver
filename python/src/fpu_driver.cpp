@@ -1320,8 +1320,9 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("_ER_AUTO", ER_AUTO)
     .value("_ER_OK_UNCONFIRMED", ER_OK_UNCONFIRMED)
     .value("_ER_TIMEDOUT", ER_TIMEDOUT)
+    .value("_ER_DATUMTO", ER_DATUMTO)
+    .value("_ER_DATUM_LIMIT", ER_DATUM_LIMIT)
     .export_values();
-
 
     enum_<E_CAN_COMMAND>("E_CAN_COMMAND")
     .value("CCMD_NO_COMMAND", CCMD_NO_COMMAND)

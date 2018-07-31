@@ -97,7 +97,7 @@ typedef struct __attribute__((packed)) t_fpu_state
     E_CAN_COMMAND last_command;
     // motion controller status response for last command
     E_MOC_ERRCODE last_status; /* note this is very low-level
-                                  information which should only used
+                                  information which should only be used
                                   by the CAN driver */
 
     // these members are the individual values
