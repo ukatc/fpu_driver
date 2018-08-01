@@ -232,14 +232,16 @@ when the internal state struct is used.
 *** TODO add reporting number of movements
 *** TODO add reporting of total number of steps
 *** TODO make wording of direction orientation more precise
-*** TODO fix torn paragraph in state machine description
+*** DONE fix torn paragraph in state machine description
+*** TODO add counters for total number of movements etc
+*** TODO add and evaluate error codes for datum time-out / datum rejected because on limit switch
 ** TODO Flash etherCAN gateways with different IPs and MACs
 ** TODO make Thorlabs automation available to Python
 ** TODO  clean-up of version 1 code
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList
 *** TODO Unit test of TimeOutList
-*** TODO run short stress test of firmware with CAN command logging
+*** DONE run short stress test of firmware with CAN command logging
 *** TODO Refactor duplicate code in command header encoding
 *** TODO split SBuffer in independent read buffer and write buffer ?   
 ** TODO Implement CAN Protocol V2
