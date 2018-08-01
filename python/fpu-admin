@@ -11,6 +11,7 @@ import lmdb
 from interval import Interval
 from protectiondb import ProtectionDB as pdb
 from protectiondb import INIT_COUNTERS
+from protectiondb import HealthLogDB
 
 from fpu_constants import *
 
@@ -63,6 +64,8 @@ if __name__ == '__main__' :
         blimits <serial_number> <beta_limit_min> <beta_limit_max>
         bretries <serial_number> <freebetatries>
 
+        healthlog <serial_number>
+
         Default alpha datum offset: %f 
         """ % ALPHA_DATUM_OFFSET)
         exit(1)
@@ -114,7 +117,7 @@ if __name__ == '__main__' :
             if re_initialize:
                 counters = None
             else:
-                counters =  pdb.getRawField(txn,serial_number,subkey)
+                counters =  pdb.getRawField(txn,serial_number,pdb.counters)
                 
             if counters != None:
                 init_counters.update(counters)
@@ -217,7 +220,27 @@ if __name__ == '__main__' :
                 print(key,":", val)
                 
                 
+    elif command == "healthlog":
+        if len(argv) != 3:
+            print("usage: healthlog <serial_number>")
+            exit(1)
+            
+        serial_number = argv[2]
 
+        with env.begin(db=fpudb) as txn:
+            counters = pdb.getField(txn,serial_number, pdb.counters)
+            num_datum_ops = counters[HealthLogDB.datum_count]
+
+        if num_datum_ops == 0:
+            sus.exit(1)
+        
+        healthlog = env.open_db("healthlog")
+        with env.begin(db=healthlog) as txn:
+            for cnt in range(1, num_datum_ops+1):
+                key, val = HealthLogDB.getEntry(txn,serial_number, cnt)
+                          
+                print(key,":", val)
+        
                       
             
 

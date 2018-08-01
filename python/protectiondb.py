@@ -1,4 +1,7 @@
 #!/usr/bin/python
+from __future__ import print_function
+
+import types
 from ast import literal_eval
 from interval import Interval, Inf, nan
 
@@ -32,6 +35,14 @@ INIT_COUNTERS = {
     "datum_sqsum_alpha_aberration" : 0, # square sum of above
     "datum_sqsum_beta_aberration" : 0,  # square sum of above
 }
+
+def get_sn(fpu):
+    
+    if type(fpu) == types.StringType:
+        serial_number = fpu
+    else:
+        serial_number = fpu.serial_number
+    return serial_number
 
 
 class ProtectionDB:
@@ -79,7 +90,9 @@ class ProtectionDB:
     
     @classmethod
     def getField(cls, txn, fpu, subkey):
-        val = cls.getRawField(txn, fpu.serial_number, subkey)
+        serial_number = get_sn(fpu)
+            
+        val = cls.getRawField(txn, serial_number, subkey)
         
         if subkey == cls.counters:
             rval = INIT_COUNTERS
@@ -151,3 +164,28 @@ class ProtectionDB:
         cls.putField(txn, fpu.serial_number, cls.counters, counter_vals)
             
     
+
+class HealthLogDB:
+    dbname = "healthlog"
+    counters = "counters"
+    datum_count = "datum_count"
+
+    @classmethod
+    def putEntry(cls, txn, fpu, dict_counters):
+        serial_number = fpu.serial_number
+        assert(serial_number != "@@@@@")
+        # we make the key to be from serial number and datum search counter
+        key = repr( (serial_number, cls.counters, { cls.datum_count : dict_counters[cls.datum_count] }))
+        txn.put(key, repr(dict_counters))
+    
+    @classmethod
+    def getEntry(cls, txn, fpu, datum_cnt):
+        serial_number = get_sn(fpu)
+        assert(serial_number != "@@@@@")
+        # we make the key to be from serial number and datum search counter
+        key = repr( (serial_number, cls.counters, { cls.datum_count : datum_cnt }))
+        val = txn.get(key)
+        if val == None:
+            return key, None
+        
+        return key, literal_eval(val)    

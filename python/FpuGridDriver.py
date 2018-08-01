@@ -16,7 +16,7 @@ import lmdb
 from interval import Interval, Inf, nan
 
 from fpu_constants import *
-from protectiondb import ProtectionDB
+from protectiondb import ProtectionDB, HealthLogDB
 
 import fpu_driver
 import fpu_commands
@@ -668,7 +668,7 @@ class UnprotectedGridDriver (object):
                 time.sleep(0.1)
                 rv = self._gd.startExecuteMotion(gs, fpuset)
             except InvalidStateException as e:
-                self_cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
+                self.cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
                 raise
             if rv != fpu_driver.E_DriverErrCode.DE_OK:
                 raise RuntimeError("FPUs not ready to move, driver error code = %r" % rv)
@@ -823,6 +823,7 @@ class GridDriver(UnprotectedGridDriver):
 
     def _post_connect_hook(self, config):
         self.fpudb = env.open_db(ProtectionDB.dbname)
+        self.healthlog = env.open_db(HealthLogDB.dbname)
         
         grid_state = self.getGridState()
         self.readSerialNumbers(grid_state)
@@ -1377,7 +1378,6 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         if (moved_fpu.last_status == _ER_TIMEDOUT) and (moved_fpu.last_command == CCMD_EXECUTE_MOTION):
             fpu_counters["movement_timeout"] += 1
         
-        print("updating error counters: after = %r" % fpu_counters)
         
     
     def _post_execute_motion_hook(self, gs, old_gs, move_gs, fpuset):
@@ -1564,7 +1564,13 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                 self._update_counters_find_datum(self.counters[fpu_id], fpu, prev_fpu, datum_fpu)
                 ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
                         
+
+        with env.begin(db=self.healthlog, write=True) as txn:
+            for fpu_id, fpu in enumerate(datum_gs.FPU):
+                HealthLogDB.putEntry(txn, fpu, self.counters[fpu_id])
+            
         env.sync()
+
 
     def _update_counters_find_datum(self, fpu_counters, fpu, prev_fpu, datum_fpu):
         
