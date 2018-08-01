@@ -43,6 +43,10 @@ void handleTimeout(const GridDriverConfig config, int fpu_id, t_fpu_state& fpu, 
 
     get_monotonic_time(cur_time);
 
+    // this counter is a unsigned 16-bit value which can wrap
+    // around. It must therefore *always* be compared for inequality!
+    fpu.timeout_count++;
+    
     switch (cmd_id)
     {
     case CCMD_PING_FPU   :
