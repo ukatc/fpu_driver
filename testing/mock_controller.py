@@ -17,7 +17,7 @@ from gevent import sleep, spawn, spawn_later
 #  number of buses on one gateway
 BUSES_PER_GATEWAY =  5
 # number of FPUs on one CAN bus
-FPUS_PER_BUS = 67
+FPUS_PER_BUS = 76
 
 CAN_PROTOCOL_VERSION = 1
 

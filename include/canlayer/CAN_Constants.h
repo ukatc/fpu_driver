@@ -34,7 +34,7 @@ namespace canlayer
 // number of can buses on one gateway
 const int BUSES_PER_GATEWAY =  5;
 // number of FPUs on one CAN bus
-const int FPUS_PER_BUS = 67;
+const int FPUS_PER_BUS = 76;
 
 
 // maximum number of elementary commands resulting from one
