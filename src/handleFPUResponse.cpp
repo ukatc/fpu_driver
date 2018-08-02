@@ -721,6 +721,20 @@ void handleFPUResponse(const GridDriverConfig config,
                             timeout_list, count_pending);
             }
         }
+        else if (response_errcode == ER_DATUM_LIMIT)
+        {
+            remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+	    
+	    fpu.state = FPST_UNINITIALIZED;
+	    fpu.alpha_was_zeroed = false;
+	    fpu.beta_was_zeroed = false;
+	    fpu.ping_ok = false;
+
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "findDatum request rejected for FPU %i, because alpha limit switch active\n",
+                   get_realtime(),
+                   fpu_id);
+        }
         else if (response_errcode == ER_AUTO)
         {
             remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
@@ -786,7 +800,7 @@ void handleFPUResponse(const GridDriverConfig config,
 	    // only way this can regularly happen for the alpha arm is
 	    // if the motor is not moving, or the alpha switch is
 	    // broken. In the latter case, the alpha gearbox is
-	    // probably already destroyed.
+	    // possibly already destroyed.
             fpu.state = FPST_ABORTED;
             fpu.waveform_valid = false;
             fpu.alpha_was_zeroed = false;
@@ -795,13 +809,13 @@ void handleFPUResponse(const GridDriverConfig config,
 
             // FIXME: decrease log level in production system to keep responsivity at maximum
             LOG_RX(LOG_ERROR, "%18.6f : RX : "
-                   "while waiting for end of datum command:"
+                   "while waiting for finishing datum command:"
                    "hardware datum time-out message received for FPU %i\n",
                    get_realtime(),
                    fpu_id);
 	    
             LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
-			"while waiting for end of datum command:"
+			"while waiting for finishing datum command:"
 			"hardware datum time-out message received for FPU %i\n"
 			"\a\a\aWARNING: HARDWARE DAMAGE LIKELY\n",
 			get_realtime(),
@@ -819,6 +833,20 @@ void handleFPUResponse(const GridDriverConfig config,
             LOG_RX(LOG_DEBUG, "%18.6f : RX : "
                    "while waiting for end of datum command:"
                    "movement abortion message received for FPU %i\n",
+                   get_realtime(),
+                   fpu_id);
+        }
+        else if (response_errcode == ER_DATUM_LIMIT)
+        {
+            if (fpu.state == FPST_DATUM_SEARCH)
+            {
+                fpu.state = FPST_UNINITIALIZED;
+                fpu.alpha_was_zeroed = false;
+                fpu.beta_was_zeroed = false;
+		fpu.ping_ok = false;
+            }
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "datum request rejected for FPU %i, because alpha limit switch active\n",
                    get_realtime(),
                    fpu_id);
         }

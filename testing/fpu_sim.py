@@ -136,6 +136,7 @@ class FPU:
         self.ustep_level = 1
         self.step_timing_fault = False
         self.alpha_switch_direction = 0
+        self.datum_timeout = False
 
         fw_date = self.opts.fw_date
         
@@ -275,7 +276,9 @@ class FPU:
             else:
                 print("fpu #%i: wavetable ready (%i sections)" % (self.fpu_id, n))
 
-    def alpha_switch_on(self, asteps):
+    def alpha_switch_on(self, asteps=None):
+        if asteps == None:
+            asteps = self.alpha_steps
         alpha_steps = asteps + self.aoff_steps
         return ( ((alpha_steps > MIN_ALPHA_OFF)
                   and (alpha_steps < MIN_ALPHA_ON))
@@ -369,8 +372,9 @@ class FPU:
                   auto_datum=False, anti_clockwise=False):
         
         printtime()
-        alpha_speed = -120.0 # steps per time interval
-        beta_speed = -120.0 # steps per interval
+        wait_interval_sec = 0.1
+        alpha_speed = -50.0 # steps per time interval
+        beta_speed = -50.0 # steps per interval
         
         if auto_datum:
             if self.beta_steps < 0:
@@ -397,30 +401,36 @@ class FPU:
         
         self.beta_deviation = int(random_deviation())
 
-        #self.alpha_steps += self.alpha_deviation
-        #self.beta_steps += self.beta_deviation
-                
-        print("FPU #%i: findDatum is now at (%i, %i) steps\n" % (self.fpu_id, self.alpha_steps, self.beta_steps))
-            
-        wait_interval_sec = 0.1
-
         beta_offset = self.boff_steps
         alpha_offset = self.aoff_steps
-        last_beta_angle = self.beta_steps + beta_offset
-        last_alpha_angle = self.alpha_steps + alpha_offset
+        
+        d_offset = self.opts.alpha_datum_offset
+        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
+        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
+                
+        print("FPU #%i: findDatum is now at (%i, %i) steps = (%7.2f, %7.2f) degree\n" % (
+            self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
+            
+
+        last_beta_stepnum = self.beta_steps + beta_offset
+        last_alpha_stepnum = self.alpha_steps + alpha_offset
 
         beta_crossed_zero = False
         alpha_crossed_zero = False
+        timeout_limit = self.opts.datum_alpha_timeout_steps
+        start_alpha_steps = self.alpha_steps
+        self.datum_timeout = False
+        
         while True:
             # the model here is that crossing physical zero
             # edge-triggers the stop signal for both arms
             
-            beta_angle  = self.beta_steps + beta_offset
-            beta_zero_crossing= (last_beta_angle * beta_angle) <= 0
+            beta_stepnum  = self.beta_steps + beta_offset
+            beta_zero_crossing= (last_beta_stepnum * beta_stepnum) <= 0
             beta_crossed_zero = beta_crossed_zero or beta_zero_crossing
 
-            alpha_angle  = self.alpha_steps + alpha_offset
-            alpha_zero_crossing= (last_alpha_angle * alpha_angle) <= 0
+            alpha_stepnum  = self.alpha_steps + alpha_offset
+            alpha_zero_crossing= (last_alpha_stepnum * alpha_stepnum) <= 0
             alpha_crossed_zero = alpha_crossed_zero or alpha_zero_crossing
             
         
@@ -431,6 +441,8 @@ class FPU:
             #      alpha_ready, beta_crossed_zero, beta_zero_crossing, beta_ready))
             
             if alpha_ready and beta_ready:
+                if not skip_alpha:
+                    self.alpha_steps += 10
                 break
 
             sleep(wait_interval_sec)
@@ -463,8 +475,18 @@ class FPU:
                 self.is_collided = True
                 break
 
-            #print("FPU# %i: skip_alpha=%r, skip_beta=%r, beta_sign=%f" % (self.fpu_id, skip_alpha, skip_beta, beta_sign))
-            print("FPU #%i: findDatum is now at (%i, %i) steps" % (self.fpu_id, self.alpha_steps, self.beta_steps))
+            if self.opts.fw_version >= (1, 4, 0) and (abs(new_alpha - start_alpha_steps) >= timeout_limit):
+                print("FPU %i: step number exceeds time-out step count of %i, aborting" % (self.fpu_id, timeout_limit))
+                self.abort_wave = True
+                self.datum_timeout = True
+                break
+
+            
+            alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
+            beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
+                
+            print("FPU #%i: findDatum is now at (%i, %i) steps = (%7.2f, %7.2f) degree" % (
+                self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
 
             
 
@@ -487,6 +509,12 @@ class FPU:
             else:
                 print("FPU #%i: partial datum operation finished" % self.fpu_id)
 
+        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
+        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
+                
+        print("FPU #%i: findDatum stopped at (%i, %i) steps = (%7.2f, %7.2f) degree" % (
+            self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
+            
         printtime()
             
 

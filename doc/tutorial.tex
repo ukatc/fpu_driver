@@ -2976,6 +2976,20 @@ command to the FPUs.  In both cases, FPUs which were moving will be in
 flags of alpha and beta arms are cleared, and a new datum search will
 be required before normal movements can be resumed.
 
+If in an FPU, the controller firmeware cannot detect a datum switch
+within a maximum time, it aborts the movement and sends a time-out
+message, leading to a \texttt{FirmwareTimeoutError} exception. This
+can be caused by either issuing the datum command in the wrong place,
+or by a malfunction in the hardware or firmware, such as a failing
+datum switch.
+
+If an FPU's alpha arm is initially \emph{on} the datum switch, the
+command will be rejected for safety reasons, leading to a
+\texttt{ProtectionError} Exception with error code
+\verb+DE_ALPHA_ARM_ON_LIMIT_SWITCH+. If the state
+is detected by the FPU, this leads to a \texttt{HardwareProtectionError}.
+
+
 
 
 
@@ -3537,6 +3551,8 @@ The hierarchy of exceptions used by the Python module is as follows:
             LimitBreachError         // alpha limit breach detected
             AbortMotionError         // AbortMotion message was sent
             StepTimingError          // internal FPU error
+            FirmwareTimeoutError     // firmware time-out, movement took too long
+            HardwareProtectionError  // firmware rejected movement
         InvalidStateException        // command does not match driver state
             ProtectionError          // unsafe command called
         SystemFailure                // system ressource error
@@ -3752,6 +3768,35 @@ DE_STEP_TIMING_ERROR = 603,
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
+
+\subsection*{Changes in version 1.1.0}
+\begin{itemize}
+\item Added: The FPU database contains counters for the number of
+  movements, number of datum operations, collisions, limit switch
+  breaches, and datum time-outs. Sums and square sums of the datum
+  counter aberrations are stored as well.
+
+\item Added: An additional database tracks the counters for each FPU
+  indexed by the count of datum operations. The command
+  \begin{minted}{bash}
+    fpu-admin healthlog {serialnumber}
+  \end{minted}
+  allows to read these series.
+
+\item Fixed: The maximum number of FPUs on one CAN bus was changed
+  from 67 to 76.
+  
+\item Fixed: The fpu status field \texttt{timeout\_count}, a wrapping
+  16-bit counter, is now incremented every time a CAN time-out occurs.
+
+\item Fixed: After an \texttt{resetFPU()} command, a 2.5 sec waiting
+  time was inserted. Without that pause, the subsequent
+  \texttt{getSerialNumbers()} command fails because the FPU cannot
+  respond that fast, leading to a time-out.
+  
+\end{itemize}
+ 
+
 
 \subsection*{Changes in version 1.0.0}
 \begin{itemize}

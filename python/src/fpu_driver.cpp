@@ -45,6 +45,7 @@ PyObject* MovementErrorExceptionTypeObj = 0;
 PyObject* CollisionErrorExceptionTypeObj = 0;
 PyObject* LimitBreachErrorExceptionTypeObj = 0;
 PyObject* AbortMotionErrorExceptionTypeObj = 0;
+PyObject* FirmwareTimeOutExceptionTypeObj = 0;
 PyObject* TimingErrorExceptionTypeObj = 0;
 PyObject* InvalidStateExceptionTypeObj = 0;
 PyObject* SystemFailureExceptionTypeObj = 0;
@@ -54,6 +55,7 @@ PyObject* ConnectionFailureExceptionTypeObj = 0;
 PyObject* SocketFailureExceptionTypeObj = 0;
 PyObject* CommandTimeoutExceptionTypeObj = 0;
 PyObject* ProtectionErrorExceptionTypeObj = 0;
+PyObject* HardwareProtectionErrorExceptionTypeObj = 0;
 
 
 
@@ -415,6 +417,7 @@ void translate_driver_error(FPUDriverException const& e)
     case DE_INVALID_FPU_STATE :
     case DE_INVALID_DRIVER_STATE :
     case DE_IN_ABORTED_STATE :
+    case DE_ALPHA_ARM_ON_LIMIT_SWITCH:
         PyErr_SetString(InvalidStateExceptionTypeObj, e.what());
         break;
 
@@ -470,8 +473,17 @@ void translate_driver_error(FPUDriverException const& e)
     case DE_STEP_TIMING_ERROR:
         PyErr_SetString(TimingErrorExceptionTypeObj, e.what());
         break;
+	
     case DE_MOVEMENT_ABORTED:
         PyErr_SetString(AbortMotionErrorExceptionTypeObj, e.what());
+        break;
+
+    case DE_DATUM_COMMAND_HW_TIMEOUT:
+        PyErr_SetString(FirmwareTimeOutExceptionTypeObj, e.what());
+        break;
+	
+    case DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH:
+        PyErr_SetString(HardwareProtectionErrorExceptionTypeObj, e.what());
         break;
 
     default:
@@ -627,6 +639,26 @@ void checkDriverError(E_DriverErrCode ecode)
                                  " because of an abortMotion command or a step timing error "
                                  "- use the resetFPUs command to reset state.",
                                  DE_MOVEMENT_ABORTED);
+        break;
+
+    case DE_DATUM_COMMAND_HW_TIMEOUT :
+        throw FPUDriverException("DE_DATUM_COMMAND_HW_TIMEOUT: The FPU firmware has timed-out"
+				 " a datum operation because it took too long to complete. Potentially,"
+				 " the datum switch is not working, or the FPU hardware is otherwise"
+				 " damaged.",
+                                 DE_DATUM_COMMAND_HW_TIMEOUT);
+        break;
+
+    case DE_ALPHA_ARM_ON_LIMIT_SWITCH:
+        throw FPUDriverException("DE_ALPHA_ARM_ON_LIMIT_SWITCH: Datum command rejected because"
+				 " an FPU alpha arm is on its limit switch.",
+                                 DE_ALPHA_ARM_ON_LIMIT_SWITCH);
+        break;
+	
+    case DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH:
+        throw FPUDriverException("DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH: An FPU rejected"
+				 " a datum command because the alpha arm is on the limit switch.",
+                                 DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH);
         break;
 	
 
@@ -1248,6 +1280,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     CollisionErrorExceptionTypeObj = FPUDriverExceptionClass("CollisionError", MovementErrorExceptionTypeObj);
     LimitBreachErrorExceptionTypeObj = FPUDriverExceptionClass("LimitBreachError", MovementErrorExceptionTypeObj);
     AbortMotionErrorExceptionTypeObj = FPUDriverExceptionClass("AbortMotionError", MovementErrorExceptionTypeObj);
+    FirmwareTimeOutExceptionTypeObj = FPUDriverExceptionClass("FirmwareTimeoutError", MovementErrorExceptionTypeObj);
     TimingErrorExceptionTypeObj = FPUDriverExceptionClass("StepTimingError", MovementErrorExceptionTypeObj);
     InvalidStateExceptionTypeObj = FPUDriverExceptionClass("InvalidStateException", FPUDriverExceptionTypeObj);
     SystemFailureExceptionTypeObj = FPUDriverExceptionClass("SystemFailure", FPUDriverExceptionTypeObj);
@@ -1258,6 +1291,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     SocketFailureExceptionTypeObj = FPUDriverExceptionClass("SocketFailure", ConnectionFailureExceptionTypeObj);
     CommandTimeoutExceptionTypeObj = FPUDriverExceptionClass("CommandTimeout", ConnectionFailureExceptionTypeObj);
     ProtectionErrorExceptionTypeObj = FPUDriverExceptionClass("ProtectionError", InvalidStateExceptionTypeObj);
+    HardwareProtectionErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
 
 
 
@@ -1404,6 +1438,9 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_WAIT_TIMEOUT", DE_WAIT_TIMEOUT)
     .value("DE_IN_ABORTED_STATE", DE_IN_ABORTED_STATE)
     .value("DE_MOVEMENT_ABORTED", DE_MOVEMENT_ABORTED)
+    .value("DE_DATUM_COMMAND_HW_TIMEOUT", DE_DATUM_COMMAND_HW_TIMEOUT)
+    .value("DE_ALPHA_ARM_ON_LIMIT_SWITCH", DE_ALPHA_ARM_ON_LIMIT_SWITCH)
+    .value("DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH", DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
     .value("DE_STEP_TIMING_ERROR", DE_STEP_TIMING_ERROR)
     .value("DE_INVALID_FPU_ID", DE_INVALID_FPU_ID)

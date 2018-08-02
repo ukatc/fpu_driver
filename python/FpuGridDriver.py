@@ -387,7 +387,7 @@ class UnprotectedGridDriver (object):
                 self._cancel_find_datum_hook(gs, fpuset,initial_positions=initial_positions)
                 raise
                 
-    
+            print("waiting for findDatum to finish..")
             time.sleep(0.1)
             time_interval = 0.1
             is_ready = False
@@ -677,6 +677,7 @@ class UnprotectedGridDriver (object):
             is_ready = False
             was_aborted = False
             refresh_state = False
+            rv = "UNDONE"
             try:
                 try:
                     with SignalHandler() as sh:
@@ -686,6 +687,7 @@ class UnprotectedGridDriver (object):
                                 print("STOPPING FPUs.")
                                 self.abortMotion(gs, fpuset)
                                 was_aborted = True
+                                refresh_state = True
                                 break
                             is_ready = (rv != fpu_driver.E_DriverErrCode.DE_WAIT_TIMEOUT)
                             
@@ -698,7 +700,7 @@ class UnprotectedGridDriver (object):
                 
             finally:
                 # This is skipped in case of a SocketFailure, for example
-                if (rv == fpu_driver.E_DriverErrCode.DE_OK) or was_aborted or refresh_state:
+                if (rv == fpu_driver.E_DriverErrCode.DE_OK) or refresh_state:
                     # execute a ping to update positions
                     # (this is only needed for protocol version 1)
                     move_gs = self._gd.getGridState()
@@ -1307,7 +1309,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
 
         
 
-    def _start_execute_motion_hook(self, gs, fpuset, initial_positions={}):
+    def _start_execute_motion_hook(self, gs, fpuset, initial_positions=None):
         """This runs before executeMotion command is started. After that
         point, the FPU in fpuset should be moving within the ranges
         set by the last config_motion, repeat_motion or reverse_motion
@@ -1319,15 +1321,21 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         called.
 
         """
+
+        # initial_positions has to be a dict
+        initial_positions.clear()
+        
         self.pingFPUs(gs, fpuset=fpuset)
         
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
                 if len(fpuset) != 0 and (fpu_id not in fpuset):
                     continue
-                
-                initial_positions[fpu_id] = (self.apositions[fpu_id],
-                                             self.bpositions[fpu_id])
+
+                # Needs to make a copy here because otherwise the
+                # referenced objects are mutated later. Duh.
+                initial_positions[fpu_id] = (self.apositions[fpu_id].copy(),
+                                             self.bpositions[fpu_id].copy())
                 # copy configured alpha and beta position intervals, and
                 # store both to DB
                 if self.configured_arange.has_key(fpu_id):
@@ -1598,10 +1606,17 @@ Emergency exit: Position database needs to be re-initialized.""" % (
 
         
         
-    def _start_find_datum_hook(self, gs, search_modes=None,  selected_arm=None, fpuset=[], initial_positions={}, soft_protection=None):
+    def _start_find_datum_hook(self, gs, search_modes=None,  selected_arm=None, fpuset=[], initial_positions=None, soft_protection=None):
         """This is run when an findDatum command is actually started.
         It updates the new range of possible positions to include the zero point of each arm."""
 
+        # initial_positions needs to be a dict
+        
+        initial_positions.clear()
+        # we allow 0.5 degree of imprecision. This is mainly for the
+        # FPU simulator which steps at discrete intervals
+        tolerance = 0.5 # degrees
+        
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
                 if len(fpuset) > 0 and (not (fpu_id in fpuset)):
@@ -1613,13 +1628,14 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                 # record initial position intervals so that the
                 # known range can be restored if the datum search is
                 # rejected
-                initial_positions[fpu_id] = (self.apositions[fpu_id],
-                                             self.bpositions[fpu_id])
+                initial_positions[fpu_id] = (self.apositions[fpu_id].copy(),
+                                             self.bpositions[fpu_id].copy())
+                
                 
                 # update stored intervals to include zero, and store in DB
                 if selected_arm in [DASEL_ALPHA, DASEL_BOTH]:
                     if soft_protection:
-                        self._update_apos(txn, fpu, fpu_id, self.apositions[fpu_id].extend(0.0 + self.config.alpha_datum_offset))
+                        self._update_apos(txn, fpu, fpu_id, self.apositions[fpu_id].extend(0.0 - tolerance + self.config.alpha_datum_offset))
                     else:
                         protection_interval = Interval(ALPHA_MIN_HARDSTOP_DEGREE, ALPHA_MAX_HARDSTOP_DEGREE)
                         apos = self.apositions[fpu_id]
@@ -1630,7 +1646,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                 if selected_arm in [DASEL_BETA, DASEL_BOTH]:
                     bpos = self.bpositions[fpu_id]
                     if soft_protection:
-                        self._update_bpos(txn, fpu, fpu_id,  bpos.extend(0.0))
+                        self._update_bpos(txn, fpu, fpu_id,  bpos.extend(0.0 - tolerance).extend(0.0 + tolerance))
                     else:
                         
                         m = search_modes.get(fpu_id, SEARCH_AUTO)
@@ -1654,12 +1670,11 @@ Emergency exit: Position database needs to be re-initialized.""" % (
     def _cancel_find_datum_hook(self, gs, search_modes,  selected_arm=None,
                                fpuset=[], initial_positions={}):
 
-        print("canceling findDatum, resetting tracked positions...")
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id in initial_positions.keys():
                 # get last stored positions
-                apos, bpos = initial_positions[fpu_id] 
-            
+                apos, bpos = initial_positions[fpu_id]
+
                 fpu = gs.FPU[fpu_id]
                 # revert stored intervals to old values
                 self._update_apos(txn, fpu, fpu_id, apos)

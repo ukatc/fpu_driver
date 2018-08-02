@@ -96,8 +96,9 @@ ER_M1LIMIT          = 0x08        #  M1 Limit switch breached
 ER_M2LIMIT          = 0x09        #  no longer used
 ER_PARAM            = 0x10        #  parameter out of range
 ER_AUTO             = 0x11        #  FPU cannot datum automatically
-ER_OK_UNCONFIRMED   = 0x12        #  command will not be confirmed if OK
-ER_TIMEDOUT         = 0x13        #  command hit time-out
+ER_DATUMTO          = 0x12        #  hardware error: datum search timed out by firmware
+ER_DATUM_LIMIT      = 0x13        # datum search denied, limit switch is active
+# (note: the driver uses additional internal status codes)
 
 
 # status flags
@@ -779,6 +780,10 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
     elif flag_auto_datum and (not FPUGrid[fpu_id].was_initialized):
         TX[3] = errflag = 0xff
         TX[4] = errcode = ER_AUTO # not initialized, reject automatic datum search
+    elif (FPUGrid[fpu_id].opts.fw_version >= (1, 4, 0)) and FPUGrid[fpu_id].alpha_switch_on():
+        TX[3] = errflag = 0xff
+        TX[4] = errcode = ER_DATUM_LIMIT # alpha on limit switch, reject datum command
+        TX[5] = 0
     else:
         # send confirmation and spawn findDatum method call
         TX[3] = errflag = 0
@@ -803,10 +808,11 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
             limit_callback = LimitCallback(fpu_adr_bus, bus_adr, socket)
             collision_callback = CollisionCallback(fpu_adr_bus, bus_adr, socket)
 
+
             # simulate findDatum FPU operation
             FPUGrid[fpu_id].findDatum(sleep,
-                                      limit_callback.call, collision_callback.call,
-                                      skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta,
+                                    limit_callback.call, collision_callback.call,
+                                    skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta,
                                       auto_datum=flag_auto_datum,
                                       anti_clockwise=flag_anti_clockwise)
             print("FPU %i: findDatum command finished" % fpu_id);
@@ -824,6 +830,10 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
             elif status & STBT_M1LIMIT:
                 TX[3] = errflag = 0xff
                 TX[4] = errcode = ER_M1LIMIT
+                TX[5] = 0
+            elif FPUGrid[fpu_id].datum_timeout:
+                TX[3] = errflag = 0xff
+                TX[4] = errcode = ER_DATUMTO
                 TX[5] = 0
             else:
                 # in version 1, other cases do not have

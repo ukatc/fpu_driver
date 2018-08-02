@@ -38,6 +38,9 @@ class Interval:
         
         self.iv = iv
 
+    def copy(self):
+        return Interval(self.iv)
+
     def __str__(self):
         if isnan(self.iv[0]) and isnan(self.iv[1]):
             return "[]"

@@ -548,18 +548,30 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         {
             continue;
         }
-        E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
+	const t_fpu_state fpu = grid_state.FPU_state[i];
+        const E_FPU_STATE fpu_status = fpu.state;
         if (fpu_status == FPST_OBSTACLE_ERROR)
         {
-            LOG_CONTROL(LOG_ERROR, "%18.6f : unresolved collisions - aborting findDatum()operation \n",
-                        canlayer::get_realtime());
+            LOG_CONTROL(LOG_ERROR, "%18.6f : unresolved collision for FPU ## %i - aborting findDatum()operation.\n",
+                        canlayer::get_realtime(), i);
             return DE_UNRESOLVED_COLLISION;
         }
         if (fpu_status == FPST_ABORTED)
         {
-            LOG_CONTROL(LOG_ERROR, "%18.6f : FPUs are in aborted state - cancelling findDatum()operation \n",
-                        canlayer::get_realtime());
+            LOG_CONTROL(LOG_ERROR, "%18.6f : FPU #%i is in aborted state - cancelling findDatum()operation.\n",
+                        canlayer::get_realtime(), i);
             return DE_IN_ABORTED_STATE;
+        }
+	
+        if ( (fpu.alpha_datum_switch_active) && ((arm_selection == DASEL_ALPHA) || (arm_selection == DASEL_BOTH)))
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : FPU #%i has active alpha datum/limit switch"
+			" - cancelling findDatum()operation.\n",
+                        canlayer::get_realtime(), i);
+	    // We differentiate the error codes in one for the above pre-check, and
+	    // another for the firmware error message. This makes it possible
+	    // to derive the correct arm location in the protection layer.
+            return DE_ALPHA_ARM_ON_LIMIT_SWITCH;
         }
     }
 
@@ -757,16 +769,49 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
         }
         if (fpu_status == FPST_ABORTED)
         {
-            LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU movement was aborted for FPU %i\n",
-                        canlayer::get_realtime(), i);
-            logGridState(config.logLevel, grid_state);
-            fsync(config.fd_controllog);
 
-            return DE_MOVEMENT_ABORTED;
+	    if (fpu.last_status == ER_DATUMTO)
+	    {
+		LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): CRITICAL ERROR: Datum operation timed out for FPU %i\n",
+			    canlayer::get_realtime(), i);
+		logGridState(config.logLevel, grid_state);
+		fsync(config.fd_controllog);
+
+		return DE_DATUM_COMMAND_HW_TIMEOUT;
+	    }
+	    else
+	    {
+		LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU movement was aborted for FPU %i\n",
+			    canlayer::get_realtime(), i);
+		logGridState(config.logLevel, grid_state);
+		fsync(config.fd_controllog);
+
+		return DE_MOVEMENT_ABORTED;
+	    }
         }
 
     }
 
+    // we do this check in a new loop with the goal to give collision reports precedence
+    for (int i=0; i < config.num_fpus; i++)
+    {
+
+        t_fpu_state fpu = grid_state.FPU_state[i];
+        E_FPU_STATE fpu_status = fpu.state;
+
+        if ((fpu_status == FPST_UNINITIALIZED) && (fpu.last_status == ER_DATUM_LIMIT))
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU %i alpha arm on datum switch, movement rejected\n",
+                        canlayer::get_realtime(), i);
+            logGridState(config.logLevel, grid_state);
+            fsync(config.fd_controllog);
+
+            return DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH;
+        }
+
+    }
+    
+    
     if (state_summary == GS_COLLISION)
     {
         printf("collision detected, aborting datum search");

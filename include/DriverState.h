@@ -150,6 +150,11 @@ enum E_DriverErrCode
     // A previous movement was aborted.
     DE_IN_ABORTED_STATE = 115,
 
+    // An alpha arm is on the limit switch, and cannot
+    // be datumed.
+    DE_ALPHA_ARM_ON_LIMIT_SWITCH = 116,
+
+
     /***************************************/
     /* setup errors */
 
@@ -248,6 +253,17 @@ enum E_DriverErrCode
     /* abort message */
     // The movement has just been aborted.
     DE_MOVEMENT_ABORTED = 604,
+
+    /***************************************/
+    /* Datum rejected: alpha arm on limit switch */
+    // The datum command was rejected.
+    DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH = 605,
+
+    /***************************************/
+    /* datum time-out */
+    // The datum command has timed out on the FPU.
+    DE_DATUM_COMMAND_HW_TIMEOUT = 606,
+
 };
 
 // this is a one-bit parameter to several commands
