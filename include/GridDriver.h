@@ -38,6 +38,11 @@
 namespace mpifps
 {
 
+using canlayer::E_DATUM_TIMEOUT_FLAG;
+using canlayer::DATUM_TIMEOUT_ENABLE;
+using canlayer::DATUM_TIMEOUT_DISABLE;
+
+
 
 class GridDriver : public canlayer::AsyncDriver
 {
@@ -108,12 +113,14 @@ public:
     E_DriverErrCode findDatum(t_grid_state& grid_state,
                               E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
                               E_DATUM_SELECTION arm_selection=DASEL_BOTH,
-                              bool soft_protection=true,
+			      E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                              bool count_protection=true,
                               t_fpuset const  * const fpuset=nullptr);
 
     E_DriverErrCode startFindDatum(t_grid_state& grid_state,
                                    E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
                                    E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+				   E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
                                    bool count_protection=true,
                                    t_fpuset const * const fpuset=nullptr);
 

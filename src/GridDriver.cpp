@@ -28,11 +28,17 @@ namespace mpifps
 E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
                                       E_DATUM_SEARCH_DIRECTION * p_direction_flags,
                                       E_DATUM_SELECTION arm_selection,
-                                      bool soft_protection,
+				      E_DATUM_TIMEOUT_FLAG timeout_flag,
+                                      bool count_protection,
                                       t_fpuset const * const fpuset)
 {
 
-    E_DriverErrCode estatus = startFindDatum(grid_state, p_direction_flags, arm_selection, soft_protection, fpuset);
+    E_DriverErrCode estatus = startFindDatum(grid_state,
+					     p_direction_flags,
+					     arm_selection,
+					     timeout_flag,
+					     count_protection,
+					     fpuset);
 
     if (estatus != DE_OK)
     {
@@ -48,9 +54,11 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
 }
 
 E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
-        E_DATUM_SEARCH_DIRECTION * p_direction_flags,
-        E_DATUM_SELECTION arm_selection,
-        bool count_protection, t_fpuset const * const fpuset)
+					   E_DATUM_SEARCH_DIRECTION * p_direction_flags,
+					   E_DATUM_SELECTION arm_selection,
+					   E_DATUM_TIMEOUT_FLAG timeout_flag,
+					   bool count_protection,
+					   t_fpuset const * const fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -64,6 +72,7 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
         estatus = startAutoFindDatumAsync(grid_state, state_summary,
                                           p_direction_flags,
                                           arm_selection,
+					  timeout_flag,
                                           count_protection,
                                           fpuset);
 

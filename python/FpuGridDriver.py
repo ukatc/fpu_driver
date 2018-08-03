@@ -27,7 +27,8 @@ from fpu_driver import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,
                         AbortMotionError, StepTimingError, InvalidStateException, SystemFailure,
                         InvalidParameterError, SetupError, InvalidWaveformException, ConnectionFailure,
                         SocketFailure, CommandTimeout, ProtectionError,                        
-                        DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, 
+                        DASEL_BOTH, DASEL_ALPHA, DASEL_BETA,
+                        DATUM_TIMEOUT_ENABLE, DATUM_TIMEOUT_DISABLE,
                         LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_VERBOSE, LOG_TRACE_CAN_MESSAGES, 
                         SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, FPST_UNINITIALIZED,
                         FPST_LOCKED, FPST_DATUM_SEARCH, FPST_AT_DATUM, FPST_LOADING, FPST_READY_FORWARD,
@@ -239,8 +240,13 @@ class UnprotectedGridDriver (object):
                                fpuset=[], initial_positions={}):
         pass
     
-    def findDatumB(self, gs, search_modes={}, selected_arm=DASEL_BOTH, soft_protection=True,
-                   check_protection=None, fpuset=[], support_uninitialized_auto=True):
+    def findDatumB(self, gs, search_modes={},
+                   selected_arm=DASEL_BOTH,
+                   soft_protection=True,
+                   check_protection=None,
+                   fpuset=[],
+                   support_uninitialized_auto=True,
+                   timeout=DATUM_TIMEOUT_ENABLE):
         """Moves all FPUs to datum position. 
 
         This is a blocking variant of the findDatum command,
@@ -272,7 +278,7 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             try:
                 try:
-                    rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, count_protection)
+                    rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, timeout, count_protection)
                 except (RuntimeError,
                         InvalidParameterException,
                         SetupErrorException,
@@ -306,7 +312,7 @@ class UnprotectedGridDriver (object):
         
     def findDatum(self, gs, search_modes={}, selected_arm=DASEL_BOTH, fpuset=[],
                   soft_protection=True, count_protection=True, check_protection=None,
-                  support_uninitialized_auto=True):
+                  support_uninitialized_auto=True, timeout=DATUM_TIMEOUT_ENABLE):
         """Moves all FPUs to datum position. 
 
         If the program receives a SIGNINT, or Control-C is pressed, an
@@ -373,7 +379,7 @@ class UnprotectedGridDriver (object):
             
             try:
                 time.sleep(0.1)
-                rv = self._gd.startFindDatum(gs, search_modes, selected_arm, fpuset, count_protection)
+                rv = self._gd.startFindDatum(gs, search_modes, fpuset, selected_arm, timeout, count_protection)
                 if rv != fpu_driver.E_DriverErrCode.DE_OK:
                     raise RuntimeError("can't search Datum, driver error code = %r" % rv)
                 
@@ -1575,7 +1581,9 @@ Emergency exit: Position database needs to be re-initialized.""" % (
 
         with env.begin(db=self.healthlog, write=True) as txn:
             for fpu_id, fpu in enumerate(datum_gs.FPU):
-                HealthLogDB.putEntry(txn, fpu, self.counters[fpu_id])
+                cnt = self.counters[fpu_id].copy()
+                cnt['unixtime'] = time.time()
+                HealthLogDB.putEntry(txn, fpu, cnt)
             
         env.sync()
 

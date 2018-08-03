@@ -1054,6 +1054,7 @@ public:
                                    dict &dict_modes,
                                    list& fpu_list,
                                    E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+ 			           E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
                                    bool count_protection=true)
     {
         t_fpuset fpuset;
@@ -1062,7 +1063,9 @@ public:
         t_datum_search_flags direction_flags;
         getDatumFlags(dict_modes, direction_flags, fpuset);
 
-        E_DriverErrCode ecode = findDatum(grid_state, direction_flags, arm_selection, count_protection, &fpuset);
+        E_DriverErrCode ecode = findDatum(grid_state, direction_flags,
+					  arm_selection, timeout_flag,
+					  count_protection, &fpuset);
         checkDriverError(ecode);
         return ecode;
     }
@@ -1070,9 +1073,10 @@ public:
 
     E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state,
                                         dict& dict_modes,
-                                        E_DATUM_SELECTION arm_selection,
                                         list& fpu_list,
-                                        bool soft_protection=true)
+                                        E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+ 			                E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                                        bool count_protection=true)
     {
 
         t_fpuset fpuset;
@@ -1081,7 +1085,11 @@ public:
         t_datum_search_flags direction_flags;
         getDatumFlags(dict_modes, direction_flags, fpuset);
 
-        E_DriverErrCode ecode = startFindDatum(grid_state, direction_flags, arm_selection, soft_protection, &fpuset);
+        E_DriverErrCode ecode = startFindDatum(grid_state,
+					       direction_flags,
+					       arm_selection,
+					       timeout_flag,
+					       count_protection, &fpuset);
         checkDriverError(ecode);
         return ecode;
     }
@@ -1476,6 +1484,14 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("REQD_ANTI_CLOCKWISE", REQD_ANTI_CLOCKWISE  )
     .value("REQD_CLOCKWISE", REQD_CLOCKWISE       )
     .export_values();
+
+
+    enum_<E_DATUM_TIMEOUT_FLAG>("E_DATUM_TIMEOUT_FLAG")
+    .value("DATUM_TIMEOUT_ENABLE", DATUM_TIMEOUT_ENABLE)
+    .value("DATUM_TIMEOUT_DISABLE", DATUM_TIMEOUT_DISABLE)
+    .export_values();
+
+
 
     // direction of the current or last actually recorded movement of each FPU
     enum_<E_MOVEMENT_DIRECTION>("E_MOVEMENT_DIRECTION")

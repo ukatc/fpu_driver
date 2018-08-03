@@ -7,6 +7,7 @@ from interval import Interval, Inf, nan
 
 
 INIT_COUNTERS = {
+    "unixtime" : 0,
     # updated on executeMotion
     # aborted movements are not subtracted
     "total_beta_steps" : 0,           # total step count for beta arm
@@ -57,6 +58,7 @@ class ProtectionDB:
     beta_retry_count_cw = 'beta_retry_count_cw'
     beta_retry_count_acw = 'beta_retry_count_acw'
     counters = 'counters'
+    serialnumber_used = 'serialnumber_used'
     
     @staticmethod
     def putField(txn, serial_number, subkey, val):
@@ -107,7 +109,8 @@ class ProtectionDB:
                       cls.waveform_reversed,
                       cls.free_beta_retries,
                       cls.beta_retry_count_cw,
-                      cls.beta_retry_count_acw]:
+                      cls.beta_retry_count_acw,
+                      cls.serialnumber_used]:
             return val
         else:
             # return position span as interval object

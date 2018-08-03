@@ -117,6 +117,7 @@ DATUM_SKIP_ALPHA = 1
 DATUM_SKIP_BETA = (1 << 1)
 DATUM_MODE_AUTO = (1 << 2)
 DATUM_MODE_ANTI_CLOCKWISE = (1 << 3)
+DATUM_TIMEOUT_DISABLE = (1 << 4)
 
 def encode_and_send(msg, socket, verbose=False):
     confirmation = codec.encode(msg, verbose=verbose)
@@ -753,6 +754,7 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
     flag_skip_beta = False
     flag_auto_datum = False
     flag_anti_clockwise = False
+    flag_disable_timeout = False
     skip_flag = RX[1] # protocol 1 !
     
     if skip_flag > 0:
@@ -771,7 +773,10 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
             print("WARNING: protocol version %r running,"
                   + " ignoring arm and mode selection flags flags", opts.fw_version)
             skip_flag = 0
-    
+            
+    if opts.fw_version >= (1,4,3):
+        if (skip_flag & DATUM_TIMEOUT_DISABLE) > 0:
+            flag_disable_timeout = True
     
     if FPUGrid[fpu_id].is_collided:
         # only send an error message
@@ -811,10 +816,12 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
 
             # simulate findDatum FPU operation
             FPUGrid[fpu_id].findDatum(sleep,
-                                    limit_callback.call, collision_callback.call,
-                                    skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta,
+                                      limit_callback.call, collision_callback.call,
+                                      skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta,
                                       auto_datum=flag_auto_datum,
-                                      anti_clockwise=flag_anti_clockwise)
+                                      anti_clockwise=flag_anti_clockwise,
+                                      disable_timeout=flag_disable_timeout)
+            
             print("FPU %i: findDatum command finished" % fpu_id);
 
             TX = [0] * 8

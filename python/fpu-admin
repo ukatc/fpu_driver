@@ -81,6 +81,12 @@ if __name__ == '__main__' :
         n = argv.index("--reinitialize")
         del argv[n]
         
+    if "--reuse_sn" in argv:
+        reuse_sn = True
+        n = argv.index("--reuse_sn")
+        del argv[n]
+    else:
+        reuse_sn = False
               
     command = argv[1]
 
@@ -141,8 +147,22 @@ if __name__ == '__main__' :
         serial_number = argv[2]
         assert(len(serial_number) <= 5)
         fpu_id = int(argv[3])
-        
+
+        with env.begin(db=fpudb) as txn:
+            val = pdb.getField(txn,serial_number, pdb.serialnumber_used)
+
+        print("val=", repr(val))
+        if val != None:
+            if not reuse_sn:
+                print("Command rejected: Serial number is already in use."
+                      " Call with '--reuse_sn' to use it again.")
+                exit(1)
+        else:              
+            with env.begin(write=True, db=fpudb) as txn:
+                val = pdb.putField(txn,serial_number, pdb.serialnumber_used, True)
+            
         flash_FPU(fpu_id, serial_number, mockup=is_mockup)
+        
 
             
     if command == "alimits":
@@ -212,7 +232,8 @@ if __name__ == '__main__' :
                             pdb.free_beta_retries,
                             pdb.beta_retry_count_cw,
                             pdb.beta_retry_count_acw,
-                            pdb.counters]:
+                            pdb.counters,
+                            pdb.serialnumber_used]:
                 
                 key = str((serial_number, subkey))
                 val = pdb.getRawField(txn,serial_number,subkey)

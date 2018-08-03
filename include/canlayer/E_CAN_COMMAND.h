@@ -158,6 +158,12 @@ enum E_DATUM_MODE_FLAG
     MODE_DATUM_ANTI_CLOCKWISE = (1 << 3),
 };
 
+enum E_DATUM_TIMEOUT_FLAG
+{
+    DATUM_TIMEOUT_ENABLE  = 0,
+    DATUM_TIMEOUT_DISABLE = (1 << 4),
+};
+
 
 
 // this uses the unsigned specifier because

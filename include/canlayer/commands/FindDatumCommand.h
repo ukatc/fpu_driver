@@ -48,6 +48,7 @@ public:
         fpu_id = 0;
         bcast = false;
         _search_mode = SKIP_FPU;
+        _timeout_flag = DATUM_TIMEOUT_ENABLE;
     };
 
     ~FindDatumCommand() {};
@@ -59,12 +60,14 @@ public:
 
 
     void parametrize(int f_id, bool broadcast,
-                     E_DATUM_SEARCH_DIRECTION search_mode, E_DATUM_SELECTION arm_selection)
+                     E_DATUM_SEARCH_DIRECTION search_mode, E_DATUM_SELECTION arm_selection,
+		     E_DATUM_TIMEOUT_FLAG timeout_flag)
     {
         fpu_id = f_id;
         bcast = broadcast;
         _search_mode = search_mode;
         _arm_selection = arm_selection;
+        _timeout_flag = timeout_flag;
     };
 
 
@@ -158,6 +161,14 @@ public:
             assert(false);
             break;
         }
+	switch (_timeout_flag)
+	{
+        case DATUM_TIMEOUT_ENABLE:
+        case DATUM_TIMEOUT_DISABLE:
+	     break;
+        default:
+	    assert(false);
+	}
         // this is defined so that an empty field (all-zero)
         // has the defeault behavoir implemented by the
         // current firmware >= 1.0.0 , which datums both arms.
@@ -169,7 +180,8 @@ public:
         const uint8_t flags = ( (skip_alpha ? DATUM_SKIP_ALPHA : 0)
                                 | (skip_beta ? DATUM_SKIP_BETA : 0)
                                 | (_auto_datum ? MODE_DATUM_AUTO : 0)
-                                | (_anti_clockwise ? MODE_DATUM_ANTI_CLOCKWISE : 0));
+                                | (_anti_clockwise ? MODE_DATUM_ANTI_CLOCKWISE : 0)
+				| _timeout_flag);
 
         can_buffer.message.data[1] = flags;
         buf_len += 8;
@@ -213,8 +225,8 @@ private:
     uint16_t fpu_id;
     E_DATUM_SELECTION _arm_selection;
     E_DATUM_SEARCH_DIRECTION _search_mode;
+    E_DATUM_TIMEOUT_FLAG _timeout_flag;
     bool bcast;
-
 
 };
 

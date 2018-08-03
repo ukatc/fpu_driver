@@ -369,7 +369,8 @@ class FPU:
         
     def findDatum(self, sleep, limit_callback, collision_callback,
                   skip_alpha=False, skip_beta=False,
-                  auto_datum=False, anti_clockwise=False):
+                  auto_datum=False, anti_clockwise=False,
+                  disable_timeout=False):
         
         printtime()
         wait_interval_sec = 0.1
@@ -420,6 +421,8 @@ class FPU:
         timeout_limit = self.opts.datum_alpha_timeout_steps
         start_alpha_steps = self.alpha_steps
         self.datum_timeout = False
+        use_timeout = self.opts.fw_version >= (1, 4, 0) and (not disable_timeout)
+        print("FPU %i : timeouts enabled: %r" % (self.fpu_id, use_timeout))
         
         while True:
             # the model here is that crossing physical zero
@@ -437,8 +440,6 @@ class FPU:
             alpha_ready = alpha_crossed_zero or skip_alpha
             beta_ready = beta_crossed_zero or skip_beta
 
-            #print("alpha ready=%r, beta crossed zero=%r, is crossing zero=%r, ready=%r" % (
-            #      alpha_ready, beta_crossed_zero, beta_zero_crossing, beta_ready))
             
             if alpha_ready and beta_ready:
                 if not skip_alpha:
@@ -475,7 +476,7 @@ class FPU:
                 self.is_collided = True
                 break
 
-            if self.opts.fw_version >= (1, 4, 0) and (abs(new_alpha - start_alpha_steps) >= timeout_limit):
+            if use_timeout and (abs(new_alpha - start_alpha_steps) >= timeout_limit):
                 print("FPU %i: step number exceeds time-out step count of %i, aborting" % (self.fpu_id, timeout_limit))
                 self.abort_wave = True
                 self.datum_timeout = True

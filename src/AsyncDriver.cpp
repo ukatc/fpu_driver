@@ -343,6 +343,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         E_DATUM_SEARCH_DIRECTION * p_direction_flags,
         E_DATUM_SELECTION arm_selection,
+        E_DATUM_TIMEOUT_FLAG timeout_flag,
         bool count_protection,
         t_fpuset const * const fpuset_opt)
 {
@@ -351,6 +352,23 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     getFPUsetOpt(fpuset_opt, fpuset);
 
     {
+
+	const char * to_string;
+	switch (timeout_flag)
+	{
+        case DATUM_TIMEOUT_ENABLE:
+	    to_string = "enabled";
+	    break;
+        case DATUM_TIMEOUT_DISABLE:
+	    to_string = "disabled";
+	    break;
+        default:
+            LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: invalid time-out setting\n",
+                        canlayer::get_realtime());
+            return DE_INVALID_PAR_VALUE;
+	}
+	
+	
 
 
         const char * as_string;
@@ -378,12 +396,13 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
             return DE_INVALID_PAR_VALUE;
         }
 
-        LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum started, arm_selection=%s\n",
-                    canlayer::get_realtime(), as_string);
+        LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum started, arm_selection=%s, timeouts=%s\n",
+                    canlayer::get_realtime(), as_string, to_string);
     }
 
     bool contains_auto=false;
     bool contains_anti_clockwise=false;
+    bool timeouts_disabled = (timeout_flag == DATUM_TIMEOUT_DISABLE);
 
     // if present, copy direction hint
     t_datum_search_flags direction_flags;
@@ -449,6 +468,12 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
             return DE_INVALID_PAR_VALUE;
         }
 
+	if (contains_auto && timeouts_disabled)
+	{
+            LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: time-outs disabled, but automatic search selected for FPU #%i\n",
+                        canlayer::get_realtime(), i);
+            return DE_INVALID_PAR_VALUE;
+	}
         LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum(): direction selection for FPU %i =%s\n",
                     canlayer::get_realtime(), i, as_string);
     }
@@ -468,6 +493,9 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     fw_version_check_needed |= ((arm_selection == DASEL_ALPHA)
                                 || (arm_selection == DASEL_NONE));
 
+    // capability to disable time-outs is for firmware versions >= 1.4.3
+    fw_version_check_needed |= timeouts_disabled;
+    
     uint8_t min_firmware_version[3] = {0,0,0};
     int min_firmware_fpu = -1;    
 
@@ -476,9 +504,15 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 
     if (fw_version_check_needed)
     {
-        int req_fw_major = 1;
+        const int req_fw_major = 1;
         int req_fw_minor = 0;
         int req_fw_patch = 0;
+	// The following checks need to be in ascending order,
+	// so that the maximum is found.
+        if ((arm_selection == DASEL_ALPHA) || (arm_selection == DASEL_NONE))
+        {
+            req_fw_minor = 1;
+        }
         if (contains_anti_clockwise)
         {
             req_fw_minor = 2;
@@ -487,10 +521,11 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         {
             req_fw_minor = 2;
         }
-        if ((arm_selection == DASEL_ALPHA) || (arm_selection == DASEL_NONE))
-        {
-            req_fw_minor = 1;
-        }
+	if (timeouts_disabled)
+	{
+           req_fw_minor = 4;
+           req_fw_patch = 3;	    
+	}
         if ( (min_firmware_version[0] < req_fw_major)
                 || (min_firmware_version[1] < req_fw_minor)
                 || (min_firmware_version[2] < req_fw_patch))
@@ -644,7 +679,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
             bool broadcast = false;
             can_command = gateway.provideInstance<FindDatumCommand>();
 
-            can_command->parametrize(i, broadcast, direction_flags[i], arm_selection);
+            can_command->parametrize(i, broadcast, direction_flags[i], arm_selection, timeout_flag);
             unique_ptr<I_CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
 

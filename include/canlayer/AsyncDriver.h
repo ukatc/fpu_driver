@@ -22,6 +22,7 @@
 #include "../GridDriverConfig.h"
 #include "GatewayDriver.h"
 #include "../DriverConstants.h"
+#include "E_CAN_COMMAND.h"
 
 namespace mpifps
 {
@@ -114,6 +115,7 @@ public:
     E_DriverErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
                                             E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
                                             E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+					    E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
                                             bool count_protection=true,
                                             t_fpuset const * const fpuset_opt=nullptr);
 
