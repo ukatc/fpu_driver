@@ -38,7 +38,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 1.0.0 (document version \texttt{\input{../git_version}}).}
+  module} \subtitle{For driver version 1.1.0 (document version \texttt{\input{../git_version}}).}
 
 \author{Johannes Nix}
 
@@ -93,6 +93,7 @@ possible states of the hardware.
 \index{Python!introduction}
 \index{Python!further information}
 
+\paragraph{What will be helpful to know before}
 It is assumed that the reader has basic knowledge of Python, or,
 alternatively, a similar object-oriented language, like Java or C\#.
 In the case that using Python scripts is new to the reader, it is
@@ -111,6 +112,7 @@ system. This is explained, for example, in
 ``\href{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}{getting
   a git repository}\footnote{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}''.
 
+\paragraph{Order of presentation}
 The order of presentation is divided in three parts, as follows: The
 first part represents a tutorial aiming at explaining quickly how to
 use the software. In section~\ref{sec:settingup}, it is explained how
@@ -135,8 +137,8 @@ collisions and limit switch breaches are handled. The final section
 of that part, section~\ref{sec:multifpu}, explains how multiple FPUs
 can be handled, especially in complex recovery scenarios.
 
-The third part is the reference part, Section~\ref{sec:reference},
-lists all available commands with a comprehensive list of all their
+The third part is the reference part, section~\ref{sec:reference}.
+It lists all available commands with a comprehensive list of all their
 options, and also documents the hierarchy of exceptions.
 Additionally, section~\ref{sec:changelog} contains a detailed reverse
 chronological list of changes to commands.
@@ -345,6 +347,8 @@ elements: gateway number, bus number, and CAN ID.
 \index{software protection!configuration and setup}
 \index{LMDB database!initialisation}
 
+\paragraph{initialising an FPU}
+
 Before any FPU can be used with the driver, two commands
 need to be performed to configure it:
 
@@ -379,7 +383,9 @@ Then, the following two commands need to be issued:
 The first command writes the serial number to the NVRAM of the FPU
 controller. This needs to be done only once (except when the
 electronics PCB of that FPU is replaced by another PCB). The serial
-number must never be used for another FPU.
+number must never be used for another FPU. (As a protective measure,
+the command checks that the serial number wasn't used before. This
+check can be disabled by passing the \texttt{--reuse\_sn} flag.)
 
 The second command stores the position of the FPU in the position
 database. The position has to be qualitatively correct whether the
@@ -399,6 +405,8 @@ Importantly, storing the position has to be repeated when it should
 occur that the stored position is not matching the actual
 position. Apart from driver bugs, this can only happen if the FPU is
 moved by something else than the FPU driver.
+
+\paragraph{Viewing FPU position dates}
 
 The database record can be viewed and verified by using the command
 
@@ -437,8 +445,15 @@ start and end of an interval of possible positions.
 
 The intervals ``alimits'' and ``blimits'' describe the ranges which
 are considered safe by the software. They can be adjusted on an
-per-FPU basis if required.
+per-FPU basis if required, using \texttt{fpu-admin alimits} and
+\texttt{fpu-admin blimits}.
 
+The \texttt{fpu-admin} tool can also be used to print a list of datum
+aberrations (the difference between the ideal datum position, and the
+step count at which datum was actually found), and a time-series of
+counters. This is described in the reference part in
+section~\ref{sec:healthlog}. More commands and options are shown if the
+tool is run with the command-line option ``-h'' or ``--help''.
 
 \subsection{Database maintenance}
 \index{LMDB database!maintenance, backup}
@@ -1033,7 +1048,11 @@ conditions are as follows:
     that it shows the correct position, before moving the FPU.
   \item The protection layer cannot defend FPUs from failures of the
     datum switches. Always have checked that these switches work
-    before using a \texttt{findDatum()} command.
+    before using a \texttt{findDatum()} command. The following
+    section~\ref{sec:datumswitchcheck} explains in detail how a
+    provisional check can be done using driver commands. Checks which
+    address the reliability of the hardware are out of the scope of
+    this document - please refer to the FPU hardware documentation.
 \end{itemize}
 
 \subsection{Allowed operations and covered cases}
@@ -1877,6 +1896,63 @@ testing, and correct discovery of fault conditions, such as
 collisions. A full explanation on how to handle exceptions in Python can
 be found at \url{https://docs.python.org/2.7/tutorial/errors.html}.
 
+\section{Health log of FPU counters}
+\label{sec:healthlog}
+
+For each \texttt{executeMotion()} and \texttt{findDatum()} command,
+the FPU driver maintains a set of counters which are stored in the
+position database, and a time series of that counters in a second
+database called ``health log''.
+
+The content of this database can be listed using the command
+
+\begin{minted}{bash}
+    fpu-admin healthlog  ${serialnumber}
+\end{minted}
+
+Each database record is indexed by the FPU serial number and the count
+of the \texttt{findDatum()} command.
+
+This constant of each record the following fields:
+
+\begin{description}
+ 
+\item[unixtime] The UNIX time (number of seconds since January 1,
+  1970). This corresponds to the time stamps in the driver log.
+  
+\item[datum\_count] Count of datum operations for this FPU.
+  
+  \item[executed\_waveforms] Number of executed waveforms.
+
+  \item[alpha\_starts] Number of times the alpha arm started to move.
+  \item[beta\_starts] Number of times the alpha arm started to move.
+  \item[total\_alpha\_steps] Total step count of the alpha arm.
+  \item[total\_beta\_steps] Total step count of the beta arm.
+
+  \item[alpha\_direction\_reversals] Number of times the alpha arm reversed direction.
+  \item[beta\_direction\_reversals]  Number of times the beta arm reversed direction.
+  \item[sign\_alpha\_last\_direction] Sign of last alpha movement.
+  \item[sign\_beta\_last\_direction] Sign of last beta movement.
+
+    
+  \item[collisions] Number of collisions detected for this FPU.
+  \item[limit\_breaches] Number of alpha limit breaches detected.
+  \item[datum\_timeout] Number of time-outs for the datum command (including both CAN timeouts, and hardware time-outs).
+  \item[movement\_timeout] Number of time-outs during movements.
+  \item[can\_timeout] Number of CAN timeouts during both datum and movements.
+    
+  \item[alpha\_aberration\_count] Number of counted alpha aberrations,
+    that is the number of steps which the alpha step counter had when
+    the datum switch was found the last time. This count does not include
+    uninitialised datum searches.
+    
+  \item[beta\_aberration\_count] Number of counted beta aberrations.
+  \item[datum\_sum\_alpha\_aberration] Sum of alpha aberrations, which can be used to compute the mean.
+  \item[datum\_sum\_beta\_aberration] Sum of beta aberrations.
+  \item[datum\_sqsum\_alpha\_aberration] Sum of squares of the alpha aberration counts, usable to compute the standard deviation.
+  \item[datum\_sqsum\_beta\_aberration] Sum of squares of the beta aberration counts.
+
+\end{description}
 
 \section{Logging}
 \label{sec:logging}
@@ -2840,7 +2916,8 @@ The full signature of the \texttt{findDatum()} method is
   FpuGridDriver.findDatum(grid_state, search_modes={},
                             selected_arm=DASEL_BOTH, fpuset=[],
                             soft_protection=True, count_protection=True, 
-                            support_uninitialized_auto=True)
+                            support_uninitialized_auto=True,
+                            timeout=DATUM_ENABLE_TIMEOUT)
 \end{minted}
 
 In almost all cases, the automatic datum search is sufficient.  The
@@ -2944,6 +3021,31 @@ as it is only necessary to pass in exceptional circumstances.
     whether operations are safe.}
 \end{warning}
 
+\paragraph{Disabling hardware timeouts}
+\index{finddatum()!timeout}
+\index{finddatum()!hardware protection}
+\index{hardware protection!disabling datum time-out}
+\index{moving uninitialized FPUs}
+\index{FPU movements!datum uninitialized FPUs}
+
+FPU firmware with version >= 1.4.3 includes a time-out check for the
+datum search. This check stops a datum search if no datum switch
+change was detected within a certain step number. For an initialized
+FPU, this number is derived from the internal step counter, and
+otherwise it is in the range of a few degrees.  For some situations,
+it might be desirable to disable this hardware safety check for an
+uninitialized FPU. This can, for example, be perform a datum scan for
+an FPU which is newly installed, and powered on the first time.
+
+To disable the check, one can pass the keyword parameter
+
+\begin{minted}{python}
+  timeout=DATUM_TIMEOUT_DISABLE
+\end{minted}
+
+This mode is only valid when no selected FPU was initialized before,
+otherwise it will be rejected by the driver.
+
 
 \paragraph{Result state of a datum operation}
 
@@ -2976,7 +3078,7 @@ command to the FPUs.  In both cases, FPUs which were moving will be in
 flags of alpha and beta arms are cleared, and a new datum search will
 be required before normal movements can be resumed.
 
-If in an FPU, the controller firmeware cannot detect a datum switch
+If in an FPU, the controller firmware cannot detect a datum switch
 within a maximum time, it aborts the movement and sends a time-out
 message, leading to a \texttt{FirmwareTimeoutError} exception. This
 can be caused by either issuing the datum command in the wrong place,
@@ -3094,7 +3196,7 @@ last configured waveform tables as a dictionary, one entry for each
 FPU.
 
 
-\subsection{getReversed()}
+\subsubsection{getReversed()}
 \index{commands!getReversed()} The method \texttt{getReversed()}
 retrieves for each currently configured, or last configured waveform
 table whether it was configured for the forward or reverse direction.
@@ -3577,189 +3679,211 @@ might change.
 
 
 \begin{verbatim}
-// everything worked
-DE_OK = 0,
+    // everything worked
+    DE_OK = 0,
 
-/*********************************/
-/* non-error return codes */
+    /*********************************/
+    /* non-error return codes */
 
-// The user waited for a command completion using a time-out
-// value, and the state has not been reached yet. This is a
-// "user notification", not an error.
-DE_WAIT_TIMEOUT = 1,
+    // The user waited for a command completion using a time-out
+    // value, and the state has not been reached yet. This is a
+    // "user notification", not an error.
+    DE_WAIT_TIMEOUT = 1,
 
-// Firmware does not implement operation for this protocol 
-// version
-DE_FIRMWARE_UNIMPLEMENTED = 2,
-
-
-/*********************************/
-/* Fatal system failure */
-
-// An initialization command ran out of memory, which prevents
-// successful driver start-up.
-DE_OUT_OF_MEMORY = 10,
-
-// Some resource from the OS is not available, which leads
-// to an unrecoverable situation.
-DE_RESOURCE_ERROR = 11,
-
-// A necessary assumption or check for correctness of the driver
-// was violated.
-DE_ASSERTION_FAILED = 12,
+    // Firmware does not implement operation for this protocol version
+    // - the calling code might need to check and branch according to
+    // the used protocol version
+    DE_FIRMWARE_UNIMPLEMENTED = 2,
 
 
-/*********************************/
-/* state errors where requested operations do not match the
-   current system state */
+    /*********************************/
+    /* Fatal system failure */
 
-// A command was tried to send, or the driver was instructed to
-// connect, but the driver was not initialized properly.  That can
-// happen if the system goes out of memory, or if a logical error
-// affected the initialization.
-DE_DRIVER_NOT_INITIALIZED = 101,
+    // An initialization command ran out of memory, which prevents
+    // successful driver start-up.
+    DE_OUT_OF_MEMORY = 10,
 
+    // Some resource from the OS is not available, which leads
+    // to an unrecoverable situation.
+    DE_RESOURCE_ERROR = 11,
 
-// Driver has already been correctly initialised, and another
-// initialisation was tried.
-DE_DRIVER_ALREADY_INITIALIZED = 102,
-
-
-// The user tried to send a high-level command while another
-// high-level command was still not finished and waited for.
-DE_STILL_BUSY = 103,
-
-// The user tried to start a movement command while at least one
-// FPU was in collided or aborted state - the command was rejected
-// because of that.
-DE_UNRESOLVED_COLLISION = 104,
-
-// An FPU has not been initialised, so it cannot be moved
-// accurately and safely.
-DE_FPU_NOT_INITIALIZED = 105,
-
-// Driver is already initialized.
-DE_DRIVER_ALREADY_CONNECTED = 106,
-
-// Driver is still connected.
-DE_DRIVER_STILL_CONNECTED = 107,
-
-// Waveform is not configured / not ready for movement.
-DE_WAVEFORM_NOT_READY = 108,
-
-// The addressed FPUs were not yet calibrated by a datum search.
-DE_FPUS_NOT_CALIBRATED = 109,
-
-// A motion command was issued but no FPUs are allowed to move.
-DE_NO_MOVABLE_FPUS = 110,
-
-// Command not allowed for present FPU state.
-DE_INVALID_FPU_STATE = 111,
-
-// The operation can damage hardware and protection is enabled
-DE_PROTECTION_ERROR = 112,
-
-// The driver state does not allows the operation
-DE_INVALID_DRIVER_STATE = 113,
-
-// Some addressed FPUs are locked.
-DE_FPUS_LOCKED = 114,
-
-// A previous movement was aborted.
-DE_ABORTED_STATE = 115,
+    // A necessary assumption or check for correctness of the driver
+    // was violated.
+    DE_ASSERTION_FAILED = 12,
 
 
-/***************************************/
-/* setup errors */
+    /*********************************/
+    /* state errors where requested operations do not match the
+       current system state */
 
-// Insufficient number of gateways for requested number of FPUs.
-DE_INSUFFICENT_NUM_GATEWAYS = 201,
-
-// Configuration parameters invalid, see log message.
-DE_INVALID_CONFIG = 202,
-
-/***************************************/
-/* invalid command parameters*/
-
-// An FPU id which was passed as a parameter is invalid
-// because it is larger than the maximum number of FPUs.
-DE_INVALID_FPU_ID = 301,
-
-// passed parameter value is invalid
-DE_INVALID_PAR_VALUE = 302,
+    // A command was tried to send, or the driver was instructed to
+    // connect, but the driver was not initialized properly.  That can
+    // happen if the system goes out of memory, or if a logical error
+    // affected the initialization.
+    DE_DRIVER_NOT_INITIALIZED = 101,
 
 
-/***************************************/
-/* Connection failures */
-
-// The maximum retry count was exceeded for command.
-DE_MAX_RETRIES_EXCEEDED = 401,
-
-// A CAN command to an FPU surpassed the maximum waiting time for
-// a response.
-//
-// This can indicate either a connection problem, a failure of the
-// FPU controller, or a failure of the FPU hardware.
-DE_CAN_COMMAND_TIMEOUT_ERROR = 402,
-
-// A command was tried to send to the FPUs but this was not
-// possible because the driver was or became disconnected from a
-// gateway. During operation, this should only happen when the
-// socket connection breaks down for an extended time, as the
-// socket protocol will try hard to do re-sends for several
-// minutes.  Before this error happens, one will probably see
-// time-outs on every single FPU command to the corresponding
-// gateways as they all fail to respond.
-DE_NO_CONNECTION = 403,
+    // Driver has already been correctly initialised, and another
+    // initialisation was tried.
+    DE_DRIVER_ALREADY_INITIALIZED = 102,
 
 
-/***************************************/
-/* invalid waveforms */
+    // The user tried to send a high-level command while another
+    // high-level command was still not finished and waited for.
+    DE_STILL_BUSY = 103,
 
-// General error in waveform definition, see text.
-//
-// Also: We tried to move FPUs but some addressed FPUs still have
-// invalid waveforms.
-DE_INVALID_WAVEFORM = 500,
+    // The user tried to start a movement command while at least one
+    // FPU was in collided or aborted state - the command was rejected
+    // because of that.
+    DE_UNRESOLVED_COLLISION = 104,
+
+    // An FPU has not been initialised, so it cannot be moved
+    // accurately and safely.
+    DE_FPU_NOT_INITIALIZED = 105,
+
+    // Driver is already initialized.
+    DE_DRIVER_ALREADY_CONNECTED = 106,
+
+    // Driver is still connected.
+    DE_DRIVER_STILL_CONNECTED = 107,
+
+    // Waveform is not configured / not ready for movement.
+    DE_WAVEFORM_NOT_READY = 108,
+
+    // The addressed FPUs were not yet calibrated by a datum search.
+    DE_FPUS_NOT_CALIBRATED = 109,
+
+    // A motion command was issued but no FPUs are allowed to move.
+    DE_NO_MOVABLE_FPUS = 110,
+
+    // Command not allowed for present FPU state.
+    DE_INVALID_FPU_STATE = 111,
+
+    // The operation can damage hardware and protection is enabled
+    DE_PROTECTION_ERROR = 112,
+
+    // The driver state does not allows the operation
+    DE_INVALID_DRIVER_STATE = 113,
+
+    // Some addressed FPUs are locked.
+    DE_FPUS_LOCKED = 114,
+
+    // A previous movement was aborted.
+    DE_IN_ABORTED_STATE = 115,
+
+    // An alpha arm is on the limit switch, and cannot
+    // be datumed.
+    DE_ALPHA_ARM_ON_LIMIT_SWITCH = 116,
 
 
-// waveform has to many steps
-DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS = 501,
+    /***************************************/
+    /* setup errors */
 
-// Number of sections different for different FPUS - this isn't
-// allowed to avoid collisions.
-DE_INVALID_WAVEFORM_RAGGED = 502,
+    // Insufficient number of gateways for requested number of FPUs.
+    DE_INSUFFICENT_NUM_GATEWAYS = 201,
 
-// Step number in section is too high for current firmware.
-DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE = 503,
+    // Configuration parameters invalid, see log message.
+    DE_INVALID_CONFIG = 202,
 
-// The change in step count per section is incorrect (e.g. too large)
-DE_INVALID_WAVEFORM_CHANGE = 504,
+    /***************************************/
+    /* invalid command parameters*/
 
-// The tail of the waveform is incorrect.
-DE_INVALID_WAVEFORM_TAIL = 505,
+    // An FPU id which was passed as a parameter is invalid
+    // because it is larger than the maximum number of FPUs.
+    DE_INVALID_FPU_ID = 301,
+
+    // passed parameter value is invalid
+    DE_INVALID_PAR_VALUE = 302,
+
+    // duplicate serial number
+    DE_DUPLICATE_SERIAL_NUMBER = 303,
+
+    /***************************************/
+    /* Connection failures */
+
+    // The maximum retry count was exceeded for command.
+    DE_MAX_RETRIES_EXCEEDED = 401,
+
+    // A CAN command to an FPU surpassed the maximum waiting time for
+    // a response.
+    //
+    // This can indicate either a connection problem, a failure of the
+    // FPU controller, or a failure of the FPU hardware.
+    DE_CAN_COMMAND_TIMEOUT_ERROR = 402,
+
+    // A command was tried to send to the FPUs but this was not
+    // possible because the driver was or became disconnected from a
+    // gateway. During operation, this should only happen when the
+    // socket connection breaks down for an extended time, as the
+    // socket protocol will try hard to do re-sends for several
+    // minutes.  Before this error happens, one will probably see
+    // time-outs on every single FPU command to the corresponding
+    // gateways as they all fail to respond.
+    DE_NO_CONNECTION = 403,
 
 
-/***************************************/
-/***************************************/
-/* Errors which terminate movements  */
+    /***************************************/
+    /* invalid waveforms */
 
-/***************************************/
-/* Collision error */
-// A collision occured, and the operation was aborted.
-DE_NEW_COLLISION = 601,
+    // General error in waveform definition, see text.
+    //
+    // Also: We tried to move FPUs but some addressed FPUs still have
+    // invalid waveforms.
+    DE_INVALID_WAVEFORM = 500,
 
-/***************************************/
-/* limit breach */
-// An alpha limit breach occured, and the operation was aborted.
-DE_NEW_LIMIT_BREACH = 602,
 
-// At least one FPU ran into a step timing error, which means the
-// FPU's motion controller was not able to compute the required
-// step frequency quick enough for the configured microstepping
-// level.
+    // waveform has to many steps
+    DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS = 501,
 
-DE_STEP_TIMING_ERROR = 603,
+    // Number of sections different for different FPUS - this isn't
+    // allowed to avoid collisions.
+    DE_INVALID_WAVEFORM_RAGGED = 502,
+
+    // Step number in section is too high for current firmware.
+    DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE = 503,
+
+    // The change in step count per section is incorrect (e.g. too large)
+    DE_INVALID_WAVEFORM_CHANGE = 504,
+
+    // The tail of the waveform is incorrect.
+    DE_INVALID_WAVEFORM_TAIL = 505,
+
+
+    /***************************************/
+    /***************************************/
+    /* Errors which terminate movements  */
+
+    /***************************************/
+    /* Collision error */
+    // A collision occured, and the operation was aborted.
+    DE_NEW_COLLISION = 601,
+
+    /***************************************/
+    /* limit breach */
+    // An alpha limit breach occured, and the operation was aborted.
+    DE_NEW_LIMIT_BREACH = 602,
+
+    // At least one FPU ran into a step timing error, which means the
+    // FPU's motion controller was not able to compute the required
+    // step frequency quick enough for the configured microstepping
+    // level.
+
+    DE_STEP_TIMING_ERROR = 603,
+
+    /***************************************/
+    /* abort message */
+    // The movement has just been aborted.
+    DE_MOVEMENT_ABORTED = 604,
+
+    /***************************************/
+    /* Datum rejected: alpha arm on limit switch */
+    // The datum command was rejected.
+    DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH = 605,
+
+    /***************************************/
+    /* datum time-out */
+    // The datum command has timed out on the FPU.
+    DE_DATUM_COMMAND_HW_TIMEOUT = 606,
 \end{verbatim}
 
 \section{Changelog}
@@ -3771,28 +3895,51 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 1.1.0}
 \begin{itemize}
-\item Added: The FPU database contains counters for the number of
+\item Added: The FPU database now contains counters for the number of
   movements, number of datum operations, collisions, limit switch
   breaches, and datum time-outs. Sums and square sums of the datum
   counter aberrations are stored as well.
 
-\item Added: An additional database tracks the counters for each FPU
-  indexed by the count of datum operations. The command
+\item Added: A new, second database now tracks the counters for each
+  FPU indexed by the count of datum operations. The command
   \begin{minted}{bash}
     fpu-admin healthlog {serialnumber}
   \end{minted}
-  allows to read these series.
+  allows to print these series. See section~\ref{sec:healthlog} for
+  any details.
 
+\item Added: Support for the hardware error codes \texttt{ER\_DATUMTO}
+  and \texttt{ER\_DATUM\_LIMIT}. These correspond to two new cases
+  where datum operations which are rejected by the FPU with the goal
+  to improve safety. The first case is a time-out that is triggered
+  when a certain step count is exceeded without finding datum.  The
+  second change rejects datum commands when the alpha limit switch is
+  active.
+
+\item Added: The \texttt{findDatum()} command now also features an
+  extra option to disable the above time-out safety check, which is
+  available for firmware version 1.4.3. See the reference section on
+  the datum command.
+  
+\item Added: To the FPU \& EtherCAN simulation, support
+  was added for hardware 1 protocol l.4. 
+  
 \item Fixed: The maximum number of FPUs on one CAN bus was changed
   from 67 to 76.
   
 \item Fixed: The fpu status field \texttt{timeout\_count}, a wrapping
   16-bit counter, is now incremented every time a CAN time-out occurs.
 
-\item Fixed: After an \texttt{resetFPU()} command, a 2.5 sec waiting
+\item Fixed: After an \texttt{resetFPUs()} command, a 2.5 sec waiting
   time was inserted. Without that pause, the subsequent
-  \texttt{getSerialNumbers()} command fails because the FPU cannot
+  \texttt{readSerialNumbers()} command fails because the FPU cannot
   respond that fast, leading to a time-out.
+
+\item Fixed: Fixed an error in state tracking in cases where
+  a findDatum or executeMotion command was aborted. The
+  initial states had been stored but were erroneously
+  references to objects which were then mutated. This lead
+  to errors in state tracking.
   
 \end{itemize}
  
@@ -3802,12 +3949,18 @@ commands, or alter otherwise visible behaviour of the driver.
 \begin{itemize}
 \item Added protection layer which disables most unsafe movements
   unless explicitly enabled by switching off a flag. This is described
-  in the sections~ref{sec:setinitialposition}
+  in the sections~\ref{sec:setinitialposition}
   and~\ref{sec:protectionintro}.
 
+\item The current positions are stored in real-time in a
+  high-performance memory-mapped key-value database (called LMDB aka
+  ``Lightning Memory-Mapped Database'' which has a good amount of
+  protection against system failures and even power failure.
+
 \item Passing explicit direction parameters to the initial
-  \texttt{findDatum()} command is no longer required, as they can be
-  safely derived from positions stored in LMDB. 
+  \texttt{findDatum()} command after powering on an FPU is no longer
+  required, as they can be safely derived from positions stored in
+  LMDB.
 
 \item The \texttt{soft\_protection} parameter for \texttt{findDatum()}
   has been split into \texttt{soft\_protection}, which checks against

@@ -55,16 +55,43 @@ if __name__ == '__main__' :
     if (len(argv) < 2) or (len(argv) == 2) and argv[1] in ["-h", "-?", "--help", "help"]:
         print("""usage:
         help
+            - print this message
+
         flash <serial_number> <fpu_id>
+            - flash serial number to FPU with ID <fpu_id>. FPU must be connected.
+
         init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]
-        init <serial_number> "[" <apos_min>, <apos_max> "]", "[" <bpos_min>, <bpos_max> "]" [<adatum_offset>]
+            - initialize protection database for FPU, passing the initial alpha 
+              and beta arm positions in degree. 
+              The optional last parameter is the alpha datum offset.
+
+        init <serial_number> "[<apos_min>, <apos_max>]" "[<bpos_min>, <bpos_max>]" [<adatum_offset>]
+            - as above, but defining position intervals instead.
+
         list
+            - list whole database.
+
         list1 <serial_number>
+            - list  data for one FPU
+
         alimits <serial_number> <alpha_limit__min> <alpha_limit_max> [<adatum_offset>]
+            - set individual safe limits for alpha arm of this FPU.
+
         blimits <serial_number> <beta_limit_min> <beta_limit_max>
+            - set safe limits for beta arm of this FPU
+
         bretries <serial_number> <freebetatries>
+            - set allowed number of freeBetaCollision command in the same
+              direction before the software protection kicks in.
+              The retry count is reset to zero upon a successfully finished 
+              datum search.
 
         healthlog <serial_number>
+            - print the content of the health log database for an FPU 
+              to the screen. The index number is the count of finished 
+              datum searches. Each row also contains the UNIX time stamp
+              which can be used to plot against time, or to identify
+              events in the driver logs.
 
         Default alpha datum offset: %f 
         """ % ALPHA_DATUM_OFFSET)
