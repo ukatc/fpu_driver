@@ -752,7 +752,7 @@ the FPUs:
 \end{description}
 
 \subsection{Utility functions}
-\index{list\_angles()!example}
+\index{list\_angles()|see{countedAngles()}}
 \index{countedAngles()!example}
 \index{list\_positions()!example}
 \index{gen\_wf()!example}
@@ -766,12 +766,6 @@ data, and displaying information about the FPU state:
   degree units. In these coordinates, the datum positions serve as a
   point of reference. Their value are normally -180 degree for the
   alpha datum position, and 0 degree for the beta datum positions.
-
-\item[\texttt{list\_angles()}] is a function which also displays the
-  angles in a \texttt{grid\_state} instance. In difference to the
-  \texttt{countedAngles()} method, it does not update the content of
-  \texttt{grid\_state}, so it is occasionally useful to display values
-  retrieved at an earlier time.
   
 \item[\texttt{gen\_wf()}] is a function which takes an (alpha,beta)
   pair of angle values, scaled in degrees, and generates a valid
@@ -1054,6 +1048,12 @@ conditions are as follows:
     address the reliability of the hardware are out of the scope of
     this document - please refer to the FPU hardware documentation.
 \end{itemize}
+
+\begin{warning}
+  \textbf{WARNING: Do not power-cycle the FPU while it is connected
+    to the driver software.}
+\end{warning}
+
 
 \subsection{Allowed operations and covered cases}
 \index{software protection!allowed operations and conditions}
@@ -1443,26 +1443,7 @@ This is done by the command
 It is also recommend to move the FPUs to the datum position
 before powering off. 
 
-\paragraph{Manual datum search}
-
-If the FPU had been powered off, the beta arm is in a positive range
-(at the datums witch, or rotated anti-clockwise from it), and the
-alpha arm is in a normal safe position, the following command will
-initialise the FPU with ID zero and move it to the datum position:
-\begin{minted}{python}
-  gd.findDatum(grid_state, {0: SEARCH_CLOCKWISE}, soft_protection=False)
-\end{minted}
-
-This instructs the FPU to move clock-wise, and enable the driver to do
-this without checking the current position. Analogously, the constant
-\texttt{SEARCH\_ANTI\_CLOCKWISE} can be passed to move the FPU into
-the negative direction.
-
-Such a manual search was required to be performed in previous versions
-of the driver, earlier than version 1.0.0. For current driver
-versions, while still possible, this is not necessary any more since
-the position database keeps track of the actual positions, when the
-system is powered off.  A detailed description of all possible
+A detailed description of all possible
 parameters for the datum search can be found in
 section~\ref{sec:finddatum} on page~\pageref{sec:finddatum}.
 
@@ -2927,11 +2908,11 @@ reset, or if it had a collision).
 The full signature of the \texttt{findDatum()} method is
 
 \begin{minted}{python}
-  FpuGridDriver.findDatum(grid_state, search_modes={},
-                            selected_arm=DASEL_BOTH, fpuset=[],
-                            soft_protection=True, count_protection=True, 
-                            support_uninitialized_auto=True,
-                            timeout=DATUM_ENABLE_TIMEOUT)
+  FpuGridDriver.findDatum(grid_state,
+                          selected_arm=DASEL_BOTH, fpuset=[],
+                          soft_protection=True, count_protection=True, 
+                          support_uninitialized_auto=True,
+                          timeout=DATUM_ENABLE_TIMEOUT)
 \end{minted}
 
 In almost all cases, the automatic datum search is sufficient.  The
@@ -3007,7 +2988,23 @@ Using the \texttt{search\_modes} keyword argument, it is possible to
 manually define the direction in which the beta arm will move when
 performing the datum search.  Normally, this is not necessary as the
 position is known from the FPU position database, so the correct
-direction is filled in by the driver.
+direction is filled in by the driver. A datum command with manually
+defined direction looks like this:
+
+\begin{minted}{python}
+  gd.findDatum(grid_state, {0: SEARCH_CLOCKWISE}, soft_protection=False)
+\end{minted}
+
+This instructs the FPU to move clock-wise, and enable the driver to do
+this without checking the current position. Analogously, the constant
+\texttt{SEARCH\_ANTI\_CLOCKWISE} can be passed to move the FPU into
+the negative direction.
+
+Such a manual search was required to be performed in previous versions
+of the driver, earlier than version 1.1.0. For current driver
+versions, while still possible, this is not necessary any more since
+the position database keeps track of the actual positions, when the
+system is powered off.  
 
 \paragraph{Disabling protection flags}
 It is possible to disable the software protection by passing the
@@ -3935,6 +3932,12 @@ commands, or alter otherwise visible behaviour of the driver.
   
 \item Fixed: Value of alpha datum angle updated to -180
   degrees. Version numbers in explanations updated.
+
+\item Fixed: Changed \texttt{repeatMotion()} and
+  \texttt{reverseMotion()} commands to expect amd wait for a response
+  from the FPU. For allowing workarounds, this wasn't required in
+  earlier versions.  However, a response is now needed for the
+  protection wrapper.
 
 \item Added: Any passed \texttt{fpuset} argument is now checked in a
   number of additional places, to filter out invalid parameters.

@@ -142,6 +142,12 @@ def sign(x):
     else:
         raise AssertionError("a NaN value was probably passed here")
 
+def fpu_in_set(fpu_id, fpuset):
+    if len(fpuset) == 0:
+        return True
+    else:
+        return (fpu_id in fpuset)
+    
 class UnprotectedGridDriver (object):
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
@@ -199,15 +205,31 @@ class UnprotectedGridDriver (object):
             rv = self._gd.connect(address_list)
             self._post_connect_hook(self.config)
             return rv
+
+    def check_fpuset(self, fpuset):
+        if len(fpuset) == 0:
+            return fpuset
+        
+        if min(fpuset) < 0:
+            raise InvalidParameterError("DE_INVALID_FPU_ID: a passed FPU ID is smaller than zero")
+        
+        if max(fpuset) >= self.config.num_fpus:
+            raise InvalidParameterError("DE_INVALID_FPU_ID: a passed FPU ID is too large"
+                                        " for the configured number of FPUs")
+        return fpuset
+        
     
     def setUStepLevel(self, ustep_level,  gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
         return self._gd.setUStepLevel(ustep_level, gs, fpuset)
 
     def getSwitchStates(self, gs, fpuset=[]):
-        ADRESS_SWITCH=0x0060
-        
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
+            
+        fpuset = self.check_fpuset(fpuset)
+        ADRESS_SWITCH=0x0060
+        
             
         fv = self.minFirmwareVersion(gs, fpuset=fpuset)
         if fv < (1,3,2):
@@ -219,7 +241,7 @@ class UnprotectedGridDriver (object):
         def getState(fpu):
             return {'alpha_limit_active' : ((fpu.register_value & 1) == 1 ),
                     'beta_datum_active' : (((fpu.register_value >> 1) & 1) == 1)  }
-        return dict([ (fpu_id, getState(gs.FPU[fpu_id]) )for fpu_id in fpuset])
+        return dict([ (fpu_id, getState(gs.FPU[fpu_id]) ) for fpu_id in fpuset])
     
     def getGridState(self):
         return self._gd.getGridState()
@@ -254,6 +276,9 @@ class UnprotectedGridDriver (object):
 
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
+            
+        fpuset = self.check_fpuset(fpuset)
+        
             
         with self.lock:
 
@@ -347,6 +372,9 @@ class UnprotectedGridDriver (object):
         """
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
+            
+        fpuset = self.check_fpuset(fpuset)
+        
 
         with self.lock:
 
@@ -438,6 +466,9 @@ class UnprotectedGridDriver (object):
         return rv
 
     def pingFPUs(self, gs, fpuset=[]):
+        
+        fpuset = self.check_fpuset(fpuset)
+        
         time.sleep(0.1)
         return self._gd.pingFPUs(gs, fpuset)
 
@@ -445,6 +476,8 @@ class UnprotectedGridDriver (object):
         pass
     
     def resetFPUs(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        
         with self.lock:        
             old_state = self.getGridState()
             rval = self._gd.resetFPUs(gs, fpuset)
@@ -461,31 +494,41 @@ class UnprotectedGridDriver (object):
         return rval
 
     def getPositions(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        
         time.sleep(0.1)
         return self._gd.getPositions(gs, fpuset)
 
     def readRegister(self, address, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+
         time.sleep(0.1)
         return self._gd.readRegister(address, gs, fpuset)
     
     def getFirmwareVersion(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        
         time.sleep(0.1)
         return self._gd.getFirmwareVersion(gs, fpuset)
 
     def printFirmwareVersion(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+
         self.getFirmwareVersion(gs, fpuset)
         for fpu_id, fpu in enumerate(gs.FPU):
-            if (fpuset == []) or (fpu_id in fpuset):
+            if fpu_in_set(fpu_id, fpuset):
                 print("FPU %i firmware version: (%i,%i,%i) created %02i-%02i-%02i" % (
                     fpu_id,
                     fpu.fw_version_major, fpu.fw_version_minor, fpu.fw_version_patch,
                     fpu.fw_date_year, fpu.fw_date_month, fpu.fw_date_day))
 
     def minFirmwareVersion(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        
         self.getFirmwareVersion(gs, fpuset)
         min_version = (255,255,255)
         for fpu_id, fpu in enumerate(gs.FPU):
-            if (fpuset == []) or (fpu_id in fpuset):
+            if fpu_in_set(fpu_id, fpuset):
                 version = (fpu.fw_version_major, fpu.fw_version_minor, fpu.fw_version_patch)
                 if version < min_version:
                     min_version = version
@@ -493,19 +536,24 @@ class UnprotectedGridDriver (object):
         return min_version
                              
     def getCounterDeviation(self, gs, fpuset=[]):
+       fpuset = self.check_fpuset(fpuset)
+        
        time.sleep(0.1)
        return self._gd.getCounterDeviation(gs, fpuset)
 
     def readSerialNumbers(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        
         time.sleep(0.1)
         return self._gd.readSerialNumbers(gs, fpuset)
 
     def printSerialNumbers(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
         
         with self.lock:    
             self.readSerialNumbers(gs, fpuset=fpuset)
             for i in range(self.config.num_fpus):
-                if (len(fpuset) == 0) or i in fpuset:
+                if fpu_in_set(i, fpuset):
                     print("FPU %i : SN = %r" % (i, gs.FPU[i].serial_number))
             
     
@@ -560,6 +608,8 @@ class UnprotectedGridDriver (object):
         the hardware).
 
         """
+        fpuset = self.check_fpuset(fpuset)
+        
         with self.lock:
         
             if check_protection != None:
@@ -651,6 +701,8 @@ class UnprotectedGridDriver (object):
     
 
     def executeMotionB(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
             
@@ -675,6 +727,8 @@ class UnprotectedGridDriver (object):
         return rv
 
     def executeMotion(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
             
@@ -739,6 +793,8 @@ class UnprotectedGridDriver (object):
         return rv
 
     def abortMotion(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        
         # this must not use locking - it can be sent from any thread by design
         return self._gd.abortMotion(gs, fpuset)
 
@@ -764,6 +820,8 @@ class UnprotectedGridDriver (object):
         return self._gd.enableBetaCollisionProtection(gs)
 
     def reverseMotion(self, gs, fpuset=[], soft_protection=True):
+        fpuset = self.check_fpuset(fpuset)
+        
         with self.lock:        
             wtable = self.last_wavetable
                         
@@ -779,6 +837,8 @@ class UnprotectedGridDriver (object):
         return rv
 
     def repeatMotion(self, gs, fpuset=[], soft_protection=True):
+        fpuset = self.check_fpuset(fpuset)
+        
         with self.lock:
             wtable = self.last_wavetable
             
@@ -794,6 +854,8 @@ class UnprotectedGridDriver (object):
         return rv
 
     def countedAngles(self, gs, fpuset=[], show_uninitialized=False):
+        fpuset = self.check_fpuset(fpuset)
+        
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
             
@@ -942,7 +1004,7 @@ class GridDriver(UnprotectedGridDriver):
         """
         self.readSerialNumbers(new_state, fpuset=fpuset)
         for fpu_id, fpu in enumerate(new_state.FPU):
-            if (len(fpuset) > 0) and (fpu_id not in fpuset):
+            if not fpu_in_set(fpu_id, fpuset):
                 continue
                         
             # these offsets are the difference between the calibrated
@@ -962,6 +1024,8 @@ class GridDriver(UnprotectedGridDriver):
     def trackedAngles(self, gs, fpuset=[], show_offsets=False, active=False):
         """lists tracked angles, offset, and waveform span
         for configured waveforms, for each FPU"""
+        
+        fpuset = self.check_fpuset(fpuset)
         
         with self.lock:
             if len(fpuset) == 0:
@@ -1018,7 +1082,7 @@ class GridDriver(UnprotectedGridDriver):
         inconsistency_abort = False
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(grid_state.FPU):
-                if len(fpuset) > 0 and (fpu_id not in fpuset):
+                if not fpu_in_set(fpu_id, fpuset):
                     continue
 
                 if not fpu.ping_ok:
@@ -1053,6 +1117,8 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                     
 
     def pingFPUs(self, grid_state, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        
         with self.lock:
             super(GridDriver, self).pingFPUs(grid_state, fpuset=fpuset)
             self._refresh_positions(grid_state, fpuset=fpuset)
@@ -1149,7 +1215,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         # depending on protection setting
         configuring_ranges = {}
         for fpu_id, wt_row in wtable.items():
-            if (len(fpuset) != 0) and (fpu_id not in fpuset):
+            if not fpu_in_set(fpu_id, fpuset):
                 continue
             
             fpu = gs.FPU[fpu_id]
@@ -1210,7 +1276,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         # update ranges that will become valid once executeMotion is started
         for fpu_id, rentry in self.configuring_ranges.items():
             
-            if (len(fpuset) != 0) and (fpu_id not in fpuset):
+            if not fpu_in_set(fpu_id, fpuset):
                 continue
 
             fpu = gs.FPU[fpu_id]
@@ -1234,7 +1300,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         # update ranges that become valid once executeMotion is started
         idlist = []
         for fpu_id, rentry in self.configuring_ranges.items():
-            if (len(fpuset) != 0) and (fpu_id not in fpuset):
+            if not fpu_in_set(fpu_id, fpuset):
                 continue
             fpu = gs.FPU[fpu_id]
             if self.wavetable_was_received(wtable, gs, fpu_id, fpu, allow_unconfirmed=True):
@@ -1250,7 +1316,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         # update ranges that become valid once executeMotion is started
         idlist = []
         for fpu_id, rentry in self.configuring_ranges.items():
-            if (len(fpuset) != 0) and (fpu_id not in fpuset):
+            if not fpu_in_set(fpu_id, fpuset):
                 continue
             fpu = gs.FPU[fpu_id]
             if self.wavetable_was_received(wtable, gs, fpu_id, fpu,
@@ -1355,7 +1421,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
-                if len(fpuset) != 0 and (fpu_id not in fpuset):
+                if not fpu_in_set(fpu_id, fpuset):
                     continue
 
                 # Needs to make a copy here because otherwise the
@@ -1386,7 +1452,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id in initial_positions.keys():
-                if (len(fpuset) != 0) and (fpu_id not in fpuset):
+                if not fpu_in_set(fpu_id, fpuset):
                     continue
                 apos, bpos = initial_positions[fpu_id]
                 fpu = gs.FPU[fpu_id]
@@ -1455,7 +1521,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         
         # clear wavetable spans for the addressed FPUs - they are not longer valid
         for k in self.configured_ranges.keys():
-            if (len(fpuset) == 0) or (k in fpuset):
+            if fpu_in_set(k, fpuset):
                 del self.configured_ranges[k]
                 
 
@@ -1475,7 +1541,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         acw_range = Interval(0, Inf)
         cw_range = Interval(-Inf, 0)
         for fpu_id, fpu in enumerate(gs.FPU):
-            if len(fpuset) != 0 and (fpu_id not in fpuset):
+            if not fpu_in_set(fpu_id, fpuset):
                 continue
             # set default value of SEARCH_AUTO
             if not search_modes.has_key(fpu_id):
@@ -1550,7 +1616,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                 _gs = datum_gs
 
             for fpu_id, fpu in enumerate(_gs.FPU):
-                if len(fpuset) > 0 and (not (fpu_id in fpuset)):
+                if not fpu_in_set(fpu_id, fpuset):
                     continue
             
                 if (len(search_modes) != 0) and (not search_modes.has_key(fpu_id)):
@@ -1647,7 +1713,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
-                if len(fpuset) > 0 and (not (fpu_id in fpuset)):
+                if not fpu_in_set(fpu_id, fpuset):
                     continue
             
                 if (len(search_modes) != 0) and (not search_modes.has_key(fpu_id)):
