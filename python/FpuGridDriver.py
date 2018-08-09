@@ -1021,7 +1021,7 @@ class GridDriver(UnprotectedGridDriver):
                 del self.last_wavetable[fpu_id]
 
                         
-    def trackedAngles(self, gs, fpuset=[], show_offsets=False, active=False):
+    def trackedAngles(self, gs=None, fpuset=[], show_offsets=False, active=False):
         """lists tracked angles, offset, and waveform span
         for configured waveforms, for each FPU"""
         
@@ -1042,7 +1042,7 @@ class GridDriver(UnprotectedGridDriver):
                     wf_arange, wf_brange = self.configuring_ranges.get(fi, (Interval(), Interval()))
                     prefix="last"
 
-                if show_offsets:
+                if show_offsets and (gs != None):
                     print("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
                           " stepcount angle= ({!s}, {!s}), {!s}_wform_range=({!s},{!s})".
                           format(fi, self.apositions[fi],self.bpositions[fi],
@@ -1458,9 +1458,12 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                 fpu = gs.FPU[fpu_id]
                 self._update_apos(txn, fpu, fpu_id, apos)
                 self._update_bpos(txn, fpu, fpu_id,  bpos)
-                
-                self._update_counters_execute_motion(fpu_id, self.counters[fpu_id], self.last_wavetable[fpu_id], self.wf_reversed[fpu_id],
-                                                     cancel=True)
+
+                if self.configured_ranges.has_key(fpu_id):
+                    self._update_counters_execute_motion(fpu_id, self.counters[fpu_id],
+                                                         self.last_wavetable[fpu_id],
+                                                         self.wf_reversed[fpu_id],
+                                                         cancel=True)
                 ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
                 
         env.sync()
