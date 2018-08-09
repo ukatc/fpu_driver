@@ -421,6 +421,8 @@ class FPU:
         timeout_limit = self.opts.datum_alpha_timeout_steps
         start_alpha_steps = self.alpha_steps
         self.datum_timeout = False
+        alpha_datumed = False
+        beta_datumed = False
         use_timeout = self.opts.fw_version >= (1, 4, 0) and (not disable_timeout)
         print("FPU %i : timeouts enabled: %r" % (self.fpu_id, use_timeout))
         
@@ -442,8 +444,8 @@ class FPU:
 
             
             if alpha_ready and beta_ready:
-                if not skip_alpha:
-                    self.alpha_steps += 10
+                alpha_datumed = alpha_ready and (not skip_alpha)
+                beta_datumed = beta_ready and (not skip_beta)
                 break
 
             sleep(wait_interval_sec)
@@ -480,6 +482,8 @@ class FPU:
                 print("FPU %i: step number exceeds time-out step count of %i, aborting" % (self.fpu_id, timeout_limit))
                 self.abort_wave = True
                 self.datum_timeout = True
+                alpha_datumed = alpha_ready and (not skip_alpha)
+                beta_datumed = beta_ready and (not skip_beta)
                 break
 
             
@@ -490,19 +494,24 @@ class FPU:
                 self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
 
             
+        if alpha_datumed:
+            self.alpha_steps = 0
+            self.aoff_steps = 0
+            if skip_beta:
+                print("FPU #%i: alpha datum reached" % self.fpu_id)
+                
+        if beta_datumed:
+            self.beta_steps = 0
+            self.boff_steps = 0
+            if skip_alpha:
+                print("FPU #%i: beta datum reached" % self.fpu_id)
+                
+        if alpha_datumed and beta_datumed:
+            print("FPU #%i: alpha and beta datum reached" % self.fpu_id)
 
+                
         if not self.abort_wave:
 
-            if not skip_alpha:
-                self.alpha_steps = 0
-                self.aoff_steps = 0
-                if skip_beta:
-                    print("FPU #%i: alpha datum reached" % self.fpu_id)
-            if not skip_beta:
-                self.beta_steps = 0
-                self.boff_steps = 0
-                if skip_alpha:
-                    print("FPU #%i: beta datum reached" % self.fpu_id)
             if not (skip_alpha or skip_beta):
                 self.at_datum = True
                 self.was_initialized = True
@@ -510,8 +519,8 @@ class FPU:
             else:
                 print("FPU #%i: partial datum operation finished" % self.fpu_id)
 
-        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
-        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
+        alpha_real_deg =  (self.alpha_steps + self.aoff_steps) / StepsPerDegreeAlpha + d_offset
+        beta_real_deg =  (self.beta_steps + self.boff_steps) / StepsPerDegreeBeta
                 
         print("FPU #%i: findDatum stopped at (%i, %i) steps = (%7.2f, %7.2f) degree" % (
             self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))

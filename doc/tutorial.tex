@@ -38,7 +38,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 1.1.0 (document version \texttt{\input{../git_version}}).}
+  module} \subtitle{For driver version 1.1.1 (document version \texttt{\input{../git_version}}).}
 
 \author{Johannes Nix}
 
@@ -198,11 +198,11 @@ working version.
 In some cases, it might be required to
 use a specific revision of the library.
 Assuming that we need, as an example,
-to build version v0.5.2 of the library,
+to build version 1.0.0 of the library,
 checking out this revision is done with the
 command
 
-\mint{bash}|git checkout v0.5.2|
+\mint{bash}|git checkout v1.0.0|
 
 After this, one can proceed with building the library as normal. To
 switch back to the master branch, issue the command
@@ -856,7 +856,7 @@ the starting position (in degrees) is: [(-180.0, 0.0)]
   'firmware_version' : 1.3.0,  'firmware_date' : '0-0-0',
   'serial_number' : "102",  }
 >>> gd.countedAngles(grid_state)
-[(-181.0, 0.0)]
+[(-180.0, 0.0)]
 >>> gd.executeMotion(grid_state)
 fpu_driver.E_DriverErrCode.DE_OK
 >>> grid_state.FPU[0]
@@ -1555,7 +1555,7 @@ angles:
     position, will have negative angles.
   \item The zero position itself is defined as the datum position for
     the beta arm. For the alpha arm, the position is configurable. By
-    convention, the alpha datum position is at $-181.0\degree$.
+    convention, the alpha datum position is at $-180.0\degree$.
 \end{itemize}
 
 \subsubsection{Moving by an angle}
@@ -2507,8 +2507,8 @@ be passed:
   \index{alpha\_datum\_offset}
 \item[\texttt{alpha\_datum\_offset}] This parameter defines the alpha
   angle convention at the datum position. By default, it is set to
-  -181.0, this means that the alpha arm at the datum position will
-  have an alpha angle of $-181.0\degree$. This angle is primarily used
+  -180.0, this means that the alpha arm at the datum position will
+  have an alpha angle of $-180.0\degree$. This angle is primarily used
   when waveform tables and movements are logged by the driver (see
   also the keyword argument with the same name in the
   \texttt{countedAngles()} method and the \texttt{list\_angles()}
@@ -2830,7 +2830,7 @@ IDs.
 The driver method
 
 \begin{minted}{python}
-  FpuGridDriver.trackedAngles(grid_state, fpuset=[])
+  FpuGridDriver.trackedAngles(grid_state, fpuset=[], show_offsets=False, active=False)
 \end{minted}
 
 displays the current tracked positions of FPUs, 
@@ -2898,6 +2898,20 @@ The command accepts an \texttt{fpuset} keyword argument which, when
 set, causes it to retrieve and list only values for the passed FPU
 IDs.
 
+\paragraph{Display options}
+
+The ``\texttt{show\_offset}'' flag shows the FPU step counters and
+the offset between step counters and tracked angles, when
+true.
+
+If the ``\texttt{active}'' flag is set to true, it shows only active
+waveforms, which will be executed when an \texttt{executeMotion()}
+command is issued next. This does not display waveforms which may me
+present on the FPUs, but which are currently not in executable state.
+
+(It is also possible that a previous waveform is displayed but
+actually not any more executable, for example if the FPU has been
+reset, or if it had a collision).
 
 \subsubsection{findDatum()}
 \label{sec:finddatum}
@@ -3515,7 +3529,7 @@ argument, \texttt{alpha\_datum\_offset}, which sets the conventional
 value of the alpha angle when the alpha arm is at the datum position.
 To match the values which are used in the driver logs, it should have
 the same value as the driver parameter with the same name described in
-section~\ref{sec:driverparams}. The default value is $-181.0\degree$.
+section~\ref{sec:driverparams}. The default value is $-180.0\degree$.
 
 Under normal circumstances, it is preferable to use the
 \texttt{countedAngles()} driver method, because that method
@@ -3893,6 +3907,39 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
+\subsection*{Changes in version 1.1.1}
+\begin{itemize}
+\item Added: The \texttt{configMotion()} command now prints the number
+  of configured FPUs if the passed wavetable data did not configure
+  all of them. This should avoid confusion if there are old wave
+  tables active, or if FPUs are not configured to move.
+
+\item Changed: The \texttt{trackedangles()} method now shows angles
+  from the FPU step counters only when the keyword argument
+  \texttt{show\_offsets} is set to true. Otherwise, only current
+  angles and movement ranges are displayed.
+  
+\item Fixed: If only a subset of FPUs was configured to move
+  directly after a \texttt{resetFPUs()) command, a following
+    \texttt{executeMotion()} command would fail,
+    without actually starting a movement.
+  
+\item Fixed: During execution of the \texttt{findDatum()} command, a
+  safety tolerance of 0.5 degrees had been added. This was dropped
+  since it caused confusion and made error recovery from hardware
+  datum time-outs more difficult than needed.
+  
+\item Fixed: The \texttt{executeMotion()} command could trigger a
+  Python KeyError exception when not all FPUs were configured and some
+  FPUs had not been not initialised before.
+  
+\item Fixed: Value of alpha datum angle updated to -180
+  degrees. Version numbers in explanations updated.
+
+\item Added: Any passed \texttt{fpuset} argument is now checked in a
+  number of additional places, to filter out invalid parameters.
+\end{itemize}
+
 \subsection*{Changes in version 1.1.0}
 \begin{itemize}
 \item Added: The FPU database now contains counters for the number of
@@ -4014,7 +4061,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \item The driver now logs alpha arm angles with a configurable offset
   parameter for the datum position, named
   \texttt{alpha\_datum\_offset}. The default value is
-  $-181.0\degree$.  The same parameter can be set in the
+  $-180.0\degree$.  The same parameter can be set in the
   \texttt{list\_angles()} function.
   
 \item Some information and warnings about hardware safety precautions

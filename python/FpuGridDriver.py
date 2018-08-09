@@ -33,7 +33,7 @@ from fpu_driver import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,
                         SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, FPST_UNINITIALIZED,
                         FPST_LOCKED, FPST_DATUM_SEARCH, FPST_AT_DATUM, FPST_LOADING, FPST_READY_FORWARD,
                         FPST_READY_REVERSE, FPST_MOVING, FPST_RESTING, FPST_ABORTED, FPST_OBSTACLE_ERROR, DS_CONNECTED,
-                        _ER_TIMEDOUT, _ER_DATUMTO, CCMD_EXECUTE_MOTION)
+                        _ER_TIMEDOUT, _ER_DATUMTO, CCMD_EXECUTE_MOTION, _ER_OK_UNCONFIRMED)
 
 
 import fpu_commands as cmds
@@ -538,6 +538,16 @@ class UnprotectedGridDriver (object):
         with self.lock:
             self.set_wtable_reversed(fpuset, True)
 
+
+    @staticmethod
+    def wavetable_was_received(wtable, gs, fpu_id, fpu,
+                               allow_unconfirmed=False,
+                               target_state=FPST_READY_FORWARD):
+        
+        return ( wtable.has_key(fpu_id)
+                 and (fpu.state==target_state)
+                 and ((fpu.last_status == 0) or (allow_unconfirmed and (fpu.last_status == _ER_OK_UNCONFIRMED))))
+
     
     def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None,  allow_uninitialized=False):
         """ 
@@ -572,7 +582,6 @@ class UnprotectedGridDriver (object):
             else:
                 wmode=Range.Warn
             self._pre_config_motion_hook(wtable, gs, fpuset, wmode=wmode)
-            self.wavetables_incomplete = False
             update_config = False
             try:
                 try:
@@ -584,27 +593,33 @@ class UnprotectedGridDriver (object):
                     # Transmission failure. Here, it is possible that some
                     # FPUs have finished loading valid data, but the
                     # process was not finished for all FPUs.
-                    self.wavetables_incomplete=True
                     update_config = True
-                    for fpu_id, fpu in enumerate(gs.FPU):
-                        # We accept entries which appear to have been
-                        # configured successfuly. This is not 100%
-                        # failure-proof - an FPU could hold onto a
-                        # wavetable which has been configured earlier, and
-                        # which happens to have the same length.
-                        if wtable.has_key(fpu_id):
-                            if (fpu.state==FPST_READY_FORWARD) and (
-                                    fpu.fpu.num_waveform_segments == len(wtable[fpu_id])):
-                                self.last_wavetable[fpu_id] = wtable[fpu_id]
                     raise
-                # remember wavetable
-                self.last_wavetable.update(wtable)
                 
             finally:
                 if update_config:
-                    self._post_config_motion_hook(wtable, gs, fpuset,
-                                                 partial_config=self.wavetables_incomplete)
+                    # accept configured wavetable entries
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        if not wtable.has_key(fpu_id):
+                            continue
+                        
+                        if self.wavetable_was_received(wtable, gs, fpu_id, fpu):                            
+                                self.last_wavetable[fpu_id] = wtable[fpu_id]
+                        else:
+                            print("warning: waveform table for FPU %i was not confirmed" % fpu_id)
+                            del wtable[fpu_id]
+
+                                
+                    self._post_config_motion_hook(wtable, gs, fpuset)
                 
+        if len(wtable.keys()) < self.config.num_fpus:
+            num_movable = 0
+            for fpu in gs.FPU:
+                if fpu.state in [FPST_READY_FORWARD, FPST_READY_REVERSE]:
+                    num_movable += 1
+            print("%i wave tables added: now %i out of %i FPUs configured to move." % (
+                len(wtable), num_movable, self.config.num_fpus))
+            
         return rval
 
     def getCurrentWaveTables(self):
@@ -674,7 +689,7 @@ class UnprotectedGridDriver (object):
                 time.sleep(0.1)
                 rv = self._gd.startExecuteMotion(gs, fpuset)
             except InvalidStateException as e:
-                self.cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
+                self._cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
                 raise
             if rv != fpu_driver.E_DriverErrCode.DE_OK:
                 raise RuntimeError("FPUs not ready to move, driver error code = %r" % rv)
@@ -750,12 +765,7 @@ class UnprotectedGridDriver (object):
 
     def reverseMotion(self, gs, fpuset=[], soft_protection=True):
         with self.lock:        
-            wtable = self.last_wavetable.copy()
-            if len(fpuset) > 0:
-                kys = wtable.keys()
-                for k in kys:
-                    if not k in fpuset:
-                        del wtable[k]
+            wtable = self.last_wavetable
                         
             if soft_protection:
                 wmode=Range.Error
@@ -770,13 +780,8 @@ class UnprotectedGridDriver (object):
 
     def repeatMotion(self, gs, fpuset=[], soft_protection=True):
         with self.lock:
-            wtable = self.last_wavetable.copy()
-            if len(fpuset) > 0:
-                kys = wtable.keys()
-                for k in kys:
-                    if not k in fpuset:
-                        del wtable[k]
-                        
+            wtable = self.last_wavetable
+            
             if soft_protection:
                 wmode=Range.Error
             else:
@@ -822,12 +827,10 @@ class GridDriver(UnprotectedGridDriver):
 
         with self.lock:
             # position intervals which are being configured by configMotion
-            self.alpha_configuring_range = {}
-            self.beta_configuring_range = {}
+            self.configuring_ranges = {}
             # position intervals which have successfully been configured
             # and will become valid with next executeMotion
-            self.configured_arange = {}
-            self.configured_brange = {}
+            self.configured_ranges = {}
 
     def _post_connect_hook(self, config):
         self.fpudb = env.open_db(ProtectionDB.dbname)
@@ -948,8 +951,15 @@ class GridDriver(UnprotectedGridDriver):
             self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - self._alpha_angle(fpu)
 
             self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - self._beta_angle(fpu)
+
+            if self.configured_ranges.has_key(fpu_id):
+                del self.configured_ranges[fpu_id]
+                
+            if self.last_wavetable.has_key(fpu_id):
+                del self.last_wavetable[fpu_id]
+
                         
-    def trackedAngles(self, gs, fpuset=[]):
+    def trackedAngles(self, gs, fpuset=[], show_offsets=False, active=False):
         """lists tracked angles, offset, and waveform span
         for configured waveforms, for each FPU"""
         
@@ -957,21 +967,29 @@ class GridDriver(UnprotectedGridDriver):
             if len(fpuset) == 0:
                 fpuset = range(self.config.num_fpus)
                 
-            warange_dict = self.alpha_configuring_range
-            wbrange_dict = self.beta_configuring_range
             for fi in fpuset:
                 fpu = gs.FPU[fi]
                 aangle = self._alpha_angle(fpu)
                 bangle = self._beta_angle(fpu)
-                wf_arange = warange_dict.get(fi,Interval())
-                wf_brange = wbrange_dict.get(fi,Interval())
-                
-                print("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
-                      " stepcount angle= ({!s}, {!s}), last_wform_range=({!s},{!s})".
-                      format(fi, self.apositions[fi],self.bpositions[fi],
-                             self.a_caloffsets[fi], self.b_caloffsets[fi],
-                             aangle, bangle,
-                             wf_arange, wf_brange))
+                if active:
+                    wf_arange, wf_brange = self.configured_ranges.get(fi, (Interval(), Interval()))
+                    prefix="active"
+                else:
+                    wf_arange, wf_brange = self.configuring_ranges.get(fi, (Interval(), Interval()))
+                    prefix="last"
+
+                if show_offsets:
+                    print("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
+                          " stepcount angle= ({!s}, {!s}), {!s}_wform_range=({!s},{!s})".
+                          format(fi, self.apositions[fi],self.bpositions[fi],
+                                 self.a_caloffsets[fi], self.b_caloffsets[fi],
+                                 aangle, bangle,
+                                 prefix, wf_arange, wf_brange))
+                else:
+                    print("FPU #{}: angle = ({!s}, {!s}), {!s}_wform_range=({!s},{!s})".
+                          format(fi, self.apositions[fi],self.bpositions[fi],
+                                 prefix, wf_arange, wf_brange))
+
 
     def _update_apos(self, txn, fpu, fpu_id, new_apos, store=True):
         self.apositions[fpu_id] = new_apos
@@ -997,7 +1015,7 @@ class GridDriver(UnprotectedGridDriver):
         it, so this might change.
 
         """
-        
+        inconsistency_abort = False
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(grid_state.FPU):
                 if len(fpuset) > 0 and (fpu_id not in fpuset):
@@ -1014,11 +1032,11 @@ class GridDriver(UnprotectedGridDriver):
                 if ((not self.apositions[fpu_id].contains(new_alpha, tolerance=0.25))
                     or (not self.bpositions[fpu_id].contains(new_beta, tolerance=0.25))) :
                     
-                    print("""FATAL ERROR: RECEIVED FPU POSITION = (%r, %r) OUTSIDE OF TRACKED RANGE = (%r, %r). 
+                    print("""FATAL ERROR: RECEIVED POSITION = (%r, %r) FOR FPU %i OUTSIDE OF TRACKED RANGE = (%r, %r). 
 FPU was possibly moved or power-cycled circumventing the running driver. 
 Emergency exit: Position database needs to be re-initialized.""" % (
-                        new_alpha, new_beta, self.apositions[fpu_id], self.bpositions[fpu_id]))
-                    os.abort()
+                        new_alpha, new_beta, fpu_id, self.apositions[fpu_id], self.bpositions[fpu_id]))
+                    inconsistency_abort = True
             
                 # compute alpha and beta position intervals,
                 # and store both to DB
@@ -1026,6 +1044,11 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                 self._update_bpos(txn, fpu, fpu_id, new_beta, store=store)
                 
         env.sync()
+
+        if inconsistency_abort:
+            os.abort()
+
+
  
                     
 
@@ -1124,9 +1147,11 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         # compare to allowed range
         # if not in range, throw exception, or print warning,
         # depending on protection setting
-        alpha_configuring_range = {}
-        beta_configuring_range = {}
+        configuring_ranges = {}
         for fpu_id, wt_row in wtable.items():
+            if (len(fpuset) != 0) and (fpu_id not in fpuset):
+                continue
+            
             fpu = gs.FPU[fpu_id]
  
             alimits= self.alimits[fpu_id]
@@ -1160,14 +1185,12 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                                          blimits, beta_sect,
                                          wf_brange, wmode)
                 
-            alpha_configuring_range[fpu_id] = wf_arange
-            beta_configuring_range[fpu_id] = wf_brange
+            configuring_ranges[fpu_id] = (wf_arange, wf_brange)
 
         # this is the list of alpha/beta position intervals that
         # will become valid if and after an executeMotion is started,
         # and before the new positions can be retrieved via ping
-        self.alpha_configuring_range.update(alpha_configuring_range)
-        self.beta_configuring_range.update(beta_configuring_range)
+        self.configuring_ranges.update(configuring_ranges)
 
     def _pre_config_motion_hook(self, wtable, gs, fpuset, wmode=Range.Error):
         self._check_and_register_wtable(wtable, gs, fpuset, wmode, sign=1)
@@ -1185,34 +1208,16 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         
     def _post_config_motion_hook(self, wtable, gs, fpuset, partial_config=False):
         # update ranges that will become valid once executeMotion is started
-        if not partial_config:
-            self.configured_arange.update(self.alpha_configuring_range)
-            self.configured_brange.update(self.beta_configuring_range)
-        else:
-            # In this case, not all waveforms were sent successfully.
-            #
-            # Because we do not know which waveforms have been
-            # changed, and which not, we simply extend the worst-case
-            # range of the affected waveforms. This covers both
-            # the situation that the old wave table is used, and
-            # the case that the new one is used.
-            for fpu_id, rentry in self.alpha_configuring_range.items():
-                if gs.FPU[fpu_id].state == FPST_READY_FORWARD:
-                    self.configured_arange[fpu_id].extend(rentry)
-                else:
-                    self.configured_arange[fpu_id] = Interval(0)
-                    del wtable[fpu_id]
+        for fpu_id, rentry in self.configuring_ranges.items():
+            
+            if (len(fpuset) != 0) and (fpu_id not in fpuset):
+                continue
+
+            fpu = gs.FPU[fpu_id]
+            if self.wavetable_was_received(wtable, gs, fpu_id, fpu):
+                self.configured_ranges[fpu_id] = rentry
                     
                 
-            for fpu_id, rentry in self.beta_configuring_range.items():
-                if gs.FPU[fpu_id].state == FPST_READY_FORWARD:
-                    self.configured_brange[fpu_id].extend(rentry)
-                else:
-                    self.configured_brange[fpu_id] = Interval(0)
-                    
-                    if wtable.has_key(fpu_id):
-                        del wtable[fpu_id]
-
         self._save_wtable_direction(wtable.keys(), is_reversed=False, grid_state=gs)
         # save the changed waveform tables
         with env.begin(db=self.fpudb, write=True) as txn:
@@ -1226,20 +1231,35 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         
         
     def _post_repeat_motion_hook(self, wtable, gs, fpuset):
-        # updateranges that become valid once executeMotion is started
-        self.configured_arange.update(self.alpha_configuring_range)
-        self.configured_brange.update(self.beta_configuring_range)
-        self._save_wtable_direction(wtable.keys(), is_reversed=False, grid_state=gs)
+        # update ranges that become valid once executeMotion is started
+        idlist = []
+        for fpu_id, rentry in self.configuring_ranges.items():
+            if (len(fpuset) != 0) and (fpu_id not in fpuset):
+                continue
+            fpu = gs.FPU[fpu_id]
+            if self.wavetable_was_received(wtable, gs, fpu_id, fpu, allow_unconfirmed=True):
+                self.configured_ranges[fpu_id] = rentry
+                idlist.append(fpu_id)
+        self._save_wtable_direction(idlist, is_reversed=False, grid_state=gs)
 
     def _pre_reverse_motion_hook(self, wtable, gs, fpuset, wmode=Range.Error):
         self._check_and_register_wtable(wtable, gs, fpuset, wmode, sign=-1)
         
         
     def _post_reverse_motion_hook(self, wtable, gs, fpuset):
-        # updateranges that become valid once executeMotion is started
-        self.configured_arange.update(self.alpha_configuring_range)
-        self.configured_brange.update(self.beta_configuring_range)
-        self._save_wtable_direction(wtable.keys(), is_reversed=True, grid_state=gs)
+        # update ranges that become valid once executeMotion is started
+        idlist = []
+        for fpu_id, rentry in self.configuring_ranges.items():
+            if (len(fpuset) != 0) and (fpu_id not in fpuset):
+                continue
+            fpu = gs.FPU[fpu_id]
+            if self.wavetable_was_received(wtable, gs, fpu_id, fpu,
+                                           allow_unconfirmed=True,
+                                           target_state=FPST_READY_REVERSE):
+                self.configured_ranges[fpu_id] = rentry
+                idlist.append(fpu_id)
+
+        self._save_wtable_direction(idlist, is_reversed=True, grid_state=gs)
         
     def _update_counters_execute_motion(self, fpu_id, fpu_counters, wtable, is_reversed, cancel=False):
         sum_beta_steps = 0
@@ -1344,11 +1364,15 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                                              self.bpositions[fpu_id].copy())
                 # copy configured alpha and beta position intervals, and
                 # store both to DB
-                if self.configured_arange.has_key(fpu_id):
-                    self._update_apos(txn, fpu, fpu_id, self.configured_arange[fpu_id])
-                    self._update_bpos(txn, fpu, fpu_id,  self.configured_brange[fpu_id])
+                if self.configured_ranges.has_key(fpu_id):
+                    (arange, brange) = self.configured_ranges[fpu_id]
+                    self._update_apos(txn, fpu, fpu_id, arange)
+                    self._update_bpos(txn, fpu, fpu_id,  brange)
 
-                    self._update_counters_execute_motion(fpu_id, self.counters[fpu_id], self.last_wavetable[fpu_id], self.wf_reversed[fpu_id])
+                    self._update_counters_execute_motion(fpu_id, self.counters[fpu_id],
+                                                         self.last_wavetable[fpu_id],
+                                                         self.wf_reversed[fpu_id])
+                    
                     ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
                     
         env.sync()
@@ -1430,13 +1454,10 @@ Emergency exit: Position database needs to be re-initialized.""" % (
 
         
         # clear wavetable spans for the addressed FPUs - they are not longer valid
-        for k in self.configured_arange.keys():
+        for k in self.configured_ranges.keys():
             if (len(fpuset) == 0) or (k in fpuset):
-                del self.configured_arange[k]
+                del self.configured_ranges[k]
                 
-        for k in self.configured_brange.keys():
-            if (len(fpuset) == 0) or (k in fpuset):
-                del self.configured_brange[k]
 
     def _allow_find_datum_hook(self,gs, search_modes, selected_arm=None, fpuset=[],
                               support_uninitialized_auto=True):
@@ -1623,7 +1644,6 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         initial_positions.clear()
         # we allow 0.5 degree of imprecision. This is mainly for the
         # FPU simulator which steps at discrete intervals
-        tolerance = 0.5 # degrees
         
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
@@ -1643,7 +1663,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                 # update stored intervals to include zero, and store in DB
                 if selected_arm in [DASEL_ALPHA, DASEL_BOTH]:
                     if soft_protection:
-                        self._update_apos(txn, fpu, fpu_id, self.apositions[fpu_id].extend(0.0 - tolerance + self.config.alpha_datum_offset))
+                        self._update_apos(txn, fpu, fpu_id, self.apositions[fpu_id].extend(0.0 + self.config.alpha_datum_offset))
                     else:
                         protection_interval = Interval(ALPHA_MIN_HARDSTOP_DEGREE, ALPHA_MAX_HARDSTOP_DEGREE)
                         apos = self.apositions[fpu_id]
@@ -1654,7 +1674,7 @@ Emergency exit: Position database needs to be re-initialized.""" % (
                 if selected_arm in [DASEL_BETA, DASEL_BOTH]:
                     bpos = self.bpositions[fpu_id]
                     if soft_protection:
-                        self._update_bpos(txn, fpu, fpu_id,  bpos.extend(0.0 - tolerance).extend(0.0 + tolerance))
+                        self._update_bpos(txn, fpu, fpu_id,  bpos.extend(0.0))
                     else:
                         
                         m = search_modes.get(fpu_id, SEARCH_AUTO)
