@@ -75,7 +75,11 @@ def parse_args():
 
     parser.add_argument('-t', '--datum_alpha_timeout_steps',  dest='datum_alpha_timeout_steps',
                         default=500,
-                        help='CAN protocol version')
+                        help='timeout limit for alpha arm, in steps')
+    
+    parser.add_argument('-b', '--datum_beta_timeout_steps',  dest='datum_beta_timeout_steps',
+                        default=125 * 20,
+                        help='timeout limit for beta arm, in steps')
 
     parser.add_argument('-D', '--firmware_date',  dest='firmware_date',
                         default="18-01-01",

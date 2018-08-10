@@ -353,13 +353,17 @@ class FPU:
             self.is_collided = True
             self.was_initialized = False
             collision_callback(self)
-            raise BetaCollisionException("a beta arm collision was detected")
+            raise BetaCollisionException("a beta arm collision was detected (due to running into the lower stop)")
         elif ((newbeta + beta_offset) > MAX_BETA) and self.collision_protection_active:
             self.is_collided = True
             self.was_initialized = False
             self.beta_steps = MAX_BETA
             collision_callback(self)
-            raise BetaCollisionException("a beta arm collision was detected")
+            raise BetaCollisionException("a beta arm collision was detected (due to running into the upper stop)")
+        elif self.is_collided :
+            self.was_initialized = False
+            collision_callback(self)
+            raise BetaCollisionException("a beta arm collision was detected (due to signal)")
         else:
             if (newbeta + beta_offset) < MIN_BETA_CRASH:
                 raise CrashException("An min beta crash occured")        
@@ -418,8 +422,10 @@ class FPU:
 
         beta_crossed_zero = False
         alpha_crossed_zero = False
-        timeout_limit = self.opts.datum_alpha_timeout_steps
+        alpha_timeout_limit = self.opts.datum_alpha_timeout_steps
+        beta_timeout_limit = self.opts.datum_beta_timeout_steps
         start_alpha_steps = self.alpha_steps
+        start_beta_steps = self.beta_steps
         self.datum_timeout = False
         alpha_datumed = False
         beta_datumed = False
@@ -461,25 +467,46 @@ class FPU:
                 if not alpha_ready:
                     new_alpha = self.alpha_steps + int(alpha_speed)
                     self.move_alpha(new_alpha, limit_callback)
+                else:
+                    new_alpha = self.alpha_steps
             except LimitBreachException:
                 print("Alpha limit breach for FPU  %i" % self.fpu_id)
                 self.abort_wave = True
                 break
             
             try:
+                if self.is_collided:
+                    print("Beta collision for FPU  %i still active" % self.fpu_id)
+                    self.abort_wave = True
+                    self.is_collided = True
+                    break
+
                 if not beta_ready:
                     # this is much simplified: search until crossing the zero point
                     if not beta_crossed_zero:
                         new_beta = self.beta_steps + int(beta_speed * beta_sign)
                         self.move_beta(new_beta, collision_callback)
+                    else:
+                        new_beta = self.beta_steps
+                else:
+                    new_beta = self.beta_steps
+                    
             except BetaCollisionException:
                 print("Beta collision for FPU  %i" % self.fpu_id)
                 self.abort_wave = True
                 self.is_collided = True
                 break
 
-            if use_timeout and (abs(new_alpha - start_alpha_steps) >= timeout_limit):
-                print("FPU %i: step number exceeds time-out step count of %i, aborting" % (self.fpu_id, timeout_limit))
+            if use_timeout and (abs(new_alpha - start_alpha_steps) >= alpha_timeout_limit):
+                print("FPU %i: step number exceeds alpha time-out step count of %i, aborting" % (self.fpu_id, alpha_timeout_limit))
+                self.abort_wave = True
+                self.datum_timeout = True
+                alpha_datumed = alpha_ready and (not skip_alpha)
+                beta_datumed = beta_ready and (not skip_beta)
+                break
+
+            if use_timeout and (abs(new_beta - start_beta_steps) >= beta_timeout_limit):
+                print("FPU %i: step number exceeds beta time-out step count of %i, aborting" % (self.fpu_id, beta_timeout_limit))
                 self.abort_wave = True
                 self.datum_timeout = True
                 alpha_datumed = alpha_ready and (not skip_alpha)
@@ -567,6 +594,7 @@ class FPU:
 
             
     def enableBetaCollisionProtection(self):
+        self.is_collided = False
         self.collision_protection_active = True
 
         
@@ -698,14 +726,20 @@ class SignalHandler(object):
 
         return self
 
-def handler(signum, frame):
+def reset_handler(signum, frame):
     print("resetting FPUs")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.resetFPU(fpu_id, time.sleep)
-    
+
+def collision_handler(signum, frame):
+    print("generating a collision")
+    for fpu_id, fpu in enumerate(FPUGrid):
+        fpu.is_collided = True
+        
 def init_FPUGrid(options, num_fpus):        
     FPUGrid[:] = [FPU(i, options) for i in range(num_fpus) ]
-    signal.signal(signal.SIGHUP, handler)
+    signal.signal(signal.SIGHUP, reset_handler)
+    signal.signal(signal.SIGUSR1, collision_handler)
     
         
         
