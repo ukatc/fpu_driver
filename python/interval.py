@@ -100,7 +100,7 @@ class Interval:
         
         self.iv = self.iv - iv
 
-    def combine(self, b):
+    def assignCombine(self, b):
         """mutating combine intervals and return result."""
         if not isinstance(b, Interval):
             b = Interval(b)
@@ -111,7 +111,13 @@ class Interval:
 
         return self
         
-    def extend(self, x):
+    def combine(self,b):
+        """immutable combining interval, returning result and
+        not changing object."""
+        iv = self.copy()
+        return iv.assignCombine(b)
+    
+    def assignExtend(self, x):
         """mutating extend interval with scalar, and return result."""
         if x < self.iv[0]:
             self.iv[0] = x
@@ -121,17 +127,11 @@ class Interval:
         return self
             
 
-    def iextend(self, x):
+    def extend(self, x):
         """immutable extend interval, returning result 
         but not changing object."""
         iv = self.copy()
-        return iv.extend(x)
-
-    def icombine(self,b):
-        """immutable combining interval, returning result and
-        not changing object."""
-        iv = self.copy()
-        return iv.combine(b)
+        return iv.assignExtend(x)
     
     def contains(self, b, tolerance=0):
         assert(tolerance >= 0)

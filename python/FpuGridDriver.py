@@ -1193,7 +1193,7 @@ Aborting driver: Position database needs to be re-initialized.""")
 
         # if the movement extends the range of the FPU location,
         # this is updated in the movement range
-        new_range.combine(x)
+        new_range.assignCombine(x)
         
         if not xlimits.contains(x):
             if wmode == Range.Error:
@@ -1769,7 +1769,8 @@ Aborting driver: Position database needs to be re-initialized.""")
                 # update stored intervals to include zero, and store in DB
                 if selected_arm in [DASEL_ALPHA, DASEL_BOTH]:
                     if soft_protection:
-                        self._update_apos(txn, fpu, fpu_id, self.apositions[fpu_id].extend(0.0 + self.config.alpha_datum_offset))
+                        new_apos = self.apositions[fpu_id].extend(0.0 + self.config.alpha_datum_offset)
+                        self._update_apos(txn, fpu, fpu_id, new_apos)
                     else:
                         protection_interval = Interval(ALPHA_MIN_HARDSTOP_DEGREE, ALPHA_MAX_HARDSTOP_DEGREE)
                         apos = self.apositions[fpu_id]
@@ -1780,7 +1781,8 @@ Aborting driver: Position database needs to be re-initialized.""")
                 if selected_arm in [DASEL_BETA, DASEL_BOTH]:
                     bpos = self.bpositions[fpu_id]
                     if soft_protection:
-                        self._update_bpos(txn, fpu, fpu_id,  bpos.extend(0.0))
+                        new_bpos = bpos.extend(0.0)
+                        self._update_bpos(txn, fpu, fpu_id,  new_bpos)
                     else:
                         
                         m = search_modes.get(fpu_id, SEARCH_AUTO)
