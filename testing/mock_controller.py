@@ -1015,7 +1015,7 @@ def handle_repeatMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
         # wavetable is not ready
         print("FPU #", fpu_id, ": wave table is not valid, sending response code", ER_INVALID)
         TX[3] = errflag = 0xff
-        TX[4] = errcode =  ER_INVALIDY
+        TX[4] = errcode =  ER_INVALID
     else:
         try:
             FPUGrid[fpu_id].repeatMotion(fpu_id)
