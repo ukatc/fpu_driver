@@ -147,6 +147,19 @@ def fpu_in_set(fpu_id, fpuset):
         return True
     else:
         return (fpu_id in fpuset)
+
+def countMovableFPUs(gs):
+    num_forward = 0
+    num_reversed = 0
+    for fpu in gs.FPU:
+        state = fpu.state
+        if state == FPST_READY_FORWARD:
+            num_forward += 1
+        elif state == FPST_READY_REVERSE:
+            num_reversed += 1
+
+    return num_forward, num_reversed, num_forward + num_reversed
+
     
 class UnprotectedGridDriver (object):
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
@@ -663,12 +676,14 @@ class UnprotectedGridDriver (object):
                     self._post_config_motion_hook(wtable, gs, fpuset)
                 
         if len(wtable.keys()) < self.config.num_fpus:
-            num_movable = 0
-            for fpu in gs.FPU:
-                if fpu.state in [FPST_READY_FORWARD, FPST_READY_REVERSE]:
-                    num_movable += 1
-            print("%i wave tables added: now %i out of %i FPUs configured to move." % (
-                len(wtable), num_movable, self.config.num_fpus))
+            num_forward,  num_reversed, num_movable = countMovableFPUs(gs)
+            if num_reversed > 0:
+                print("%i wave tables added: now %i out of %i FPUs configured to move, %i of them reversed." % (
+                    len(wtable), num_movable, self.config.num_fpus, num_reversed))
+            else:
+                print("%i wave tables added: now %i out of %i FPUs configured to move." % (
+                    len(wtable), num_movable, self.config.num_fpus))
+                
             
         return rval
 
@@ -834,6 +849,17 @@ class UnprotectedGridDriver (object):
             time.sleep(0.1)
             rv = self._gd.reverseMotion(gs, fpuset)
             self._post_reverse_motion_hook(wtable, gs, fpuset)
+            
+        num_configured = len(fpuset) if (len(fpuset) != 0) else self.config.num_fpus
+        if num_configured < self.config.num_fpus:
+            num_forward,  num_reversed, num_movable = countMovableFPUs(gs)
+            if num_forward > 0:
+                print("%i wave tables reversed: now %i out of %i FPUs configured to move, %i of them forward." % (
+                    num_configured, num_movable, self.config.num_fpus, num_forward))
+            else:
+                print("%i wave tables reversed: now %i out of %i FPUs configured to move." % (
+                    num_configured, num_movable, self.config.num_fpus))
+
         return rv
 
     def repeatMotion(self, gs, fpuset=[], soft_protection=True):
@@ -851,6 +877,17 @@ class UnprotectedGridDriver (object):
             time.sleep(0.1)
             rv = self._gd.repeatMotion(gs, fpuset)
             self._post_repeat_motion_hook(wtable, gs, fpuset)
+
+        num_configured = len(fpuset) if (len(fpuset) != 0) else self.config.num_fpus
+        if num_configured < self.config.num_fpus:
+            num_forward,  num_reversed, num_movable = countMovableFPUs(gs)
+            if num_reversed > 0:
+                print("%i wave tables activated: now %i out of %i FPUs configured to move, %i of them reversed." % (
+                    num_configured, num_movable, self.config.num_fpus, num_reversed))
+            else:
+                print("%i wave tables activated: now %i out of %i FPUs configured to move." % (
+                    num_configured, num_movable, self.config.num_fpus))
+            
         return rv
 
     def countedAngles(self, gs, fpuset=[], show_uninitialized=False):
@@ -1096,9 +1133,7 @@ class GridDriver(UnprotectedGridDriver):
                 if ((not self.apositions[fpu_id].contains(new_alpha, tolerance=0.25))
                     or (not self.bpositions[fpu_id].contains(new_beta, tolerance=0.25))) :
                     
-                    print("""FATAL ERROR: RECEIVED POSITION = (%r, %r) FOR FPU %i OUTSIDE OF TRACKED RANGE = (%r, %r). 
-FPU was possibly moved or power-cycled circumventing the running driver. 
-Emergency exit: Position database needs to be re-initialized.""" % (
+                    print("ERROR: RECEIVED POSITION = (%r, %r) FOR FPU %i OUTSIDE OF TRACKED RANGE = (%r, %r)."  % (
                         new_alpha, new_beta, fpu_id, self.apositions[fpu_id], self.bpositions[fpu_id]))
                     inconsistency_abort = True
             
@@ -1110,6 +1145,8 @@ Emergency exit: Position database needs to be re-initialized.""" % (
         env.sync()
 
         if inconsistency_abort:
+            print("""\n\nFPU was possibly moved or power-cycled circumventing the running driver. 
+Aborting driver: Position database needs to be re-initialized.""")
             os.abort()
 
 
