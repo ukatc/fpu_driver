@@ -370,7 +370,7 @@ variable \texttt{serialnumber}, the logical FPU id by the variable
 \texttt{alpha\_position}, and the beta arm position by
 \texttt{beta\_position}. The angular positions are given in degrees,
 and with the coordinate offsets used in the instrument. By default,
-this means the alpha datum position is at -180 degrees, and the beta
+this means the alpha datum position is at -180\degree\ degrees, and the beta
 datum position at zero degrees.
 
 Then, the following two commands need to be issued:
@@ -414,8 +414,8 @@ The database record can be viewed and verified by using the command
   fpu-admin list1 ${serialnumber}
 \end{minted}
 
-Assuming the initial positions were alpha = -179 degrees and beta = 1
-degrees, this should show data similar to the following output:
+Assuming the initial positions were alpha = -179\degree\ degrees and beta =
+1\degree\ degrees, this should show data similar to the following output:
 
 \begin{minted}{python}
 jnix@nippes:~/MOONS/fpu_driver/python$ ./fpu-admin list1 PT01
@@ -436,7 +436,7 @@ position ('apos') and the beta position ('bpos') are stored as a
 braced pair of identical numbers, followed by an additional
 number. The number pair indicates the position, and the additional
 number indicates the offset of the datum position, which is by default
--180 degrees for the alpha arm, and 0 degrees for the beta arm. One
+-180\degree\ degrees for the alpha arm, and 0\degree\ degrees for the beta arm. One
 could ask why the arm positions are represented as a number pair. The
 reason is simple: The database is designed so that it can, if
 required, represent uncertainty around the arm positions as an
@@ -1099,7 +1099,7 @@ collisions, or due to \texttt{abortMotion} messages, it is possible
 that positions become ambiguous. It can happen that such an ambiguous
 position prevents the software protection from allowing a new
 movement.  For example, if the beta arm is only known to be in a range
-between -10.0 and +10.0 degrees, the software protection cannot decide
+between -10.0\degree\ and +10.0\degree\ degrees, the software protection cannot decide
 whether it should be moved clock-wise or anti-clockwise. In this case,
 an error is thrown.
 
@@ -1109,9 +1109,9 @@ There are three ways to handle such a situation:
 \item The easiest approach is to move the FPU so that its range of
   possible location does not prevent the \texttt{findDatum()} command
   any more to move in a unambiguous direction. For example, if in the
-  case given above, the FPU is moved by 15 degrees anti-clockwise, its
+  case given above, the FPU is moved by 15\degree\ degrees anti-clockwise, its
   new position will still be ambiguous, but it will be in the range
-  from +5.0 to +25.0 degrees. (When the FPU is not in initialized
+  from +5.0\degree\ to +25.0\degree\ degrees. (When the FPU is not in initialized
   state, it will be necessary to pass the keyword parameter
   \texttt{allow\_uninitialized=True} to the corresponding
   \texttt{configMotion()} command. However, it is not at all necessary
@@ -1176,9 +1176,9 @@ FPU firmware revisions and are currently still subject to change.
 They are described in document
 [4],~``FPUMovementSafetySpecification.docx''.  The following
 description assumes that the position after performing a datum
-operation is (-180, 0) degrees, that both switches are off at
-positions (-175, 5.0), and both switches on at positions (-180.2,
--0.2).
+operation is (-180\degree, 0\degree) degrees, that both switches are off at
+positions (-175\degree, 5.0\degree), and both switches on at positions (-180.2\degree,
+-0.2\degree).
 
 \subsection{Test procedure, explained step-by-step}
 To test the datum switches, perform the following steps:
@@ -1205,9 +1205,9 @@ To test the datum switches, perform the following steps:
     ....
   \end{minted}
 
-  This indicates that the alpha arm is at position -180 degrees,
-  using a datum offset of -180 degrees, and the beta arm is at 0
-  degrees.
+  This indicates that the alpha arm is at position -180\degree\ degrees,
+  using a datum offset of -180\degree\ degrees, and the beta arm is at
+  0\degree\ degrees.
   
   If the positions are not correct, proceed as described in
   section~\ref{sec:setinitialposition} on
@@ -2811,7 +2811,8 @@ IDs.
 The driver method
 
 \begin{minted}{python}
-  FpuGridDriver.trackedAngles(grid_state, fpuset=[], show_offsets=False, active=False)
+  FpuGridDriver.trackedAngles(grid_state, fpuset=[],
+                              show_offsets=False, active=False)
 \end{minted}
 
 displays the current tracked positions of FPUs, 
@@ -2821,10 +2822,12 @@ an intended movement command will be within the safe range
 of movements, and to view  in which position FPUs have
 been left when they were powered off.
 
+\index{trackedAngles!showing range of configured waveforms}
 In addition, the method call shows also the interval of absolute angle
 positions which the currently configured movement, or the last
 configured movement will touch. If a \texttt{reverseMotion()} command
-is issued, these ranges are updated accordingly.
+is issued, these ranges are updated accordingly, taking into account
+the reversed movement.
 
 An example output of the command looks like this:
 
@@ -2834,10 +2837,10 @@ An example output of the command looks like this:
            0.0), last_wform_range=([],[])
 \end{minted}
 
-Here,the current actual angle is at position alpha=-180, beta=0
+Here,the current actual angle is at position alpha=-180\degree, beta=0\degree\ 
 degrees.  The angles derived from the step counts are identical, and
 the offsets are zero. When the FPU is moved by an angle of alpha=10 degree
-and beta = 20 degrees, the output looks like this:
+and beta = 20\degree\ degrees, the output looks like this:
 
 \begin{minted}{python}
   >>> w = gen_wf(10, 20)
@@ -2869,10 +2872,11 @@ FPU #0: angle = (-170.0, 19.9), offsets = (9.94, 19.99), \
 
 
 If the positions of FPUs become uncertain for any reason, for example
-due to communication failures during a movement, then instead of a
-single-value position, the interval of \emph{possible} position values
-will be shown.  These intervals are also tracked when uncalibrated
-movements are made, and when the driver is exited and started again.
+due to communication failures during a movement, or a collision, then
+instead of a single-value position, the interval of \emph{possible}
+position values will be shown.  These intervals are also tracked when
+uncalibrated movements are made, and when the driver is exited and
+started again.
 
 
 The command accepts an \texttt{fpuset} keyword argument which, when
@@ -2880,6 +2884,8 @@ set, causes it to retrieve and list only values for the passed FPU
 IDs.
 
 \paragraph{Display options}
+\index{trackedAngles!showing range of active waveforms}
+\index{waveforms!viewing active waveforms}
 
 The ``\texttt{show\_offset}'' flag shows the FPU step counters and
 the offset between step counters and tracked angles, when
@@ -3906,38 +3912,42 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 1.1.1}
 \begin{itemize}
-\item Added: The \texttt{configMotion()} command now prints the number
-  of configured FPUs if the passed wavetable data did not configure
-  all of them. This should avoid confusion if there are old wave
-  tables active, or if FPUs are not configured to move.
+\item Added: The \texttt{configMotion()}, \texttt{repeatMotion()}, and
+  \texttt{reverseMotion()} commands all now print the number of
+  configured FPUs if the passed wavetable data did not configure all
+  of them. This should avoid confusion if there are old wave tables
+  active, or if some FPUs are unintentionally not configured to move.
 
-\item Changed: The \texttt{trackedangles()} method now shows angles
-  from the FPU step counters only when the keyword argument
-  \texttt{show\_offsets} is set to true. Otherwise, only current
-  angles and movement ranges are displayed.
-  
-\item Fixed: If only a subset of FPUs was configured to move
-  directly after a \texttt{resetFPUs()) command, a following
-    \texttt{executeMotion()} command would fail,
-    without actually starting a movement.
+\item Changed: In order to reduce details more to the essential, the
+  \texttt{trackedAngles()} method now shows angles from the FPU step
+  counters only when the keyword argument \texttt{show\_offsets} is
+  set to true. Otherwise, only current angles and movement ranges are
+  displayed.
+
+\item Changed: The \texttt{trackedAngles()} now can show the currently
+  active waveforms (instead of the last configured waveforms), if the
+  keyword argument \texttt{active} is set to \texttt{True}.
   
 \item Fixed: During execution of the \texttt{findDatum()} command, a
-  safety tolerance of 0.5 degrees had been added. This was dropped
-  since it caused confusion and made error recovery from hardware
-  datum time-outs more difficult than needed.
+  safety tolerance of 0.5\degree\ degrees had been added. The shady goal of
+  this was to make simulations easier. This was dropped since it
+  caused confusion and made error recovery from hardware datum
+  time-outs more difficult than needed. Instead, simulations were
+  fixed to return an exact datum position by default.
   
-\item Fixed: The \texttt{executeMotion()} command could trigger a
-  Python KeyError exception when not all FPUs were configured and some
-  FPUs had not been not initialised before.
+\item Fixed: If only a subset of FPUs was configured to move directly
+  after a \texttt{resetFPUs()} command, a following
+  \texttt{executeMotion()} command could trigger a Python KeyError
+  exception.
   
-\item Fixed: Value of alpha datum angle updated to -180
-  degrees. Version numbers in explanations updated.
+\item Fixed: Value of alpha datum angle updated to
+  -180\degree\ degrees. Version numbers in explanations updated.
 
-\item Fixed: Changed \texttt{repeatMotion()} and
-  \texttt{reverseMotion()} commands to expect amd wait for a response
-  from the FPU. For allowing workarounds, this wasn't required in
-  earlier versions.  However, a response is now needed for the
-  protection wrapper.
+\item Fixed/changed: Changed \texttt{repeatMotion()} and
+  \texttt{reverseMotion()} commands to wait for a response from the
+  FPU. For allowing workarounds, this wasn't required in earlier
+  driver versions.  However, a response is now needed for the
+  protection wrapper in order to operate reliably.
 
 \item Added: Any passed \texttt{fpuset} argument is now checked in a
   number of additional places, to filter out invalid parameters.
