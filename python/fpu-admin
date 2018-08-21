@@ -19,6 +19,8 @@ import FpuGridDriver
 
 DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE")
 
+GATEWAY0_ADDRESS = os.environ.get("ETHERCAN_GATEWAY0", "192.168.0.10")
+
 env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10)
 
 fpudb = env.open_db("fpu")
@@ -36,7 +38,7 @@ def flash_FPU(fpu_id, serial_number,mockup=True):
         gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                             for p in [4700, 4701, 4702] ]
     else:
-        gateway_address = [ FpuGridDriver.GatewayAddress("192.168.0.10", 4700) ]
+        gateway_address = [ FpuGridDriver.GatewayAddress(GATEWAY0_ADDRESS, 4700) ]
 
     print("connecting grid:", gd.connect(address_list=gateway_address))
 
