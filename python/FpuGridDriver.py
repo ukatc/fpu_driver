@@ -167,6 +167,10 @@ class UnprotectedGridDriver (object):
                  alpha_datum_offset=ALPHA_DATUM_OFFSET,
                  logLevel=DEFAULT_LOGLEVEL,
                  log_dir=DEFAULT_LOGDIR,
+                 motor_minimum_frequency=500,  
+                 motor_maximum_frequency=2000, 
+                 motor_max_start_frequency=525,
+                 motor_max_rel_increase=1.4,   
                  control_logfile="_{start_timestamp}-fpu_control.log",
                  tx_logfile = "_{start_timestamp}-fpu_tx.log",
                  rx_logfile = "_{start_timestamp}-fpu_rx.log",
@@ -903,7 +907,7 @@ class UnprotectedGridDriver (object):
         return [angles[k] for k in fpuset ]
 
 
-DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "/var/run/fpudb")
+DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "/var/lib/fpudb")
 
 if DATABASE_FILE_NAME != "":
     env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10)

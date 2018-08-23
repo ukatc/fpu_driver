@@ -130,11 +130,11 @@ def parse_args():
     
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=-180.0,
                         help='minimum alpha value  (default: %(default)s)')
-    parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=179.6,
+    parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=172.0,
                         help='maximum alpha value  (default: %(default)s)')
-    parser.add_argument('--beta_min', metavar='BETA_MIN', type=float, default=-179.3,
+    parser.add_argument('--beta_min', metavar='BETA_MIN', type=float, default=-179.0,
                         help='minimum beta value  (default: %(default)s)')
-    parser.add_argument('--beta_max', metavar='BETA_MAX', type=float, default=150.3,
+    parser.add_argument('--beta_max', metavar='BETA_MAX', type=float, default=150.0,
                         help='maximum beta value  (default: %(default)s)')
 
     parser.add_argument('--chill_time', metavar='CHILL_TIME', type=float, default=1,

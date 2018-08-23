@@ -30,16 +30,17 @@ if os.environ.get("MOCKUP","") != "":
 else:
     is_mockup = False
 
-def flash_FPU(fpu_id, serial_number,mockup=True):
+def flash_FPU(fpu_id, serial_number,mockup=True, gateway_address=None):
     
     gd = FpuGridDriver.UnprotectedGridDriver(fpu_id+1)
 
-    if mockup:
-        gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
-                            for p in [4700, 4701, 4702] ]
-    else:
-        gateway_address = [ FpuGridDriver.GatewayAddress(GATEWAY0_ADDRESS, 4700) ]
-
+    if gateway_address is None:
+        if mockup:
+            gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
+                                for p in [4700, 4701, 4702] ]
+        else:
+            gateway_address = [ FpuGridDriver.GatewayAddress(GATEWAY0_ADDRESS, 4700) ]
+            
     print("connecting grid:", gd.connect(address_list=gateway_address))
 
     grid_state = gd.getGridState()
@@ -116,6 +117,15 @@ if __name__ == '__main__' :
         del argv[n]
     else:
         reuse_sn = False
+
+    gateway_address=None
+    if "--gateway_address" in argv:
+        k = argv.index("--gateway_address")
+        hostname = argv[k+1]
+        del argv[k+1]
+        del argv[k]
+        gateway_address = [ FpuGridDriver.GatewayAddress(hostname, 4700) ]
+
               
     command = argv[1]
 
@@ -190,7 +200,7 @@ if __name__ == '__main__' :
             with env.begin(write=True, db=fpudb) as txn:
                 val = pdb.putField(txn,serial_number, pdb.serialnumber_used, True)
             
-        flash_FPU(fpu_id, serial_number, mockup=is_mockup)
+        flash_FPU(fpu_id, serial_number, mockup=is_mockup, gateway_address=gateway_address)
         
 
             

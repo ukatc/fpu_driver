@@ -38,14 +38,8 @@ class ConfigureMotionCommand : public I_CAN_Command
 
 public:
 
-    // minimum step count for a movement section (frame)
-    static const int MIN_STEPCOUNT=125;
-    // maximum step count for a movement section
-    static const int MAX_STEPCOUNT=500;
     // maximum number of sections the FPU can store
     static const unsigned int MAX_NUM_SECTIONS=128;
-    // maximum relative increase in step counts between sections
-    static constexpr double MAX_REL_INCREASE = 0.4;
     // Short wait time before sending configMotion commands
     // to the same FPU, so that the poor thing can have
     // a break.
@@ -72,7 +66,8 @@ public:
     void parametrize(int f_id,
                      int16_t alpha_steps,
                      int16_t beta_steps,
-                     bool first_entry, bool last_entry)
+                     bool first_entry, bool last_entry,
+		     const int MIN_STEPCOUNT)
     {
         fpu_id = f_id;
 

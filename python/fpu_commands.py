@@ -160,16 +160,23 @@ def step_list_pad(slist, target_len):
 
 
 def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
-              mode=None):
+              mode=None, units="degree"):
     # assert we don't deal with NaNs
     assert( (adegree == adegree) and (bdegree == bdegree))
     # (if the above code confuses you, read https://en.wikipedia.org/wiki/NaN
     # and https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html )
     if not (mode in ['fast', 'slow', 'slowpar']):
             raise ValueError("mode needs to be one of 'slow', 'slowpar', 'fast'")
+
+    if units == "degree":
+        asteps = int(round(adegree * asteps_per_deg))
+        bsteps = int(round(bdegree * bsteps_per_deg))
+    elif units == "steps":
+        asteps = int(round(adegree))
+        bsteps = int(round(bdegree))
+    else:
+        raise ValueError("The unit needs to be 'steps' or 'degree'")
         
-    asteps = int(adegree * asteps_per_deg)
-    bsteps = int(bdegree * bsteps_per_deg)
     asign = int(math.copysign(1.0, asteps))
     bsign = int(math.copysign(1.0, bsteps))
     asteps *= asign
@@ -203,7 +210,9 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
     return slist
 
 
-def gen_wf(adegree, bdegree, asteps_per_deg=StepsPerDegreeAlpha, bsteps_per_deg=StepsPerDegreeBeta,
+def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
+           bsteps_per_deg=StepsPerDegreeBeta,
+           units='degree',
            mode='fast'):
     """
     Generate a waveform which moves the alpha arm by an angle of 
@@ -221,19 +230,20 @@ def gen_wf(adegree, bdegree, asteps_per_deg=StepsPerDegreeAlpha, bsteps_per_deg=
     No range checking of movements is done.
     """
 
-    adeg = asarray(adegree)
-    bdeg = asarray(bdegree)
+    aangle = asarray(aangle)
+    bangle = asarray(bangle)
 
-    if adeg.ndim == 0:
-        adeg.shape = 1
+    if aangle.ndim == 0:
+        aangle.shape = 1
 
-    bdeg = ones_like(adeg) * bdeg
-    adeg = ones_like(bdeg) * adeg
+    bangle = ones_like(aangle) * bangle
+    aangle = ones_like(bangle) * aangle
 
-    assert(adeg.ndim <= 1)
+    assert(aangle.ndim <= 1)
 
-    slists = dict( (i, gen_slist(adeg[i], bdeg[i], asteps_per_deg, bsteps_per_deg, mode))
-                 for i in range(len(adeg)))
+    slists = dict( (i, gen_slist(aangle[i], bangle[i], asteps_per_deg, bsteps_per_deg,
+                                 mode=mode, units=units))
+                 for i in range(len(aangle)))
 
     # extend waveform to common maximum length
     maxlen = max(map(len, slists.values()))

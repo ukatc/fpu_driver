@@ -949,8 +949,11 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 }
 
 E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
-        const int MIN_STEPS, const int MAX_STEPS,
-        const unsigned int MAX_NUM_SECTIONS, const double MAX_INCREASE) const
+					       const int MIN_STEPS,
+					       const int MAX_STEPS,
+					       const int MAX_START_STEPS,
+					       const unsigned int MAX_NUM_SECTIONS,
+					       const double MAX_INCREASE_FACTOR) const
 {
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: validating waveforms\n",
@@ -958,6 +961,35 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
 
     const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
+
+    if (MIN_STEPS > MAX_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    "  minimum step number limit is larger than maximum limit\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_START_STEPS > MAX_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    " upper limit of step count during start exceeds maximum step count\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_START_STEPS <= MIN_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    " upper limit of step count during start is smaller than minimum value\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_INCREASE_FACTOR < 1.0)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    " relative growth factor is smaller than 1.\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
 
 
     if (num_steps > MAX_NUM_SECTIONS)
@@ -998,7 +1030,6 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
 
             for (unsigned int sidx=0; sidx<num_steps; sidx++)
             {
-                const double MAX_FACTOR = 1.0 + MAX_INCREASE;
 
                 const t_step_pair& step = wform.steps[sidx];
 
@@ -1028,36 +1059,37 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
 
 
 
-                int xa_small = std::min(xa_last, xa);
-                int xa_large = std::max(xa_last, xa);
+                const int xa_small = std::min(xa_last, xa);
+                const int xa_large = std::max(xa_last, xa);
+		const int increase_limit = int(ceil(xa_small * MAX_INCREASE_FACTOR));
 
-                bool valid_acc = (
+                const bool valid_acc = (
                                      // 1) movement into the same direction
+
                                      ((x_sign == x_last_sign)
                                       //   1a) and currently *stopping* to move
                                       && (( (xa < MIN_STEPS)
-                                            && (xa_last == MIN_STEPS))
-                                          // or, 1b) at least MIN_STEPS and not larger
-                                          // than the allowed relative increase
+                                            && (xa_last <= MAX_START_STEPS))
+                                          // or, 1b) at least  MIN_STEPS and the larger
+                                          // of both values not larger than the allowed
+					  // relative increase
                                           || ( (xa_small >= MIN_STEPS)
-                                               && (xa_large <= int(xa_small * MAX_FACTOR)))))
+                                               && (xa_large <= increase_limit))))
                                      // or, has stopped to move (and only in this case,
                                      // the step count can be smaller than MIN_STEPS)
                                      || ( (xa == 0)
-                                          && (xa_last < MIN_STEPS))
+                                          && (xa_last < MAX_START_STEPS))
                                      // or, a single entry with a small number of steps,
                                      // followed by a pause or end of the table
-                                     || ( (xa <= MIN_STEPS)
+                                     || ( (xa <= MAX_START_STEPS)
                                           && (xa_last == 0)
                                           && (xa_next == 0))
                                      // or, with or without a change of direction,
-                                     // one step number zero and the other at
-                                     // MIN_STEPS - at start or end of a movement
+                                     // one step number zero and the other below or at
+                                     // MAX_START_STEPS - at start or end of a movement
                                      || ((xa_small == 0)
-                                         && (xa_large == MIN_STEPS))
-                                     // or, a pause in movement (however not
-                                     // allowed for both channels at start of
-                                     // waveform)
+                                         && (xa_large <= MAX_START_STEPS))
+                                     // or, a pause in movement
                                      || ((xa_small == 0)
                                          && (xa_large == 0)));
 
@@ -1073,7 +1105,7 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
                 xa_last = xa;
                 x_last_sign = x_sign;
             }
-            if (xa_last > MIN_STEPS)
+            if (xa_last > MAX_START_STEPS)
             {
                 // last step count must be minimum or smaller
                 LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: DE_INVALID_WAVEFORM_TAIL: "
@@ -1109,6 +1141,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     const unsigned long old_count_timeout = grid_state.count_timeout;
 #endif
 
+
+    const int min_stepcount = int(floor(config.motor_minimum_frequency
+					    * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
 
     // perform hardware protection checks unless
     // explicitly disabled.
@@ -1153,11 +1188,19 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 	}
     
 
+	const int max_stepcount = int(ceil(config.motor_maximum_frequency
+				       * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+	const int max_start_stepcount = int(ceil(config.motor_max_start_frequency
+					     * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+	
+	const double max_rel_increase = config.motor_max_rel_increase;
+	
         const E_DriverErrCode vwecode = validateWaveforms(waveforms,
-                                        ConfigureMotionCommand::MIN_STEPCOUNT,
-                                        ConfigureMotionCommand::MAX_STEPCOUNT,
-                                        ConfigureMotionCommand::MAX_NUM_SECTIONS,
-                                        ConfigureMotionCommand::MAX_REL_INCREASE);
+							  min_stepcount,
+							  max_stepcount,
+							  max_start_stepcount,
+							  ConfigureMotionCommand::MAX_NUM_SECTIONS,
+							  max_rel_increase);
         if (vwecode != DE_OK)
         {
             return vwecode;
@@ -1241,7 +1284,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                                          step.alpha_steps,
                                          step.beta_steps,
                                          first_entry,
-                                         last_entry);
+                                         last_entry,
+					 min_stepcount);
 
                 // send the command (the actual sending happens
                 // in the TX thread in the background).

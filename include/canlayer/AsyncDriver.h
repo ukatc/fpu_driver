@@ -19,6 +19,7 @@
 #ifndef ASYNC_DRIVER_H
 #define ASYNC_DRIVER_H
 
+#include <cmath>
 #include "../GridDriverConfig.h"
 #include "GatewayDriver.h"
 #include "../DriverConstants.h"
@@ -189,6 +190,7 @@ public:
     E_DriverErrCode validateWaveforms(const t_wtable& waveforms,
                                       const int MIN_STEPS,
                                       const int MAX_STEPS,
+				      const int MAX_START_STEPS,
                                       const unsigned int MAX_NUM_SECTIONS,
                                       const double MAX_INCREASE) const;
 

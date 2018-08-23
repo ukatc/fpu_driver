@@ -191,6 +191,7 @@ when the internal state struct is used.
 *** DONE proof-read tutorial again
 *** DONE add print_function to imports from __future__ everywhere
 *** DONE fix swallowing of OBSTACLE_ERROR in finishMotion
+** DONE Flash etherCAN gateways with different IPs and MACs
 ** DONE add outstanding features for verification system
 *** DONE discern SocketFailure from FPUTimeoutError
 *** DONE extend spec to autoDatum and firmwareVersion flags
@@ -234,9 +235,11 @@ when the internal state struct is used.
 *** DONE fix torn paragraph in state machine description
 *** DONE add counters for total number of movements etc
 *** DONE add and evaluate error codes for datum time-out / datum rejected because on limit switch
+*** TODO add explanation to rounding in gen_wf() to tutorial
+*** TODO add unit="steps" option to gen_wf()
 ** TODO change default directory for position DB to /var/lib, update documentation
 ** TODO add "--gateway_address" option to admin tool
-** DONE Flash etherCAN gateways with different IPs and MACs
+** TODO add configPath() method with mandatory rounding parameter
 ** TODO  clean-up of version 1 code
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList

@@ -59,6 +59,11 @@ public:
     // offset with which alpha arm angles are computed from step counts
     double alpha_datum_offset;
 
+    double motor_minimum_frequency;   // lower bound of stepper motor frequency
+    double motor_maximum_frequency;   // upper bound of stepper motor frequency
+    double motor_max_start_frequency; // maximum start frequency
+    double motor_max_rel_increase;    // maximum frequency growth factor
+
     GridDriverConfig()
     {
         num_fpus = MAX_NUM_POSITIONERS;
@@ -76,6 +81,10 @@ public:
         fd_txlog = -1;
 
         alpha_datum_offset = ALPHA_DATUM_OFFSET;
+	motor_minimum_frequency = 500.0;
+	motor_maximum_frequency = 2000.0;
+	motor_max_start_frequency=550.0;
+	motor_max_rel_increase = 1.4;
     };
 
 };
