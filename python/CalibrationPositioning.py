@@ -60,7 +60,7 @@ def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
 
     
 def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
-                     return_to_datum=True, deviation_list=[]):
+                     return_to_datum=True, deviation_list=[], args=None):
 
     #gd.pingFPUs(grid_state)
     positions = asarray(list_angles(grid_state))
@@ -83,12 +83,12 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
 
     if return_to_datum:
         printtime()
-        if (alpha0 == 0).all() and (beta0 == 0).all():
-            print("now moving back to ({},{})".format(0, 0))
+        if (alpha0 == args.alpha_datum_pos).all() and (beta0 == args.beta_datum_pos).all():
+            print("now moving back to ({},{})".format(args.alpha_datum_pos, args.beta_datum_pos))
             gd.reverseMotion(grid_state)
             gd.executeMotion(grid_state)
         else:
-            move_fpu(gd, grid_state, -alpha, -beta, "return" )
+            move_fpu(gd, grid_state, -alpha + 0.5, -beta + 0.5, "return to origin" )
 
         printtime()
         print("position:", list_angles(grid_state), "steps=", list_positions(grid_state, show_zeroed=False))
@@ -127,6 +127,12 @@ def parse_args():
     
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=1,
                         help='Number of adressed FPUs. For the deterministic patterns, the FPUs will be steered in unison. For the raodnom patterns, each FPU will receive a random value. WARNING: No conflict checking is done.  (default: %(default)s)')
+    
+    parser.add_argument('--alpha_datum_pos', metavar='ALPHA_DATUM_POS', type=float, default=-180.0,
+                        help='alpha datum position  (default: %(default)s)')
+
+    parser.add_argument('--beta_datum_pos', metavar='beta_DATUM_POS', type=float, default=0.0,
+                        help='beta datum position  (default: %(default)s)')
     
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=-180.0,
                         help='minimum alpha value  (default: %(default)s)')
@@ -306,7 +312,8 @@ def iterate_positions(args, seq, gd, grid_state, metrology_func=None, deviation_
     for alpha, beta, go_datum in seq:
         print("measuring at ({},{}), datum={}".format(alpha, beta, go_datum))
         measure_position(gd, grid_state, alpha, beta, return_to_datum=go_datum,
-                         metrology_func=metrology_func, deviation_list=deviation_list)
+                         metrology_func=metrology_func, deviation_list=deviation_list,
+                         args=args)
         
         if args.chill_time > 10:
             print("waiting %f seconds for fpu to cool off" % args.chill_time)
