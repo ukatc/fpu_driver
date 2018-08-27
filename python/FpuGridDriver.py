@@ -1062,7 +1062,7 @@ class GridDriver(UnprotectedGridDriver):
                 del self.last_wavetable[fpu_id]
 
                         
-    def trackedAngles(self, gs=None, fpuset=[], show_offsets=False, active=False):
+    def trackedAngles(self, gs=None, fpuset=[], show_offsets=False, active=False, retrieve=False):
         """lists tracked angles, offset, and waveform span
         for configured waveforms, for each FPU"""
         
@@ -1094,6 +1094,8 @@ class GridDriver(UnprotectedGridDriver):
                     print("FPU #{}: angle = ({!s}, {!s}), {!s}_wform_range=({!s},{!s})".
                           format(fi, self.apositions[fi],self.bpositions[fi],
                                  prefix, wf_arange, wf_brange))
+            if retrieve:
+                return [ (self.apositions[fi],self.bpositions[fi]) for fi in fpuset ]
 
 
     def _update_apos(self, txn, fpu, fpu_id, new_apos, store=True):

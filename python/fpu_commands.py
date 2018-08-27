@@ -2,7 +2,7 @@
 from __future__ import division, print_function
 
 import math
-from numpy import asarray, ones_like
+from numpy import asarray, ones_like, ceil, floor
 
 """ Utility functions for using the fpu_driver module on the command line.
 """
@@ -83,14 +83,15 @@ def list_serial_numbers(gs, num_fpus=None):
 
 # these values are for version 1 firmware and default
 # section duration
-STEPS_LOWER_LIMIT=125
-STEPS_UPPER_LIMIT=500
+STEPS_LOWER_LIMIT= int(MOTOR_MIN_STEP_FREQUENCY * WAVEFORM_SEGMENT_LENGTH_MS / 1000)
+STEPS_UPPER_LIMIT=int(ceil(MOTOR_MAX_STEP_FREQUENCY * WAVEFORM_SEGMENT_LENGTH_MS / 1000))
 
 
-def step_list_slow(nsteps):
-    full_segments = int(math.floor(nsteps / STEPS_LOWER_LIMIT))
-    delta = STEPS_LOWER_LIMIT
-    # delta = nsteps // full_segments
+
+def step_list_slow(nsteps, min_steps=STEPS_LOWER_LIMIT,):
+    full_segments = int(math.floor(nsteps / min_steps))
+    delta = min_steps
+
     delta_end  = nsteps - delta * full_segments
 
     slist = [ ]
@@ -101,9 +102,11 @@ def step_list_slow(nsteps):
 
     return slist
 
-def step_list_fast(nsteps, max_change=1.2):
+def step_list_fast(nsteps, max_change=1.2,
+                   min_steps=STEPS_LOWER_LIMIT, max_steps=STEPS_UPPER_LIMIT):
+    
     rest_steps = nsteps
-    new_speed = STEPS_LOWER_LIMIT
+    new_speed = min_steps
     steps_accelerate = []
     steps_decelerate = []
     
@@ -115,10 +118,10 @@ def step_list_fast(nsteps, max_change=1.2):
             rest_steps = rest_steps - new_speed
 
         old_speed = new_speed
-        if int(new_speed * max_change) <= STEPS_UPPER_LIMIT:
+        if int(new_speed * max_change) <= max_steps:
             new_speed = int(new_speed * max_change)
         else:
-            new_speed = STEPS_UPPER_LIMIT
+            new_speed = max_steps
             
         if (new_speed > rest_steps) and (old_speed <= rest_steps):
             new_speed = rest_steps
@@ -128,14 +131,14 @@ def step_list_fast(nsteps, max_change=1.2):
     # with minimum speed to the start and end.
     # (more elegant solutions are possible).
     
-    while rest_steps > (2 * STEPS_LOWER_LIMIT):
-        steps_accelerate.insert(0, STEPS_LOWER_LIMIT)
-        steps_decelerate.insert(0, STEPS_LOWER_LIMIT)
-        rest_steps = rest_steps - 2 * STEPS_LOWER_LIMIT
+    while rest_steps > (2 * min_steps):
+        steps_accelerate.insert(0, min_steps)
+        steps_decelerate.insert(0, min_steps)
+        rest_steps = rest_steps - 2 * min_steps
         
-    if rest_steps > STEPS_LOWER_LIMIT:
-        steps_accelerate.insert(0, STEPS_LOWER_LIMIT)
-        rest_steps = rest_steps -  STEPS_LOWER_LIMIT
+    if rest_steps > min_steps:
+        steps_accelerate.insert(0, min_steps)
+        rest_steps = rest_steps -  min_steps
 
     steps_decelerate.reverse()
     steps_decelerate.append(rest_steps)
@@ -160,7 +163,8 @@ def step_list_pad(slist, target_len):
 
 
 def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
-              mode=None, units="degree"):
+              mode=None, units="degree", max_change=1.2,
+              min_steps=STEPS_LOWER_LIMIT, max_steps=STEPS_UPPER_LIMIT):
     # assert we don't deal with NaNs
     assert( (adegree == adegree) and (bdegree == bdegree))
     # (if the above code confuses you, read https://en.wikipedia.org/wiki/NaN
@@ -186,16 +190,16 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
         slist = [ (astep * asign, 0) for astep in step_list_slow(asteps) ]
         slist.extend([ (0, bstep * bsign) for bstep in step_list_slow(bsteps) ])
     elif mode == 'slowpar':
-        alist = step_list_slow(asteps)
-        blist = step_list_slow(bsteps)
+        alist = step_list_slow(asteps, min_steps=min_steps)
+        blist = step_list_slow(bsteps, min_steps=min_steps)
         max_len = max(len(alist), len(blist))
         alist = step_list_pad(alist, max_len)
         blist = step_list_pad(blist, max_len)
         slist = [ (astep * asign, bstep * bsign)
                   for astep, bstep in zip(alist, blist) ]
     else:
-        alist = step_list_fast(asteps)
-        blist = step_list_fast(bsteps)
+        alist = step_list_fast(asteps, max_change=max_change, min_steps=min_steps, max_steps=max_steps)
+        blist = step_list_fast(bsteps, max_change=max_change, min_steps=min_steps, max_steps=max_steps)
         max_len = max(len(alist), len(blist))
         alist = step_list_pad(alist, max_len)
         blist = step_list_pad(blist, max_len)
@@ -213,7 +217,10 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
 def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
            bsteps_per_deg=StepsPerDegreeBeta,
            units='degree',
-           mode='fast'):
+           mode='fast',
+           max_change=1.2,
+           min_steps=STEPS_LOWER_LIMIT,
+           max_steps=STEPS_UPPER_LIMIT):
     """
     Generate a waveform which moves the alpha arm by an angle of 
     adegree and the beta arm by bdegree. asteps_per_deg and bsteps_er_deg
@@ -242,7 +249,8 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
     assert(aangle.ndim <= 1)
 
     slists = dict( (i, gen_slist(aangle[i], bangle[i], asteps_per_deg, bsteps_per_deg,
-                                 mode=mode, units=units))
+                                 mode=mode, units=units, max_change=max_change,
+                                 min_steps=min_steps, max_steps=max_steps))
                  for i in range(len(aangle)))
 
     # extend waveform to common maximum length

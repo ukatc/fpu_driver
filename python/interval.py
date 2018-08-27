@@ -41,6 +41,10 @@ class Interval:
     def copy(self):
         return Interval(self.iv)
 
+    def as_scalar(self):
+        assert(self.iv[0] == self.iv[1])
+        return self.iv[0]
+
     def __str__(self):
         if isnan(self.iv[0]) and isnan(self.iv[1]):
             return "[]"
