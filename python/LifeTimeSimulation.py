@@ -13,7 +13,7 @@ import pylab as pl
 import sys
 
 from numpy import (array, random, asarray, zeros, ones, sqrt, ceil,
-                   cumsum, arange, sin, pi, maximum, sign )
+                   cumsum, arange, sin, pi, maximum, sign, append, insert )
 
 import FpuGridDriver
 from FpuGridDriver import (TEST_GATEWAY_ADRESS_LIST, GatewayAddress,
@@ -23,6 +23,9 @@ from fpu_constants import *
 
 def wf_create():
     return { 0 : []}
+
+def wf_zero():
+    return { 0 : [ (0, 0)]}
 
 def wf_copy(wf):
     return {id : list(steps) for id, steps in wf.items() }
@@ -57,13 +60,19 @@ def gen_fastmove(current_alpha, current_beta, alpha_target, beta_target, fractio
                  min_steps=opts.start_steps)
     return wf2
 
-def gen_jerk(current_alpha, current_beta, opts=None):
+def gen_jerk(current_alpha, current_beta, jerk_direction, opts=None):
     rel_range = random.uniform(0.05, 0.3)
-    
-    alpha_jmin = current_alpha - (current_alpha - opts.alpha_min) * rel_range
-    alpha_jmax = current_alpha + (opts.alpha_max - current_alpha) * rel_range
-    beta_jmin = current_beta - (current_beta - opts.beta_min) * rel_range
-    beta_jmax = current_beta + (opts.beta_max - current_beta) * rel_range
+
+    if jerk_direction == 0:
+        alpha_jmin = current_alpha
+        alpha_jmax = current_alpha + (opts.alpha_max - current_alpha) * rel_range
+        beta_jmin = current_beta
+        beta_jmax = current_beta + (opts.beta_max - current_beta) * rel_range
+    else:
+        alpha_jmin = current_alpha - (current_alpha - opts.alpha_min) * rel_range
+        alpha_jmax = current_alpha
+        beta_jmin = current_beta - (current_beta - opts.beta_min) * rel_range
+        beta_jmax = current_beta
 
     new_alpha = random.uniform(alpha_jmin, alpha_jmax)
     new_beta = random.uniform(beta_jmin, beta_jmax)
@@ -76,10 +85,12 @@ def gen_jerk(current_alpha, current_beta, opts=None):
 
 def gen_oscillation(current_alpha, current_beta, opts=None):
     oscillation_time = random.uniform(1, 5)
-    oscillation_segments = int(oscillation_time/ opts.segment_length_ms)
+    oscillation_segments = int(float(oscillation_time)/ opts.segment_length_ms)
     frq = random.uniform(0.2, 3)
     max_steps = opts.max_steps
     min_steps = opts.min_steps
+    max_acc = opts.max_acceleration
+    start_steps = opts.start_steps
 
     oscillation_t = arange(oscillation_segments) * opts.segment_length_ms
 
@@ -96,7 +107,71 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
         if y[k] * y[k+1] < 0:
             y[k+1] = 0
             
-    
+    # smooth out too large accelerations
+    for k in range(len(y) -1):
+        s = sign(y[k])
+        if k == 0:
+            prev_y = 0
+        else:
+            prev_y = y[k-1]
+            
+        if prev_y == 0:
+            if abs(y[k]) > start_steps:
+                y[k] = s * random.randint(min_steps, start_steps+1)
+            elif abs(y[k]) < min_steps and (y[k] != 0):
+                y[k] = s * min_steps
+        else:
+            if abs(y[k]) > max_acc * abs(prev_y):
+                y[k] = s * max_acc * abs(prev_y)
+
+    # smooth out too large decelerations
+    # this has the twist that at the end of a movement
+    # in one direction, and value between start_steps and zero is allowed
+    # once
+    k = 0
+    while k < len(y):
+        s = sign(y[k])
+        if k == 0:
+            prev_y = 0
+        else:
+            prev_y = y[k-1]
+
+
+        if abs(prev_y) > start_steps:
+            # normal deceleration
+            if abs(y[k]) < abs(prev_y) / max_acc:
+                    y[k] = s * abs(prev_y) / max_acc
+        else:
+            # deceleration when finishing movement streak
+            if (y[k] == 0):
+                # that's fine, the arm stopped
+                pass
+            else:
+                if abs(y[k]) < abs(prev_y) / max_acc:
+                    y[k] = s * abs(prev_y) / max_acc
+
+                # we may need to insert or append a zero value
+                if k == (len(y) - 1):
+                    # we brake to zero so that the waveform is neutral
+                    if abs(y[k]) < min_steps:
+                        # below min threhold, next needs to be stop
+                        max_next_y = 0
+                    else:
+                        max_next_y = s * abs(y[k]) / max_acc
+                        
+                    y = append(y, max_next_y)
+                else:
+                    if abs(y[k]) < min_steps:
+                        # we need to ensure that the next y is zero
+                        next_y = y[k+1]
+                        if abs(next_y) > 0:
+                            y = insert(y, k+1, 0)
+                        
+                    
+                    
+
+        k += 1
+        
 
     series = [ (yt, yt) for yt in y ]
     wf = { j : series for j in range(len(current_alpha)) }
@@ -117,13 +192,13 @@ def gen_creep(current_alpha, current_beta, alpha_target, beta_target,
 
     # inject a few low step counts, to simulate rounding effects
     if opts.simulate_quantization:
-        for ws in wf.values():
+         for ws in wf.values():
             for k in range(len(ws)):
-                if random.randint(30) != 0:
+                if random.randint(5) != 0:
                     continue
                 segment = list(ws[k])
                 for c in [0,1]:
-                    if segment[c] <= opts.start_steps + 1:
+                    if segment[c] <= opts.start_steps:
                         segment[c] = random.randint(opts.min_steps, opts.start_steps+1)
                 ws[k]=tuple(segment)
                         
@@ -152,6 +227,40 @@ def gen_jump(current_alpha, current_beta, alpha_target, beta_target, opts=None):
 
     return wf
 
+def check_wf(wf, channel, opts):
+    for ws in wf.values():
+        y = array([ seg[channel] for seg in ws ])
+        y = append(y, 0)
+        print("y=", y)
+        len_y = len(y)
+        for k, yk in enumerate(y):
+            if k == 0:
+                y_prev = 0
+            else:
+                y_prev = y[k-1]
+            if k == len_y -1:
+                y_post = 0
+            else:
+                y_post = y[k+1]
+            
+                
+            yk_abs = abs(yk)
+            y_prev_abs = abs(y_prev)
+            y_post_abs = abs(y_post)
+            
+            large_y = max(yk_abs, y_prev_abs)
+            small_y = min(yk_abs, y_prev_abs)
+            
+            print("v[%i][%i]= %r, small=%i, large=%i, y_post=%i" % (channel, k, yk, small_y, large_y, y_post))
+
+            assert(sign(yk) * sign(y_prev) >= 0)
+            assert(sign(yk) * sign(y_post) >= 0)
+                   
+            if (small_y != 0) and (y_prev != 0) and (y_post != 0):
+                assert( (large_y /  small_y) <= opts.max_acceleration)
+                        
+
+
 """generates a waveform according to the given command line parameters."""
 def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0, opts=None):
 
@@ -176,13 +285,18 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0, opts=None):
 
         elif smrsix == 1:
             # several jerky movements back and forth - between 1 and 5 jerks, with randomized strength
-            njerks = random.randint(1,5)
+            njerks = random.randint(1,6)
             wf2 = wf_create()
+            wf_z = wf_zero()
+            jerk_direction = random.randint(0, 2)
             for k in range(njerks):
-                wf3 = gen_creep(current_alpha, current_beta, alpha_target, beta_target, opts=opts,
+                wf_creep = gen_creep(current_alpha, current_beta, alpha_target, beta_target, opts=opts,
                                 fraction=0.1, max_change=1.2, speed_factor=0.5)
-                wf2 = wf_append(wf2, wf3)
-                wf2 = wf_append(wf2, gen_jerk(current_alpha, current_beta, opts))
+                wf2 = wf_append(wf_append(wf2, wf_creep), wf_z)
+                wf_jerk = gen_jerk(current_alpha, current_beta, jerk_direction, opts=opts)
+                jerk_direction = (jerk_direction + 1) % 2
+                wf2 = wf_append(wf_append(wf2, wf_jerk), wf_z)
+                
         elif smrsix == 2:
             # a period of small oscillations
             wf2a = gen_creep(current_alpha, current_beta, alpha_target, beta_target,
@@ -208,27 +322,9 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0, opts=None):
         if wf2_len <= rest_segments:
             print("smrsix=", smrsix)
 
-            for ws in wf.values():
-                for ix in [0, 1]:
-                    print("ws=", ws)
-                    len_ws = len(ws)
-                    if len_ws > 0:
-                        vap=abs(ws[0][ix])
-                    for k, v in enumerate(ws):
-                        va = abs(v[ix])
-                        if k < 1:
-                            print("v[%i]=" % k,v)
-                        large_v = max(va, vap)
-                        small_v = min(va, vap)
-                        if k < len_ws -1:
-                            van = abs(ws[k+1][ix])
-                            print("v[%i]= %r, small=%i, large=%i" % (k+1, ws[k+1], small_v, large_v))
-                        else:
-                            van = 0
-                        if (small_v != 0) and (vap != 0) and (van != 0):
-                            assert( ((large_v - small_v) / small_v) <= 1.4)
-                        vap = va
-
+            for channel in [0, 1]:
+                check_wf(wf2, channel, opts)
+                
             
             wf = wf_append(wf, wf2)
             smrsix = (smrsix + 1) % 6
@@ -314,7 +410,6 @@ def parse_args():
         
     parser.add_argument('--max_acceleration', metavar='MAX_ACCELERATION', type=float,
                         default=MAX_ACCELERATION_FACTOR,
-#                        default=1.35,
                         help='maximum motor acceleration  (default: %(default)s)')
 
     parser.add_argument('--segment_length_ms', metavar='SEGMENT_LENGTH_MS', type=float,
@@ -325,8 +420,14 @@ def parse_args():
                         default=MAXNUM_WAVEFORM_SEGMENTS,
                         help='waveform segment length, in milliseconds (default: %(default)s)')
 
-    parser.add_argument('--simulate_quantization', default=False, action='store_true',
-                        help='simulate quatization of step counts')
+    parser.set_defaults(simulate_quantization=False)
+    
+    parser.add_argument('-Q', '--simulate_quantization', dest="simulate_quantization",  action='store_true',
+                        help='simulate quantization of step counts by introducing '
+                        'mocked rounding errrors  (default: %(default)s)')
+
+    parser.add_argument('-q', '--no_quantization', dest="simulate_quantization", action='store_false',
+                        help='do not simulate quantization of step counts')
 
             
     parser.add_argument('--end_time', metavar='END_TIME', type=str,
