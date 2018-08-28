@@ -34,7 +34,11 @@ def wf_append(wf1, wf2):
     wf = wf_copy(wf1)
     
     for k in wf.keys():
-        wf[k].extend(wf2[k])
+        if wf2.has_key(k):
+            ws = wf2[k]
+        else:
+            ws = wf2[0]
+        wf[k].extend(ws)
 
     return wf
 
@@ -51,6 +55,20 @@ def sum_steps(wf, coord):
         result[int(k)] = sum([v[idx] for v in val])
         
     return result
+
+# returns true if any step indexed with
+# idx in any series of the waveform is non-zero
+def any_seg_nonzero(wf, idx):
+    # iterate over series per FPU
+    for ws in wf.values():
+        # get indexed step in waveform
+        s = ws[idx]
+        # check for non-zero
+        if  (s[0] != 0) or  (s[1] != 0):
+            return True
+    return False
+        
+
 
 def gen_fastmove(current_alpha, current_beta, alpha_target, beta_target, fraction=0.6, opts=None):
     acceleration = random.uniform(sqrt(opts.max_acceleration), opts.max_acceleration)
@@ -181,13 +199,13 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
     
     
 def gen_creep(current_alpha, current_beta, alpha_target, beta_target,
-              opts=None, fraction=0.6, max_change=1.01, speed_factor=0.2):
+              opts=None, fraction=0.6, max_change=1.05, speed_factor=0.2):
     dist_alpha = alpha_target - current_alpha
     dist_beta = beta_target - current_beta
 
     max_steps = opts.start_steps + int( (opts.max_steps - opts.start_steps) * speed_factor)
 
-    wf = gen_wf(dist_alpha * fraction, dist_beta * fraction, max_change,
+    wf = gen_wf(dist_alpha * fraction, dist_beta * fraction, max_change=max_change,
                 min_steps=opts.start_steps, max_steps=max_steps)
 
     # inject a few low step counts, to simulate rounding effects
@@ -206,12 +224,11 @@ def gen_creep(current_alpha, current_beta, alpha_target, beta_target,
     return wf
              
 
-def gen_wait(current_alpha, current_beta, opts=None, nsegments=None):
+def gen_wait(current_alpha, current_beta, opts=None, nsegments=None, max_segments=None):
     clen = opts.cycle_length
 
     if nsegments is None:
-        wait_time = random.uniform(0.05 * clen, 0.1 * clen)
-        nsegments = int(round(1000 * wait_time / opts.segment_length_ms))
+        nsegments = random.randint(0, max_segments+1)
 
     series = [ (0, 0) for k in range(nsegments) ]
     wf = { k : series for k in range(len(current_alpha)) }
@@ -227,11 +244,12 @@ def gen_jump(current_alpha, current_beta, alpha_target, beta_target, opts=None):
 
     return wf
 
-def check_wf(wf, channel, opts):
+def check_wf(wf, channel, opts=None, verbose=False):
     for ws in wf.values():
         y = array([ seg[channel] for seg in ws ])
         y = append(y, 0)
-        print("y=", y)
+        if verbose:
+            print("y=", y)
         len_y = len(y)
         for k, yk in enumerate(y):
             if k == 0:
@@ -250,8 +268,9 @@ def check_wf(wf, channel, opts):
             
             large_y = max(yk_abs, y_prev_abs)
             small_y = min(yk_abs, y_prev_abs)
-            
-            print("v[%i][%i]= %r, small=%i, large=%i, y_post=%i" % (channel, k, yk, small_y, large_y, y_post))
+
+            if verbose:
+                print("v[%i][%i]= %r, small=%i, large=%i, y_post=%i" % (channel, k, yk, small_y, large_y, y_post))
 
             assert(sign(yk) * sign(y_prev) >= 0)
             assert(sign(yk) * sign(y_post) >= 0)
@@ -262,7 +281,8 @@ def check_wf(wf, channel, opts):
 
 
 """generates a waveform according to the given command line parameters."""
-def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0, opts=None):
+def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
+                   verbose=True, opts=None):
 
     rest_segments = int(round((1000 * cycle_length) / opts.segment_length_ms))    
     if rest_segments > opts.maxnum_waveform_segments:
@@ -275,6 +295,7 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0, opts=None):
     while True:
         
         if smrsix == 0:
+            sname = "fastmove"
             # chose a random final destination for both arms
             alpha_target = random.uniform(opts.alpha_min, opts.alpha_max)
             beta_target = random.uniform(opts.beta_min, opts.beta_max)
@@ -284,8 +305,9 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0, opts=None):
                                fraction=0.7, opts=opts)
 
         elif smrsix == 1:
+            sname = "jerks"
             # several jerky movements back and forth - between 1 and 5 jerks, with randomized strength
-            njerks = random.randint(1,6)
+            njerks = random.randint(0,3)
             wf2 = wf_create()
             wf_z = wf_zero()
             jerk_direction = random.randint(0, 2)
@@ -298,42 +320,74 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0, opts=None):
                 wf2 = wf_append(wf_append(wf2, wf_jerk), wf_z)
                 
         elif smrsix == 2:
+            sname = "oscillations"
             # a period of small oscillations
             wf2a = gen_creep(current_alpha, current_beta, alpha_target, beta_target,
                              fraction=0.05, speed_factor=0.3, opts=opts)
             wf2b = gen_oscillation(current_alpha, current_beta, opts=opts)
             wf2 = wf_append(wf2a, wf2b)
         elif smrsix == 3:
+            sname = "slow creep"
+                        
             # a slow creeping movement towards the target
             wf2 = gen_creep(current_alpha, current_beta, alpha_target, beta_target,
                             fraction=0.95, opts=opts)
         elif smrsix == 4:
+            sname = "wait"
+
             # a few moments stationary wait - random duration
-            wf2 = gen_wait(current_alpha, current_beta, opts=opts)
+            wf2 = gen_wait(current_alpha, current_beta, max_segments=int(0.3 * rest_segments), opts=opts)
         elif smrsix == 5:
+            sname = "jumptotarget"
+
             # a short jump to the final destination
             wf2 = gen_jump(current_alpha, current_beta, alpha_target, beta_target, opts=opts)
         else:
+            sname = "rest wait"
+
             # a few moments stationary wait - rest duration
-            nsegments = rest_segments
-            wf2 = gen_wait(current_alpha, current_beta, nsegments, opts=opts)
+            wf2 = gen_wait(current_alpha, current_beta, nsegments=rest_segments, opts=opts)
 
+        if verbose:
+            print("smrsix", smrsix, "segment:", sname, "wf=", wf2, end="")
+            
         wf2_len = len(wf2[0])
-        if wf2_len <= rest_segments:
-            print("smrsix=", smrsix)
 
-            for channel in [0, 1]:
-                check_wf(wf2, channel, opts)
-                
-            
-            wf = wf_append(wf, wf2)
-            smrsix = (smrsix + 1) % 6
-            
-            rest_segments -= wf2_len
-            current_alpha += (sum_steps(wf2, "alpha") / StepsPerDegreeAlpha)
-            current_beta += (sum_steps(wf2, "beta") / StepsPerDegreeBeta)
-        else:
+        new_alpha = current_alpha + (sum_steps(wf2, "alpha") / StepsPerDegreeAlpha)
+        
+        new_beta = current_beta + (sum_steps(wf2, "beta") / StepsPerDegreeBeta)
+        
+        if wf2_len > rest_segments:
+            print("(discarded, bc length)")
             break
+        elif (any(new_alpha < opts.alpha_min)
+              or any(new_alpha > opts.alpha_max)
+              or any(new_beta < opts.beta_min)
+              or any(new_beta > opts.beta_max)):
+            
+            print("(discarded, bc range)")
+            break
+        else:
+            print(".. ok")
+        
+        if (wf2_len > 0) and (wf2_len < rest_segments):
+            if any_seg_nonzero(wf2, -1):
+                wf2 = wf_append(wf2, wf_zero())
+                wf2_len = len(wf2[0])
+                
+        for channel in [0, 1]:
+            check_wf(wf2, channel, opts=opts)
+        
+        wf = wf_append(wf, wf2)
+            
+        smrsix = (smrsix + 1) % 6
+        if smrsix == 0:
+            break
+        
+        rest_segments -= wf2_len
+        
+        current_alpha = new_alpha        
+        current_beta = new_beta
             
 
     return wf
@@ -388,7 +442,7 @@ def parse_args():
     parser.add_argument('--beta_max', metavar='BETA_MAX', type=float, default=BETA_MAX_DEGREE,
                         help='maximum beta value  (default: %(default)s)')
 
-    parser.add_argument('--chill_time', metavar='CHILL_TIME', type=float, default=30,
+    parser.add_argument('--chill_time', metavar='CHILL_TIME', type=float, default=3,
                         help='chill time for alpha arm  (default: %(default)s)')
         
     parser.add_argument('--cycle_length', metavar='CYCLE_LENGTH', type=float, default=32,
@@ -504,10 +558,21 @@ def initialize_FPU(args):
 
     return gd, grid_state
 
+def chatty_sleep(sleep_time, time_slice=0.2):
+    n = 0
+    while sleep_time > 0:
+        slice_len = min(time_slice, sleep_time)
 
-    
+        c = "-\|/"[n % 4]
+        
+        print("waiting %4.1f sec .... %s\r" % (sleep_time, c), end="")
+        sys.stdout.flush()
+        time.sleep(slice_len)
+        sleep_time -= slice_len
+        n += 1
+        
 
-def rungrid(args):
+def rungrid(args, verbose=False):
     # initialize FPU accordingly
     gd, grid_state = initialize_FPU(args)
 
@@ -525,13 +590,20 @@ def rungrid(args):
             current_angles = gd.countedAngles(grid_state)
             current_alpha = array([x for x, y in current_angles ])
             current_beta = array([y for x, y in current_angles ])
-            wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length, args)
+            wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length, opts=args)
+            if verbose:
+                for k, ws in enumerate(wf[0]):
+                    print("wf[%i] = %r" % (k, ws))
+
+            print("configure new waveform")
             gd.configMotion(wf, grid_state)
             gd.executeMotion(grid_state)
-            time.sleep(args.chill_time)
+            chatty_sleep(args.chill_time)
+            print("reversing waveform")
             gd.reverseMotion(grid_state)
             gd.executeMotion(grid_state)
-            time.sleep(args.chill_time)
+            chatty_sleep(args.chill_time)
+            print("findDatum")
             gd.findDatum(grid_state)
     
     except SystemExit:
@@ -559,9 +631,7 @@ def plot_waveform(wf, idx):
     beta_degree = cumsum(steps[1]) / StepsPerDegreeBeta
         
     h1, = pl.plot(t_sec, alpha_degree, '-', label='alpha over time')
-        
-    pl.hold(True)
-            
+                    
     h2, = pl.plot(t_sec, beta_degree, '-', label='beta over time')
         
     pl.legend(handles=[h1, h2])
@@ -580,9 +650,7 @@ def plot_steps(wf, idx):
     beta_steps =  steps[1]
         
     h1, = pl.plot(t_sec, alpha_steps, '.', label='alpha over time')
-        
-    pl.hold(True)
-            
+                   
     h2, = pl.plot(t_sec, beta_steps, '.', label='beta over time')
         
     pl.legend(handles=[h1, h2])
@@ -603,7 +671,7 @@ if __name__ == '__main__':
         
         current_alpha=0
         current_beta=0
-        wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length, args)
+        wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length, opts=args)
         plot_waveform(wf, 0)
         plot_steps(wf, 0)
 
