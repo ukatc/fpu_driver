@@ -103,7 +103,8 @@ def gen_jerk(current_alpha, current_beta, jerk_direction, opts=None):
 
 def gen_oscillation(current_alpha, current_beta, opts=None):
     oscillation_time = random.uniform(1, 5)
-    oscillation_segments = int(float(oscillation_time)/ opts.segment_length_ms)
+    #oscillation_segments = int(float(oscillation_time)/ (opts.segment_length_ms / 1000.0))
+    oscillation_segments = 0
     frq = random.uniform(0.2, 3)
     max_steps = opts.max_steps
     min_steps = opts.min_steps
@@ -112,7 +113,7 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
 
     oscillation_t = arange(oscillation_segments) * opts.segment_length_ms
 
-    y = max_steps * sin(oscillation_t * 2 * pi * frq)
+    y = (max_steps * sin(oscillation_t * 2 * pi * frq)).astype(int)
     # eliminate speed values which are too small
 
 
@@ -135,12 +136,12 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
             
         if prev_y == 0:
             if abs(y[k]) > start_steps:
-                y[k] = s * random.randint(min_steps, start_steps+1)
+                y[k] = int(s * random.randint(min_steps, start_steps+1))
             elif abs(y[k]) < min_steps and (y[k] != 0):
-                y[k] = s * min_steps
+                y[k] = int(s * min_steps)
         else:
             if abs(y[k]) > max_acc * abs(prev_y):
-                y[k] = s * max_acc * abs(prev_y)
+                y[k] = int(s * max_acc * abs(prev_y))
 
     # smooth out too large decelerations
     # this has the twist that at the end of a movement
@@ -158,7 +159,7 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
         if abs(prev_y) > start_steps:
             # normal deceleration
             if abs(y[k]) < abs(prev_y) / max_acc:
-                    y[k] = s * abs(prev_y) / max_acc
+                    y[k] = int(ceil(s * abs(prev_y) / max_acc))
         else:
             # deceleration when finishing movement streak
             if (y[k] == 0):
@@ -166,7 +167,7 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
                 pass
             else:
                 if abs(y[k]) < abs(prev_y) / max_acc:
-                    y[k] = s * abs(prev_y) / max_acc
+                    y[k] = int(ceil(s * abs(prev_y) / max_acc))
 
                 # we may need to insert or append a zero value
                 if k == (len(y) - 1):
@@ -175,7 +176,7 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
                         # below min threhold, next needs to be stop
                         max_next_y = 0
                     else:
-                        max_next_y = s * abs(y[k]) / max_acc
+                        max_next_y = int(ceil(s * abs(y[k]) / max_acc))
                         
                     y = append(y, max_next_y)
                 else:
@@ -191,7 +192,7 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
         k += 1
         
 
-    series = [ (yt, yt) for yt in y ]
+    series = [ (int(yt), int(yt)) for yt in y ]
     wf = { j : series for j in range(len(current_alpha)) }
 
     return wf
@@ -290,6 +291,7 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
     
     wf = wf_create()
 
+    print("current angles:", zip(current_alpha, current_beta))
     
     smrsix = 0 # that's the state machine rotating state index
     while True:
@@ -380,16 +382,18 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
         
         wf = wf_append(wf, wf2)
             
-        smrsix = (smrsix + 1) % 6
-        if smrsix == 0:
-            break
         
         rest_segments -= wf2_len
         
         current_alpha = new_alpha        
         current_beta = new_beta
             
+        smrsix = (smrsix + 1) % 6
+        if smrsix == 0:
+            break
 
+    print("new angles:", zip(current_alpha, current_beta))
+    
     return wf
 
 
@@ -588,6 +592,7 @@ def rungrid(args, verbose=False):
                 
             # get current angles
             current_angles = gd.countedAngles(grid_state)
+
             current_alpha = array([x for x, y in current_angles ])
             current_beta = array([y for x, y in current_angles ])
             wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length, opts=args)

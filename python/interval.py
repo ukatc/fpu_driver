@@ -3,6 +3,7 @@
 from types import StringType, IntType, ListType, FloatType
 
 from ast import literal_eval
+import numpy
 from numpy import array, ndarray, nan, Inf, isnan
 
 class Interval:
@@ -16,7 +17,8 @@ class Interval:
             assert(len(source)==2)
             source = list(source)
             source.sort()
-
+        if (type(source) == numpy.float) or (type(source) == numpy.float64):
+            source = float(source)
         if isinstance(source, Interval):
             iv = array(source.iv)
         elif type(source) == ndarray:
@@ -34,7 +36,8 @@ class Interval:
             assert(len(source)==2)
             iv = array(source, dtype=float)
         else:
-            raise RunTimeException("unsupported data type for interval")
+            raise RuntimeError("Passed: value %r, type %s - "
+                               "unsupported data type for interval" % (source, type(source)))
         
         self.iv = iv
 
