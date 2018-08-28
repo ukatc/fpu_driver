@@ -1280,7 +1280,18 @@ Aborting driver: Position database needs to be re-initialized.""")
 
             asteps = 0
             bsteps = 0
-            for step_num, entry in enumerate(wt_row):
+            # if the waveform is reversed, we need to
+            # go backwards with the check!
+            if sign == 1:
+                step_sequence = range(len(wt_row))
+            elif sign == -1:
+                step_sequence = range(len(wt_row) -1, -1, -1)
+            else:
+                assert(0)
+            
+            
+            for step_num in step_sequence:
+                entry = wt_row[step_num]
                 a, b = entry
                 asteps += a *sign
                 bsteps += b * sign

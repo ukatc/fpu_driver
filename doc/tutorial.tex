@@ -4020,6 +4020,15 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 1.2.0}
 \begin{itemize}
+\item Fixed: A bug in the software protection layer was fixed which
+  affected reversing movements with the \texttt{reverseMotion()}
+  command when the movement was not monotonous, but going forwards and
+  backwards. The cause for the bug was that the stored waveform was
+  correctly checked with the reverse sign, but incorrectly with the
+  temporal order of the forward movement. This had the effect that
+  waveforms were rejected which were actually safe, which is now
+  fixed.
+  
 \item Added: The \texttt{fpu-admin} command has an additional option
   \texttt{--gateway\_address <ipaddress>} which allows to flash
   FPUs which are connected to a gateway with an IP address different
