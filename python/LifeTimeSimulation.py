@@ -384,8 +384,8 @@ def parse_args():
     parser.add_argument('--beta_max', metavar='BETA_MAX', type=float, default=BETA_MAX_DEGREE,
                         help='maximum beta value  (default: %(default)s)')
 
-    parser.add_argument('--chill_time', metavar='CHILL_TIME', type=float, default=3,
-                        help='chill time for alpha arm  (default: %(default)s)')
+    parser.add_argument('--chill_time', metavar='CHILL_TIME', type=float, default=30,
+                        help='chill time between movements  (default: %(default)s)')
         
     parser.add_argument('--cycle_length', metavar='CYCLE_LENGTH', type=float, default=32,
                         help='cycle duration  (default: %(default)s)')
