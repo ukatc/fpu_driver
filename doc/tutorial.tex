@@ -508,8 +508,9 @@ the corresponding driver methods. Passing the value
 protection check off. When this is done, the entire responsibility
 with operating the FPUs safely is with the user. It is highly
 recommended to refer to additional documentation (especially
-FPUMovementSafetySpecification.docx, and additional hardware and
-firmware documentation), to assess which operations are safe.
+FPUMovementSafetySpecification.docx, the actual RFE to software ICD
+document, and additional hardware and firmware documentation), to
+assess which operations are safe.
 
 
 
@@ -4020,9 +4021,14 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 1.2.0}
 \begin{itemize}
+  
 \item Added: Life time test script which generates relatively
   realistic movements in a continuous loop.
   
+\item Added: Some information on why the movement configuration using
+  \texttt{gen\_wf()} needs to round angles to entire steps, and the
+  consequences of this has been added.
+
 \item Fixed: A bug in the software protection layer was fixed which
   affected reversing movements with the \texttt{reverseMotion()}
   command when the movement was not monotonous, but going forwards and
@@ -4031,15 +4037,16 @@ commands, or alter otherwise visible behaviour of the driver.
   temporal order of the forward movement. This had the effect that
   waveforms were rejected which were actually safe, which is now
   fixed.
-  
+    
+\item Added: The \texttt{gen\_wf()} function now provides a keyword
+  parameter \texttt{units='steps'} which allows to configure exact
+  movements, without rounding errors.
+
 \item Added: The \texttt{fpu-admin} command has an additional option
   \texttt{--gateway\_address <ipaddress>} which allows to flash
   FPUs which are connected to a gateway with an IP address different
   from the default.
   
-\item Added: The \texttt{gen\_wf()} function now provides a keyword
-  parameter \texttt{units='steps'} which allows to configure exact
-  movements, without rounding errors.
 \item Added: The driver has now initialisation parameters which
   allow to configure the minimum and maximum speed of the stepper
   motors.
