@@ -61,7 +61,7 @@ public:
 
     void parametrize(int f_id, bool broadcast,
                      E_DATUM_SEARCH_DIRECTION search_mode, E_DATUM_SELECTION arm_selection,
-		     E_DATUM_TIMEOUT_FLAG timeout_flag)
+                     E_DATUM_TIMEOUT_FLAG timeout_flag)
     {
         fpu_id = f_id;
         bcast = broadcast;
@@ -161,14 +161,14 @@ public:
             assert(false);
             break;
         }
-	switch (_timeout_flag)
-	{
+        switch (_timeout_flag)
+        {
         case DATUM_TIMEOUT_ENABLE:
         case DATUM_TIMEOUT_DISABLE:
-	     break;
+            break;
         default:
-	    assert(false);
-	}
+            assert(false);
+        }
         // this is defined so that an empty field (all-zero)
         // has the defeault behavoir implemented by the
         // current firmware >= 1.0.0 , which datums both arms.
@@ -181,7 +181,7 @@ public:
                                 | (skip_beta ? DATUM_SKIP_BETA : 0)
                                 | (_auto_datum ? MODE_DATUM_AUTO : 0)
                                 | (_anti_clockwise ? MODE_DATUM_ANTI_CLOCKWISE : 0)
-				| _timeout_flag);
+                                | _timeout_flag);
 
         can_buffer.message.data[1] = flags;
         buf_len += 8;

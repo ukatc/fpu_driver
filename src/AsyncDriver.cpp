@@ -353,22 +353,22 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 
     {
 
-	const char * to_string;
-	switch (timeout_flag)
-	{
+        const char * to_string;
+        switch (timeout_flag)
+        {
         case DATUM_TIMEOUT_ENABLE:
-	    to_string = "enabled";
-	    break;
+            to_string = "enabled";
+            break;
         case DATUM_TIMEOUT_DISABLE:
-	    to_string = "disabled";
-	    break;
+            to_string = "disabled";
+            break;
         default:
             LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: invalid time-out setting\n",
                         canlayer::get_realtime());
             return DE_INVALID_PAR_VALUE;
-	}
-	
-	
+        }
+
+
 
 
         const char * as_string;
@@ -468,12 +468,12 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
             return DE_INVALID_PAR_VALUE;
         }
 
-	if (contains_auto && timeouts_disabled)
-	{
+        if (contains_auto && timeouts_disabled)
+        {
             LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: time-outs disabled, but automatic search selected for FPU #%i\n",
                         canlayer::get_realtime(), i);
             return DE_INVALID_PAR_VALUE;
-	}
+        }
         LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: findDatum(): direction selection for FPU %i =%s\n",
                     canlayer::get_realtime(), i, as_string);
     }
@@ -495,9 +495,9 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
 
     // capability to disable time-outs is for firmware versions >= 1.4.3
     fw_version_check_needed |= timeouts_disabled;
-    
+
     uint8_t min_firmware_version[3] = {0,0,0};
-    int min_firmware_fpu = -1;    
+    int min_firmware_fpu = -1;
 
     E_DriverErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
@@ -507,8 +507,8 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         const int req_fw_major = 1;
         int req_fw_minor = 0;
         int req_fw_patch = 0;
-	// The following checks need to be in ascending order,
-	// so that the maximum is found.
+        // The following checks need to be in ascending order,
+        // so that the maximum is found.
         if ((arm_selection == DASEL_ALPHA) || (arm_selection == DASEL_NONE))
         {
             req_fw_minor = 1;
@@ -521,11 +521,11 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         {
             req_fw_minor = 2;
         }
-	if (timeouts_disabled)
-	{
-           req_fw_minor = 4;
-           req_fw_patch = 3;	    
-	}
+        if (timeouts_disabled)
+        {
+            req_fw_minor = 4;
+            req_fw_patch = 3;
+        }
         if ( (min_firmware_version[0] < req_fw_major)
                 || (min_firmware_version[1] < req_fw_minor)
                 || (min_firmware_version[2] < req_fw_patch))
@@ -583,7 +583,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         {
             continue;
         }
-	const t_fpu_state fpu = grid_state.FPU_state[i];
+        const t_fpu_state fpu = grid_state.FPU_state[i];
         const E_FPU_STATE fpu_status = fpu.state;
         if (fpu_status == FPST_OBSTACLE_ERROR)
         {
@@ -597,15 +597,15 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
                         canlayer::get_realtime(), i);
             return DE_IN_ABORTED_STATE;
         }
-	
+
         if ( (fpu.alpha_datum_switch_active) && ((arm_selection == DASEL_ALPHA) || (arm_selection == DASEL_BOTH)))
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : FPU #%i has active alpha datum/limit switch"
-			" - cancelling findDatum()operation.\n",
+                        " - cancelling findDatum()operation.\n",
                         canlayer::get_realtime(), i);
-	    // We differentiate the error codes in one for the above pre-check, and
-	    // another for the firmware error message. This makes it possible
-	    // to derive the correct arm location in the protection layer.
+            // We differentiate the error codes in one for the above pre-check, and
+            // another for the firmware error message. This makes it possible
+            // to derive the correct arm location in the protection layer.
             return DE_ALPHA_ARM_ON_LIMIT_SWITCH;
         }
     }
@@ -805,24 +805,24 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
         if (fpu_status == FPST_ABORTED)
         {
 
-	    if (fpu.last_status == ER_DATUMTO)
-	    {
-		LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): CRITICAL ERROR: Datum operation timed out for FPU %i\n",
-			    canlayer::get_realtime(), i);
-		logGridState(config.logLevel, grid_state);
-		fsync(config.fd_controllog);
+            if (fpu.last_status == ER_DATUMTO)
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): CRITICAL ERROR: Datum operation timed out for FPU %i\n",
+                            canlayer::get_realtime(), i);
+                logGridState(config.logLevel, grid_state);
+                fsync(config.fd_controllog);
 
-		return DE_DATUM_COMMAND_HW_TIMEOUT;
-	    }
-	    else
-	    {
-		LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU movement was aborted for FPU %i\n",
-			    canlayer::get_realtime(), i);
-		logGridState(config.logLevel, grid_state);
-		fsync(config.fd_controllog);
+                return DE_DATUM_COMMAND_HW_TIMEOUT;
+            }
+            else
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU movement was aborted for FPU %i\n",
+                            canlayer::get_realtime(), i);
+                logGridState(config.logLevel, grid_state);
+                fsync(config.fd_controllog);
 
-		return DE_MOVEMENT_ABORTED;
-	    }
+                return DE_MOVEMENT_ABORTED;
+            }
         }
 
     }
@@ -845,8 +845,8 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
         }
 
     }
-    
-    
+
+
     if (state_summary == GS_COLLISION)
     {
         printf("collision detected, aborting datum search");
@@ -877,14 +877,14 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
             continue;
         }
         if ((grid_state.FPU_state[i].state == FPST_UNINITIALIZED)
-            && (grid_state.FPU_state[i].last_status == ER_AUTO))
+                && (grid_state.FPU_state[i].last_status == ER_AUTO))
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: DE_PROTECTION_ERROR, FPU denied automatic datum search\n",
                         canlayer::get_realtime());
             return DE_PROTECTION_ERROR;
         }
     }
-    
+
 
 #if (CAN_PROTOCOL_VERSION == 1)
     {
@@ -949,11 +949,11 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 }
 
 E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
-					       const int MIN_STEPS,
-					       const int MAX_STEPS,
-					       const int MAX_START_STEPS,
-					       const unsigned int MAX_NUM_SECTIONS,
-					       const double MAX_INCREASE_FACTOR) const
+        const int MIN_STEPS,
+        const int MAX_STEPS,
+        const int MAX_START_STEPS,
+        const unsigned int MAX_NUM_SECTIONS,
+        const double MAX_INCREASE_FACTOR) const
 {
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: validating waveforms\n",
@@ -1061,37 +1061,37 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
 
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
-		const int increase_limit = int(ceil(xa_small * MAX_INCREASE_FACTOR));
+                const int increase_limit = int(ceil(xa_small * MAX_INCREASE_FACTOR));
 
                 const bool valid_acc = (
-                                     // 1) movement into the same direction
+                                           // 1) movement into the same direction
 
-                                     ((x_sign == x_last_sign)
-                                      //   1a) and currently *stopping* to move
-                                      && (( (xa < MIN_STEPS)
-                                            && (xa_last <= MAX_START_STEPS))
-                                          // or, 1b) at least  MIN_STEPS and the larger
-                                          // of both values not larger than the allowed
-					  // relative increase
-                                          || ( (xa_small >= MIN_STEPS)
-                                               && (xa_large <= increase_limit))))
-                                     // or, has stopped to move (and only in this case,
-                                     // the step count can be smaller than MIN_STEPS)
-                                     || ( (xa == 0)
-                                          && (xa_last < MAX_START_STEPS))
-                                     // or, a single entry with a small number of steps,
-                                     // followed by a pause or end of the table
-                                     || ( (xa <= MAX_START_STEPS)
-                                          && (xa_last == 0)
-                                          && (xa_next == 0))
-                                     // or, with or without a change of direction,
-                                     // one step number zero and the other below or at
-                                     // MAX_START_STEPS - at start or end of a movement
-                                     || ((xa_small == 0)
-                                         && (xa_large <= MAX_START_STEPS))
-                                     // or, a pause in movement
-                                     || ((xa_small == 0)
-                                         && (xa_large == 0)));
+                                           ((x_sign == x_last_sign)
+                                            //   1a) and currently *stopping* to move
+                                            && (( (xa < MIN_STEPS)
+                                                  && (xa_last <= MAX_START_STEPS))
+                                                // or, 1b) at least  MIN_STEPS and the larger
+                                                // of both values not larger than the allowed
+                                                // relative increase
+                                                || ( (xa_small >= MIN_STEPS)
+                                                     && (xa_large <= increase_limit))))
+                                           // or, has stopped to move (and only in this case,
+                                           // the step count can be smaller than MIN_STEPS)
+                                           || ( (xa == 0)
+                                                && (xa_last < MAX_START_STEPS))
+                                           // or, a single entry with a small number of steps,
+                                           // followed by a pause or end of the table
+                                           || ( (xa <= MAX_START_STEPS)
+                                                && (xa_last == 0)
+                                                && (xa_next == 0))
+                                           // or, with or without a change of direction,
+                                           // one step number zero and the other below or at
+                                           // MAX_START_STEPS - at start or end of a movement
+                                           || ((xa_small == 0)
+                                               && (xa_large <= MAX_START_STEPS))
+                                           // or, a pause in movement
+                                           || ((xa_small == 0)
+                                               && (xa_large == 0)));
 
                 if (!valid_acc)
                 {
@@ -1123,11 +1123,11 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
 }
 
 E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
-					       E_GridState& state_summary,
-					       const t_wtable& waveforms,
-					       t_fpuset const &fpuset,
-					       bool soft_protection,
-					       bool allow_uninitialized)
+        E_GridState& state_summary,
+        const t_wtable& waveforms,
+        t_fpuset const &fpuset,
+        bool soft_protection,
+        bool allow_uninitialized)
 {
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: calling configMotion()\n",
@@ -1143,64 +1143,64 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
 
     const int min_stepcount = int(floor(config.motor_minimum_frequency
-					    * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+                                        * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
 
     // perform hardware protection checks unless
     // explicitly disabled.
-    
+
     // check no FPUs have ongoing collisions
     // and all have been initialized
     for (int i=0; i < config.num_fpus; i++)
     {
-	if (soft_protection)
-	{
-	    E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
-	    if (fpu_status == FPST_OBSTACLE_ERROR)
-	    {
-		LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_UNRESOLVED_COLLISION"
-			    " - unresolved collision active for FPU %i\n",
-			    canlayer::get_realtime(), i);
-		return DE_UNRESOLVED_COLLISION;
-	    }
-	    // This isn't enforced in protocol version 1,
-	    // because we do not have an enableMove command.
-	    // In protocol version 2, the user has to issue
-	    // enableMove first.
-	    if (fpu_status == FPST_ABORTED)
-	    {
-		LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_ABORTED_STATE"
-			    " - FPU %i is in aborted state\n",
-			    canlayer::get_realtime(), i);
-		return DE_IN_ABORTED_STATE;
-	    }
-	}
+        if (soft_protection)
+        {
+            E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
+            if (fpu_status == FPST_OBSTACLE_ERROR)
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_UNRESOLVED_COLLISION"
+                            " - unresolved collision active for FPU %i\n",
+                            canlayer::get_realtime(), i);
+                return DE_UNRESOLVED_COLLISION;
+            }
+            // This isn't enforced in protocol version 1,
+            // because we do not have an enableMove command.
+            // In protocol version 2, the user has to issue
+            // enableMove first.
+            if (fpu_status == FPST_ABORTED)
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_ABORTED_STATE"
+                            " - FPU %i is in aborted state\n",
+                            canlayer::get_realtime(), i);
+                return DE_IN_ABORTED_STATE;
+            }
+        }
 
-	if (!allow_uninitialized)
-	{
-	    if ( ! (grid_state.FPU_state[i].alpha_was_zeroed
-		    && grid_state.FPU_state[i].beta_was_zeroed))
-	    {
-		LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_FPUS_NOT_CALIBRATED"
-			    " - FPU %i is not calibrated and soft_protection flag was not cleared\n",
-			    canlayer::get_realtime(), i);
-		return DE_FPUS_NOT_CALIBRATED;
-	    }
-	}
-    
+        if (!allow_uninitialized)
+        {
+            if ( ! (grid_state.FPU_state[i].alpha_was_zeroed
+                    && grid_state.FPU_state[i].beta_was_zeroed))
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_FPUS_NOT_CALIBRATED"
+                            " - FPU %i is not calibrated and soft_protection flag was not cleared\n",
+                            canlayer::get_realtime(), i);
+                return DE_FPUS_NOT_CALIBRATED;
+            }
+        }
 
-	const int max_stepcount = int(ceil(config.motor_maximum_frequency
-				       * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
-	const int max_start_stepcount = int(ceil(config.motor_max_start_frequency
-					     * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
-	
-	const double max_rel_increase = config.motor_max_rel_increase;
-	
+
+        const int max_stepcount = int(ceil(config.motor_maximum_frequency
+                                           * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+        const int max_start_stepcount = int(ceil(config.motor_max_start_frequency
+                                            * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+
+        const double max_rel_increase = config.motor_max_rel_increase;
+
         const E_DriverErrCode vwecode = validateWaveforms(waveforms,
-							  min_stepcount,
-							  max_stepcount,
-							  max_start_stepcount,
-							  ConfigureMotionCommand::MAX_NUM_SECTIONS,
-							  max_rel_increase);
+                                        min_stepcount,
+                                        max_stepcount,
+                                        max_start_stepcount,
+                                        ConfigureMotionCommand::MAX_NUM_SECTIONS,
+                                        max_rel_increase);
         if (vwecode != DE_OK)
         {
             return vwecode;
@@ -1285,7 +1285,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                                          step.beta_steps,
                                          first_entry,
                                          last_entry,
-					 min_stepcount);
+                                         min_stepcount);
 
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
@@ -3269,12 +3269,12 @@ E_DriverErrCode AsyncDriver::readRegisterAsync(uint16_t read_address,
 
 // get minimum firmware version value, using cache when valid
 E_DriverErrCode AsyncDriver::getMinFirmwareVersion(t_fpuset const &fpuset,
-                                                   uint8_t (&min_firmware_version)[3],
-                                                   int &min_firmware_fpu,
-                                                   t_grid_state& grid_state,
-                                                   E_GridState& state_summary)
+        uint8_t (&min_firmware_version)[3],
+        int &min_firmware_fpu,
+        t_grid_state& grid_state,
+        E_GridState& state_summary)
 {
-    
+
     min_firmware_fpu=-1;
     bool successfully_retrieved = false;
 
@@ -3297,9 +3297,9 @@ E_DriverErrCode AsyncDriver::getMinFirmwareVersion(t_fpuset const &fpuset,
         }
 
         getCachedMinFirmwareVersion(fpuset,
-                              successfully_retrieved,
-                              min_firmware_version,
-                              min_firmware_fpu);
+                                    successfully_retrieved,
+                                    min_firmware_version,
+                                    min_firmware_fpu);
 
         if (! successfully_retrieved)
         {
@@ -3313,9 +3313,9 @@ E_DriverErrCode AsyncDriver::getMinFirmwareVersion(t_fpuset const &fpuset,
 }
 
 void AsyncDriver::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
-                                              bool &was_retrieved,
-                                              uint8_t (&min_firmware_version)[3],
-                                              int &min_firmware_fpu) const
+        bool &was_retrieved,
+        uint8_t (&min_firmware_version)[3],
+        int &min_firmware_fpu) const
 {
 
     min_firmware_fpu = 0;
@@ -3440,7 +3440,7 @@ E_DriverErrCode AsyncDriver::readSerialNumbersAsync(t_grid_state& grid_state,
     }
 
     uint8_t min_firmware_version[3] = {0,0,0};
-    int min_firmware_fpu = -1;    
+    int min_firmware_fpu = -1;
 
     E_DriverErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
@@ -3450,7 +3450,7 @@ E_DriverErrCode AsyncDriver::readSerialNumbersAsync(t_grid_state& grid_state,
     }
 
     if ((min_firmware_version[0] < 1)
-        ||(min_firmware_version[1] < 3))
+            ||(min_firmware_version[1] < 3))
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error DE_FIRMWARE_UNIMPLEMENTED "
                     "- FPU firmware does not provide feature\n",
@@ -3534,7 +3534,7 @@ E_DriverErrCode AsyncDriver::readSerialNumbersAsync(t_grid_state& grid_state,
                 canlayer::get_realtime());
     for(int i=0; i < config.num_fpus; i++)
     {
-        const double t = canlayer::get_realtime(); 
+        const double t = canlayer::get_realtime();
         if (fpuset[i])
         {
             LOG_CONTROL(LOG_INFO, "%18.6f : FPU %i : SN = %s\n",
@@ -3577,7 +3577,7 @@ E_DriverErrCode AsyncDriver::writeSerialNumberAsync(int fpu_id, const char seria
         LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_INVALID_PAR_VALUE,"
                     " serial number is too long (length %i, only %i characters allowed)\n",
                     canlayer::get_realtime(), sn_len, LEN_SERIAL_NUMBER-1);
-        
+
         return DE_INVALID_PAR_VALUE;
     }
     // check that we have ASCII printable chars only
@@ -3609,18 +3609,18 @@ E_DriverErrCode AsyncDriver::writeSerialNumberAsync(int fpu_id, const char seria
     }
 
     uint8_t min_firmware_version[3] = {0,0,0};
-    int min_firmware_fpu = -1;    
+    int min_firmware_fpu = -1;
     ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
     if ((min_firmware_version[0] < 1)
-        ||(min_firmware_version[1] < 3))
+            ||(min_firmware_version[1] < 3))
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_FIRMWARE_UNIMPLEMENTED "
                     "- FPU firmware does not provide feature\n",
                     canlayer::get_realtime());
         return DE_FIRMWARE_UNIMPLEMENTED;
     }
-    
+
 
     // get all existing numbers
     ecode = readSerialNumbersAsync(grid_state, state_summary, fpuset);
@@ -3635,7 +3635,7 @@ E_DriverErrCode AsyncDriver::writeSerialNumberAsync(int fpu_id, const char seria
     // make sure no FPU is moving or finding datum
 
     if ((grid_state.Counts[FPST_MOVING] > 0)
-        || (grid_state.Counts[FPST_DATUM_SEARCH] > 0))
+            || (grid_state.Counts[FPST_DATUM_SEARCH] > 0))
     {
         // We do not allow writing the serial number when there are
         // moving FPUs, because it can take a long time.
@@ -3665,7 +3665,7 @@ E_DriverErrCode AsyncDriver::writeSerialNumberAsync(int fpu_id, const char seria
                         "Serial number is already used by another FPU in the grid\n",
                         canlayer::get_realtime());
             return DE_DUPLICATE_SERIAL_NUMBER;
-            
+
         }
     }
 

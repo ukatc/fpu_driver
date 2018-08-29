@@ -234,7 +234,7 @@ public:
         */
 
         s << "{ 'last_updated' : " << s.precision(10) << (1.0 * fpu.last_updated.tv_sec
-                                                          + 1.0e-9 * fpu.last_updated.tv_nsec) << ", "
+                + 1.0e-9 * fpu.last_updated.tv_nsec) << ", "
           << " 'pending_command_set' : " << fpu.pending_command_set << ", "
           << " 'state' : ";
         s << fpu.state << ", "
@@ -265,8 +265,8 @@ public:
           << " 'waveform_reversed' : " << fpu.waveform_reversed << ", "
           << " 'register_address' : " << std::hex << std::showbase << fpu.register_address << ", "
           << " 'register_value' : " << fpu.register_value << std::dec << std::noshowbase << ", "
-          << " 'firmware_version' : " << fpu.fw_version_major 
-          << "." << fpu.fw_version_minor 
+          << " 'firmware_version' : " << fpu.fw_version_major
+          << "." << fpu.fw_version_minor
           << "." << fpu.fw_version_patch << ", "
           << " 'firmware_date' : '" << fpu.fw_date_year
           << "-" << fpu.fw_date_month
@@ -473,7 +473,7 @@ void translate_driver_error(FPUDriverException const& e)
     case DE_STEP_TIMING_ERROR:
         PyErr_SetString(TimingErrorExceptionTypeObj, e.what());
         break;
-	
+
     case DE_MOVEMENT_ABORTED:
         PyErr_SetString(AbortMotionErrorExceptionTypeObj, e.what());
         break;
@@ -481,7 +481,7 @@ void translate_driver_error(FPUDriverException const& e)
     case DE_DATUM_COMMAND_HW_TIMEOUT:
         PyErr_SetString(FirmwareTimeOutExceptionTypeObj, e.what());
         break;
-	
+
     case DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH:
         PyErr_SetString(HardwareProtectionErrorExceptionTypeObj, e.what());
         break;
@@ -643,24 +643,24 @@ void checkDriverError(E_DriverErrCode ecode)
 
     case DE_DATUM_COMMAND_HW_TIMEOUT :
         throw FPUDriverException("DE_DATUM_COMMAND_HW_TIMEOUT: The FPU firmware has timed-out"
-				 " a datum operation because it took too long to complete. Potentially,"
-				 " the datum switch is not working, or the FPU hardware is otherwise"
-				 " damaged.",
+                                 " a datum operation because it took too long to complete. Potentially,"
+                                 " the datum switch is not working, or the FPU hardware is otherwise"
+                                 " damaged.",
                                  DE_DATUM_COMMAND_HW_TIMEOUT);
         break;
 
     case DE_ALPHA_ARM_ON_LIMIT_SWITCH:
         throw FPUDriverException("DE_ALPHA_ARM_ON_LIMIT_SWITCH: Datum command rejected because"
-				 " an FPU alpha arm is on its limit switch.",
+                                 " an FPU alpha arm is on its limit switch.",
                                  DE_ALPHA_ARM_ON_LIMIT_SWITCH);
         break;
-	
+
     case DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH:
         throw FPUDriverException("DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH: An FPU rejected"
-				 " a datum command because the alpha arm is on the limit switch.",
+                                 " a datum command because the alpha arm is on the limit switch.",
                                  DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH);
         break;
-	
+
 
     case DE_FPUS_LOCKED :
         throw FPUDriverException("DE_FPUS_LOCKED: Some addressed FPUs are in locked state,"
@@ -853,8 +853,8 @@ public:
 
     E_DriverErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state,
                                          list &fpu_list,
-					 bool soft_protection=true,
-					 bool allow_uninitialized=false)
+                                         bool soft_protection=true,
+                                         bool allow_uninitialized=false)
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
@@ -1054,7 +1054,7 @@ public:
                                    dict &dict_modes,
                                    list& fpu_list,
                                    E_DATUM_SELECTION arm_selection=DASEL_BOTH,
- 			           E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                                   E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
                                    bool count_protection=true)
     {
         t_fpuset fpuset;
@@ -1064,8 +1064,8 @@ public:
         getDatumFlags(dict_modes, direction_flags, fpuset);
 
         E_DriverErrCode ecode = findDatum(grid_state, direction_flags,
-					  arm_selection, timeout_flag,
-					  count_protection, &fpuset);
+                                          arm_selection, timeout_flag,
+                                          count_protection, &fpuset);
         checkDriverError(ecode);
         return ecode;
     }
@@ -1075,7 +1075,7 @@ public:
                                         dict& dict_modes,
                                         list& fpu_list,
                                         E_DATUM_SELECTION arm_selection=DASEL_BOTH,
- 			                E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                                        E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
                                         bool count_protection=true)
     {
 
@@ -1086,10 +1086,10 @@ public:
         getDatumFlags(dict_modes, direction_flags, fpuset);
 
         E_DriverErrCode ecode = startFindDatum(grid_state,
-					       direction_flags,
-					       arm_selection,
-					       timeout_flag,
-					       count_protection, &fpuset);
+                                               direction_flags,
+                                               arm_selection,
+                                               timeout_flag,
+                                               count_protection, &fpuset);
         checkDriverError(ecode);
         return ecode;
     }
@@ -1587,11 +1587,11 @@ BOOST_PYTHON_MODULE(fpu_driver)
 
     class_<GridDriverConfig>("GridDriverConfig", init<>())
     .def_readwrite("num_fpus", &GridDriverConfig::num_fpus)
-    .def_readwrite("alpha_datum_offset", &GridDriverConfig::alpha_datum_offset)        
-    .def_readwrite("motor_minimum_frequency", &GridDriverConfig::motor_minimum_frequency)        
-    .def_readwrite("motor_maximum_frequency", &GridDriverConfig::motor_maximum_frequency)        
-    .def_readwrite("motor_max_start_frequency", &GridDriverConfig::motor_max_start_frequency)        
-    .def_readwrite("motor_max_rel_increase", &GridDriverConfig::motor_max_rel_increase)        
+    .def_readwrite("alpha_datum_offset", &GridDriverConfig::alpha_datum_offset)
+    .def_readwrite("motor_minimum_frequency", &GridDriverConfig::motor_minimum_frequency)
+    .def_readwrite("motor_maximum_frequency", &GridDriverConfig::motor_maximum_frequency)
+    .def_readwrite("motor_max_start_frequency", &GridDriverConfig::motor_max_start_frequency)
+    .def_readwrite("motor_max_rel_increase", &GridDriverConfig::motor_max_rel_increase)
     .def_readwrite("logLevel", &GridDriverConfig::logLevel)
     .def_readwrite("SocketTimeOutSeconds", &GridDriverConfig::SocketTimeOutSeconds)
     .def_readwrite("TCP_IdleSeconds", &GridDriverConfig::TCP_IdleSeconds)

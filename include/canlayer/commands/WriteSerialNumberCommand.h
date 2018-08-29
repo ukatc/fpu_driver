@@ -35,8 +35,8 @@ class WriteSerialNumberCommand : public I_CAN_Command
 {
 
 public:
-    
-    
+
+
     static E_CAN_COMMAND getCommandCode()
     {
         return CCMD_WRITE_SERIAL_NUMBER;
@@ -92,10 +92,10 @@ public:
 
 
         // CAN command code
-        
+
         can_buffer.message.data[0] = cmd_code;
         for(int i=0; i < DIGITS_SERIAL_NUMBER; i++)
-        {    
+        {
             can_buffer.message.data[i+1] = serial_number[i];
         }
 

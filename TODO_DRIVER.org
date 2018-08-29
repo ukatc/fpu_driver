@@ -237,8 +237,8 @@ when the internal state struct is used.
 *** DONE add and evaluate error codes for datum time-out / datum rejected because on limit switch
 *** TODO add explanation to rounding in gen_wf() to tutorial
 *** TODO add unit="steps" option to gen_wf()
-** TODO change default directory for position DB to /var/lib, update documentation
-** TODO add "--gateway_address" option to admin tool
+** DONE change default directory for position DB to /var/lib, update documentation
+** DONE add "--gateway_address" option to admin tool
 ** TODO add configPath() method with mandatory rounding parameter
 ** TODO  clean-up of version 1 code
 *** TODO Add state filtering to command precondition check

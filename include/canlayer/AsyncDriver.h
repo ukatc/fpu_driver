@@ -116,7 +116,7 @@ public:
     E_DriverErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
                                             E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
                                             E_DATUM_SELECTION arm_selection=DASEL_BOTH,
-					    E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                                            E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
                                             bool count_protection=true,
                                             t_fpuset const * const fpuset_opt=nullptr);
 
@@ -131,7 +131,7 @@ public:
                                       const t_wtable& waveforms,
                                       t_fpuset const &fpuset,
                                       bool soft_protection=true,
-				      bool allow_uninitialized=false);
+                                      bool allow_uninitialized=false);
 
     E_DriverErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
@@ -190,7 +190,7 @@ public:
     E_DriverErrCode validateWaveforms(const t_wtable& waveforms,
                                       const int MIN_STEPS,
                                       const int MAX_STEPS,
-				      const int MAX_START_STEPS,
+                                      const int MAX_START_STEPS,
                                       const unsigned int MAX_NUM_SECTIONS,
                                       const double MAX_INCREASE) const;
 
@@ -210,11 +210,11 @@ protected:
                                           int &min_firmware_fpu,
                                           t_grid_state& grid_state,
                                           E_GridState& state_summary);
-    
+
     void getCachedMinFirmwareVersion(t_fpuset const &fpuset,
-                               bool &was_retrieved,
-                               uint8_t (&min_firmware_version)[3],
-                               int &min_firmware_fpu) const;
+                                     bool &was_retrieved,
+                                     uint8_t (&min_firmware_version)[3],
+                                     int &min_firmware_fpu) const;
 
     E_DriverErrCode readSerialNumbersAsync(t_grid_state& grid_state,
                                            E_GridState& state_summary, t_fpuset const &fpuset);

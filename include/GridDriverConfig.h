@@ -81,10 +81,10 @@ public:
         fd_txlog = -1;
 
         alpha_datum_offset = ALPHA_DATUM_OFFSET;
-	motor_minimum_frequency = 500.0;
-	motor_maximum_frequency = 2000.0;
-	motor_max_start_frequency=550.0;
-	motor_max_rel_increase = 1.4;
+        motor_minimum_frequency = 500.0;
+        motor_maximum_frequency = 2000.0;
+        motor_max_start_frequency=550.0;
+        motor_max_rel_increase = 1.4;
     };
 
 };

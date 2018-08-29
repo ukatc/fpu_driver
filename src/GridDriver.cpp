@@ -28,17 +28,17 @@ namespace mpifps
 E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
                                       E_DATUM_SEARCH_DIRECTION * p_direction_flags,
                                       E_DATUM_SELECTION arm_selection,
-				      E_DATUM_TIMEOUT_FLAG timeout_flag,
+                                      E_DATUM_TIMEOUT_FLAG timeout_flag,
                                       bool count_protection,
                                       t_fpuset const * const fpuset)
 {
 
     E_DriverErrCode estatus = startFindDatum(grid_state,
-					     p_direction_flags,
-					     arm_selection,
-					     timeout_flag,
-					     count_protection,
-					     fpuset);
+                              p_direction_flags,
+                              arm_selection,
+                              timeout_flag,
+                              count_protection,
+                              fpuset);
 
     if (estatus != DE_OK)
     {
@@ -54,11 +54,11 @@ E_DriverErrCode GridDriver::findDatum(t_grid_state& grid_state,
 }
 
 E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
-					   E_DATUM_SEARCH_DIRECTION * p_direction_flags,
-					   E_DATUM_SELECTION arm_selection,
-					   E_DATUM_TIMEOUT_FLAG timeout_flag,
-					   bool count_protection,
-					   t_fpuset const * const fpuset)
+        E_DATUM_SEARCH_DIRECTION * p_direction_flags,
+        E_DATUM_SELECTION arm_selection,
+        E_DATUM_TIMEOUT_FLAG timeout_flag,
+        bool count_protection,
+        t_fpuset const * const fpuset)
 {
     E_DriverErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -72,7 +72,7 @@ E_DriverErrCode GridDriver::startFindDatum(t_grid_state& grid_state,
         estatus = startAutoFindDatumAsync(grid_state, state_summary,
                                           p_direction_flags,
                                           arm_selection,
-					  timeout_flag,
+                                          timeout_flag,
                                           count_protection,
                                           fpuset);
 
@@ -112,9 +112,9 @@ E_DriverErrCode GridDriver::waitFindDatum(t_grid_state& grid_state,
 
 
 E_DriverErrCode GridDriver::configMotion(const t_wtable& waveforms, t_grid_state& grid_state,
-					 t_fpuset const &fpuset,
-					 bool soft_protection,
-					 bool allow_uninitialized)
+        t_fpuset const &fpuset,
+        bool soft_protection,
+        bool allow_uninitialized)
 
 {
     E_DriverErrCode estatus = DE_OK;
@@ -442,7 +442,7 @@ E_DriverErrCode GridDriver::setUStepLevel(int ustep_level, t_grid_state& grid_st
 }
 
 E_DriverErrCode GridDriver::writeSerialNumber(int fpu_id, const char serial_number[],
-                                              t_grid_state& grid_state)
+        t_grid_state& grid_state)
 {
     E_GridState state_summary;
     E_DriverErrCode status;

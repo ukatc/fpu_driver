@@ -67,7 +67,7 @@ public:
                      int16_t alpha_steps,
                      int16_t beta_steps,
                      bool first_entry, bool last_entry,
-		     const int MIN_STEPCOUNT)
+                     const int MIN_STEPCOUNT)
     {
         fpu_id = f_id;
 
