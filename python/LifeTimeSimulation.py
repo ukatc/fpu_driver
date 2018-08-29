@@ -102,99 +102,30 @@ def gen_jerk(current_alpha, current_beta, jerk_direction, opts=None):
     return wf
 
 def gen_oscillation(current_alpha, current_beta, opts=None):
-    oscillation_time = random.uniform(1, 5)
-    #oscillation_segments = int(float(oscillation_time)/ (opts.segment_length_ms / 1000.0))
-    oscillation_segments = 0
-    frq = random.uniform(0.2, 3)
-    max_steps = opts.max_steps
-    min_steps = opts.min_steps
-    max_acc = opts.max_acceleration
-    start_steps = opts.start_steps
+    oscillation_maxsteps = random.randint(0, 1 + opts.start_steps)
+    oscillation_max_segments = int(float(opts.max_oscillation_time)/ (opts.segment_length_ms / 1000.0))
+    oscillation_segments = random.randint(4, oscillation_max_segments +1)
+    oscillation_period_len = 4 * random.randint(1, 1 + oscillation_segments // 4) 
 
-    oscillation_t = arange(oscillation_segments) * opts.segment_length_ms
-
-    y = (max_steps * sin(oscillation_t * 2 * pi * frq)).astype(int)
-    # eliminate speed values which are too small
-
-
-    # filter out values which are too small
-    y[abs(y) <  min_steps] = 0
-    # set intermediate values to minimum
-    y = maximum(abs(y), min_steps) * sign(y)
-    # filter out sign jumps
-    for k in range(len(y) -1):
-        if y[k] * y[k+1] < 0:
-            y[k+1] = 0
+    oscillation_num_periods = oscillation_segments //  oscillation_period_len
+    samples = []
+    stepped_segs = oscillation_period_len // 2 -1
+    steps_per_seg = oscillation_maxsteps // stepped_segs 
+    
+    for p in range(oscillation_num_periods):
+        for sign in (-1,1):
+            for k in range(stepped_segs):
+                oscillation_steps = random.randint(int(steps_per_seg * 0.8),
+                                                   steps_per_seg +1)
+                samples.append(sign * oscillation_steps)
+            samples.append(0)
             
-    # smooth out too large accelerations
-    for k in range(len(y) -1):
-        s = sign(y[k])
-        if k == 0:
-            prev_y = 0
-        else:
-            prev_y = y[k-1]
             
-        if prev_y == 0:
-            if abs(y[k]) > start_steps:
-                y[k] = int(s * random.randint(min_steps, start_steps+1))
-            elif abs(y[k]) < min_steps and (y[k] != 0):
-                y[k] = int(s * min_steps)
-        else:
-            if abs(y[k]) > max_acc * abs(prev_y):
-                y[k] = int(s * max_acc * abs(prev_y))
 
-    # smooth out too large decelerations
-    # this has the twist that at the end of a movement
-    # in one direction, and value between start_steps and zero is allowed
-    # once
-    k = 0
-    while k < len(y):
-        s = sign(y[k])
-        if k == 0:
-            prev_y = 0
-        else:
-            prev_y = y[k-1]
+    ws = [ (s, s) for s in samples]
+    wf = { j : ws for j in range(len(current_alpha)) }
 
-
-        if abs(prev_y) > start_steps:
-            # normal deceleration
-            if abs(y[k]) < abs(prev_y) / max_acc:
-                    y[k] = int(ceil(s * abs(prev_y) / max_acc))
-        else:
-            # deceleration when finishing movement streak
-            if (y[k] == 0):
-                # that's fine, the arm stopped
-                pass
-            else:
-                if abs(y[k]) < abs(prev_y) / max_acc:
-                    y[k] = int(ceil(s * abs(prev_y) / max_acc))
-
-                # we may need to insert or append a zero value
-                if k == (len(y) - 1):
-                    # we brake to zero so that the waveform is neutral
-                    if abs(y[k]) < min_steps:
-                        # below min threhold, next needs to be stop
-                        max_next_y = 0
-                    else:
-                        max_next_y = int(ceil(s * abs(y[k]) / max_acc))
-                        
-                    y = append(y, max_next_y)
-                else:
-                    if abs(y[k]) < min_steps:
-                        # we need to ensure that the next y is zero
-                        next_y = y[k+1]
-                        if abs(next_y) > 0:
-                            y = insert(y, k+1, 0)
-                        
-                    
-                    
-
-        k += 1
-        
-
-    series = [ (int(yt), int(yt)) for yt in y ]
-    wf = { j : series for j in range(len(current_alpha)) }
-
+    print("wf for osc: ", wf)
     return wf
 
     
@@ -291,7 +222,7 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
     
     wf = wf_create()
 
-    print("current angles:", zip(current_alpha, current_beta))
+    print("current angles:", current_alpha, current_beta)
     
     smrsix = 0 # that's the state machine rotating state index
     while True:
@@ -324,10 +255,11 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
         elif smrsix == 2:
             sname = "oscillations"
             # a period of small oscillations
+            wf_z = wf_zero()
             wf2a = gen_creep(current_alpha, current_beta, alpha_target, beta_target,
                              fraction=0.05, speed_factor=0.3, opts=opts)
             wf2b = gen_oscillation(current_alpha, current_beta, opts=opts)
-            wf2 = wf_append(wf2a, wf2b)
+            wf2 = wf_append(wf_append(wf2a, wf_z), wf2b)
         elif smrsix == 3:
             sname = "slow creep"
                         
@@ -392,7 +324,7 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
         if smrsix == 0:
             break
 
-    print("new angles:", zip(current_alpha, current_beta))
+    print("new angles:", current_alpha, current_beta)
     
     return wf
 
@@ -477,6 +409,10 @@ def parse_args():
     parser.add_argument('--maxnum_waveform_segments', metavar='MAXNUM_WAVEFORM_SEGMENTS', type=float,
                         default=MAXNUM_WAVEFORM_SEGMENTS,
                         help='waveform segment length, in milliseconds (default: %(default)s)')
+
+    parser.add_argument('--max_oscillation_time', metavar='MAX_OSCILLATION_TIME', type=float,
+                        default=5.0,
+                        help='time for small oscillation, in seconds (default: %(default)s)')
 
     parser.set_defaults(simulate_quantization=False)
     
