@@ -4,13 +4,13 @@ from __future__ import print_function, division
 positions and calls a measurement function at each position.
 """
 
+import sys
+import signal
 import time
 import os
-import readline
 import argparse
 import matplotlib
 import pylab as pl
-import sys
 
 from numpy import (array, random, asarray, zeros, ones, sqrt, ceil,
                    cumsum, arange, sin, pi, maximum, sign, append, insert )
@@ -109,7 +109,7 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
 
     oscillation_num_periods = oscillation_segments //  oscillation_period_len
     samples = []
-    stepped_segs = oscillation_period_len // 2 -1
+    stepped_segs = oscillation_period_len // 4
     steps_per_seg = oscillation_maxsteps // stepped_segs 
     
     for p in range(oscillation_num_periods):
@@ -118,14 +118,13 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
                 oscillation_steps = random.randint(int(steps_per_seg * 0.8),
                                                    steps_per_seg +1)
                 samples.append(sign * oscillation_steps)
-            samples.append(0)
+                samples.append(0)
             
             
 
     ws = [ (s, s) for s in samples]
     wf = { j : ws for j in range(len(current_alpha)) }
 
-    print("wf for osc: ", wf)
     return wf
 
     
@@ -214,15 +213,18 @@ def check_wf(wf, channel, opts=None, verbose=False):
 
 """generates a waveform according to the given command line parameters."""
 def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
-                   verbose=True, opts=None):
+                   opts=None):
 
     rest_segments = int(round((1000 * cycle_length) / opts.segment_length_ms))    
     if rest_segments > opts.maxnum_waveform_segments:
         raise ValueError("the time requires more segments than the the number of allowed segments")
     
+    verbosity = opts.verbosity
+    
     wf = wf_create()
 
-    print("current angles:", current_alpha, current_beta)
+    if verbosity > 1:
+        print("current angles:", current_alpha, current_beta)
     
     smrsix = 0 # that's the state machine rotating state index
     while True:
@@ -282,7 +284,7 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
             # a few moments stationary wait - rest duration
             wf2 = gen_wait(current_alpha, current_beta, nsegments=rest_segments, opts=opts)
 
-        if verbose:
+        if verbosity > 2:
             print("smrsix", smrsix, "segment:", sname, "wf=", wf2, end="")
             
         wf2_len = len(wf2[0])
@@ -292,17 +294,20 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
         new_beta = current_beta + (sum_steps(wf2, "beta") / StepsPerDegreeBeta)
         
         if wf2_len > rest_segments:
-            print("(discarded, bc length)")
+            if verbosity > 0:
+                print("(discarded, bc length)")
             break
         elif (any(new_alpha < opts.alpha_min)
               or any(new_alpha > opts.alpha_max)
               or any(new_beta < opts.beta_min)
               or any(new_beta > opts.beta_max)):
-            
-            print("(discarded, bc range)")
+
+            if verbosity > 0:
+                print("(discarded, bc range)")
             break
         else:
-            print(".. ok")
+            if verbosity  > 1:
+                print(".. ok")
         
         if (wf2_len > 0) and (wf2_len < rest_segments):
             if any_seg_nonzero(wf2, -1):
@@ -323,8 +328,9 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
         smrsix = (smrsix + 1) % 6
         if smrsix == 0:
             break
-
-    print("new angles:", current_alpha, current_beta)
+        
+    if verbosity > 2:
+        print("new angles:", current_alpha, current_beta)
     
     return wf
 
@@ -428,6 +434,10 @@ def parse_args():
                         default="2025-12-31T12:59:59UTC",
                         help='ISO8601 time stamp of when test ends (default: %(default)s)')
 
+    parser.add_argument('-v', '--verbosity', metavar='VERBOSITY', type=int,
+                        default=1,
+                        help='verbosity level of progress messages (default: %(default)s)')
+
      
     args = parser.parse_args()
     args.stop_time = time.strptime(args.end_time, '%Y-%m-%dT%H:%M:%S%Z')
@@ -442,6 +452,13 @@ max_steps   = %i""" % (args.min_steps, args.start_steps, args.max_steps))
           
     return args
 
+
+stop_all_fpus = False
+
+def stop_handler(signum, frame):
+    global stop_all_fpus
+    print("STOPPING LIFE TIME TEST - PLEASE STAND BY")
+    stop_all_fpus = True
 
 
 def initialize_FPU(args):
@@ -496,34 +513,46 @@ def initialize_FPU(args):
     # We can use grid_state to display the starting position
     print("the starting position (in degrees) is:", list_angles(grid_state)[0])
 
+        
+    signal.signal(signal.SIGQUIT, stop_handler)
+    print("press <Ctrl>-\ to terminate test orderly")
+
     return gd, grid_state
 
-def chatty_sleep(sleep_time, time_slice=0.2):
+def chatty_sleep(sleep_time, time_slice=0.2, opts=None):
     n = 0
     while sleep_time > 0:
         slice_len = min(time_slice, sleep_time)
 
         c = "-\|/"[n % 4]
-        
-        print("waiting %4.1f sec .... %s\r" % (sleep_time, c), end="")
-        sys.stdout.flush()
+
+        if opts.verbosity > 0:
+            print("waiting %4.1f sec .... %s\r" % (sleep_time, c), end="")
+            sys.stdout.flush()
         time.sleep(slice_len)
         sleep_time -= slice_len
         n += 1
         
 
-def rungrid(args, verbose=False):
+def rungrid(args):
     # initialize FPU accordingly
+    verbosity = args.verbosity
     gd, grid_state = initialize_FPU(args)
 
     deviations = []
 
+    global stop_all_fpus
+
     try:
         while True:
-            t = time.gmtime()
-            print("end_time = %r, time: %r" % (args.stop_time, t))
+            t = time.localtime()
             if t > args.stop_time:
+                print("end_time = %r, time: %r" % (args.stop_time, t))
                 print("Time limit reached: finished.")
+                sys.exit(0)
+                
+            if stop_all_fpus:                
+                print("Stop signal received: terminating.")
                 sys.exit(0)
                 
             # get current angles
@@ -532,19 +561,29 @@ def rungrid(args, verbose=False):
             current_alpha = array([x for x, y in current_angles ])
             current_beta = array([y for x, y in current_angles ])
             wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length, opts=args)
-            if verbose:
+            if verbosity > 2:
                 for k, ws in enumerate(wf[0]):
                     print("wf[%i] = %r" % (k, ws))
 
-            print("configure new waveform")
-            gd.configMotion(wf, grid_state)
-            gd.executeMotion(grid_state)
-            chatty_sleep(args.chill_time)
-            print("reversing waveform")
-            gd.reverseMotion(grid_state)
-            gd.executeMotion(grid_state)
-            chatty_sleep(args.chill_time)
-            print("findDatum")
+            if verbosity > 0:
+                print("configure new waveform")
+            if not stop_all_fpus:
+                gd.configMotion(wf, grid_state)
+            if not stop_all_fpus:
+                gd.executeMotion(grid_state)
+                if not stop_all_fpus:
+                    chatty_sleep(args.chill_time, opts=args)
+
+                if verbosity > 0:
+                    print("reversing waveform")
+                gd.reverseMotion(grid_state)
+                gd.executeMotion(grid_state)
+                
+            if not stop_all_fpus:
+                chatty_sleep(args.chill_time, opts=args)
+
+            if verbosity > 0:
+                print("findDatum")
             gd.findDatum(grid_state)
     
     except SystemExit:
