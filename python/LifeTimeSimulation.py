@@ -21,8 +21,8 @@ from FpuGridDriver import (TEST_GATEWAY_ADRESS_LIST, GatewayAddress,
 from fpu_commands import *
 from fpu_constants import *
 
-def wf_create():
-    return { 0 : []}
+def wf_create(num_fpus=1):
+    return { id : [] for id in range(num_fpus)}
 
 def wf_zero():
     return { 0 : [ (0, 0)]}
@@ -221,7 +221,7 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
     
     verbosity = opts.verbosity
     
-    wf = wf_create()
+    wf = wf_create(opts.N)
 
     if verbosity > 1:
         print("current angles:", current_alpha, current_beta)
@@ -515,7 +515,7 @@ def initialize_FPU(args):
 
         
     signal.signal(signal.SIGQUIT, stop_handler)
-    print("press <Ctrl>-\ to terminate test orderly")
+    print("press <Ctrl>-'\' to terminate test orderly, <Ctrl>-c only for emergency abort")
 
     return gd, grid_state
 
@@ -532,6 +532,9 @@ def chatty_sleep(sleep_time, time_slice=0.2, opts=None):
         time.sleep(slice_len)
         sleep_time -= slice_len
         n += 1
+        
+    if opts.verbosity > 0:
+        print("waiting 0 sec    .... OK")
         
 
 def rungrid(args):

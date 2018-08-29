@@ -4020,6 +4020,9 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 1.2.0}
 \begin{itemize}
+\item Added: Life time test script which generates relatively
+  realistic movements in a continuous loop.
+  
 \item Fixed: A bug in the software protection layer was fixed which
   affected reversing movements with the \texttt{reverseMotion()}
   command when the movement was not monotonous, but going forwards and
@@ -4054,6 +4057,11 @@ commands, or alter otherwise visible behaviour of the driver.
   been replaced by configuring the position database with the actual
   angle of the FPUs, so that a subsequent datum search will
   automatically chose the right direction.
+\item Fixed: The default directory for the position database had been
+  set to \texttt{/var/run/fpudb}. However the /var/run directory is
+  automatically cleared on system boot, so the default was changed to
+  \texttt{var/lib/fpudb}.
+  
 \end{itemize}
   
 \subsection*{Changes in version 1.1.1}
