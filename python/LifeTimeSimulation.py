@@ -13,7 +13,7 @@ import matplotlib
 import pylab as pl
 
 from numpy import (array, random, asarray, zeros, ones, sqrt, ceil,
-                   cumsum, arange, sin, pi, maximum, sign, append, insert )
+                   cumsum, arange, sin, pi, maximum, sign, append, insert, isnan )
 
 import FpuGridDriver
 from FpuGridDriver import (TEST_GATEWAY_ADRESS_LIST, GatewayAddress,
@@ -535,6 +535,13 @@ def chatty_sleep(sleep_time, time_slice=0.2, opts=None):
         
     if opts.verbosity > 0:
         print("waiting 0 sec    .... OK")
+
+def out_of_range(ws, channel, current_angle, scale, minval, maxval):
+    positions = current_angle  + cumsum([ s[channel] for s in ws]) / scale
+    
+    if (min(positions) < minval) or (max(positions) > maxval):
+        return True
+    return False
         
 
 def rungrid(args):
@@ -563,7 +570,21 @@ def rungrid(args):
 
             current_alpha = array([x for x, y in current_angles ])
             current_beta = array([y for x, y in current_angles ])
-            wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length, opts=args)
+            invalid=True
+            while invalid:
+                wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length, opts=args)
+
+                invalid=False
+                for id, ws in wf.items():
+                    if ( out_of_range(ws, 0, current_alpha[id], StepsPerDegreeAlpha, args.alpha_min, args.alpha_max)
+                         or out_of_range(ws, 1, current_beta[id], StepsPerDegreeBeta, args.beta_min, args.beta_max)):
+                        
+                        print("waveform out of range, retry..")
+                        invalid=True
+                        break
+                    
+                
+                    
             if verbosity > 2:
                 for k, ws in enumerate(wf[0]):
                     print("wf[%i] = %r" % (k, ws))
