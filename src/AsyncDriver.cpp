@@ -1185,26 +1185,27 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                             canlayer::get_realtime(), i);
                 return DE_FPUS_NOT_CALIBRATED;
             }
-        }
+        
 
 
-        const int max_stepcount = int(ceil(config.motor_maximum_frequency
-                                           * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
-        const int max_start_stepcount = int(ceil(config.motor_max_start_frequency
-                                            * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+	    const int max_stepcount = int(ceil(config.motor_maximum_frequency
+					       * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+	    const int max_start_stepcount = int(ceil(config.motor_max_start_frequency
+						     * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
 
-        const double max_rel_increase = config.motor_max_rel_increase;
+	    const double max_rel_increase = config.motor_max_rel_increase;
 
-        const E_DriverErrCode vwecode = validateWaveforms(waveforms,
-                                        min_stepcount,
-                                        max_stepcount,
-                                        max_start_stepcount,
-                                        ConfigureMotionCommand::MAX_NUM_SECTIONS,
-                                        max_rel_increase);
-        if (vwecode != DE_OK)
-        {
-            return vwecode;
-        }
+	    const E_DriverErrCode vwecode = validateWaveforms(waveforms,
+							      min_stepcount,
+							      max_stepcount,
+							      max_start_stepcount,
+							      ConfigureMotionCommand::MAX_NUM_SECTIONS,
+							      max_rel_increase);
+	    if (vwecode != DE_OK)
+	    {
+		return vwecode;
+	    }
+	}
     }
 
 
@@ -1411,6 +1412,24 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
     return DE_OK;
 }
+
+#if 0
+E_DriverErrCode AsyncDriver::configPathsAsync(t_grid_state& grid_state,
+					      E_GridState& state_summary,
+					      const t_wtable& waveforms,
+					      t_fpuset const &fpuset,
+					      bool soft_protection,
+					      bool allow_uninitialized)
+{
+    // convert path using the selected gearbox correction
+    // round to whole steps
+    // check that first position is current position -> if not, error code
+    // compute differences
+    // store rounded paths to waveform
+    // call configMotion, and return result
+    
+}
+#endif
 
 E_DriverErrCode AsyncDriver::startExecuteMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
