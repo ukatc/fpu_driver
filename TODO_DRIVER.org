@@ -239,7 +239,25 @@ when the internal state struct is used.
 *** TODO add unit="steps" option to gen_wf()
 ** DONE change default directory for position DB to /var/lib, update documentation
 ** DONE add "--gateway_address" option to admin tool
-** TODO add configPath() method with mandatory rounding parameter
+** TODO fix underflow / overflow of step counter after reset in simulation code
+** TODO take underflow / overflow value of step counter into account in protection layer
+** TODO enhance abort error message for illegal step count:
+*** TODO generate exception
+*** TODO report offset
+*** TODO report step counter
+*** TODO report expected range
+** TODO add version number to waveform validation code
+** TODO Update lifetime test script to stricter waveform rule
+** TODO add documentation for waveform ruleset versions
+** TODO Add logging for protection layer:
+*** TODO log start-up time
+*** TODO log driver version
+*** TODO log firmware versions
+*** TODO log updated counter offsets on reset / start
+** TODO check for CAN buffer overflow in MOC (HW/SW)
+** TODO support configurable new storage location of FPU version number
+** TODO add configPath() method for absolute positioning with mandatory rounding parameter
+** TODO 
 ** TODO  clean-up of version 1 code
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList
@@ -247,7 +265,7 @@ when the internal state struct is used.
 *** DONE run short stress test of firmware with CAN command logging
 *** TODO Refactor duplicate code in command header encoding
 *** TODO split SBuffer in independent read buffer and write buffer ?   
-*** TODO make wording of direction orientation more precise
+*** DONE make wording of direction orientation more precise
 ** TODO Implement CAN Protocol V2
 *** TODO clean up protocol document
 *** TODO confirm agreement on protocol
@@ -265,11 +283,11 @@ when the internal state struct is used.
      
 * TODO Integrate FMA path analysis script into MOONS shared library
 ** DONE do a git-svn pull of library
-** TODO integrate test values into test folder
-** TODO convert (r,theta) coordinates to FPU coordinates
+** DONE integrate test values into test folder
+** DONE convert (r,theta) coordinates to FPU coordinates
    (observing curvature of focal surface)
-** TODO extend avoidance model
-** TODO do tests
+** DONE extend avoidance model
+** DONE do tests
 
 
 

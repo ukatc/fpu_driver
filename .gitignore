@@ -11,4 +11,4 @@ GSYMS
 GTAGS
 /obj
 git_version
-
+*.org_archive
