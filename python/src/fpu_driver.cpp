@@ -486,6 +486,10 @@ void translate_driver_error(FPUDriverException const& e)
         PyErr_SetString(HardwareProtectionErrorExceptionTypeObj, e.what());
         break;
 
+    case DE_INCONSISTENT_STEP_COUNT:
+        PyErr_SetString(HardwareProtectionErrorExceptionTypeObj, e.what());
+        break;
+
     default:
         PyErr_SetString(FPUDriverExceptionTypeObj, e.what());
     }
@@ -655,10 +659,12 @@ void checkDriverError(E_DriverErrCode ecode)
                                  DE_ALPHA_ARM_ON_LIMIT_SWITCH);
         break;
 
-    case DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH:
-        throw FPUDriverException("DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH: An FPU rejected"
-                                 " a datum command because the alpha arm is on the limit switch.",
-                                 DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH);
+    case DE_INCONSISTENT_STEP_COUNT:
+        throw FPUDriverException("The driver received an illegal counter value from"
+				 " an FPU, so that it cannot correctly track the FPUs"
+				 " any more. It is required to measure the"
+				 " position and update the position database.",
+                                 DE_INCONSISTENT_STEP_COUNT);
         break;
 
 
@@ -1299,7 +1305,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     SocketFailureExceptionTypeObj = FPUDriverExceptionClass("SocketFailure", ConnectionFailureExceptionTypeObj);
     CommandTimeoutExceptionTypeObj = FPUDriverExceptionClass("CommandTimeout", ConnectionFailureExceptionTypeObj);
     ProtectionErrorExceptionTypeObj = FPUDriverExceptionClass("ProtectionError", InvalidStateExceptionTypeObj);
-    HardwareProtectionErrorExceptionTypeObj = FPUDriverExceptionClass("MovementError", MovementErrorExceptionTypeObj);
+    HardwareProtectionErrorExceptionTypeObj = FPUDriverExceptionClass("HardwareProtectionError", MovementErrorExceptionTypeObj);
 
 
 
@@ -1448,6 +1454,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_MOVEMENT_ABORTED", DE_MOVEMENT_ABORTED)
     .value("DE_DATUM_COMMAND_HW_TIMEOUT", DE_DATUM_COMMAND_HW_TIMEOUT)
     .value("DE_ALPHA_ARM_ON_LIMIT_SWITCH", DE_ALPHA_ARM_ON_LIMIT_SWITCH)
+    .value("DE_INCONSISTENT_STEP_COUNT", DE_INCONSISTENT_STEP_COUNT)
     .value("DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH", DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
     .value("DE_STEP_TIMING_ERROR", DE_STEP_TIMING_ERROR)

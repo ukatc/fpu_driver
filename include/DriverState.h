@@ -155,6 +155,7 @@ enum E_DriverErrCode
     DE_ALPHA_ARM_ON_LIMIT_SWITCH = 116,
 
 
+    
     /***************************************/
     /* setup errors */
 
@@ -263,6 +264,13 @@ enum E_DriverErrCode
     /* datum time-out */
     // The datum command has timed out on the FPU.
     DE_DATUM_COMMAND_HW_TIMEOUT = 606,
+
+
+    // The driver received an illegal counter value from
+    // an FPU, so that it cannot correctly track the FPUs
+    // any more. It is required to measure the
+    // position and update the position database.
+    DE_INCONSISTENT_STEP_COUNT = 607,
 
 };
 

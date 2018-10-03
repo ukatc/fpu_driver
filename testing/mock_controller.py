@@ -127,7 +127,7 @@ def encode_and_send(msg, socket, verbose=False):
 def fold_stepcount_alpha(val):
     low_limit = - 10000
     vrange = 1 << 16
-    assert( (val >= low_limit) and (val < (low_limit + vrange)))
+    #assert( (val >= low_limit) and (val < (low_limit + vrange)))
     # convert to unsigned 16-bit number
             
     if val < 0:

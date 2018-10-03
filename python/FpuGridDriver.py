@@ -26,7 +26,7 @@ from fpu_driver import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,
                         FPUDriverException, MovementError, CollisionError, LimitBreachError,
                         AbortMotionError, StepTimingError, InvalidStateException, SystemFailure,
                         InvalidParameterError, SetupError, InvalidWaveformException, ConnectionFailure,
-                        SocketFailure, CommandTimeout, ProtectionError,                        
+                        SocketFailure, CommandTimeout, ProtectionError, HardwareProtectionError,
                         DASEL_BOTH, DASEL_ALPHA, DASEL_BETA,
                         DATUM_TIMEOUT_ENABLE, DATUM_TIMEOUT_DISABLE,
                         LOG_ERROR, LOG_INFO, LOG_GRIDSTATE, LOG_DEBUG, LOG_VERBOSE, LOG_TRACE_CAN_MESSAGES, 
@@ -1139,10 +1139,12 @@ class GridDriver(UnprotectedGridDriver):
                 if ((not self.apositions[fpu_id].contains(new_alpha, tolerance=0.25))
                     or (not self.bpositions[fpu_id].contains(new_beta, tolerance=0.25))) :
                     
-                    print("ERROR: RECEIVED POSITION = (%r, %r) FOR FPU %i OUTSIDE OF TRACKED RANGE = (%r, %r)."  % (
-                        new_alpha, new_beta, fpu_id, self.apositions[fpu_id], self.bpositions[fpu_id]))
+                    print("\a\a\aERROR: RECEIVED POSITION = (%r, %r) FOR FPU %i OUTSIDE OF TRACKED RANGE = (%r, %r)."
+                          " step counters = (%r,%r), offsets = (%r,%r)"  % (
+                              new_alpha, new_beta, fpu_id, self.apositions[fpu_id], self.bpositions[fpu_id],
+                              fpu.alpha_steps, fpu.beta_steps, self.a_caloffsets[fpu_id], self.b_caloffsets[fpu_id]))
                     inconsistency_abort = True
-            
+                
                 # compute alpha and beta position intervals,
                 # and store both to DB
                 self._update_apos(txn, fpu, fpu_id, new_alpha, store=store)
@@ -1151,9 +1153,9 @@ class GridDriver(UnprotectedGridDriver):
         env.sync()
 
         if inconsistency_abort:
-            print("""\n\nFPU was possibly moved or power-cycled circumventing the running driver. 
-Aborting driver: Position database needs to be re-initialized.""")
-            os.abort()
+            raise HardwareProtectionError("Invalid step counter. FPU was possibly moved or "
+                                          "power-cycled circumventing the running driver.\n" 
+                                          "WARNING: Position database needs to be re-initialized by measurement.")
 
 
  

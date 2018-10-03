@@ -3792,7 +3792,7 @@ The hierarchy of exceptions used by the Python module is as follows:
             AbortMotionError         // AbortMotion message was sent
             StepTimingError          // internal FPU error
             FirmwareTimeoutError     // firmware time-out, movement took too long
-            HardwareProtectionError  // firmware rejected movement
+            HardwareProtectionError  // firmware rejected movement, or fatal failure
         InvalidStateException        // command does not match driver state
             ProtectionError          // unsafe command called
         SystemFailure                // system ressource error
@@ -4022,6 +4022,16 @@ might change.
     /* datum time-out */
     // The datum command has timed out on the FPU.
     DE_DATUM_COMMAND_HW_TIMEOUT = 606,
+
+
+    /***************************************/
+    /* illegal step counter value */
+    // The driver received an illegal counter value from
+    // an FPU, so that it cannot correctly track the FPUs
+    // any more. It is required to measure the
+    // position and update the position database.
+    DE_INCONSISTENT_STEP_COUNT = 607,
+
 \end{verbatim}
 
 \section{Changelog}
