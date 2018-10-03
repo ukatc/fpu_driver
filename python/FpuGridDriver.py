@@ -335,7 +335,7 @@ class UnprotectedGridDriver (object):
                 if was_cancelled or (rv != fpu_driver.E_DriverErrCode.DE_OK):
                     time.sleep(0.1)
                     try:
-                        self.pingFPUs(gs, fpuset)
+                        self._pingFPUs(gs, fpuset)
                     except CommandTimeout:
                         pass
 
@@ -461,7 +461,7 @@ class UnprotectedGridDriver (object):
                 if not finished_ok:
                     time.sleep(0.1)
                     try:
-                        self.pingFPUs(gs, fpuset)
+                        self._pingFPUs(gs, fpuset)
                     except CommandTimeout:
                         pass
     
@@ -482,12 +482,16 @@ class UnprotectedGridDriver (object):
             
         return rv
 
-    def pingFPUs(self, gs, fpuset=[]):
+    def _pingFPUs(self, gs, fpuset=[]):
         
         fpuset = self.check_fpuset(fpuset)
         
         time.sleep(0.1)
         return self._gd.pingFPUs(gs, fpuset)
+
+    def pingFPUs(self, gs, fpuset=[]):
+        return self._pingFPUs(gs, fpuset=fpuset)
+            
 
     def _reset_hook(self, old_state, gs, fpuset=[]):
         pass
@@ -738,7 +742,7 @@ class UnprotectedGridDriver (object):
             finally:
                 move_gs = self._gd.getGridState()
                 try:
-                    self.pingFPUs(gs, fpuset)
+                    self._pingFPUs(gs, fpuset)
                 except CommandTimeout:
                     pass
                 self._post_execute_motion_hook(gs, prev_gs, move_gs, fpuset)
@@ -800,7 +804,7 @@ class UnprotectedGridDriver (object):
                     move_gs = self._gd.getGridState()
                     try:
                         time.sleep(0.1)
-                        self.pingFPUs(gs, fpuset)
+                        self._pingFPUs(gs, fpuset)
                     except CommandTimeout:
                         pass
                     # the following hook will narrow down the recorded intervals of positions
@@ -900,7 +904,7 @@ class UnprotectedGridDriver (object):
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
             
-        self.pingFPUs(gs, fpuset=fpuset)
+        self._pingFPUs(gs, fpuset=fpuset)
         
         angles = fpu_commands.list_angles(gs, show_uninitialized=show_uninitialized,
                                           alpha_datum_offset=self.config.alpha_datum_offset)
@@ -997,6 +1001,10 @@ class GridDriver(UnprotectedGridDriver):
                             in_dicts[subkey][fpu_id] = val + alpha_datum_offset
                         else:
                             in_dicts[subkey][fpu_id] = val
+
+        target_positions = {}
+        for fpu_id, fpu in enumerate(grid_state.FPU):
+            target_positions[fpu_id] = (apositions[fpu_id].copy(),bpositions[fpu_id].copy())
                         
         self.apositions = apositions
         self.bpositions = bpositions
@@ -1011,20 +1019,31 @@ class GridDriver(UnprotectedGridDriver):
         self.bretries_acw = bretries_acw
         self.counters = counters
         self._last_counters = counters.copy()
+        self.target_positions = target_positions
+        self.configuring_targets = {}
+        self.configured_targets = {}
         
 
         # query positions and compute offsets, if FPUs have been resetted.
         # This assumes that the stored positions are correct.
-        super(GridDriver,self).pingFPUs(grid_state)
+        self._pingFPUs(grid_state)
         self._reset_hook(grid_state, grid_state)
         self._refresh_positions(grid_state, store=False)
 
 
     def _alpha_angle(self, fpu):
-        return fpu.alpha_steps / StepsPerDegreeAlpha + self.config.alpha_datum_offset
+        alpha_underflow = (fpu.alpha_steps == ALPHA_UNDERFLOW_COUNT)
+        alpha_overflow = (fpu.alpha_steps == ALPHA_OVERFLOW_COUNT)
+        return (fpu.alpha_steps / StepsPerDegreeAlpha + self.config.alpha_datum_offset,
+                alpha_underflow,
+                alpha_overflow)
 
     def _beta_angle(self, fpu):
-        return fpu.beta_steps / StepsPerDegreeBeta
+        beta_underflow = (fpu.beta_steps == BETA_UNDERFLOW_COUNT)
+        beta_overflow = (fpu.beta_steps == BETA_OVERFLOW_COUNT)
+        return (fpu.beta_steps / StepsPerDegreeBeta,
+                beta_underflow,
+                beta_overflow)
 
     def _reset_hook(self, old_state, new_state, fpuset=[]):
         """This is to be run after a reset or hardware power-on-reset.
@@ -1051,9 +1070,15 @@ class GridDriver(UnprotectedGridDriver):
             # these offsets are the difference between the calibrated
             # angle and the uncalibrated angle - after a findDatum,
             # they are set to zero
-            self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - self._alpha_angle(fpu)
+            alpha_angle, a_underflow, a_overflow = self._alpha_angle(fpu)
+            if a_underflow or a_overflow:
+                print("_reset_hook(): warning: alpha step counter is at underflow / overflow value")
+            self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - alpha_angle
 
-            self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - self._beta_angle(fpu)
+            beta_angle, b_underflow, b_overflow = self._beta_angle(fpu)
+            if b_underflow or b_overflow:
+                print("beta step counter is at underflow / overflow value")
+            self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - beta_angle
 
             if self.configured_ranges.has_key(fpu_id):
                 del self.configured_ranges[fpu_id]
@@ -1071,11 +1096,14 @@ class GridDriver(UnprotectedGridDriver):
         with self.lock:
             if len(fpuset) == 0:
                 fpuset = range(self.config.num_fpus)
+
+            if gs is None:
+                gs = self.getGridState()
                 
             for fi in fpuset:
                 fpu = gs.FPU[fi]
-                aangle = self._alpha_angle(fpu)
-                bangle = self._beta_angle(fpu)
+                aangle, a_underflow, a_overflow = self._alpha_angle(fpu)
+                bangle, b_underflow, b_overflow = self._beta_angle(fpu)
                 if active:
                     wf_arange, wf_brange = self.configured_ranges.get(fi, (Interval(), Interval()))
                     prefix="active"
@@ -1084,11 +1112,25 @@ class GridDriver(UnprotectedGridDriver):
                     prefix="last"
 
                 if show_offsets and (gs != None):
+                    if a_underflow:
+                        aflag = "!u"
+                    elif a_overflow:
+                        aflag = "!o"
+                    else:
+                        aflag = ""
+                        
+                    if b_underflow:
+                        bflag = "!u"
+                    elif a_overflow:
+                        bflag = "!o"
+                    else:
+                        bflag = ""
+                        
                     print("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
-                          " stepcount angle= ({!s}, {!s}), {!s}_wform_range=({!s},{!s})".
+                          " stepcount angle= ({!s}{!s}, {!s}{!s}), {!s}_wform_range=({!s},{!s})".
                           format(fi, self.apositions[fi],self.bpositions[fi],
                                  self.a_caloffsets[fi], self.b_caloffsets[fi],
-                                 aangle, bangle,
+                                 aangle, aflag, bangle, bflag,
                                  prefix, wf_arange, wf_brange))
                 else:
                     print("FPU #{}: angle = ({!s}, {!s}), {!s}_wform_range=({!s},{!s})".
@@ -1134,8 +1176,24 @@ class GridDriver(UnprotectedGridDriver):
                     # every movement as well as all movement time-outs
                     continue
 
-                new_alpha = self.a_caloffsets[fpu_id] + self._alpha_angle(fpu)
-                new_beta = self.b_caloffsets[fpu_id] + self._beta_angle(fpu)
+                counted_alpha_angle, a_underflow, a_overflow  = self._alpha_angle(fpu)
+                new_alpha = self.a_caloffsets[fpu_id] + counted_alpha_angle
+                
+                counted_beta_angle, b_underflow, b_overflow  = self._beta_angle(fpu)
+                new_beta = self.b_caloffsets[fpu_id] + counted_beta_angle
+                # compute alpha and beta position intervals,
+                # and store both to DB
+                a_target, b_target = self.target_positions[fpu_id]
+                if a_underflow or a_overflow:
+                    print("Warning: _refresh_positions(): FPU id %i: using stored alpha target value"
+                          " to bypass counter underflow/overflow" % fpu_id)
+                    new_alpha = a_target
+                if b_underflow or b_overflow :
+                    print("Warning: _refresh_positions(): FPU id %i: using stored beta target value"
+                          " to bypass counter underflow/overflow" % fpu_id)
+                    new_beta = b_target
+                self.target_positions[fpu_id] = (new_alpha, new_beta)
+                
                 if ((not self.apositions[fpu_id].contains(new_alpha, tolerance=0.25))
                     or (not self.bpositions[fpu_id].contains(new_beta, tolerance=0.25))) :
                     
@@ -1145,8 +1203,7 @@ class GridDriver(UnprotectedGridDriver):
                               fpu.alpha_steps, fpu.beta_steps, self.a_caloffsets[fpu_id], self.b_caloffsets[fpu_id]))
                     inconsistency_abort = True
                 
-                # compute alpha and beta position intervals,
-                # and store both to DB
+                    
                 self._update_apos(txn, fpu, fpu_id, new_alpha, store=store)
                 self._update_bpos(txn, fpu, fpu_id, new_beta, store=store)
                 
@@ -1165,7 +1222,7 @@ class GridDriver(UnprotectedGridDriver):
         fpuset = self.check_fpuset(fpuset)
         
         with self.lock:
-            super(GridDriver, self).pingFPUs(grid_state, fpuset=fpuset)
+            self._pingFPUs(grid_state, fpuset=fpuset)
             self._refresh_positions(grid_state, fpuset=fpuset)
 
             
@@ -1176,7 +1233,7 @@ class GridDriver(UnprotectedGridDriver):
             grid_state = self.getGridState()
             if grid_state.driver_state == DS_CONNECTED:
                 # fetch current positions
-                super(GridDriver,self).pingFPUs(grid_state)
+                self._pingFPUs(grid_state)
     
             self._refresh_positions(grid_state)
             
@@ -1259,6 +1316,7 @@ class GridDriver(UnprotectedGridDriver):
         # if not in range, throw exception, or print warning,
         # depending on protection setting
         configuring_ranges = {}
+        configuring_targets = {}
         for fpu_id, wt_row in wtable.items():
             if not fpu_in_set(fpu_id, fpuset):
                 continue
@@ -1308,11 +1366,13 @@ class GridDriver(UnprotectedGridDriver):
                                          wf_brange, wmode)
                 
             configuring_ranges[fpu_id] = (wf_arange, wf_brange)
+            configuring_targets[fpu_id] = (alpha_sect, beta_sect)
 
         # this is the list of alpha/beta position intervals that
         # will become valid if and after an executeMotion is started,
         # and before the new positions can be retrieved via ping
         self.configuring_ranges.update(configuring_ranges)
+        self.configuring_targets.update(configuring_targets)
 
     def _pre_config_motion_hook(self, wtable, gs, fpuset, wmode=Range.Error):
         self._check_and_register_wtable(wtable, gs, fpuset, wmode, sign=1)
@@ -1338,6 +1398,8 @@ class GridDriver(UnprotectedGridDriver):
             fpu = gs.FPU[fpu_id]
             if self.wavetable_was_received(wtable, gs, fpu_id, fpu):
                 self.configured_ranges[fpu_id] = rentry
+                # store actual target position
+                self.configured_targets[fpu_id] = self.configuring_targets[fpu_id]
                     
                 
         self._save_wtable_direction(wtable.keys(), is_reversed=False, grid_state=gs)
@@ -1362,6 +1424,7 @@ class GridDriver(UnprotectedGridDriver):
             if self.wavetable_was_received(wtable, gs, fpu_id, fpu, allow_unconfirmed=True):
                 self.configured_ranges[fpu_id] = rentry
                 idlist.append(fpu_id)
+                self.configured_targets[fpu_id] = self.configuring_targets[fpu_id]
         self._save_wtable_direction(idlist, is_reversed=False, grid_state=gs)
 
     def _pre_reverse_motion_hook(self, wtable, gs, fpuset, wmode=Range.Error):
@@ -1379,6 +1442,7 @@ class GridDriver(UnprotectedGridDriver):
                                            allow_unconfirmed=True,
                                            target_state=FPST_READY_REVERSE):
                 self.configured_ranges[fpu_id] = rentry
+                self.configured_targets[fpu_id] = self.configuring_targets[fpu_id]
                 idlist.append(fpu_id)
 
         self._save_wtable_direction(idlist, is_reversed=True, grid_state=gs)
@@ -1473,7 +1537,7 @@ class GridDriver(UnprotectedGridDriver):
         # initial_positions has to be a dict
         initial_positions.clear()
         
-        self.pingFPUs(gs, fpuset=fpuset)
+        self._pingFPUs(gs, fpuset=fpuset)
         
         with env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
@@ -1490,6 +1554,8 @@ class GridDriver(UnprotectedGridDriver):
                     (arange, brange) = self.configured_ranges[fpu_id]
                     self._update_apos(txn, fpu, fpu_id, arange)
                     self._update_bpos(txn, fpu, fpu_id,  brange)
+                    # update target position which is used in case of step counter overflow
+                    self.target_positions[fpu_id] = self.configured_targets[fpu_id]
 
                     self._update_counters_execute_motion(fpu_id, self.counters[fpu_id],
                                                          self.last_wavetable[fpu_id],
@@ -1514,6 +1580,7 @@ class GridDriver(UnprotectedGridDriver):
                 fpu = gs.FPU[fpu_id]
                 self._update_apos(txn, fpu, fpu_id, apos)
                 self._update_bpos(txn, fpu, fpu_id,  bpos)
+                self.target_positions[fpu_id] = (apos, bpos)
 
                 if self.configured_ranges.has_key(fpu_id):
                     self._update_counters_execute_motion(fpu_id, self.counters[fpu_id],
@@ -1552,10 +1619,10 @@ class GridDriver(UnprotectedGridDriver):
         # Solution for now: wait.
         while True:
             if (gs.Counts[FPST_MOVING] > 0) or (gs.Counts[FPST_DATUM_SEARCH] > 0):
-                print("waiting for movement to finish in order to retrieve reached positions..")
+                print("_post_execute_motion_hook(): waiting for movement to finish in order to retrieve reached positions..")
                 time.sleep(0.5)
                 try:
-                    super(GridDriver, self).pingFPUs(gs, fpuset=fpuset)
+                    self._pingFPUs(gs, fpuset=fpuset)
                 except Commandtimeout:
                     pass
             else:
@@ -1566,7 +1633,18 @@ class GridDriver(UnprotectedGridDriver):
         # collisions would compromise the precision of step counts,
         # but for protection purposes this should be OK.
         #
-        # Thus, use the step counter positions to update the location
+        # Thus, use the step counter positions to update the location.
+        # If the FPU step counters are in underflow / overflow, use
+        # the registered target positions, to continue tracking.
+        # But, roll back the latter to the movement range for an FPU, if
+        # that FPU is not yet at target.
+        for fpu_id in fpuset:
+            print("fpu_id %i state: %r" % (fpu_id, gs.FPU[fpu_id].state))
+            if gs.FPU[fpu_id].state != FPST_RESTING:
+                print("_post_execute_motion_hook(): retaining interval positions for FPU id %i" % fpu_id)
+                self.target_positions[fpu_id] = (self.apositions[fpu_id].copy(),
+                                                 self.bpositions[fpu_id].copy())
+
         self._refresh_positions(gs, fpuset=fpuset)
 
         with env.begin(db=self.fpudb, write=True) as txn:
@@ -1593,7 +1671,7 @@ class GridDriver(UnprotectedGridDriver):
         """
 
         # get fresh ping data
-        self.pingFPUs(gs, fpuset=fpuset)
+        self._pingFPUs(gs, fpuset=fpuset)
         
         # super(GridDriver, self).pingFPUs(gs, fpuset=fpuset)
 
@@ -1693,7 +1771,17 @@ class GridDriver(UnprotectedGridDriver):
                     ## step counter was successfully retrieved by a
                     ## subsequent ping, and the offset is unchanged.
                     if fpu.ping_ok:
-                        self._update_apos(txn, fpu, fpu_id, Interval(self._alpha_angle(fpu)) + self.a_caloffsets[fpu_id])
+                        alpha_angle, a_underflow, a_overflow = self._alpha_angle(fpu)
+                        if a_underflow or a_overflow:
+                            # we know only we are in the interval between the
+                            # overflow / underflow value and the datum position
+                            a_int = (Interval(alpha_angle) + self.a_caloffsets[fpu_id]
+                            ).extend(0.0 + self.config.alpha_datum_offset)
+
+                        else:
+                            a_int = Interval(alpha_angle) + self.a_caloffsets[fpu_id]
+                            
+                        self._update_apos(txn, fpu, fpu_id, a_int)
 
                 
                 if fpu.beta_was_zeroed:
@@ -1709,7 +1797,15 @@ class GridDriver(UnprotectedGridDriver):
                             ProtectionDB.store_bretry_count(txn, fpu, clockwise, 0)
                 else:
                     if fpu.ping_ok:
-                        self._update_bpos(txn, fpu, fpu_id,  Interval(self._beta_angle(fpu)) + self.b_caloffsets[fpu_id])
+                        beta_angle, b_underflow, b_overflow = self._beta_angle(fpu)
+                        if b_underflow or b_overflow:
+                            # we know only we are in the interval between the
+                            # overflow / underflow value and the datum position
+                            b_int = (Interval(beta_angle) + self.b_caloffsets[fpu_id]).extend(0.0)
+                        else:
+                            b_int = Interval(beta_angle) + self.b_caloffsets[fpu_id]
+                                                    
+                        self._update_bpos(txn, fpu, fpu_id,  b_int)
 
                 
                 prev_fpu = prev_gs.FPU[fpu_id]
@@ -1784,6 +1880,7 @@ class GridDriver(UnprotectedGridDriver):
                 initial_positions[fpu_id] = (self.apositions[fpu_id].copy(),
                                              self.bpositions[fpu_id].copy())
                 
+                (atarget, btarget) = initial_positions[fpu_id]
                 
                 # update stored intervals to include zero, and store in DB
                 if selected_arm in [DASEL_ALPHA, DASEL_BOTH]:
@@ -1795,6 +1892,7 @@ class GridDriver(UnprotectedGridDriver):
                         apos = self.apositions[fpu_id]
                         new_range = apos.combine(protection_interval)
                         self._update_apos(txn, fpu, fpu_id, new_range)
+                    atarget = 0.0
 
                     
                 if selected_arm in [DASEL_BETA, DASEL_BOTH]:
@@ -1814,9 +1912,17 @@ class GridDriver(UnprotectedGridDriver):
                             new_range = bpos.combine(protection_interval)
 
 
-                        self._update_bpos(txn, fpu, fpu_id,  new_range)                                                               
-                        
+                        self._update_bpos(txn, fpu, fpu_id,  new_range)
+                    btarget = 0.0
+                    
+                # update target positions. The target positions are
+                # used as a computed tracked value if the driver
+                # cannot retrieve the exact counted position of the
+                # FPU because the firmware counter is in underflow /
+                # overflow. (That should only happen if the datum
+                # search does not move this arm.)
                 
+                self.target_positions[fpu_id] = (atarget, btarget)
                     
         env.sync()
  
@@ -1834,6 +1940,8 @@ class GridDriver(UnprotectedGridDriver):
                 # revert stored intervals to old values
                 self._update_apos(txn, fpu, fpu_id, apos)
                 self._update_bpos(txn, fpu, fpu_id, bpos)
+                
+                self.target_positions[fpu_id] = (apos, bpos)
                 
         env.sync()
  
@@ -1870,6 +1978,8 @@ class GridDriver(UnprotectedGridDriver):
 
         bpos = self.bpositions[fpu_id]
         new_bpos = bpos + diff / StepsPerDegreeBeta
+
+        self.target_positions[fpu_id] = ( self.apositions[fpu_id], new_bpos)
         
         with env.begin(db=self.fpudb, write=True) as txn:
             ProtectionDB.store_bretry_count(txn, fpu, clockwise, cnt)
@@ -1877,5 +1987,5 @@ class GridDriver(UnprotectedGridDriver):
 
 
         fpuset = [fpu_id]
-        super(GridDriver, self).pingFPUs(grid_state, fpuset=fpuset)
+        self._pingFPUs(grid_state, fpuset=fpuset)
         self._refresh_positions(grid_state, fpuset=fpuset)
