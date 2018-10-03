@@ -127,7 +127,13 @@ def encode_and_send(msg, socket, verbose=False):
 def fold_stepcount_alpha(val):
     low_limit = - 10000
     vrange = 1 << 16
-    #assert( (val >= low_limit) and (val < (low_limit + vrange)))
+    # As specified in protcol,
+    # cap underflow / overflow values to representable range
+    if val < low_limit:
+        val = low_limit
+    if val > low_limit + vrange:
+        val = low_limit + vrange
+
     # convert to unsigned 16-bit number
             
     if val < 0:
@@ -138,7 +144,11 @@ def fold_stepcount_alpha(val):
 def fold_stepcount_beta(val):
     low_limit = - 0x8000
     vrange = 1 << 16
-    assert( (val >= low_limit) and (val < (low_limit + vrange)))
+    # cap underflow / overflow values to representable range
+    if val < low_limit:
+        val = low_limit
+    if val > low_limit + vrange:
+        val = low_limit + vrange
     # convert to unsigned 16-bit number
             
     if val < 0:
