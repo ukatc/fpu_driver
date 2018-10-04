@@ -948,7 +948,7 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 
 }
 
-E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
+E_DriverErrCode AsyncDriver::validateWaveformsV1(const t_wtable& waveforms,
         const int MIN_STEPS,
         const int MAX_STEPS,
         const int MAX_START_STEPS,
@@ -956,7 +956,7 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
         const double MAX_INCREASE_FACTOR) const
 {
 
-    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: validating waveforms\n",
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: validating waveforms (ruleset V1)\n",
                 canlayer::get_realtime());
 
     const int num_loading =  waveforms.size();
@@ -1122,12 +1122,369 @@ E_DriverErrCode AsyncDriver::validateWaveforms(const t_wtable& waveforms,
     return DE_OK;
 }
 
+E_DriverErrCode AsyncDriver::validateWaveformsV2(const t_wtable& waveforms,
+						 const int MIN_STEPS,
+						 const int MAX_STEPS,
+						 const int MAX_START_STEPS,
+						 const unsigned int MAX_NUM_SECTIONS,
+						 const double MAX_INCREASE_FACTOR) const
+{
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: validating waveforms (ruleset V2)\n",
+                canlayer::get_realtime());
+
+    const int num_loading =  waveforms.size();
+    const unsigned int num_steps = waveforms[0].steps.size();
+
+    if (MIN_STEPS > MAX_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    "  minimum step number limit is larger than maximum limit\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_START_STEPS > MAX_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    " upper limit of step count during start exceeds maximum step count\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_START_STEPS < MIN_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    " upper limit of step count during start is smaller than minimum value\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_INCREASE_FACTOR < 1.0)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    " relative growth factor is smaller than 1.\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+
+
+    if (num_steps > MAX_NUM_SECTIONS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:"
+                    "  waveform has too many steps (%i)\n",
+                    canlayer::get_realtime(), num_steps);
+        return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
+    }
+
+    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    {
+        const int fpu_id = waveforms[fpu_index].fpu_id;
+        if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: waveform error DE_INVALID_FPU_ID:"
+                        " FPU ID %i in waveform table is out of range\n",
+                        canlayer::get_realtime(), fpu_id);
+            return DE_INVALID_FPU_ID;
+        }
+
+        // require same number of steps for all FPUs
+        if (waveforms[fpu_index].steps.size() != num_steps)
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_RAGGED:"
+                        " waveforms for FPU %i have unequal length\n",
+                        canlayer::get_realtime(), fpu_id);
+            return DE_INVALID_WAVEFORM_RAGGED;
+        }
+
+
+        const t_waveform& wform = waveforms[fpu_index];
+
+        for(int chan_idx=0; chan_idx < 2; chan_idx++)
+        {
+            int xa_last = 0;
+            int x_last_sign = 0;
+
+            for (unsigned int sidx=0; sidx<num_steps; sidx++)
+            {
+
+                const t_step_pair& step = wform.steps[sidx];
+
+                const int xs = (chan_idx == 0) ?
+                               step.alpha_steps : step.beta_steps;
+
+                const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
+                const int xa = abs(xs);
+
+		const bool is_last_step = (sidx == (num_steps -1));
+
+
+                if (xa > MAX_STEPS)
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:"
+                                "fpu %i, %s arm, movement interval %i: step count exceeds maximum\n\n",
+                                canlayer::get_realtime(),
+                                fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
+                }
+
+
+
+                const int xa_small = std::min(xa_last, xa);
+                const int xa_large = std::max(xa_last, xa);
+                const int increase_limit = int(ceil(xa_small * MAX_INCREASE_FACTOR));
+
+                const bool valid_acc = (
+		    // 1) movement into the same direction
+
+		    ((x_sign == x_last_sign)
+		     //   1a) and currently *stopping* to move and on last step of waveform
+		     && (( (xa < MIN_STEPS)
+			   && is_last_step)
+			 // or, 1b) at least  MIN_STEPS and the larger
+			 // of both values not larger than the allowed
+			 // relative increase
+			 || ( (xa_small >= MIN_STEPS)
+			      && (xa_large <= increase_limit))))
+
+		    // or, it is the last step and before was a zero count
+		    || ( (xa_last == 0)
+			 && ( (xa < MIN_STEPS)
+			      && is_last_step))
+
+		    // or, has stopped to move, possibly from higher speed
+		    || ( (xa == 0)
+			 && (xa_last >= MIN_STEPS)
+			 && (xa_last <= MAX_START_STEPS))
+		    // or, a single entry with a small number of steps,
+		    // preceded by a pause
+		    || ( (xa <= MAX_START_STEPS)
+			 && (xa >= MIN_STEPS)
+			 && (xa_last == 0))
+		    // or, with or without a change of direction,
+		    // one step number zero and the other at least
+		    // MIN_STEPS - at start or end of a movement
+		    || ((xa_small == 0)
+			&& (xa_large >= MIN_STEPS)
+		        && (xa_large <= MAX_START_STEPS))
+		    // or, a pause in movement
+		    || ((xa_small == 0)
+			&& (xa_large == 0)));
+
+                if (!valid_acc)
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: DE_INVALID_WAVEFORM_CHANGE: "
+                                "fpu %i, %s arm, movement interval %i: invalid step count change\n",
+                                canlayer::get_realtime(),
+                                fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    return DE_INVALID_WAVEFORM_CHANGE;
+                }
+
+                xa_last = xa;
+                x_last_sign = x_sign;
+            }
+            if (xa_last > MAX_START_STEPS)
+            {
+                // last step count must be minimum or smaller
+                LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: DE_INVALID_WAVEFORM_TAIL: "
+                            "fpu %i, %s arm, movement interval %i: last step count too large\n",
+                            canlayer::get_realtime(),
+                            fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
+                return DE_INVALID_WAVEFORM_TAIL;
+            }
+        }
+    }
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver::validateWaveforms() waveform OK\n",
+                canlayer::get_realtime());
+
+    return DE_OK;
+}
+
+
+E_DriverErrCode AsyncDriver::validateWaveformsV3(const t_wtable& waveforms,
+						 const int MIN_STEPS,
+						 const int MAX_STEPS,
+						 const int MAX_START_STEPS,
+						 const unsigned int MAX_NUM_SECTIONS,
+						 const double MAX_INCREASE_FACTOR) const
+{
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: validating waveforms (ruleset V2)\n",
+                canlayer::get_realtime());
+
+    const int num_loading =  waveforms.size();
+    const unsigned int num_steps = waveforms[0].steps.size();
+
+    if (MIN_STEPS > MAX_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    "  minimum step number limit is larger than maximum limit\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_START_STEPS > MAX_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    " upper limit of step count during start exceeds maximum step count\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_START_STEPS < MIN_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    " upper limit of step count during start is smaller than minimum value\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_INCREASE_FACTOR < 1.0)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_CONFIG:"
+                    " relative growth factor is smaller than 1.\n",
+                    canlayer::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+
+
+    if (num_steps > MAX_NUM_SECTIONS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:"
+                    "  waveform has too many steps (%i)\n",
+                    canlayer::get_realtime(), num_steps);
+        return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
+    }
+
+    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    {
+        const int fpu_id = waveforms[fpu_index].fpu_id;
+        if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: waveform error DE_INVALID_FPU_ID:"
+                        " FPU ID %i in waveform table is out of range\n",
+                        canlayer::get_realtime(), fpu_id);
+            return DE_INVALID_FPU_ID;
+        }
+
+        // require same number of steps for all FPUs
+        if (waveforms[fpu_index].steps.size() != num_steps)
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_RAGGED:"
+                        " waveforms for FPU %i have unequal length\n",
+                        canlayer::get_realtime(), fpu_id);
+            return DE_INVALID_WAVEFORM_RAGGED;
+        }
+
+
+        const t_waveform& wform = waveforms[fpu_index];
+
+        for(int chan_idx=0; chan_idx < 2; chan_idx++)
+        {
+            int xa_last = 0;
+            int x_last_sign = 0;
+
+            for (unsigned int sidx=0; sidx<num_steps; sidx++)
+            {
+
+                const t_step_pair& step = wform.steps[sidx];
+
+                const int xs = (chan_idx == 0) ?
+                               step.alpha_steps : step.beta_steps;
+
+                const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
+                const int xa = abs(xs);
+
+		const bool is_last_step = (sidx == (num_steps -1));
+
+
+                if (xa > MAX_STEPS)
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: error DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:"
+                                "fpu %i, %s arm, movement interval %i: step count exceeds maximum\n\n",
+                                canlayer::get_realtime(),
+                                fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
+                }
+
+
+
+                const int xa_small = std::min(xa_last, xa);
+                const int xa_large = std::max(xa_last, xa);
+                const int increase_limit = int(ceil(xa_last * MAX_INCREASE_FACTOR));
+                const int decrease_limit = int(floor(xa_last / (MAX_INCREASE_FACTOR * MAX_INCREASE_FACTOR)));
+
+                const bool valid_acc = (
+		    // 1) movement into the same direction
+
+		    ((x_sign == x_last_sign)
+		     //   1a) and currently *stopping* to move and on last step of waveform
+		     && (( (xa < MIN_STEPS)
+			   && is_last_step)
+			 // or, 1b) at least  MIN_STEPS and the larger
+			 // of both values not larger than the allowed
+			 // relative increase
+			 || ( (xa >= xa_last)
+			      && (xa_last >= MIN_STEPS)
+			      && (xa <= increase_limit))
+			 || ( (xa <= xa_last)
+			      && (xa >= MIN_STEPS)
+			      && (xa >= decrease_limit))))
+
+		    // or, it is the last step and before was a zero count
+		    || ( (xa_last == 0)
+			 && ( (xa < MIN_STEPS)
+			      && is_last_step))
+
+		    // or, has stopped to move, from any speed
+		    || ( (xa == 0)
+			 && (xa_last >= MIN_STEPS))
+		    // or, a single entry with a small number of steps,
+		    // preceded by a pause
+		    || ( (xa <= MAX_START_STEPS)
+			 && (xa >= MIN_STEPS)
+			 && (xa_last == 0))
+		    // or, with or without a change of direction,
+		    // one step number zero and the other at least
+		    // MIN_STEPS - at start or end of a movement
+		    || ((xa_small == 0)
+			&& (xa_large >= MIN_STEPS)
+		        && (xa_large <= MAX_START_STEPS))
+		    // or, a pause in movement
+		    || ((xa_small == 0)
+			&& (xa_large == 0)));
+
+                if (!valid_acc)
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: DE_INVALID_WAVEFORM_CHANGE: "
+                                "fpu %i, %s arm, movement interval %i: invalid step count change\n",
+                                canlayer::get_realtime(),
+                                fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    return DE_INVALID_WAVEFORM_CHANGE;
+                }
+
+                xa_last = xa;
+                x_last_sign = x_sign;
+            }
+            if (xa_last > MAX_START_STEPS)
+            {
+                // last step count must be minimum or smaller
+                LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncDriver: DE_INVALID_WAVEFORM_TAIL: "
+                            "fpu %i, %s arm, movement interval %i: last step count too large\n",
+                            canlayer::get_realtime(),
+                            fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
+                return DE_INVALID_WAVEFORM_TAIL;
+            }
+        }
+    }
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver::validateWaveforms() waveform OK\n",
+                canlayer::get_realtime());
+
+    return DE_OK;
+}
+
+
 E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
-        E_GridState& state_summary,
-        const t_wtable& waveforms,
-        t_fpuset const &fpuset,
-        bool soft_protection,
-        bool allow_uninitialized)
+					       E_GridState& state_summary,
+					       const t_wtable& waveforms,
+					       t_fpuset const &fpuset,
+					       bool soft_protection,
+					       bool allow_uninitialized,
+					       int ruleset_version)
 {
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncDriver: calling configMotion()\n",
@@ -1185,27 +1542,65 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                             canlayer::get_realtime(), i);
                 return DE_FPUS_NOT_CALIBRATED;
             }
-        
 
-
-	    const int max_stepcount = int(ceil(config.motor_maximum_frequency
-					       * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
-	    const int max_start_stepcount = int(ceil(config.motor_max_start_frequency
-						     * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
-
-	    const double max_rel_increase = config.motor_max_rel_increase;
-
-	    const E_DriverErrCode vwecode = validateWaveforms(waveforms,
-							      min_stepcount,
-							      max_stepcount,
-							      max_start_stepcount,
-							      ConfigureMotionCommand::MAX_NUM_SECTIONS,
-							      max_rel_increase);
-	    if (vwecode != DE_OK)
-	    {
-		return vwecode;
-	    }
 	}
+        
+    }
+
+    {
+
+	const int max_stepcount = int(ceil(config.motor_maximum_frequency
+					   * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+	const int max_start_stepcount = int(ceil(config.motor_max_start_frequency
+						 * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+
+	const double max_rel_increase = config.motor_max_rel_increase;
+
+	E_DriverErrCode vwecode = DE_OK;
+
+	switch (ruleset_version)
+	{
+	case 0:
+	    break;
+
+	case 1:
+	    vwecode = validateWaveformsV1(waveforms,
+					  min_stepcount,
+					  max_stepcount,
+					  max_start_stepcount,
+					  ConfigureMotionCommand::MAX_NUM_SECTIONS,
+					  max_rel_increase);
+	    break;
+		
+	case 2:
+	    vwecode = validateWaveformsV2(waveforms,
+					  min_stepcount,
+					  max_stepcount,
+					  max_start_stepcount,
+					  ConfigureMotionCommand::MAX_NUM_SECTIONS,
+					  max_rel_increase);
+	    break;
+
+	case 3:
+	    vwecode = validateWaveformsV3(waveforms,
+					  min_stepcount,
+					  max_stepcount,
+					  max_start_stepcount,
+					  ConfigureMotionCommand::MAX_NUM_SECTIONS,
+					  max_rel_increase);
+
+	    break;
+	default:
+	    return DE_INVALID_PAR_VALUE;
+		
+	}
+	    
+		
+	if (vwecode != DE_OK)
+	{
+	    return vwecode;
+	}	
+
     }
 
 
@@ -1306,8 +1701,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         }
 #if (CAN_PROTOCOL_VERSION != 1)
         /* Apparently, at least for firmware version 1, we cannot
-               send more than one configMotion command at a time,
-               or else CAN commands will get lost. */
+	   send more than one configMotion command at a time,
+	   or else CAN commands will get lost. */
         if (first_entry || last_entry)
 #endif
         {
@@ -1342,10 +1737,10 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 // we retry if an FPU which we tried to configure and is
                 // not locked did not change to FPST_LOADING state.
                 if ((fpu_state.state != FPST_LOCKED)
-                        && ( ((first_entry && (! last_entry))
-                              &&  (fpu_state.state != FPST_LOADING))
-                             || (last_entry
-                                 &&  (fpu_state.state != FPST_READY_FORWARD))))
+		    && ( ((first_entry && (! last_entry))
+			  &&  (fpu_state.state != FPST_LOADING))
+			 || (last_entry
+			     &&  (fpu_state.state != FPST_READY_FORWARD))))
                 {
                     if (retry_downcount <= 0)
                     {

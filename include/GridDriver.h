@@ -132,7 +132,8 @@ public:
                                  t_grid_state& grid_state,
                                  t_fpuset const &fpuset,
                                  bool soft_protection=true,
-                                 bool allow_uninitialized=false);
+                                 bool allow_uninitialized=false,
+				 int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
 
     E_DriverErrCode executeMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 

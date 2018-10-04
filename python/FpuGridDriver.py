@@ -22,7 +22,8 @@ import fpu_driver
 import fpu_commands
 
 from fpu_driver import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  
-                        REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, 
+                        REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE,
+                        DEFAULT_WAVEFORM_RULSET_VERSION,
                         FPUDriverException, MovementError, CollisionError, LimitBreachError,
                         AbortMotionError, StepTimingError, InvalidStateException, SystemFailure,
                         InvalidParameterError, SetupError, InvalidWaveformException, ConnectionFailure,
@@ -182,6 +183,10 @@ class UnprotectedGridDriver (object):
         config.num_fpus = nfpus
         config.SocketTimeOutSeconds = SocketTimeOutSeconds
         config.alpha_datum_offset = alpha_datum_offset
+        config.motor_minimum_frequency = motor_minimum_frequency
+        config.motor_maximum_frequency = motor_maximum_frequency
+        config.motor_max_start_frequency= motor_max_start_frequency
+        config.motor_max_rel_increase = motor_max_rel_increase
         
         flags = os.O_CREAT | os.O_APPEND | os.O_WRONLY
         mode = 0o00644
@@ -618,7 +623,8 @@ class UnprotectedGridDriver (object):
                  and ((fpu.last_status == 0) or (allow_unconfirmed and (fpu.last_status == _ER_OK_UNCONFIRMED))))
 
     
-    def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None,  allow_uninitialized=False):
+    def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None,
+                     allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION):
         """ 
         Configures movement by sending a waveform table to a group of FPUs.
         Call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
@@ -657,7 +663,8 @@ class UnprotectedGridDriver (object):
             try:
                 try:
                     time.sleep(0.1)
-                    rval = self._gd.configMotion(wtable, gs, fpuset, soft_protection, allow_uninitialized)
+                    rval = self._gd.configMotion(wtable, gs, fpuset, soft_protection,
+                                                 allow_uninitialized, ruleset_version)
                     update_config = True
                     
                 except (SocketFailure, CommandTimeout) as e:
@@ -1639,7 +1646,6 @@ class GridDriver(UnprotectedGridDriver):
         # But, roll back the latter to the movement range for an FPU, if
         # that FPU is not yet at target.
         for fpu_id in fpuset:
-            print("fpu_id %i state: %r" % (fpu_id, gs.FPU[fpu_id].state))
             if gs.FPU[fpu_id].state != FPST_RESTING:
                 print("_post_execute_motion_hook(): retaining interval positions for FPU id %i" % fpu_id)
                 self.target_positions[fpu_id] = (self.apositions[fpu_id].copy(),

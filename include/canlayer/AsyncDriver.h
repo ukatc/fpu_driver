@@ -131,7 +131,8 @@ public:
                                       const t_wtable& waveforms,
                                       t_fpuset const &fpuset,
                                       bool soft_protection=true,
-                                      bool allow_uninitialized=false);
+                                      bool allow_uninitialized=false,				     
+				      int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
 
     E_DriverErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
@@ -187,12 +188,26 @@ public:
                              double &max_wait_time,
                              bool &cancelled) const;
 
-    E_DriverErrCode validateWaveforms(const t_wtable& waveforms,
-                                      const int MIN_STEPS,
-                                      const int MAX_STEPS,
-                                      const int MAX_START_STEPS,
-                                      const unsigned int MAX_NUM_SECTIONS,
-                                      const double MAX_INCREASE) const;
+     E_DriverErrCode validateWaveformsV1(const t_wtable& waveforms,
+					 const int MIN_STEPS,
+					 const int MAX_STEPS,
+					 const int MAX_START_STEPS,
+					 const unsigned int MAX_NUM_SECTIONS,
+					 const double MAX_INCREASE) const;
+    
+    E_DriverErrCode validateWaveformsV2(const t_wtable& waveforms,
+					const int MIN_STEPS,
+					const int MAX_STEPS,
+					const int MAX_START_STEPS,
+					const unsigned int MAX_NUM_SECTIONS,
+					const double MAX_INCREASE) const;
+    
+    E_DriverErrCode validateWaveformsV3(const t_wtable& waveforms,
+					const int MIN_STEPS,
+					const int MAX_STEPS,
+					const int MAX_START_STEPS,
+					const unsigned int MAX_NUM_SECTIONS,
+					const double MAX_INCREASE) const;
 
     void logGridState(const E_LogLevel logLevel, t_grid_state& grid_state) const;
 
