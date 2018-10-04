@@ -860,7 +860,8 @@ public:
     E_DriverErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state,
                                          list &fpu_list,
                                          bool soft_protection=true,
-                                         bool allow_uninitialized=false)
+                                         bool allow_uninitialized=false,
+					 int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION)
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
@@ -907,7 +908,8 @@ public:
             wform.steps = steps;
             wtable.push_back(wform);
         }
-        E_DriverErrCode ecode = configMotion(wtable, grid_state, fpuset, soft_protection, allow_uninitialized);
+        E_DriverErrCode ecode = configMotion(wtable, grid_state, fpuset, soft_protection,
+					     allow_uninitialized, ruleset_version);
         checkDriverError(ecode);
         return ecode;
 
@@ -1287,6 +1289,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
 
     scope().attr("CAN_PROTOCOL_VERSION") = CAN_PROTOCOL_VERSION;
 
+    scope().attr("DEFAULT_WAVEFORM_RULSET_VERSION") = DEFAULT_WAVEFORM_RULSET_VERSION;
 
     /* define the exception hierarchy */
     FPUDriverExceptionTypeObj = FPUDriverExceptionClass("FPUDriverException");
