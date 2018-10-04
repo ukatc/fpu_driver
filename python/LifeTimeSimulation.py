@@ -17,7 +17,8 @@ from numpy import (array, random, asarray, zeros, ones, sqrt, ceil,
 
 import FpuGridDriver
 from FpuGridDriver import (TEST_GATEWAY_ADRESS_LIST, GatewayAddress,
-                           SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE)
+                           SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE,
+                           DEFAULT_WAVEFORM_RULSET_VERSION, DATUM_TIMEOUT_DISABLE)
 from fpu_commands import *
 from fpu_constants import *
 
@@ -30,10 +31,42 @@ def wf_zero():
 def wf_copy(wf):
     return {id : list(steps) for id, steps in wf.items() }
 
-def wf_append(wf1, wf2):
+def below_minsteps(s, min_steps):
+    astep = abs(s)
+    return  ((astep > 0 ) and (astep < min_steps))
+
+
+def filter_slow_tail(step_list, min_steps):
+    if len(step_list) == 0:
+        return step_list
+    #print("before:", step_list)
+    asteps, bsteps = zip(*step_list)
+    asteps =  list(filter(lambda s: not below_minsteps(s, min_steps), asteps))
+    bsteps =  list(filter(lambda s: not below_minsteps(s, min_steps), bsteps))
+
+    #print("asteps:", asteps)
+    #print("bsteps:", bsteps)
+    while len(asteps) < len(bsteps):
+        asteps.append(0)
+    while len(bsteps) < len(asteps):
+        bsteps.append(0)
+
+    sl = zip(asteps, bsteps)            
+    
+    #print("after:", sl)
+    return sl
+    
+    
+
+def wf_append(wf1, wf2, min_steps=125, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION):
     wf = wf_copy(wf1)
     
     for k in wf.keys():
+        if ruleset_version == 2:
+            # delete entries which have step numbers
+            # smaller than min_steps
+            wf[k] = filter_slow_tail(wf[k], min_steps)
+                
         if wf2.has_key(k):
             ws = wf2[k]
         else:
@@ -175,7 +208,7 @@ def gen_jump(current_alpha, current_beta, alpha_target, beta_target, opts=None):
 
     return wf
 
-def check_wf(wf, channel, opts=None, verbose=False):
+def check_wf(wf, channel, opts=None, verbose=False, rulset_version=None):
     for ws in wf.values():
         y = array([ seg[channel] for seg in ws ])
         y = append(y, 0)
@@ -196,9 +229,9 @@ def check_wf(wf, channel, opts=None, verbose=False):
             yk_abs = abs(yk)
             y_prev_abs = abs(y_prev)
             y_post_abs = abs(y_post)
-            
-            large_y = max(yk_abs, y_prev_abs)
+
             small_y = min(yk_abs, y_prev_abs)
+            large_y = max(yk_abs, y_prev_abs)
 
             if verbose:
                 print("v[%i][%i]= %r, small=%i, large=%i, y_post=%i" % (channel, k, yk, small_y, large_y, y_post))
@@ -207,17 +240,21 @@ def check_wf(wf, channel, opts=None, verbose=False):
             assert(sign(yk) * sign(y_post) >= 0)
                    
             if (small_y != 0) and (y_prev != 0) and (y_post != 0):
-                assert( (large_y /  small_y) <= opts.max_acceleration)
+                assert ( (large_y /  small_y) <= opts.max_acceleration), "step too large for step %i, small=%i, large = %i" % (
+                    k, small_y, large_y)
                         
 
 
 """generates a waveform according to the given command line parameters."""
 def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
+                   ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION,
                    opts=None):
 
     rest_segments = int(round((1000 * cycle_length) / opts.segment_length_ms))    
     if rest_segments > opts.maxnum_waveform_segments:
         raise ValueError("the time requires more segments than the the number of allowed segments")
+
+    min_steps = opts.min_steps
     
     verbosity = opts.verbosity
     
@@ -226,7 +263,8 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
     if verbosity > 1:
         print("current angles:", current_alpha, current_beta)
     
-    smrsix = 0 # that's the state machine rotating state index
+    smrsix = 0 # that's the state machine rotating state index,
+    #            aka SMRSIX
     while True:
         
         if smrsix == 0:
@@ -249,19 +287,24 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
             for k in range(njerks):
                 wf_creep = gen_creep(current_alpha, current_beta, alpha_target, beta_target, opts=opts,
                                 fraction=0.1, max_change=1.2, speed_factor=0.5)
-                wf2 = wf_append(wf_append(wf2, wf_creep), wf_z)
+                wf2 = wf_append(wf_append(wf2, wf_creep, min_steps=min_steps, ruleset_version=ruleset_version),
+                                wf_z, min_steps=min_steps, ruleset_version=ruleset_version)
                 wf_jerk = gen_jerk(current_alpha, current_beta, jerk_direction, opts=opts)
                 jerk_direction = (jerk_direction + 1) % 2
-                wf2 = wf_append(wf_append(wf2, wf_jerk), wf_z)
+                wf2 = wf_append(wf_append(wf2, wf_jerk, min_steps=min_steps, ruleset_version=ruleset_version),
+                                wf_z, min_steps=min_steps, ruleset_version=ruleset_version)
                 
         elif smrsix == 2:
-            sname = "oscillations"
+            smrsix += 1
+            continue
+            sname = "oscillations"            
             # a period of small oscillations
             wf_z = wf_zero()
             wf2a = gen_creep(current_alpha, current_beta, alpha_target, beta_target,
                              fraction=0.05, speed_factor=0.3, opts=opts)
             wf2b = gen_oscillation(current_alpha, current_beta, opts=opts)
-            wf2 = wf_append(wf_append(wf2a, wf_z), wf2b)
+            wf2 = wf_append(wf_append(wf2a, wf_z, min_steps=min_steps, ruleset_version=ruleset_version),
+                            wf2b, min_steps=min_steps, ruleset_version=ruleset_version)
         elif smrsix == 3:
             sname = "slow creep"
                         
@@ -311,13 +354,13 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
         
         if (wf2_len > 0) and (wf2_len < rest_segments):
             if any_seg_nonzero(wf2, -1):
-                wf2 = wf_append(wf2, wf_zero())
+                wf2 = wf_append(wf2, wf_zero(), min_steps=min_steps, ruleset_version=ruleset_version)
                 wf2_len = len(wf2[0])
                 
         for channel in [0, 1]:
             check_wf(wf2, channel, opts=opts)
         
-        wf = wf_append(wf, wf2)
+        wf = wf_append(wf, wf2, min_steps=min_steps, ruleset_version=ruleset_version)
             
         
         rest_segments -= wf2_len
@@ -371,6 +414,14 @@ def parse_args():
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=7,
                         help="""Number of adressed FPUs. The FPUs will be steered in unison.
                                  WARNING: No conflict checking is done.  (default: %(default)s)""")
+    
+    parser.add_argument('-r', '--ruleset_version',  metavar='RULESET_VERSION', type=int,
+                        default=DEFAULT_WAVEFORM_RULSET_VERSION,
+                        help="""Version number of rule set which is used for waveform validity checking.
+                        Currently available options: 0 - no checking, 1 - strict checking with 
+                        small speeds allowed (not fully supported by current firmware)
+                        2 - loose checking with small speeds disallowed, as in RFE to Software ICD issue 2.1,
+                        and supported by firmware >= 1.4.4. (default: %(default)s)""")
     
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=ALPHA_MIN_DEGREE,
                         help='minimum alpha value  (default: %(default)s)')
@@ -507,7 +558,7 @@ def initialize_FPU(args):
     
     
     print("issuing findDatum:")
-    gd.findDatum(grid_state)
+    gd.findDatum(grid_state, timeout=DATUM_TIMEOUT_DISABLE)
     print("findDatum finished")
 
     # We can use grid_state to display the starting position
@@ -515,7 +566,7 @@ def initialize_FPU(args):
 
         
     signal.signal(signal.SIGQUIT, stop_handler)
-    print("press <Ctrl>-'\' to terminate test orderly, <Ctrl>-c only for emergency abort")
+    print("press <Ctrl>-'\\' to terminate test orderly, <Ctrl>-c only for emergency abort")
 
     return gd, grid_state
 
@@ -572,7 +623,8 @@ def rungrid(args):
             current_beta = array([y for x, y in current_angles ])
             invalid=True
             while invalid:
-                wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length, opts=args)
+                wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length,
+                                    ruleset_version=args.ruleset_version, opts=args)
 
                 invalid=False
                 for id, ws in wf.items():
@@ -592,8 +644,15 @@ def rungrid(args):
             if verbosity > 0:
                 print("configure new waveform")
             if not stop_all_fpus:
-                gd.configMotion(wf, grid_state)
+                start_time = time.time()
+                gd.configMotion(wf, grid_state,
+                                ruleset_version=args.ruleset_version)
+                finish_time = time.time()
+                if verbosity > 0:
+                    print("waveform upload duration took %5.2f seconds" % (finish_time - start_time))
             if not stop_all_fpus:
+                if verbosity > 0:
+                    print("executing waveform")
                 gd.executeMotion(grid_state)
                 if not stop_all_fpus:
                     chatty_sleep(args.chill_time, opts=args)
@@ -675,7 +734,8 @@ if __name__ == '__main__':
         
         current_alpha=0
         current_beta=0
-        wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length, opts=args)
+        wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length,
+                            ruleset_version=args.ruleset_version, opts=args)
         plot_waveform(wf, 0)
         plot_steps(wf, 0)
 
