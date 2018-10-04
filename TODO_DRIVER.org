@@ -239,25 +239,29 @@ when the internal state struct is used.
 *** TODO add unit="steps" option to gen_wf()
 ** DONE change default directory for position DB to /var/lib, update documentation
 ** DONE add "--gateway_address" option to admin tool
-** TODO fix underflow / overflow of step counter after reset in simulation code
-** TODO take underflow / overflow value of step counter into account in protection layer
-** TODO enhance abort error message for illegal step count:
+** DONE fix underflow / overflow of step counter after reset in simulation code
+** DONE take underflow / overflow value of step counter into account in protection layer
+** DONE enhance abort error message for illegal step count:
 *** TODO generate exception
 *** TODO report offset
 *** TODO report step counter
 *** TODO report expected range
-** TODO add version number to waveform validation code
-** TODO Update lifetime test script to stricter waveform rule
-** TODO add documentation for waveform ruleset versions
+** DONE add version number to waveform validation code
+** DONE create waveform validation check which matches the ICD document 
+** DONE Update lifetime test script to stricter waveform rule
+** DONE add documentation for waveform ruleset versions
+** DONE make waveform upload parameters configurable
+** TODO add script which collects and prints parameters of generated waveforms
 ** TODO Add logging for protection layer:
 *** TODO log start-up time
 *** TODO log driver version
 *** TODO log firmware versions
 *** TODO log updated counter offsets on reset / start
 ** TODO check for CAN buffer overflow in MOC (HW/SW)
-** TODO support configurable new storage location of FPU version number
+** TODO support (configurable ?) new storage location of FPU version number
 ** TODO add configPath() method for absolute positioning with mandatory rounding parameter
-** TODO 
+** TODO fix bug with summed step counter
+
 ** TODO  clean-up of version 1 code
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList
