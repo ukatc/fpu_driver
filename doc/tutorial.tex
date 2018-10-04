@@ -38,7 +38,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 1.2.0 (document version \texttt{\input{../git_version}}).}
+  module} \subtitle{For driver version 1.3.0 (document version \texttt{\input{../git_version}}).}
 
 \author{Johannes Nix}
 
@@ -1721,12 +1721,21 @@ slice of the movement, the alpha arm should move 125 steps
 counter-clockwise, and the beta arm should move 125 steps
 clockwise,'' and so on.
 
-\paragraph{Waveform validity rules}
+\subsubsection{Waveform validity rules}
   \index{waveforms!validity rules}
 
 When you define waveforms, they have to conform to a fairly large
 number of rules and conditions to make sure that the FPU firmware can
-actually execute them. These rules are currently as follows:
+actually execute them. These rules are versioned, and the used rule
+set can be selected by passing the \texttt{ruleset\_version} keyword
+argument to the \texttt{configMotion()} method.  The rules for each
+version are defined as follows:
+
+\paragraph{Waveform validity rule set version 1}
+
+This rule set is a stricter rule-set which is designed to filter out
+any waveforms which could cause undesired behavior in the motors.
+
 
 \begin{enumerate}
 
@@ -1759,7 +1768,7 @@ actually execute them. These rules are currently as follows:
   
 \item A single entry with a step count equal to or smaller than the
   minimum step count is allowed. It can only be preceded or followed
-  by non-zero entries.
+  by zero-valued entries.
   
 \item Except the the last non-zero entry in a movement part, all step
   numbers in a waveform need to have an absolute value which has at
@@ -1780,6 +1789,88 @@ actually execute them. These rules are currently as follows:
 
   
 \end{enumerate}
+
+\paragraph{Waveform validity rule set version 2}
+
+This rule set is a more liberal selection of rules, which is designed
+to test preliminary path generation algorithms.
+
+\begin{enumerate}
+\item Parameters are a minimum step count (which is 125, by default),
+  a maximum step count (which is 500, by default), and a maximum
+  starting speed at 138, which is the minimum step count plus 10.0\,\%.  These
+  limits are driver parameters, see
+  section~\ref{sec:driverinitialisation} on
+  page~\pageref{sec:driverinitialisation}.
+
+
+\item All step numbers need to be integer values.
+
+\item The maximum number of entries in a waveform table is 128 for the
+  CAN protocol version 1.\footnote{In version 2 of the firmware
+    communication protocol, this limit is raised to a value of 256}
+  
+\item A waveform for one FPU can include several movement parts for
+  each arm. A movement part is a sequence of step counts which are
+  non-zero and have the same direction.  A waveform can contain an
+  arbitrary number of movement sequences with non-zero entries.
+
+  \index{step frequency!minimum and maximum}
+  \index{minimum number of steps}
+
+\item Except the the last non-zero entry in a movement part, all step
+  numbers in a waveform need to have an absolute value which has at
+  least the minimum value of 125, and at most the maximum value of
+  500. Also, arbitrary sequences of zeros are allowed.
+  
+\item The first non-zero entry in any movement sequence needs to be
+  between the minimum step count (125) and the starting speed (138).
+  
+\item Except for the very last entry in a waveform, the last non-zero
+  entry in any movement sequence needs to be between the minimum step
+  count (125) and the starting speed (138).
+  
+\item Only the very last entry of a waveform can have a step count
+  between zero and the minimum step count. It also can be larger than
+  the minimum step count (causing a stop with a high deceleration or
+  jerk value).
+  
+\item A single entry with a step count equal to or larger than the
+  minimum step count, but not larger than the starting speed is
+  allowed. It can only be preceded or followed by zero-valued entries.
+  
+\item When changing the movement direction, the absolute number of
+  steps before the change needs to be at least the minimum step count,
+  followed by a wave table segment with a step count of zero, followed
+  by a value between the minimum step count and the starting speed
+  with the opposite sign.
+
+\item Between consecutive step number values, the absolute value of
+  the larger number can only be at most 40\% larger than the absolute
+  value of the smaller number. This applies to both sections with
+  increasing speed, and sections with decreasing speed. Also, a change
+  from zero to the minimum start speed value, or from a value larger
+  or equal to the minimum start value to zero is allowed. This maximum
+  rate of change is also a driver parameter, see
+  section~\ref{sec:driverinitialisation}.
+
+  
+\end{enumerate}
+
+\paragraph{Waveform validity rule set version 3}
+
+This rule set is identical to ruleset version 2, with
+two exceptions:
+
+\begin{itemize}
+\item Completely stopping a movement is allowed from any speed.
+\item When decelerating (reducing the velocity), the square of
+  the limit for accelerating is allowed. With a default
+  acceleration limit of 40\,\%, this amounts to 95\,\%.
+\end{itemize}
+
+
+\paragraph{Handling of validation failures}
 
 \begin{sloppypar}
 If the \texttt{configMotion} method is called with an invalid
@@ -3216,7 +3307,8 @@ The method
 \begin{minted}{python}
   FpuGridDriver.configMotion(wavetable, grid_state, fpuset=[],
                              soft_protection=True,
-                             allow_uninitialized=False)
+                             allow_uninitialized=False,
+                             ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION)
 \end{minted}
 sends a dictionary of waveform tables to a set of FPUs.
 
@@ -4040,9 +4132,63 @@ might change.
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
+\subsection*{Changes in version 1.3.0}
+\begin{itemize}
+\item Compatibility: This FPU driver version is compatible with
+  firmware version 1.4.4 upwards. It is not backward-compatible with
+  earlier firmware versions because the version code flag which is
+  used to test safety of a number of operations is stored in a
+  different place on the FPUs.
+
+\item Updated: The lifetime test script has been updated
+  to match the newest waveform rules.
+  
+\item Added: The \texttt{configMotion()} command has now an additional
+  version parameter which allows to disable the waveform validity
+  check, or use a simpler version of the rule set for the check.  The
+  waveform rules defined by the RFE to Software document are the rule
+  set version which is enabled by default.
+
+\item Changed: The waveform validation check was made less
+  strict in some aspects in order to match it better
+  with the Software to RFE ICD, and to allow to
+  use waveforms as generated by the DNF algorithm.
+
+\item Improved: The error message for the case that the driver has to
+  abort operation because the FPU step counters are inconsistent has
+  been clarified and completed with some helpful details.
+  
+\item Fixed: Handling of cases where the step counter overflows after
+  a reset of an FPU was improved.  (Correct handling of step counter
+  overflow requires some additional firmware support, which might
+  become available with firmware version 1.4.5.)
+  
+\item Added: A \texttt{load\_waveform()} function was added which
+  can load the output from the path generator software
+  and use it as a waveform for the \texttt{configMotion()} method.
+\item Added: A new driver method named \texttt{configPath()} allows to
+  send paths which are defined using absolute angles and execute them
+  on the FPUs with minimum quantization error when rounding to step
+  counts.
+  
+\item Added: The driver checks for CAN buffer overflow
+  error messages which have been added in firmware version 1.4.4\,.
+\item Added: The driver has additional parameters which allow to
+  select a higher upload speed for the upload of waveforms to the
+  FPUs, and can optionally disable most waiting for
+  confirmations. These options are not enabled by default, because
+  they might trigger some non-obvious problems.
+  
+\item Added: operations in the driver protection layer have been
+  added to the logging.
+\end{itemize}
 
 \subsection*{Changes in version 1.2.0}
 \begin{itemize}
+\item Compatibility: This driver version is not compatible with later
+  developed firmware versions of v1.4.4 or higher. The reason is that
+  these later version store the firmware version information in a
+  different binary location which can't be found by the driver.
   
 \item Added: Life time test script which generates relatively
   realistic movements in a continuous loop.
