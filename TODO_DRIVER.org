@@ -252,7 +252,7 @@ when the internal state struct is used.
 ** DONE add documentation for waveform ruleset versions
 ** DONE make waveform upload parameters configurable
 ** DONE add script which collects and prints parameters of generated waveforms
-** TODO Test lifetime script with alpha_max = 0
+** DONE Test lifetime script with alpha_max = 0
 ** TODO Add logging for protection layer:
 *** TODO log start-up time
 *** TODO log driver version
