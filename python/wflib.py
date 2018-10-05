@@ -24,7 +24,7 @@ def path_to_steps(p, steps_per_degree, origin=0.0):
     sum_steps = round((array(p,dtype=float) - origin)
                       * RADIAN_TO_DEGREE * steps_per_degree).astype(int)
     #print("p(diff):", sum_steps[1:] - sum_steps[:-1])
-    return sum_steps[1:] - sum_steps[:-1]
+    return sum_steps[1:] - sum_steps[:-1], sum_steps
     
     
 
@@ -38,9 +38,9 @@ def load_waveform(filename="targets_7fp_case_5_1_PATHS.txt",
     waveform = {}
     for cellid, alpha_path, beta_path  in paths:
         fpu_id = idmap[str(cellid)]
-        alpha_steps = path_to_steps(alpha_path, StepsPerDegreeAlpha,
+        alpha_steps, _ = path_to_steps(alpha_path, StepsPerDegreeAlpha,
                                     origin=ALPHA_DATUM_OFFSET)
-        beta_steps = path_to_steps(beta_path, StepsPerDegreeBeta,
+        beta_steps, _ = path_to_steps(beta_path, StepsPerDegreeBeta,
                                    origin=BETA_DATUM_OFFSET)
 
         tseries = zip(alpha_steps, beta_steps)

@@ -514,7 +514,11 @@ def stop_handler(signum, frame):
 
 def initialize_FPU(args):
     
-    gd = FpuGridDriver.GridDriver(args.N)
+    gd = FpuGridDriver.GridDriver(args.N,
+                                  motor_minimum_frequency=args.min_step_frequency,  
+                                  motor_maximum_frequency=args.max_step_frequency, 
+                                  motor_max_start_frequency=args.max_start_frequency,
+                                  motor_max_rel_increase=args.max_acceleration)
 
     if args.mockup:
         gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)

@@ -16,7 +16,7 @@ NUM_FPUS = int(os.environ.get("NUM_FPUS","7"))
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Ping a configured number of FPUs')
+    parser = argparse.ArgumentParser(description='set up grid to upload waveform from path generator')
     parser.add_argument('--mockup',   default=False, action='store_true',
                         help='set gateway address to use mock-up gateway and FPU')
 
@@ -110,10 +110,6 @@ if __name__ == '__main__':
 
     gd.trackedAngles(grid_state)
 
-
-
-    clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
-    acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(args.N)])
 
 
 
