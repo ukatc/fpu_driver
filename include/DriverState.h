@@ -201,6 +201,13 @@ enum E_DriverErrCode
     // gateways as they all fail to respond.
     DE_NO_CONNECTION = 403,
 
+    // A CAN buffer overflow warning was received, meaning that more
+    // commands were sent at once than the FPU firmware and CAN
+    // implementation were able to process. This is similar to a
+    // COMMAND_TIMEOUT_ERROR, except that we know that the last
+    // message wasn't processed.
+    DE_FIRMWARE_CAN_BUFFER_OVERFLOW = 404,
+
 
     /***************************************/
     /* invalid waveforms */

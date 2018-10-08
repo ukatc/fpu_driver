@@ -40,7 +40,7 @@ namespace canlayer
 {
 
 // logs error status in CAN response
-void logErrorStatus(const GridDriverConfig config, int fpu_id, int err_code)
+void logErrorStatus(const GridDriverConfig &config, int fpu_id, int err_code)
 {
 
     const char * err_msg = "(no error)";
@@ -152,7 +152,7 @@ void update_status_flags(t_fpu_state& fpu, unsigned int status_mask)
 
 }
 
-void handleFPUResponse(const GridDriverConfig config,
+void handleFPUResponse(const GridDriverConfig& config,
                        int fpu_id, t_fpu_state& fpu,
                        const t_response_buf& data,
                        const int blen, TimeOutList& timeout_list,
@@ -481,7 +481,7 @@ void handleFPUResponse(const GridDriverConfig config,
                 remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
                 break;
             case FPST_DATUM_SEARCH:
-                remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+                remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
                 break;
             default:
                 /* the other commands are not movements */
@@ -511,6 +511,53 @@ void handleFPUResponse(const GridDriverConfig config,
 
         break;
 
+
+    case CMSG_WARN_CANOVERFLOW    :
+        // clear time-out flag
+	
+	// FIXME: Update step counter in protocol version 2
+	//update_steps(fpu.alpha_steps, fpu.beta_steps, data);
+	// remove executeMotion from pending commands
+	switch(fpu.state)
+	{
+	case FPST_MOVING:
+	    remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+	    break;
+	case FPST_DATUM_SEARCH:
+	    remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+	    break;
+	default:
+	    /* the other commands are not movements */
+	    break;
+	}
+        
+	// the most likely situation in which an overflow response occurs is
+	// when uploading new waveforms to the FPUs 
+	if ( ((fpu.pending_command_set >> CCMD_CONFIG_MOTION) & 1) == 1)
+	{
+	    
+	    remove_pending(config, fpu, fpu_id, CCMD_CONFIG_MOTION, response_errcode, timeout_list, count_pending);
+	    
+	    if (fpu.state == FPST_LOADING)
+            {
+                fpu.state = FPST_RESTING;
+            }
+
+	}
+
+        fpu.last_updated = cur_time;
+        fpu.ping_ok = false;
+	fpu.last_status = ER_CANOVERFLOW;
+	fpu.can_overflow_errcount += 1; // this unsigned counter can wrap around - this is planned in.
+
+	LOG_RX(LOG_ERROR, "%18.6f : RX : "
+	       "CMSG_WARN_CAN_OVERFLOW (buffer overflow in FPU firmware) message received for FPU %i\n",
+	       get_realtime(),
+	       fpu_id);
+
+
+        break;
+	
     case CCMD_GET_STEPS_ALPHA :
         // clear time-out flag
         remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode,timeout_list, count_pending);
@@ -673,7 +720,7 @@ void handleFPUResponse(const GridDriverConfig config,
             if (fpu.pending_command_set != 0)
             {
                 // remove *all* other pending commands
-                for(int cmd_code; cmd_code < NUM_CAN_COMMANDS; cmd_code++)
+                for(int cmd_code=0; cmd_code < NUM_CAN_COMMANDS; cmd_code++)
                 {
                     if (((fpu.pending_command_set >> cmd_code) & 1) == 1)
                     {

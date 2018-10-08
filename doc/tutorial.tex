@@ -3877,23 +3877,24 @@ Further options to this script can be listed by using the
 The hierarchy of exceptions used by the Python module is as follows:
 
 \begin{verbatim}
-    FPUDriverException               // top-level class
-        MovementError                // error during movement operations
-            CollisionError           // collision detected
-            LimitBreachError         // alpha limit breach detected
-            AbortMotionError         // AbortMotion message was sent
-            StepTimingError          // internal FPU error
-            FirmwareTimeoutError     // firmware time-out, movement took too long
-            HardwareProtectionError  // firmware rejected movement, or fatal failure
-        InvalidStateException        // command does not match driver state
-            ProtectionError          // unsafe command called
-        SystemFailure                // system ressource error
-        InvalidParameterError        // parameters for command not valid
-            SetupError               // system set-up not allowed
-            InvalidWaveformException // waveform does not match specs
-        ConnectionFailure            // connection problem
-            SocketFailure            // Socket connection was lost
-            CommandTimeout           // FPU is not responding in time
+    FPUDriverException                   // top-level class
+        MovementError                    // error during movement operations
+            CollisionError               // collision detected
+            LimitBreachError             // alpha limit breach detected
+            AbortMotionError             // AbortMotion message was sent
+            StepTimingError              // internal FPU error
+            FirmwareTimeoutError         // firmware time-out, movement took too long
+            HardwareProtectionError      // firmware rejected movement, or fatal failure
+        InvalidStateException            // command does not match driver state
+            ProtectionError              // unsafe command called
+        SystemFailure                    // system ressource error
+        InvalidParameterError            // parameters for command not valid
+            SetupError                   // system set-up not allowed
+            InvalidWaveformException     // waveform does not match specs
+        ConnectionFailure                // connection problem
+            SocketFailure                // Socket connection was lost
+            CommandTimeout               // FPU is not responding in time
+            CAN_BufferOverflowException  // CAN buffer overflow in FPU firmware
 
 \end{verbatim}
 
@@ -4051,6 +4052,13 @@ might change.
     // gateways as they all fail to respond.
     DE_NO_CONNECTION = 403,
 
+
+    // A CAN buffer overflow message was received, meaning 
+    // that more commands were received at once than the FPU firmware 
+    // and its CAN implementation were able to process. This
+    // is similar to a COMMAND_TIMEOUT_ERROR, except that we
+    // know that the last message wasn't processed.
+    DE_FIRMWARE_CAN_BUFFER_OVERFLOW = 404,
 
     /***************************************/
     /* invalid waveforms */

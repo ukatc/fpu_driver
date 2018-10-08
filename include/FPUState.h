@@ -113,6 +113,7 @@ typedef struct __attribute__((packed)) t_fpu_state
     // occur at higher microstepping levels, if the time is not long
     // enough for the microcontroller to compute the step frequency.
     uint16_t step_timing_errcount;
+    uint16_t can_overflow_errcount;
     E_MOVEMENT_DIRECTION direction_alpha;
     E_MOVEMENT_DIRECTION direction_beta;
     int8_t num_active_timeouts;

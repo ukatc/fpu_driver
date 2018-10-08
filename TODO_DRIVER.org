@@ -253,12 +253,12 @@ when the internal state struct is used.
 ** DONE make waveform upload parameters configurable
 ** DONE add script which collects and prints parameters of generated waveforms
 ** DONE Test lifetime script with alpha_max = 0
+** TODO check for CAN buffer overflow in MOC (HW/SW)
 ** TODO Add logging for protection layer:
 *** TODO log start-up time
 *** TODO log driver version
 *** TODO log firmware versions
 *** TODO log updated counter offsets on reset / start
-** TODO check for CAN buffer overflow in MOC (HW/SW)
 ** TODO support (configurable ?) new storage location of FPU version number
 ** TODO add configPath() method for absolute positioning with mandatory rounding parameter
 ** TODO fix bug with summed step counter

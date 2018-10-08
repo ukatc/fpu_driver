@@ -54,6 +54,7 @@ PyObject* InvalidParameterExceptionTypeObj = 0;
 PyObject* ConnectionFailureExceptionTypeObj = 0;
 PyObject* SocketFailureExceptionTypeObj = 0;
 PyObject* CommandTimeoutExceptionTypeObj = 0;
+PyObject* CAN_OverflowExceptionTypeObj = 0;
 PyObject* ProtectionErrorExceptionTypeObj = 0;
 PyObject* HardwareProtectionErrorExceptionTypeObj = 0;
 
@@ -186,6 +187,7 @@ public:
         beta_deviation            = fpu_state.beta_deviation;
         timeout_count             = fpu_state.timeout_count;
         step_timing_errcount      = fpu_state.step_timing_errcount;
+	can_overflow_errcount     - fpu_state.can_overflow_errcount;
         direction_alpha           = fpu_state.direction_alpha;
         direction_beta            = fpu_state.direction_beta;
         num_waveform_segments     = fpu_state.num_waveform_segments;
@@ -246,6 +248,7 @@ public:
           << " 'beta_deviation' : " << fpu.beta_deviation << ", "
           << " 'timeout_count' : " << fpu.timeout_count << ", "
           << " 'step_timing_errcount' : " << fpu.step_timing_errcount << ", "
+          << " 'can_overflow_errcount' : " << fpu.can_overflow_errcount << ", "
           << " 'direction_alpha' : " << fpu.direction_alpha << ", "
           << " 'direction_beta' : " << fpu.direction_beta << ", "
           << " 'num_waveform_segments' : " << fpu.num_waveform_segments << ", "
@@ -455,6 +458,10 @@ void translate_driver_error(FPUDriverException const& e)
         PyErr_SetString(CommandTimeoutExceptionTypeObj, e.what());
         break;
 
+    case DE_FIRMWARE_CAN_BUFFER_OVERFLOW:
+        PyErr_SetString(CAN_OverflowExceptionTypeObj, e.what());
+        break;
+	
     case DE_INVALID_WAVEFORM :
     case DE_INVALID_WAVEFORM_TAIL:
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:
@@ -527,6 +534,13 @@ void checkDriverError(E_DriverErrCode ecode)
                                  DE_CAN_COMMAND_TIMEOUT_ERROR);
         break;
 
+    case DE_FIRMWARE_CAN_BUFFER_OVERFLOW:
+        throw FPUDriverException("DE_FIRMWARE_CAN_BUFFER_OVERFLOW:"
+                                 " A CAN command to an FPU could not be processed and was lost"
+				 "because the FPU firmware buffer was full.",
+                                 DE_FIRMWARE_CAN_BUFFER_OVERFLOW);
+        break;
+	
     case DE_INSUFFICENT_NUM_GATEWAYS:
         throw FPUDriverException("DE_INSUFFICENT_NUM_GATEWAYS: The number of EtherCAN gateways"
                                  " configured is insufficient for the configured number of FPUs",
@@ -1307,6 +1321,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     ConnectionFailureExceptionTypeObj = FPUDriverExceptionClass("ConnectionFailure", FPUDriverExceptionTypeObj);
     SocketFailureExceptionTypeObj = FPUDriverExceptionClass("SocketFailure", ConnectionFailureExceptionTypeObj);
     CommandTimeoutExceptionTypeObj = FPUDriverExceptionClass("CommandTimeout", ConnectionFailureExceptionTypeObj);
+    CAN_OverflowExceptionTypeObj = FPUDriverExceptionClass("CAN_BufferOverflowException", ConnectionFailureExceptionTypeObj);
     ProtectionErrorExceptionTypeObj = FPUDriverExceptionClass("ProtectionError", InvalidStateExceptionTypeObj);
     HardwareProtectionErrorExceptionTypeObj = FPUDriverExceptionClass("HardwareProtectionError", MovementErrorExceptionTypeObj);
 
@@ -1436,6 +1451,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_STILL_BUSY",DE_STILL_BUSY)
     .value("DE_MAX_RETRIES_EXCEEDED", DE_MAX_RETRIES_EXCEEDED)
     .value("DE_CAN_COMMAND_TIMEOUT_ERROR", DE_CAN_COMMAND_TIMEOUT_ERROR)
+    .value("DE_FIRMWARE_CAN_BUFFER_OVERFLOW", DE_FIRMWARE_CAN_BUFFER_OVERFLOW)
     .value("DE_UNRESOLVED_COLLISION",DE_UNRESOLVED_COLLISION)
     .value("DE_NEW_COLLISION", DE_NEW_COLLISION)
     .value("DE_NEW_LIMIT_BREACH", DE_NEW_LIMIT_BREACH)

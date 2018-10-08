@@ -235,6 +235,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -312,9 +313,19 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
     // without causing undefined behaviour.
     if (grid_state.count_timeout != old_count_timeout)
     {
+	LOG_CONTROL(LOG_ERROR, "%18.6f : resetFPUs():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+	LOG_CONTROL(LOG_ERROR, "%18.6f : resetFPUs():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
     LOG_CONTROL(LOG_INFO, "%18.6f : resetFPUs: command completed succesfully\n",
                 canlayer::get_realtime());
 
@@ -545,6 +556,8 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
     // now, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
+
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -696,6 +709,14 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
                     canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+    
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
 
     LOG_CONTROL(LOG_INFO, "%18.6f : findDatum(): command successfully sent\n",
                 canlayer::get_realtime());
@@ -760,6 +781,7 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 
 
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     state_summary = gateway.waitForState(TGT_NO_MORE_MOVING,
                                          grid_state, max_wait_time, cancelled);
@@ -866,6 +888,17 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
 
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+    
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+
+        logGridState(config.logLevel, grid_state);
+        fsync(config.fd_controllog);
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
 
     finished = (num_moving == 0) && (! cancelled);
 
@@ -1493,10 +1526,9 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
 
-#if (CAN_PROTOCOL_VERSION != 1 )
     // FIXME: disable checks for time-outs for now
     const unsigned long old_count_timeout = grid_state.count_timeout;
-#endif
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
 
     const int min_stepcount = int(floor(config.motor_minimum_frequency
@@ -1767,7 +1799,6 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         step_index++;
     }
 
-#if (CAN_PROTOCOL_VERSION != 1 )
     // seems not to work reliably with current firmware
     if (grid_state.count_timeout != old_count_timeout)
     {
@@ -1778,8 +1809,17 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
 
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
-#endif
 
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+
+        logGridState(config.logLevel, grid_state);
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+    
 
     for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
     {
@@ -2021,6 +2061,7 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
     bool cancelled = false;
 
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
 
     LOG_CONTROL(LOG_VERBOSE, "%18.6f : waitExecuteMotion() - waiting for movement to complete\n",
@@ -2125,6 +2166,17 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
 
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+    
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: firmware CAN buffer overflow.\n",
+                    canlayer::get_realtime());
+
+        logGridState(config.logLevel, grid_state);
+        fsync(config.fd_controllog);
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
 
     if (finished)
     {
@@ -2162,6 +2214,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -2303,6 +2356,15 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions(): error: firmware CAN buffer overflow.\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+    
+
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : getPositions(): positions were retrieved successfully.\n",
@@ -2321,6 +2383,7 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -2448,7 +2511,7 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
 
     if (grid_state.driver_state != DS_CONNECTED)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error DE_NO_CONNECTION, connection was lost\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error: DE_NO_CONNECTION, connection was lost\n",
                     canlayer::get_realtime());
         return DE_NO_CONNECTION;
     }
@@ -2456,13 +2519,24 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
 
     if (grid_state.count_timeout != old_count_timeout)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error: DE_CAN_COMMAND_TIMEOUT_ERROR\n",
                     canlayer::get_realtime());
 
         logGridState(config.logLevel, grid_state);
 
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+
+        logGridState(config.logLevel, grid_state);
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
 
     logGridState(config.logLevel, grid_state);
 
@@ -2481,6 +2555,7 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
     state_summary = gateway.getGridState(grid_state);
 
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -2621,6 +2696,17 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+
+        logGridState(config.logLevel, grid_state);
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
+
     LOG_CONTROL(LOG_INFO, "%18.6f : repeatMotion(): command successfully sent OK\n",
                 canlayer::get_realtime());
 
@@ -2639,6 +2725,7 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
     state_summary = gateway.getGridState(grid_state);
 
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -2777,6 +2864,17 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        logGridState(config.logLevel, grid_state);
+
+        LOG_CONTROL(LOG_ERROR, "%18.6f : reverseMotion():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
+
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : reverseMotion: command successfully sent OK\n",
@@ -2799,6 +2897,7 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(pthread_mutex_t & command_mutex,
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -2910,6 +3009,17 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(pthread_mutex_t & command_mutex,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        logGridState(config.logLevel, grid_state);
+
+        LOG_CONTROL(LOG_ERROR, "%18.6f : abortMotion():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
+
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : abortMotion(): command successfully sent\n",
@@ -2931,6 +3041,7 @@ E_DriverErrCode AsyncDriver::lockFPUAsync(int fpu_id, t_grid_state& grid_state,
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -2946,6 +3057,15 @@ E_DriverErrCode AsyncDriver::lockFPUAsync(int fpu_id, t_grid_state& grid_state,
                     canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
 
     logGridState(config.logLevel, grid_state);
 
@@ -2968,6 +3088,7 @@ E_DriverErrCode AsyncDriver::unlockFPUAsync(int fpu_id, t_grid_state& grid_state
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -2983,6 +3104,15 @@ E_DriverErrCode AsyncDriver::unlockFPUAsync(int fpu_id, t_grid_state& grid_state
                     canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+    
 
     logGridState(config.logLevel, grid_state);
 
@@ -3000,6 +3130,7 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -3065,6 +3196,17 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
                     canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+    
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        logGridState(config.logLevel, grid_state);
+
+        LOG_CONTROL(LOG_ERROR, "%18.6f : pingFPUs():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
 
 
     LOG_CONTROL(LOG_INFO, "%18.6f : pingFPUs(): command successfully completed\n",
@@ -3085,6 +3227,7 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
     logGridState(config.logLevel, grid_state);
 
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -3160,6 +3303,17 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        logGridState(config.logLevel, grid_state);
+
+        LOG_CONTROL(LOG_ERROR, "%18.6f : enableBetaCollisionProtection():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
+
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : enableBetaCollisionProtection(): command successfully sent to grid\n",
@@ -3175,6 +3329,7 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
     state_summary = gateway.getGridState(grid_state);
 
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -3255,6 +3410,15 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
                     canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+    
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
 
     logGridState(config.logLevel, grid_state);
 
@@ -3289,6 +3453,7 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
     state_summary = gateway.getGridState(grid_state);
 
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -3379,6 +3544,18 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
 
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+    
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : setUStepLevel():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+
+        logGridState(config.logLevel, grid_state);
+	
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
 
     logGridState(config.logLevel, grid_state);
 
@@ -3533,7 +3710,7 @@ void AsyncDriver::logGridState(const E_LogLevel logLevel, t_grid_state& grid_sta
                                 fpu.at_alpha_limit,
                                 fpu.beta_collision,
                                 fpu.is_locked,
-                                fpu.num_active_timeouts,
+                                (unsigned) (fpu.num_active_timeouts),
                                 fpu.num_waveform_segments,
                                 fpu.waveform_reversed
                                );
@@ -3580,6 +3757,8 @@ E_DriverErrCode AsyncDriver::readRegisterAsync(uint16_t read_address,
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
+
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
     {
@@ -3653,6 +3832,15 @@ E_DriverErrCode AsyncDriver::readRegisterAsync(uint16_t read_address,
                     canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+    
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : readRegister(): error: firmware CAN buffer overflow.\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
 
 #if (CAN_PROTOCOL_VERSION < 2)
     for(int i=0; i < config.num_fpus; i++)
@@ -3844,6 +4032,7 @@ E_DriverErrCode AsyncDriver::readSerialNumbersAsync(t_grid_state& grid_state,
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -3942,6 +4131,17 @@ E_DriverErrCode AsyncDriver::readSerialNumbersAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+
+        logGridState(config.logLevel, grid_state);
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
+
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : readSerialNumbers(): retrieved serial numbers\n",
@@ -3968,6 +4168,7 @@ E_DriverErrCode AsyncDriver::writeSerialNumberAsync(int fpu_id, const char seria
     state_summary = gateway.getGridState(grid_state);
 
     const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
     // check driver is connected
     if (grid_state.driver_state != DS_CONNECTED)
@@ -4116,6 +4317,15 @@ E_DriverErrCode AsyncDriver::writeSerialNumberAsync(int fpu_id, const char seria
                     canlayer::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
+
+    if (old_count_can_overflow == grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error: firmware CAN buffer overflow\n",
+                    canlayer::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+    
+
 
     logGridState(config.logLevel, grid_state);
 
