@@ -42,13 +42,14 @@ public:
         return CCMD_FIND_DATUM;
     };
 
-
-    FindDatumCommand()
+    
+    FindDatumCommand():
+	fpu_id(0),
+	_arm_selection(DASEL_BOTH),
+        _search_mode(SKIP_FPU),
+        _timeout_flag(DATUM_TIMEOUT_ENABLE),
+        bcast(false)
     {
-        fpu_id = 0;
-        bcast = false;
-        _search_mode = SKIP_FPU;
-        _timeout_flag = DATUM_TIMEOUT_ENABLE;
     };
 
     ~FindDatumCommand() {};

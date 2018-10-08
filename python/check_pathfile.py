@@ -218,7 +218,7 @@ def  check_step(nstep, aang, bang,
         aang *= RADIAN_TO_DEGREE
         bang *= RADIAN_TO_DEGREE
         
-    print("%3i: (%7.2f, %7.2f) = Σ_steps (%6i, %6i)  " % (nstep,
+    print("%3i: (%8.3f, %8.3f) = Σ_steps (%6i, %6i)  " % (nstep,
                                                           aang, bang,
                                                           asum, bsum), end='')
     if nstep < len(alpha_steps):

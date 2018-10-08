@@ -157,7 +157,7 @@ SBuffer::SBuffer()
     memset(command_buf, 0, sizeof(command_buf));
 }
 
-void SBuffer::setConfig(const GridDriverConfig config_vals)
+void SBuffer::setConfig(const GridDriverConfig &config_vals)
 {
     config = config_vals;
     // config must not be changed any more, it is meant to be const

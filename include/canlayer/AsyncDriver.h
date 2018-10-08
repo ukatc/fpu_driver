@@ -59,7 +59,7 @@ public:
 
     const uint8_t FIRMWARE_NOT_RETRIEVED = 0xff;
 
-    AsyncDriver(const GridDriverConfig config_vals)
+    explicit AsyncDriver(const GridDriverConfig &config_vals)
         : config(config_vals), gateway(config_vals)
     {
         num_gateways = 0;

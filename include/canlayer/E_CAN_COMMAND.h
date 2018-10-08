@@ -94,12 +94,14 @@ enum E_CAN_COMMAND
     CMSG_WARN_COLLISION_BETA = 105, // collision at beta arm
     CMSG_WARN_LIMIT_ALPHA    = 106, // limit switch at alpha arm
     CMSG_WARN_RACE           = 107, // step timing error
+    CMSG_WARN_CANOVERFLOW    = 108, // CAN buffer overflow warning
 #else
     CMSG_FINISHED_MOTION     = 26, // executeMotion finished
     CMSG_FINISHED_DATUM      = 27, // findDatum finished
     CMSG_WARN_COLLISION_BETA = 28, // collision at beta arm
     CMSG_WARN_LIMIT_ALPHA    = 29, // limit switch at alpha arm
     CMSG_WARN_TIMEOUT_DATUM  = 30, // datum search time out
+    CMSG_WARN_CANOVERFLOW    = 31, // CAN buffer overflow warning
 #endif
 
 };
@@ -126,6 +128,7 @@ enum E_MOC_ERRCODE
     ER_DATUM_LIMIT    = 0x13,   // datum search denied, limit switch is active
     ER_OK_UNCONFIRMED = 0x14,   // command will not be confirmed if OK
     ER_TIMEDOUT       = 0x15,   // command hit driver time-out
+    ER_CANOVERFLOW    = 0x16,   // buffer overflow in FPU firmware
 };
 
 

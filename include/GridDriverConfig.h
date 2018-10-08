@@ -65,6 +65,7 @@ public:
     double motor_max_rel_increase;    // maximum frequency growth factor
 
     GridDriverConfig()
+	: logLevel(LOG_TRACE_CAN_MESSAGES)
     {
         num_fpus = MAX_NUM_POSITIONERS;
 
@@ -75,7 +76,6 @@ public:
         TCP_KeepaliveIntervalSeconds = 1;
 
         // Initialize log file descriptors
-        logLevel = LOG_TRACE_CAN_MESSAGES;
         fd_controllog = -1;
         fd_rxlog = -1;
         fd_txlog = -1;

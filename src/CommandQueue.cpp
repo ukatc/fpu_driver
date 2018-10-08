@@ -30,7 +30,7 @@ namespace canlayer
 {
 
 
-CommandQueue::CommandQueue(const GridDriverConfig config_values):
+CommandQueue::CommandQueue(const GridDriverConfig &config_values):
     config(config_values)
 {
     ngateways = 0;
@@ -249,7 +249,7 @@ void CommandQueue::flushToPool(CommandPool& memory_pool)
     pthread_mutex_unlock(&queue_mutex);
 }
 
-
+#if 0
 int CommandQueue::getNumQueuedCommands()
 {
     int numQueued = 0;
@@ -261,6 +261,7 @@ int CommandQueue::getNumQueuedCommands()
     pthread_mutex_unlock(&queue_mutex);
     return numQueued;
 }
+#endif
 
 
 }
