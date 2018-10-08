@@ -59,6 +59,8 @@ if CAN_PROTOCOL_VERSION == 1:
     CMSG_FINISHED_DATUM                = 104 #  findDatum finished
     CMSG_WARN_COLLISION_BETA           = 105 #  collision at beta arm
     CMSG_WARN_LIMIT_ALPHA              = 106 #  limit switch at alpha arm
+    CMSG_WARN_RACE                     = 107 #  step timing error
+    CMSG_WARN_CANOVERFLOW              = 108 #  CAN overflow
 else:
     CCMD_LOCK_UNIT                        = 4 # ignore any command except reset and unlock
     CCMD_UNLOCK_UNIT                      = 5 # listen to commands again
@@ -250,6 +252,13 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
     except RuntimeError:
         tx3_errflag = 0xff
         tx4_errcode = ER_INVALID
+    except BufferError:
+        tx3_errflag = 0xff
+        tx4_errcode = ER_STALLX
+        command_id = CMSG_WARN_CANOVERFLOW
+        
+        
+        
 
 
     if CAN_PROTOCOL_VERSION == 1:

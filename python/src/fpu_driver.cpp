@@ -537,7 +537,7 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_FIRMWARE_CAN_BUFFER_OVERFLOW:
         throw FPUDriverException("DE_FIRMWARE_CAN_BUFFER_OVERFLOW:"
                                  " A CAN command to an FPU could not be processed and was lost"
-				 "because the FPU firmware buffer was full.",
+				 " because the FPU firmware buffer was full.",
                                  DE_FIRMWARE_CAN_BUFFER_OVERFLOW);
         break;
 	

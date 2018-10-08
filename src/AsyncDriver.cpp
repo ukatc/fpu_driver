@@ -318,7 +318,7 @@ E_DriverErrCode AsyncDriver::resetFPUsAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
 	LOG_CONTROL(LOG_ERROR, "%18.6f : resetFPUs():  error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -710,7 +710,7 @@ E_DriverErrCode AsyncDriver::startAutoFindDatumAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
     
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -889,7 +889,7 @@ E_DriverErrCode AsyncDriver::waitAutoFindDatumAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
     
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -1810,7 +1810,7 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -2167,7 +2167,7 @@ E_DriverErrCode AsyncDriver::waitExecuteMotionAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
     
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: firmware CAN buffer overflow.\n",
                     canlayer::get_realtime());
@@ -2356,7 +2356,7 @@ E_DriverErrCode AsyncDriver::getPositionsAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions(): error: firmware CAN buffer overflow.\n",
                     canlayer::get_realtime());
@@ -2527,7 +2527,7 @@ E_DriverErrCode AsyncDriver::getCounterDeviationAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -2696,7 +2696,7 @@ E_DriverErrCode AsyncDriver::repeatMotionAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -2864,7 +2864,7 @@ E_DriverErrCode AsyncDriver::reverseMotionAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         logGridState(config.logLevel, grid_state);
 
@@ -3009,7 +3009,7 @@ E_DriverErrCode AsyncDriver::abortMotionAsync(pthread_mutex_t & command_mutex,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         logGridState(config.logLevel, grid_state);
 
@@ -3058,7 +3058,7 @@ E_DriverErrCode AsyncDriver::lockFPUAsync(int fpu_id, t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -3105,7 +3105,7 @@ E_DriverErrCode AsyncDriver::unlockFPUAsync(int fpu_id, t_grid_state& grid_state
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -3197,7 +3197,7 @@ E_DriverErrCode AsyncDriver::pingFPUsAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
     
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         logGridState(config.logLevel, grid_state);
 
@@ -3303,7 +3303,7 @@ E_DriverErrCode AsyncDriver::enableBetaCollisionProtectionAsync(t_grid_state& gr
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         logGridState(config.logLevel, grid_state);
 
@@ -3411,7 +3411,7 @@ E_DriverErrCode AsyncDriver::freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECT
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
     
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -3545,7 +3545,7 @@ E_DriverErrCode AsyncDriver::setUStepLevelAsync(int ustep_level,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
     
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : setUStepLevel():  error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -3833,7 +3833,7 @@ E_DriverErrCode AsyncDriver::readRegisterAsync(uint16_t read_address,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
     
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : readRegister(): error: firmware CAN buffer overflow.\n",
                     canlayer::get_realtime());
@@ -4131,7 +4131,7 @@ E_DriverErrCode AsyncDriver::readSerialNumbersAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());
@@ -4318,7 +4318,7 @@ E_DriverErrCode AsyncDriver::writeSerialNumberAsync(int fpu_id, const char seria
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
-    if (old_count_can_overflow == grid_state.count_can_overflow)
+    if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error: firmware CAN buffer overflow\n",
                     canlayer::get_realtime());

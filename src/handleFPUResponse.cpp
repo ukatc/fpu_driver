@@ -550,11 +550,29 @@ void handleFPUResponse(const GridDriverConfig& config,
 	fpu.last_status = ER_CANOVERFLOW;
 	fpu.can_overflow_errcount += 1; // this unsigned counter can wrap around - this is planned in.
 
-	LOG_RX(LOG_ERROR, "%18.6f : RX : "
-	       "CMSG_WARN_CAN_OVERFLOW (buffer overflow in FPU firmware) message received for FPU %i\n",
-	       get_realtime(),
-	       fpu_id);
+	{
+	    const char * msg = "(n/a)";
+	    if (data[4] % 0x02)
+	    {
+		msg = "(hardware overflow)";
+	    }
+	    else if (data[4] % 0x01)
+	    {
+		msg = "(software overflow)";
+	    }
 
+	    LOG_RX(LOG_ERROR, "%18.6f : RX : "
+		   "CMSG_WARN_CAN_OVERFLOW (buffer overflow in FPU firmware) message received for FPU %i %s\n",
+		   get_realtime(),
+		   fpu_id,
+		   msg);
+
+	    LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+			"CMSG_WARN_CAN_OVERFLOW (buffer overflow in FPU firmware) message received for FPU %i %s\n",
+			get_realtime(),
+			fpu_id,
+			msg);
+	}
 
         break;
 	

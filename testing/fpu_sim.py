@@ -137,6 +137,7 @@ class FPU:
         self.step_timing_fault = False
         self.alpha_switch_direction = 0
         self.datum_timeout = False
+        self.can_overflow = False
 
         fw_date = self.opts.fw_date
         
@@ -238,6 +239,10 @@ class FPU:
                 bsteps, bpause, bclockwise):
         
         verbose = self.opts.verbosity > 4
+
+        if self.can_overflow:
+            self.can_overflow = False
+            raise BufferError("CAN buffer overflow")
         
         if self.running_wave:
             raise RuntimeError("FPU is moving")
@@ -735,11 +740,18 @@ def collision_handler(signum, frame):
     print("generating a collision")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.is_collided = True
+
+
+def overflow_handler(signum, frame):
+    print("generating a CAN overflow")
+    for fpu_id, fpu in enumerate(FPUGrid):
+        fpu.can_overflow = True
         
 def init_FPUGrid(options, num_fpus):        
     FPUGrid[:] = [FPU(i, options) for i in range(num_fpus) ]
     signal.signal(signal.SIGHUP, reset_handler)
     signal.signal(signal.SIGUSR1, collision_handler)
+    signal.signal(signal.SIGUSR2, overflow_handler)
     
         
         
