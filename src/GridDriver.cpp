@@ -22,6 +22,19 @@
 namespace mpifps
 {
 
+GridDriver::GridDriver(const GridDriverConfig config_values)
+: AsyncDriver(config_values)
+{
+    
+    LOG_CONTROL(LOG_INFO, "%18.6f : starting driver version '%s' for %i FPUs\n",
+		canlayer::get_realtime(), VERSION, config.num_fpus);
+    LOG_CONTROL(LOG_INFO, "%18.6f : waveform_upload_pause_us = %lu\n",
+		canlayer::get_realtime(), config.waveform_upload_pause_us);
+    LOG_CONTROL(LOG_INFO, "%18.6f : confirm_each_step = %s\n",
+		canlayer::get_realtime(), (config.confirm_each_step ? "True" : "False"));
+
+    
+}
 
 
 

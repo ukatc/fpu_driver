@@ -52,15 +52,7 @@ public:
     const int DEFAULT_NUM_RETRIES = 10;
 
 
-    GridDriver(const GridDriverConfig config_values)
-        : AsyncDriver(config_values)
-    {
-
-        LOG_CONTROL(LOG_INFO, "%18.6f : starting driver for %i FPUs\n",
-                    canlayer::get_realtime(), config.num_fpus);
-
-
-    }
+    GridDriver(const GridDriverConfig config_values);
 
     ~GridDriver()
     {

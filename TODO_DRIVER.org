@@ -254,7 +254,7 @@ when the internal state struct is used.
 ** DONE add script which collects and prints parameters of generated waveforms
 ** DONE Test lifetime script with alpha_max = 0
 ** DONE check for CAN buffer overflow in MOC (HW/SW)
-** TODO check overflow error count, add print of total overflow count in wrapper
+** DONE check overflow error count, add print of total overflow count in wrapper
 ** TODO provide wait time configuration for configMotion command
 ** TODO Add logging for protection layer:
 *** TODO log start-up time

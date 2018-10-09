@@ -66,8 +66,8 @@ doc/FPU-state1.pdf : doc/FPU-state1.svg
 tutorial:	doc/tutorial.tex doc/FPU-state1.pdf git_version
 	cd doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
-$(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS) 
-	$(CC) $(CXXFLAGS) -c -o $@ $< 
+$(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS) git_version
+	$(CC) $(CXXFLAGS) -DVERSION=\"$(GIT_VERSION)\" -c -o $@ $< 
 
 lib/libfpudriver.a: $(OBJ)
 	ar rcs   $@ $^ 
