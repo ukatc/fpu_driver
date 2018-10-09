@@ -255,8 +255,8 @@ when the internal state struct is used.
 ** DONE Test lifetime script with alpha_max = 0
 ** DONE check for CAN buffer overflow in MOC (HW/SW)
 ** DONE check overflow error count, add print of total overflow count in wrapper
-** TODO provide wait time configuration for configMotion command
-** TODO Add logging for protection layer:
+** DONE provide wait time configuration for configMotion command
+** TODO Add some logging for protection layer:
 *** TODO log start-up time
 *** TODO log driver version
 *** TODO log firmware versions
