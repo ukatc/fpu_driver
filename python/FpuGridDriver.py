@@ -1115,6 +1115,8 @@ class GridDriver(UnprotectedGridDriver):
             if self.last_wavetable.has_key(fpu_id):
                 del self.last_wavetable[fpu_id]
 
+        print("%f: _reset_hook(): new a_caloffsets = %r, b_cal_offsets=%r" % (
+            time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
                         
     def trackedAngles(self, gs=None, fpuset=[], show_offsets=False, active=False, retrieve=False):
         """lists tracked angles, offset, and waveform span
