@@ -214,7 +214,8 @@ class UnprotectedGridDriver (object):
         self.protectionlog = open(get_logname(protection_logfile, 
                                               log_dir=log_path, timestamp=start_timestamp), "wt")
         
-        print("starting driver version %s" % fpu_driver.__version__, file=self.protectionlog)
+        print("%f: starting driver version %s" % (time.time(), fpu_driver.__version__),
+              file=self.protectionlog)
         
         config.fd_controllog = os.open(get_logname(control_logfile, 
                  log_dir=log_path, timestamp=start_timestamp), flags, mode)
@@ -1089,7 +1090,7 @@ class GridDriver(UnprotectedGridDriver):
 
         """
         self.readSerialNumbers(new_state, fpuset=fpuset)
-        print("resetting fpu set %r" % fpuset,  file=self.protectionlog)
+        print("%f: resetting fpu set %r" % (time.time(), fpuset),  file=self.protectionlog)
         
         for fpu_id, fpu in enumerate(new_state.FPU):
             if not fpu_in_set(fpu_id, fpuset):
@@ -1154,6 +1155,7 @@ class GridDriver(UnprotectedGridDriver):
                     else:
                         bflag = ""
 
+                    print("%f : " % time.time(), file=self.protectionlog, end='')
                     for f in [sys.stdout, self.protectionlog]:
                         print("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
                               " stepcount angle= ({!s}{!s}, {!s}{!s}), {!s}_wform_range=({!s},{!s})".
@@ -1162,6 +1164,7 @@ class GridDriver(UnprotectedGridDriver):
                                      aangle, aflag, bangle, bflag,
                                      prefix, wf_arange, wf_brange), file=f)
                 else:
+                    print("%f : " % time.time(), file=self.protectionlog, end='')
                     for f in [sys.stdout, self.protectionlog]:
                         print("FPU #{}: angle = ({!s}, {!s}), {!s}_wform_range=({!s},{!s})".
                               format(fi, self.apositions[fi],self.bpositions[fi],
@@ -1239,7 +1242,8 @@ class GridDriver(UnprotectedGridDriver):
                 
         env.sync()
 
-        print("refresh_positions(): new apositions = %r, bpositions = %r" % (self.apositions, self.bpositions),
+        print("%f: refresh_positions(): new apositions = %r, bpositions = %r" % (
+            time.time(), self.apositions, self.bpositions),
               file=self.protectionlog)
         
         if inconsistency_abort:
@@ -1296,14 +1300,15 @@ class GridDriver(UnprotectedGridDriver):
         if not xlimits.contains(x):
             
             if wmode == Range.Error:
-                print("Error: wavetable defines unsafe path for FPU %i, at step %i, arm %s  (angle=%r, limits=%r)" %(
-                    fpu_id, stepnum, arm_name, x, xlimits), file=self.protectionlog)
+                print("%f: Error: wavetable defines unsafe path for FPU %i, at step %i, arm %s  (angle=%r, limits=%r)" %(
+                    time.time(), fpu_id, stepnum, arm_name, x, xlimits), file=self.protectionlog)
                 raise ProtectionError("For FPU %i, at step %i, arm %s, the wavetable"
                                       " steps outside the tracked safe limits (angle=%r, limits=%r)" %(
                     fpu_id, stepnum, arm_name, x, xlimits))
                 
             elif wmode == Range.Warn:
-                print("Warning: wavetable defines unsafe path for FPU %i, at step %i, arm %s  (angle=%r, limits=%r)" %(
+                print("%f: Warning: wavetable defines unsafe path for FPU %i, at step %i, arm %s  (angle=%r, limits=%r)" %(
+                    time.time(),
                     fpu_id, stepnum, arm_name, x, xlimits), file=self.protectionlog)
                 
                 print("Warning: wavetable defines unsafe path for FPU %i, at step %i, arm %s  (angle=%r, limits=%r)" %(
@@ -1448,7 +1453,7 @@ class GridDriver(UnprotectedGridDriver):
                 fpu = gs.FPU[fpu_id]
                 ProtectionDB.storeWaveform(txn, fpu, wentry)
 
-        print("_post_config_motion_hook(): configured_targets =%r" % self.configured_targets,
+        print("%f: _post_config_motion_hook(): configured_targets =%r" % (time.time(), self.configured_targets),
               file=self.protectionlog)
               
 
@@ -1469,7 +1474,8 @@ class GridDriver(UnprotectedGridDriver):
                 idlist.append(fpu_id)
                 self.configured_targets[fpu_id] = self.configuring_targets[fpu_id]
         self._save_wtable_direction(idlist, is_reversed=False, grid_state=gs)
-        print("_post_repeat_motion_hook(): configured_targets =%r" % self.configured_targets,
+        print("%f: _post_repeat_motion_hook(): configured_targets =%r" % (
+            time.time(), self.configured_targets),
               file=self.protectionlog)
 
     def _pre_reverse_motion_hook(self, wtable, gs, fpuset, wmode=Range.Error):
@@ -1491,7 +1497,8 @@ class GridDriver(UnprotectedGridDriver):
                 idlist.append(fpu_id)
 
         self._save_wtable_direction(idlist, is_reversed=True, grid_state=gs)
-        print("_post_reverse_motion_hook(): configured_targets =%r" % self.configured_targets,
+        print("%f: _post_reverse_motion_hook(): configured_targets =%r" % (
+            time.time(), self.configured_targets),
               file=self.protectionlog)
         
     def _update_counters_execute_motion(self, fpu_id, fpu_counters, wtable, is_reversed, cancel=False):
@@ -1637,7 +1644,7 @@ class GridDriver(UnprotectedGridDriver):
                 ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
                 
         env.sync()
-        print("_cancel_execute_motion_hook(): movement cancelled",
+        print("%f: _cancel_execute_motion_hook(): movement cancelled" % time.time(),
               file=self.protectionlog)
 
 
@@ -1993,7 +2000,7 @@ class GridDriver(UnprotectedGridDriver):
                 self.target_positions[fpu_id] = (apos, bpos)
                 
         env.sync()
-        print("_cancel_find_datum_hook(): movement cancelled",
+        print("%f: _cancel_find_datum_hook(): movement cancelled" % time.time(),
               file=self.protectionlog)
 
 
