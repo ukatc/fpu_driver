@@ -3864,7 +3864,7 @@ E_DriverErrCode AsyncDriver::readRegisterAsync(uint16_t read_address,
         double log_time = canlayer::get_realtime();
         for(int i=0; i < config.num_fpus; i++)
         {
-            LOG_CONTROL(LOG_INFO, "%18.6f : readregister: FPU # %4i, location %0x04u = %02xu.\n",
+            LOG_CONTROL(LOG_INFO, "%18.6f : readregister: FPU # %4i, location 0X%04x = 0X%02x.\n",
                         log_time, i, read_address, grid_state.FPU_state[i].register_value);
 
         }
@@ -3977,10 +3977,17 @@ E_DriverErrCode AsyncDriver::getFirmwareVersionAsync(t_grid_state& grid_state,
     return DE_FIRMWARE_UNIMPLEMENTED;
 #endif
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion(): reading firmware version with"
+		" address offset 0x%04x - make sure this matches the used firmwares\n",
+                canlayer::get_realtime(), config.firmware_version_address_offset);
+
 
     for (int k=0; k < num_fields; k++)
     {
-        ecode = readRegisterAsync(k, grid_state, state_summary, fpuset);
+	// for firmware version 1.4.4 and later, the firmware version
+	// is stored at a different address, requiring to configure the
+	// offset explicitly for different firmware versions
+        ecode = readRegisterAsync(config.firmware_version_address_offset + k, grid_state, state_summary, fpuset);
         if (ecode != DE_OK)
         {
             return ecode;

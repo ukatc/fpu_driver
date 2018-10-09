@@ -173,7 +173,9 @@ class UnprotectedGridDriver (object):
                  motor_minimum_frequency=MOTOR_MIN_STEP_FREQUENCY,  
                  motor_maximum_frequency=MOTOR_MAX_STEP_FREQUENCY, 
                  motor_max_start_frequency=MOTOR_MAX_START_FREQUENCY,
-                 motor_max_rel_increase=MAX_ACCELERATION_FACTOR,   
+                 motor_max_rel_increase=MAX_ACCELERATION_FACTOR,
+                 firmware_version_address_offset=0x0,
+                 #firmware_version_address_offset=0x61,
                  protection_logfile="_{start_timestamp}-fpu_protection.log",
                  control_logfile="_{start_timestamp}-fpu_control.log",
                  tx_logfile = "_{start_timestamp}-fpu_tx.log",
@@ -200,7 +202,7 @@ class UnprotectedGridDriver (object):
         config.motor_max_rel_increase = motor_max_rel_increase
         config.confirm_each_step = confirm_each_step
         config.waveform_upload_pause_us = waveform_upload_pause_us
-
+        config.firmware_version_address_offset = firmware_version_address_offset
         
         flags = os.O_CREAT | os.O_APPEND | os.O_WRONLY
         mode = 0o00644

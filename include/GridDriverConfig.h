@@ -68,6 +68,8 @@ public:
     long waveform_upload_pause_us; // wait time before a new waveform step is sent to the same FPU
     bool confirm_each_step; // request confirmation for each waveform step
 
+    int firmware_version_address_offset;
+
     GridDriverConfig()
 	: logLevel(LOG_TRACE_CAN_MESSAGES)
     {
@@ -81,6 +83,8 @@ public:
 
 	waveform_upload_pause_us = 50000;
 	confirm_each_step = true;
+
+	firmware_version_address_offset = 0x61; // new offset for v1.3.0, matching firmware version 1.4.4
 
         // Initialize log file descriptors
         fd_controllog = -1;
