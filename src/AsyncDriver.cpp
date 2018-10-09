@@ -1647,11 +1647,12 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     unique_ptr<ConfigureMotionCommand> can_command;
     // loop over number of steps in the table
     const int num_steps = waveforms[0].steps.size();
-#if (CAN_PROTOCOL_VERSION == 1)
+
     bool configured_fpus[MAX_NUM_POSITIONERS];
     memset(configured_fpus, 0, sizeof(configured_fpus));
-#endif
+
     const int num_loading =  waveforms.size();
+    const bool confirm_each_step = config.confirm_each_step;
 
     int step_index = 0;
     int retry_downcount = 5;
@@ -1661,6 +1662,11 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
     {
         const bool first_entry = (step_index == 0);
         const bool last_entry = (step_index == (num_steps-1));
+	const bool request_confirmation = (first_entry
+					   || last_entry
+					   || confirm_each_step
+					   || ((step_index % 4) == 0));
+	
         if (first_entry)
         {
             // get current step number to track positions
@@ -1677,12 +1683,14 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
         for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
         {
 
-            if ((fpu_index == 0) && (step_index != 0))
+            if ((fpu_index == 0)
+		&& (step_index != 0)
+		&& (config.waveform_upload_pause_us > 0))
             {
                 // Wait a short time before talking to the same FPU again because the FPUs seem to be
                 // in general a bit sluggish.
                 // We don't care about signals here.
-                usleep(ConfigureMotionCommand::CHAT_PAUSE_TIME_USEC);
+                usleep(config.waveform_upload_pause_us);
             }
             int fpu_id = waveforms[fpu_index].fpu_id;
             if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
@@ -1713,7 +1721,8 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                                          step.beta_steps,
                                          first_entry,
                                          last_entry,
-                                         min_stepcount);
+                                         min_stepcount,
+					 request_confirmation);
 
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
@@ -1731,12 +1740,11 @@ E_DriverErrCode AsyncDriver::configMotionAsync(t_grid_state& grid_state,
                 gateway.sendCommand(fpu_id, cmd);
             }
         }
-#if (CAN_PROTOCOL_VERSION != 1)
-        /* Apparently, at least for firmware version 1, we cannot
+
+        /* Apparently, at least for some firmware version 1, we cannot
 	   send more than one configMotion command at a time,
 	   or else CAN commands will get lost. */
-        if (first_entry || last_entry)
-#endif
+        if (request_confirmation)
         {
             /* Wait and check that all FPUs are registered in LOADING
                state.  This is needed to make sure we have later a clear

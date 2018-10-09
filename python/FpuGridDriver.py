@@ -165,6 +165,8 @@ def countMovableFPUs(gs):
 class UnprotectedGridDriver (object):
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
+                 confirm_each_step=True,
+                 waveform_upload_pause_us=50000,
                  alpha_datum_offset=ALPHA_DATUM_OFFSET,
                  logLevel=DEFAULT_LOGLEVEL,
                  log_dir=DEFAULT_LOGDIR,
@@ -179,6 +181,14 @@ class UnprotectedGridDriver (object):
 
         self.lock = threading.RLock()
 
+        if not confirm_each_step:
+            warn("confirm_each_steps set to False, which reduces"
+                 " confirmation requests of waveform step upload")
+
+        if waveform_upload_pause_us < 50000:
+            warn("waveform_upload_pause_us is set to smaller value."
+                 " Increase if firmware CAN overflow errors are triggered")
+
         config = fpu_driver.GridDriverConfig()
         config.num_fpus = nfpus
         config.SocketTimeOutSeconds = SocketTimeOutSeconds
@@ -187,6 +197,9 @@ class UnprotectedGridDriver (object):
         config.motor_maximum_frequency = motor_maximum_frequency
         config.motor_max_start_frequency= motor_max_start_frequency
         config.motor_max_rel_increase = motor_max_rel_increase
+        config.confirm_each_step = confirm_each_step
+        config.waveform_upload_pause_us = waveform_upload_pause_us
+
         
         flags = os.O_CREAT | os.O_APPEND | os.O_WRONLY
         mode = 0o00644

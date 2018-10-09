@@ -1724,6 +1724,7 @@ clockwise,'' and so on.
 \subsubsection{Waveform validity rules}
   \index{waveforms!validity rules}
 
+\label{sec:validity_rulesets}
 When you define waveforms, they have to conform to a fairly large
 number of rules and conditions to make sure that the FPU firmware can
 actually execute them. These rules are versioned, and the used rule
@@ -2687,7 +2688,26 @@ be passed:
   sections. It applies symmetrically to both increasing and decreasing
   speeds: The larger value must be not larger than the smaller value
   times this factor.
+  
+\label{it:waveform_upload_pause_ms}
+\item[\texttt{waveform\_upload\_pause\_us}] This keyword parameter
+  allows to configure a small pause between sending waveform steps to
+  the same FPU. The value is an integer number in microsecond units,
+  and for driver version 1.2.0 and newer, it is 50\,000 by default. If
+  the value is zero, no waiting is done.
 
+\label{it:confirm_each_step}  
+\item[\texttt{confirm\_each\_step}] This keyword parameter is a
+  Boolean value which controls whether the driver waits for a
+  confirming response for each waveform element that is sent to an
+  FPU. Because each response requires a CAN message, this can roughly
+  reduce the free capacity of the CAN buses by a factor of two. For the
+  1.2.0 driver and subsequent versions, the default value is \texttt{True}.
+
+  Important: As of driver version 1.3.0, this option is not yet fully
+  implemented, because the correct implementation requires significant
+  structural change to the driver. Correspondingly, the waveform
+  upload can fail.
   
 \end{description}
 
@@ -4152,10 +4172,12 @@ commands, or alter otherwise visible behaviour of the driver.
   to match the newest waveform rules.
   
 \item Added: The \texttt{configMotion()} command has now an additional
-  version parameter which allows to disable the waveform validity
-  check, or use a simpler version of the rule set for the check.  The
-  waveform rules defined by the RFE to Software document are the rule
-  set version which is enabled by default.
+  version parameter, texttt{ruleset\_version} which allows to disable
+  the waveform validity check, or use a simpler version of the rule
+  set for the check.  The waveform rules defined by the RFE to
+  Software document are the rule set version which is enabled by
+  default. Details are described in
+  section~\ref{sec:validity_rulesets}.
 
 \item Changed: The waveform validation check was made less
   strict in some aspects in order to match it better
@@ -4181,11 +4203,19 @@ commands, or alter otherwise visible behaviour of the driver.
   
 \item Added: The driver checks for CAN buffer overflow
   error messages which have been added in firmware version 1.4.4\,.
-\item Added: The driver has additional parameters which allow to
-  select a higher upload speed for the upload of waveforms to the
-  FPUs, and can optionally disable most waiting for
-  confirmations. These options are not enabled by default, because
-  they might trigger some non-obvious problems.
+\item Added: The driver has two additional parameters.  The first,
+  named \texttt{waveform\_upload\_pause\_ms}, allows to select a
+  higher upload speed for the upload of waveforms to the FPUs.  The
+  second, \texttt{confirm\_each\_step}, allows to optionally disable
+  most waiting for confirmations. These options are not enabled by
+  default, because they might trigger some non-obvious problems.  As
+  of driver version 1.3.0, the second option is not fully implemented.
+  Details are described in~\ref{it:waveform_upload_pause_ms} on
+  page~\pageref{it:waveform_upload_pause_ms}.
+
+\item Fixed: Minimum and maximum speed settings from the lifetime test
+  script are now passed as instantiation parameters when the driver
+  instance is created.
   
 \item Added: operations in the driver protection layer have been
   added to the logging.

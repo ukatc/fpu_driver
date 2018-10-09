@@ -64,6 +64,10 @@ public:
     double motor_max_start_frequency; // maximum start frequency
     double motor_max_rel_increase;    // maximum frequency growth factor
 
+    // waveform upload parameters
+    long waveform_upload_pause_us; // wait time before a new waveform step is sent to the same FPU
+    bool confirm_each_step; // request confirmation for each waveform step
+
     GridDriverConfig()
 	: logLevel(LOG_TRACE_CAN_MESSAGES)
     {
@@ -74,6 +78,9 @@ public:
         SocketTimeOutSeconds = 20.0;
         TCP_IdleSeconds = 10;
         TCP_KeepaliveIntervalSeconds = 1;
+
+	waveform_upload_pause_us = 50000;
+	confirm_each_step = true;
 
         // Initialize log file descriptors
         fd_controllog = -1;

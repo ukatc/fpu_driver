@@ -40,10 +40,6 @@ public:
 
     // maximum number of sections the FPU can store
     static const unsigned int MAX_NUM_SECTIONS=128;
-    // Short wait time before sending configMotion commands
-    // to the same FPU, so that the poor thing can have
-    // a break.
-    static const useconds_t CHAT_PAUSE_TIME_USEC = 50000;
 
     static E_CAN_COMMAND getCommandCode()
     {
@@ -61,13 +57,15 @@ public:
         bclockwise = false;
         fentry = false;
         lentry = false;
+	confirm = true;
     };
 
     void parametrize(int f_id,
                      int16_t alpha_steps,
                      int16_t beta_steps,
                      bool first_entry, bool last_entry,
-                     const int MIN_STEPCOUNT)
+                     const int MIN_STEPCOUNT,
+		     bool do_confirm)
     {
         fpu_id = f_id;
 
@@ -101,6 +99,7 @@ public:
         bclockwise = beta_clockwise;
         fentry = first_entry;
         lentry = last_entry;
+	confirm = do_confirm;
     };
 
     E_CAN_COMMAND getInstanceCommandCode()
@@ -181,11 +180,7 @@ public:
     bool expectsResponse()
     {
         // send response if this is the first or last entry
-#if (CAN_PROTOCOL_VERSION == 1)
-        return true;
-#else
-        return (fentry || lentry);
-#endif
+        return confirm;
     };
 
     // time-out period for a response to the message
@@ -215,6 +210,7 @@ private:
     bool bclockwise;
     bool fentry;
     bool lentry;
+    bool confirm;
 
 
 };
