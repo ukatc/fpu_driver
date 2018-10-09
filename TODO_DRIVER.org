@@ -256,11 +256,11 @@ when the internal state struct is used.
 ** DONE check for CAN buffer overflow in MOC (HW/SW)
 ** DONE check overflow error count, add print of total overflow count in wrapper
 ** DONE provide wait time configuration for configMotion command
-** TODO Add some logging for protection layer:
-*** TODO log start-up time
-*** TODO log driver version
-*** TODO log firmware versions
-*** TODO log updated counter offsets on reset / start
+** DONE Add some logging for protection layer:
+*** DONE log start-up time
+*** DONE log driver version
+*** DONE log firmware versions
+*** DONE log updated counter offsets on reset / start
 ** TODO support (configurable ?) new storage location of FPU version number
 ** TODO add configPath() method for absolute positioning with mandatory rounding parameter
 ** TODO fix bug with summed step counter
