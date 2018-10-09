@@ -187,7 +187,7 @@ public:
         beta_deviation            = fpu_state.beta_deviation;
         timeout_count             = fpu_state.timeout_count;
         step_timing_errcount      = fpu_state.step_timing_errcount;
-	can_overflow_errcount     - fpu_state.can_overflow_errcount;
+	can_overflow_errcount     = fpu_state.can_overflow_errcount;
         direction_alpha           = fpu_state.direction_alpha;
         direction_beta            = fpu_state.direction_beta;
         num_waveform_segments     = fpu_state.num_waveform_segments;
@@ -345,6 +345,7 @@ public:
         s << "{ 'count_pending' :" << gs.count_pending << ", "
           << "'num_queued' :" << gs.num_queued << ", "
           << "'count_timeout' :" << gs.count_timeout << ", "
+          << "'count_can_overflow' :" << gs.count_can_overflow << ", "
           << "'driver_state' :";
         s << gs.driver_state << ", "
           << "'Counts' : { ";
@@ -1600,6 +1601,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("FPU", &WrapGridState::getStateVec)
     .def_readonly("Counts", &WrapGridState::getCounts)
     .def_readonly("count_timeout", &WrapGridState::count_timeout)
+    .def_readonly("count_can_overflow", &WrapGridState::count_can_overflow)
     .def_readonly("count_pending", &WrapGridState::count_pending)
     .def_readonly("driver_state", &WrapGridState::driver_state)
     .def("__str__", &WrapGridState::to_string)

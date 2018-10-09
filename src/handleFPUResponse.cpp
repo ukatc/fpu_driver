@@ -77,6 +77,12 @@ void logErrorStatus(const GridDriverConfig &config, int fpu_id, int err_code)
     case ER_DATUMTO    :
         err_msg = "hardware failure: datum search timed out";
         break;
+    case ER_CANOVRS    :
+        err_msg = "CAN message buffer overflow - FPU firmware";
+        break;
+    case ER_CANOVRH    :
+        err_msg = "CAN message buffer overflow - FPU CAN hardware";
+        break;
 
     default:
     case ER_STALLX           :
@@ -547,16 +553,15 @@ void handleFPUResponse(const GridDriverConfig& config,
 
         fpu.last_updated = cur_time;
         fpu.ping_ok = false;
-	fpu.last_status = ER_CANOVERFLOW;
-	fpu.can_overflow_errcount += 1; // this unsigned counter can wrap around - this is planned in.
+	fpu.can_overflow_errcount++; // this unsigned counter can wrap around - that's intentional.
 
 	{
 	    const char * msg = "(n/a)";
-	    if (data[4] % 0x02)
+	    if (response_errcode == ER_CANOVRH)
 	    {
 		msg = "(hardware overflow)";
 	    }
-	    else if (data[4] % 0x01)
+	    else if (response_errcode == ER_CANOVRS)
 	    {
 		msg = "(software overflow)";
 	    }

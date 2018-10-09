@@ -779,7 +779,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
 	if (old_can_overflows != FPUGridState.FPU_state[fpu_id].can_overflow_errcount)
 	{
-	    FPUGridState.count_can_overflow++;
+	    FPUGridState.count_can_overflow++; // rarely, this counter may wrap around - that's intentional
 	}
 
         // The state of the grid can change when *all* FPUs have left

@@ -96,10 +96,12 @@ ER_WAVE2BIG         = 0x06        #  waveform exceeds memory allocation
 ER_TIMING           = 0x07        #  step timing error (interrupt race condition)
 ER_M1LIMIT          = 0x08        #  M1 Limit switch breached
 ER_M2LIMIT          = 0x09        #  no longer used
+ER_CANOVRS          = 0x0A        #  CAN overflow firmware software buffer
+ER_CANOVRH          = 0x0B        #  CAN overflow FPU hardware buffer
 ER_PARAM            = 0x10        #  parameter out of range
 ER_AUTO             = 0x11        #  FPU cannot datum automatically
 ER_DATUMTO          = 0x12        #  hardware error: datum search timed out by firmware
-ER_DATUM_LIMIT      = 0x13        # datum search denied, limit switch is active
+ER_DATUM_LIMIT      = 0x13        #  datum search denied, limit switch is active
 # (note: the driver uses additional internal status codes)
 
 
@@ -254,7 +256,11 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
         tx4_errcode = ER_INVALID
     except BufferError:
         tx3_errflag = 0xff
-        tx4_errcode = ER_STALLX
+        tx4_errcode = ER_CANOVRH
+        command_id = CMSG_WARN_CANOVERFLOW
+    except OverflowError:
+        tx3_errflag = 0xff
+        tx4_errcode = ER_CANOVRS
         command_id = CMSG_WARN_CANOVERFLOW
         
         
