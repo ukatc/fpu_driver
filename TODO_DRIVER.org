@@ -261,10 +261,11 @@ when the internal state struct is used.
 *** DONE log driver version
 *** DONE log firmware versions
 *** DONE log updated counter offsets on reset / start
-** TODO support (configurable ?) new storage location of FPU version number
+** DONE support (configurable ?) new storage location of FPU version number
+** DONE match simulated firmware version response to new driver version
 ** TODO add configPath() method for absolute positioning with mandatory rounding parameter
-** TODO fix bug with summed step counter
-
+** DONE fix bug with summed step counter where numbers are too low
+** TODO re-test path generator output with waveform checker script, and driver
 ** TODO  clean-up of version 1 code
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList

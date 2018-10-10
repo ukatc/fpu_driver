@@ -1549,8 +1549,8 @@ class GridDriver(UnprotectedGridDriver):
             asteps *= rsign
             bsteps *= rsign
             
-            sum_alpha_steps = abs(asteps)
-            sum_beta_steps = abs(bsteps)
+            sum_alpha_steps += abs(asteps)
+            sum_beta_steps += abs(bsteps)
 
             alpha_sign = sign(asteps)
             if alpha_sign != 0:
