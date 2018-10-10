@@ -685,8 +685,17 @@ class UnprotectedGridDriver (object):
             try:
                 try:
                     time.sleep(0.1)
-                    rval = self._gd.configMotion(wtable, gs, fpuset, soft_protection,
-                                                 allow_uninitialized, ruleset_version)
+
+                    try:
+                        rval = self._gd.configMotion(wtable, gs, fpuset, soft_protection,
+                                                     allow_uninitialized, ruleset_version)
+                    except InvalidWaveformException as e:
+                        print("%f: Error %s for wtable=%r" % (
+                            time.time(), e, wtable), file=self.protectionlog)
+                        print("Error %s for wtable=%r" % (
+                            e, wtable))
+                        raise
+
                     update_config = True
                     
                 except (SocketFailure, CommandTimeout) as e:
@@ -1417,7 +1426,7 @@ class GridDriver(UnprotectedGridDriver):
                     
                 configuring_ranges[fpu_id] = (wf_arange, wf_brange)
                 configuring_targets[fpu_id] = (alpha_sect, beta_sect)
-            except (ProtectionError, InvalidWaveformException) as e:
+            except ProtectionError as e:
                 print("%f: Error %s for fpu %i, wtable=%r" % (
                     time.time(), e, fpu_id, wt_row), file=self.protectionlog)
                 print("Error %s for fpu %i, wtable=%r" % (

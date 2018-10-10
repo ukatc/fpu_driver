@@ -4171,6 +4171,16 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \item Updated: The lifetime test script has been updated
   to match the newest waveform rules.
+
+\item Fixed: The function \texttt{gen\_wf()} has been updated
+  to match the current waveform rules, and the firmware
+  capabilities of firmware up to 1.4.4. Especially, when
+  combining a short movement for one arm, and a movement with
+  more waveform segments for the other arm, zeros are now
+  always padded at the beginning of the shorter movement, not
+  at the end or both ends. This ensures that the firmware
+  can generate small step numbers with appropriate frequency.
+  
   
 \item Added: The \texttt{configMotion()} command has now an additional
   version parameter, texttt{ruleset\_version} which allows to disable
