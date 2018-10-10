@@ -174,8 +174,7 @@ class UnprotectedGridDriver (object):
                  motor_maximum_frequency=MOTOR_MAX_STEP_FREQUENCY, 
                  motor_max_start_frequency=MOTOR_MAX_START_FREQUENCY,
                  motor_max_rel_increase=MAX_ACCELERATION_FACTOR,
-                 firmware_version_address_offset=0x0,
-                 #firmware_version_address_offset=0x61,
+                 firmware_version_address_offset=0x61,
                  protection_logfile="_{start_timestamp}-fpu_protection.log",
                  control_logfile="_{start_timestamp}-fpu_control.log",
                  tx_logfile = "_{start_timestamp}-fpu_tx.log",
@@ -237,6 +236,7 @@ class UnprotectedGridDriver (object):
     def __del__(self):
         # the following delete is necessary to run destructors!!
         del self._gd
+        self.protectionlog.close()
         os.close(self.config.fd_controllog)
         os.close(self.config.fd_txlog)
         os.close(self.config.fd_rxlog)
@@ -1379,43 +1379,51 @@ class GridDriver(UnprotectedGridDriver):
 
             wf_arange = Interval(alpha0)
             wf_brange = Interval(beta0)
+
+            try:
                         
-            self._check_allowed_range(fpu_id, -1, "alpha", alimits, alpha0,
-                                     wf_arange,  wmode)
-
-            self._check_allowed_range(fpu_id, -1, "beta",  blimits, beta0, 
-                                     wf_brange, wmode)
-
-            asteps = 0
-            bsteps = 0
-            # if the waveform is reversed, we need to
-            # go backwards with the check!
-            if sign == 1:
-                step_sequence = range(len(wt_row))
-            elif sign == -1:
-                step_sequence = range(len(wt_row) -1, -1, -1)
-            else:
-                assert(0)
-            
-            
-            for step_num in step_sequence:
-                entry = wt_row[step_num]
-                a, b = entry
-                asteps += a *sign
-                bsteps += b * sign
-                alpha_sect = alpha0 + asteps / StepsPerDegreeAlpha
-                beta_sect = beta0 + bsteps / StepsPerDegreeBeta
-                
-                self._check_allowed_range(fpu_id, step_num, "alpha",
-                                         alimits, alpha_sect,
+                self._check_allowed_range(fpu_id, -1, "alpha", alimits, alpha0,
                                          wf_arange,  wmode)
-                self._check_allowed_range(fpu_id, step_num, "beta",
-                                         blimits, beta_sect,
+    
+                self._check_allowed_range(fpu_id, -1, "beta",  blimits, beta0, 
                                          wf_brange, wmode)
+    
+                asteps = 0
+                bsteps = 0
+                # if the waveform is reversed, we need to
+                # go backwards with the check!
+                if sign == 1:
+                    step_sequence = range(len(wt_row))
+                elif sign == -1:
+                    step_sequence = range(len(wt_row) -1, -1, -1)
+                else:
+                    assert(0)
                 
-            configuring_ranges[fpu_id] = (wf_arange, wf_brange)
-            configuring_targets[fpu_id] = (alpha_sect, beta_sect)
-
+                
+                for step_num in step_sequence:
+                    entry = wt_row[step_num]
+                    a, b = entry
+                    asteps += a *sign
+                    bsteps += b * sign
+                    alpha_sect = alpha0 + asteps / StepsPerDegreeAlpha
+                    beta_sect = beta0 + bsteps / StepsPerDegreeBeta
+                    
+                    self._check_allowed_range(fpu_id, step_num, "alpha",
+                                             alimits, alpha_sect,
+                                             wf_arange,  wmode)
+                    self._check_allowed_range(fpu_id, step_num, "beta",
+                                             blimits, beta_sect,
+                                             wf_brange, wmode)
+                    
+                configuring_ranges[fpu_id] = (wf_arange, wf_brange)
+                configuring_targets[fpu_id] = (alpha_sect, beta_sect)
+            except (ProtectionError, InvalidWaveformException) as e:
+                print("%f: Error %s for fpu %i, wtable=%r" % (
+                    time.time(), e, fpu_id, wt_row), file=self.protectionlog)
+                print("Error %s for fpu %i, wtable=%r" % (
+                    e, fpu_id, wt_row))
+                raise
+    
         # this is the list of alpha/beta position intervals that
         # will become valid if and after an executeMotion is started,
         # and before the new positions can be retrieved via ping
