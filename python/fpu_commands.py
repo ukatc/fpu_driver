@@ -1,6 +1,8 @@
 #!/usr/bin/python
 from __future__ import division, print_function
 
+import warnings
+
 import math
 from numpy import asarray, ones_like, ceil, floor
 
@@ -148,17 +150,14 @@ def step_list_fast(nsteps, max_change=1.2,
 
 
 def step_list_pad(slist, target_len):
+    slist = list(slist)
     if len(slist) >= target_len:
         return slist
-    ld = target_len - len(slist)
+    dlen = target_len - len(slist)
 
-    lhead = ld // 2
-    ltail = ld - lhead
-    slist = list(slist)
     slist.reverse()
-    slist.extend([ 0] * lhead)
+    slist.extend([ 0 ] * dlen)
     slist.reverse()
-    slist.extend([0] * ltail)
     return slist
 
 
@@ -186,10 +185,7 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
     asteps *= asign
     bsteps *= bsign
 
-    if mode == 'slow':
-        slist = [ (astep * asign, 0) for astep in step_list_slow(asteps) ]
-        slist.extend([ (0, bstep * bsign) for bstep in step_list_slow(bsteps) ])
-    elif mode == 'slowpar':
+    if mode in ['slow', 'slowpar']:
         alist = step_list_slow(asteps, min_steps=min_steps)
         blist = step_list_slow(bsteps, min_steps=min_steps)
         max_len = max(len(alist), len(blist))
@@ -226,9 +222,10 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
     adegree and the beta arm by bdegree. asteps_per_deg and bsteps_er_deg
     are approximate calibration factors. The mode parameter can be
     'fast' to generate a movement which is as quick as possible, or 
-    'slow' to generate a movement with minimum speed, or
-    'slowpar' to generate a slow movement where alpha and beta
-    are moved in parallel.
+    'slow' or'slowpar' to generate a slow movement where alpha and beta
+    are moved in parallel. (The former 'slow' mode is obsolete,
+    it does not match the protocol and capabilities of the current
+    firmware).
 
     If adegree or bdegree are arrays, extend then if possible to a
     common shape, and return a list of waveforms for a number of
@@ -236,6 +233,8 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
 
     No range checking of movements is done.
     """
+    if mode == 'slow':
+        warnings.warn("'slow' mode is obsolete, it does not match the waveform protocol, mapped to 'slowpar'.")
 
     aangle = asarray(aangle)
     bangle = asarray(bangle)
@@ -257,6 +256,10 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
     maxlen = max(map(len, slists.values()))
 
     for v in slists.values():
-        v.extend([(0, 0)] * (maxlen - len(v)))
+        shortfall = maxlen - len(v)
+        if shortfall > 0:
+            v.reverse()
+            v.extend([(0, 0)] * shortfall)
+            v.reverse()
         
     return slists
