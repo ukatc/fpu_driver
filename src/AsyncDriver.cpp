@@ -3987,7 +3987,8 @@ E_DriverErrCode AsyncDriver::getFirmwareVersionAsync(t_grid_state& grid_state,
 	// for firmware version 1.4.4 and later, the firmware version
 	// is stored at a different address, requiring to configure the
 	// offset explicitly for different firmware versions
-        ecode = readRegisterAsync(config.firmware_version_address_offset + k, grid_state, state_summary, fpuset);
+	const int adr = config.firmware_version_address_offset + k;
+        ecode = readRegisterAsync(adr, grid_state, state_summary, fpuset);
         if (ecode != DE_OK)
         {
             return ecode;
@@ -3999,7 +4000,7 @@ E_DriverErrCode AsyncDriver::getFirmwareVersionAsync(t_grid_state& grid_state,
             {
                 continue;
             }
-            if (grid_state.FPU_state[i].register_address != k)
+            if (grid_state.FPU_state[i].register_address != adr)
             {
                 return DE_ASSERTION_FAILED;
             }

@@ -151,19 +151,23 @@ class FPU:
         self.firmware_year = fw_date[0]
         self.firmware_month = fw_date[1]
         self.firmware_day = fw_date[2]
+        self.fw_version_address_offset = 0x61
+        if version_tuple < (1,4,4):
+            self.fw_version_address_offset = 0x0
 
     def getRegister(self, register_address):
-        if register_address == 0:
+        fwa_offset = self.fw_version_address_offset
+        if register_address == 0 + fwa_offset:
             return self.firmware_major
-        elif register_address == 1:
+        elif register_address == 1 + fwa_offset:
             return self.firmware_minor
-        elif register_address == 2:
+        elif register_address == 2 + fwa_offset:
             return self.firmware_patch
-        elif register_address == 3:
+        elif register_address == 3 + fwa_offset:
             return self.firmware_year
-        elif register_address == 4:
+        elif register_address == 4 + fwa_offset:
             return self.firmware_month
-        elif register_address == 5:
+        elif register_address == 5 + fwa_offset:
             return self.firmware_day
         elif register_address == 0x0060:
             if self.opts.fw_version < (1,3,2):
