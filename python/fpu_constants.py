@@ -1,5 +1,10 @@
 #!/usr/bin/python
 
+from math import pi
+
+RADIAN_TO_DEGREE = 180.0 / pi # conversion factor
+
+
 AlphaGearRatio 	= 2050.175633 # actual gear ratio
 BetaGearRatio 	= 1517.662482 # actual gear ratio
 

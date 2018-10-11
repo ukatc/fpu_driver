@@ -162,6 +162,9 @@ def countMovableFPUs(gs):
     return num_forward, num_reversed, num_forward + num_reversed
 
     
+    
+
+    
 class UnprotectedGridDriver (object):
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
@@ -2068,3 +2071,54 @@ class GridDriver(UnprotectedGridDriver):
         fpuset = [fpu_id]
         self._pingFPUs(grid_state, fpuset=fpuset)
         self._refresh_positions(grid_state, fpuset=fpuset)
+
+
+    def configPaths(self, paths, grid_state, fpuset=[], soft_protection=True, check_protection=None,
+                    allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION, reverse=False):
+        """This methods takes a path which was loaded using wflib.load_path, and 
+        passes it to the configMotion method. All normal checks apply.
+        In addition, the start point of the passed path must match the
+        current position of the FPUs exactly.
+        """
+
+        waveform = {}
+        for fpu_id, (alpha_path, beta_path)  in paths.items():
+            assert(len(alpha_path) == len(beta_path))
+            assert(len(alpha_path) > 0)
+
+            if not fpu_in_set(fpu_id, fpuset):
+                continue
+
+            
+            alpha_steps, alpha_sum = fpu_commands.path_to_steps(alpha_path, StepsPerDegreeAlpha,
+                                        origin=ALPHA_DATUM_OFFSET)
+            beta_steps, beta_sum = fpu_commands.path_to_steps(beta_path, StepsPerDegreeBeta,
+                                       origin=BETA_DATUM_OFFSET)
+    
+            if soft_protection:
+                sidx = 0
+                if reverse:
+                    sidx = -1
+                if alpha_sum[sidx] != grid_state.FPU[fpu_id].alpha_steps:
+                    raise ProtectionError("for FPU %i, start point of passed path (%i) does not match "
+                                          "current alpha arm position (%i) " % (fpu_id, alpha_sum[sidx],
+                                                                                grid_state.FPU[fpu_id].alpha_steps))
+                if beta_sum[sidx] != grid_state.FPU[fpu_id].beta_steps:
+                    raise ProtectionError("for FPU %i, start point of passed path (%i) does not match "
+                                          "current beta arm position (%i) " % (fpu_id, beta_sum[sidx],
+                                                                                grid_state.FPU[fpu_id].beta_steps))
+                
+                
+            tseries = zip(alpha_steps, beta_steps)
+            if reverse:
+                tseries.reverse()
+            waveform[fpu_id] = tseries
+
+            
+        
+        self.configMotion(waveform, grid_state,
+                          fpuset=fpuset,
+                          soft_protection=soft_protection,
+                          check_protection=check_protection,
+                          allow_uninitialized=allow_uninitialized,
+                          ruleset_version=ruleset_version)

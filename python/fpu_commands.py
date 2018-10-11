@@ -4,7 +4,7 @@ from __future__ import division, print_function
 import warnings
 
 import math
-from numpy import asarray, ones_like, ceil, floor
+from numpy import array, asarray, ones_like, ceil, floor, round
 
 """ Utility functions for using the fpu_driver module on the command line.
 """
@@ -263,3 +263,8 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
             v.reverse()
         
     return slists
+
+def path_to_steps(p, steps_per_degree, origin=0.0):
+    sum_steps = round((array(p,dtype=float) * RADIAN_TO_DEGREE - origin)
+                      * steps_per_degree).astype(int)
+    return sum_steps[1:] - sum_steps[:-1], sum_steps

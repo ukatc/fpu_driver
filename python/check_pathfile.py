@@ -7,12 +7,14 @@ from __future__ import print_function, division
 import os
 import argparse
 
-from numpy import sign
+from numpy import sign, ceil
 
-from fpu_commands import *
-from fpu_constants import *
+from fpu_commands import path_to_steps
+from fpu_constants import (RADIAN_TO_DEGREE, MOTOR_MAX_STEP_FREQUENCY, MOTOR_MAX_START_FREQUENCY,
+                           MOTOR_MIN_STEP_FREQUENCY, WAVEFORM_SEGMENT_LENGTH_MS,
+                           StepsPerDegreeAlpha, StepsPerDegreeBeta, ALPHA_DATUM_OFFSET, BETA_DATUM_OFFSET)
 from FpuGridDriver import DEFAULT_WAVEFORM_RULSET_VERSION
-from wflib import load_waveform, path_to_steps, read_path_file, RADIAN_TO_DEGREE
+from wflib import load_waveform, read_path_file
 
 
 
@@ -263,6 +265,7 @@ if __name__ == '__main__':
                 2 : ruleset_v2,
                 3 : ruleset_v3 }[args.ruleset_version]
 
+    total_failed_rules = set()
     for filename in args.pathfile:
         paths = read_path_file(filename)
         
@@ -299,7 +302,10 @@ if __name__ == '__main__':
                 print("\n\n\n")
                 
             
-                                                            
+            total_failed_rules.update(failed_rules)
+
+    print("A total number of %i rules were broken (%s)" % (len(total_failed_rules),
+                                                    [x.label for x in total_failed_rules ]))
 
 
     

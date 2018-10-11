@@ -6,9 +6,10 @@ from numpy import array, pi, round
 from mocpath.path.path_generator import read_path_file
 
 from fpu_constants import (ALPHA_DATUM_OFFSET, BETA_DATUM_OFFSET,
-                           StepsPerDegreeAlpha, StepsPerDegreeBeta)
+                           StepsPerDegreeAlpha, StepsPerDegreeBeta,
+                           RADIAN_TO_DEGREE)
 
-RADIAN_TO_DEGREE = 180.0 / pi
+from fpu_commands import path_to_steps
 
 def is_comment(s):
     """returns True if string s is a comment line
@@ -16,28 +17,33 @@ def is_comment(s):
     return s.strip()[0] == '#'
 
 
-def path_to_steps(p, steps_per_degree, origin=0.0):
-    #print("p:",p)
-    #print("p - origin:", (array(p,dtype=float) - origin))
-    #print("p(steps):", round((array(p,dtype=float) - origin)
-    #                  * RADIAN_TO_DEGREE * steps_per_degree).astype(int))
-    sum_steps = round((array(p,dtype=float) - origin)
-                      * RADIAN_TO_DEGREE * steps_per_degree).astype(int)
-    #print("p(diff):", sum_steps[1:] - sum_steps[:-1])
-    return sum_steps[1:] - sum_steps[:-1], sum_steps
-    
     
 
-def load_waveform(filename="targets_7fp_case_5_1_PATHS.txt",
+def load_paths(filename="targets_7fp_case_5_1_PATHS.txt",
                   canmap_fname="canmap.cfg", reverse=False):
+
+    """Loads an outout file from the path generator, and returns
+    a structure which can passed into the FPU driver's
+    configPath() method.
+    Caveat: Different from the path file, the angle units
+    in the returned results are in radian."""
+    
     paths = read_path_file(filename)
 
     idmap = literal_eval("".join(filter(lambda x: not is_comment(x),
                                         open(canmap_fname).readlines())))
 
+    return { idmap[str(cellid)] : (alpha_path, beta_path)
+             for cellid, alpha_path, beta_path  in paths }
+
+
+def load_waveform(filename="targets_7fp_case_5_1_PATHS.txt",
+                  canmap_fname="canmap.cfg", reverse=False):
+
+    paths = load_paths(filename, canmap_fname)
+
     waveform = {}
-    for cellid, alpha_path, beta_path  in paths:
-        fpu_id = idmap[str(cellid)]
+    for fpu_id, (alpha_path, beta_path)  in paths.items():
         alpha_steps, _ = path_to_steps(alpha_path, StepsPerDegreeAlpha,
                                     origin=ALPHA_DATUM_OFFSET)
         beta_steps, _ = path_to_steps(beta_path, StepsPerDegreeBeta,
