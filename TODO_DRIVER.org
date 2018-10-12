@@ -263,17 +263,18 @@ when the internal state struct is used.
 *** DONE log updated counter offsets on reset / start
 ** DONE support (configurable ?) new storage location of FPU version number
 ** DONE match simulated firmware version response to new driver version
-** TODO add configPath() method for absolute positioning with mandatory rounding parameter
+** DONE add configPath() method for absolute positioning with mandatory rounding parameter
 ** DONE fix bug with summed step counter where numbers are too low
-** TODO re-test path generator output with waveform checker script, and driver
+** DONE re-test path generator output with waveform checker script, and driver
+** TODO Update CAN overflow error codes in communication protocol
 ** TODO  clean-up of version 1 code
+*** DONE run short stress test of firmware with CAN command logging
+*** DONE make wording of direction orientation more precise
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList
 *** TODO Unit test of TimeOutList
-*** DONE run short stress test of firmware with CAN command logging
 *** TODO Refactor duplicate code in command header encoding
 *** TODO split SBuffer in independent read buffer and write buffer ?   
-*** DONE make wording of direction orientation more precise
 ** TODO Implement CAN Protocol V2
 *** TODO clean up protocol document
 *** TODO confirm agreement on protocol
