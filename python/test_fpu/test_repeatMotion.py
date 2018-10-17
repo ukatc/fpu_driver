@@ -4,9 +4,7 @@ import time
 
 import FpuGridDriver
 
-from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST
-from FpuGridDriver import REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE
-
+from FpuGridDriver import *
 from fpu_commands import *
 
 NUM_FPUS = 1

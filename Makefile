@@ -34,10 +34,13 @@ _DEPS = DriverState.h E_GridState.h FPUState.h GridDriver.h		\
 	canlayer/commands/GetStepsAlphaCommand.h			\
 	canlayer/commands/GetStepsBetaCommand.h				\
 	canlayer/commands/PingFPUCommand.h				\
+	canlayer/commands/ReadRegisterCommand.h				\
 	canlayer/commands/RepeatMotionCommand.h				\
 	canlayer/commands/ResetFPUCommand.h				\
 	canlayer/commands/ReverseMotionCommand.h			\
 	canlayer/commands/SetUStepLevelCommand.h			\
+	canlayer/commands/WriteSerialNumberCommand.h			\
+	canlayer/commands/ReadSerialNumberCommand.h			\
 	canlayer/sync_utils.h canlayer/time_utils.h
 
 
@@ -57,11 +60,14 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 git_version: force
 	echo '$(GIT_VERSION)' | cmp -s - $@ || echo '$(GIT_VERSION)' > $@
 
-tutorial:	doc/tutorial.tex
+doc/FPU-state1.pdf : doc/FPU-state1.svg
+	inkscape doc/FPU-state1.svg --export-pdf=doc/FPU-state1.pdf
+
+tutorial:	doc/tutorial.tex doc/FPU-state1.pdf git_version
 	cd doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
-$(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS) 
-	$(CC) $(CXXFLAGS) -c -o $@ $< 
+$(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS) git_version
+	$(CC) $(CXXFLAGS) -DVERSION=\"$(GIT_VERSION)\" -c -o $@ $< 
 
 lib/libfpudriver.a: $(OBJ)
 	ar rcs   $@ $^ 
@@ -71,6 +77,8 @@ driver: lib/libfpudriver.a
 pyext: lib/libfpudriver.a python/src/fpu_driver.cpp $(DEPS) git_version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/fpu_driver.so python/src/fpu_driver.cpp -L./lib  -lfpudriver -lboost_python -g -DVERSION=\"$(GIT_VERSION)\"
 
+style:
+	astyle src/*cpp python/src/*cpp include/{,/*{,*/{,*/}},}/*.h
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ doc/*.{aux,dvi,log,out,toc,pdf}

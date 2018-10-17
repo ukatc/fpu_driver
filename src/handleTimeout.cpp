@@ -37,11 +37,15 @@ namespace mpifps
 namespace canlayer
 {
 
-void handleTimeout(const GridDriverConfig config, int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id)
+void handleTimeout(const GridDriverConfig &config, int fpu_id, t_fpu_state& fpu, E_CAN_COMMAND cmd_id)
 {
     timespec cur_time;
 
     get_monotonic_time(cur_time);
+
+    // this counter is a unsigned 16-bit value which can wrap
+    // around. It must therefore *always* be compared for inequality!
+    fpu.timeout_count++;
 
     switch (cmd_id)
     {
@@ -60,6 +64,7 @@ void handleTimeout(const GridDriverConfig config, int fpu_id, t_fpu_state& fpu, 
                canlayer::get_realtime(),
                fpu_id);
         fpu.state = FPST_RESTING;
+        fpu.ping_ok = false;
         break;
 
     case CCMD_ABORT_MOTION    :
@@ -68,14 +73,17 @@ void handleTimeout(const GridDriverConfig config, int fpu_id, t_fpu_state& fpu, 
         LOG_RX(LOG_ERROR, "%18.6f : RX CRITICAL ERROR: ABORT_MOTION timed out for FPU #%i!.\n",
                canlayer::get_realtime(),
                fpu_id);
+        fpu.ping_ok = false;
         break;
 
     case CCMD_RESET_FPU       :
         fpu.state = FPST_UNKNOWN;
+        fpu.ping_ok = false;
         break;
 
     case CCMD_FIND_DATUM :
         fpu.state = FPST_UNINITIALIZED;
+        fpu.ping_ok = false;
         fprintf(stderr, "Error: findDatum timed out for FPU #%i\n", fpu_id);
 
         LOG_RX(LOG_ERROR, "%18.6f : RX ERROR: findDatum() timed out for FPU #%i!.\n",
@@ -96,6 +104,7 @@ void handleTimeout(const GridDriverConfig config, int fpu_id, t_fpu_state& fpu, 
                canlayer::get_realtime(),
                fpu_id);
         fpu.state = fpu.previous_state;
+        fpu.ping_ok = false;
         break;
 
     default:

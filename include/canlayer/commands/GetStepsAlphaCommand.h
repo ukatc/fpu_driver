@@ -123,7 +123,7 @@ public:
     {
         timespec const toval =
         {
-            /* .tv_sec = */ 20,
+            /* .tv_sec = */ 2,
             /* .tv_nsec = */ 500000000
         };
 

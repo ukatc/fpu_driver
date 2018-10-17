@@ -6,14 +6,17 @@ PREREQUISITES
 
 1) for the C++ driver and static library
 
-* gcc-4.9 (essentially, with support for C++11)
-* Linux-2.6 or newer (requiring support for eventfd)
-* glibc-2.3.2 (epoll support)
+ * gcc-4.9 (essentially, with support for C++11)
+ * Linux-2.6 or newer (requiring support for eventfd)
+ * glibc-2.3.2 (epoll support)
+ * liblmdb0 (Lightning Memory database, aka LMDB)
+ * lmdb-utils (contains backup utility for LMDB)
 
 2) for the test code and Python bindings
 
-* Python-2.7
-* boost-1-66 , which can be downloaded from http://www.boost.org/users/download/
+ * Python-2.7
+ * boost-1-66 , which can be downloaded from http://www.boost.org/users/download/
+ * python-lmdb (Python bindings)
 
 INSTALLATION
 ============
@@ -48,9 +51,11 @@ $ su
 
 To make the boost libraries accessible when the
 final program is run, you need to add the
-command
+two commands
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/lib
 
 to your shell configuration (usually, $HOME/.bashrc).
 

@@ -47,7 +47,7 @@ namespace canlayer
 
 
 
-FPUArray::FPUArray(const GridDriverConfig config_vals):
+FPUArray::FPUArray(const GridDriverConfig &config_vals):
     config(config_vals)
 {
 
@@ -55,6 +55,7 @@ FPUArray::FPUArray(const GridDriverConfig config_vals):
     // really need dynamic initialization.
 
     FPUGridState.count_timeout = 0;
+    FPUGridState.count_can_overflow = 0;
     FPUGridState.count_pending     = 0;
 
     memset(FPUGridState.Counts, 0,
@@ -183,15 +184,6 @@ void FPUArray::incSending()
 
 }
 
-int  FPUArray::countSending() const
-{
-    int rv;
-    pthread_mutex_lock(&grid_state_mutex);
-    rv = FPUGridState.num_queued;
-    pthread_mutex_unlock(&grid_state_mutex);
-
-    return rv;
-}
 
 
 void FPUArray::decSending()
@@ -249,19 +241,21 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
     pthread_mutex_lock(&grid_state_mutex);
 
     const unsigned long count_timeouts = reference_state.count_timeout;
+    const unsigned long count_can_overflows = reference_state.count_can_overflow;
 
     bool got_value = false;
     while (! got_value)
     {
 
-        // note this test functions *must* me be called
+        // note this test functions *must* be called
         // in 'locked' (mutex-protected) state!
         sum_state = getStateSummary_unprotected();
 
         // if a time-out occurs and qualifies, we return early.
         // (the counter can wrap around - no problem!)
         const bool new_timeout_triggered = ( (target & TGT_TIMEOUT) &&
-                                             (count_timeouts != FPUGridState.count_timeout));
+                                             ( ((count_timeouts != FPUGridState.count_timeout))
+					       || ((count_can_overflows != FPUGridState.count_can_overflow))));
 
 
         // If all FPUs have been updated, that might be
@@ -398,8 +392,6 @@ bool FPUArray::inTargetState(E_GridState sum_state,
             && (FPUGridState.count_pending == 0)
             && (FPUGridState.num_queued == 0)
             && (FPUGridState.Counts[FPST_DATUM_SEARCH] == 0)
-            && (FPUGridState.Counts[FPST_READY_FORWARD] == 0)
-            && (FPUGridState.Counts[FPST_READY_BACKWARD] == 0)
             && (FPUGridState.Counts[FPST_MOVING] == 0))
 
     {
@@ -420,9 +412,8 @@ bool FPUArray::inTargetState(E_GridState sum_state,
 
 bool FPUArray::isLocked(int fpu_id) const
 {
-    bool is_locked = false;
     pthread_mutex_lock(&grid_state_mutex);
-    is_locked = (FPUGridState.FPU_state[fpu_id].state == FPST_LOCKED);
+    bool is_locked = (FPUGridState.FPU_state[fpu_id].state == FPST_LOCKED);
     pthread_mutex_unlock(&grid_state_mutex);
 
     return is_locked;
@@ -641,9 +632,6 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
     int fpu_busid = can_identifier & 0x7f;
 
-    char log_buf[256];
-    int buf_idx=0;
-    int char_cnt = 0;
 
 
     assert(gateway_id < MAX_NUM_GATEWAYS);
@@ -655,6 +643,10 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
     if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
     {
+	char log_buf[256];
+	int buf_idx=0;
+	int char_cnt = 0;
+	
         char_cnt = sprintf(log_buf, "RX: %18.6f: dispatching response:"
                            " gateway_id=%i, bus_id=%i, can_identifier=%i,"
                            " priority=%i, fpu_busid=%i, data[%i] = ",
@@ -767,6 +759,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // that.
 
         const t_fpu_state oldstate = FPUGridState.FPU_state[fpu_id];
+	const uint16_t old_can_overflows = FPUGridState.FPU_state[fpu_id].can_overflow_errcount;
 
         canlayer::handleFPUResponse(config, fpu_id, FPUGridState.FPU_state[fpu_id], data, blen,
                                     tout_list, FPUGridState.count_pending);
@@ -783,6 +776,11 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
         FPUGridState.Counts[oldstate.state]--;
         FPUGridState.Counts[newstate.state]++;
+
+	if (old_can_overflows != FPUGridState.FPU_state[fpu_id].can_overflow_errcount)
+	{
+	    FPUGridState.count_can_overflow++; // rarely, this counter may wrap around - that's intentional
+	}
 
         // The state of the grid can change when *all* FPUs have left
         // an old state, or *at least one* has entered a new state.
@@ -930,7 +928,8 @@ void remove_pending(const GridDriverConfig &config, t_fpu_state& fpu, int fpu_id
 
 }
 
-timespec expire_pending(const GridDriverConfig config, t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
+timespec expire_pending(const GridDriverConfig &config, t_fpu_state& fpu,
+			int fpu_id, const timespec& expiration_time,
                         int &count_pending, unsigned long &count_timeouts)
 {
 

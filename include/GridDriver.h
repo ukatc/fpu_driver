@@ -38,6 +38,11 @@
 namespace mpifps
 {
 
+using canlayer::E_DATUM_TIMEOUT_FLAG;
+using canlayer::DATUM_TIMEOUT_ENABLE;
+using canlayer::DATUM_TIMEOUT_DISABLE;
+
+
 
 class GridDriver : public canlayer::AsyncDriver
 {
@@ -46,15 +51,8 @@ public:
     // number of retries for each action
     const int DEFAULT_NUM_RETRIES = 10;
 
-    GridDriver(const GridDriverConfig config_values)
-        : AsyncDriver(config_values)
-    {
 
-        LOG_CONTROL(LOG_INFO, "%18.6f : starting driver for %i FPUs\n",
-                    canlayer::get_realtime(), config.num_fpus);
-
-
-    }
+    GridDriver(const GridDriverConfig config_values);
 
     ~GridDriver()
     {
@@ -97,49 +95,79 @@ public:
 #endif
 
 
-    E_DriverErrCode initializeGrid(t_grid_state& grid_state);
+    E_DriverErrCode initializeGrid(t_grid_state& grid_state, t_fpuset const &fpuset);
 
-    E_DriverErrCode resetFPUs(t_grid_state& grid_state);
+    E_DriverErrCode resetFPUs(t_grid_state& grid_state, t_fpuset const &fpuset);
 
-    E_DriverErrCode pingFPUs(t_grid_state& grid_state);
+    E_DriverErrCode pingFPUs(t_grid_state& grid_state, t_fpuset const &fpuset);
 
     // find datum with automatic firmware operation
-    E_DriverErrCode findDatum(t_grid_state& grid_state, E_DATUM_SELECTION arm_selection);
+    E_DriverErrCode findDatum(t_grid_state& grid_state,
+                              E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
+                              E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+                              E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                              bool count_protection=true,
+                              t_fpuset const  * const fpuset=nullptr);
 
-    E_DriverErrCode startFindDatum(t_grid_state& grid_state, E_DATUM_SELECTION arm_selection);
+    E_DriverErrCode startFindDatum(t_grid_state& grid_state,
+                                   E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
+                                   E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+                                   E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                                   bool count_protection=true,
+                                   t_fpuset const * const fpuset=nullptr);
 
     E_DriverErrCode waitFindDatum(t_grid_state& grid_state,
-                                  double &max_wait_time, bool &finished);
+                                  double &max_wait_time, bool &finished,
+                                  t_fpuset const * const fpuset=nullptr);
 
-    E_DriverErrCode configMotion(const t_wtable& waveforms, t_grid_state& grid_state, bool check_protection);
+    E_DriverErrCode configMotion(const t_wtable& waveforms,
+                                 t_grid_state& grid_state,
+                                 t_fpuset const &fpuset,
+                                 bool soft_protection=true,
+                                 bool allow_uninitialized=false,
+				 int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
 
-    E_DriverErrCode executeMotion(t_grid_state& grid_state);
+    E_DriverErrCode executeMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
-    E_DriverErrCode startExecuteMotion(t_grid_state& grid_state);
+    E_DriverErrCode startExecuteMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
-    E_DriverErrCode waitExecuteMotion(t_grid_state& grid_state, double &max_wait_time, bool &finished);
+    E_DriverErrCode waitExecuteMotion(t_grid_state& grid_state,
+                                      double &max_wait_time,
+                                      bool &finished,
+                                      t_fpuset const &fpuset);
 
 
-    E_DriverErrCode getPositions(t_grid_state& grid_state);
+    E_DriverErrCode getPositions(t_grid_state& grid_state, t_fpuset const &fpuset);
 
-    E_DriverErrCode getCounterDeviation(t_grid_state& grid_state);
+    E_DriverErrCode getCounterDeviation(t_grid_state& grid_state, t_fpuset const &fpuset);
 
-    E_DriverErrCode repeatMotion(t_grid_state& grid_state);
+    E_DriverErrCode repeatMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
-    E_DriverErrCode reverseMotion(t_grid_state& grid_state);
+    E_DriverErrCode reverseMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
-    E_DriverErrCode abortMotion(t_grid_state& grid_state);
+    E_DriverErrCode abortMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
     E_DriverErrCode freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_dir,
                                       t_grid_state& grid_state);
 
     E_DriverErrCode enableBetaCollisionProtection(t_grid_state& grid_state);
 
-    E_DriverErrCode setUStepLevel(int ustep_level, t_grid_state& grid_state);
+    E_DriverErrCode setUStepLevel(int ustep_level, t_grid_state& grid_state, t_fpuset const &fpuset);
 
-    E_DriverErrCode lockFPU(t_grid_state& grid_state);
+    E_DriverErrCode readRegister(uint16_t read_address,
+                                 t_grid_state& grid_state,
+                                 t_fpuset const &fpuset);
 
-    E_DriverErrCode unlockFPU(t_grid_state& grid_state);
+    E_DriverErrCode getFirmwareVersion(t_grid_state& grid_state, t_fpuset const &fpuset);
+
+    E_DriverErrCode lockFPU(int fpu_id, t_grid_state& grid_state);
+
+    E_DriverErrCode unlockFPU(int fpu_id, t_grid_state& grid_state);
+
+    E_DriverErrCode readSerialNumbers(t_grid_state& grid_state, t_fpuset const &fpuset);
+
+    E_DriverErrCode writeSerialNumber(int fpu_id, const char serial_number[],
+                                      t_grid_state& grid_state);
 
     int getNumFPUs() const;
 

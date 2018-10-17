@@ -44,7 +44,7 @@ enum E_GridState
     GS_AT_DATUM       = (1 << 6), // datum is known, no waveforms loaded
     GS_LOADING        = (1 << 7), // loading waveforms
     GS_READY_FORWARD  = (1 << 8), // all FPUs are ready to go forward
-    GS_READY_BACKWARD = (1 << 9), // all FPUs are ready to go backward
+    GS_READY_REVERSE = (1 << 9), // all FPUs are ready to go backward
     GS_MOVING         = (1 << 10), // all or some FPUs are moving
     GS_FINISHED       = (1 << 11), // all FPUs at target
     GS_COLLISION      = (1 << 12), // a collision or limit stop was detected
@@ -85,7 +85,7 @@ enum E_WaitTarget
 
 
     TGT_READY_TO_MOVE = (GS_READY_FORWARD
-                         | GS_READY_BACKWARD
+                         | GS_READY_REVERSE
                          | GS_AT_DATUM
                          | GS_UNINITIALIZED
                          | GS_COLLISION

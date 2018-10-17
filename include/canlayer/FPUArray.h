@@ -73,7 +73,7 @@ public:
     typedef uint16_t t_address_map[MAX_NUM_GATEWAYS][BUSES_PER_GATEWAY][1 + FPUS_PER_BUS];
 
 
-    FPUArray(const GridDriverConfig config_vals);
+    explicit FPUArray(const GridDriverConfig &config_vals);
 
     ~FPUArray();
 
@@ -226,7 +226,7 @@ void remove_pending(const GridDriverConfig &config,
 // Remove time out entries which are earlier than the expiration time
 // from the fpu pending set, and return the next time-out value from
 // the remaining set (or MAX_TIMESPEC if the set is empty)
-timespec expire_pending(const GridDriverConfig config,
+timespec expire_pending(const GridDriverConfig &config,
                         t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
                         int  &count_pending, unsigned long &count_timeouts);
 

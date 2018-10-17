@@ -61,7 +61,7 @@ def parse_args():
                         default = DEFAULT_PORTS,
                         help='ports which will listen to a connection')
     
-    parser.add_argument('--debug', dest='debug',  action='store_true',
+    parser.add_argument('-d', '--debug', dest='debug',  action='store_true',
                         default=DEBUG,
                         help='print received binary commands and responses')
     
@@ -70,14 +70,52 @@ def parse_args():
                         help='verbosity: 0 - no extra output ... 5 - print extensive debug output')
 
     parser.add_argument('-V', '--protocol_version',  dest='protocol_version',
-                        default="1.0",
+                        default="1.4.4",
                         help='CAN protocol version')
 
+    parser.add_argument('-t', '--datum_alpha_timeout_steps',  dest='datum_alpha_timeout_steps',
+                        default=500,
+                        help='timeout limit for alpha arm, in steps')
+    
+    parser.add_argument('-b', '--datum_beta_timeout_steps',  dest='datum_beta_timeout_steps',
+                        default=125 * 20,
+                        help='timeout limit for beta arm, in steps')
+
+    parser.add_argument('-D', '--firmware_date',  dest='firmware_date',
+                        default="18-01-01",
+                        help='ISO timestamp with firmware date (format yy-mm-dd as "18-12-31")')
+    
     parser.add_argument('-N', '--NUM_FPUS',  type=int, dest='NUM_FPUS',
                         default=int(DEFAULT_NUM_FPUS),
                         help='number of simulated FPUs')
+
+    parser.add_argument('-O', '--alpha-datum-offset',  type=float, dest='alpha_datum_offset',
+                        default=-180.0,
+                        help=("""Conventional angle of datum position."""))
+    
+    parser.add_argument('-A', '--alpha-start',  type=float, dest='alpha_start',
+                        default=0.0,
+                        help=("""simulated offset of alpha arm at start, 
+                        when the step count is 0.
+                        This can be used to simulate conditions like a power failure"""))
+    
+    parser.add_argument('-B', '--beta-start',  type=float, dest='beta_start',
+                        default=0.0,
+                        help='simulated offset of beta arm at start')
     
     args = parser.parse_args()
+    
+    version_tuple = map(int, args.protocol_version.split("."))
+    
+    while len(version_tuple) < 3:
+        version_tuple = version_tuple + [0]
+        print("firmware version=", version_tuple)
+    args.fw_version = tuple(version_tuple)
+    
+    del args.protocol_version # delete for safety
+
+    args.fw_date = map(int, args.firmware_date.split("-"))
+
     return args
      
 
@@ -88,7 +126,7 @@ if __name__ == '__main__':
     args = parse_args()
     
     
-    print("protocol_version:", args.protocol_version)
+    print("protocol_version:", args.fw_version)
     print("listening to ports:", args.ports)
     print("listening to ports:", args.ports)
     print("number of FPUs    :", args.NUM_FPUS)

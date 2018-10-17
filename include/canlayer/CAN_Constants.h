@@ -34,7 +34,7 @@ namespace canlayer
 // number of can buses on one gateway
 const int BUSES_PER_GATEWAY =  5;
 // number of FPUs on one CAN bus
-const int FPUS_PER_BUS = 67;
+const int FPUS_PER_BUS = 76;
 
 
 // maximum number of elementary commands resulting from one
@@ -48,6 +48,9 @@ const int MAX_CAN_PAYLOAD_BYTES = 8;
 // including 11-bit CAN identifier and
 // 8-bit bus identifier.
 const int MAX_UNENCODED_GATEWAY_MESSAGE_BYTES = 11;
+
+// length of serial number stored in FPU NVRAM
+const int DIGITS_SERIAL_NUMBER=5;
 
 
 }

@@ -51,6 +51,8 @@ typedef struct
     // types does not cause undefined  behavior in C/C++.)
     unsigned long count_timeout;
 
+    unsigned long count_can_overflow;
+
     // number of commands awaiting a response.
     int count_pending;
 

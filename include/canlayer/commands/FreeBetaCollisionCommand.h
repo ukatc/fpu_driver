@@ -42,11 +42,11 @@ public:
         return CCMD_FREE_BETA_COLLISION;
     };
 
-    FreeBetaCollisionCommand()
-    {
-        fpu_id = 0;
-        request_direction = REQD_ANTI_CLOCKWISE;
-    };
+    FreeBetaCollisionCommand():
+	request_direction(REQD_ANTI_CLOCKWISE)
+	{
+	    fpu_id = 0;
+	};
 
     E_CAN_COMMAND getInstanceCommandCode()
     {

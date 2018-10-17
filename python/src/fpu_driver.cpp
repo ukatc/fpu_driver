@@ -15,6 +15,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <string.h>
+#include <iostream>
+#include <string>
+#include <vector>
+
 #include <boost/python/class.hpp>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
@@ -23,12 +28,10 @@
 #include <boost/python/list.hpp>
 #include <boost/python/dict.hpp>
 #include <boost/python/tuple.hpp>
+#include <boost/python/str.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/exception_translator.hpp>
-#include <iostream>
-#include <string>
-#include <vector>
 
 #include "../../include/canlayer/E_CAN_COMMAND.h"
 #include "../../include/T_GridState.h"
@@ -42,12 +45,18 @@ PyObject* MovementErrorExceptionTypeObj = 0;
 PyObject* CollisionErrorExceptionTypeObj = 0;
 PyObject* LimitBreachErrorExceptionTypeObj = 0;
 PyObject* AbortMotionErrorExceptionTypeObj = 0;
+PyObject* FirmwareTimeOutExceptionTypeObj = 0;
 PyObject* TimingErrorExceptionTypeObj = 0;
 PyObject* InvalidStateExceptionTypeObj = 0;
 PyObject* SystemFailureExceptionTypeObj = 0;
 PyObject* SetupErrorExceptionTypeObj = 0;
 PyObject* InvalidParameterExceptionTypeObj = 0;
 PyObject* ConnectionFailureExceptionTypeObj = 0;
+PyObject* SocketFailureExceptionTypeObj = 0;
+PyObject* CommandTimeoutExceptionTypeObj = 0;
+PyObject* CAN_OverflowExceptionTypeObj = 0;
+PyObject* ProtectionErrorExceptionTypeObj = 0;
+PyObject* HardwareProtectionErrorExceptionTypeObj = 0;
 
 
 
@@ -63,6 +72,7 @@ using boost::python::extract;
 using boost::python::list;
 using boost::python::dict;
 using boost::python::tuple;
+using boost::python::str;
 
 
 std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
@@ -70,40 +80,40 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
     switch(s)
     {
     case FPST_UNKNOWN:
-        out << "'UNKNOWN'";
+        out << "'FPST_UNKNOWN'";
         break;
     case FPST_UNINITIALIZED:
-        out << "'UNINITIALIZED'";
+        out << "'FPST_UNINITIALIZED'";
         break;
     case FPST_LOCKED:
-        out << "'LOCKED'";
+        out << "'FPST_LOCKED'";
         break;
     case FPST_DATUM_SEARCH:
-        out << "'DATUM_SEARCH'";
+        out << "'FPST_DATUM_SEARCH'";
         break;
     case FPST_AT_DATUM:
-        out << "'AT_DATUM'";
+        out << "'FPST_AT_DATUM'";
         break;
     case FPST_LOADING:
-        out << "'LOADING'";
+        out << "'FPST_LOADING'";
         break;
     case FPST_READY_FORWARD:
-        out << "'READY_FORWARD'";
+        out << "'FPST_READY_FORWARD'";
         break;
-    case FPST_READY_BACKWARD:
-        out << "'READY_BACKWARD'";
+    case FPST_READY_REVERSE:
+        out << "'FPST_READY_REVERSE'";
         break;
     case FPST_MOVING:
-        out << "'MOVING'";
+        out << "'FPST_MOVING'";
         break;
     case FPST_RESTING:
-        out << "'RESTING'";
+        out << "'FPST_RESTING'";
         break;
     case FPST_ABORTED:
-        out << "'ABORTED'";
+        out << "'FPST_ABORTED'";
         break;
     case FPST_OBSTACLE_ERROR:
-        out << "'OBSTACLE_ERROR'";
+        out << "'FPST_OBSTACLE_ERROR'";
         break;
     }
     return out;
@@ -151,6 +161,15 @@ public:
     int num_active_timeouts;
     int sequence_number;
     int movement_complete;
+    int register_value;
+    uint16_t register_address;
+    int fw_version_major;
+    int fw_version_minor;
+    int fw_version_patch;
+    int fw_date_year;
+    int fw_date_month;
+    int fw_date_day;
+    std::string serial_number;
 
     WrapFPUState() {}
 
@@ -168,6 +187,7 @@ public:
         beta_deviation            = fpu_state.beta_deviation;
         timeout_count             = fpu_state.timeout_count;
         step_timing_errcount      = fpu_state.step_timing_errcount;
+	can_overflow_errcount     = fpu_state.can_overflow_errcount;
         direction_alpha           = fpu_state.direction_alpha;
         direction_beta            = fpu_state.direction_beta;
         num_waveform_segments     = fpu_state.num_waveform_segments;
@@ -185,7 +205,17 @@ public:
         waveform_valid            = fpu_state.waveform_valid;
         waveform_ready            = fpu_state.waveform_ready;
         waveform_reversed         = fpu_state.waveform_reversed;
+        register_value            = fpu_state.register_value;
+        register_address          = fpu_state.register_address;
+        fw_version_major          =  fpu_state.firmware_version[0];
+        fw_version_minor          =  fpu_state.firmware_version[1];
+        fw_version_patch          =  fpu_state.firmware_version[2];
+        fw_date_year              =  fpu_state.firmware_date[0];
+        fw_date_month             =  fpu_state.firmware_date[1];
+        fw_date_day               =  fpu_state.firmware_date[2];
 
+        assert(strlen(fpu_state.serial_number) < LEN_SERIAL_NUMBER);
+        serial_number = std::string(fpu_state.serial_number);
     }
 
     bool operator==(const  WrapFPUState &a) const
@@ -206,36 +236,45 @@ public:
         */
 
         s << "{ 'last_updated' : " << s.precision(10) << (1.0 * fpu.last_updated.tv_sec
-                + 1.0e-9 * fpu.last_updated.tv_nsec)
-          << " 'pending_command_set' : " << fpu.pending_command_set
-          << " 'pending_command_set' : " << fpu.pending_command_set
+                + 1.0e-9 * fpu.last_updated.tv_nsec) << ", "
+          << " 'pending_command_set' : " << fpu.pending_command_set << ", "
           << " 'state' : ";
-        s << fpu.state
-          << " 'last_command' : " << fpu.last_command
-          << " 'last_status' : " << fpu.last_status
-          << " 'alpha_steps' : " << fpu.alpha_steps
-          << " 'beta_steps' : " << fpu.beta_steps
-          << " 'alpha_deviation' : " << fpu.alpha_deviation
-          << " 'beta_deviation' : " << fpu.beta_deviation
-          << " 'timeout_count' : " << fpu.timeout_count
-          << " 'step_timing_errcount' : " << fpu.step_timing_errcount
-          << " 'direction_alpha' : " << fpu.direction_alpha
-          << " 'direction_beta' : " << fpu.direction_beta
-          << " 'num_waveform_segments' : " << fpu.num_waveform_segments
-          << " 'num_active_timeouts' : " << fpu.num_active_timeouts
-          << " 'sequence_number' : " << fpu.sequence_number
-          << " 'ping_ok' : " << fpu.ping_ok
-          << " 'movement_complete' : " << fpu.movement_complete
-          << " 'alpha_was_zeroed' : " << fpu.alpha_was_zeroed
-          << " 'beta_was_zeroed' : " << fpu.beta_was_zeroed
-          << " 'is_locked' : " << fpu.is_locked
-          << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active
-          << " 'beta_datum_switch_active' : " << fpu.beta_datum_switch_active
-          << " 'at_alpha_limit' : " << fpu.at_alpha_limit
-          << " 'beta_collision' : " << fpu.beta_collision
-          << " 'waveform_valid' : " << fpu.waveform_valid
-          << " 'waveform_ready' : " << fpu.waveform_ready
-          << " 'waveform_reversed' : " << fpu.waveform_reversed
+        s << fpu.state << ", "
+          << " 'last_command' : " << fpu.last_command << ", "
+          << " 'last_status' : " << fpu.last_status << ", "
+          << " 'alpha_steps' : " << fpu.alpha_steps << ", "
+          << " 'beta_steps' : " << fpu.beta_steps << ", "
+          << " 'alpha_deviation' : " << fpu.alpha_deviation << ", "
+          << " 'beta_deviation' : " << fpu.beta_deviation << ", "
+          << " 'timeout_count' : " << fpu.timeout_count << ", "
+          << " 'step_timing_errcount' : " << fpu.step_timing_errcount << ", "
+          << " 'can_overflow_errcount' : " << fpu.can_overflow_errcount << ", "
+          << " 'direction_alpha' : " << fpu.direction_alpha << ", "
+          << " 'direction_beta' : " << fpu.direction_beta << ", "
+          << " 'num_waveform_segments' : " << fpu.num_waveform_segments << ", "
+          << " 'num_active_timeouts' : " << fpu.num_active_timeouts << ", "
+          << " 'sequence_number' : " << fpu.sequence_number << ", "
+          << " 'ping_ok' : " << fpu.ping_ok << ", "
+          << " 'movement_complete' : " << fpu.movement_complete << ", "
+          << " 'alpha_was_zeroed' : " << fpu.alpha_was_zeroed << ", "
+          << " 'beta_was_zeroed' : " << fpu.beta_was_zeroed << ", "
+          << " 'is_locked' : " << fpu.is_locked << ", "
+          << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active << ", "
+          << " 'beta_datum_switch_active' : " << fpu.beta_datum_switch_active << ", "
+          << " 'at_alpha_limit' : " << fpu.at_alpha_limit << ", "
+          << " 'beta_collision' : " << fpu.beta_collision << ", "
+          << " 'waveform_valid' : " << fpu.waveform_valid << ", "
+          << " 'waveform_ready' : " << fpu.waveform_ready << ", "
+          << " 'waveform_reversed' : " << fpu.waveform_reversed << ", "
+          << " 'register_address' : " << std::hex << std::showbase << fpu.register_address << ", "
+          << " 'register_value' : " << fpu.register_value << std::dec << std::noshowbase << ", "
+          << " 'firmware_version' : " << fpu.fw_version_major
+          << "." << fpu.fw_version_minor
+          << "." << fpu.fw_version_patch << ", "
+          << " 'firmware_date' : '" << fpu.fw_date_year
+          << "-" << fpu.fw_date_month
+          << "-" << fpu.fw_date_day <<"', "
+          << " 'serial_number' : \"" << fpu.serial_number << "\", "
           << " }";
         return s.str();
     }
@@ -306,6 +345,7 @@ public:
         s << "{ 'count_pending' :" << gs.count_pending << ", "
           << "'num_queued' :" << gs.num_queued << ", "
           << "'count_timeout' :" << gs.count_timeout << ", "
+          << "'count_can_overflow' :" << gs.count_can_overflow << ", "
           << "'driver_state' :";
         s << gs.driver_state << ", "
           << "'Counts' : { ";
@@ -380,16 +420,22 @@ void translate_driver_error(FPUDriverException const& e)
     case DE_FPUS_LOCKED :
     case DE_INVALID_FPU_STATE :
     case DE_INVALID_DRIVER_STATE :
+    case DE_IN_ABORTED_STATE :
+    case DE_ALPHA_ARM_ON_LIMIT_SWITCH:
         PyErr_SetString(InvalidStateExceptionTypeObj, e.what());
         break;
 
-    case DE_UNIMPLEMENTED:
+    case DE_PROTECTION_ERROR:
+        PyErr_SetString(ProtectionErrorExceptionTypeObj, e.what());
+        break;
+
     case DE_OUT_OF_MEMORY:
     case DE_RESOURCE_ERROR:
     case DE_ASSERTION_FAILED:
         PyErr_SetString(SystemFailureExceptionTypeObj, e.what());
         break;
 
+    case DE_FIRMWARE_UNIMPLEMENTED:
     case DE_INSUFFICENT_NUM_GATEWAYS :
     case DE_INVALID_CONFIG :
         PyErr_SetString(SetupErrorExceptionTypeObj, e.what());
@@ -397,16 +443,26 @@ void translate_driver_error(FPUDriverException const& e)
 
     case DE_INVALID_FPU_ID :
     case DE_INVALID_PAR_VALUE :
+    case DE_DUPLICATE_SERIAL_NUMBER:
         PyErr_SetString(InvalidParameterExceptionTypeObj, e.what());
         break;
 
-    case DE_MAX_RETRIES_EXCEEDED :
     case DE_WAIT_TIMEOUT :
-    case DE_NO_CONNECTION :
-    case DE_CAN_COMMAND_TIMEOUT_ERROR:
+        // this is normally not raised, because not necessarily an error
         PyErr_SetString(ConnectionFailureExceptionTypeObj, e.what());
         break;
+    case DE_NO_CONNECTION :
+        PyErr_SetString(SocketFailureExceptionTypeObj, e.what());
+        break;
+    case DE_MAX_RETRIES_EXCEEDED :
+    case DE_CAN_COMMAND_TIMEOUT_ERROR:
+        PyErr_SetString(CommandTimeoutExceptionTypeObj, e.what());
+        break;
 
+    case DE_FIRMWARE_CAN_BUFFER_OVERFLOW:
+        PyErr_SetString(CAN_OverflowExceptionTypeObj, e.what());
+        break;
+	
     case DE_INVALID_WAVEFORM :
     case DE_INVALID_WAVEFORM_TAIL:
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:
@@ -425,8 +481,21 @@ void translate_driver_error(FPUDriverException const& e)
     case DE_STEP_TIMING_ERROR:
         PyErr_SetString(TimingErrorExceptionTypeObj, e.what());
         break;
-    case DE_ABORTED_STATE:
+
+    case DE_MOVEMENT_ABORTED:
         PyErr_SetString(AbortMotionErrorExceptionTypeObj, e.what());
+        break;
+
+    case DE_DATUM_COMMAND_HW_TIMEOUT:
+        PyErr_SetString(FirmwareTimeOutExceptionTypeObj, e.what());
+        break;
+
+    case DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH:
+        PyErr_SetString(HardwareProtectionErrorExceptionTypeObj, e.what());
+        break;
+
+    case DE_INCONSISTENT_STEP_COUNT:
+        PyErr_SetString(HardwareProtectionErrorExceptionTypeObj, e.what());
         break;
 
     default:
@@ -466,6 +535,13 @@ void checkDriverError(E_DriverErrCode ecode)
                                  DE_CAN_COMMAND_TIMEOUT_ERROR);
         break;
 
+    case DE_FIRMWARE_CAN_BUFFER_OVERFLOW:
+        throw FPUDriverException("DE_FIRMWARE_CAN_BUFFER_OVERFLOW:"
+                                 " A CAN command to an FPU could not be processed and was lost"
+				 " because the FPU firmware buffer was full.",
+                                 DE_FIRMWARE_CAN_BUFFER_OVERFLOW);
+        break;
+	
     case DE_INSUFFICENT_NUM_GATEWAYS:
         throw FPUDriverException("DE_INSUFFICENT_NUM_GATEWAYS: The number of EtherCAN gateways"
                                  " configured is insufficient for the configured number of FPUs",
@@ -553,8 +629,7 @@ void checkDriverError(E_DriverErrCode ecode)
     case DE_FPUS_NOT_CALIBRATED:
         throw FPUDriverException("DE_FPUS_NOT_CALIBRATED: FPUs are lacking calibration by "
                                  "a findDatum operation. For engineering or recovery use, consider"
-                                 " to set the 'check_protection' keyword argument to False,"
-                                 " to disable hardware safety checks.",
+                                 " to set the 'allow_uninitialized' keyword argument to True",
                                  DE_FPUS_NOT_CALIBRATED);
         break;
 
@@ -571,12 +646,42 @@ void checkDriverError(E_DriverErrCode ecode)
                                  DE_WAIT_TIMEOUT);
         break;
 
-    case DE_ABORTED_STATE :
-        throw FPUDriverException("DE_ABORTED_STATE: There are FPUs in aborted state,"
+    case DE_IN_ABORTED_STATE :
+        throw FPUDriverException("DE_IN_ABORTED_STATE: There are FPUs in aborted state,"
+                                 " because of a previous abortMotion command or a step timing error"
+                                 "- use the resetFPUs command to reset state.",
+                                 DE_IN_ABORTED_STATE);
+        break;
+
+    case DE_MOVEMENT_ABORTED :
+        throw FPUDriverException("DE_MOVEMENT_ABORTED: The FPU has entered the FPST_ABORTED state,"
                                  " because of an abortMotion command or a step timing error "
                                  "- use the resetFPUs command to reset state.",
-                                 DE_ABORTED_STATE);
+                                 DE_MOVEMENT_ABORTED);
         break;
+
+    case DE_DATUM_COMMAND_HW_TIMEOUT :
+        throw FPUDriverException("DE_DATUM_COMMAND_HW_TIMEOUT: The FPU firmware has timed-out"
+                                 " a datum operation because it took too long to complete. Potentially,"
+                                 " the datum switch is not working, or the FPU hardware is otherwise"
+                                 " damaged.",
+                                 DE_DATUM_COMMAND_HW_TIMEOUT);
+        break;
+
+    case DE_ALPHA_ARM_ON_LIMIT_SWITCH:
+        throw FPUDriverException("DE_ALPHA_ARM_ON_LIMIT_SWITCH: Datum command rejected because"
+                                 " an FPU alpha arm is on its limit switch.",
+                                 DE_ALPHA_ARM_ON_LIMIT_SWITCH);
+        break;
+
+    case DE_INCONSISTENT_STEP_COUNT:
+        throw FPUDriverException("The driver received an illegal counter value from"
+				 " an FPU, so that it cannot correctly track the FPUs"
+				 " any more. It is required to measure the"
+				 " position and update the position database.",
+                                 DE_INCONSISTENT_STEP_COUNT);
+        break;
+
 
     case DE_FPUS_LOCKED :
         throw FPUDriverException("DE_FPUS_LOCKED: Some addressed FPUs are in locked state,"
@@ -603,15 +708,25 @@ void checkDriverError(E_DriverErrCode ecode)
                                  DE_INVALID_FPU_STATE);
         break;
 
+    case DE_PROTECTION_ERROR:
+        throw FPUDriverException("DE_PROTECTION_ERROR: Command might damage FPU, step count protection is enabled.",
+                                 DE_PROTECTION_ERROR);
+        break;
+
     case DE_INVALID_PAR_VALUE:
         throw FPUDriverException("DE_INVALID_PAR_VALUE: The passed parameter value is invalid.",
                                  DE_INVALID_PAR_VALUE);
         break;
 
-    case DE_UNIMPLEMENTED:
-        throw FPUDriverException("DE_UNIMPLEMENTED: Command or operation not implemented"
+    case DE_DUPLICATE_SERIAL_NUMBER:
+        throw FPUDriverException("DE_DUPLICATE_SERIAL_NUMBER: The passed serial number is already in use.",
+                                 DE_DUPLICATE_SERIAL_NUMBER);
+        break;
+
+    case DE_FIRMWARE_UNIMPLEMENTED:
+        throw FPUDriverException("DE_FIRMWARE_UNIMPLEMENTED: Command or operation not implemented"
                                  " for this protocol version",
-                                 DE_UNIMPLEMENTED);
+                                 DE_FIRMWARE_UNIMPLEMENTED);
         break;
 
     case DE_RESOURCE_ERROR:
@@ -679,9 +794,42 @@ private:
 
 class WrapGridDriver : public GridDriver
 {
+private:
+    const GridDriverConfig config;
+
+    void getFPUSet(const list& fpu_list, t_fpuset &fpuset) const
+    {
+        if (len(fpu_list) == 0)
+        {
+            for(int i=0; i < MAX_NUM_POSITIONERS; i++)
+            {
+                fpuset[i] = true;
+            }
+        }
+        else
+        {
+            for(int i=0; i < MAX_NUM_POSITIONERS; i++)
+            {
+                fpuset[i] = false;
+            }
+            for(int i=0; i < len(fpu_list); i++)
+            {
+                int fpu_id = extract<int>(fpu_list[i]);
+                if ((fpu_id < 0)
+                        || (fpu_id >= MAX_NUM_POSITIONERS)
+                        || (fpu_id >= config.num_fpus))
+                {
+                    throw FPUDriverException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                                             DE_INVALID_FPU_ID);
+                }
+                fpuset[fpu_id] = true;
+            }
+        }
+    }
+
 public:
 
-    WrapGridDriver(const GridDriverConfig config) : GridDriver(config)
+    WrapGridDriver(const GridDriverConfig _config) : config(_config), GridDriver(_config)
     {
 
         E_DriverErrCode ecode = initializeDriver();
@@ -725,8 +873,14 @@ public:
     };
 
     E_DriverErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state,
-                                         bool check_protection)
+                                         list &fpu_list,
+                                         bool soft_protection=true,
+                                         bool allow_uninitialized=false,
+					 int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION)
     {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
         list fpu_id_list = dict_waveforms.keys();
         const int nkeys = len(fpu_id_list);
 
@@ -769,7 +923,8 @@ public:
             wform.steps = steps;
             wtable.push_back(wform);
         }
-        E_DriverErrCode ecode = configMotion(wtable, grid_state, check_protection);
+        E_DriverErrCode ecode = configMotion(wtable, grid_state, fpuset, soft_protection,
+					     allow_uninitialized, ruleset_version);
         checkDriverError(ecode);
         return ecode;
 
@@ -782,69 +937,203 @@ public:
         return grid_state;
     }
 
-    E_DriverErrCode wrap_initializeGrid(WrapGridState& grid_state)
+    E_DriverErrCode wrap_initializeGrid(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = initializeGrid(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = initializeGrid(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_resetFPUs(WrapGridState& grid_state)
+    E_DriverErrCode wrap_resetFPUs(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = resetFPUs(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = resetFPUs(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
 
     }
 
-    E_DriverErrCode wrap_pingFPUs(WrapGridState& grid_state)
+    E_DriverErrCode wrap_pingFPUs(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = pingFPUs(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+        E_DriverErrCode ecode = pingFPUs(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
 
-    E_DriverErrCode wrap_getPositions(WrapGridState& grid_state)
+    E_DriverErrCode wrap_getPositions(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = getPositions(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = getPositions(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_getCounterDeviation(WrapGridState& grid_state)
+    E_DriverErrCode wrap_readRegister(int read_address, WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = getCounterDeviation(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        if ( (read_address > 0xffff) || (read_address < 0))
+        {
+            checkDriverError(DE_INVALID_PAR_VALUE);
+        }
+        const uint16_t raddress = (uint16_t) read_address;
+        E_DriverErrCode ecode = readRegister(raddress, grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_findDatum(WrapGridState& grid_state, E_DATUM_SELECTION arm_selection)
+    E_DriverErrCode wrap_getFirmwareVersion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = findDatum(grid_state, arm_selection);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = getFirmwareVersion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state, E_DATUM_SELECTION arm_selection)
+
+    E_DriverErrCode wrap_getCounterDeviation(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = startFindDatum(grid_state, arm_selection);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = getCounterDeviation(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_waitFindDatum(WrapGridState& grid_state, double max_wait_time)
+    void getDatumFlags(dict& dict_modes, t_datum_search_flags &direction_flags, const t_fpuset &fpuset)
+    {
+        list fpu_id_list = dict_modes.keys();
+        const int nkeys = len(fpu_id_list);
+
+        if (nkeys == 0)
+        {
+            // default -- everything is SEARCH_AUTO
+            for(int i=0; i < MAX_NUM_POSITIONERS; i++)
+            {
+                if (fpuset[i])
+                {
+                    direction_flags[i] = SEARCH_AUTO;
+                }
+                else
+                {
+                    direction_flags[i] = SKIP_FPU;
+                }
+            }
+        }
+        else
+        {
+            for(int i=0; i < MAX_NUM_POSITIONERS; i++)
+            {
+                direction_flags[i] = SKIP_FPU;
+            }
+
+
+            const int num_fpus = getNumFPUs();
+
+            if (nkeys > num_fpus )
+            {
+                throw FPUDriverException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                                         DE_INVALID_FPU_ID);
+            }
+
+
+            for(int i = 0; i < nkeys; i++)
+            {
+                object fpu_key = fpu_id_list[i];
+                int fpu_id = extract<int>(fpu_key);
+
+                if ((fpu_id >= num_fpus) || (fpu_id < 0))
+                {
+                    throw FPUDriverException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                                             DE_INVALID_FPU_ID);
+                }
+
+
+                if (fpuset[fpu_id])
+                {
+                    int mode = extract<int>(dict_modes[fpu_key]);
+                    direction_flags[fpu_id] = static_cast<E_DATUM_SEARCH_DIRECTION>(mode);
+                }
+
+            }
+        }
+    }
+
+    E_DriverErrCode wrap_findDatum(WrapGridState& grid_state,
+                                   dict &dict_modes,
+                                   list& fpu_list,
+                                   E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+                                   E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                                   bool count_protection=true)
+    {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        t_datum_search_flags direction_flags;
+        getDatumFlags(dict_modes, direction_flags, fpuset);
+
+        E_DriverErrCode ecode = findDatum(grid_state, direction_flags,
+                                          arm_selection, timeout_flag,
+                                          count_protection, &fpuset);
+        checkDriverError(ecode);
+        return ecode;
+    }
+
+
+    E_DriverErrCode wrap_startFindDatum(WrapGridState& grid_state,
+                                        dict& dict_modes,
+                                        list& fpu_list,
+                                        E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+                                        E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                                        bool count_protection=true)
+    {
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        t_datum_search_flags direction_flags;
+        getDatumFlags(dict_modes, direction_flags, fpuset);
+
+        E_DriverErrCode ecode = startFindDatum(grid_state,
+                                               direction_flags,
+                                               arm_selection,
+                                               timeout_flag,
+                                               count_protection, &fpuset);
+        checkDriverError(ecode);
+        return ecode;
+    }
+
+    E_DriverErrCode wrap_waitFindDatum(WrapGridState& grid_state, double max_wait_time, list& fpu_list)
     {
         E_DriverErrCode estatus;
         bool finished = false;
 
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+
         // FIXME: should return remaining wait time in tuple
-        estatus =  waitFindDatum(grid_state, max_wait_time, finished);
+        estatus =  waitFindDatum(grid_state, max_wait_time, finished, &fpuset);
 
         if (((! finished) && (estatus == DE_OK))
                 || (estatus == DE_WAIT_TIMEOUT))
         {
             estatus = DE_WAIT_TIMEOUT;
+            // we return because this is not exceptional or an error
             return estatus;
         }
 
@@ -854,31 +1143,41 @@ public:
     }
 
 
-    E_DriverErrCode wrap_executeMotion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_executeMotion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode =executeMotion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode =executeMotion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_startExecuteMotion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_startExecuteMotion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode =startExecuteMotion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode =startExecuteMotion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_waitExecuteMotion(WrapGridState& grid_state, double max_wait_time)
+    E_DriverErrCode wrap_waitExecuteMotion(WrapGridState& grid_state, double max_wait_time, list& fpu_list)
     {
         E_DriverErrCode estatus;
         bool finished = false;
 
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
         // FIXME: should return remaining wait time in tuple
-        estatus =  waitExecuteMotion(grid_state, max_wait_time, finished);
+        estatus =  waitExecuteMotion(grid_state, max_wait_time, finished, fpuset);
         if (((! finished) && (estatus == DE_OK))
                 || (estatus == DE_WAIT_TIMEOUT))
         {
             estatus = DE_WAIT_TIMEOUT;
+            // we return because this is not exceptional oo an error
             return estatus;
         }
 
@@ -886,23 +1185,32 @@ public:
         return estatus;
     }
 
-    E_DriverErrCode wrap_repeatMotion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_repeatMotion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode =repeatMotion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode =repeatMotion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_reverseMotion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_reverseMotion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode =reverseMotion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = reverseMotion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_abortMotion(WrapGridState& grid_state)
+    E_DriverErrCode wrap_abortMotion(WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode =abortMotion(grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = abortMotion(grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
@@ -915,9 +1223,12 @@ public:
         return ecode;
     }
 
-    E_DriverErrCode wrap_setUStepLevel(int ustep_level, WrapGridState& grid_state)
+    E_DriverErrCode wrap_setUStepLevel(int ustep_level, WrapGridState& grid_state, list& fpu_list)
     {
-        E_DriverErrCode ecode = setUStepLevel(ustep_level, grid_state);
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_DriverErrCode ecode = setUStepLevel(ustep_level, grid_state, fpuset);
         checkDriverError(ecode);
         return ecode;
     }
@@ -929,21 +1240,39 @@ public:
         return ecode;
     }
 
-    E_DriverErrCode wrap_lockFPU(WrapGridState& grid_state)
+    E_DriverErrCode wrap_lockFPU(int fpu_id, WrapGridState& grid_state)
     {
-        E_DriverErrCode ecode =lockFPU(grid_state);
+        E_DriverErrCode ecode =lockFPU(fpu_id, grid_state);
         checkDriverError(ecode);
         return ecode;
     }
 
-    E_DriverErrCode wrap_unlockFPU(WrapGridState& grid_state)
+    E_DriverErrCode wrap_unlockFPU(int fpu_id, WrapGridState& grid_state)
     {
-        E_DriverErrCode ecode =unlockFPU(grid_state);
+        E_DriverErrCode ecode =unlockFPU(fpu_id, grid_state);
         checkDriverError(ecode);
         return ecode;
     }
 
+    E_DriverErrCode wrap_readSerialNumbers(WrapGridState& grid_state, list& fpu_list)
+    {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
 
+        E_DriverErrCode ecode = readSerialNumbers(grid_state, fpuset);
+        checkDriverError(ecode);
+        return ecode;
+    }
+
+    E_DriverErrCode wrap_writeSerialNumber(int fpu_id, str serial_number,
+                                           WrapGridState& grid_state)
+    {
+        std::string cpp_serial_number =  extract<std::string>(serial_number);
+
+        E_DriverErrCode ecode = writeSerialNumber(fpu_id, cpp_serial_number.c_str(), grid_state);
+        checkDriverError(ecode);
+        return ecode;
+    }
 
 
 };
@@ -975,6 +1304,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
 
     scope().attr("CAN_PROTOCOL_VERSION") = CAN_PROTOCOL_VERSION;
 
+    scope().attr("DEFAULT_WAVEFORM_RULSET_VERSION") = DEFAULT_WAVEFORM_RULSET_VERSION;
 
     /* define the exception hierarchy */
     FPUDriverExceptionTypeObj = FPUDriverExceptionClass("FPUDriverException");
@@ -982,13 +1312,19 @@ BOOST_PYTHON_MODULE(fpu_driver)
     CollisionErrorExceptionTypeObj = FPUDriverExceptionClass("CollisionError", MovementErrorExceptionTypeObj);
     LimitBreachErrorExceptionTypeObj = FPUDriverExceptionClass("LimitBreachError", MovementErrorExceptionTypeObj);
     AbortMotionErrorExceptionTypeObj = FPUDriverExceptionClass("AbortMotionError", MovementErrorExceptionTypeObj);
+    FirmwareTimeOutExceptionTypeObj = FPUDriverExceptionClass("FirmwareTimeoutError", MovementErrorExceptionTypeObj);
     TimingErrorExceptionTypeObj = FPUDriverExceptionClass("StepTimingError", MovementErrorExceptionTypeObj);
-    InvalidStateExceptionTypeObj = FPUDriverExceptionClass("InvalidState", FPUDriverExceptionTypeObj);
+    InvalidStateExceptionTypeObj = FPUDriverExceptionClass("InvalidStateException", FPUDriverExceptionTypeObj);
     SystemFailureExceptionTypeObj = FPUDriverExceptionClass("SystemFailure", FPUDriverExceptionTypeObj);
-    InvalidParameterExceptionTypeObj  = FPUDriverExceptionClass("InvalidParameter", FPUDriverExceptionTypeObj);
+    InvalidParameterExceptionTypeObj  = FPUDriverExceptionClass("InvalidParameterError", FPUDriverExceptionTypeObj);
     SetupErrorExceptionTypeObj  = FPUDriverExceptionClass("SetupError", InvalidParameterExceptionTypeObj);
     InvalidWaveformExceptionTypeObj = FPUDriverExceptionClass("InvalidWaveformException", InvalidParameterExceptionTypeObj);
     ConnectionFailureExceptionTypeObj = FPUDriverExceptionClass("ConnectionFailure", FPUDriverExceptionTypeObj);
+    SocketFailureExceptionTypeObj = FPUDriverExceptionClass("SocketFailure", ConnectionFailureExceptionTypeObj);
+    CommandTimeoutExceptionTypeObj = FPUDriverExceptionClass("CommandTimeout", ConnectionFailureExceptionTypeObj);
+    CAN_OverflowExceptionTypeObj = FPUDriverExceptionClass("CAN_BufferOverflowException", ConnectionFailureExceptionTypeObj);
+    ProtectionErrorExceptionTypeObj = FPUDriverExceptionClass("ProtectionError", InvalidStateExceptionTypeObj);
+    HardwareProtectionErrorExceptionTypeObj = FPUDriverExceptionClass("HardwareProtectionError", MovementErrorExceptionTypeObj);
 
 
 
@@ -1008,7 +1344,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("FPST_AT_DATUM", FPST_AT_DATUM)
     .value("FPST_LOADING", FPST_LOADING)
     .value("FPST_READY_FORWARD", FPST_READY_FORWARD)
-    .value("FPST_READY_BACKWARD", FPST_READY_BACKWARD)
+    .value("FPST_READY_REVERSE", FPST_READY_REVERSE)
     .value("FPST_MOVING", FPST_MOVING)
     .value("FPST_RESTING", FPST_RESTING)
     .value("FPST_ABORTED", FPST_ABORTED)
@@ -1040,18 +1376,20 @@ BOOST_PYTHON_MODULE(fpu_driver)
        be used by normal driver client code.
      */
     enum_<E_MOC_ERRCODE>("E_MOC_ERRCODE")
-    .value("_ER_OK",ER_OK)
-    .value("_ER_COLLIDE",ER_COLLIDE)
-    .value("_ER_INVALID",ER_INVALID)
-    .value("_ER_WAVENRDY",ER_WAVENRDY)
-    .value("_ER_WAVE2BIG",ER_WAVE2BIG)
-    .value("_ER_TIMING",ER_TIMING)
-    .value("_ER_M1LIMIT",ER_M1LIMIT)
-    .value("_ER_PARAM",ER_PARAM)
-    .value("_ER_OK_UNCONFIRMED",ER_OK_UNCONFIRMED)
-    .value("_ER_TIMEDOUT",ER_TIMEDOUT)
+    .value("_ER_OK", ER_OK)
+    .value("_ER_COLLIDE", ER_COLLIDE)
+    .value("_ER_INVALID", ER_INVALID)
+    .value("_ER_WAVENRDY", ER_WAVENRDY)
+    .value("_ER_WAVE2BIG", ER_WAVE2BIG)
+    .value("_ER_TIMING", ER_TIMING)
+    .value("_ER_M1LIMIT", ER_M1LIMIT)
+    .value("_ER_PARAM", ER_PARAM)
+    .value("_ER_AUTO", ER_AUTO)
+    .value("_ER_OK_UNCONFIRMED", ER_OK_UNCONFIRMED)
+    .value("_ER_TIMEDOUT", ER_TIMEDOUT)
+    .value("_ER_DATUMTO", ER_DATUMTO)
+    .value("_ER_DATUM_LIMIT", ER_DATUM_LIMIT)
     .export_values();
-
 
     enum_<E_CAN_COMMAND>("E_CAN_COMMAND")
     .value("CCMD_NO_COMMAND", CCMD_NO_COMMAND)
@@ -1114,6 +1452,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_STILL_BUSY",DE_STILL_BUSY)
     .value("DE_MAX_RETRIES_EXCEEDED", DE_MAX_RETRIES_EXCEEDED)
     .value("DE_CAN_COMMAND_TIMEOUT_ERROR", DE_CAN_COMMAND_TIMEOUT_ERROR)
+    .value("DE_FIRMWARE_CAN_BUFFER_OVERFLOW", DE_FIRMWARE_CAN_BUFFER_OVERFLOW)
     .value("DE_UNRESOLVED_COLLISION",DE_UNRESOLVED_COLLISION)
     .value("DE_NEW_COLLISION", DE_NEW_COLLISION)
     .value("DE_NEW_LIMIT_BREACH", DE_NEW_LIMIT_BREACH)
@@ -1131,17 +1470,24 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DE_WAVEFORM_NOT_READY", DE_WAVEFORM_NOT_READY)
     .value("DE_NO_MOVABLE_FPUS", DE_NO_MOVABLE_FPUS)
     .value("DE_WAIT_TIMEOUT", DE_WAIT_TIMEOUT)
-    .value("DE_ABORTED_STATE", DE_ABORTED_STATE)
+    .value("DE_IN_ABORTED_STATE", DE_IN_ABORTED_STATE)
+    .value("DE_MOVEMENT_ABORTED", DE_MOVEMENT_ABORTED)
+    .value("DE_DATUM_COMMAND_HW_TIMEOUT", DE_DATUM_COMMAND_HW_TIMEOUT)
+    .value("DE_ALPHA_ARM_ON_LIMIT_SWITCH", DE_ALPHA_ARM_ON_LIMIT_SWITCH)
+    .value("DE_INCONSISTENT_STEP_COUNT", DE_INCONSISTENT_STEP_COUNT)
+    .value("DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH", DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH)
     .value("DE_FPUS_LOCKED", DE_FPUS_LOCKED)
     .value("DE_STEP_TIMING_ERROR", DE_STEP_TIMING_ERROR)
     .value("DE_INVALID_FPU_ID", DE_INVALID_FPU_ID)
     .value("DE_INVALID_FPU_STATE", DE_INVALID_FPU_STATE)
+    .value("DE_PROTECTION_ERROR", DE_PROTECTION_ERROR)
     .value("DE_INVALID_PAR_VALUE", DE_INVALID_PAR_VALUE)
+    .value("DE_DUPLICATE_SERIAL_NUMBER", DE_DUPLICATE_SERIAL_NUMBER)
     .value("DE_INVALID_CONFIG", DE_INVALID_CONFIG)
     .value("DE_INVALID_DRIVER_STATE", DE_INVALID_DRIVER_STATE)
     .value("DE_OUT_OF_MEMORY", DE_OUT_OF_MEMORY)
     .value("DE_RESOURCE_ERROR", DE_RESOURCE_ERROR)
-    .value("DE_UNIMPLEMENTED", DE_UNIMPLEMENTED)
+    .value("DE_FIRMWARE_UNIMPLEMENTED", DE_FIRMWARE_UNIMPLEMENTED)
     .export_values();
 
     enum_<E_GridState>("E_GridState")
@@ -1153,7 +1499,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("GS_AT_DATUM", GS_AT_DATUM     )
     .value("GS_LOADING", GS_LOADING         )
     .value("GS_READY_FORWARD", GS_READY_FORWARD   )
-    .value("GS_READY_BACKWARD", GS_READY_BACKWARD  )
+    .value("GS_READY_REVERSE", GS_READY_REVERSE  )
     .value("GS_MOVING", GS_MOVING          )
     .value("GS_FINISHED", GS_FINISHED        )
     .value("GS_COLLISION", GS_COLLISION       )
@@ -1165,6 +1511,14 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("REQD_ANTI_CLOCKWISE", REQD_ANTI_CLOCKWISE  )
     .value("REQD_CLOCKWISE", REQD_CLOCKWISE       )
     .export_values();
+
+
+    enum_<E_DATUM_TIMEOUT_FLAG>("E_DATUM_TIMEOUT_FLAG")
+    .value("DATUM_TIMEOUT_ENABLE", DATUM_TIMEOUT_ENABLE)
+    .value("DATUM_TIMEOUT_DISABLE", DATUM_TIMEOUT_DISABLE)
+    .export_values();
+
+
 
     // direction of the current or last actually recorded movement of each FPU
     enum_<E_MOVEMENT_DIRECTION>("E_MOVEMENT_DIRECTION")
@@ -1186,12 +1540,22 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .value("DASEL_BETA",   DASEL_BETA)
     .export_values();
 
+
+    // operation mode for datum command
+    enum_<E_DATUM_SEARCH_DIRECTION>("E_DATUM_SEARCH_DIRECTION")
+    .value("SEARCH_CLOCKWISE",       SEARCH_CLOCKWISE)
+    .value("SEARCH_ANTI_CLOCKWISE",  SEARCH_ANTI_CLOCKWISE)
+    .value("SEARCH_AUTO",            SEARCH_AUTO)
+    .value("SKIP_FPU",               SKIP_FPU)
+    .export_values();
+
     class_<WrapFPUState>("FPUState")
     .def_readonly("state", &WrapFPUState::state)
     .def_readonly("last_command", &WrapFPUState::last_command)
     .def_readonly("last_status", &WrapFPUState::last_status)
     .def_readonly("alpha_steps", &WrapFPUState::alpha_steps)
     .def_readonly("beta_steps", &WrapFPUState::beta_steps)
+    .def_readonly("ping_ok", &WrapFPUState::ping_ok)
     .def_readonly("alpha_deviation", &WrapFPUState::alpha_deviation)
     .def_readonly("beta_deviation", &WrapFPUState::beta_deviation)
     .def_readonly("timeout_count", &WrapFPUState::timeout_count)
@@ -1211,6 +1575,15 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("waveform_ready", &WrapFPUState::waveform_ready)
     .def_readonly("waveform_reversed", &WrapFPUState::waveform_reversed)
     .def_readonly("pending_command_set", &WrapFPUState::pending_command_set)
+    .def_readonly("register_address", &WrapFPUState::register_address)
+    .def_readonly("fw_version_major", &WrapFPUState::fw_version_major)
+    .def_readonly("fw_version_minor", &WrapFPUState::fw_version_minor)
+    .def_readonly("fw_version_patch", &WrapFPUState::fw_version_patch)
+    .def_readonly("fw_date_year", &WrapFPUState::fw_date_year)
+    .def_readonly("fw_date_month", &WrapFPUState::fw_date_month)
+    .def_readonly("fw_date_day", &WrapFPUState::fw_date_day)
+    .def_readonly("register_value", &WrapFPUState::register_value)
+    .def_readonly("serial_number", &WrapFPUState::serial_number)
     .def("__repr__", &WrapFPUState::to_repr)
     ;
 
@@ -1228,6 +1601,7 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def_readonly("FPU", &WrapGridState::getStateVec)
     .def_readonly("Counts", &WrapGridState::getCounts)
     .def_readonly("count_timeout", &WrapGridState::count_timeout)
+    .def_readonly("count_can_overflow", &WrapGridState::count_can_overflow)
     .def_readonly("count_pending", &WrapGridState::count_pending)
     .def_readonly("driver_state", &WrapGridState::driver_state)
     .def("__str__", &WrapGridState::to_string)
@@ -1241,7 +1615,15 @@ BOOST_PYTHON_MODULE(fpu_driver)
 
     class_<GridDriverConfig>("GridDriverConfig", init<>())
     .def_readwrite("num_fpus", &GridDriverConfig::num_fpus)
+    .def_readwrite("alpha_datum_offset", &GridDriverConfig::alpha_datum_offset)
+    .def_readwrite("motor_minimum_frequency", &GridDriverConfig::motor_minimum_frequency)
+    .def_readwrite("motor_maximum_frequency", &GridDriverConfig::motor_maximum_frequency)
+    .def_readwrite("motor_max_start_frequency", &GridDriverConfig::motor_max_start_frequency)
+    .def_readwrite("motor_max_rel_increase", &GridDriverConfig::motor_max_rel_increase)
     .def_readwrite("logLevel", &GridDriverConfig::logLevel)
+    .def_readwrite("waveform_upload_pause_us", &GridDriverConfig::waveform_upload_pause_us)
+    .def_readwrite("firmware_version_address_offset", &GridDriverConfig::firmware_version_address_offset)	
+    .def_readwrite("confirm_each_step", &GridDriverConfig::confirm_each_step)
     .def_readwrite("SocketTimeOutSeconds", &GridDriverConfig::SocketTimeOutSeconds)
     .def_readwrite("TCP_IdleSeconds", &GridDriverConfig::TCP_IdleSeconds)
     .def_readwrite("TCP_KeepaliveIntervalSeconds", &GridDriverConfig::TCP_KeepaliveIntervalSeconds)
@@ -1274,9 +1656,13 @@ BOOST_PYTHON_MODULE(fpu_driver)
     .def("abortMotion", &WrapGridDriver::wrap_abortMotion)
     .def("freeBetaCollision", &WrapGridDriver::wrap_freeBetaCollision)
     .def("setUStepLevel", &WrapGridDriver::wrap_setUStepLevel)
+    .def("readRegister", &WrapGridDriver::wrap_readRegister)
+    .def("getFirmwareVersion", &WrapGridDriver::wrap_getFirmwareVersion)
     .def("enableBetaCollisionProtection", &WrapGridDriver::wrap_enableBetaCollisionProtection)
     .def("lockFPU", &WrapGridDriver::lockFPU)
     .def("unlockFPU", &WrapGridDriver::unlockFPU)
+    .def("writeSerialNumber", &WrapGridDriver::wrap_writeSerialNumber)
+    .def("readSerialNumbers", &WrapGridDriver::wrap_readSerialNumbers)
     .def_readonly("NumFPUs", &WrapGridDriver::getNumFPUs)
     ;
 

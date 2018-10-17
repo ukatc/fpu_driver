@@ -55,7 +55,7 @@ public:
 
     typedef int t_command_mask;
 
-    CommandQueue(const GridDriverConfig config_values);
+    explicit CommandQueue(const GridDriverConfig &config_values);
 
     // set number of active gateways for which queue is polled
     void setNumGateways(int ngws);
@@ -103,7 +103,9 @@ public:
     // should be discarded.
     void flushToPool(CommandPool& memory_pool);
 
+#if 0    
     int getNumQueuedCommands();
+#endif    
 
     void setEventDescriptor(int fd);
 

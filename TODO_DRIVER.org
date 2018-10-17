@@ -186,27 +186,93 @@ when the internal state struct is used.
 *** DONE Add log levels as discussed
 *** DONE add separate reporting/logging of results
 ** DONE document logging
-** TODO 0.5.4: Tutorial, fix description of findDatum option selected_arm
+** DONE 0.5.4: Tutorial, fix description of findDatum option selected_arm
 *** DONE replace reference to old version, 
-*** TODO proof-read tutorial again
-*** TODO add print_function to imports from __future__ everywhere
+*** DONE proof-read tutorial again
+*** DONE add print_function to imports from __future__ everywhere
 *** DONE fix swallowing of OBSTACLE_ERROR in finishMotion
-** TODO add outstanding features for verification system
-*** TODO discern SocketFailure from FPUTimeoutError
-*** TODO extend spec to autoDatum and firmwareVersion flags
-*** TODO control direction of datum command and add automatic datum flag
-*** TODO add readRegister command
-*** TODO add  readFirmwareVersion command
-*** TODO test firmware version in findDatum command
-*** TODO add addressing a subset of FPUs 
-*** TODO add reporting of total number of steps
-*** TODO add reporting number of movements
-*** TODO pack release 0.6.0
-** TODO make Thorlabs automation available to Python
+** DONE Flash etherCAN gateways with different IPs and MACs
+** DONE add outstanding features for verification system
+*** DONE discern SocketFailure from FPUTimeoutError
+*** DONE extend spec to autoDatum and firmwareVersion flags
+*** DONE control direction of datum command and add automatic datum flag
+**** DONE test denial of auto with firmware < 1.2
+**** DONE extend simfirmware to ignore beta, mirror flags
+**** DONE test DASEL_ALPHA, DASEL_BOTH
+**** DONE test SEARCH_AUTO, SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE
+**** DONE test protection flag (switch off denial)
+**** DONE add readRegister command
+**** DONE add  readFirmwareVersion command
+**** DONE test firmware version in findDatum command
+**** DONE document orientation ~ steps in tutorial
+**** DONE document new exceptions for ProtectionError, TimeoutError
+**** DONE document changes to findDatum
+**** DONE document readRegister, getVersionInformation
+*** DONE add addressing a subset of FPUs 
+*** DONE rename *_BACKWARD to $_REVERSE
+*** DONE test AutoDatum
+*** DONE pack release 0.6.0
+*** DONE add reading/writing serial number
+*** DONE change datum reference default
+*** DONE add count of allowed freeBetaCollision attempts
+*** DONE separate out driver constants (gear ratios)
+*** DONE change movement commands (findDatum,executeMotion,freeBetaCollision) so that the ping_ok field is cleared on confirmation
+*** DONE update Steven's picture on FPU motor ranges
+*** DONE format serial number in printSerialNumbers() with repr()
+*** DONE install LMDB on moons-pc01
+*** DONE install eigen on moons-pc01
+*** DONE read intro into LMDB usage
+*** DONE add hook for ping
+*** DONE add hook for reset
+*** DONE add hook for findDatum
+*** DONE add hook for freeBetaCollision
+*** DONE add hook for configMotion
+*** DONE add hook for executeMotion
+*** DONE Add reading the alpha limit switch state from register
+*** DONE Add ER_DATUMTO error code
+*** DONE add reporting number of movements
+*** DONE add reporting of total number of steps
+*** DONE fix torn paragraph in state machine description
+*** DONE add counters for total number of movements etc
+*** DONE add and evaluate error codes for datum time-out / datum rejected because on limit switch
+*** TODO add explanation to rounding in gen_wf() to tutorial
+*** TODO add unit="steps" option to gen_wf()
+** DONE change default directory for position DB to /var/lib, update documentation
+** DONE add "--gateway_address" option to admin tool
+** DONE fix underflow / overflow of step counter after reset in simulation code
+** DONE take underflow / overflow value of step counter into account in protection layer
+** DONE enhance abort error message for illegal step count:
+*** DONE generate exception
+*** DONE report offset
+*** DONE report step counter
+*** DONE report expected range
+** DONE add version number to waveform validation code
+** DONE create waveform validation check which matches the ICD document 
+** DONE Update lifetime test script to stricter waveform rule
+** DONE add documentation for waveform ruleset versions
+** DONE make waveform upload parameters configurable
+** DONE add script which collects and prints parameters of generated waveforms
+** DONE Test lifetime script with alpha_max = 0
+** DONE check for CAN buffer overflow in MOC (HW/SW)
+** DONE check overflow error count, add print of total overflow count in wrapper
+** DONE provide wait time configuration for configMotion command
+** DONE Add some logging for protection layer:
+*** DONE log start-up time
+*** DONE log driver version
+*** DONE log firmware versions
+*** DONE log updated counter offsets on reset / start
+** DONE support (configurable ?) new storage location of FPU version number
+** DONE match simulated firmware version response to new driver version
+** DONE add configPath() method for absolute positioning with mandatory rounding parameter
+** DONE fix bug with summed step counter where numbers are too low
+** DONE re-test path generator output with waveform checker script, and driver
+** TODO Update CAN overflow error codes in communication protocol
 ** TODO  clean-up of version 1 code
+*** DONE run short stress test of firmware with CAN command logging
+*** DONE make wording of direction orientation more precise
 *** TODO Add state filtering to command precondition check
 *** TODO Fix caching in TimeOutList
-*** TODO run short stress test of firmware with CAN command logging
+*** TODO Unit test of TimeOutList
 *** TODO Refactor duplicate code in command header encoding
 *** TODO split SBuffer in independent read buffer and write buffer ?   
 ** TODO Implement CAN Protocol V2
@@ -222,14 +288,15 @@ when the internal state struct is used.
 *** DONE [?] Do PySerial experiments
 *** DONE Check protocol for turntable / controller
 *** TODO fix python library for NR360, parametrize models
-
-* TODO Integrate path analysis script into MOONS shared library
+** DONE make Thorlabs automation available to Python
+     
+* TODO Integrate FMA path analysis script into MOONS shared library
 ** DONE do a git-svn pull of library
-** TODO integrate test values into test folder
-** TODO convert (r,theta) coordinates to FPU coordinates
+** DONE integrate test values into test folder
+** DONE convert (r,theta) coordinates to FPU coordinates
    (observing curvature of focal surface)
-** TODO extend avoidance model
-** TODO do tests
+** DONE extend avoidance model
+** DONE do tests
 
 
 

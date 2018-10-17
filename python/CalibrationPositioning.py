@@ -5,12 +5,16 @@ positions and calls a measurement function at each position.
 """
 
 import time
+import os
+import readline
 import argparse
+
 import numpy
 from numpy import random, asarray, zeros, ones
 
 import FpuGridDriver
-from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST, GatewayAddress
+from FpuGridDriver import (TEST_GATEWAY_ADRESS_LIST, GatewayAddress,
+                           SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE)
 from fpu_commands import *
 
 
@@ -56,7 +60,7 @@ def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
 
     
 def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
-                     return_to_datum=True, deviation_list=[]):
+                     return_to_datum=True, deviation_list=[], args=None):
 
     #gd.pingFPUs(grid_state)
     positions = asarray(list_angles(grid_state))
@@ -79,12 +83,12 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
 
     if return_to_datum:
         printtime()
-        if (alpha0 == 0).all() and (beta0 == 0).all():
-            print("now moving back to ({},{})".format(0, 0))
+        if (alpha0 == args.alpha_datum_pos).all() and (beta0 == args.beta_datum_pos).all():
+            print("now moving back to ({},{})".format(args.alpha_datum_pos, args.beta_datum_pos))
             gd.reverseMotion(grid_state)
             gd.executeMotion(grid_state)
         else:
-            move_fpu(gd, grid_state, -alpha, -beta, "return" )
+            move_fpu(gd, grid_state, -alpha + 0.5, -beta + 0.5, "return to origin" )
 
         printtime()
         print("position:", list_angles(grid_state), "steps=", list_positions(grid_state, show_zeroed=False))
@@ -112,7 +116,8 @@ def parse_args():
                         help='set gateway address to use mock-up gateway and FPU')
 
     parser.add_argument('--resetFPU',   default=False, action='store_true',
-                        help='reset FPU so that earlier aborts / collisions are ignored')
+                        help='reset FPU so that earlier aborts / collisions are ignored (does not work '
+                        'with driver 0.7.x because FPU must be initialized before an automatic datum search)')
 
     parser.add_argument('--gateway_port', metavar='GATEWAY_PORT', type=int, default=4700,
                         help='EtherCAN gateway port number (default: %(default)s)')
@@ -123,13 +128,19 @@ def parse_args():
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=1,
                         help='Number of adressed FPUs. For the deterministic patterns, the FPUs will be steered in unison. For the raodnom patterns, each FPU will receive a random value. WARNING: No conflict checking is done.  (default: %(default)s)')
     
-    parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=0.0,
+    parser.add_argument('--alpha_datum_pos', metavar='ALPHA_DATUM_POS', type=float, default=-180.0,
+                        help='alpha datum position  (default: %(default)s)')
+
+    parser.add_argument('--beta_datum_pos', metavar='beta_DATUM_POS', type=float, default=0.0,
+                        help='beta datum position  (default: %(default)s)')
+    
+    parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=-180.0,
                         help='minimum alpha value  (default: %(default)s)')
-    parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=360.0,
+    parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=172.0,
                         help='maximum alpha value  (default: %(default)s)')
-    parser.add_argument('--beta_min', metavar='BETA_MIN', type=float, default=-180.0,
+    parser.add_argument('--beta_min', metavar='BETA_MIN', type=float, default=-179.0,
                         help='minimum beta value  (default: %(default)s)')
-    parser.add_argument('--beta_max', metavar='BETA_MAX', type=float, default=130.0,
+    parser.add_argument('--beta_max', metavar='BETA_MAX', type=float, default=150.0,
                         help='maximum beta value  (default: %(default)s)')
 
     parser.add_argument('--chill_time', metavar='CHILL_TIME', type=float, default=1,
@@ -183,7 +194,11 @@ def initialize_FPU(args):
     # We monitor the FPU grid by a variable which is
     # called grid_state, and reflects the state of
     # all FPUs.
+
     grid_state = gd.getGridState()
+    
+    gd.pingFPUs(grid_state)
+    
 
     if args.resetFPU:
         print("resetting FPU")
@@ -192,6 +207,7 @@ def initialize_FPU(args):
 
     # Now, we issue a findDatum method. In order to know when and how
     # this command finished, we pass the grid_state variable.
+        
     print("issuing findDatum:")
     gd.findDatum(grid_state)
     print("findDatum finished")
@@ -296,7 +312,8 @@ def iterate_positions(args, seq, gd, grid_state, metrology_func=None, deviation_
     for alpha, beta, go_datum in seq:
         print("measuring at ({},{}), datum={}".format(alpha, beta, go_datum))
         measure_position(gd, grid_state, alpha, beta, return_to_datum=go_datum,
-                         metrology_func=metrology_func, deviation_list=deviation_list)
+                         metrology_func=metrology_func, deviation_list=deviation_list,
+                         args=args)
         
         if args.chill_time > 10:
             print("waiting %f seconds for fpu to cool off" % args.chill_time)

@@ -44,7 +44,7 @@ class CommandPool
 {
 public:
 
-    CommandPool(const GridDriverConfig config_vals):
+    explicit CommandPool(const GridDriverConfig &config_vals):
         config(config_vals)
     {
     };

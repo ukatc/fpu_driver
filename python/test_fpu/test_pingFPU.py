@@ -1,8 +1,7 @@
 from __future__ import print_function
 
 import FpuGridDriver
-from FpuGridDriver import TEST_GATEWAY_ADRESS_LIST
-
+from FpuGridDriver import *
 from fpu_commands import *
 
 NUM_FPUS = 1

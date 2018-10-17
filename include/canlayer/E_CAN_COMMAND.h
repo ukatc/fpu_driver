@@ -50,7 +50,7 @@ enum E_CAN_COMMAND
     CCMD_READ_REGISTER                    = 6, // read register - unused
     CCMD_PING_FPU                         = 7, // check connectivity
     CCMD_RESET_FPU                        = 8, // reset MCU
-    CCMD_FIND_DATUM                  = 9, // "automatic" datum search
+    CCMD_FIND_DATUM                       = 9, // "automatic" datum search
     CCMD_RESET_STEPCOUNTER                = 10, // only for debugging
     CCMD_REPEAT_MOTION                    = 11, // re-use last waveform
     CCMD_REVERSE_MOTION                   = 12, // invert last waveform
@@ -60,10 +60,12 @@ enum E_CAN_COMMAND
 
 #if (CAN_PROTOCOL_VERSION == 1)
     // the next two are combined in version 2
-    CCMD_GET_ERROR_ALPHA                  = 16, // get residue count at last datum hit
-    CCMD_GET_ERROR_BETA                   = 17, // get residue count at last datum hit
+    CCMD_GET_ERROR_ALPHA                  = 16, // get residue alpha count at last datum hit
+    CCMD_GET_ERROR_BETA                   = 17, // get residue beta count at last datum hit
+    CCMD_READ_SERIAL_NUMBER               = 18, // read serial number from NVRAM
+    CCMD_WRITE_SERIAL_NUMBER              = 19, // write serial number to NVRAM
 
-    NUM_CAN_COMMANDS = 18,
+    NUM_CAN_COMMANDS = 20,
 #else
     // commands which are not yet implemented
     CCMD_GET_COUNTER_DEVIATION            = 16, // get alpha and beta residue count
@@ -74,8 +76,10 @@ enum E_CAN_COMMAND
     CCMD_SET_TICKS_PER_SEGMENT            = 21, // set movement time interval
     CCMD_SET_STEPS_PER_SEGMENT            = 22, // set minimum step frequency
     CCMD_ENABLE_MOVE                      = 23, // leave aborted state
+    CCMD_READ_SERIAL_NUMBER               = 24, // read serial number from NVRAM
+    CCMD_WRITE_SERIAL_NUMBER              = 25, // write serial number to NVRAM
 
-    NUM_CAN_COMMANDS = 24,
+    NUM_CAN_COMMANDS = 26,
 
 #endif
 
@@ -89,12 +93,15 @@ enum E_CAN_COMMAND
     CMSG_FINISHED_DATUM      = 104, // findDatum finished
     CMSG_WARN_COLLISION_BETA = 105, // collision at beta arm
     CMSG_WARN_LIMIT_ALPHA    = 106, // limit switch at alpha arm
+    CMSG_WARN_RACE           = 107, // step timing error
+    CMSG_WARN_CANOVERFLOW    = 108, // CAN buffer overflow warning
 #else
-    CMSG_FINISHED_MOTION     = 23, // executeMotion finished
-    CMSG_FINISHED_DATUM      = 24, // findDatum finished
-    CMSG_WARN_COLLISION_BETA = 25, // collision at beta arm
-    CMSG_WARN_LIMIT_ALPHA    = 26, // limit switch at alpha arm
-    CMSG_WARN_TIMEOUT_DATUM  = 27, // datum search time out
+    CMSG_FINISHED_MOTION     = 26, // executeMotion finished
+    CMSG_FINISHED_DATUM      = 27, // findDatum finished
+    CMSG_WARN_COLLISION_BETA = 28, // collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA    = 29, // limit switch at alpha arm
+    CMSG_WARN_TIMEOUT_DATUM  = 30, // datum search time out
+    CMSG_WARN_CANOVERFLOW    = 31, // CAN buffer overflow warning
 #endif
 
 };
@@ -115,9 +122,14 @@ enum E_MOC_ERRCODE
     ER_TIMING         = 0x07,   // step timing error (interrupt race condition)
     ER_M1LIMIT        = 0x08,   // M1 Limit switch breached
     ER_M2LIMIT        = 0x09,   // no longer used
+    ER_CANOVRS        = 0x0A,   // can overflow firmware software buffer
+    ER_CANOVRH        = 0x0B,   // can overflow FPU hardware buffer
     ER_PARAM          = 0x10,   // parameter out of range
-    ER_OK_UNCONFIRMED = 0x11,   // command will not be confirmed if OK
-    ER_TIMEDOUT       = 0x12,   // command hit time-out
+    ER_AUTO           = 0x11,   // FPU step counters not initialized, cannot datum automatically
+    ER_DATUMTO        = 0x12,   // hardware error: datum search timed out by firmware
+    ER_DATUM_LIMIT    = 0x13,   // datum search denied, limit switch is active
+    ER_OK_UNCONFIRMED = 0x14,   // command will not be confirmed if OK
+    ER_TIMEDOUT       = 0x15,   // command hit driver time-out
 };
 
 
@@ -140,8 +152,20 @@ enum E_FPU_STATUS_BITS
 
 enum E_DATUM_SKIP_FLAG
 {
-    DATUM_SKIP_ALPHA = 1,
+    DATUM_SKIP_ALPHA = (1 << 0),
     DATUM_SKIP_BETA = (1 << 1),
+};
+
+enum E_DATUM_MODE_FLAG
+{
+    MODE_DATUM_AUTO = (1 << 2),
+    MODE_DATUM_ANTI_CLOCKWISE = (1 << 3),
+};
+
+enum E_DATUM_TIMEOUT_FLAG
+{
+    DATUM_TIMEOUT_ENABLE  = 0,
+    DATUM_TIMEOUT_DISABLE = (1 << 4),
 };
 
 

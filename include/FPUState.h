@@ -21,6 +21,7 @@
 #define FPU_STATE_H
 
 #include "canlayer/E_CAN_COMMAND.h"
+#include "canlayer/CAN_Constants.h"
 #include <time.h>
 
 namespace mpifps
@@ -39,7 +40,7 @@ enum E_FPU_STATE
     FPST_AT_DATUM                = 4,
     FPST_LOADING                 = 5,
     FPST_READY_FORWARD           = 6,
-    FPST_READY_BACKWARD          = 7,
+    FPST_READY_REVERSE          = 7,
     FPST_MOVING                  = 8,
     FPST_RESTING                 = 9,
     FPST_ABORTED                 = 10,
@@ -70,6 +71,9 @@ typedef struct __attribute__((packed)) tout_entry
     uint8_t cmd_code;
 } tout_entry;
 
+// length of serial number string in state structure
+const int LEN_SERIAL_NUMBER = (canlayer::DIGITS_SERIAL_NUMBER + 1);
+
 typedef struct __attribute__((packed)) t_fpu_state
 {
     // time when any running command is considered timed out
@@ -78,8 +82,12 @@ typedef struct __attribute__((packed)) t_fpu_state
     tout_entry cmd_timeouts[MAX_NUM_TIMEOUTS];
     // this uses the monotonic system time (roughly, seconds since booting)
     timespec last_updated;
+    // zero-terminated serial number of FPU, stored in controller NVRAM
+    char serial_number[LEN_SERIAL_NUMBER];
     // set of any still running and incomplete commands
     uint32_t pending_command_set;
+    uint8_t firmware_version[3];
+    uint8_t firmware_date[3];
 
     // current state of FPU
     E_FPU_STATE state;
@@ -89,7 +97,7 @@ typedef struct __attribute__((packed)) t_fpu_state
     E_CAN_COMMAND last_command;
     // motion controller status response for last command
     E_MOC_ERRCODE last_status; /* note this is very low-level
-                                  information which should only used
+                                  information which should only be used
                                   by the CAN driver */
 
     // these members are the individual values
@@ -105,9 +113,12 @@ typedef struct __attribute__((packed)) t_fpu_state
     // occur at higher microstepping levels, if the time is not long
     // enough for the microcontroller to compute the step frequency.
     uint16_t step_timing_errcount;
+    uint16_t can_overflow_errcount;
     E_MOVEMENT_DIRECTION direction_alpha;
     E_MOVEMENT_DIRECTION direction_beta;
     int8_t num_active_timeouts;
+    uint16_t register_address;
+    uint8_t register_value;  // single-byte response value for readRegister command
     uint8_t sequence_number; // number of last pending / received command
     unsigned int num_waveform_segments: 9; /* number of loaded waveform segements */
     unsigned int alpha_was_zeroed: 1; /* alpha steps are validly calibrated by

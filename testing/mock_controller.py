@@ -17,7 +17,7 @@ from gevent import sleep, spawn, spawn_later
 #  number of buses on one gateway
 BUSES_PER_GATEWAY =  5
 # number of FPUs on one CAN bus
-FPUS_PER_BUS = 67
+FPUS_PER_BUS = 76
 
 CAN_PROTOCOL_VERSION = 1
 
@@ -29,7 +29,7 @@ CCMD_EXECUTE_MOTION                   = 2 # execute loaded waveform
 CCMD_ABORT_MOTION                     = 3 # abort any ongoing movement
     
 
-CCMD_READ_REGISTER                    = 6 # read register - unused
+CCMD_READ_REGISTER                    = 6 # read register
 CCMD_PING_FPU                         = 7 # check connectivity
 CCMD_RESET_FPU                        = 8 # reset MCU
 CCMD_FIND_DATUM                       = 9 # "automatic" datum search
@@ -48,8 +48,10 @@ if CAN_PROTOCOL_VERSION == 1:
     # the next two are combined in version 2
     CCMD_GET_ERROR_ALPHA                  = 16 # get residue count at last datum hit
     CCMD_GET_ERROR_BETA                   = 17 # get residue count at last datum hit
-    
-    NUM_CAN_COMMANDS = 18
+
+    CCMD_READ_SERIAL_NUMBER               = 18 # read serial number from NVRAM
+    CCMD_WRITE_SERIAL_NUMBER              = 19 # write serial number to NVRAM
+    NUM_CAN_COMMANDS = 20
     
     # code 101 unused 
     # code 102 unused 
@@ -57,6 +59,8 @@ if CAN_PROTOCOL_VERSION == 1:
     CMSG_FINISHED_DATUM                = 104 #  findDatum finished
     CMSG_WARN_COLLISION_BETA           = 105 #  collision at beta arm
     CMSG_WARN_LIMIT_ALPHA              = 106 #  limit switch at alpha arm
+    CMSG_WARN_RACE                     = 107 #  step timing error
+    CMSG_WARN_CANOVERFLOW              = 108 #  CAN overflow
 else:
     CCMD_LOCK_UNIT                        = 4 # ignore any command except reset and unlock
     CCMD_UNLOCK_UNIT                      = 5 # listen to commands again
@@ -68,16 +72,18 @@ else:
     CCMD_FREE_ALPHA_LIMIT_BREACH          = 19 # untangle alpha arm
     CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    = 20 # re-enable limit switch
     CCMD_SET_TIME_STEP                    = 21 # set movement time interval
-    CCMD_SET_STEPS_PER_FRAME               = 22 # set minimum step frequency
+    CCMD_SET_STEPS_PER_FRAME              = 22 # set minimum step frequency
     CCMD_ENABLE_MOVE                      = 23 # set minimum step frequency
-
-    CMSG_FINISHED_MOTION               = 23 # executeMotion finished
-    CMSG_FINISHED_DATUM                = 24 # findDatum finished
-    CMSG_WARN_COLLISION_BETA           = 25 # collision at beta arm
-    CMSG_WARN_LIMIT_ALPHA              = 26 # limit switch at alpha arm
-    CMSG_WARN_TIMEOUT_DATUM            = 27 # datum search time out
+    CCMD_READ_SERIAL_NUMBER               = 24 # read serial number from NVRAM
+    CCMD_WRITE_SERIAL_NUMBER              = 25 # write serial number to NVRAM
+                                          
+    CMSG_FINISHED_MOTION                  = 26 # executeMotion finished
+    CMSG_FINISHED_DATUM                   = 27 # findDatum finished
+    CMSG_WARN_COLLISION_BETA              = 28 # collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA                 = 29 # limit switch at alpha arm
+    CMSG_WARN_TIMEOUT_DATUM               = 30 # datum search time out
     
-    NUM_CAN_COMMANDS = 24
+    NUM_CAN_COMMANDS = 30
 
 
 # error codes
@@ -90,7 +96,13 @@ ER_WAVE2BIG         = 0x06        #  waveform exceeds memory allocation
 ER_TIMING           = 0x07        #  step timing error (interrupt race condition)
 ER_M1LIMIT          = 0x08        #  M1 Limit switch breached
 ER_M2LIMIT          = 0x09        #  no longer used
+ER_CANOVRS          = 0x0A        #  CAN overflow firmware software buffer
+ER_CANOVRH          = 0x0B        #  CAN overflow FPU hardware buffer
 ER_PARAM            = 0x10        #  parameter out of range
+ER_AUTO             = 0x11        #  FPU cannot datum automatically
+ER_DATUMTO          = 0x12        #  hardware error: datum search timed out by firmware
+ER_DATUM_LIMIT      = 0x13        #  datum search denied, limit switch is active
+# (note: the driver uses additional internal status codes)
 
 
 # status flags
@@ -107,7 +119,9 @@ STBT_REVERSE_WAVE    = 1 << 7   #  waveform to be run in reverse
 
 DATUM_SKIP_ALPHA = 1
 DATUM_SKIP_BETA = (1 << 1)
-
+DATUM_MODE_AUTO = (1 << 2)
+DATUM_MODE_ANTI_CLOCKWISE = (1 << 3)
+DATUM_TIMEOUT_DISABLE = (1 << 4)
 
 def encode_and_send(msg, socket, verbose=False):
     confirmation = codec.encode(msg, verbose=verbose)
@@ -117,7 +131,13 @@ def encode_and_send(msg, socket, verbose=False):
 def fold_stepcount_alpha(val):
     low_limit = - 10000
     vrange = 1 << 16
-    assert( (val >= low_limit) and (val < (low_limit + vrange)))
+    # As specified in protcol,
+    # cap underflow / overflow values to representable range
+    if val < low_limit:
+        val = low_limit
+    if val > low_limit + vrange:
+        val = low_limit + vrange
+
     # convert to unsigned 16-bit number
             
     if val < 0:
@@ -128,7 +148,11 @@ def fold_stepcount_alpha(val):
 def fold_stepcount_beta(val):
     low_limit = - 0x8000
     vrange = 1 << 16
-    assert( (val >= low_limit) and (val < (low_limit + vrange)))
+    # cap underflow / overflow values to representable range
+    if val < low_limit:
+        val = low_limit
+    if val > low_limit + vrange:
+        val = low_limit + vrange
     # convert to unsigned 16-bit number
             
     if val < 0:
@@ -230,6 +254,17 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
     except RuntimeError:
         tx3_errflag = 0xff
         tx4_errcode = ER_INVALID
+    except BufferError:
+        tx3_errflag = 0xff
+        tx4_errcode = ER_CANOVRH
+        command_id = CMSG_WARN_CANOVERFLOW
+    except OverflowError:
+        tx3_errflag = 0xff
+        tx4_errcode = ER_CANOVRS
+        command_id = CMSG_WARN_CANOVERFLOW
+        
+        
+        
 
 
     if CAN_PROTOCOL_VERSION == 1:
@@ -382,115 +417,6 @@ def handle_GetErrorBeta(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX 
 
 
-def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
-        
-    print("starting findDatum for FPU %i" % fpu_id)
-
-    if len(RX) < 8:
-        print("CAN command format error, length must be 8");
-        return []
-
-    ## gateway header
-    
-    tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_adr_bus
-    
-    TH = [ 0 ] * 3
-    TH[0] = bus_adr
-    TH[1] = (tx_canid & 0xff)
-    TH[2] = ((tx_canid >> 8) & 0xff)
-
-    TX = [0] * 8
-    TX[0] = fpu_adr_bus
-    
-    command_id = RX[0]
-    TX[1] = command_id
-    TX[2] = getStatus(FPUGrid[fpu_id])
-    
-    TX[5] = dummy0 = 0
-    TX[6] = dummy1 = 0
-    TX[7] = dummy2 = 0
-
-    
-    if FPUGrid[fpu_id].is_collided:
-        # only send an error message
-        TX[3] = errflag = 0xff
-        TX[4] = errcode = ER_COLLIDE
-    else:
-        # send confirmation and spawn findDatum method call
-        TX[3] = errflag = 0
-        TX[4] = errcode = 0
-
-
-        def findDatum_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
-
-            tx_prio = 0x02
-            tx_canid = (tx_prio << 7) | fpu_adr_bus
-            
-            TH = [ 0 ] * 3
-            TH[0] = bus_adr
-            TH[1] = (tx_canid & 0xff)
-            TH[2] = ((tx_canid >> 8) & 0xff)
-
-            command_id = RX[0]
-
-            flag_skip_alpha = False
-            flag_skip_beta = False
-            skip_flag = RX[1]
-            if skip_flag > 0:
-                if opts.protocol_version > "1.0":
-                    flag_skip_alpha = (skip_flag & DATUM_SKIP_ALPHA) > 0
-                    flag_skip_beta = (skip_flag & DATUM_SKIP_BETA) > 0
-                else:
-                    print("WARNING: protocol version 1.0 running, ignoring additional datum flags")
-                    skip_flag = 0
-
-            # simulate findDatum FPU operation
-            FPUGrid[fpu_id].findDatum(sleep, skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta)
-            print("FPU %i: findDatum command finished" % fpu_id);
-
-            TX = [0] * 8
-            TX[0] = fpu_adr_bus
-            TX[1] = CMSG_FINISHED_DATUM
-            TX[2] = status = getStatus(FPUGrid[fpu_id])
-
-            if FPUGrid[fpu_id].is_collided:
-                # only send an error message
-                TX[3] = errflag = 0xff
-                TX[4] = errcode = ER_COLLIDE
-                TX[5] = 0
-            elif status & STBT_M1LIMIT:
-                TX[3] = errflag = 0xff
-                TX[4] = errcode = ER_M1LIMIT
-                TX[5] = 0
-            else:
-                # in version 1, other cases do not have
-                # status flag / error code information
-                TX[3] = errflag = 0
-                TX[4] = dummy0 = 0
-                TX[5] = skip_flag
-
-                
-            TX[6] = dummy2 = 0
-            TX[7] = dummy3 = 0
-
-            
-            finish_message =  TH + TX
-
-            
-            #print("FPU %i: findDatum command finished" % fpu_id);
-            encode_and_send(finish_message, socket, verbose=opts.debug)
-
-        # "spawn_later" inserts a timed event into the aynchronous event loop
-        # - similar to a thread but not running in parallel.
-        spawn_later(1, findDatum_func, fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts)
-    
-    ## send confirmation message 
-    #print("FPU %i: sending confirmation to findDatum command" % fpu_id);
-    conf_msg = TH + TX
-
-    return conf_msg
-
 
 def handle_pingFPU(fpu_id, fpu_adr_bus, bus_adr, RX):
     command_id = RX[0]
@@ -638,6 +564,35 @@ def handle_setUStepLevel(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX
 
 
+def handle_readRegister(fpu_id, fpu_adr_bus, bus_adr, RX):
+
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [0] * 8
+
+    command_id = RX[0]
+    register_address = ((RX[1] << 8) | RX[2])
+
+    TX[0] = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id]) 
+    TX[3] = errflag = 0
+
+    byte = FPUGrid[fpu_id].getRegister(register_address)
+    TX[4] = byte
+    
+    print("fpu #%i: read from address 0x%04x yields 0x%02x" %
+          (fpu_id,register_address, byte) )
+    
+    return TH + TX 
+
+
 def handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
     def reset_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
@@ -709,7 +664,7 @@ def handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 ##############################
 # the following two callback objects are passed as bound methods
-# to the FPUs executeMotion method so that FPUs can signal
+# to the FPUs executeMotion and findDatum methods so that FPUs can signal
 # collisions or limit switch breaks
 
 class LimitCallback:
@@ -787,6 +742,159 @@ class CollisionCallback:
         
         limit_message =  TH + TX
         encode_and_send(limit_message, self.socket, verbose=self.verbose)
+
+
+#################################
+
+def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
+        
+    print("starting findDatum for FPU %i" % fpu_id)
+
+    if len(RX) < 8:
+        print("CAN command format error, length must be 8");
+        return []
+
+    ## gateway header
+    
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [0] * 8
+    TX[0] = fpu_adr_bus
+    
+    command_id = RX[0]
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id])
+    
+    TX[5] = dummy0 = 0
+    TX[6] = dummy1 = 0
+    TX[7] = dummy2 = 0
+
+    flag_skip_alpha = False
+    flag_skip_beta = False
+    flag_auto_datum = False
+    flag_anti_clockwise = False
+    flag_disable_timeout = False
+    skip_flag = RX[1] # protocol 1 !
+    
+    if skip_flag > 0:
+        if opts.fw_version > (1,0,0):
+            flag_skip_alpha = (skip_flag & DATUM_SKIP_ALPHA) > 0
+            flag_skip_beta = (skip_flag & DATUM_SKIP_BETA) > 0
+            
+            if opts.fw_version > (1,1,0):
+                flag_auto_datum = (skip_flag & DATUM_MODE_AUTO) > 0
+                flag_anti_clockwise = (skip_flag & DATUM_MODE_ANTI_CLOCKWISE) > 0
+            else:
+                print("WARNING: protocol version %r running, "
+                      +"ignoring mode selection flags", opts.fw_version)
+                skip_flag = skip_flag & 0x3
+        else:
+            print("WARNING: protocol version %r running,"
+                  + " ignoring arm and mode selection flags flags", opts.fw_version)
+            skip_flag = 0
+            
+    if opts.fw_version >= (1,4,3):
+        if (skip_flag & DATUM_TIMEOUT_DISABLE) > 0:
+            flag_disable_timeout = True
+    
+    if FPUGrid[fpu_id].is_collided:
+        # only send an error message
+        TX[3] = errflag = 0xff
+        TX[4] = errcode = ER_COLLIDE
+    elif flag_auto_datum and (not FPUGrid[fpu_id].was_initialized):
+        TX[3] = errflag = 0xff
+        TX[4] = errcode = ER_AUTO # not initialized, reject automatic datum search
+    elif (FPUGrid[fpu_id].opts.fw_version >= (1, 4, 0)) and FPUGrid[fpu_id].alpha_switch_on():
+        TX[3] = errflag = 0xff
+        TX[4] = errcode = ER_DATUM_LIMIT # alpha on limit switch, reject datum command
+        TX[5] = 0
+    else:
+        # send confirmation and spawn findDatum method call
+        TX[3] = errflag = 0
+        TX[4] = errcode = 0
+
+
+        def findDatum_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
+
+            tx_prio = 0x02
+            tx_canid = (tx_prio << 7) | fpu_adr_bus
+            
+            TH = [ 0 ] * 3
+            TH[0] = bus_adr
+            TH[1] = (tx_canid & 0xff)
+            TH[2] = ((tx_canid >> 8) & 0xff)
+
+            command_id = RX[0]
+
+
+            # instantiate two objects which can send collision messages
+            # if needed
+            limit_callback = LimitCallback(fpu_adr_bus, bus_adr, socket)
+            collision_callback = CollisionCallback(fpu_adr_bus, bus_adr, socket)
+
+
+            # simulate findDatum FPU operation
+            FPUGrid[fpu_id].findDatum(sleep,
+                                      limit_callback.call, collision_callback.call,
+                                      skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta,
+                                      auto_datum=flag_auto_datum,
+                                      anti_clockwise=flag_anti_clockwise,
+                                      disable_timeout=flag_disable_timeout)
+            
+            print("FPU %i: findDatum command finished" % fpu_id);
+
+            TX = [0] * 8
+            TX[0] = fpu_adr_bus
+            TX[1] = CMSG_FINISHED_DATUM
+            TX[2] = status = getStatus(FPUGrid[fpu_id])
+
+            if FPUGrid[fpu_id].is_collided:
+                # only send an error message
+                TX[3] = errflag = 0xff
+                TX[4] = errcode = ER_COLLIDE
+                TX[5] = 0
+            elif status & STBT_M1LIMIT:
+                TX[3] = errflag = 0xff
+                TX[4] = errcode = ER_M1LIMIT
+                TX[5] = 0
+            elif FPUGrid[fpu_id].datum_timeout:
+                TX[3] = errflag = 0xff
+                TX[4] = errcode = ER_DATUMTO
+                TX[5] = 0
+            else:
+                # in version 1, other cases do not have
+                # status flag / error code information
+                TX[3] = errflag = 0
+                TX[4] = dummy0 = 0
+                TX[5] = skip_flag
+
+                
+            TX[6] = dummy2 = 0
+            TX[7] = dummy3 = 0
+
+            
+            finish_message =  TH + TX
+
+            
+            #print("FPU %i: findDatum command finished" % fpu_id);
+            encode_and_send(finish_message, socket, verbose=opts.debug)
+
+        # "spawn_later" inserts a timed event into the aynchronous event loop
+        # - similar to a thread but not running in parallel.
+        spawn_later(1, findDatum_func, fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts)
+    
+    ## send confirmation message 
+    #print("FPU %i: sending confirmation to findDatum command" % fpu_id);
+    conf_msg = TH + TX
+
+    return conf_msg
+
 
         
 ##############################
@@ -932,7 +1040,7 @@ def handle_repeatMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
         # wavetable is not ready
         print("FPU #", fpu_id, ": wave table is not valid, sending response code", ER_INVALID)
         TX[3] = errflag = 0xff
-        TX[4] = errcode =  ER_INVALIDY
+        TX[4] = errcode =  ER_INVALID
     else:
         try:
             FPUGrid[fpu_id].repeatMotion(fpu_id)
@@ -984,8 +1092,79 @@ def handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX
 
 
+def handle_readSerialNumber(fpu_id, fpu_adr_bus, bus_adr, RX):
+
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    TX = [0] * 8
+    TX[0] = fpu_adr_bus
+
+    command_id = RX[0]
+
+    TX[0] = tx0_fpu_adr_bus = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id])
+    sn = FPUGrid[fpu_id].readSerialNumber()
+    assert(len(sn) <= 5)
+    for k in range(len(sn)):
+        TX[3+k] = ord(sn[k])
+
+
+    return TH + TX 
+
+def handle_writeSerialNumber(fpu_id, fpu_adr_bus, bus_adr, RX):
+    command_id = RX[0]
+
+    # CAN header for gateway
+    tx_prio = 0x02
+    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    
+    TH = [ 0 ] * 3
+    TH[0] = bus_adr
+    TH[1] = (tx_canid & 0xff)
+    TH[2] = ((tx_canid >> 8) & 0xff)
+
+    serial_number = ""
+    chrs = RX[1:6]
+    for c in chrs:
+        if c == 0:
+            break
+        serial_number += chr(c)
+
+
+    try:
+        FPUGrid[fpu_id].writeSerialNumber(serial_number)
+        errflag = 0
+        ecode = 0
+    except RuntimeError:
+        errflag = 0xff
+        ecode = 1
+    
+    TX = [ 0 ] * 8
+    
+    TX[0] = fpu_adr_bus
+    TX[1] = command_id
+    TX[2] = getStatus(FPUGrid[fpu_id])
+    TX[3] = errflag
+    TX[4] = ecode
+
+
+    
+    return TH + TX
+
+
 def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args):
     verbose = args.debug
+    if fpu_id >= args.NUM_FPUS:
+        print("Warning: command sent to non-existant FPU ID #%i (discarded)" % fpu_id)
+        return
+    
     if command_id == CCMD_PING_FPU                         :
         # resp = handle_pingFPU(fpu_id, cmd)
         resp = handle_pingFPU(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
@@ -1007,7 +1186,8 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
         resp = handle_abortMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
     elif command_id == CCMD_READ_REGISTER                    :
-        pass
+        resp = handle_readRegister(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+        
 
     elif command_id == CCMD_RESET_STEPCOUNTER                :
         pass
@@ -1040,6 +1220,12 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
         elif command_id == CCMD_GET_ERROR_BETA                   :
             resp = handle_GetErrorBeta(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
             
+        elif command_id == CCMD_READ_SERIAL_NUMBER               :
+            resp = handle_readSerialNumber(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+            
+        elif command_id == CCMD_WRITE_SERIAL_NUMBER               :
+            resp = handle_writeSerialNumber(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+            
         else:
             resp = handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     else:
@@ -1063,6 +1249,10 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
             pass
         elif command_id == CCMD_ENABLE_MOVE                      :
             pass        
+        elif command_id == CCMD_READ_SERIAL_NUMBER               :
+            pass            
+        elif command_id == CCMD_WRITE_SERIAL_NUMBER               :
+            pass
         else:
             resp = handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 

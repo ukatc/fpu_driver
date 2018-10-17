@@ -68,7 +68,7 @@ public:
                                     };
 
 
-    GatewayDriver(const GridDriverConfig config_vals);
+    explicit GatewayDriver(const GridDriverConfig &config_vals);
     ~GatewayDriver();
 
     E_DriverErrCode initialize();
@@ -118,8 +118,10 @@ public:
     // returns id which needs to be set as fpu id for broadcast command
     int getBroadcastID(const int gateway_id, const int busid);
 
+#if 0    
     // returns gateway ID for an FPU
     int getGatewayIdByFPUID(int fpu_id) const;
+#endif    
 
     // returns whether an FPU is currently marked as locked.
     bool isLocked(int fpu_id) const;

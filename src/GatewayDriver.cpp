@@ -47,7 +47,7 @@ namespace canlayer
 {
 
 
-GatewayDriver::GatewayDriver(GridDriverConfig config_vals)
+GatewayDriver::GatewayDriver(const GridDriverConfig &config_vals)
     : commandQueue(config_vals), config(config_vals),
       fpuArray(config_vals),
       command_pool(config_vals)
@@ -66,6 +66,9 @@ GatewayDriver::GatewayDriver(GridDriverConfig config_vals)
     // number of commands which are being processed
     fpuArray.setDriverState(DS_UNINITIALIZED);
 
+    memset(SocketID, 0, sizeof(SocketID));
+    DescriptorCommandEvent = 0;
+    DescriptorCloseEvent = 0;
 
     // initialize address map
     memset(fpu_id_by_adr, 0, sizeof(fpu_id_by_adr));
@@ -351,17 +354,17 @@ int make_socket(const GridDriverConfig &config, const char *ip, uint16_t port)
 
 static void* threadTxEntryFun(void *arg)
 {
-    GatewayDriver* driver = (GatewayDriver*) arg;
+    GatewayDriver* driver = static_cast<GatewayDriver*>(arg);
     return driver->threadTxFun();
 }
 
 static void* threadRxEntryFun(void *arg)
 {
-    GatewayDriver* driver = (GatewayDriver*) arg;
+    GatewayDriver* driver = static_cast<GatewayDriver*>(arg);
     return driver->threadRxFun();
 }
 
-void set_rt_priority(const GridDriverConfig config, int prio)
+void set_rt_priority(const GridDriverConfig &config, int prio)
 {
     if (USE_REALTIME_SCHEDULING)
     {
@@ -826,16 +829,6 @@ SBuffer::E_SocketStatus GatewayDriver::send_buffer(unique_ptr<I_CAN_Command> &ac
     return status;
 }
 
-// returns number of commands which are not yet sent
-// in a thread-safe way. This is needed for waiting
-// until all commands are sent.
-int GatewayDriver::getNumUnsentCommands() const
-{
-    // TODO: Check for potential race conditions if a
-    // command is being sent and is processed very
-    // quickly.
-    return fpuArray.countSending();
-}
 
 
 void GatewayDriver::incSending()
@@ -1057,7 +1050,9 @@ inline void print_time(char* label, struct timespec tm)
     printf("%s : %li / %09li\n", label, tm.tv_sec, tm.tv_nsec);
     fflush(stdout);
 }
+#endif
 
+#if 0
 inline void print_curtime(char* label)
 {
     struct timespec tm;
@@ -1065,8 +1060,8 @@ inline void print_curtime(char* label)
     print_time(label, tm);
     fflush(stdout);
 }
-
 #endif
+
 
 void* GatewayDriver::threadRxFun()
 {
@@ -1288,10 +1283,12 @@ CommandQueue::E_QueueState GatewayDriver::sendCommand(const int fpu_id, unique_p
 }
 
 
+#if 0
 int GatewayDriver::getGatewayIdByFPUID(const int fpu_id) const
 {
     return address_map[fpu_id].gateway_id;
 }
+#endif
 
 
 int GatewayDriver::getBroadcastID(const int gateway_id, const int busid)

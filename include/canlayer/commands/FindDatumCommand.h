@@ -42,15 +42,14 @@ public:
         return CCMD_FIND_DATUM;
     };
 
-
-    FindDatumCommand()
+    
+    FindDatumCommand():
+	fpu_id(0),
+	_arm_selection(DASEL_BOTH),
+        _search_mode(SKIP_FPU),
+        _timeout_flag(DATUM_TIMEOUT_ENABLE),
+        bcast(false)
     {
-        fpu_id = 0;
-        bcast = false;
-#if (CAN_PROTOCOL_VERSION > 1)
-        _auto_datum = false;
-        _clockwise_first = false;
-#endif
     };
 
     ~FindDatumCommand() {};
@@ -61,23 +60,16 @@ public:
     };
 
 
-#if (CAN_PROTOCOL_VERSION == 1)
-    void parametrize(int f_id, bool broadcast, E_DATUM_SELECTION arm_selection)
+    void parametrize(int f_id, bool broadcast,
+                     E_DATUM_SEARCH_DIRECTION search_mode, E_DATUM_SELECTION arm_selection,
+                     E_DATUM_TIMEOUT_FLAG timeout_flag)
     {
         fpu_id = f_id;
         bcast = broadcast;
+        _search_mode = search_mode;
         _arm_selection = arm_selection;
+        _timeout_flag = timeout_flag;
     };
-#else
-    void parametrize(int f_id, bool broadcast, bool auto_datum, bool clockwise_first, E_DATUM_SELECTION arm_selection)
-    {
-        fpu_id = f_id;
-        bcast = broadcast;
-        _auto_datum = auto_datum;
-        _clockwise_first = clockwise_first;
-        _arm_selection = arm_selection;
-    };
-#endif
 
 
     void SerializeToBuffer(const uint8_t busid,
@@ -122,7 +114,6 @@ public:
 
         // CAN command code
         can_buffer.message.data[0] = cmd_code;
-#if (CAN_PROTOCOL_VERSION == 1)
         bool skip_alpha = false;
         bool skip_beta = false;
         switch (_arm_selection)
@@ -145,23 +136,55 @@ public:
             // AsyncDriver, so this can't happen.
             assert(0);
         }
+
+        bool _auto_datum = false;
+        bool _anti_clockwise = false;
+        switch (_search_mode)
+        {
+        case SEARCH_CLOCKWISE:
+            _anti_clockwise = false;
+            _auto_datum = false;
+            break;
+
+        case SEARCH_ANTI_CLOCKWISE:
+            _anti_clockwise = true;
+            _auto_datum = false;
+            break;
+
+        case SEARCH_AUTO          :
+            _anti_clockwise = false;
+            _auto_datum = true;
+            break;
+
+        // must not happen
+        default:
+        case SKIP_FPU             :
+            assert(false);
+            break;
+        }
+        switch (_timeout_flag)
+        {
+        case DATUM_TIMEOUT_ENABLE:
+        case DATUM_TIMEOUT_DISABLE:
+            break;
+        default:
+            assert(false);
+        }
         // this is defined so that an empty field (all-zero)
         // has the defeault behavoir implemented by the
-        // current firmware, which datums both arms.
+        // current firmware >= 1.0.0 , which datums both arms.
         //
         // Note that this is not necessarily safe if
         // one of the switches is broken - old firmware ignoring
         // the arm selection can break the FPU then.
-        can_buffer.message.data[1] = ( (skip_alpha ? DATUM_SKIP_ALPHA : 0)
-                                       | (skip_beta ? DATUM_SKIP_BETA : 0));
 
-#endif
+        const uint8_t flags = ( (skip_alpha ? DATUM_SKIP_ALPHA : 0)
+                                | (skip_beta ? DATUM_SKIP_BETA : 0)
+                                | (_auto_datum ? MODE_DATUM_AUTO : 0)
+                                | (_anti_clockwise ? MODE_DATUM_ANTI_CLOCKWISE : 0)
+                                | _timeout_flag);
 
-#if (CAN_PROTOCOL_VERSION > 1)
-        can_buffer.message.data[2] = ( ( _auto_datum ? 1 : 0)
-                                       | ((_clockwise_first ?  1 : 0) << 1));
-#endif
-
+        can_buffer.message.data[1] = flags;
         buf_len += 8;
 
     };
@@ -202,13 +225,9 @@ public:
 private:
     uint16_t fpu_id;
     E_DATUM_SELECTION _arm_selection;
-
-#if (CAN_PROTOCOL_VERSION > 1)
-    bool _auto_datum;
-    bool _clockwise_first;
-#endif
+    E_DATUM_SEARCH_DIRECTION _search_mode;
+    E_DATUM_TIMEOUT_FLAG _timeout_flag;
     bool bcast;
-
 
 };
 

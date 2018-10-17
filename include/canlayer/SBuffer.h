@@ -62,7 +62,7 @@ public:
 
     SBuffer();
 
-    void setConfig(const GridDriverConfig config_vals);
+    void setConfig(const GridDriverConfig &config_vals);
 
     // encodes a buffer with a CAN message and sends it to
     // the socket identified with sockfd

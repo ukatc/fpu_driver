@@ -69,10 +69,10 @@ enum E_DriverErrCode
     // "user notification", not an error.
     DE_WAIT_TIMEOUT = 1,
 
-    // operation not implemented for this protocol version - the
-    // calling code might need to check and branch according to the
-    // used protocol version
-    DE_UNIMPLEMENTED = 2,
+    // Firmware does not implement operation for this protocol version
+    // - the calling code might need to check and branch according to
+    // the used protocol version
+    DE_FIRMWARE_UNIMPLEMENTED = 2,
 
 
     /*********************************/
@@ -138,15 +138,24 @@ enum E_DriverErrCode
     // Command not allowed for present FPU state.
     DE_INVALID_FPU_STATE = 111,
 
+    // The operation can damage hardware and protection is enabled
+    DE_PROTECTION_ERROR = 112,
+
     // The driver state does not allows the operation
-    DE_INVALID_DRIVER_STATE = 112,
+    DE_INVALID_DRIVER_STATE = 113,
 
     // Some addressed FPUs are locked.
-    DE_FPUS_LOCKED = 113,
+    DE_FPUS_LOCKED = 114,
 
     // A previous movement was aborted.
-    DE_ABORTED_STATE = 114,
+    DE_IN_ABORTED_STATE = 115,
 
+    // An alpha arm is on the limit switch, and cannot
+    // be datumed.
+    DE_ALPHA_ARM_ON_LIMIT_SWITCH = 116,
+
+
+    
     /***************************************/
     /* setup errors */
 
@@ -166,6 +175,8 @@ enum E_DriverErrCode
     // passed parameter value is invalid
     DE_INVALID_PAR_VALUE = 302,
 
+    // duplicate serial number
+    DE_DUPLICATE_SERIAL_NUMBER = 303,
 
     /***************************************/
     /* Connection failures */
@@ -189,6 +200,13 @@ enum E_DriverErrCode
     // time-outs on every single FPU command to the corresponding
     // gateways as they all fail to respond.
     DE_NO_CONNECTION = 403,
+
+    // A CAN buffer overflow warning was received, meaning that more
+    // commands were sent at once than the FPU firmware and CAN
+    // implementation were able to process. This is similar to a
+    // COMMAND_TIMEOUT_ERROR, except that we know that the last
+    // message wasn't processed.
+    DE_FIRMWARE_CAN_BUFFER_OVERFLOW = 404,
 
 
     /***************************************/
@@ -239,6 +257,28 @@ enum E_DriverErrCode
 
     DE_STEP_TIMING_ERROR = 603,
 
+    /***************************************/
+    /* abort message */
+    // The movement has just been aborted.
+    DE_MOVEMENT_ABORTED = 604,
+
+    /***************************************/
+    /* Datum rejected: alpha arm on limit switch */
+    // The datum command was rejected.
+    DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH = 605,
+
+    /***************************************/
+    /* datum time-out */
+    // The datum command has timed out on the FPU.
+    DE_DATUM_COMMAND_HW_TIMEOUT = 606,
+
+
+    // The driver received an illegal counter value from
+    // an FPU, so that it cannot correctly track the FPUs
+    // any more. It is required to measure the
+    // position and update the position database.
+    DE_INCONSISTENT_STEP_COUNT = 607,
+
 };
 
 // this is a one-bit parameter to several commands
@@ -254,6 +294,14 @@ enum E_DATUM_SELECTION
     DASEL_ALPHA = 1,
     DASEL_BETA  = 2,
     DASEL_NONE  = 3,
+};
+
+enum E_DATUM_SEARCH_DIRECTION
+{
+    SEARCH_CLOCKWISE      = 0,
+    SEARCH_ANTI_CLOCKWISE = 1,
+    SEARCH_AUTO           = 2,
+    SKIP_FPU              = 3,
 };
 
 

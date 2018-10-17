@@ -56,7 +56,22 @@ public:
 
     int num_fpus;
 
+    // offset with which alpha arm angles are computed from step counts
+    double alpha_datum_offset;
+
+    double motor_minimum_frequency;   // lower bound of stepper motor frequency
+    double motor_maximum_frequency;   // upper bound of stepper motor frequency
+    double motor_max_start_frequency; // maximum start frequency
+    double motor_max_rel_increase;    // maximum frequency growth factor
+
+    // waveform upload parameters
+    long waveform_upload_pause_us; // wait time before a new waveform step is sent to the same FPU
+    bool confirm_each_step; // request confirmation for each waveform step
+
+    int firmware_version_address_offset;
+
     GridDriverConfig()
+	: logLevel(LOG_TRACE_CAN_MESSAGES)
     {
         num_fpus = MAX_NUM_POSITIONERS;
 
@@ -66,11 +81,21 @@ public:
         TCP_IdleSeconds = 10;
         TCP_KeepaliveIntervalSeconds = 1;
 
+	waveform_upload_pause_us = 50000;
+	confirm_each_step = true;
+
+	firmware_version_address_offset = 0x61; // new offset for v1.3.0, matching firmware version 1.4.4
+
         // Initialize log file descriptors
-        logLevel = LOG_TRACE_CAN_MESSAGES;
         fd_controllog = -1;
         fd_rxlog = -1;
         fd_txlog = -1;
+
+        alpha_datum_offset = ALPHA_DATUM_OFFSET;
+        motor_minimum_frequency = 500.0;
+        motor_maximum_frequency = 2000.0;
+        motor_max_start_frequency=550.0;
+        motor_max_rel_increase = 1.4;
     };
 
 };
