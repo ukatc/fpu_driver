@@ -1,0 +1,18 @@
+Pro converting all into interface:
+
+- can use class independent of ESO framework in Python
+- can use locks etc internally
+- protection layer in interface
+- isolates namespace stuff from implementation
+- access single-threaded, but thread-safe where needed
+
+- reserve driver for domain logic
+- easier simulation (just use variant of interface)
+
+
+Cons:
+- don't understand "driver" completely
+- semantics unclear (multi-threading etc)
+- unclear how to test - but easier when implemenattion is independent
+
+

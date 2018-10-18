@@ -23,10 +23,10 @@
 
 #include <time.h>
 #include <stdint.h>
-#include "DriverConstants.h"
+#include "InterfaceConstants.h"
 #include "FPUState.h"
-#include "canlayer/E_CAN_COMMAND.h"
-#include "DriverState.h"
+#include "ethercan/E_CAN_COMMAND.h"
+#include "InterfaceState.h"
 
 namespace mpifps
 {
@@ -61,7 +61,7 @@ typedef struct
 
 
     // state of the driver itself
-    E_DriverState driver_state;
+    E_InterfaceState interface_state;
 } t_grid_state;
 
 }

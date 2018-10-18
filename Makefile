@@ -14,40 +14,40 @@ SRCDIR = ./src
 
 LIBS = -lm -lpthread
 
-_DEPS = DriverState.h E_GridState.h FPUState.h GridDriver.h		\
-	GridDriverConfig.h E_LogLevel.h GridState.h T_GridState.h	\
-	canlayer/AsyncDriver.h T_GatewayAddress.h			\
-	canlayer/handleFPUResponse.h canlayer/handleTimeout.h		\
-	canlayer/CANError.h canlayer/CommandPool.h			\
-	canlayer/CAN_Constants.h canlayer/E_CAN_COMMAND.h		\
-	canlayer/CommandQueue.h DriverConstants.h canlayer/FPUArray.h	\
-	canlayer/GatewayDriver.h canlayer/I_CAN_Command.h		\
-	canlayer/I_ResponseHandler.h canlayer/SBuffer.h			\
-	canlayer/TimeOutList.h canlayer/commands/AbortMotionCommand.h	\
-	canlayer/commands/ConfigureMotionCommand.h			\
-	canlayer/commands/EnableBetaCollisionProtectionCommand.h	\
-	canlayer/commands/ExecuteMotionCommand.h			\
-	canlayer/commands/FindDatumCommand.h				\
-	canlayer/commands/FreeBetaCollisionCommand.h			\
-	canlayer/commands/GetErrorAlphaCommand.h			\
-	canlayer/commands/GetErrorBetaCommand.h				\
-	canlayer/commands/GetStepsAlphaCommand.h			\
-	canlayer/commands/GetStepsBetaCommand.h				\
-	canlayer/commands/PingFPUCommand.h				\
-	canlayer/commands/ReadRegisterCommand.h				\
-	canlayer/commands/RepeatMotionCommand.h				\
-	canlayer/commands/ResetFPUCommand.h				\
-	canlayer/commands/ReverseMotionCommand.h			\
-	canlayer/commands/SetUStepLevelCommand.h			\
-	canlayer/commands/WriteSerialNumberCommand.h			\
-	canlayer/commands/ReadSerialNumberCommand.h			\
-	canlayer/sync_utils.h canlayer/time_utils.h
+_DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h		\
+	EtherCANInterfaceConfig.h E_LogLevel.h GridState.h T_GridState.h	\
+	ethercan/AsyncInterface.h T_GatewayAddress.h			\
+	ethercan/handleFPUResponse.h ethercan/handleTimeout.h		\
+	ethercan/CANError.h ethercan/CommandPool.h			\
+	ethercan/CAN_Constants.h ethercan/E_CAN_COMMAND.h		\
+	ethercan/CommandQueue.h InterfaceConstants.h ethercan/FPUArray.h	\
+	ethercan/GatewayInterface.h ethercan/I_CAN_Command.h		\
+	ethercan/I_ResponseHandler.h ethercan/SBuffer.h			\
+	ethercan/TimeOutList.h ethercan/cancommands/AbortMotionCommand.h	\
+	ethercan/cancommands/ConfigureMotionCommand.h			\
+	ethercan/cancommands/EnableBetaCollisionProtectionCommand.h	\
+	ethercan/cancommands/ExecuteMotionCommand.h			\
+	ethercan/cancommands/FindDatumCommand.h				\
+	ethercan/cancommands/FreeBetaCollisionCommand.h			\
+	ethercan/cancommands/GetErrorAlphaCommand.h			\
+	ethercan/cancommands/GetErrorBetaCommand.h				\
+	ethercan/cancommands/GetStepsAlphaCommand.h			\
+	ethercan/cancommands/GetStepsBetaCommand.h				\
+	ethercan/cancommands/PingFPUCommand.h				\
+	ethercan/cancommands/ReadRegisterCommand.h				\
+	ethercan/cancommands/RepeatMotionCommand.h				\
+	ethercan/cancommands/ResetFPUCommand.h				\
+	ethercan/cancommands/ReverseMotionCommand.h			\
+	ethercan/cancommands/SetUStepLevelCommand.h			\
+	ethercan/cancommands/WriteSerialNumberCommand.h			\
+	ethercan/cancommands/ReadSerialNumberCommand.h			\
+	ethercan/sync_utils.h ethercan/time_utils.h
 
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ =  GridDriver.o    AsyncDriver.o FPUArray.o GridState.o \
-	CommandPool.o   GatewayDriver.o  TimeOutList.o \
+_OBJ =  EtherCANInterface.o    AsyncInterface.o FPUArray.o GridState.o \
+	CommandPool.o   GatewayInterface.o  TimeOutList.o \
 	CommandQueue.o  time_utils.o  sync_utils.o SBuffer.o \
 	handleFPUResponse.o handleTimeout.o FPUState.o
 
@@ -66,16 +66,19 @@ doc/FPU-state1.pdf : doc/FPU-state1.svg
 tutorial:	doc/tutorial.tex doc/FPU-state1.pdf git_version
 	cd doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
-$(ODIR)/%.o: $(SRCDIR)/%.cpp $(DEPS) git_version
+cppcheck: force
+	cppcheck src/*.C python/src/*.cpp  -I include -I include/ethercan -I include/ethercan/cancommands --enable=all
+
+$(ODIR)/%.o: $(SRCDIR)/%.C $(DEPS) git_version
 	$(CC) $(CXXFLAGS) -DVERSION=\"$(GIT_VERSION)\" -c -o $@ $< 
 
-lib/libfpudriver.a: $(OBJ)
+lib/libethercan.a: $(OBJ)
 	ar rcs   $@ $^ 
 
-driver: lib/libfpudriver.a
+lib: lib/libethercan.a
 
-pyext: lib/libfpudriver.a python/src/fpu_driver.cpp $(DEPS) git_version
-	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/fpu_driver.so python/src/fpu_driver.cpp -L./lib  -lfpudriver -lboost_python -g -DVERSION=\"$(GIT_VERSION)\"
+pyext: lib/libethercan.a python/src/ethercanif.cpp $(DEPS) git_version
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.cpp -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(GIT_VERSION)\"
 
 style:
 	astyle src/*cpp python/src/*cpp include/{,/*{,*/{,*/}},}/*.h

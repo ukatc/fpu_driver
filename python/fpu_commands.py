@@ -16,7 +16,7 @@ from numpy import array, asarray, ones_like, ceil, floor, round
 
 from fpu_constants import *
 
-from fpu_driver import getGridStateSummary as gGSS
+from ethercanif import getGridStateSummary as gGSS
 
 
 
