@@ -266,7 +266,7 @@ when the internal state struct is used.
 ** DONE add configPath() method for absolute positioning with mandatory rounding parameter
 ** DONE fix bug with summed step counter where numbers are too low
 ** DONE re-test path generator output with waveform checker script, and driver
-** TODO Update CAN overflow error codes in communication protocol
+** TODO Fix and Update CAN overflow error codes in communication protocol (upper limit -10000 + 2 ** 16 - 1)
 ** TODO  clean-up of version 1 code
 *** DONE run short stress test of firmware with CAN command logging
 *** DONE make wording of direction orientation more precise
