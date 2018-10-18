@@ -20,16 +20,16 @@
 #ifndef FPU_STATE_H
 #define FPU_STATE_H
 
-#include "canlayer/E_CAN_COMMAND.h"
-#include "canlayer/CAN_Constants.h"
+#include "ethercan/E_CAN_COMMAND.h"
+#include "ethercan/CAN_Constants.h"
 #include <time.h>
 
 namespace mpifps
 {
 
-using canlayer::E_CAN_COMMAND;
-using canlayer::E_MOC_ERRCODE;
-using canlayer::NUM_CAN_COMMANDS;
+using ethercanif::E_CAN_COMMAND;
+using ethercanif::E_MOC_ERRCODE;
+using ethercanif::NUM_CAN_COMMANDS;
 
 enum E_FPU_STATE
 {
@@ -72,7 +72,7 @@ typedef struct __attribute__((packed)) tout_entry
 } tout_entry;
 
 // length of serial number string in state structure
-const int LEN_SERIAL_NUMBER = (canlayer::DIGITS_SERIAL_NUMBER + 1);
+const int LEN_SERIAL_NUMBER = (ethercanif::DIGITS_SERIAL_NUMBER + 1);
 
 typedef struct __attribute__((packed)) t_fpu_state
 {
@@ -145,7 +145,7 @@ typedef struct __attribute__((packed)) t_fpu_state
 } t_fpu_state;
 
 
-namespace canlayer
+namespace ethercanif
 {
 
 void initialize_fpu(t_fpu_state &fpu);

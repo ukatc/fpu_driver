@@ -18,13 +18,13 @@ from interval import Interval, Inf, nan
 from fpu_constants import *
 from protectiondb import ProtectionDB, HealthLogDB
 
-import fpu_driver
 import fpu_commands
 
-from fpu_driver import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  
+import ethercanif
+from ethercanif import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  EtherCANInterfaceConfig,
                         REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE,
                         DEFAULT_WAVEFORM_RULSET_VERSION,
-                        FPUDriverException, MovementError, CollisionError, LimitBreachError,
+                        EtherCANException, MovementError, CollisionError, LimitBreachError,
                         AbortMotionError, StepTimingError, InvalidStateException, SystemFailure,
                         InvalidParameterError, SetupError, InvalidWaveformException, ConnectionFailure,
                         SocketFailure, CommandTimeout, ProtectionError, HardwareProtectionError,
@@ -194,7 +194,7 @@ class UnprotectedGridDriver (object):
             warn("waveform_upload_pause_us is set to smaller value."
                  " Increase if firmware CAN overflow errors are triggered")
 
-        config = fpu_driver.GridDriverConfig()
+        config = EtherCANInterfaceConfig()
         config.num_fpus = nfpus
         config.SocketTimeOutSeconds = SocketTimeOutSeconds
         config.alpha_datum_offset = alpha_datum_offset
@@ -218,7 +218,7 @@ class UnprotectedGridDriver (object):
         self.protectionlog = open(get_logname(protection_logfile, 
                                               log_dir=log_path, timestamp=start_timestamp), "wt")
         
-        print("%f: starting driver version %s" % (time.time(), fpu_driver.__version__),
+        print("%f: starting communication interface version %s" % (time.time(), ethercanif.__version__),
               file=self.protectionlog)
         
         config.fd_controllog = os.open(get_logname(control_logfile, 
@@ -234,7 +234,7 @@ class UnprotectedGridDriver (object):
 
         self.wavetables_incomplete = False
 
-        self._gd = fpu_driver.GridDriver(config)
+        self._gd = ethercanif.EtherCANInterface(config)
 
     def __del__(self):
         # the following delete is necessary to run destructors!!
@@ -280,7 +280,7 @@ class UnprotectedGridDriver (object):
             
         fv = self.minFirmwareVersion(gs, fpuset=fpuset)
         if fv < (1,3,2):
-            raise  FPUDriverException("Not all addressed FPU's firmware implements reading the switch states")
+            raise  EtherCANException("Not all addressed FPU's firmware implements reading the switch states")
 
         with self.lock:
             self.readRegister(ADRESS_SWITCH, gs, fpuset=fpuset)
@@ -362,7 +362,7 @@ class UnprotectedGridDriver (object):
                     was_cancelled = True
             finally:
                 datum_gs = self.getGridState()
-                if was_cancelled or (rv != fpu_driver.E_DriverErrCode.DE_OK):
+                if was_cancelled or (rv != ethercanif.E_EtherCANErrCode.DE_OK):
                     time.sleep(0.1)
                     try:
                         self._pingFPUs(gs, fpuset)
@@ -455,7 +455,7 @@ class UnprotectedGridDriver (object):
             try:
                 time.sleep(0.1)
                 rv = self._gd.startFindDatum(gs, search_modes, fpuset, selected_arm, timeout, count_protection)
-                if rv != fpu_driver.E_DriverErrCode.DE_OK:
+                if rv != ethercanif.E_EtherCANErrCode.DE_OK:
                     raise RuntimeError("can't search Datum, driver error code = %r" % rv)
                 
             except (RuntimeError,
@@ -484,8 +484,8 @@ class UnprotectedGridDriver (object):
                             self.abortMotion(gs)
                             was_aborted = True
                             break
-                        is_ready = (rv != fpu_driver.E_DriverErrCode.DE_WAIT_TIMEOUT)
-                        finished_ok = (rv == fpu_driver.E_DriverErrCode.DE_OK)
+                        is_ready = (rv != ethercanif.E_EtherCANErrCode.DE_WAIT_TIMEOUT)
+                        finished_ok = (rv == ethercanif.E_EtherCANErrCode.DE_OK)
             finally:
                 datum_gs = self._gd.getGridState()
                 if not finished_ok:
@@ -809,7 +809,7 @@ class UnprotectedGridDriver (object):
             except InvalidStateException as e:
                 self._cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
                 raise
-            if rv != fpu_driver.E_DriverErrCode.DE_OK:
+            if rv != ethercanif.E_EtherCANErrCode.DE_OK:
                 raise RuntimeError("FPUs not ready to move, driver error code = %r" % rv)
             
             time_interval = 0.1
@@ -828,7 +828,7 @@ class UnprotectedGridDriver (object):
                                 was_aborted = True
                                 refresh_state = True
                                 break
-                            is_ready = (rv != fpu_driver.E_DriverErrCode.DE_WAIT_TIMEOUT)
+                            is_ready = (rv != ethercanif.E_EtherCANErrCode.DE_WAIT_TIMEOUT)
                             
                 except MovementError:
                     refresh_state = True
@@ -839,7 +839,7 @@ class UnprotectedGridDriver (object):
                 
             finally:
                 # This is skipped in case of a SocketFailure, for example
-                if (rv == fpu_driver.E_DriverErrCode.DE_OK) or refresh_state:
+                if (rv == ethercanif.E_EtherCANErrCode.DE_OK) or refresh_state:
                     # execute a ping to update positions
                     # (this is only needed for protocol version 1)
                     move_gs = self._gd.getGridState()
@@ -1035,7 +1035,7 @@ class GridDriver(UnprotectedGridDriver):
                     val = ProtectionDB.getField(txn, fpu, subkey)
                           
                     if val == None: 
-                        raise fpu_driver.ProtectionError("serial number {0!r} not found in position database"
+                        raise ethercanif.ProtectionError("serial number {0!r} not found in position database"
                                                          " - run fpu-admin.py to create entry".format(fpu.serial_number))
                     else:
                         if subkey in [ProtectionDB.alpha_positions, ProtectionDB.alpha_limits]:
@@ -1284,7 +1284,7 @@ class GridDriver(UnprotectedGridDriver):
         # the positions before exiting
         with self.lock:
             grid_state = self.getGridState()
-            if grid_state.driver_state == DS_CONNECTED:
+            if grid_state.interface_state == DS_CONNECTED:
                 # fetch current positions
                 self._pingFPUs(grid_state)
     

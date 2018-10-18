@@ -38,7 +38,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For driver version 1.3.0 (document version \texttt{\input{../git_version}}).}
+  module} \subtitle{For EtherCAN interface version 1.3.0 (document version \texttt{\input{../git_version}}).}
 
 \author{Johannes Nix}
 
@@ -63,25 +63,29 @@
 
 \subsection{Purpose of this document}
 This document describes the Python programming interface for the MOONS
-Fibre Positioner Unit CAN level driver module.
+Fibre Positioner Unit EtherCAN interface module.
 
-The CAN level driver allows to control and move Fibre Positioner Units
-(FPU) in the MOONS FPU grid by a software interface. This programming
-interface is implemented in C++. It is designed to be used in several
-different contexts: Primarily, for simultaneously controlling more
-than 1000 FPUs in the final MOONS astronomic instrument. Important
-secondary uses are verifying and calibrating the components of the
-positioning system, developing and testing of algorithms for complex
-higher layers of the instrument control system, and engineering and
-development of related systems and verification software such as image
-analysis.
+The EtherCAN interface allows to control and move Fibre Positioner
+Units (FPUsp
+) in the MOONS FPU grid by a software interface. This
+programming interface is implemented in C++. It is designed to be used
+in several different contexts: Primarily, for simultaneously
+controlling more than 1000 FPUs in the final MOONS astronomic
+instrument. Important secondary uses are verifying and calibrating the
+components of the positioning system, developing and testing of
+algorithms for complex higher layers of the instrument control system,
+and engineering and development of related systems and verification
+software such as image analysis. For this second use, a Python driver
+is available, which derives the lion's share of its functionality by
+the C++ EtherCAN interface, while adding a small amount of
+functionality which is only required for testing, or experimental.
 
 Using the final verification software will not require the users to
 know how to program Python.  However, several parts of the
 verification software system and the instrument control software are
 entirely or initially developed and tested in Python.  The Python
 driver library documented here has the function to make the
-functionality of the CAN level C++ driver accessible from Python. As
+functionality of the C++ EtherCAN interface accessible from Python. As
 such, the goal of this document is to describe a toolbox which can be
 used to manipulate and test the FPUs as easily as possible, while the
 verification software is being developed. The underlying hardware
@@ -100,7 +104,7 @@ alternatively, a similar object-oriented language, like Java or C\#.
 In the case that using Python scripts is new to the reader, it is
 probably helpful to consult the tutorial for Python 2.7 at
 \url{https://docs.python.org/2.7/tutorial/}.  Both the current version
-of the driver as well as this document use Python 2.7. Python 2, which
+of the EtherCAN interface as well as this document use Python 2.7. Python 2, which
 is reaching its end of life in 2020, has some differences to Python
 3. However this description will proceed in a way that differences to
 Python 3 are minimised.
@@ -117,7 +121,7 @@ system. This is explained, for example, in
 The order of presentation is divided in three parts, as follows: The
 first part represents a tutorial aiming at explaining quickly how to
 use the software. In section~\ref{sec:settingup}, it is explained how
-the driver module is configured. Then, in
+the EtherCAN interface module is configured. Then, in
 section~\ref{sec:minimalexample}, a minimal example is presented. As
 additional required knowledge, in section~\ref{sec:protectionrules}
 the rules for using the software protection layer, and in
@@ -152,11 +156,12 @@ the test gateway (section~\ref{sec:runningthegateway}).
 
 \section{Setting up the library module}
 \label{sec:settingup}
-\index{driver!building}
+\index{driver|see{also: EtherCAN interface}}
+\index{EtherCAN interface!building}
 
 This section deals with retrieving, installing and configuring the
-driver module. On the MOONS workstation, it can be skipped because the
-FPU driver is already installed.  In this case, you can proceed
+EtherCAN interface module. On the MOONS workstation, it can be skipped because the
+FPU EtherCAN interface is already installed.  In this case, you can proceed
 directly with section~\ref{sec:minimalexample} on
 page~\pageref{sec:minimalexample}.
 
@@ -175,13 +180,13 @@ server. Assuming the account name is \texttt{carl}, this is done by
 the command
 \index{git!repository setup}
 
-\mint{bash}|git clone carl@dalriada/sw/sw4/jnix/MOONS/fpu_driver|
+\mint{bash}|git clone carl@dalriada/sw/sw4/jnix/MOONS/fpu_EtherCAN interface|
 
 After entering the password for user \texttt{carl}, the
 source code is copied into the new folder \texttt{fpu\_driver}.
 
 \subsection{Refreshing the source code}
-\index{driver!building!update or change version}
+\index{EtherCAN interface!building!update or change version}
 To refresh the source code, change the
 working directory to \texttt{fpu\_driver},
 and issue the command
@@ -191,7 +196,7 @@ and issue the command
 
 \subsection{Building specific revisions}
 \index{git!get specific version}
-\index{driver!building!specific version}
+\index{EtherCAN interface!building!specific version}
 In the default case, the library is build from
 the master branch of the git repository.
 The master branch contains the most current
@@ -212,7 +217,7 @@ switch back to the master branch, issue the command
 
 
 \subsection{Building the library module}
-\index{driver!building}
+\index{EtherCAN interface!building}
 To build the Python library module,
 change the working directory to \texttt{fpu\_driver},
 and issue the command \mint{bash}|make pyext|
@@ -226,9 +231,9 @@ is given in the text file ``\texttt{doc/INSTALL}''.
 
 \subsection{Enabling debug output of CAN messages}
 
-Previous versions of the driver required to change macros in the C
+Previous versions of the EtherCAN interface required to change macros in the C
 source code to enable low-level logging of CAN commands.  Beginning
-with driver version 0.5.3, a very comprehensive log of sent and
+with EtherCAN interface version 0.5.3, a very comprehensive log of sent and
 received CAN messages is enabled by default. For long running tests,
 the logging might need to be set to a lower level of detail in order
 to keep the used disk space in reasonable limits.  See
@@ -237,7 +242,7 @@ location of these logs, and any further details.
 
 
 \subsection{Environment configuration}
-\index{driver!configuration}
+\index{EtherCAN interface!configuration}
 \index{setup!environment variables}
 \index{environment variables}
 
@@ -247,7 +252,7 @@ needs to be added to the environment variable
 
 Also, it is probably useful to add the \texttt{python} directory and
 the current directory to the environment variable \texttt{PYTHONPATH},
-so that the driver module can be found independently from the current
+so that the EtherCAN interface module can be found independently from the current
 working directory.  Assuming a standard Ubuntu or Debian setup, this
 can be done by adding the following lines to the file \texttt{.bashrc}
 in the user-specific home directory:
@@ -269,15 +274,15 @@ directory in the PATH environment variable, like this:
 Further, it is recommended to set the default log directory to point
 to a file system which has a lot of free space, for example:
 \begin{minted}{bash}
-  export FPU_DRIVER_DEFAULT_LOGDIR=/moonsdata/logfiles
+  export FPU_INTERFACE_DEFAULT_LOGDIR=/moonsdata/logfiles
 \end{minted}
 
 \index{software protection!configuration}
 \index{software protection!access permissions}
-This version of the driver uses a position database, which tracks
+This version of the EtherCAN interface uses a position database, which tracks
 positions and state of FPUs at any point in time. Importantly, this
 database needs to be \emph{global} for the workstation on which the
-driver software is running. To configure it, the environment variable
+EtherCAN interface software is running. To configure it, the environment variable
 \texttt{FPU\_DATABASE} needs to be set in the configuration file
 \texttt{/etc/profile} as follows:
 
@@ -291,13 +296,13 @@ driver software is running. To configure it, the environment variable
 
 \index{LMDB database!access permissions}
 The directory specified has to be created to be writable by any user
-which runs an FPU driver. It is therefore necessary to set up any user
-which runs the FPU driver to belong to the same user group, and make
+which runs an FPU EtherCAN interface. It is therefore necessary to set up any user
+which runs the FPU EtherCAN interface to belong to the same user group, and make
 the directory writable by any member of this group, using the Unix
 ``chmod'' and ``chgrp'' commands.
 
 \subsection{Supported firmware versions}
-This driver requires FPU firmware version 1.4.4 to support all regular
+This EtherCAN interface requires FPU firmware version 1.4.4 to support all regular
 features. Older versions of the FPU firmware are not fully supported.
 See section~\ref{sec:firmware_compatibility} for details which
 functionality is missing for older versions.
@@ -314,7 +319,7 @@ Messages to an individual FPU are sent using a logical number, the FPU
 ID, which starts at 0 and goes up to a maximum value. Gaps in the
 sequence of used logical numbers are not supported.
 
-The messages from the driver to FPUs are transported by two layers of
+The messages from the EtherCAN interface to FPUs are transported by two layers of
 hardware.
 
 \index{EtherCAN gateway!configuration} \index{IP address!of EtherCAN
@@ -335,7 +340,7 @@ number as well, and is connected to up to 72 (currently, 67) FPUs.
 they have to use a CAN ID which is unique on each bus, and is
 different from zero. This ID is physically configured by manually
 toggling a DIP switch in the FPU's electronics board. The current
-driver uses a fixed continuous mapping (basically, array indexing)
+EtherCAN interface uses a fixed continuous mapping (basically, array indexing)
 from the translation of FPU IDs to gateway number, bus number, and CAN
 ID\footnote{Future versions of the software will relax this
   restriction}.
@@ -356,7 +361,7 @@ elements: gateway number, bus number, and CAN ID.
 
 \paragraph{initialising an FPU}
 
-Before any FPU can be used with the driver, two commands
+Before any FPU can be used with the EtherCAN interface, two commands
 need to be performed to configure it:
 
 \begin{enumerate}
@@ -411,7 +416,7 @@ quotes:
 Importantly, storing the position has to be repeated when it should
 occur that the stored position is not matching the actual
 position. Apart from driver bugs, this can only happen if the FPU is
-moved by something else than the FPU driver.
+moved by something else than the FPU EtherCAN interface.
 
 \paragraph{Viewing FPU position dates}
 
@@ -473,8 +478,8 @@ backup tool for LMDB, \texttt{mdb\_copy} should to be
 used. \texttt{mdb\_copy} can also back-up a database which is in use,
 for example during long-running lifetime tests.
 
-The database can be used by several driver instances at once, each of
-them controlling different FPUs. When the involved drivers are not
+The database can be used by several EtherCAN interface instances at once, each of
+them controlling different FPUs. When the involved EtherCAN interfaces are not
 running, FPUs can be switched from one gateway to another one - the
 information in the database will remain valid.
 
@@ -498,7 +503,7 @@ hardware protection should be used only at an emergency
 level. Furthermore, some situations are not covered by it,
 specifically if the FPU arms are moved into the dead zones.
 
-For these two reasons, the driver software performs comprehensive
+For these two reasons, the EtherCAN interface software performs comprehensive
 additional checks which should ideally ensure that no out-of-range
 movements occur. These checks are performed every time an FPU is
 moved, or configured to move, and are named ``software protection''.
@@ -509,7 +514,7 @@ In some situations, specifically if the hardware protection or the
 alpha datum switch needs to be tested, it can be necessary to switch
 off and deactivate this software protection layer. This can be done
 using the ``\texttt{soft\_protection}'' keyword argument when calling
-the corresponding driver methods. Passing the value
+the corresponding EtherCAN interface methods. Passing the value
 ``\texttt{soft\_protection=False}'' will switch the software
 protection check off. When this is done, the entire responsibility
 with operating the FPUs safely is with the user. It is highly
@@ -523,10 +528,10 @@ assess which operations are safe.
 \subsection{Communication protocol versions}
 \index{protocol!see{\ CAN protocol}} \index{CAN protocol!versions}
 \index{protocol!versions}
-\index{CAN protocol versions! version 1 capabilities} The FPU driver
+\index{CAN protocol versions! version 1 capabilities} The FPU EtherCAN interface
 sends commands to the fibre positioner units, which use a specific
 communication protocol. This protocol needs to match the FPUs firmware
-and its capabilities. The current version of the driver (version
+and its capabilities. The current version of the EtherCAN interface (version
 1.0.x) uses ``communication protocol version 1.3'', which has some
 restrictions in functionality.
 
@@ -536,7 +541,7 @@ need to be manually recovered from. This is explained in
 section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 
 
-The functionality described in this document is supported by driver
+The functionality described in this document is supported by EtherCAN interface
 versions equal or newer than 1.0.0 and an FPU  firmware that supports the
 CAN protocol version 1.3 or later. Earlier firmware versions do not
 support all described features.
@@ -556,7 +561,7 @@ with the FPU.
     command, make positively sure that both the alpha arm datum switch
     and the beta datum switch work. Especially for the alpha arms,
     defective datum switches will likely cause the datum command to
-    damage the hardware. The driver software cannot protect against
+    damage the hardware. The EtherCAN interface software cannot protect against
     this.}
 \end{warning}
 
@@ -565,15 +570,15 @@ with the FPU.
 \label{sec:minimalexample}
 \index{example script}\index{movements!example}
 \index{connect()!example}
-\index{driver!initialisation!example}
+\index{EtherCAN interface!initialisation!example}
 \index{getGridState()!example}
 \index{gen\_wf()!example}
 \index{configMotion()!example}
 \index{executeMotion()!example}
 \index{findDatum()!example}
-\index{version information!retrieving driver and CAN protocol version!example}
+\index{version information!retrieving EtherCAN interface and CAN protocol version!example}
 The following listing shows a minimal example of the
-driver usage, and explains the underlying concepts
+EtherCAN interface usage, and explains the underlying concepts
 step by step.
 
 Importantly, the example assumes that the FPUs have been powered on
@@ -672,27 +677,27 @@ configurations:
 \end{itemize}
 
 \subsection{Grid driver object}
-\index{driver!instantiation}
+\index{EtherCAN interface!instantiation}
 
 In line 10 of the example script, the used number of FPUs is set to
-one, and in line 11, the FPU grid driver is initialised with that
+one, and in line 11, the FPU grid EtherCAN interface is initialised with that
 value. The returned object, which is here referenced by the Python variable
 ``\texttt{gd}'', is always required to access the FPUs.
 
 \subsection{Driver methods}
 \index{networking!see{also connect()}}
 \index{connect()}
-\index{driver!how to call methods}
+\index{EtherCAN interface!how to call methods}
 The driver object allows to invoke method calls (methods are also
 often called member functions) which control the FPU hardware. The
 method names always start with a dot after the name of the driver
 object.  So, \texttt{gd.abc()} would call method ``abc'' of the driver
 object. Like normal function calls, they usually have parameters.
 
-In this case, the method \texttt{connect()} connects the driver to one
+In this case, the method \texttt{connect()} connects the EtherCAN interface to one
 or more EtherCAN gateways and starts listening to messages from the
 FPUs. The parameter \texttt{gw\_address} defines to \emph{which}
-gateways the driver listens to. Section~\ref{sec:connect}
+gateways the EtherCAN interface listens to. Section~\ref{sec:connect}
 on~\pageref{sec:connect} explains the default parameters which are
 used.
 
@@ -700,7 +705,7 @@ As can be seen in the example, the methods have return values.  In
 case of serious errors, the methods raise a Python exception.
 
 The Python program does not need to explicitly disconnect and
-de-initialise the driver, this happens automatically when the program
+de-initialise the EtherCAN interface, this happens automatically when the program
 terminates\footnote{However if required, you can use the statements
   \texttt{gd.disconnect()} and \texttt{del gd}, which disconnects and
   deletes the driver object.}.
@@ -708,7 +713,7 @@ terminates\footnote{However if required, you can use the statements
 
 
 \subsection{Grid state variable}
-\index{grid\_state variable!introduction} Almost all commands to the driver
+\index{grid\_state variable!introduction} Almost all commands to the EtherCAN interface
 receive and return a snapshot of the current state of the used FPU
 (or, if there are several, of all FPUs). That snapshot is passed in a
 variable called \texttt{grid\_state}. This variable contains all the
@@ -794,7 +799,7 @@ data, and displaying information about the FPU state:
 \index{fpu\_state!interactive inspection}
 \index{fpu\_state|see{~\emph{also} FPU state}}
 \index{Python!running interactively}
-\index{driver!configuration!example}
+\index{EtherCAN interface!configuration!example}
 \index{collisions!indicator flags}
 \index{grid state!interactive inspection}
 \index{FPU!detailed state information}
@@ -912,7 +917,7 @@ one datum search was completed) just a scaled and shifted version of
 the ``alpha\_steps'' and ``beta\_steps'' fields. The flags
 \texttt{alpha\_was\_zeroed} and \texttt{beta\_was\_zeroed} are set to
 \texttt{True} when the datum position was reached at least once since
-the driver was started, and no collisions, limit switch breaches, or
+the EtherCAN interface was started, and no collisions, limit switch breaches, or
 abortMotion commands have happened since.
 \end{sloppypar}
 
@@ -948,7 +953,7 @@ retrieved by
   \hline
   \textbf{State name} & \textbf{Description} \\
   \hline 
-UNKNOWN & The state of the FPU is not known, the driver needs to
+UNKNOWN & The state of the FPU is not known, the EtherCAN interface needs to
 be connected to the EtherCAN gateway first and retrieve the state.\\
 \hline
 UNINITIALIZED & The FPU has been pinged successfully, but it was
@@ -994,7 +999,7 @@ OBSTACLE\_ERROR& The FPU has either detected a collision of the
 \index{FPU!states!allowed transitions}
   \includegraphics[width=1\textwidth]{FPU-state1.pdf}
   \caption{Allowed state transitions of a single FPU for CAN protocol
-    version 1, and the associated driver commands and CAN messages.}
+    version 1, and the associated EtherCAN interface commands and CAN messages.}
   \label{fig:states}
 \end{figure}
 
@@ -1031,22 +1036,22 @@ conditions are as follows:
 
 \begin{itemize}
   \item Never use the same serial number for more than one FPU.
-  \item Never move FPUs circumventing the driver. If FPUs are moved
-    outside of the driver, their positions need to be stored in the
+  \item Never move FPUs circumventing the EtherCAN interface. If FPUs are moved
+    outside of the EtherCAN interface, their positions need to be stored in the
     database again, using the \texttt{fpu-admin} tool. If any driver
     instance is controlling such an FPU, before correcting the stored
     positions: exit the driver, and only after correcting re-start the
     driver.
     
-  \item Do not use any old versions of the driver prior to version
+  \item Do not use any old versions of the EtherCAN interface prior to version
     1.0.0, which do not update the position database.
     
   \item Never power-cycle (turn off and on again) an FPU while the
-    driver is connected. If an FPU needs to be re-started, exit the
+    EtherCAN interface is connected. If an FPU needs to be re-started, exit the
     program which uses the driver, restart the FPU, and start up the
     program again.  Alternatively, one can use the
-    \texttt{resetFPUs()} command of the driver. This ensures that the
-    driver correctly interprets the changed step count which is caused
+    \texttt{resetFPUs()} command of the EtherCAN interface. This ensures that the
+    EtherCAN interface correctly interprets the changed step count which is caused
     by the firmware reset.
   \item When first using an FPU which was newly connected to a
     gateway, always use the \texttt{trackedAngles()} method to check
@@ -1055,14 +1060,14 @@ conditions are as follows:
     datum switches. Always have checked that these switches work
     before using a \texttt{findDatum()} command. The following
     section~\ref{sec:datumswitchcheck} explains in detail how a
-    provisional check can be done using driver commands. Checks which
+    provisional check can be done using EtherCAN interface commands. Checks which
     address the reliability of the hardware are out of the scope of
     this document - please refer to the FPU hardware documentation.
 \end{itemize}
 
 \begin{warning}
   \textbf{WARNING: Do not power-cycle the FPU while it is connected
-    to the driver software.}
+    to the EtherCAN interface software.}
 \end{warning}
 
 
@@ -1079,7 +1084,7 @@ allowed, and designed to include the following error conditions:
 \item Cancelling movements using \verb+<Ctrl>-<c>+ or \texttt{abortMotion()}.
 \item Exiting and re-starting the driver program.
 \item Power-cycling FPUs while the driver program is not running.
-\item Controlling multiple FPU grids by different driver instances.
+\item Controlling multiple FPU grids by different EtherCAN interface instances.
 \item Trying to configure invalid waveforms.
 \item Running into limit switch breaches and collisions of the arms.
 \item Resuming protected operations after temporarily disabling the
@@ -1195,7 +1200,7 @@ positions (-175\degree, 5.0\degree), and both switches on at positions (-180.2\d
 To test the datum switches, perform the following steps:
 
 \begin{enumerate}
-\item If the driver is connected, disconnect it first.
+\item If the EtherCAN interface is connected, disconnect it first.
   
 \item Make sure that the FPU database contains the correct alpha and
   beta arm positions for the FPU which is examined. Do this using
@@ -1225,7 +1230,7 @@ To test the datum switches, perform the following steps:
   page~\pageref{sec:setinitialposition}. The further explanation
   assumes that the FPU position is at the numbers shown above.
 
-\item Connect the driver and run a \texttt{pingFPUs()} command.
+\item Connect the EtherCAN interface and run a \texttt{pingFPUs()} command.
   
 \item Move the FPU so that it is within the normal range, and with
   certainty not touching the datum switches.
@@ -1306,7 +1311,7 @@ This can be achieved by the following commands:
 grid_state = gd.getGridState()
 grid_state.driver_state  
 \end{minted}
-The return value is the connection state of the driver, which is
+The return value is the connection state of the EtherCAN interface, which is
 \texttt{DS\_CONNECTED} if the connection is live.  In the case that the
 connection fails, it is still possible to retrieve state information
 on the FPUs, but it cannot be refreshed any more until the connection
@@ -1315,7 +1320,7 @@ object.
 \end{samepage}
 
 \index{connection errors!example} Of course, it is possible that the
-connection between driver and EtherCAN gateway works, but that an FPU
+connection between EtherCAN interface and EtherCAN gateway works, but that an FPU
 does not respond, for example, if the CAN bus connection wiring is
 broken, or the FPU has no power. This can be checked by the commands:
 
@@ -1354,7 +1359,7 @@ page~\pageref{sec:errors}.
 
 \paragraph{Recovery form connection errors}
 If the connection to a gateway is lost, the \texttt{connect()} method
-of the driver needs to be called again to re-establish it.
+of the EtherCAN interface needs to be called again to re-establish it.
 
 If a specific FPU does not respond, each command to it will result in
 a time-out, until it responds again. Other FPUs will be unaffected.
@@ -1472,7 +1477,7 @@ Both alpha and beta arm are moved to the datum position. The value
 \texttt{DASEL\_ALPHA} moves only the alpha arm, and the value
 \texttt{DASEL\_BETA} will move only the beta arm\footnote{Moving alpha
   and beta arms separately depends on a minor firmware update to
-  protocol version 1.1 which enables this feature. The driver software
+  protocol version 1.1 which enables this feature. The EtherCAN interface software
   will perform a check to make sure the firmware has the right
   version, or rise an exception of the class
   \texttt{DE\_FIRMWARE\_UNIMPLEMENTED}.}.
@@ -1526,7 +1531,7 @@ move.
 \subsubsection{Definition of movement directions}
 \index{movements!definition of directions}
 
-The FPU driver uses uniformly the following convention
+The FPU EtherCAN interface uses uniformly the following convention
 to define the direction of movements and the sign of
 angles:
 
@@ -1765,10 +1770,10 @@ not met by the current firmware.
   \index{minimum number of steps}
 \item The first non-zero entry in any movement sequence needs to have
   the minimum step count.  Currently, this minimum is set to a step
-  count of 125, which can be changed as a driver parameter. (To be
+  count of 125, which can be changed as a EtherCAN interface parameter. (To be
   precise, a starting speed which is up to 5\,\% higher than this
   minimum speed is still acceptable, which is needed for feeding in
-  output from the path planning library -- this is also a driver
+  output from the path planning library -- this is also a EtherCAN interface
   parameter, see section~\ref{sec:driverinitialisation} on
   page~\pageref{sec:driverinitialisation}. Minimum and maximum value
   will be configurable in later versions of the firmware.)
@@ -1795,7 +1800,7 @@ not met by the current firmware.
   the larger number can only be at most 40\% larger than the absolute
   value of the smaller number. Also, a change from zero to the minimum
   value, or from a value not larger than the minimum value to zero is
-  allowed. (This maximum rate of change is also a driver parameter, see
+  allowed. (This maximum rate of change is also a EtherCAN interface parameter, see
   section~\ref{sec:driverinitialisation}.)
 
   
@@ -1811,7 +1816,7 @@ all known restrictions of FPU firmware version 1.4.4.
 \item Parameters are a minimum step count (which is 125, by default),
   a maximum step count (which is 500, by default), and a maximum
   starting speed at 138, which is the minimum step count plus 10.0\,\%.  These
-  limits are driver parameters, see
+  limits are EtherCAN interface parameters, see
   section~\ref{sec:driverinitialisation} on
   page~\pageref{sec:driverinitialisation}.
 
@@ -1863,7 +1868,7 @@ all known restrictions of FPU firmware version 1.4.4.
   increasing speed, and sections with decreasing speed. Also, a change
   from zero to the minimum start speed value, or from a value larger
   or equal to the minimum start value to zero is allowed. This maximum
-  rate of change is also a driver parameter, see
+  rate of change is also a EtherCAN interface parameter, see
   section~\ref{sec:driverinitialisation}.
 
   
@@ -2061,7 +2066,7 @@ accepts all parameters which the \texttt{configMotion()} does accept.
 The full range-checking for safety of waveforms is used.
 
 Identical to a relative waveform, a path can be reversed by the
-\texttt{reverseMotion()} command. At this level, the driver does not
+\texttt{reverseMotion()} command. At this level, the EtherCAN interface does not
 check paths for conflicts or collisions, so that the path planning
 software needs to ensure that no conflicts will occur.
 
@@ -2091,7 +2096,7 @@ The script \texttt{CalibrationPositioning.py} is a small program which
 takes several options and can perform some basic burn-in or lifetime
 testing of FPUs. It can be used as a starting point for more
 elaborated engineering and verification software. Apart from the FPU
-driver commands documented in this document, all other programming
+EtherCAN interface commands documented in this document, all other programming
 constructs and functions are explained in the Python Library
 Reference\footnote{see \url{https://docs/python.org/2.7/}}.
 
@@ -2122,7 +2127,7 @@ Exceptions fall roughly into the following categories:
   \item[InvalidParameterError] Invalid parameters to a command, for example addressing an FPU
     ID which is not existent or not configured.
   \item[InvalidStateException] Issuing a command which is invalid at the current state of
-    an FPU, or of the driver as a whole.
+    an FPU, or of the EtherCAN interface as a whole.
   \item[MovementError] Errors which result from collisions, limit switch breaches,
     or abortions of movements.
   \item[SystemFailure] Rarely, errors which are caused by the depletion of memory
@@ -2161,7 +2166,7 @@ This constant of each record the following fields:
 \begin{description}
  
 \item[unixtime] The UNIX time (number of seconds since January 1,
-  1970). This corresponds to the time stamps in the driver log.
+  1970). This corresponds to the time stamps in the EtherCAN interface log.
   
 \item[datum\_count] Count of datum operations for this FPU.
   
@@ -2205,7 +2210,7 @@ This constant of each record the following fields:
 \index{troubleshooting!capturing and examining CAN messages}
 \index{troubleshooting!tracking the FPU grid state}
 
-By default, the driver logs commands and CAN messages to text files
+By default, the EtherCAN interface logs commands and CAN messages to text files
 which are created in the subdirectory \texttt{\_log} of the current
 work directory. Each log file is tagged with a ISO 8601 time
 stamp\footnote{\url{http://en.wikipedia.org/wiki/ISO\_8601}} of the
@@ -2252,7 +2257,7 @@ arguments to the driver constructor. The available options are:
     FPU and detailed state of the whole FPU grid on completion of each
     command.  This level will generate a larger amount of data but
     will not affect responsiveness of the message processing within
-    the driver.  It is tailored to reconstruct any problem with
+    the EtherCAN interface.  It is tailored to reconstruct any problem with
     collisions or hardware defects during normal instrument operation
     and, when necessary, help to improve collision recovery
     strategies. \\
@@ -2264,7 +2269,7 @@ arguments to the driver constructor. The available options are:
     (e.g. sent waveform tables). Also, logs the grid state while
     waiting for the completion of movement commands. This level will
     generate a large amount of data but should usually not affect
-    responsiveness of the driver. This level of logging is appropriate
+    responsiveness of the EtherCAN interface. This level of logging is appropriate
     e.g. when debugging the generation of waveform data from the path
     analysis layer. \\
 
@@ -2272,7 +2277,7 @@ arguments to the driver constructor. The available options are:
     LOG\_DEBUG &
     Log details on CAN response time-outs and any information which
     might be helpful to diagnose problems. This level is intended
-    for debugging the driver software.\\
+    for debugging the EtherCAN interface software.\\
 
     \hline LOG\_TRACE\_CAN\_MESSAGES & Additionally, log hex dump of
     binary data of each CAN message as it is sent to the FPUs and each
@@ -2282,7 +2287,7 @@ arguments to the driver constructor. The available options are:
     generation, the CAN protocol itself, or issues with the FPU
     firmware. Because messages are sent from within high-priority
     event loops, enabling this level will degrade the responsiveness
-    of the driver and might delay processing of critical error
+    of the EtherCAN interface and might delay processing of critical error
     responses. It is not designed to be used during normal instrument
     operation. \\
  
@@ -2290,7 +2295,7 @@ arguments to the driver constructor. The available options are:
   \hline
 \end{tabular}
 \end{centering}
-\caption{Log levels of the FPU driver}
+\caption{Log levels of the FPU EtherCAN interface}
 \label{tab:loglevels}
 \end{table}
 
@@ -2374,7 +2379,7 @@ time zone.
 Calendar dates and times are not always continuous, due to clock
 adjustments and introduction of leap seconds. In some cases, this can
 cause problems, for example spurious time-outs can appear.. Therefore,
-the driver uses internally a different, monotonic clock, which is
+the EtherCAN interface uses internally a different, monotonic clock, which is
 basically the number of seconds since the system start. When certain
 fields are logged, such as the time when an FPU received its last
 command, these times are converted to the UNIX timestamp, too.
@@ -2385,7 +2390,7 @@ command, these times are converted to the UNIX timestamp, too.
 \index{recovery of movement errors}
 \index{movements!errors!recovery}
 
-Because the FPUs are controlled individually, and the CAN-level driver
+Because the FPUs are controlled individually, and the  EtherCAN interface
 has absolutely no concept of their geometric configuration, it cannot
 take care to move them so that collisions are avoided.  Instead, the
 hardware needs to handle collisions in a way that no damage results
@@ -2409,8 +2414,8 @@ protect the beta arm. This includes movements where the beta arm is
 moved out of its allowed range and hits the hard stop.
 
 When a collision or limit switch breach occurs, the FPU electronic
-hardware stops any movement, and sends a message to the driver. On
-receiving such a message, the driver changes the state of the FPU in
+hardware stops any movement, and sends a message to the EtherCAN interface. On
+receiving such a message, the EtherCAN interface changes the state of the FPU in
 the internal \texttt{grid\_state} structure. This is reflected in the
 status flags of the FPU, which were discussed above in section
 \ref{sec:fpustate} on page \pageref{sec:fpustate}.  The \texttt{state}
@@ -2436,9 +2441,9 @@ generated exception is not caught, this terminates the Python script.
 
 \subsubsection{Collisions and limit switch breaches while the FPUs are not moving}
 \index{collisions!while FPUs are not moving} It is also possible that
-a collision occurs while an FPU is \emph{not} moving and the driver
+a collision occurs while an FPU is \emph{not} moving and the EtherCAN interface
 not executing a command.  In this case, the internal
-\texttt{grid\_state} data kept by the driver is changed, too. However,
+\texttt{grid\_state} data kept by the EtherCAN interface is changed, too. However,
 any \texttt{grid\_state} variable within Python which was returned
 form an earlier command, will not be updated automatically. When the
 user tries to launch a new command, the changed state is detected, and
@@ -2580,7 +2585,7 @@ differences for protocol version 1:
   
 \item In some cases, protocol 1 is not able to detect lost messages,
   so that state information might be stale. Also, the FPU can lose
-  messages from the driver software when it is busy or overloaded. 
+  messages from the EtherCAN interface software when it is busy or overloaded. 
   
 
 \item It is not possible to lock or unlock FPUs, in order to exclude
@@ -2602,7 +2607,7 @@ or more FPUs can be managed by higher levels of the instrument
 software.
 
 \subsection{Retrieving individual states}
-The driver software can effortlessly send and receive commands to up
+The EtherCAN interface software can effortlessly send and receive commands to up
 to 1005 FPUs. The only requirement is that the grid driver object is
 initialised with that number of FPUs, and the corresponding number of
 EtherCAN gateways is connected. When the \texttt{grid\_state} variable
@@ -2662,12 +2667,12 @@ the resulting overall state is \texttt{OBSTACLE\_ERROR}.
 
 
 \subsection{Thread-safety and concurrency}
-All driver methods are thread-safe, so they can be used in a GUI
+All EtherCAN interface methods are thread-safe, so they can be used in a GUI
 environment, for example.
 
 It is possible to inquire the state of the grid and of course the
 known positions of all FPUs while movements are happening, using the
-\texttt{getGridState()} member function of the grid driver
+\texttt{getGridState()} member function of the grid EtherCAN interface
 object. Currently, commands are only processed one at a time - this
 restriction does not has purely technical reasons, but simply makes
 management substantially less complex. The exception from this is the
@@ -2678,7 +2683,7 @@ thread.
 \index{waitForState()}
 \index{waiting for a command to finish}
 \index{movements!waiting for command completion}
-Finally, there exists a low-level driver method,
+Finally, there exists a low-level EtherCAN interface method,
 \texttt{waitForState()} which waits either for a specific time-out to
 happen, or for a specific state of the grid to be reached. It always
 returns the updated grid state.
@@ -2694,23 +2699,23 @@ and a high-level resolution strategy.
 \section{Reference}
 \label{sec:reference}
 
-\subsection{Retrieving information about the driver version}
-\index{version information!retrieving driver and CAN protocol version!reference}
+\subsection{Retrieving information about the EtherCAN interface version}
+\index{version information!retrieving EtherCAN interface and CAN protocol version!reference}
 \index{networking!CAN protocol!retrieving version}
 There are two attributes of the \texttt{FpuGridDriver} module
 which allow to retrieve version information:
 
 The standard attribute \texttt{FpuGridDriver.\_\_version\_\_} returns
-the latest git version label of the driver. The first letter is stripped, so
+the latest git version label of the EtherCAN interface. The first letter is stripped, so
 that ``v0.9.3'' turns into ``0.9.3''. This version number is
-authoritative when testing whether a driver API or documentation is
+authoritative when testing whether a EtherCAN interface API or documentation is
 valid for the installed module.
 
 The attribute \texttt{FpuGridDriver.CAN\_PROTOCOL\_VERSION} displays
-the major version number of the CAN protocol against which the driver
+the major version number of the CAN protocol against which the EtherCAN interface
 was compiled, it can be ``1'' or ``2''. This version number needs to
 match the version of the firmware which is running on the FPUs,
-otherwise the driver will not work. The version numbers of the FPU
+otherwise the EtherCAN interface will not work. The version numbers of the FPU
 firmware can be retrieved and checked using the
 \texttt{printFirmwareVersion()} and \texttt{minFirmwareVersion()}
 commands which are described in
@@ -2726,7 +2731,7 @@ The driver is initialised by calling the class constructor
 \texttt{FpuGridDriver.GridDriver()}, and assigning it to a Python
 variable. The constructor has one integer parameter, which is the
 number of FPUs which will be used. The maximum value for this number
-is defined at compile time in the driver, and is currently 1005.
+is defined at compile time in the EtherCAN interface, and is currently 1005.
 
 The numbering of FPUs and buses and the way hardware addresses are
 mapped to FPU IDs are currently fixed. Future versions will allow for
@@ -2734,7 +2739,7 @@ arbitrary numbering.
 
 \begin{sloppypar}
 If the running OS is lacking system resources, for example if the
-memory is exhausted, initializing the driver might return either a
+memory is exhausted, initializing the EtherCAN interface might return either a
 Python MemoryError exception, or an
 \texttt{fpu\_driver.SystemFailure} exception. In the latter case,
 the detailed resource which is lacking will be indicated in the error
@@ -2753,7 +2758,7 @@ be passed:
   angle convention at the datum position. By default, it is set to
   -180.0, this means that the alpha arm at the datum position will
   have an alpha angle of $-180.0\degree$. This angle is primarily used
-  when waveform tables and movements are logged by the driver (see
+  when waveform tables and movements are logged by the EtherCAN interface (see
   also the keyword argument with the same name in the
   \texttt{countedAngles()} method and the \texttt{list\_angles()}
   utility function).
@@ -2766,7 +2771,7 @@ be passed:
   non-responding FPU is defined by the protocol).
 
 \item[\texttt{motor\_minimum\_frequency=500}] Is the minimum allowed
-  frequency of the stepper motor which the driver will accept when
+  frequency of the stepper motor which the EtherCAN interface will accept when
   checking waveforms for validity. Together with the length of a
   waveform segment this frequency directly defines the minimum number
   of steps which need to occur in a waveform section. For example, in
@@ -2814,20 +2819,20 @@ be passed:
 \item[\texttt{waveform\_upload\_pause\_us}] This keyword parameter
   allows to configure a small pause between sending waveform steps to
   the same FPU. The value is an integer number in microsecond units,
-  and for driver version 1.2.0 and newer, it is 50\,000 by default. If
+  and for EtherCAN interface version 1.2.0 and newer, it is 50\,000 by default. If
   the value is zero, no waiting is done.
 
 \label{it:confirm_each_step}  
 \item[\texttt{confirm\_each\_step}] This keyword parameter is a
-  Boolean value which controls whether the driver waits for a
+  Boolean value which controls whether the EtherCAN interface waits for a
   confirming response for each waveform element that is sent to an
   FPU. Because each response requires a CAN message, this can roughly
   reduce the free capacity of the CAN buses by a factor of two. For the
-  1.2.0 driver and subsequent versions, the default value is \texttt{True}.
+  1.2.0 EtherCAN interface and subsequent versions, the default value is \texttt{True}.
 
-  Important: As of driver version 1.3.0, this option is not yet fully
+  Important: As of EtherCAN interface version 1.3.0, this option is not yet fully
   implemented, because the correct implementation requires significant
-  structural change to the driver. Correspondingly, the waveform
+  structural change to the EtherCAN interface. Correspondingly, the waveform
   upload can fail.
   
 \end{description}
@@ -2866,7 +2871,7 @@ to be thrown.
 For details how subsets are handled in the \texttt{configMotion()}
 command, see section~\ref{sec:configmotion}.
 
-This feature requires a driver version >= 0.6.0 and works with all
+This feature requires a EtherCAN interface version >= 0.6.0 and works with all
 firmware versions (as long as the firmware supports the specific
 command mode).
 
@@ -2882,7 +2887,7 @@ can operate completely independently.
 \subsubsection{connect()}
 \label{sec:connect}
 \index{connect()!reference} \index{networking!ip and port
-  configuration} \index{EtherCAN!gateway!configuration} \index{IP
+  configuration} \index{EtherCAN gateway!configuration} \index{IP
   address!of EtherCAN gateway} \index{errors!connection} The method
 \texttt{FpuGridDriver.connect()} establishes a connection to a list of
 EtherCAN gateways. The configuration of gateways ip address and port
@@ -3039,7 +3044,7 @@ In the following descriptions, the state variable is named as
 valid for a Python variable.
 
 Typically, the \texttt{grid\_state} variable is updated by each call
-to a driver method. In case of movement errors such as collisions, it
+to a EtherCAN interface method. In case of movement errors such as collisions, it
 can however be useful to refresh its state by calling
 \texttt{getGridState()} again, because the state of the FPU grid might
 still be changing after the failed command has returned.
@@ -3336,7 +3341,7 @@ this without checking the current position. Analogously, the constant
 the negative direction.
 
 Such a manual search was required to be performed in previous versions
-of the driver, earlier than version 1.1.0. For current driver
+of the EtherCAN interface, earlier than version 1.1.0. For current EtherCAN interface
 versions, while still possible, this is not necessary any more since
 the position database keeps track of the actual positions, when the
 system is powered off.  
@@ -3390,7 +3395,7 @@ To disable the check, one can pass the keyword parameter
 \end{minted}
 
 This mode is only valid when no selected FPU was initialized before,
-otherwise it will be rejected by the driver.
+otherwise it will be rejected by the EtherCAN interface.
 
 
 \paragraph{Result state of a datum operation}
@@ -3891,7 +3896,7 @@ may not correspond to the current arm position.
 \index{alpha\_datum\_offset} The function accepts a second keyword
 argument, \texttt{alpha\_datum\_offset}, which sets the conventional
 value of the alpha angle when the alpha arm is at the datum position.
-To match the values which are used in the driver logs, it should have
+To match the values which are used in the EtherCAN interface logs, it should have
 the same value as the driver parameter with the same name described in
 section~\ref{sec:driverparams}. The default value is $-180.0\degree$.
 
@@ -3976,7 +3981,7 @@ The function itself does not check the path data for validity - this
 happens in the driver when the \texttt{configPaths()} method is
 called. To quickly check whether a waveform file is valid, a utility
 named \texttt{check\_pathfile.py} is provided, which performs the same
-checks as the driver, and marks each step which does not conform to
+checks as the EtherCAN interface, and marks each step which does not conform to
 all rules, along with the unsatisfied rule.
 
 
@@ -4002,7 +4007,7 @@ variable. The library itself may depend on further python modules,
 depending on the used environment.
 
 The function itself does not check the path data for validity - this
-happens in the driver when the \texttt{configMotion()} method is
+happens in the EtherCAN interface when the \texttt{configMotion()} method is
 called.
 
 \index{load\_waveform()!difference to load\_paths()}
@@ -4094,7 +4099,7 @@ Python's interactive option, like this:
   $ python -i initializeGrid.py -N 5
 \end{minted}
 
-Started this way, the script initialises the driver for that number of
+Started this way, the script initialises the EtherCAN interface for that number of
 FPUs, sends them a ping command, shows the tracked positions from the
 FPU database, and returns control to the command line, waiting for
 input. One can then inspect the tracked angles and send a
@@ -4119,7 +4124,7 @@ Further options to this script can be listed by using the
 The hierarchy of exceptions used by the Python module is as follows:
 
 \begin{verbatim}
-    FPUDriverException                   // top-level class
+    EtherCANException                    // top-level class
         MovementError                    // error during movement operations
             CollisionError               // collision detected
             LimitBreachError             // alpha limit breach detected
@@ -4127,7 +4132,7 @@ The hierarchy of exceptions used by the Python module is as follows:
             StepTimingError              // internal FPU error
             FirmwareTimeoutError         // firmware time-out, movement took too long
             HardwareProtectionError      // firmware rejected movement, or fatal failure
-        InvalidStateException            // command does not match driver state
+        InvalidStateException            // command does not match EtherCAN interface state
             ProtectionError              // unsafe command called
         SystemFailure                    // system ressource error
         InvalidParameterError            // parameters for command not valid
@@ -4146,7 +4151,7 @@ The hierarchy of exceptions used by the Python module is as follows:
 \index{error codes}
 \index{errors!during setup}
 
-The following error symbols are used in the driver.  It is recommended
+The following error symbols are used in the EtherCAN interface.  It is recommended
 to use only the symbols, not the actual enumeration values, which
 might change.
 
@@ -4173,14 +4178,14 @@ might change.
     /* Fatal system failure */
 
     // An initialization command ran out of memory, which prevents
-    // successful driver start-up.
+    // successful EtherCAN interface start-up.
     DE_OUT_OF_MEMORY = 10,
 
     // Some resource from the OS is not available, which leads
     // to an unrecoverable situation.
     DE_RESOURCE_ERROR = 11,
 
-    // A necessary assumption or check for correctness of the driver
+    // A necessary assumption or check for correctness of the EtherCAN interface
     // was violated.
     DE_ASSERTION_FAILED = 12,
 
@@ -4189,16 +4194,16 @@ might change.
     /* state errors where requested operations do not match the
        current system state */
 
-    // A command was tried to send, or the driver was instructed to
-    // connect, but the driver was not initialized properly.  That can
+    // A command was tried to send, or the EtherCAN interface was instructed to
+    // connect, but the EtherCAN interface was not initialized properly.  That can
     // happen if the system goes out of memory, or if a logical error
     // affected the initialization.
-    DE_DRIVER_NOT_INITIALIZED = 101,
+    DE_INTERFACE_NOT_INITIALIZED = 101,
 
 
-    // Driver has already been correctly initialised, and another
+    // EtherCAN Interface has already been correctly initialised, and another
     // initialisation was tried.
-    DE_DRIVER_ALREADY_INITIALIZED = 102,
+    DE_INTERFACE_ALREADY_INITIALIZED = 102,
 
 
     // The user tried to send a high-level command while another
@@ -4214,11 +4219,11 @@ might change.
     // accurately and safely.
     DE_FPU_NOT_INITIALIZED = 105,
 
-    // Driver is already initialized.
-    DE_DRIVER_ALREADY_CONNECTED = 106,
+    // EtherCAN Interface is already initialized.
+    DE_INTERFACE_ALREADY_CONNECTED = 106,
 
-    // Driver is still connected.
-    DE_DRIVER_STILL_CONNECTED = 107,
+    // EtherCAN Interface is still connected.
+    DE_INTERFACE_STILL_CONNECTED = 107,
 
     // Waveform is not configured / not ready for movement.
     DE_WAVEFORM_NOT_READY = 108,
@@ -4235,8 +4240,8 @@ might change.
     // The operation can damage hardware and protection is enabled
     DE_PROTECTION_ERROR = 112,
 
-    // The driver state does not allows the operation
-    DE_INVALID_DRIVER_STATE = 113,
+    // The EtherCAN interface state does not allows the operation
+    DE_INVALID_INTERFACE_STATE = 113,
 
     // Some addressed FPUs are locked.
     DE_FPUS_LOCKED = 114,
@@ -4285,7 +4290,7 @@ might change.
     DE_CAN_COMMAND_TIMEOUT_ERROR = 402,
 
     // A command was tried to send to the FPUs but this was not
-    // possible because the driver was or became disconnected from a
+    // possible because the EtherCAN interface was or became disconnected from a
     // gateway. During operation, this should only happen when the
     // socket connection breaks down for an extended time, as the
     // socket protocol will try hard to do re-sends for several
@@ -4368,7 +4373,7 @@ might change.
 
     /***************************************/
     /* illegal step counter value */
-    // The driver received an illegal counter value from
+    // The EtherCAN interface received an illegal counter value from
     // an FPU, so that it cannot correctly track the FPUs
     // any more. It is required to measure the
     // position and update the position database.
@@ -4381,7 +4386,7 @@ might change.
 \index{supported firmware versions}
 \index{firmware compatibility}
 
-The driver documented here, version 1.3.0, is compatible with firmware
+The EtherCAN interface documented here, version 1.3.0, is compatible with firmware
 1.4.4 and newer. The following limitations apply:
 
 \begin{description}
@@ -4390,7 +4395,7 @@ The driver documented here, version 1.3.0, is compatible with firmware
 \item For these firmware protocol versions, it is not possible to
   configure a waveform reliably without using a confirmation for every
   message.
-\item The driver probably allows some waveforms which are not within
+\item The EtherCAN interface probably allows some waveforms which are not within
   the safe range of the firmware.
   \end{itemize}
 \item[firmware versions < 1.4.4]
@@ -4426,9 +4431,9 @@ might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 \subsection*{Changes in version 1.3.0}
 \begin{itemize}
-\item Compatibility: By default, this FPU driver version is compatible
+\item Compatibility: By default, this FPU EtherCAN interface version is compatible
   with firmware version 1.4.4 upwards. To use it with earlier firmware
-  versions, the driver configuration parameter
+  versions, the EtherCAN interface configuration parameter
   \texttt{firmware\_version\_address\_offset} to the value
   0. Detection of CAN overflow conditions requires at least firmware
   version 1.4.4. For more detailed information on firmware
@@ -4506,19 +4511,19 @@ commands, or alter otherwise visible behaviour of the driver.
   against collisions is conserved.
   
   
-\item Added: The driver checks for CAN buffer overflow error messages
+\item Added: The EtherCAN interface checks for CAN buffer overflow error messages
   which have been added in firmware version 1.4.4\,.  The new
   exception type \texttt{CAN\_BufferOverflowException} has been added
   for reporting this error. See section~\ref{sec:ExceptionsReference}
   for details.
   
-\item Added: The driver has two additional parameters.  The first,
+\item Added: The EtherCAN interface has two additional parameters.  The first,
   named \texttt{waveform\_upload\_pause\_ms}, allows to select a
   higher upload speed for the upload of waveforms to the FPUs.  The
   second, \texttt{confirm\_each\_step}, allows to optionally disable
   most waiting for confirmations. These options are not enabled by
   default, because they might trigger some non-obvious problems.  As
-  of driver version 1.3.0, the second option is not implemented in the
+  of EtherCAN interface version 1.3.0, the second option is not implemented in the
   firmware protocol.  Details are described
   in~\ref{it:waveform_upload_pause_ms} on
   page~\pageref{it:waveform_upload_pause_ms}.
@@ -4539,10 +4544,10 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 1.2.0}
 \begin{itemize}
-\item Compatibility: This driver version is not compatible with later
+\item Compatibility: This EtherCAN interface version is not compatible with later
   developed firmware versions of v1.4.4 or higher. The reason is that
   these later version store the firmware version information in a
-  different binary location which can't be found by the driver.
+  different binary location which can't be found by the EtherCAN interface.
   
 \item Added: Life time test script which generates relatively
   realistic movements in a continuous loop.
@@ -4569,7 +4574,7 @@ commands, or alter otherwise visible behaviour of the driver.
   FPUs which are connected to a gateway with an IP address different
   from the default.
   
-\item Added: The driver has now initialisation parameters which
+\item Added: The EtherCAN interface has now initialisation parameters which
   allow to configure the minimum and maximum speed of the stepper
   motors.
 \item Added: According to a change in the protocol and ICD, when
@@ -4629,7 +4634,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \item Fixed/changed: Changed \texttt{repeatMotion()} and
   \texttt{reverseMotion()} commands to wait for a response from the
   FPU. For allowing workarounds, this wasn't required in earlier
-  driver versions.  However, a response is now needed for the
+  EtherCAN interface versions.  However, a response is now needed for the
   protection wrapper in order to operate reliably.
 
 \item Added: Any passed \texttt{fpuset} argument is now checked in a
@@ -4754,7 +4759,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \item The \texttt{readSerialNumbers()}, \texttt{writeSerialNumber()},
   and \texttt{printSerialNumbers()} methods have been added.
   
-\item The driver now logs alpha arm angles with a configurable offset
+\item The EtherCAN interface now logs alpha arm angles with a configurable offset
   parameter for the datum position, named
   \texttt{alpha\_datum\_offset}. The default value is
   $-180.0\degree$.  The same parameter can be set in the
@@ -4789,7 +4794,7 @@ commands, or alter otherwise visible behaviour of the driver.
   on page~\pageref{sec:restricteddatumsearch}, and
   section~\ref{sec:subsets} on page~\pageref{sec:subsets}.
   
-\item The driver methods \texttt{getFirmwareVersion()},
+\item The EtherCAN interface methods \texttt{getFirmwareVersion()},
   \texttt{printFirmwareVersion()}, and \\
   \texttt{minFirmwareVersion()}
   allow to retrieve, display, and check the version numbers of the FPU
@@ -4806,7 +4811,7 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 0.5.4}
 \begin{itemize}
-\item Fixed bug in C++ driver which caused \texttt{OBSTACLE\_ERROR}
+\item Fixed bug in C++ EtherCAN interface which caused \texttt{OBSTACLE\_ERROR}
   state to be overwritten by \texttt{ABORTED} message after an FPU
   detected a collision.
 \item Corrections to the documentation of keyword arguments \texttt{findDatum()}.
@@ -4878,15 +4883,15 @@ as needed. Here is an overview what each script does:
 
 \section{Dependency requirements and installation}
 \label{sec:installationfromscratch}
-\index{driver!building}
-\index{driver!building requirements and dependencies}
+\index{EtherCAN interface!building}
+\index{EtherCAN interface!building requirements and dependencies}
 \index{boost libraries!retrieving}
 \index{git!installation}
 
 \subsection{Prerequisites}
 
 \begin{enumerate}
-  \item For the C++ driver and static library
+  \item For the C++ EtherCAN interface and static library
 
     
 \begin{itemize}
@@ -4929,8 +4934,8 @@ Note that Python might need to be called with the command name
 \texttt{python2} on newer systems.
 
 
-\subsection{Installation of FPU driver module}
-\index{driver!installing}
+\subsection{Installation of FPU EtherCAN interface module}
+\index{EtherCAN interface!installing}
 \subsubsection{Installing boost libraries}
 \index{boost libraries!installing}
 Recent Boost libraries are required to build the Python module, which
@@ -5035,17 +5040,17 @@ On Ubuntu or Debian, install it as follows:
 
 
 
-\subsubsection{Building the C++ driver library}
-\index{driver!building!commands}
-The FPU driver is a static library which becomes included in the
+\subsubsection{Building the C++ EtherCAN interface library}
+\index{EtherCAN interface!building!commands}
+The FPU EtherCAN interface is a static library which becomes included in the
 Python module.  Build the FPU driver library as follows:
 
   \begin{minted}{bash}
     $ cd fpu_driver
-    $ make driver
+    $ make lib
   \end{minted}    
 
-This places the static library libfpudriver.a into
+This places the static library libethercan.a into
 the subdirectory "/lib".
 
 \subsubsection{Building the python module}
@@ -5064,9 +5069,9 @@ scripts which can be used to test the module.
 \subsubsection{Generating the documentation}
 \index{documentation!generating}
 
-The documentation source is managed along with the driver sources.  To
+The documentation source is managed along with the EtherCAN interface sources.  To
 generate the documentation for a specific earlier version of the
-driver, a \LaTeX{} distribution including the \texttt{minted} package
+EtherCAN interface, a \LaTeX{} distribution including the \texttt{minted} package
 and the Python pygments software needs to be installed (package name
 \texttt{python-pygments} or \texttt{pygments}).  This is typically
 included in the \texttt{tex-live} package. Also, the \texttt{inkscape}
@@ -5134,7 +5139,7 @@ variable \texttt{NUM\_FPUS} to a smaller values (the default is 1000).
 The same is achieved using the option ``-N''.  Usually, this makes
 little visible difference. Keep in mind, however, that surplus
 simulated FPUs respond to broadcast commands, which is reported by the
-driver, and recorded in the logs. Simulating too few FPUs results in
+EtherCAN interface, and recorded in the logs. Simulating too few FPUs results in
 CAN timeout errors.
 
 \index{aborting!movements|see{abortMotion}}
