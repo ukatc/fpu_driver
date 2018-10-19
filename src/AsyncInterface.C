@@ -313,19 +313,19 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
     // without causing undefined behaviour.
     if (grid_state.count_timeout != old_count_timeout)
     {
-	LOG_CONTROL(LOG_ERROR, "%18.6f : resetFPUs():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : resetFPUs():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
                     ethercanif::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
     if (old_count_can_overflow != grid_state.count_can_overflow)
     {
-	LOG_CONTROL(LOG_ERROR, "%18.6f : resetFPUs():  error: firmware CAN buffer overflow\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : resetFPUs():  error: firmware CAN buffer overflow\n",
                     ethercanif::get_realtime());
 
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
     LOG_CONTROL(LOG_INFO, "%18.6f : resetFPUs: command completed succesfully\n",
                 ethercanif::get_realtime());
 
@@ -709,14 +709,14 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
                     ethercanif::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
-    
+
     if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: firmware CAN buffer overflow\n",
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
     LOG_CONTROL(LOG_INFO, "%18.6f : findDatum(): command successfully sent\n",
                 ethercanif::get_realtime());
@@ -888,7 +888,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
 
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
-    
+
     if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: firmware CAN buffer overflow\n",
@@ -898,7 +898,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
         fsync(config.fd_controllog);
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
     finished = (num_moving == 0) && (! cancelled);
 
@@ -1156,11 +1156,11 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
 }
 
 E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
-						 const int MIN_STEPS,
-						 const int MAX_STEPS,
-						 const int MAX_START_STEPS,
-						 const unsigned int MAX_NUM_SECTIONS,
-						 const double MAX_INCREASE_FACTOR) const
+        const int MIN_STEPS,
+        const int MAX_STEPS,
+        const int MAX_START_STEPS,
+        const unsigned int MAX_NUM_SECTIONS,
+        const double MAX_INCREASE_FACTOR) const
 {
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V2)\n",
@@ -1246,7 +1246,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
                 const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
                 const int xa = abs(xs);
 
-		const bool is_last_step = (sidx == (num_steps -1));
+                const bool is_last_step = (sidx == (num_steps -1));
 
 
                 if (xa > MAX_STEPS)
@@ -1265,41 +1265,41 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
                 const int increase_limit = int(ceil(xa_small * MAX_INCREASE_FACTOR));
 
                 const bool valid_acc = (
-		    // 1) movement into the same direction
+                                           // 1) movement into the same direction
 
-		    ((x_sign == x_last_sign)
-		     //   1a) and currently *stopping* to move and on last step of waveform
-		     && (( (xa < MIN_STEPS)
-			   && is_last_step)
-			 // or, 1b) at least  MIN_STEPS and the larger
-			 // of both values not larger than the allowed
-			 // relative increase
-			 || ( (xa_small >= MIN_STEPS)
-			      && (xa_large <= increase_limit))))
+                                           ((x_sign == x_last_sign)
+                                            //   1a) and currently *stopping* to move and on last step of waveform
+                                            && (( (xa < MIN_STEPS)
+                                                  && is_last_step)
+                                                // or, 1b) at least  MIN_STEPS and the larger
+                                                // of both values not larger than the allowed
+                                                // relative increase
+                                                || ( (xa_small >= MIN_STEPS)
+                                                     && (xa_large <= increase_limit))))
 
-		    // or, it is the last step and before was a zero count
-		    || ( (xa_last == 0)
-			 && ( (xa < MIN_STEPS)
-			      && is_last_step))
+                                           // or, it is the last step and before was a zero count
+                                           || ( (xa_last == 0)
+                                                && ( (xa < MIN_STEPS)
+                                                     && is_last_step))
 
-		    // or, has stopped to move, possibly from higher speed
-		    || ( (xa == 0)
-			 && (xa_last >= MIN_STEPS)
-			 && (xa_last <= MAX_START_STEPS))
-		    // or, a single entry with a small number of steps,
-		    // preceded by a pause
-		    || ( (xa <= MAX_START_STEPS)
-			 && (xa >= MIN_STEPS)
-			 && (xa_last == 0))
-		    // or, with or without a change of direction,
-		    // one step number zero and the other at least
-		    // MIN_STEPS - at start or end of a movement
-		    || ((xa_small == 0)
-			&& (xa_large >= MIN_STEPS)
-		        && (xa_large <= MAX_START_STEPS))
-		    // or, a pause in movement
-		    || ((xa_small == 0)
-			&& (xa_large == 0)));
+                                           // or, has stopped to move, possibly from higher speed
+                                           || ( (xa == 0)
+                                                && (xa_last >= MIN_STEPS)
+                                                && (xa_last <= MAX_START_STEPS))
+                                           // or, a single entry with a small number of steps,
+                                           // preceded by a pause
+                                           || ( (xa <= MAX_START_STEPS)
+                                                && (xa >= MIN_STEPS)
+                                                && (xa_last == 0))
+                                           // or, with or without a change of direction,
+                                           // one step number zero and the other at least
+                                           // MIN_STEPS - at start or end of a movement
+                                           || ((xa_small == 0)
+                                               && (xa_large >= MIN_STEPS)
+                                               && (xa_large <= MAX_START_STEPS))
+                                           // or, a pause in movement
+                                           || ((xa_small == 0)
+                                               && (xa_large == 0)));
 
                 if (!valid_acc)
                 {
@@ -1332,11 +1332,11 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
 
 
 E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
-						 const int MIN_STEPS,
-						 const int MAX_STEPS,
-						 const int MAX_START_STEPS,
-						 const unsigned int MAX_NUM_SECTIONS,
-						 const double MAX_INCREASE_FACTOR) const
+        const int MIN_STEPS,
+        const int MAX_STEPS,
+        const int MAX_START_STEPS,
+        const unsigned int MAX_NUM_SECTIONS,
+        const double MAX_INCREASE_FACTOR) const
 {
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V2)\n",
@@ -1422,7 +1422,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
                 const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
                 const int xa = abs(xs);
 
-		const bool is_last_step = (sidx == (num_steps -1));
+                const bool is_last_step = (sidx == (num_steps -1));
 
 
                 if (xa > MAX_STEPS)
@@ -1442,44 +1442,44 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
                 const int decrease_limit = int(floor(xa_last / (MAX_INCREASE_FACTOR * MAX_INCREASE_FACTOR)));
 
                 const bool valid_acc = (
-		    // 1) movement into the same direction
+                                           // 1) movement into the same direction
 
-		    ((x_sign == x_last_sign)
-		     //   1a) and currently *stopping* to move and on last step of waveform
-		     && (( (xa < MIN_STEPS)
-			   && is_last_step)
-			 // or, 1b) at least  MIN_STEPS and the larger
-			 // of both values not larger than the allowed
-			 // relative increase
-			 || ( (xa >= xa_last)
-			      && (xa_last >= MIN_STEPS)
-			      && (xa <= increase_limit))
-			 || ( (xa <= xa_last)
-			      && (xa >= MIN_STEPS)
-			      && (xa >= decrease_limit))))
+                                           ((x_sign == x_last_sign)
+                                            //   1a) and currently *stopping* to move and on last step of waveform
+                                            && (( (xa < MIN_STEPS)
+                                                  && is_last_step)
+                                                // or, 1b) at least  MIN_STEPS and the larger
+                                                // of both values not larger than the allowed
+                                                // relative increase
+                                                || ( (xa >= xa_last)
+                                                     && (xa_last >= MIN_STEPS)
+                                                     && (xa <= increase_limit))
+                                                || ( (xa <= xa_last)
+                                                     && (xa >= MIN_STEPS)
+                                                     && (xa >= decrease_limit))))
 
-		    // or, it is the last step and before was a zero count
-		    || ( (xa_last == 0)
-			 && ( (xa < MIN_STEPS)
-			      && is_last_step))
+                                           // or, it is the last step and before was a zero count
+                                           || ( (xa_last == 0)
+                                                && ( (xa < MIN_STEPS)
+                                                     && is_last_step))
 
-		    // or, has stopped to move, from any speed
-		    || ( (xa == 0)
-			 && (xa_last >= MIN_STEPS))
-		    // or, a single entry with a small number of steps,
-		    // preceded by a pause
-		    || ( (xa <= MAX_START_STEPS)
-			 && (xa >= MIN_STEPS)
-			 && (xa_last == 0))
-		    // or, with or without a change of direction,
-		    // one step number zero and the other at least
-		    // MIN_STEPS - at start or end of a movement
-		    || ((xa_small == 0)
-			&& (xa_large >= MIN_STEPS)
-		        && (xa_large <= MAX_START_STEPS))
-		    // or, a pause in movement
-		    || ((xa_small == 0)
-			&& (xa_large == 0)));
+                                           // or, has stopped to move, from any speed
+                                           || ( (xa == 0)
+                                                && (xa_last >= MIN_STEPS))
+                                           // or, a single entry with a small number of steps,
+                                           // preceded by a pause
+                                           || ( (xa <= MAX_START_STEPS)
+                                                && (xa >= MIN_STEPS)
+                                                && (xa_last == 0))
+                                           // or, with or without a change of direction,
+                                           // one step number zero and the other at least
+                                           // MIN_STEPS - at start or end of a movement
+                                           || ((xa_small == 0)
+                                               && (xa_large >= MIN_STEPS)
+                                               && (xa_large <= MAX_START_STEPS))
+                                           // or, a pause in movement
+                                           || ((xa_small == 0)
+                                               && (xa_large == 0)));
 
                 if (!valid_acc)
                 {
@@ -1512,12 +1512,12 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
 
 
 E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
-					       E_GridState& state_summary,
-					       const t_wtable& waveforms,
-					       t_fpuset const &fpuset,
-					       bool soft_protection,
-					       bool allow_uninitialized,
-					       int ruleset_version)
+        E_GridState& state_summary,
+        const t_wtable& waveforms,
+        t_fpuset const &fpuset,
+        bool soft_protection,
+        bool allow_uninitialized,
+        int ruleset_version)
 {
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: calling configMotion()\n",
@@ -1575,63 +1575,63 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 return DE_FPUS_NOT_CALIBRATED;
             }
 
-	}
-        
+        }
+
     }
 
     {
 
-	const int max_stepcount = int(ceil(config.motor_maximum_frequency
-					   * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
-	const int max_start_stepcount = int(ceil(config.motor_max_start_frequency
-						 * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+        const int max_stepcount = int(ceil(config.motor_maximum_frequency
+                                           * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
+        const int max_start_stepcount = int(ceil(config.motor_max_start_frequency
+                                            * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
 
-	const double max_rel_increase = config.motor_max_rel_increase;
+        const double max_rel_increase = config.motor_max_rel_increase;
 
-	E_EtherCANErrCode vwecode = DE_OK;
+        E_EtherCANErrCode vwecode = DE_OK;
 
-	switch (ruleset_version)
-	{
-	case 0:
-	    break;
+        switch (ruleset_version)
+        {
+        case 0:
+            break;
 
-	case 1:
-	    vwecode = validateWaveformsV1(waveforms,
-					  min_stepcount,
-					  max_stepcount,
-					  max_start_stepcount,
-					  ConfigureMotionCommand::MAX_NUM_SECTIONS,
-					  max_rel_increase);
-	    break;
-		
-	case 2:
-	    vwecode = validateWaveformsV2(waveforms,
-					  min_stepcount,
-					  max_stepcount,
-					  max_start_stepcount,
-					  ConfigureMotionCommand::MAX_NUM_SECTIONS,
-					  max_rel_increase);
-	    break;
+        case 1:
+            vwecode = validateWaveformsV1(waveforms,
+                                          min_stepcount,
+                                          max_stepcount,
+                                          max_start_stepcount,
+                                          ConfigureMotionCommand::MAX_NUM_SECTIONS,
+                                          max_rel_increase);
+            break;
 
-	case 3:
-	    vwecode = validateWaveformsV3(waveforms,
-					  min_stepcount,
-					  max_stepcount,
-					  max_start_stepcount,
-					  ConfigureMotionCommand::MAX_NUM_SECTIONS,
-					  max_rel_increase);
+        case 2:
+            vwecode = validateWaveformsV2(waveforms,
+                                          min_stepcount,
+                                          max_stepcount,
+                                          max_start_stepcount,
+                                          ConfigureMotionCommand::MAX_NUM_SECTIONS,
+                                          max_rel_increase);
+            break;
 
-	    break;
-	default:
-	    return DE_INVALID_PAR_VALUE;
-		
-	}
-	    
-		
-	if (vwecode != DE_OK)
-	{
-	    return vwecode;
-	}	
+        case 3:
+            vwecode = validateWaveformsV3(waveforms,
+                                          min_stepcount,
+                                          max_stepcount,
+                                          max_start_stepcount,
+                                          ConfigureMotionCommand::MAX_NUM_SECTIONS,
+                                          max_rel_increase);
+
+            break;
+        default:
+            return DE_INVALID_PAR_VALUE;
+
+        }
+
+
+        if (vwecode != DE_OK)
+        {
+            return vwecode;
+        }
 
     }
 
@@ -1662,11 +1662,11 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     {
         const bool first_entry = (step_index == 0);
         const bool last_entry = (step_index == (num_steps-1));
-	const bool request_confirmation = (first_entry
-					   || last_entry
-					   || confirm_each_step
-					   || ((step_index % 4) == 0));
-	
+        const bool request_confirmation = (first_entry
+                                           || last_entry
+                                           || confirm_each_step
+                                           || ((step_index % 4) == 0));
+
         if (first_entry)
         {
             // get current step number to track positions
@@ -1684,8 +1684,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         {
 
             if ((fpu_index == 0)
-		&& (step_index != 0)
-		&& (config.waveform_upload_pause_us > 0))
+                    && (step_index != 0)
+                    && (config.waveform_upload_pause_us > 0))
             {
                 // Wait a short time before talking to the same FPU again because the FPUs seem to be
                 // in general a bit sluggish.
@@ -1722,7 +1722,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                          first_entry,
                                          last_entry,
                                          min_stepcount,
-					 request_confirmation);
+                                         request_confirmation);
 
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
@@ -1742,8 +1742,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         }
 
         /* Apparently, at least for some firmware version 1, we cannot
-	   send more than one configMotion command at a time,
-	   or else CAN commands will get lost. */
+        send more than one configMotion command at a time,
+        or else CAN commands will get lost. */
         if (request_confirmation)
         {
             /* Wait and check that all FPUs are registered in LOADING
@@ -1777,10 +1777,10 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 // we retry if an FPU which we tried to configure and is
                 // not locked did not change to FPST_LOADING state.
                 if ((fpu_state.state != FPST_LOCKED)
-		    && ( ((first_entry && (! last_entry))
-			  &&  (fpu_state.state != FPST_LOADING))
-			 || (last_entry
-			     &&  (fpu_state.state != FPST_READY_FORWARD))))
+                        && ( ((first_entry && (! last_entry))
+                              &&  (fpu_state.state != FPST_LOADING))
+                             || (last_entry
+                                 &&  (fpu_state.state != FPST_READY_FORWARD))))
                 {
                     if (retry_downcount <= 0)
                     {
@@ -1826,8 +1826,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         logGridState(config.logLevel, grid_state);
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
-    
+
+
 
     for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
     {
@@ -1858,11 +1858,11 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
 #if 0
 E_EtherCANErrCode AsyncInterface::configPathsAsync(t_grid_state& grid_state,
-					      E_GridState& state_summary,
-					      const t_wtable& waveforms,
-					      t_fpuset const &fpuset,
-					      bool soft_protection,
-					      bool allow_uninitialized)
+        E_GridState& state_summary,
+        const t_wtable& waveforms,
+        t_fpuset const &fpuset,
+        bool soft_protection,
+        bool allow_uninitialized)
 {
     // convert path using the selected gearbox correction
     // round to whole steps
@@ -1870,7 +1870,7 @@ E_EtherCANErrCode AsyncInterface::configPathsAsync(t_grid_state& grid_state,
     // compute differences
     // store rounded paths to waveform
     // call configMotion, and return result
-    
+
 }
 #endif
 
@@ -2174,7 +2174,7 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
 
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
-    
+
     if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: firmware CAN buffer overflow.\n",
@@ -2184,7 +2184,7 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
         fsync(config.fd_controllog);
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
     if (finished)
     {
@@ -2370,8 +2370,8 @@ E_EtherCANErrCode AsyncInterface::getPositionsAsync(t_grid_state& grid_state,
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
-    
+
+
 
     logGridState(config.logLevel, grid_state);
 
@@ -2543,7 +2543,7 @@ E_EtherCANErrCode AsyncInterface::getCounterDeviationAsync(t_grid_state& grid_st
         logGridState(config.logLevel, grid_state);
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
     logGridState(config.logLevel, grid_state);
@@ -2712,7 +2712,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
         logGridState(config.logLevel, grid_state);
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
     LOG_CONTROL(LOG_INFO, "%18.6f : repeatMotion(): command successfully sent OK\n",
@@ -2880,7 +2880,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
     logGridState(config.logLevel, grid_state);
@@ -3025,7 +3025,7 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
     logGridState(config.logLevel, grid_state);
@@ -3072,7 +3072,7 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
     logGridState(config.logLevel, grid_state);
@@ -3119,8 +3119,8 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
-    
+
+
 
     logGridState(config.logLevel, grid_state);
 
@@ -3204,7 +3204,7 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
                     ethercanif::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
-    
+
     if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         logGridState(config.logLevel, grid_state);
@@ -3213,7 +3213,7 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
 
@@ -3319,7 +3319,7 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
     logGridState(config.logLevel, grid_state);
@@ -3418,14 +3418,14 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id, E_REQUEST_D
                     ethercanif::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
-    
+
     if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error: firmware CAN buffer overflow\n",
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
     logGridState(config.logLevel, grid_state);
@@ -3445,7 +3445,7 @@ E_GridState AsyncInterface::getGridState(t_grid_state& out_state) const
 }
 
 E_GridState AsyncInterface::waitForState(E_WaitTarget target,
-                                      t_grid_state& out_detailed_state, double &max_wait_time, bool &cancelled) const
+        t_grid_state& out_detailed_state, double &max_wait_time, bool &cancelled) const
 {
     return gateway.waitForState(target, out_detailed_state, max_wait_time, cancelled);
 }
@@ -3552,17 +3552,17 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
 
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
-    
+
     if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : setUStepLevel():  error: firmware CAN buffer overflow\n",
                     ethercanif::get_realtime());
 
         logGridState(config.logLevel, grid_state);
-	
+
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
     logGridState(config.logLevel, grid_state);
@@ -3840,14 +3840,14 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
                     ethercanif::get_realtime());
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
-    
+
     if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : readRegister(): error: firmware CAN buffer overflow.\n",
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
 #if (CAN_PROTOCOL_VERSION < 2)
@@ -3978,16 +3978,16 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
 #endif
 
     LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion(): reading firmware version with"
-		" address offset 0x%04x - make sure this matches the used firmwares\n",
+                " address offset 0x%04x - make sure this matches the used firmwares\n",
                 ethercanif::get_realtime(), config.firmware_version_address_offset);
 
 
     for (int k=0; k < num_fields; k++)
     {
-	// for firmware version 1.4.4 and later, the firmware version
-	// is stored at a different address, requiring to configure the
-	// offset explicitly for different firmware versions
-	const int adr = config.firmware_version_address_offset + k;
+        // for firmware version 1.4.4 and later, the firmware version
+        // is stored at a different address, requiring to configure the
+        // offset explicitly for different firmware versions
+        const int adr = config.firmware_version_address_offset + k;
         ecode = readRegisterAsync(adr, grid_state, state_summary, fpuset);
         if (ecode != DE_OK)
         {
@@ -4155,7 +4155,7 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
         logGridState(config.logLevel, grid_state);
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
     logGridState(config.logLevel, grid_state);
@@ -4340,7 +4340,7 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-    
+
 
 
     logGridState(config.logLevel, grid_state);

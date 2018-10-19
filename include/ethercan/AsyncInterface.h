@@ -114,37 +114,37 @@ public:
     E_EtherCANErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
-                                            E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
-                                            E_DATUM_SELECTION arm_selection=DASEL_BOTH,
-                                            E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
-                                            bool count_protection=true,
-                                            t_fpuset const * const fpuset_opt=nullptr);
+            E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
+            E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+            E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+            bool count_protection=true,
+            t_fpuset const * const fpuset_opt=nullptr);
 
     E_EtherCANErrCode waitAutoFindDatumAsync(t_grid_state& grid_state,
-                                           E_GridState& state_summary,
-                                           double &max_wait_time,
-                                           bool &finished,
-                                           t_fpuset const  * const fpuset_opt=nullptr);
+            E_GridState& state_summary,
+            double &max_wait_time,
+            bool &finished,
+            t_fpuset const  * const fpuset_opt=nullptr);
 
     E_EtherCANErrCode configMotionAsync(t_grid_state& grid_state,
-                                      E_GridState& state_summary,
-                                      const t_wtable& waveforms,
-                                      t_fpuset const &fpuset,
-                                      bool soft_protection=true,
-                                      bool allow_uninitialized=false,				     
-				      int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
+                                        E_GridState& state_summary,
+                                        const t_wtable& waveforms,
+                                        t_fpuset const &fpuset,
+                                        bool soft_protection=true,
+                                        bool allow_uninitialized=false,
+                                        int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
 
     E_EtherCANErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode waitExecuteMotionAsync(t_grid_state& grid_state,
-                                           E_GridState& state_summary,
-                                           double &max_wait_time,
-                                           bool &finished,
-                                           t_fpuset const &fpuset);
+            E_GridState& state_summary,
+            double &max_wait_time,
+            bool &finished,
+            t_fpuset const &fpuset);
 
     E_EtherCANErrCode getPositionsAsync(t_grid_state& grid_state,
-                                      E_GridState& state_summary,
-                                      t_fpuset const &fpuset);
+                                        E_GridState& state_summary,
+                                        t_fpuset const &fpuset);
 
     E_EtherCANErrCode getCounterDeviationAsync(t_grid_state& grid_state,
             E_GridState& state_summary,
@@ -155,9 +155,9 @@ public:
     E_EtherCANErrCode reverseMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode abortMotionAsync(pthread_mutex_t & command_mutex,
-                                     t_grid_state& grid_state,
-                                     E_GridState& state_summary,
-                                     t_fpuset const &fpuset);
+                                       t_grid_state& grid_state,
+                                       E_GridState& state_summary,
+                                       t_fpuset const &fpuset);
 
     E_EtherCANErrCode lockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
 
@@ -167,18 +167,18 @@ public:
             E_GridState& state_summary);
 
     E_EtherCANErrCode freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
-                                           t_grid_state& grid_state,
-                                           E_GridState& state_summary);
+            t_grid_state& grid_state,
+            E_GridState& state_summary);
 
     E_EtherCANErrCode setUStepLevelAsync(int ustep_level,
-                                       t_grid_state& grid_state,
-                                       E_GridState& state_summary,
-                                       t_fpuset const &fpuset);
+                                         t_grid_state& grid_state,
+                                         E_GridState& state_summary,
+                                         t_fpuset const &fpuset);
 
     E_EtherCANErrCode readRegisterAsync(uint16_t read_address,
-                                      t_grid_state& grid_state,
-                                      E_GridState& state_summary,
-                                      t_fpuset const &fpuset);
+                                        t_grid_state& grid_state,
+                                        E_GridState& state_summary,
+                                        t_fpuset const &fpuset);
 
 
     E_GridState getGridState(t_grid_state& out_state) const;
@@ -188,26 +188,26 @@ public:
                              double &max_wait_time,
                              bool &cancelled) const;
 
-     E_EtherCANErrCode validateWaveformsV1(const t_wtable& waveforms,
-					 const int MIN_STEPS,
-					 const int MAX_STEPS,
-					 const int MAX_START_STEPS,
-					 const unsigned int MAX_NUM_SECTIONS,
-					 const double MAX_INCREASE) const;
-    
+    E_EtherCANErrCode validateWaveformsV1(const t_wtable& waveforms,
+                                          const int MIN_STEPS,
+                                          const int MAX_STEPS,
+                                          const int MAX_START_STEPS,
+                                          const unsigned int MAX_NUM_SECTIONS,
+                                          const double MAX_INCREASE) const;
+
     E_EtherCANErrCode validateWaveformsV2(const t_wtable& waveforms,
-					const int MIN_STEPS,
-					const int MAX_STEPS,
-					const int MAX_START_STEPS,
-					const unsigned int MAX_NUM_SECTIONS,
-					const double MAX_INCREASE) const;
-    
+                                          const int MIN_STEPS,
+                                          const int MAX_STEPS,
+                                          const int MAX_START_STEPS,
+                                          const unsigned int MAX_NUM_SECTIONS,
+                                          const double MAX_INCREASE) const;
+
     E_EtherCANErrCode validateWaveformsV3(const t_wtable& waveforms,
-					const int MIN_STEPS,
-					const int MAX_STEPS,
-					const int MAX_START_STEPS,
-					const unsigned int MAX_NUM_SECTIONS,
-					const double MAX_INCREASE) const;
+                                          const int MIN_STEPS,
+                                          const int MAX_STEPS,
+                                          const int MAX_START_STEPS,
+                                          const unsigned int MAX_NUM_SECTIONS,
+                                          const double MAX_INCREASE) const;
 
     void logGridState(const E_LogLevel logLevel, t_grid_state& grid_state) const;
 
@@ -221,10 +221,10 @@ protected:
     int countMoving(const t_grid_state &grid_state, t_fpuset const &fpuset) const;
 
     E_EtherCANErrCode getMinFirmwareVersion(t_fpuset const &fpuset,
-                                          uint8_t (&min_firmware_version)[3],
-                                          int &min_firmware_fpu,
-                                          t_grid_state& grid_state,
-                                          E_GridState& state_summary);
+                                            uint8_t (&min_firmware_version)[3],
+                                            int &min_firmware_fpu,
+                                            t_grid_state& grid_state,
+                                            E_GridState& state_summary);
 
     void getCachedMinFirmwareVersion(t_fpuset const &fpuset,
                                      bool &was_retrieved,
@@ -232,11 +232,11 @@ protected:
                                      int &min_firmware_fpu) const;
 
     E_EtherCANErrCode readSerialNumbersAsync(t_grid_state& grid_state,
-                                           E_GridState& state_summary, t_fpuset const &fpuset);
+            E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode writeSerialNumberAsync(int fpu_id, const char serial_number[],
-                                           t_grid_state& grid_state,
-                                           E_GridState& state_summary);
+            t_grid_state& grid_state,
+            E_GridState& state_summary);
 private:
 
     int num_gateways;

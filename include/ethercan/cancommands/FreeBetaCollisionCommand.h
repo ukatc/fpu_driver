@@ -43,10 +43,10 @@ public:
     };
 
     FreeBetaCollisionCommand():
-	request_direction(REQD_ANTI_CLOCKWISE)
-	{
-	    fpu_id = 0;
-	};
+        request_direction(REQD_ANTI_CLOCKWISE)
+    {
+        fpu_id = 0;
+    };
 
     E_CAN_COMMAND getInstanceCommandCode()
     {

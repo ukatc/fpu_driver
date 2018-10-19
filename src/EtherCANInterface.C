@@ -23,35 +23,35 @@ namespace mpifps
 {
 
 EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values)
-: AsyncInterface(config_values)
+    : AsyncInterface(config_values)
 {
-    
-    LOG_CONTROL(LOG_INFO, "%18.6f : starting driver version '%s' for %i FPUs\n",
-		ethercanif::get_realtime(), VERSION, config.num_fpus);
-    LOG_CONTROL(LOG_INFO, "%18.6f : waveform_upload_pause_us = %lu\n",
-		ethercanif::get_realtime(), config.waveform_upload_pause_us);
-    LOG_CONTROL(LOG_INFO, "%18.6f : confirm_each_step = %s\n",
-		ethercanif::get_realtime(), (config.confirm_each_step ? "True" : "False"));
 
-    
+    LOG_CONTROL(LOG_INFO, "%18.6f : starting driver version '%s' for %i FPUs\n",
+                ethercanif::get_realtime(), VERSION, config.num_fpus);
+    LOG_CONTROL(LOG_INFO, "%18.6f : waveform_upload_pause_us = %lu\n",
+                ethercanif::get_realtime(), config.waveform_upload_pause_us);
+    LOG_CONTROL(LOG_INFO, "%18.6f : confirm_each_step = %s\n",
+                ethercanif::get_realtime(), (config.confirm_each_step ? "True" : "False"));
+
+
 }
 
 
 
 E_EtherCANErrCode EtherCANInterface::findDatum(t_grid_state& grid_state,
-                                      E_DATUM_SEARCH_DIRECTION * p_direction_flags,
-                                      E_DATUM_SELECTION arm_selection,
-                                      E_DATUM_TIMEOUT_FLAG timeout_flag,
-                                      bool count_protection,
-                                      t_fpuset const * const fpuset)
+        E_DATUM_SEARCH_DIRECTION * p_direction_flags,
+        E_DATUM_SELECTION arm_selection,
+        E_DATUM_TIMEOUT_FLAG timeout_flag,
+        bool count_protection,
+        t_fpuset const * const fpuset)
 {
 
     E_EtherCANErrCode estatus = startFindDatum(grid_state,
-                              p_direction_flags,
-                              arm_selection,
-                              timeout_flag,
-                              count_protection,
-                              fpuset);
+                                p_direction_flags,
+                                arm_selection,
+                                timeout_flag,
+                                count_protection,
+                                fpuset);
 
     if (estatus != DE_OK)
     {
@@ -125,10 +125,10 @@ E_EtherCANErrCode EtherCANInterface::waitFindDatum(t_grid_state& grid_state,
 
 
 E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_grid_state& grid_state,
-					 t_fpuset const &fpuset,
-					 bool soft_protection,
-					 bool allow_uninitialized,
-					 int ruleset_version)
+        t_fpuset const &fpuset,
+        bool soft_protection,
+        bool allow_uninitialized,
+        int ruleset_version)
 
 {
     E_EtherCANErrCode estatus = DE_OK;
@@ -144,7 +144,7 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
     while (num_avaliable_retries > 0)
     {
         estatus = configMotionAsync(grid_state, state_summary, cur_wtable, fpuset,
-				    soft_protection, allow_uninitialized, ruleset_version);
+                                    soft_protection, allow_uninitialized, ruleset_version);
         if (estatus != DE_OK)
         {
             // if connection is lost or command invalid, quit.

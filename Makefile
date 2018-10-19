@@ -63,8 +63,8 @@ git_version: force
 doc/FPU-state1.pdf : doc/FPU-state1.svg
 	inkscape doc/FPU-state1.svg --export-pdf=doc/FPU-state1.pdf
 
-tutorial:	doc/tutorial.tex doc/FPU-state1.pdf git_version
-	cd doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
+tutorial:	python/doc/tutorial.tex python/doc/FPU-state1.pdf git_version
+	cd python/doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
 cppcheck: force
 	cppcheck src/*.C python/src/*.cpp  -I include -I include/ethercan -I include/ethercan/cancommands --enable=all

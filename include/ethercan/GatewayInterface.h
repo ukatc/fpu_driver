@@ -118,10 +118,10 @@ public:
     // returns id which needs to be set as fpu id for broadcast command
     int getBroadcastID(const int gateway_id, const int busid);
 
-#if 0    
+#if 0
     // returns gateway ID for an FPU
     int getGatewayIdByFPUID(int fpu_id) const;
-#endif    
+#endif
 
     // returns whether an FPU is currently marked as locked.
     bool isLocked(int fpu_id) const;
@@ -135,7 +135,7 @@ public:
     // the Rx thread to be able to trigger an automatic abort if too
     // many collisions happen in a short time span.).
     E_EtherCANErrCode abortMotion(t_grid_state& grid_state,
-                                E_GridState& state_summary);
+                                  E_GridState& state_summary);
 
 
 

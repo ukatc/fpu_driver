@@ -103,9 +103,9 @@ public:
     // should be discarded.
     void flushToPool(CommandPool& memory_pool);
 
-#if 0    
+#if 0
     int getNumQueuedCommands();
-#endif    
+#endif
 
     void setEventDescriptor(int fd);
 

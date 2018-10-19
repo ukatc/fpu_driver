@@ -71,7 +71,7 @@ public:
     int firmware_version_address_offset;
 
     EtherCANInterfaceConfig()
-	: logLevel(LOG_TRACE_CAN_MESSAGES)
+        : logLevel(LOG_TRACE_CAN_MESSAGES)
     {
         num_fpus = MAX_NUM_POSITIONERS;
 
@@ -81,10 +81,10 @@ public:
         TCP_IdleSeconds = 10;
         TCP_KeepaliveIntervalSeconds = 1;
 
-	waveform_upload_pause_us = 50000;
-	confirm_each_step = true;
+        waveform_upload_pause_us = 50000;
+        confirm_each_step = true;
 
-	firmware_version_address_offset = 0x61; // new offset for v1.3.0, matching firmware version 1.4.4
+        firmware_version_address_offset = 0x61; // new offset for v1.3.0, matching firmware version 1.4.4
 
         // Initialize log file descriptors
         fd_controllog = -1;
