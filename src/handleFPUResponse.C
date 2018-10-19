@@ -113,7 +113,9 @@ void logErrorStatus(const EtherCANInterfaceConfig &config, int fpu_id, int err_c
 int unfold_stepcount_alpha(const uint16_t step_count)
 {
     int val = static_cast<int>(step_count);
-    if (val >= 55000)
+    const int lower_limit = -10000;
+    const int upper_limit = lower_limit + (1 << 16) -1;
+    if (val > upper_limit)
     {
         val -= (1 << 16);
     }
@@ -127,7 +129,8 @@ int unfold_stepcount_alpha(const uint16_t step_count)
 int unfold_stepcount_beta(const uint16_t step_count)
 {
     int val = static_cast<int>(step_count);
-    if (val >= (1 << 15))
+    const int upper_limit = (1 << 15) -1;
+    if (val > upper_limit)
     {
         val -= (1 << 16);
     }
