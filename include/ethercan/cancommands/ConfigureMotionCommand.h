@@ -57,7 +57,7 @@ public:
         bclockwise = false;
         fentry = false;
         lentry = false;
-	confirm = true;
+        confirm = true;
     };
 
     void parametrize(int f_id,
@@ -65,7 +65,7 @@ public:
                      int16_t beta_steps,
                      bool first_entry, bool last_entry,
                      const int MIN_STEPCOUNT,
-		     bool do_confirm)
+                     bool do_confirm)
     {
         fpu_id = f_id;
 
@@ -99,7 +99,7 @@ public:
         bclockwise = beta_clockwise;
         fentry = first_entry;
         lentry = last_entry;
-	confirm = do_confirm;
+        confirm = do_confirm;
     };
 
     E_CAN_COMMAND getInstanceCommandCode()

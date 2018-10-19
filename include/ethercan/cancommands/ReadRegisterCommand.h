@@ -45,8 +45,8 @@ public:
     {
         fpu_id = -1;
         bcast = false;
-	bank = 0;
-	address=0;
+        bank = 0;
+        address=0;
     };
 
     E_CAN_COMMAND getInstanceCommandCode()

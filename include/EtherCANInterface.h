@@ -103,38 +103,38 @@ public:
 
     // find datum with automatic firmware operation
     E_EtherCANErrCode findDatum(t_grid_state& grid_state,
-                              E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
-                              E_DATUM_SELECTION arm_selection=DASEL_BOTH,
-                              E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
-                              bool count_protection=true,
-                              t_fpuset const  * const fpuset=nullptr);
+                                E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
+                                E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+                                E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                                bool count_protection=true,
+                                t_fpuset const  * const fpuset=nullptr);
 
     E_EtherCANErrCode startFindDatum(t_grid_state& grid_state,
-                                   E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
-                                   E_DATUM_SELECTION arm_selection=DASEL_BOTH,
-                                   E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
-                                   bool count_protection=true,
-                                   t_fpuset const * const fpuset=nullptr);
+                                     E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
+                                     E_DATUM_SELECTION arm_selection=DASEL_BOTH,
+                                     E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
+                                     bool count_protection=true,
+                                     t_fpuset const * const fpuset=nullptr);
 
     E_EtherCANErrCode waitFindDatum(t_grid_state& grid_state,
-                                  double &max_wait_time, bool &finished,
-                                  t_fpuset const * const fpuset=nullptr);
+                                    double &max_wait_time, bool &finished,
+                                    t_fpuset const * const fpuset=nullptr);
 
     E_EtherCANErrCode configMotion(const t_wtable& waveforms,
-                                 t_grid_state& grid_state,
-                                 t_fpuset const &fpuset,
-                                 bool soft_protection=true,
-                                 bool allow_uninitialized=false,
-				 int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
+                                   t_grid_state& grid_state,
+                                   t_fpuset const &fpuset,
+                                   bool soft_protection=true,
+                                   bool allow_uninitialized=false,
+                                   int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
 
     E_EtherCANErrCode executeMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
     E_EtherCANErrCode startExecuteMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
     E_EtherCANErrCode waitExecuteMotion(t_grid_state& grid_state,
-                                      double &max_wait_time,
-                                      bool &finished,
-                                      t_fpuset const &fpuset);
+                                        double &max_wait_time,
+                                        bool &finished,
+                                        t_fpuset const &fpuset);
 
 
     E_EtherCANErrCode getPositions(t_grid_state& grid_state, t_fpuset const &fpuset);
@@ -148,15 +148,15 @@ public:
     E_EtherCANErrCode abortMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
     E_EtherCANErrCode freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_dir,
-                                      t_grid_state& grid_state);
+                                        t_grid_state& grid_state);
 
     E_EtherCANErrCode enableBetaCollisionProtection(t_grid_state& grid_state);
 
     E_EtherCANErrCode setUStepLevel(int ustep_level, t_grid_state& grid_state, t_fpuset const &fpuset);
 
     E_EtherCANErrCode readRegister(uint16_t read_address,
-                                 t_grid_state& grid_state,
-                                 t_fpuset const &fpuset);
+                                   t_grid_state& grid_state,
+                                   t_fpuset const &fpuset);
 
     E_EtherCANErrCode getFirmwareVersion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
@@ -167,7 +167,7 @@ public:
     E_EtherCANErrCode readSerialNumbers(t_grid_state& grid_state, t_fpuset const &fpuset);
 
     E_EtherCANErrCode writeSerialNumber(int fpu_id, const char serial_number[],
-                                      t_grid_state& grid_state);
+                                        t_grid_state& grid_state);
 
     int getNumFPUs() const;
 

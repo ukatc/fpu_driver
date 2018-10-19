@@ -255,7 +255,7 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         // (the counter can wrap around - no problem!)
         const bool new_timeout_triggered = ( (target & TGT_TIMEOUT) &&
                                              ( ((count_timeouts != FPUGridState.count_timeout))
-					       || ((count_can_overflows != FPUGridState.count_can_overflow))));
+                                               || ((count_can_overflows != FPUGridState.count_can_overflow))));
 
 
         // If all FPUs have been updated, that might be
@@ -643,10 +643,10 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
     if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
     {
-	char log_buf[256];
-	int buf_idx=0;
-	int char_cnt = 0;
-	
+        char log_buf[256];
+        int buf_idx=0;
+        int char_cnt = 0;
+
         char_cnt = sprintf(log_buf, "RX: %18.6f: dispatching response:"
                            " gateway_id=%i, bus_id=%i, can_identifier=%i,"
                            " priority=%i, fpu_busid=%i, data[%i] = ",
@@ -759,10 +759,10 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         // that.
 
         const t_fpu_state oldstate = FPUGridState.FPU_state[fpu_id];
-	const uint16_t old_can_overflows = FPUGridState.FPU_state[fpu_id].can_overflow_errcount;
+        const uint16_t old_can_overflows = FPUGridState.FPU_state[fpu_id].can_overflow_errcount;
 
         ethercanif::handleFPUResponse(config, fpu_id, FPUGridState.FPU_state[fpu_id], data, blen,
-                                    tout_list, FPUGridState.count_pending);
+                                      tout_list, FPUGridState.count_pending);
 
 
         // update global state counters
@@ -777,10 +777,10 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         FPUGridState.Counts[oldstate.state]--;
         FPUGridState.Counts[newstate.state]++;
 
-	if (old_can_overflows != FPUGridState.FPU_state[fpu_id].can_overflow_errcount)
-	{
-	    FPUGridState.count_can_overflow++; // rarely, this counter may wrap around - that's intentional
-	}
+        if (old_can_overflows != FPUGridState.FPU_state[fpu_id].can_overflow_errcount)
+        {
+            FPUGridState.count_can_overflow++; // rarely, this counter may wrap around - that's intentional
+        }
 
         // The state of the grid can change when *all* FPUs have left
         // an old state, or *at least one* has entered a new state.
@@ -929,7 +929,7 @@ void remove_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu, int
 }
 
 timespec expire_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu,
-			int fpu_id, const timespec& expiration_time,
+                        int fpu_id, const timespec& expiration_time,
                         int &count_pending, unsigned long &count_timeouts)
 {
 

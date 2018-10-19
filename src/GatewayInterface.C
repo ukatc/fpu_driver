@@ -409,7 +409,7 @@ void unset_rt_priority()
 }
 
 E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
-                                       const t_gateway_address gateway_addresses[])
+        const t_gateway_address gateway_addresses[])
 {
 
     assert(ngateways <= MAX_NUM_GATEWAYS);
@@ -754,7 +754,7 @@ void GatewayInterface::updatePendingCommand(int fpu_id,
 // processed before the pending bit is set which is confusing.
 
 void GatewayInterface::updatePendingSets(unique_ptr<I_CAN_Command> &active_can_command,
-                                      int gateway_id, int busid)
+        int gateway_id, int busid)
 {
     if (! active_can_command->doBroadcast())
     {
@@ -1259,7 +1259,7 @@ E_InterfaceState GatewayInterface::getInterfaceState() const
 
 
 E_GridState GatewayInterface::waitForState(E_WaitTarget target, t_grid_state& out_detailed_state,
-                                        double &max_wait_time, bool &cancelled) const
+        double &max_wait_time, bool &cancelled) const
 {
     return fpuArray.waitForState(target, out_detailed_state, max_wait_time, cancelled);
 }

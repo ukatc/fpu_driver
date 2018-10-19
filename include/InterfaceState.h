@@ -155,7 +155,7 @@ enum E_EtherCANErrCode
     DE_ALPHA_ARM_ON_LIMIT_SWITCH = 116,
 
 
-    
+
     /***************************************/
     /* setup errors */
 
