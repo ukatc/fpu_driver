@@ -1,12 +1,13 @@
 IDIR = ./include
-
 CC = "g++"
 
+# if you do not use git, comment the line below and uncomment the following line
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
+#GIT_VERSION := '1.4.x'
 
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g 
 
-ODIR = ./obj
+ODIR = ./object
 
 LDIR = ./lib
 
