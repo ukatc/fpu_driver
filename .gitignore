@@ -9,7 +9,7 @@ GPATH
 GRTAGS
 GSYMS
 GTAGS
-/object
+/objects
 git_version
 *.org_archive
 /python/pgtest
