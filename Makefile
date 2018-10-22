@@ -7,7 +7,7 @@ GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g 
 
-ODIR = ./object
+ODIR = ./objects
 
 LDIR = ./lib
 
