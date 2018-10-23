@@ -23,7 +23,7 @@
 #include <cassert>
 #include <stdint.h>
 
-#define CAN_PROTOCOL_VERSION 1
+#define CAN_PROTOCOL_VERSION 2
 
 namespace mpifps
 {
@@ -148,6 +148,45 @@ enum E_FPU_STATUS_BITS
     STBT_REVERSE_WAVE = (1 << 7), // waveform to be run in reverse
 };
 
+#else
+enum E_MOC_ERRCODE
+{
+    MCE_FPU_OK			     = 0x00,	// no error
+    MCE_WARN_COLLISION_DETECTED	     = 0x01,	// beta collision warning
+    MCE_WARN_LIMIT_SWITCH_BREACH     = 0x02,	// alpha limit switch breach
+    MCE_ERR_INVALID_COMMAND	     = 0x03,	// invalid command received by motion controller
+    MCE_NOTIFY_COMMAND_IGNORED	     = 0x04,	// command was ignored by FPU motion controller
+    MCE_ERR_WAVEFORM_NOT_READY	     = 0x05,	// waveform not ready for execution
+    MCE_WAVEFORM_TOO_BIG	     = 0x06,	// too many waveform entries
+    MCE_WAVEFORM_SEQUENCE	     = 0x07,	// transmitted waveform sequence not consistent in respect to use of first and last flags
+    MCE_WAVEFORM_BADVALUE	     = 0x08,	// the transmitted waveform value did not pass bounds checking
+    MCE_WARN_STEP_TIMING_ERROR	     = 0x09,	// Microstepping value is too high for step frequency
+    MCE_ERR_INVALID_PARAMETER	     = 0x0a,	// invalid parameter was rejected by motion controller
+    MCE_ERR_DATUM_TIME_OUT	     = 0x0b,	// datum search exceeded hardware time or step limit
+    MCE_NOTIFY_DATUM_ALPHA_ONLY	     = 0x0c,	// only the alpha arm was moved to datum
+    MCE_NOTIFY_DATUM_BETA_ONLY	     = 0x0d,	// only the beta arm was moved to datum
+    MCE_ERR_AUTO_DATUM_UNINITIALIZED = 0x0e,	// automatic datum operation was requested, but FPU is not initialized
+    MCE_ERR_DATUM_ON_LIMIT_SWITCH    = 0x0f,	// datum command was rejected because alpha arm is on limit switch
+    MCE_ERR_CAN_OVERFLOW_HW	     = 0x10,	// overflow in CAN hardware buffer
+    MCE_ERR_CAN_OVERFLOW_SW	     = 0x11,	// CAN overflow in motion controller firmware buffer
+};
+
+
+/* Status bits in FPU response message (many only used
+   internally in the controller) */
+
+enum E_FPU_STATUS_BITS
+{
+    STBT_MSGRCV       = 1,      // message received over CANBUS
+    STBT_WAVE_READY   = (1 << 1), // waveform good and ready for execution
+    STBT_EXECUTE_WAVE = (1 << 2), // internal start flag to start executing waveform
+    STBT_RUNNING_WAVE = (1 << 3), // FPU is running the waveform
+    STBT_ABORT_WAVE   = (1 << 4), // abort waveform
+    STBT_M1LIMIT      = (1 << 5), // M1 Limit breached
+    STBT_M2LIMIT      = (1 << 6), // no longer used
+    STBT_REVERSE_WAVE = (1 << 7), // waveform to be run in reverse
+};
+
 #endif
 
 enum E_DATUM_SKIP_FLAG
@@ -209,59 +248,68 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     return 0;
 #endif
 
-    uint8_t priority = 0x0f;
+    uint8_t	priority = 0x0f;
     switch (cmd)
     {
-    /* highest priority has smallest code */
 
-    /* priorities 0x00 and 0x01 are reserved for
-       FPU warning messages and command responses. */
 
-    /* used for emergency stop, usually broadcast */
+
+	
+	/* highest priority has smallest code */
+
+	/* priorities 0x01 and 0x02 are reserved for
+	   FPU warning messages and command responses. */
+
+	/* used for emergency stop, usually broadcast */
     case CCMD_ABORT_MOTION                       :
-    /* movement commands, usually broadcast */
+	/* movement commands, usually broadcast */
     case CCMD_EXECUTE_MOTION                     :
     case CCMD_FIND_DATUM                         :
-        priority = 0x02;
+        priority = 0x00;
         break;
 
-    /* motion configuration */
-    case CCMD_CONFIG_MOTION                      :
-    /* error recovery */
+	/* special motion commands */
+	
+    case CCMD_LOCK_UNIT                          :
+    case CCMD_UNLOCK_UNIT                        :
+    case CCMD_FREE_BETA_COLLISION                :
+    case CCMD_FREE_ALPHA_LIMIT_BREACH            :
+        priority = 0x03;
+        break;
+	
+	/* error recovery */
     case CCMD_RESET_FPU                          :
     case CCMD_RESET_STEPCOUNTER                  :
     case CCMD_ENABLE_BETA_COLLISION_PROTECTION   :
-    case CCMD_FREE_BETA_COLLISION                :
-#if CAN_PROTOCOL_VERSION == 1
-    case CCMD_GET_STEPS_ALPHA                    :
-    case CCMD_GET_STEPS_BETA                     :
-    case CCMD_GET_ERROR_ALPHA                    :
-    case CCMD_GET_ERROR_BETA                     :
-#else
-    case CCMD_FREE_ALPHA_LIMIT_BREACH            :
     case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION      :
-    case CCMD_LOCK_UNIT                          :
-    case CCMD_UNLOCK_UNIT                        :
     case CCMD_CHECK_INTEGRITY                    :
-    case CCMD_GET_FIRMWARE_VERSION               :
     case CCMD_ENABLE_MOVE                        :
-#endif
-    case CCMD_REPEAT_MOTION                      :
-    case CCMD_REVERSE_MOTION                     :
-        priority = 0x03;
+    case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    :
+    case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
+        priority = 0x04;
         break;
 
-    /* status inquiry */
+	/* motion configuration */
+    case CCMD_CONFIG_MOTION                      :
+    case CCMD_REPEAT_MOTION                      :
+    case CCMD_REVERSE_MOTION                     :
+	/* configuration and status inquiry */
+    case CCMD_GET_FIRMWARE_VERSION               :
+    case CCMD_READ_REGISTER                    :
+    case CCMD_SET_USTEP_LEVEL                  :
+    case CCMD_GET_COUNTER_DEVIATION            :
+    case CCMD_CHECK_INTEGRITY                  :
+    case CCMD_SET_STEPS_PER_SEGMENT            :
+    case CCMD_READ_SERIAL_NUMBER               :
+    case CCMD_WRITE_SERIAL_NUMBER              :
     case CCMD_PING_FPU                           :
-#if CAN_PROTOCOL_VERSION != 1
     case CCMD_SET_TICKS_PER_SEGMENT              :
     case CCMD_SET_STEPS_PER_SEGMENT              :
-#endif
     case CCMD_SET_USTEP_LEVEL                    :
         priority = 0x05;
         break;
 
-    // invalid cases
+	// invalid cases
     case CCMD_NO_COMMAND                         :
     default:
         assert(false);
