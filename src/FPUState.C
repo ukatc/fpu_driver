@@ -53,7 +53,7 @@ void initialize_fpu(t_fpu_state &fpu)
     fpu.timeout_count             = 0;
     fpu.step_timing_errcount      = 0;
     fpu.last_command              = CCMD_NO_COMMAND;
-    fpu.last_status               = ER_OK;
+    fpu.last_status               = MCE_FPU_OK;
     fpu.sequence_number           = 0;
     fpu.can_overflow_errcount     = 0;
     fpu.register_address          = 0;

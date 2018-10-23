@@ -827,7 +827,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
         if (fpu_status == FPST_ABORTED)
         {
 
-            if (fpu.last_status == ER_DATUMTO)
+            if (fpu.last_status == MCE_ERR_DATUM_TIME_OUT)
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): CRITICAL ERROR: Datum operation timed out for FPU %i\n",
                             ethercanif::get_realtime(), i);
@@ -856,7 +856,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
         t_fpu_state fpu = grid_state.FPU_state[i];
         E_FPU_STATE fpu_status = fpu.state;
 
-        if ((fpu_status == FPST_UNINITIALIZED) && (fpu.last_status == ER_DATUM_LIMIT))
+        if ((fpu_status == FPST_UNINITIALIZED) && (fpu.last_status == MCE_ERR_DATUM_ON_LIMIT_SWITCH))
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU %i alpha arm on datum switch, movement rejected\n",
                         ethercanif::get_realtime(), i);
@@ -910,7 +910,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
             continue;
         }
         if ((grid_state.FPU_state[i].state == FPST_UNINITIALIZED)
-                && (grid_state.FPU_state[i].last_status == ER_AUTO))
+                && (grid_state.FPU_state[i].last_status == MCE_ERR_AUTO_DATUM_UNINITIALIZED))
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: DE_PROTECTION_ERROR, FPU denied automatic datum search\n",
                         ethercanif::get_realtime());

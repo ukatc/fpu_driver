@@ -38,7 +38,7 @@ public:
 
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_GET_STEPS_ALPHA;
+        return CCMD_PING_FPU;
     };
 
     GetStepsAlphaCommand()

@@ -46,54 +46,86 @@ void logErrorStatus(const EtherCANInterfaceConfig &config, int fpu_id, int err_c
     const char * err_msg = "(no error)";
     switch (err_code)
     {
-    case 0:
-        err_msg = "(no error)";
+	
+    case MCE_FPU_OK:
+	err_msg = "no error";
         break;
 
-    case ER_COLLIDE  :
-        err_msg = "FPU collision detected"                       ;
+    case MCE_WARN_COLLISION_DETECTED:
+        err_msg = "FPU beta collision detected";
         break;
-    case ER_INVALID  :
-        err_msg = "received command not valid"                   ;
+
+    case MCE_ERR_INVALID_COMMAND:
+        err_msg = "invalid command received by motion controller";
         break;
-    case ER_WAVENRDY :
-        err_msg = "waveform not ready"                           ;
+	
+    case MCE_ERR_WAVEFORM_NOT_READY:
+        err_msg = "waveform not ready for execution";
         break;
-    case ER_WAVE2BIG :
-        err_msg = "waveform exceeds memory allocation"           ;
+	
+    case MCE_WAVEFORM_TOO_BIG:
+        err_msg = "too many waveform entries";
         break;
-    case ER_TIMING   :
-        err_msg = "step timing error (interrupt race condition)" ;
+	
+    case MCE_WARN_STEP_TIMING_ERROR:
+        err_msg = "step timing error:microstepping value is too high for step frequency";
         break;
-    case ER_M1LIMIT  :
-        err_msg = "M1 Limit switch breached"                     ;
+	
+    case MCE_WARN_LIMIT_SWITCH_BREACH:
+        err_msg = "alpha limit switch breach";
         break;
-    case ER_PARAM    :
-        err_msg = "parameter out of range"                       ;
+	
+    case MCE_ERR_INVALID_PARAMETER:
+        err_msg = "invalid parameter was rejected by motion controller";
         break;
-    case ER_AUTO    :
-        err_msg = "firmware cannot perform automatic datum search" ;
-        break;
-    case ER_DATUMTO    :
-        err_msg = "hardware failure: datum search timed out";
-        break;
-    case ER_CANOVRS    :
-        err_msg = "CAN message buffer overflow - FPU firmware";
-        break;
-    case ER_CANOVRH    :
-        err_msg = "CAN message buffer overflow - FPU CAN hardware";
-        break;
+	
+    case MCE_WAVEFORM_SEQUENCE:
+	err_msg = "transmitted waveform sequence not consistent in respect to use of first and last flags";
+	break;
+	
+    case MCE_WAVEFORM_BADVALUE:
+	err_msg = "the transmitted waveform value did not pass bounds checking";
+	break;
+	
+    case MCE_ERR_DATUM_TIME_OUT:
+	err_msg = "datum search exceeded hardware time or step limit";
+	break;
+	
+    case MCE_NOTIFY_DATUM_ALPHA_ONLY:
+	err_msg = "only the alpha arm was moved to datum";
+	break;
+	
+    case MCE_NOTIFY_DATUM_BETA_ONLY:
+	err_msg = "only the beta arm was moved to datum";
+	break;
+	
+    case MCE_ERR_AUTO_DATUM_UNINITIALIZED:
+	err_msg = "automatic datum operation was requested, but FPU is not initialized";
+	break;
+	
+    case MCE_ERR_DATUM_ON_LIMIT_SWITCH:
+	err_msg = "datum command was rejected because alpha arm is on limit switch";
+	break;
+		
+    case MCE_ERR_CAN_OVERFLOW_HW:
+	err_msg = "overflow in CAN hardware buffer";
+	break;
+	
+    case MCE_ERR_CAN_OVERFLOW_SW:
+	err_msg = "CAN overflow in motion controller firmware buffer";
+	break;
+	
+    case MCE_NOTIFY_COMMAND_IGNORED:
+	err_msg = "command was ignored by FPU motion controller";
+	break;
 
     default:
-    case ER_STALLX           :
-    case ER_STALLY           :
-    case ER_M2LIMIT:
         err_msg = "obsolete error code received";
         break;
 
     }
 
-    LOG_RX(LOG_DEBUG, "%18.6f: FPU #%04i : error response msg = %s\n",
+    LOG_RX(LOG_DEBUG, "%18.6f:FPU #%04i:error response msg = %s\n",
            get_realtime(),
            fpu_id, err_msg);
 
@@ -171,7 +203,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
     uint8_t response_status = data[2];
     update_status_flags(fpu, response_status);
 
-    E_MOC_ERRCODE response_errcode = data[3] ? static_cast<E_MOC_ERRCODE>(data[4]) : ER_OK;
+    E_MOC_ERRCODE response_errcode = data[3] ? static_cast<E_MOC_ERRCODE>(data[4]) : MCE_FPU_OK;
     timespec cur_time;
 
     assert(blen == 8);
@@ -280,8 +312,8 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                    fpu_id,
                    response_errcode);
 
-            if ((response_errcode == ER_WAVENRDY)
-                    || (response_errcode == ER_PARAM))
+            if ((response_errcode == MCE_ERR_WAVEFORM_NOT_READY)
+                    || (response_errcode == MCE_ERR_INVALID_PARAMETER))
             {
                 if ((fpu.state == FPST_READY_FORWARD)
                         || (fpu.state == FPST_READY_REVERSE))
@@ -293,12 +325,12 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                 // This message is set to a low log level because it is sent by any extra FPUs
                 // which have not been configured
                 LOG_CONSOLE(LOG_DEBUG, "%18.6f : RX : "
-                            "FPU # %i: executeMotion command got error response 'ER_WAVENREDY' / 'ER_PARAM'"
+                            "FPU # %i: executeMotion command got error response 'ER_WAVENREDY' / 'MCE_ERR_INVALID_PARAMETER'"
                             " command skipped.\n",
                             get_realtime(),
                             fpu_id);
             }
-            else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
+            else if ((response_status & STBT_M1LIMIT) || (response_errcode == MCE_WARN_LIMIT_SWITCH_BREACH))
             {
                 fpu.state = FPST_OBSTACLE_ERROR;
                 fpu.waveform_valid = false;
@@ -306,20 +338,20 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                 fpu.ping_ok = false;
 
                 LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
-                            "FPU # %i: executeMotion command got error status 'ER_M1LIMIT'/'STBT_M1LIMIT'"
+                            "FPU # %i: executeMotion command got error status 'MCE_WARN_LIMIT_SWITCH_BREACH'/'STBT_M1LIMIT'"
                             " command cancelled.\n",
                             get_realtime(),
                             fpu_id);
 
             }
-            else if (response_errcode == ER_COLLIDE)
+            else if (response_errcode == MCE_WARN_COLLISION_DETECTED)
             {
                 fpu.alpha_datum_switch_active = true;
                 fpu.state = FPST_OBSTACLE_ERROR;
                 fpu.waveform_valid = false;
 
                 LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
-                            "FPU # %i: executeMotion command got error response code 'ER_COLLIDE'"
+                            "FPU # %i: executeMotion command got error response code 'MCE_WARN_COLLISION_DETECTED'"
                             " command cancelled.\n",
                             get_realtime(),
                             fpu_id);
@@ -347,7 +379,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
     case CMSG_FINISHED_MOTION:
         // clear time-out flag
         remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
-        if ((response_errcode == ER_COLLIDE) || fpu.beta_collision)
+        if ((response_errcode == MCE_WARN_COLLISION_DETECTED) || fpu.beta_collision)
         {
             fpu.state = FPST_OBSTACLE_ERROR;
             fpu.movement_complete = false;
@@ -367,12 +399,12 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
 
             LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
                         "FPU # %i: executeMotion command finished error status "
-                        "'ER_COLLIDE (beta arm collision)'"
+                        "'MCE_WARN_COLLISION_DETECTED (beta arm collision)'"
                         " movement aborted.\n",
                         get_realtime(),
                         fpu_id);
         }
-        else if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT) || fpu.at_alpha_limit)
+        else if ((response_status & STBT_M1LIMIT) || (response_errcode == MCE_WARN_LIMIT_SWITCH_BREACH) || fpu.at_alpha_limit)
         {
             fpu.at_alpha_limit = true;
             fpu.state = FPST_OBSTACLE_ERROR;
@@ -392,7 +424,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
 
             LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
                         "FPU # %i: executeMotion command finished error status "
-                        "'ER_M1LIMIT' (alpha limit switch breach)"
+                        "'MCE_WARN_LIMIT_SWITCH_BREACH' (alpha limit switch breach)"
                         " movement aborted.\n",
                         get_realtime(),
                         fpu_id);
@@ -420,7 +452,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                         get_realtime(),
                         fpu_id);
         }
-        else if (response_errcode == ER_TIMING)
+        else if (response_errcode == MCE_WARN_STEP_TIMING_ERROR)
         {
             // we got a step timing error (meaning the interrupt
             // handler running on the FPUs microcontroller could not
@@ -439,7 +471,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
 
             LOG_CONSOLE(LOG_VERBOSE, "%18.6f : RX : "
                         "FPU # %i: executeMotion command finished error status "
-                        "'ER_TIMING (step timing error / firmware error)'"
+                        "'MCE_WARN_STEP_TIMING_ERROR (step timing error / firmware error)'"
                         " movement aborted.\n",
                         get_realtime(),
                         fpu_id);
@@ -472,7 +504,6 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
         fpu.last_updated = cur_time;
         break;
 
-    case CMSG_WARN_RACE:  /* fall-trough */
     case CCMD_ABORT_MOTION    :
         // clear time-out flag
         if (response_errcode == 0)
@@ -501,22 +532,13 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
         fpu.last_updated = cur_time;
         fpu.ping_ok = false;
 
-        if (cmd_id == CMSG_WARN_RACE)
-        {
-            LOG_RX(LOG_ERROR, "%18.6f : RX : "
-                   "CMSG_WARN_RACE (step timing error) message received for FPU %i\n",
-                   get_realtime(),
-                   fpu_id);
-        }
-        else
-        {
-            // this is set to a low logging level because any moving FPU
-            // will send this message
-            LOG_RX(LOG_DEBUG, "%18.6f : RX : "
-                   "abortMotion message received for FPU %i\n",
-                   get_realtime(),
-                   fpu_id);
-        }
+	// this is set to a low logging level because any moving FPU
+	// will send this message
+	LOG_RX(LOG_DEBUG, "%18.6f : RX : "
+	       "abortMotion message received for FPU %i\n",
+	       get_realtime(),
+	       fpu_id);
+
 
         break;
 
@@ -560,11 +582,11 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
 
         {
             const char * msg = "(n/a)";
-            if (response_errcode == ER_CANOVRH)
+            if (response_errcode == MCE_ERR_CAN_OVERFLOW_HW)
             {
                 msg = "(hardware overflow)";
             }
-            else if (response_errcode == ER_CANOVRS)
+            else if (response_errcode == MCE_ERR_CAN_OVERFLOW_SW)
             {
                 msg = "(software overflow)";
             }
@@ -584,39 +606,8 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
 
         break;
 
-    case CCMD_GET_STEPS_ALPHA :
-        // clear time-out flag
-        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode,timeout_list, count_pending);
-        if (response_errcode == 0)
-        {
-            const uint16_t steps_coded = (data[5] << 8) | data[4];
-            const int asteps = unfold_stepcount_alpha(steps_coded);
-            fpu.alpha_steps = asteps;
-        }
-        fpu.last_updated = cur_time;
-        if (fpu.state == FPST_UNKNOWN)
-        {
-            fpu.state = FPST_UNINITIALIZED;
-        }
-        break;
 
-    case CCMD_GET_STEPS_BETA  :
-        // clear time-out flag
-        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
-        if (response_errcode == 0)
-        {
-            const uint16_t steps_coded = (data[5] << 8) |  data[4];
-            const int bsteps = unfold_stepcount_beta(steps_coded);
-            fpu.beta_steps = bsteps;
-        }
-        fpu.last_updated = cur_time;
-        if (fpu.state == FPST_UNKNOWN)
-        {
-            fpu.state = FPST_UNINITIALIZED;
-        }
-        break;
-
-    case CCMD_GET_ERROR_ALPHA  :
+    case CCMD_GET_COUNTER_DEVIATION  :
         // clear time-out flag
         remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
         if (response_errcode == 0)
@@ -624,22 +615,6 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
             const uint16_t steps_coded = (data[5] << 8) |  data[4];
             const int bsteps = unfold_steps_deviation(steps_coded);
             fpu.alpha_deviation = bsteps;
-        }
-        fpu.last_updated = cur_time;
-        if (fpu.state == FPST_UNKNOWN)
-        {
-            fpu.state = FPST_UNINITIALIZED;
-        }
-        break;
-
-    case CCMD_GET_ERROR_BETA  :
-        // clear time-out flag
-        remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
-        if (response_errcode == 0)
-        {
-            const uint16_t steps_coded = (data[5] << 8) |  data[4];
-            const int bsteps = unfold_steps_deviation(steps_coded);
-            fpu.beta_deviation = bsteps;
         }
         fpu.last_updated = cur_time;
         if (fpu.state == FPST_UNKNOWN)
@@ -794,7 +769,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                             timeout_list, count_pending);
             }
         }
-        else if (response_errcode == ER_DATUM_LIMIT)
+        else if (response_errcode == MCE_ERR_DATUM_ON_LIMIT_SWITCH)
         {
             remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
 
@@ -808,7 +783,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                    get_realtime(),
                    fpu_id);
         }
-        else if (response_errcode == ER_AUTO)
+        else if (response_errcode == MCE_ERR_AUTO_DATUM_UNINITIALIZED)
         {
             remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
 
@@ -834,7 +809,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
         //printf("finished: datum search for FPU %i \n", fpu_id);
         remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
 
-        if ((response_status & STBT_M1LIMIT) || (response_errcode == ER_M1LIMIT))
+        if ((response_status & STBT_M1LIMIT) || (response_errcode == MCE_WARN_LIMIT_SWITCH_BREACH))
         {
             fpu.alpha_datum_switch_active = true;
             fpu.at_alpha_limit = true;
@@ -851,7 +826,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                    get_realtime(),
                    fpu_id);
         }
-        else if ((response_errcode == ER_COLLIDE) || fpu.beta_collision)
+        else if ((response_errcode == MCE_WARN_COLLISION_DETECTED) || fpu.beta_collision)
         {
             fpu.beta_collision = true;
             fpu.state = FPST_OBSTACLE_ERROR;
@@ -867,7 +842,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                    get_realtime(),
                    fpu_id);
         }
-        else if (response_errcode == ER_DATUMTO)
+        else if (response_errcode == MCE_ERR_DATUM_TIME_OUT)
         {
             // The datum operation was timed-out by the firmware.  The
             // only way this can regularly happen for the alpha arm is
@@ -909,7 +884,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                    get_realtime(),
                    fpu_id);
         }
-        else if (response_errcode == ER_DATUM_LIMIT)
+        else if (response_errcode == MCE_ERR_DATUM_ON_LIMIT_SWITCH)
         {
             if (fpu.state == FPST_DATUM_SEARCH)
             {

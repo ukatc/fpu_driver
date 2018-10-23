@@ -459,7 +459,7 @@ void FPUArray::setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd)
 
     t_fpu_state& fpu = FPUGridState.FPU_state[fpu_id];
     fpu.last_command = last_cmd;
-    fpu.last_status = ER_OK_UNCONFIRMED;
+    fpu.last_status = MCE_NO_CONFIRMATION_EXPECTED;
 
     // if tracing is active, signal state change
     // to waitForState() callers.
@@ -963,7 +963,7 @@ timespec expire_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu,
             uint8_t cmd_code = fpu.cmd_timeouts[read_index].cmd_code;
             fpu.pending_command_set &= ~(((unsigned int)1) << cmd_code);
             fpu.last_command = static_cast<E_CAN_COMMAND>(cmd_code);
-            fpu.last_status = ER_TIMEDOUT;
+            fpu.last_status = MCE_COMMAND_TIMEDOUT;
 
             LOG_RX(LOG_ERROR, "%18.6f : RX FPU %i: command code %i timed out.\n",
                    ethercanif::get_realtime(),

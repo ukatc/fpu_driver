@@ -169,6 +169,8 @@ enum E_MOC_ERRCODE
     MCE_ERR_DATUM_ON_LIMIT_SWITCH    = 0x0f,	// datum command was rejected because alpha arm is on limit switch
     MCE_ERR_CAN_OVERFLOW_HW	     = 0x10,	// overflow in CAN hardware buffer
     MCE_ERR_CAN_OVERFLOW_SW	     = 0x11,	// CAN overflow in motion controller firmware buffer
+    MCE_NO_CONFIRMATION_EXPECTED     = 0x12,    // command was sent for which no confirmation is expected
+    MCE_COMMAND_TIMEDOUT             = 0x13,    // response for CAN command is missing (timed out)
 };
 
 
@@ -284,8 +286,6 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION      :
     case CCMD_CHECK_INTEGRITY                    :
     case CCMD_ENABLE_MOVE                        :
-    case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    :
-    case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
         priority = 0x04;
         break;
 
@@ -298,14 +298,11 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     case CCMD_READ_REGISTER                    :
     case CCMD_SET_USTEP_LEVEL                  :
     case CCMD_GET_COUNTER_DEVIATION            :
-    case CCMD_CHECK_INTEGRITY                  :
-    case CCMD_SET_STEPS_PER_SEGMENT            :
     case CCMD_READ_SERIAL_NUMBER               :
     case CCMD_WRITE_SERIAL_NUMBER              :
     case CCMD_PING_FPU                           :
     case CCMD_SET_TICKS_PER_SEGMENT              :
     case CCMD_SET_STEPS_PER_SEGMENT              :
-    case CCMD_SET_USTEP_LEVEL                    :
         priority = 0x05;
         break;
 

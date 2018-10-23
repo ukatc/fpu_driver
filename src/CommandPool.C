@@ -102,8 +102,8 @@ E_EtherCANErrCode CommandPool::initialize()
             case CCMD_UNLOCK_UNIT       :
             case CCMD_GET_COUNTER_DEVIATION:
             case CCMD_GET_FIRMWARE_VERSION          :
-            case CCMD_SET_TIME_STEP                 :
-            case CCMD_SET_STEPS_PER_FRAME           :
+            case CCMD_SET_TICKS_PER_SEGMENT         :
+            case CCMD_SET_STEPS_PER_SEGMENT         :
             case CCMD_FREE_ALPHA_LIMIT_BREACH       :
             case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
             case CCMD_ENABLE_MOVE       :
@@ -175,23 +175,8 @@ E_EtherCANErrCode CommandPool::initialize()
                     pool[i].push_back(std::move(ptr));
                     break;
 
-                case CCMD_GET_STEPS_ALPHA        :
-                    ptr.reset(new GetStepsAlphaCommand());
-                    pool[i].push_back(std::move(ptr));
-                    break;
-
-                case CCMD_GET_STEPS_BETA        :
-                    ptr.reset(new GetStepsBetaCommand());
-                    pool[i].push_back(std::move(ptr));
-                    break;
-
-                case CCMD_GET_ERROR_ALPHA        :
+                case CCMD_GET_COUNTER_DEVIATION        :
                     ptr.reset(new GetErrorAlphaCommand());
-                    pool[i].push_back(std::move(ptr));
-                    break;
-
-                case CCMD_GET_ERROR_BETA        :
-                    ptr.reset(new GetErrorBetaCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
 

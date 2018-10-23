@@ -38,7 +38,7 @@ public:
 
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_GET_ERROR_BETA;
+        return CCMD_GET_COUNTER_DEVIATION;
     };
 
     GetErrorBetaCommand()
