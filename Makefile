@@ -24,24 +24,24 @@ _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h		\
 	ethercan/CommandQueue.h InterfaceConstants.h ethercan/FPUArray.h	\
 	ethercan/GatewayInterface.h ethercan/I_CAN_Command.h		\
 	ethercan/I_ResponseHandler.h ethercan/SBuffer.h			\
-	ethercan/TimeOutList.h ethercan/cancommands/AbortMotionCommand.h	\
-	ethercan/cancommands/ConfigureMotionCommand.h			\
-	ethercan/cancommands/EnableBetaCollisionProtectionCommand.h	\
-	ethercan/cancommands/ExecuteMotionCommand.h			\
-	ethercan/cancommands/FindDatumCommand.h				\
-	ethercan/cancommands/FreeBetaCollisionCommand.h			\
-	ethercan/cancommands/GetErrorAlphaCommand.h			\
-	ethercan/cancommands/GetErrorBetaCommand.h				\
-	ethercan/cancommands/GetStepsAlphaCommand.h			\
-	ethercan/cancommands/GetStepsBetaCommand.h				\
-	ethercan/cancommands/PingFPUCommand.h				\
-	ethercan/cancommands/ReadRegisterCommand.h				\
-	ethercan/cancommands/RepeatMotionCommand.h				\
-	ethercan/cancommands/ResetFPUCommand.h				\
-	ethercan/cancommands/ReverseMotionCommand.h			\
-	ethercan/cancommands/SetUStepLevelCommand.h			\
-	ethercan/cancommands/WriteSerialNumberCommand.h			\
-	ethercan/cancommands/ReadSerialNumberCommand.h			\
+	ethercan/TimeOutList.h ethercan/cancommandsv2/AbortMotionCommand.h	\
+	ethercan/cancommandsv2/ConfigureMotionCommand.h			\
+	ethercan/cancommandsv2/EnableBetaCollisionProtectionCommand.h	\
+	ethercan/cancommandsv2/ExecuteMotionCommand.h			\
+	ethercan/cancommandsv2/FindDatumCommand.h				\
+	ethercan/cancommandsv2/FreeBetaCollisionCommand.h			\
+	ethercan/cancommandsv2/GetErrorAlphaCommand.h			\
+	ethercan/cancommandsv2/GetErrorBetaCommand.h				\
+	ethercan/cancommandsv2/GetStepsAlphaCommand.h			\
+	ethercan/cancommandsv2/GetStepsBetaCommand.h				\
+	ethercan/cancommandsv2/PingFPUCommand.h				\
+	ethercan/cancommandsv2/ReadRegisterCommand.h				\
+	ethercan/cancommandsv2/RepeatMotionCommand.h				\
+	ethercan/cancommandsv2/ResetFPUCommand.h				\
+	ethercan/cancommandsv2/ReverseMotionCommand.h			\
+	ethercan/cancommandsv2/SetUStepLevelCommand.h			\
+	ethercan/cancommandsv2/WriteSerialNumberCommand.h			\
+	ethercan/cancommandsv2/ReadSerialNumberCommand.h			\
 	ethercan/sync_utils.h ethercan/time_utils.h
 
 
@@ -68,7 +68,7 @@ tutorial:	python/doc/tutorial.tex python/doc/FPU-state1.pdf git_version
 	cd python/doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
 cppcheck: force
-	cppcheck src/*.C python/src/*.cpp  -I include -I include/ethercan -I include/ethercan/cancommands --enable=all
+	cppcheck src/*.C python/src/*.cpp  -I include -I include/ethercan -I include/ethercan/cancommandsv2 --enable=all
 
 $(ODIR)/%.o: $(SRCDIR)/%.C $(DEPS) git_version
 	$(CC) $(CXXFLAGS) -DVERSION=\"$(GIT_VERSION)\" -c -o $@ $< 

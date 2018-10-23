@@ -37,7 +37,7 @@
 #include "InterfaceConstants.h"
 #include "ethercan/time_utils.h"
 #include "ethercan/GatewayInterface.h"
-#include "ethercan/cancommands/AbortMotionCommand.h"
+#include "ethercan/cancommandsv2/AbortMotionCommand.h"
 
 
 namespace mpifps
