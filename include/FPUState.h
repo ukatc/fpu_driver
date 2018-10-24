@@ -69,6 +69,7 @@ typedef struct __attribute__((packed)) tout_entry
 {
     timespec tout_val;
     uint8_t cmd_code;
+    uint8_t sequence_number;
 } tout_entry;
 
 // length of serial number string in state structure

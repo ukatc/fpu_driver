@@ -75,45 +75,12 @@ public:
     void SerializeToBuffer(const uint8_t busid,
                            const uint8_t fpu_canid,
                            int& buf_len,
-                           t_CAN_buffer& can_buffer)
+                           t_CAN_buffer& can_buffer,
+			   const uint8_t sequence_number)
     {
 
-        // zero buffer to make sure no spurious DLEs are sent
-        bzero(&can_buffer.message, sizeof(can_buffer.message));
-        // CAN bus id for that gateway to which message should go
-        can_buffer.message.busid = busid;
-
-        // we use bit 7 to 10 for the command code,
-        // and bit 0 to 6 for the FPU bus id.
-        assert(fpu_canid <= FPUS_PER_BUS);
-        if (! bcast)
-        {
-            assert(fpu_canid > 0);
-        }
-
-
-        // the CAN identifier is either all zeros (for a broadcast
-        // message) or bits 7 - 10 are the proiority and bits 0 -
-        // 6 the CAN id of the FPU.
-        const E_CAN_COMMAND cmd_code = getCommandCode();
-
-        uint16_t can_identifier = 0;
-
-        if (! bcast)
-        {
-            // priority evaluates to zero for protocol version 1
-            can_identifier = (getMessagePriority(cmd_code)
-                              << 7) | fpu_canid;
-        }
-
-        // The protocol uses little-endian encoding here
-        // (the byte order used in the CANOpen protocol).
-        can_buffer.message.identifier = htole64(can_identifier);
-        buf_len = 3;
-
-
-        // CAN command code
-        can_buffer.message.data[0] = cmd_code;
+	set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
+	
         bool skip_alpha = false;
         bool skip_beta = false;
         switch (_arm_selection)
@@ -170,13 +137,6 @@ public:
         default:
             assert(false);
         }
-        // this is defined so that an empty field (all-zero)
-        // has the defeault behavoir implemented by the
-        // current firmware >= 1.0.0 , which datums both arms.
-        //
-        // Note that this is not necessarily safe if
-        // one of the switches is broken - old firmware ignoring
-        // the arm selection can break the FPU then.
 
         const uint8_t flags = ( (skip_alpha ? DATUM_SKIP_ALPHA : 0)
                                 | (skip_beta ? DATUM_SKIP_BETA : 0)
@@ -184,8 +144,8 @@ public:
                                 | (_anti_clockwise ? MODE_DATUM_ANTI_CLOCKWISE : 0)
                                 | _timeout_flag);
 
-        can_buffer.message.data[1] = flags;
-        buf_len += 8;
+        can_buffer.message.data[2] = flags;
+        buf_len += 1;
 
     };
 

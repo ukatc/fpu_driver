@@ -166,7 +166,7 @@ void SBuffer::setConfig(const EtherCANInterfaceConfig &config_vals)
 
 SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
         int const input_len,
-        uint8_t src[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES])
+        const uint8_t src[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES])
 {
     int out_len = 0;
     const int LINE_LEN=128;
@@ -330,7 +330,6 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
                 break;
 
             case ENOTCONN: // socket not connected
-                printf("3");
                 fflush(stdout);
                 return ST_NO_CONNECTION;
 

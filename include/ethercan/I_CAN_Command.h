@@ -20,6 +20,7 @@
 #ifndef I_CAN_COMMAND_H
 #define I_CAN_COMMAND_H
 
+#include <string.h>
 #include <endian.h>
 #include <time.h>
 
@@ -58,8 +59,10 @@ class I_CAN_Command
 {
 public:
 
+    const int CMD_CODE_MASK = 0x0F;
 
-    I_CAN_Command() {};
+
+    I_CAN_Command() : fpu_id(0), bcast(false), sequence_number(0) {};
     virtual ~I_CAN_Command() {};
 
 
@@ -67,24 +70,93 @@ public:
     // CAN message
     virtual void SerializeToBuffer(const uint8_t busid,
                                    const uint8_t fpu_canid,
-                                   int& buf_len, t_CAN_buffer& buf) = 0;
+                                   int& buf_len, t_CAN_buffer& buf,
+				   const uint8_t sequence_number) = 0;
 
 
     virtual E_CAN_COMMAND getInstanceCommandCode() = 0;
 
+
     // FPU id to which message is sent
-    virtual int getFPU_ID()=0;
+    int getFPU_ID()
+    {
+        return fpu_id;
+    };
+    
 
     // boolean value indicating whether
     // the driver should wait for a response
-    virtual bool expectsResponse() = 0;
+    virtual bool expectsResponse()
+    {
+        return true;
+    };
 
     // time-out period for a response to the message
     virtual timespec getTimeOut() = 0;
 
     // if this is set, a response will be expected
     // from all FPUs which are not locked.
-    virtual bool doBroadcast() = 0;
+    bool doBroadcast()
+    {
+        return bcast;
+    }
+
+    uint8_t getSequenceNumber()
+    {
+	return sequence_number;
+    }
+
+
+			   
+    void set_msg_header(t_CAN_buffer& can_buffer, int& buflen,
+			   const uint8_t busid, const uint8_t fpu_canid,
+			   const bool bcast, const uint8_t _sequence_number)
+	{
+	    // zero buffer to make sure no spurious DLEs are sent
+	    bzero(&can_buffer.message, sizeof(can_buffer.message));
+	    // CAN bus id for that gateway to which message should go
+	    can_buffer.message.busid = busid;
+
+	    // we use bit 7 to 10 for the command code,
+	    // and bit 0 to 6 for the FPU bus id.
+	    assert(fpu_canid <= FPUS_PER_BUS);
+	    if (! bcast)
+	    {
+		assert(fpu_canid > 0);
+	    }
+
+
+	    // the CAN identifier is either all zeros (for a broadcast
+	    // message) or bits 7 - 10 are the proiority and bits 0 -
+	    // 6 the CAN id of the FPU.
+	    const E_CAN_COMMAND cmd_code = getInstanceCommandCode();
+
+	    uint16_t can_identifier = 0;
+
+	    if (! bcast)
+	    {
+		can_identifier = (getMessagePriority(cmd_code)
+				  << 7) | fpu_canid;
+	    }
+
+	    // The protocol uses little-endian encoding here
+	    // (the byte order used in the CANOpen protocol).
+	    //can_buffer.message.identifier = htole64(can_identifier);
+	    can_buffer.message.identifier = htole16(can_identifier);
+	    
+	    sequence_number = _sequence_number;
+	    can_buffer.message.data[0] = sequence_number;
+	    // CAN command code
+	    can_buffer.message.data[1] = cmd_code & CMD_CODE_MASK;
+
+	    buflen = 5; // 3 bytes header, 2 bytes payload
+	}
+
+    protected:
+    
+    uint16_t fpu_id;
+    bool bcast;
+    uint8_t sequence_number;
 
 };
 

@@ -63,39 +63,15 @@ public:
     void SerializeToBuffer(const uint8_t busid,
                            const uint8_t fpu_canid,
                            int& buf_len,
-                           t_CAN_buffer& can_buffer)
+                           t_CAN_buffer& can_buffer,
+			   const uint8_t sequence_number)
     {
 
-        // zero buffer to make sure no spurious DLEs are sent
-        bzero(&can_buffer.message, sizeof(can_buffer.message));
-        // CAN bus id for that gateway to which message should go
-        can_buffer.message.busid = busid;
+	set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
 
-        // we use bit 7 to 10 for the command code,
-        // and bit 0 to 6 for the FPU bus id.
-        assert(fpu_canid <= FPUS_PER_BUS);
+        can_buffer.message.data[2] = (request_direction == REQD_CLOCKWISE) ? 1 : 0;
 
-
-        // the CAN identifier is either all zeros (for a broadcast
-        // message) or bits 7 - 10 are the proiority and bits 0 -
-        // 6 the CAN id of the FPU.
-        const E_CAN_COMMAND cmd_code = getCommandCode();
-
-        uint16_t can_identifier = (getMessagePriority(cmd_code)
-                                   << 7) | fpu_canid;
-
-
-        // The protocol uses little-endian encoding here
-        // (the byte order used in the CANOpen protocol).
-        can_buffer.message.identifier = htole64(can_identifier);
-        buf_len = 3;
-
-
-        // CAN command code
-        can_buffer.message.data[0] = cmd_code;
-        can_buffer.message.data[1] = request_direction;
-
-        buf_len += 8;
+        buf_len += 1;
 
     };
 

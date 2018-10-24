@@ -69,7 +69,7 @@ public:
     // this operation might block!
     E_SocketStatus encode_and_send(int sockfd,
                                    int const input_len,
-                                   uint8_t bytes[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES]);
+                                   const uint8_t bytes[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES]);
 
     // we send pending data and return the
     // result of the send command.

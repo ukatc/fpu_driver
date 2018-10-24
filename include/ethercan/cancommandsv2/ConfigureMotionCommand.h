@@ -115,55 +115,33 @@ public:
     void SerializeToBuffer(const uint8_t busid,
                            const uint8_t fpu_canid,
                            int& buf_len,
-                           t_CAN_buffer& can_buffer)
+                           t_CAN_buffer& can_buffer,
+			   const uint8_t sequence_number)
     {
 
-        // zero buffer to make sure no spurious DLEs are sent
-        bzero(&can_buffer.message, sizeof(can_buffer.message));
-        // CAN bus id for that gateway to which message should go
-        can_buffer.message.busid = busid;
-
-        // we use bit 7 to 10 for the command code,
-        // and bit 0 to 6 for the FPU bus id.
-        assert(fpu_canid <= FPUS_PER_BUS);
-        assert(fpu_canid > 0);
+	set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
 
 
-        // the CAN identifier is either all zeros (for a broadcast
-        // message) or bits 7 - 10 are the proiority and bits 0 -
-        // 6 the CAN id of the FPU.
-        const E_CAN_COMMAND cmd_code = getCommandCode();
-
-        const uint16_t can_identifier = (getMessagePriority(cmd_code)
-                                         << 7) | fpu_canid;
-
-        // The protocol uses little-endian encoding here
-        // (the byte order used in the CANOpen protocol).
-        // zero buffer to make sure no spurious DLEs are sent
-        can_buffer.message.identifier = htole64(can_identifier);
-        buf_len = 3;
-
-
-        // CAN command code
-        can_buffer.message.data[0] = cmd_code;
 
         // flags for first and last entry
-        can_buffer.message.data[1] = ( (fentry ? 1 : 0)
-                                       | ((lentry ? 1 : 0) << 1));
+        can_buffer.message.data[2] = ( (fentry ? 1 : 0)
+                                       | ((lentry ? 1 : 0) << 1)
+				       | ((confirm ? 1 : 0) << 2)
+				     );
         // alpha and beta steps
-        // FIXME: tx2 and tx3, and tx4 and tx5 are swapped here
-        // to work around a small bug in the firmware.
+        // NOTE: tx2 and tx3, and tx4 and tx5 had been swapped
+        // to work around a bug in the firmware. This is fixed in v2.
         can_buffer.message.data[3] = 0xff & asteps;
-        can_buffer.message.data[2] = (0x3f & (asteps >> 8))
+        can_buffer.message.data[4] = (0x3f & (asteps >> 8))
                                      | ((apause ? 1 : 0) << 6)
                                      | ((aclockwise ? 1 : 0) << 7);
 
         can_buffer.message.data[5] = 0xff & bsteps;
-        can_buffer.message.data[4] = (0x3f & (bsteps >> 8))
+        can_buffer.message.data[6] = (0x3f & (bsteps >> 8))
                                      | ((bpause ? 1 : 0) << 6)
                                      | ((bclockwise ? 1 : 0) << 7);
 
-        buf_len += 8;
+        buf_len += 5;
 
 
     };

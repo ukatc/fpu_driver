@@ -73,6 +73,7 @@ FPUArray::FPUArray(const EtherCANInterfaceConfig &config_vals):
 
     num_trace_clients = 0;
     FPUGridState.num_queued = 0;
+    FPUGridState.broadcast_sequence_number = 0;
 }
 
 
@@ -197,6 +198,36 @@ void FPUArray::decSending()
     }
     pthread_mutex_unlock(&grid_state_mutex);
 
+}
+
+uint8_t FPUArray::countSequenceNumber(const int fpu_id, const bool increment, const bool broadcast)
+{
+    uint8_t result;
+    
+    pthread_mutex_lock(&grid_state_mutex);
+    if (broadcast)
+    {
+	if (increment)
+	{
+	    // this is an unsigned int value which is
+	    // allowed to wrap over - no problem.
+	    FPUGridState.FPU_state[fpu_id].sequence_number++;
+	}
+	result = FPUGridState.FPU_state[fpu_id].sequence_number;
+    }
+    else
+    {
+	if (increment)
+	{
+	    // this is an unsigned int value which is
+	    // allowed to wrap over - no problem.
+	    FPUGridState.broadcast_sequence_number++;
+	}
+	result = FPUGridState.broadcast_sequence_number;
+    }
+	
+    pthread_mutex_unlock(&grid_state_mutex);
+    return result;
 }
 
 
@@ -425,6 +456,7 @@ bool FPUArray::isLocked(int fpu_id) const
 // grid-global counter.
 
 void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val,
+				 uint8_t sequence_number,
                                  TimeOutList& timeout_list)
 {
     pthread_mutex_lock(&grid_state_mutex);
@@ -439,7 +471,7 @@ void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec
 
 
     add_pending(fpu, fpu_id, pending_cmd, tout_val, timeout_list,
-                FPUGridState.count_pending);
+                FPUGridState.count_pending, sequence_number);
     // if tracing is active, signal state change
     if (num_trace_clients > 0)
     {
@@ -821,7 +853,8 @@ timespec get_min_pending(const t_fpu_state& fpu)
 
 void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
                  const timespec& new_timeout,
-                 TimeOutList& timeout_list, int &count_pending)
+                 TimeOutList& timeout_list, int &count_pending,
+		 const uint8_t sequence_number)
 {
     // assert this command is not yet pending
     assert( ((fpu.pending_command_set >> cmd_code) & 1) == 0);
@@ -837,6 +870,7 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
     tout_entry new_entry;
     new_entry.cmd_code = cmd_code;
     new_entry.tout_val = new_timeout;
+    new_entry.sequence_number = sequence_number;
 
     fpu.cmd_timeouts[fpu.num_active_timeouts++] = new_entry;
     // if the new value is smaller than the previous ones,

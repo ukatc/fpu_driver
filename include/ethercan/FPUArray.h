@@ -126,7 +126,8 @@ public:
     bool isLocked(int fpu_id) const;
 
     // sets pending command for one FPU.
-    void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val, TimeOutList& timeout_list);
+    void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val,
+			   uint8_t sequence_number, TimeOutList& timeout_list);
 
 
     // sets last command for a FPU.
@@ -161,6 +162,10 @@ public:
     // which are currently sent.
     void incSending();
     void decSending();
+
+    // increments and fetches the next message sequence number
+    // for this FPU
+    uint8_t countSequenceNumber(const int fpu_id, const bool increment, const bool broadcast);
 
     // get number of commands which are being sent.
     int  countSending() const;
@@ -213,7 +218,8 @@ private:
 void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
                  const timespec& new_timeout,
                  TimeOutList& timeout_list,
-                 int &count_pending);
+                 int &count_pending,
+		 const uint8_t sequence_number);
 
 // remove a command from the pending command set, and refresh the
 // time-out list with the next time out.

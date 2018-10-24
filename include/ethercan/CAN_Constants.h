@@ -50,7 +50,7 @@ const int MAX_CAN_PAYLOAD_BYTES = 8;
 const int MAX_UNENCODED_GATEWAY_MESSAGE_BYTES = 11;
 
 // length of serial number stored in FPU NVRAM
-const int DIGITS_SERIAL_NUMBER=5;
+const int DIGITS_SERIAL_NUMBER=6;
 
 
 }

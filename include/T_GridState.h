@@ -60,6 +60,9 @@ typedef struct
     int num_queued;
 
 
+    // seqeucne number for broadcast commands
+    uint8_t broadcast_sequence_number;
+    
     // state of the driver itself
     E_InterfaceState interface_state;
 } t_grid_state;
