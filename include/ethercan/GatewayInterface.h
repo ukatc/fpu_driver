@@ -107,13 +107,13 @@ public:
         return command_pool.provideInstance<T>();
     }
 
-    void updatePendingSets(unique_ptr<I_CAN_Command> &active_can_command,
+    void updatePendingSets(unique_ptr<CAN_Command> &active_can_command,
                            int gateway_id, int busid);
 
 
     // send a CAN command to the gateway.
     // This method is thread-safe
-    CommandQueue::E_QueueState sendCommand(const int fpu_id, unique_ptr<I_CAN_Command>& new_command);
+    CommandQueue::E_QueueState sendCommand(const int fpu_id, unique_ptr<CAN_Command>& new_command);
 
     // returns id which needs to be set as fpu id for broadcast command
     int getBroadcastID(const int gateway_id, const int busid);
@@ -166,7 +166,7 @@ public:
                 // broadcast_id is an fpu id which makes sure
                 // the message goes to the requested bus.
                 can_command->parametrize(broadcast_id, do_broadcast);
-                unique_ptr<I_CAN_Command> cmd(can_command.release());
+                unique_ptr<CAN_Command> cmd(can_command.release());
                 sendCommand(broadcast_id, cmd);
             }
         }
@@ -199,7 +199,7 @@ private:
 
 
     // send a buffer (either pending data or new command)
-    SBuffer::E_SocketStatus send_buffer(unique_ptr<I_CAN_Command> &active_can_command,
+    SBuffer::E_SocketStatus send_buffer(unique_ptr<CAN_Command> &active_can_command,
                                         int gateway_id);
 
     // interface method which handles decoded CAN response messages
@@ -207,7 +207,7 @@ private:
 
 
     void updatePendingCommand(int fpu_id,
-                              std::unique_ptr<I_CAN_Command>& can_command);
+                              std::unique_ptr<CAN_Command>& can_command);
 
 
 

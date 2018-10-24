@@ -30,7 +30,7 @@
 #include "../EtherCANInterfaceConfig.h"
 
 #include "E_CAN_COMMAND.h"
-#include "I_CAN_Command.h"
+#include "CAN_Command.h"
 
 namespace mpifps
 {
@@ -70,7 +70,7 @@ public:
     template<typename T>
     inline unique_ptr<T> provideInstance()
     {
-        unique_ptr<I_CAN_Command> ptr;
+        unique_ptr<CAN_Command> ptr;
         // get the command code for that class
         E_CAN_COMMAND cmd_code = T::getCommandCode();
         assert(cmd_code > 0);
@@ -105,11 +105,11 @@ public:
     // is no longer needed into the memory pool so that it can
     // be used later without requiring a new
     // allocation.
-    void recycleInstance(unique_ptr<I_CAN_Command>& cmdptr);
+    void recycleInstance(unique_ptr<CAN_Command>& cmdptr);
 
 
 private:
-    typedef std::vector<unique_ptr<I_CAN_Command>> t_cmdvec;
+    typedef std::vector<unique_ptr<CAN_Command>> t_cmdvec;
 
     const EtherCANInterfaceConfig config;
     t_cmdvec pool[NUM_CAN_COMMANDS+1]; // numbers are one-based

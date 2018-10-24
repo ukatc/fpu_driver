@@ -22,7 +22,7 @@
 
 #include <string.h>
 #include <cassert>
-#include "../I_CAN_Command.h"
+#include "../CAN_Command.h"
 #include "../../InterfaceConstants.h"
 
 namespace mpifps
@@ -31,27 +31,24 @@ namespace mpifps
 namespace ethercanif
 {
 
-class WriteSerialNumberCommand : public I_CAN_Command
+class WriteSerialNumberCommand : public CAN_Command
 {
 
 public:
 
 
+    static const E_CAN_COMMAND command_code = CCMD_WRITE_SERIAL_NUMBER;
+    
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_WRITE_SERIAL_NUMBER;
+        return command_code;
     };
-
-    WriteSerialNumberCommand()
+    
+    WriteSerialNumberCommand(): CAN_Command(command_code)
     {
-        fpu_id = 0;
         memset(serial_number, 0, sizeof(serial_number));
     };
 
-    E_CAN_COMMAND getInstanceCommandCode()
-    {
-        return getCommandCode();
-    };
 
 
     void parametrize(int f_id, char const new_serial_number[DIGITS_SERIAL_NUMBER + 1])
@@ -79,19 +76,6 @@ public:
 
 
 
-    // FPU id to which message is sent
-    int getFPU_ID()
-    {
-        return fpu_id;
-    };
-
-    // boolean value indicating whether
-    // the driver should wait for a response
-    bool expectsResponse()
-    {
-        return true;
-    };
-
     // time-out period for a response to the message
     timespec getTimeOut()
     {
@@ -110,7 +94,6 @@ public:
     }
 
 private:
-    uint16_t fpu_id;
     uint8_t serial_number[DIGITS_SERIAL_NUMBER];
 
 };

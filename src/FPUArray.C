@@ -211,7 +211,16 @@ uint8_t FPUArray::countSequenceNumber(const int fpu_id, const bool increment, co
 	{
 	    // this is an unsigned int value which is
 	    // allowed to wrap over - no problem.
-	    FPUGridState.FPU_state[fpu_id].sequence_number++;
+	    // the value of 0 is skipped to indicate a non-checked
+	    // number
+	    if (FPUGridState.FPU_state[fpu_id].sequence_number != 0xff)
+	    {
+		FPUGridState.FPU_state[fpu_id].sequence_number++;
+	    }
+	    else
+	    {
+		FPUGridState.FPU_state[fpu_id].sequence_number = 1;
+	    }
 	}
 	result = FPUGridState.FPU_state[fpu_id].sequence_number;
     }
@@ -221,7 +230,14 @@ uint8_t FPUArray::countSequenceNumber(const int fpu_id, const bool increment, co
 	{
 	    // this is an unsigned int value which is
 	    // allowed to wrap over - no problem.
-	    FPUGridState.broadcast_sequence_number++;
+	    if (FPUGridState.broadcast_sequence_number != 0xff)
+	    {
+		FPUGridState.broadcast_sequence_number++;
+	    }
+	    else
+	    {
+		FPUGridState.broadcast_sequence_number = 1;
+	    }
 	}
 	result = FPUGridState.broadcast_sequence_number;
     }

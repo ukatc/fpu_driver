@@ -23,7 +23,7 @@
 
 #include <string.h>
 #include <cassert>
-#include "../I_CAN_Command.h"
+#include "../CAN_Command.h"
 #include "../../InterfaceConstants.h"
 
 namespace mpifps
@@ -32,26 +32,24 @@ namespace mpifps
 namespace ethercanif
 {
 
-class FreeBetaCollisionCommand : public I_CAN_Command
+class FreeBetaCollisionCommand : public CAN_Command
 {
 
 public:
 
+
+    static const E_CAN_COMMAND command_code = CCMD_FREE_BETA_COLLISION;
+    
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_FREE_BETA_COLLISION;
+        return command_code;
     };
-
-    FreeBetaCollisionCommand():
+    
+    FreeBetaCollisionCommand() : CAN_Command(command_code),
         request_direction(REQD_ANTI_CLOCKWISE)
     {
-        fpu_id = 0;
     };
 
-    E_CAN_COMMAND getInstanceCommandCode()
-    {
-        return getCommandCode();
-    };
 
 
     void parametrize(int f_id, E_REQUEST_DIRECTION request_dir)
@@ -76,20 +74,6 @@ public:
     };
 
 
-
-    // FPU id to which message is sent
-    int getFPU_ID()
-    {
-        return fpu_id;
-    };
-
-    // boolean value indicating whether
-    // the driver should wait for a response
-    bool expectsResponse()
-    {
-        return true;
-    };
-
     // time-out period for a response to the message
     timespec getTimeOut()
     {
@@ -102,13 +86,8 @@ public:
         return toval;
     };
 
-    bool doBroadcast()
-    {
-        return false;
-    }
 
 private:
-    uint16_t fpu_id;
     E_REQUEST_DIRECTION request_direction;
 
 

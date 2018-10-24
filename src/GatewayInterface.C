@@ -717,7 +717,7 @@ E_EtherCANErrCode GatewayInterface::disconnect()
 
 
 void GatewayInterface::updatePendingCommand(int fpu_id,
-        std::unique_ptr<I_CAN_Command>& can_command)
+        std::unique_ptr<CAN_Command>& can_command)
 {
 
 
@@ -737,7 +737,7 @@ void GatewayInterface::updatePendingCommand(int fpu_id,
                                    can_command->getInstanceCommandCode(),
 				   deadline,
 				   can_command->getSequenceNumber(),
-                                   deadline, timeOutList);
+                                   timeOutList);
     }
     else
     {
@@ -755,7 +755,7 @@ void GatewayInterface::updatePendingCommand(int fpu_id,
 // Otherwise, it is possible and happens that the response is
 // processed before the pending bit is set which is confusing.
 
-void GatewayInterface::updatePendingSets(unique_ptr<I_CAN_Command> &active_can_command,
+void GatewayInterface::updatePendingSets(unique_ptr<CAN_Command> &active_can_command,
         int gateway_id, int busid)
 {
     if (! active_can_command->doBroadcast())
@@ -782,7 +782,7 @@ void GatewayInterface::updatePendingSets(unique_ptr<I_CAN_Command> &active_can_c
 // This method either fetches and sends a new buffer
 // of CAN command data to a gateway, or completes sending of
 // a pending buffer, returning the status of the connection.
-SBuffer::E_SocketStatus GatewayInterface::send_buffer(unique_ptr<I_CAN_Command> &active_can_command, int gateway_id)
+SBuffer::E_SocketStatus GatewayInterface::send_buffer(unique_ptr<CAN_Command> &active_can_command, int gateway_id)
 {
     SBuffer::E_SocketStatus status = SBuffer::ST_OK;
 
@@ -882,7 +882,7 @@ void* GatewayInterface::threadTxFun()
     sigemptyset(&signal_set);
     sigaddset(&signal_set, SIGPIPE);
 
-    unique_ptr<I_CAN_Command> active_can_command[MAX_NUM_GATEWAYS];
+    unique_ptr<CAN_Command> active_can_command[MAX_NUM_GATEWAYS];
 
 
     set_rt_priority(config, WRITER_PRIORITY);
@@ -1040,7 +1040,7 @@ void* GatewayInterface::threadTxFun()
     // so that they are not lost, and memory leaks are avoided
     for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
     {
-        unique_ptr<I_CAN_Command> can_cmd = std::move(active_can_command[gateway_id]);
+        unique_ptr<CAN_Command> can_cmd = std::move(active_can_command[gateway_id]);
         if (can_cmd != nullptr)
         {
             commandQueue.requeue(gateway_id, std::move(can_cmd));
@@ -1274,7 +1274,7 @@ E_GridState GatewayInterface::waitForState(E_WaitTarget target, t_grid_state& ou
 }
 
 
-CommandQueue::E_QueueState GatewayInterface::sendCommand(const int fpu_id, unique_ptr<I_CAN_Command>& new_command)
+CommandQueue::E_QueueState GatewayInterface::sendCommand(const int fpu_id, unique_ptr<CAN_Command>& new_command)
 {
 
     assert(fpu_id < config.num_fpus);

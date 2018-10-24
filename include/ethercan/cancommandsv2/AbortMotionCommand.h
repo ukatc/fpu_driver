@@ -24,7 +24,7 @@
 #include <string.h>
 
 #include <cassert>
-#include "../I_CAN_Command.h"
+#include "../CAN_Command.h"
 
 namespace mpifps
 {
@@ -32,39 +32,27 @@ namespace mpifps
 namespace ethercanif
 {
 
-class AbortMotionCommand : public I_CAN_Command
+class AbortMotionCommand : public CAN_Command
 {
 
 public:
 
+    static const E_CAN_COMMAND command_code = CCMD_ABORT_MOTION;
+    
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_ABORT_MOTION;
+        return command_code;
     };
 
-    AbortMotionCommand(){};
+    AbortMotionCommand() : CAN_Command(command_code){};
 
-    E_CAN_COMMAND getInstanceCommandCode()
-    {
-        return getCommandCode();
-    };
-
+    
 
     void parametrize(int f_id, bool broadcast)
     {
         fpu_id = f_id;
         bcast = broadcast;
     };
-
-    void SerializeToBuffer(const uint8_t busid,
-                           const uint8_t fpu_canid,
-                           int& buf_len,
-                           t_CAN_buffer& can_buffer,
-			   const uint8_t sequence_number)
-    {
-	set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
-    };
-
 
 
 

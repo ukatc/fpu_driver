@@ -132,7 +132,7 @@ void CommandQueue::setEventDescriptor(int fd)
 
 
 CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
-        unique_ptr<I_CAN_Command>& new_command)
+        unique_ptr<CAN_Command>& new_command)
 {
 
     assert(gateway_id < MAX_NUM_GATEWAYS);
@@ -173,12 +173,12 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 
 }
 
-unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
+unique_ptr<CAN_Command> CommandQueue::dequeue(int gateway_id)
 {
     assert(gateway_id < MAX_NUM_GATEWAYS);
     assert(gateway_id >= 0);
 
-    unique_ptr<I_CAN_Command> rval;
+    unique_ptr<CAN_Command> rval;
 
     {
         pthread_mutex_lock(&queue_mutex);
@@ -196,7 +196,7 @@ unique_ptr<I_CAN_Command> CommandQueue::dequeue(int gateway_id)
 // been dequeued cannot be sent, and is added
 // again to the head / front of the queue.
 CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
-        unique_ptr<I_CAN_Command> new_command)
+        unique_ptr<CAN_Command> new_command)
 {
 
     assert(gateway_id < MAX_NUM_GATEWAYS);
@@ -232,7 +232,7 @@ CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
 
 void CommandQueue::flushToPool(CommandPool& memory_pool)
 {
-    unique_ptr<I_CAN_Command> cmd;
+    unique_ptr<CAN_Command> cmd;
 
     pthread_mutex_lock(&queue_mutex);
 

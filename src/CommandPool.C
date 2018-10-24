@@ -130,7 +130,7 @@ E_EtherCANErrCode CommandPool::initialize()
             // This can throw bad_alloc during initialization
             // if the system is very low on memory.
             pool[i].reserve(capacity);
-            unique_ptr<I_CAN_Command> ptr;
+            unique_ptr<CAN_Command> ptr;
             for (int c = 0; c < capacity; c++)
             {
                 switch (i)
@@ -281,7 +281,7 @@ E_EtherCANErrCode CommandPool::deInitialize()
 // and if any thread is waiting, notify it
 // that there are command buffers available
 // again.
-void CommandPool::recycleInstance(unique_ptr<I_CAN_Command>& cmd_ptr)
+void CommandPool::recycleInstance(unique_ptr<CAN_Command>& cmd_ptr)
 {
     pthread_mutex_lock(&pool_mutex);
     E_CAN_COMMAND cmd_type = cmd_ptr->getInstanceCommandCode();

@@ -23,7 +23,7 @@
 
 #include <string.h>
 #include <cassert>
-#include "../I_CAN_Command.h"
+#include "../CAN_Command.h"
 
 namespace mpifps
 {
@@ -31,29 +31,24 @@ namespace mpifps
 namespace ethercanif
 {
 
-class ReadRegisterCommand : public I_CAN_Command
+class ReadRegisterCommand : public CAN_Command
 {
 
 public:
 
+
+    static const E_CAN_COMMAND command_code = CCMD_READ_REGISTER;
+    
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_READ_REGISTER;
+        return command_code;
     };
-
-    ReadRegisterCommand()
+    
+    ReadRegisterCommand(): CAN_Command(command_code)
     {
-        fpu_id = -1;
-        bcast = false;
         bank = 0;
         address=0;
     };
-
-    E_CAN_COMMAND getInstanceCommandCode()
-    {
-        return getCommandCode();
-    };
-
 
     void parametrize(int f_id, bool broadcast, uint8_t _bank, uint8_t _address)
     {
@@ -81,19 +76,6 @@ public:
 
 
 
-    // FPU id to which message is sent
-    int getFPU_ID()
-    {
-        return fpu_id;
-    };
-
-    // boolean value indicating whether
-    // the driver should wait for a response
-    bool expectsResponse()
-    {
-        return true;
-    };
-
     // time-out period for a response to the message
     timespec getTimeOut()
     {
@@ -106,14 +88,8 @@ public:
         return toval;
     };
 
-    bool doBroadcast()
-    {
-        return bcast;
-    }
 
 private:
-    uint16_t fpu_id;
-    bool bcast;
     uint8_t bank;
     uint8_t address;
 

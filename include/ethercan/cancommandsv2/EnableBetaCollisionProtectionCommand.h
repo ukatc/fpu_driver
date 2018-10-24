@@ -22,7 +22,7 @@
 #include <string.h>
 
 #include <cassert>
-#include "../I_CAN_Command.h"
+#include "../CAN_Command.h"
 
 namespace mpifps
 {
@@ -30,26 +30,22 @@ namespace mpifps
 namespace ethercanif
 {
 
-class EnableBetaCollisionProtectionCommand : public I_CAN_Command
+class EnableBetaCollisionProtectionCommand : public CAN_Command
 {
 
 public:
-
+    
+    static const E_CAN_COMMAND command_code = CCMD_ENABLE_BETA_COLLISION_PROTECTION;
+    
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_ENABLE_BETA_COLLISION_PROTECTION;
+        return command_code;
     };
 
-    EnableBetaCollisionProtectionCommand()
+    EnableBetaCollisionProtectionCommand(): CAN_Command(command_code)
     {
-        fpu_id = false;
-        bcast = false;
     };
 
-    E_CAN_COMMAND getInstanceCommandCode()
-    {
-        return getCommandCode();
-    };
 
 
     void parametrize(int f_id, bool broadcast)
@@ -58,35 +54,6 @@ public:
         bcast = broadcast;
     };
 
-    void SerializeToBuffer(const uint8_t busid,
-                           const uint8_t fpu_canid,
-                           int& buf_len,
-                           t_CAN_buffer& can_buffer,
-			   const uint8_t sequence_number)
-    {
-
-	set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
-
-    };
-
-
-
-    // FPU id to which message is sent
-    int getFPU_ID()
-    {
-        return fpu_id;
-    };
-
-    // boolean value indicating whether
-    // the driver should wait for a response
-    bool expectsResponse()
-    {
-#if (CAN_PROTOCOL_VERSION == 1)
-        return false;
-#else
-        return true;
-#endif
-    };
 
     // time-out period for a response to the message
     timespec getTimeOut()
@@ -100,14 +67,7 @@ public:
         return toval;
     };
 
-    bool doBroadcast()
-    {
-        return bcast;
-    }
 
-private:
-    uint16_t fpu_id;
-    bool bcast;
 
 
 };

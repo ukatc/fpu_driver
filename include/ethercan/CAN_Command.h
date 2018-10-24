@@ -17,8 +17,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef I_CAN_COMMAND_H
-#define I_CAN_COMMAND_H
+#ifndef CAN_COMMAND_H
+#define CAN_COMMAND_H
 
 #include <string.h>
 #include <endian.h>
@@ -55,29 +55,44 @@ typedef union   __attribute__((packed))
     uint8_t bytes[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES];
 } t_CAN_buffer;
 
-class I_CAN_Command
+class CAN_Command
 {
-public:
+    private:
+        const E_CAN_COMMAND _command_code = CCMD_NO_COMMAND;
 
-    const int CMD_CODE_MASK = 0x0F;
+    public:
+
+    static const int CMD_CODE_MASK = 0x0F;
+    
+
+    
+    CAN_Command(E_CAN_COMMAND command_code) : _command_code(command_code), fpu_id(-1), bcast(false), sequence_number(0) {};
+    
+    virtual ~CAN_Command() {};
+    
 
 
-    I_CAN_Command() : fpu_id(0), bcast(false), sequence_number(0) {};
-    virtual ~I_CAN_Command() {};
+    E_CAN_COMMAND getInstanceCommandCode()
+    {
+	assert(_command_code != CCMD_NO_COMMAND);
+        return _command_code;
+    };
 
-
+    
     // method which serializes parameters into
-    // CAN message
+    // byte array which contains CAN message
     virtual void SerializeToBuffer(const uint8_t busid,
-                                   const uint8_t fpu_canid,
-                                   int& buf_len, t_CAN_buffer& buf,
-				   const uint8_t sequence_number) = 0;
+                           const uint8_t fpu_canid,
+                           int& buf_len,
+                           t_CAN_buffer& can_buffer,
+			   const uint8_t sequence_number)
+    {
+	set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
+    };
 
 
-    virtual E_CAN_COMMAND getInstanceCommandCode() = 0;
 
-
-    // FPU id to which message is sent
+    // FPU id to which message is sent; valid after instance was parametrized
     int getFPU_ID()
     {
         return fpu_id;
@@ -96,7 +111,7 @@ public:
 
     // if this is set, a response will be expected
     // from all FPUs which are not locked.
-    bool doBroadcast()
+    virtual bool doBroadcast()
     {
         return bcast;
     }
@@ -107,7 +122,9 @@ public:
     }
 
 
-			   
+
+    // functions which populates CAN message header, and saves the
+    // sequence number in a member variable
     void set_msg_header(t_CAN_buffer& can_buffer, int& buflen,
 			   const uint8_t busid, const uint8_t fpu_canid,
 			   const bool bcast, const uint8_t _sequence_number)
@@ -152,12 +169,15 @@ public:
 	    buflen = 5; // 3 bytes header, 2 bytes payload
 	}
 
+
+    
     protected:
     
     uint16_t fpu_id;
     bool bcast;
     uint8_t sequence_number;
 
+    
 };
 
 }

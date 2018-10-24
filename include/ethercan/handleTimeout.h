@@ -21,7 +21,7 @@
 #define HANDLE_TIMEOUT_H
 
 #include "FPUState.h"
-#include "ethercan/I_CAN_Command.h"
+#include "ethercan/CAN_Command.h"
 #include "EtherCANInterfaceConfig.h"
 
 namespace mpifps

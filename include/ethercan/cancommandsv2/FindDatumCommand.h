@@ -24,7 +24,7 @@
 
 #include <string.h>
 #include <cassert>
-#include "../I_CAN_Command.h"
+#include "../CAN_Command.h"
 
 namespace mpifps
 {
@@ -32,32 +32,27 @@ namespace mpifps
 namespace ethercanif
 {
 
-class FindDatumCommand : public I_CAN_Command
+class FindDatumCommand : public CAN_Command
 {
 
 public:
 
+    static const E_CAN_COMMAND command_code = CCMD_FIND_DATUM;
+    
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_FIND_DATUM;
+        return command_code;
     };
 
 
-    FindDatumCommand():
-        fpu_id(0),
+    FindDatumCommand() : CAN_Command(command_code),
         _arm_selection(DASEL_BOTH),
         _search_mode(SKIP_FPU),
-        _timeout_flag(DATUM_TIMEOUT_ENABLE),
-        bcast(false)
+        _timeout_flag(DATUM_TIMEOUT_ENABLE)
     {
     };
 
     ~FindDatumCommand() {};
-
-    E_CAN_COMMAND getInstanceCommandCode()
-    {
-        return getCommandCode();
-    };
 
 
     void parametrize(int f_id, bool broadcast,
@@ -150,19 +145,6 @@ public:
     };
 
 
-    // FPU id to which message is sent
-    int getFPU_ID()
-    {
-        return fpu_id;
-    };
-
-    // boolean value indicating whether
-    // the driver should wait for a response
-    bool expectsResponse()
-    {
-        return true;
-    };
-
     // time-out period for a response to the message
     timespec getTimeOut()
     {
@@ -177,17 +159,10 @@ public:
         return toval;
     };
 
-    bool doBroadcast()
-    {
-        return bcast;
-    }
-
 private:
-    uint16_t fpu_id;
     E_DATUM_SELECTION _arm_selection;
     E_DATUM_SEARCH_DIRECTION _search_mode;
     E_DATUM_TIMEOUT_FLAG _timeout_flag;
-    bool bcast;
 
 };
 

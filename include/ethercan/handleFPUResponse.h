@@ -22,7 +22,7 @@
 
 #include "FPUState.h"
 #include "EtherCANInterfaceConfig.h"
-#include "ethercan/I_CAN_Command.h"
+#include "ethercan/CAN_Command.h"
 #include "ethercan/TimeOutList.h"
 
 namespace mpifps

@@ -21,7 +21,7 @@
 #define COMMAND_QUEUE_H
 
 #include "../InterfaceConstants.h"
-#include "I_CAN_Command.h"
+#include "CAN_Command.h"
 
 #include "../EtherCANInterfaceConfig.h"
 #include "time_utils.h"
@@ -83,9 +83,9 @@ public:
     // adds a CAN command to the queue for the corresponding
     // gateway
     // This command can fail if the system is out-of memory.
-    E_QueueState enqueue(int gateway_id, unique_ptr<I_CAN_Command>& new_command);
+    E_QueueState enqueue(int gateway_id, unique_ptr<CAN_Command>& new_command);
 
-    unique_ptr<I_CAN_Command> dequeue(int gateway_id);
+    unique_ptr<CAN_Command> dequeue(int gateway_id);
 
 
     // This method adds an entry to the front of the
@@ -93,7 +93,7 @@ public:
     // when a command has been dequeued but cannot
     // be sent, and we don't want to throw away
     // the command.
-    E_QueueState requeue(int gateway_id, unique_ptr<I_CAN_Command> new_command);
+    E_QueueState requeue(int gateway_id, unique_ptr<CAN_Command> new_command);
 
     // this method empties all queues, flushing
     // all messages to the memorypool pool of
@@ -118,7 +118,7 @@ private:
 
     int EventDescriptorNewCommand;
 
-    std::deque<unique_ptr<I_CAN_Command>> fifos[MAX_NUM_GATEWAYS];
+    std::deque<unique_ptr<CAN_Command>> fifos[MAX_NUM_GATEWAYS];
 
 };
 

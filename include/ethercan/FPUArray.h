@@ -33,7 +33,7 @@
 #include "../InterfaceConstants.h"
 #include "../EtherCANInterfaceConfig.h"
 #include "TimeOutList.h"
-#include "I_CAN_Command.h"
+#include "CAN_Command.h"
 
 /* Switches on use of monotonic clock for timed waits
    on grid state changes. This is advisable to avoid

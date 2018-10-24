@@ -295,7 +295,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                 const timespec new_timeout = {40, 0};
                 add_pending(fpu, fpu_id, CCMD_EXECUTE_MOTION,
                             new_timeout,
-                            timeout_list, count_pending);
+                            timeout_list, count_pending, 0);
             }
         }
         else
@@ -766,7 +766,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                 const timespec new_timeout = {40, 0};
                 add_pending(fpu, fpu_id, CCMD_FIND_DATUM,
                             new_timeout,
-                            timeout_list, count_pending);
+                            timeout_list, count_pending, 0);
             }
         }
         else if (response_errcode == MCE_ERR_DATUM_ON_LIMIT_SWITCH)

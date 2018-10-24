@@ -13,3 +13,5 @@ GTAGS
 git_version
 *.org_archive
 /python/pgtest
+/doc
+/obj

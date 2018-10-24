@@ -22,7 +22,7 @@
 
 #include <string.h>
 #include <cassert>
-#include "../I_CAN_Command.h"
+#include "../CAN_Command.h"
 #include "../../InterfaceConstants.h"
 
 namespace mpifps
@@ -31,33 +31,28 @@ namespace mpifps
 namespace ethercanif
 {
 
-class SetUStepLevelCommand : public I_CAN_Command
+class SetUStepLevelCommand : public CAN_Command
 {
 
 public:
 
+    static const E_CAN_COMMAND command_code = CCMD_SET_USTEP_LEVEL;
+    
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_SET_USTEP_LEVEL;
+        return command_code;
     };
-
-    SetUStepLevelCommand()
+    
+    SetUStepLevelCommand() : CAN_Command(command_code)
     {
-        fpu_id = 0;
-        ustep_level=1;
-        broadcast = false;
-    };
-
-    E_CAN_COMMAND getInstanceCommandCode()
-    {
-        return getCommandCode();
+        ustep_level = 1;
     };
 
 
-    void parametrize(int f_id, bool bcast, uint8_t ustep)
+    void parametrize(int f_id, bool _bcast, uint8_t ustep)
     {
         fpu_id = f_id;
-        broadcast = bcast;
+        bcast = _bcast;
         switch(ustep)
         {
         case 1:
@@ -88,19 +83,6 @@ public:
 
 
 
-    // FPU id to which message is sent
-    int getFPU_ID()
-    {
-        return fpu_id;
-    };
-
-    // boolean value indicating whether
-    // the driver should wait for a response
-    bool expectsResponse()
-    {
-        return true;
-    };
-
     // time-out period for a response to the message
     timespec getTimeOut()
     {
@@ -113,14 +95,8 @@ public:
         return toval;
     };
 
-    bool doBroadcast()
-    {
-        return false;
-    }
 
 private:
-    uint16_t fpu_id;
-    bool broadcast;
     uint8_t ustep_level;
 
 

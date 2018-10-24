@@ -284,7 +284,7 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
         bool broadcast = false;
         can_command = gateway.provideInstance<ResetFPUCommand>();
         can_command->parametrize(i, broadcast);
-        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        unique_ptr<CAN_Command> cmd(can_command.release());
         gateway.sendCommand(i, cmd);
         cnt_pending++;
     }
@@ -693,7 +693,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
             can_command = gateway.provideInstance<FindDatumCommand>();
 
             can_command->parametrize(i, broadcast, direction_flags[i], arm_selection, timeout_flag);
-            unique_ptr<I_CAN_Command> cmd(can_command.release());
+            unique_ptr<CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
 
         }
@@ -1726,7 +1726,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
                 // send the command (the actual sending happens
                 // in the TX thread in the background).
-                unique_ptr<I_CAN_Command> cmd(can_command.release());
+                unique_ptr<CAN_Command> cmd(can_command.release());
                 alpha_cur[fpu_id] += step.alpha_steps;
                 beta_cur[fpu_id] += step.beta_steps;
 
@@ -1992,7 +1992,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
                 can_command = gateway.provideInstance<ExecuteMotionCommand>();
 
                 can_command->parametrize(i, use_broadcast);
-                unique_ptr<I_CAN_Command> cmd(can_command.release());
+                unique_ptr<CAN_Command> cmd(can_command.release());
                 gateway.sendCommand(i, cmd);
             }
         }
@@ -2252,7 +2252,7 @@ E_EtherCANErrCode AsyncInterface::getPositionsAsync(t_grid_state& grid_state,
             // send the command (the actual sending happens
             // in the TX thread in the background).
             CommandQueue::E_QueueState qstate;
-            unique_ptr<I_CAN_Command> cmd1(can_command1.release());
+            unique_ptr<CAN_Command> cmd1(can_command1.release());
             qstate = gateway.sendCommand(i, cmd1);
             assert(qstate == CommandQueue::QS_OK);
 
@@ -2315,7 +2315,7 @@ E_EtherCANErrCode AsyncInterface::getPositionsAsync(t_grid_state& grid_state,
             // send the command (the actual sending happens
             // in the TX thread in the background).
             CommandQueue::E_QueueState qstate;
-            unique_ptr<I_CAN_Command> cmd2(can_command2.release());
+            unique_ptr<CAN_Command> cmd2(can_command2.release());
             qstate = gateway.sendCommand(i, cmd2);
             assert(qstate == CommandQueue::QS_OK);
 
@@ -2422,7 +2422,7 @@ E_EtherCANErrCode AsyncInterface::getCounterDeviationAsync(t_grid_state& grid_st
             // send the command (the actual sending happens
             // in the TX thread in the background).
             CommandQueue::E_QueueState qstate;
-            unique_ptr<I_CAN_Command> cmd1(can_command1.release());
+            unique_ptr<CAN_Command> cmd1(can_command1.release());
             qstate = gateway.sendCommand(i, cmd1);
             assert(qstate == CommandQueue::QS_OK);
 
@@ -2484,7 +2484,7 @@ E_EtherCANErrCode AsyncInterface::getCounterDeviationAsync(t_grid_state& grid_st
             // send the command (the actual sending happens
             // in the TX thread in the background).
             CommandQueue::E_QueueState qstate;
-            unique_ptr<I_CAN_Command> cmd2(can_command2.release());
+            unique_ptr<CAN_Command> cmd2(can_command2.release());
             qstate = gateway.sendCommand(i, cmd2);
             assert(qstate == CommandQueue::QS_OK);
         }
@@ -2659,7 +2659,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
             can_command = gateway.provideInstance<RepeatMotionCommand>();
 
             can_command->parametrize(i, broadcast);
-            unique_ptr<I_CAN_Command> cmd(can_command.release());
+            unique_ptr<CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
             cnt_pending++;
 
@@ -2827,7 +2827,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
             can_command = gateway.provideInstance<ReverseMotionCommand>();
 
             can_command->parametrize(i, broadcast);
-            unique_ptr<I_CAN_Command> cmd(can_command.release());
+            unique_ptr<CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
             cnt_pending++;
 
@@ -2961,7 +2961,7 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
                 can_command = gateway.provideInstance<AbortMotionCommand>();
 
                 can_command->parametrize(i, use_broadcast);
-                unique_ptr<I_CAN_Command> cmd(can_command.release());
+                unique_ptr<CAN_Command> cmd(can_command.release());
                 gateway.sendCommand(i, cmd);
             }
         }
@@ -3169,7 +3169,7 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
             can_command = gateway.provideInstance<PingFPUCommand>();
 
             can_command->parametrize(i, broadcast);
-            unique_ptr<I_CAN_Command> cmd(can_command.release());
+            unique_ptr<CAN_Command> cmd(can_command.release());
             gateway.sendCommand(i, cmd);
             cnt_pending++;
 
@@ -3278,7 +3278,7 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
         bool broadcast = false;
         can_command = gateway.provideInstance<EnableBetaCollisionProtectionCommand>();
         can_command->parametrize(i, broadcast);
-        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        unique_ptr<CAN_Command> cmd(can_command.release());
         gateway.sendCommand(i, cmd);
     }
 
@@ -3388,7 +3388,7 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id, E_REQUEST_D
     unique_ptr<FreeBetaCollisionCommand> can_command;
     can_command = gateway.provideInstance<FreeBetaCollisionCommand>();
     can_command->parametrize(fpu_id, request_dir);
-    unique_ptr<I_CAN_Command> cmd(can_command.release());
+    unique_ptr<CAN_Command> cmd(can_command.release());
     gateway.sendCommand(fpu_id, cmd);
 
 
@@ -3518,7 +3518,7 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
         can_command = gateway.provideInstance<SetUStepLevelCommand>();
 
         can_command->parametrize(i, broadcast, ustep_level);
-        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        unique_ptr<CAN_Command> cmd(can_command.release());
         gateway.sendCommand(i, cmd);
         cnt_pending++;
     }
@@ -3793,7 +3793,7 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
             // send the command (the actual sending happens
             // in the TX thread in the background).
             CommandQueue::E_QueueState qstate;
-            unique_ptr<I_CAN_Command> cmd(can_command.release());
+            unique_ptr<CAN_Command> cmd(can_command.release());
             qstate = gateway.sendCommand(i, cmd);
             assert(qstate == CommandQueue::QS_OK);
             num_pending++;
@@ -4095,7 +4095,7 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
         // send the command (the actual sending happens
         // in the TX thread in the background).
         CommandQueue::E_QueueState qstate;
-        unique_ptr<I_CAN_Command> cmd(can_command.release());
+        unique_ptr<CAN_Command> cmd(can_command.release());
         qstate = gateway.sendCommand(i, cmd);
         assert(qstate == CommandQueue::QS_OK);
 
@@ -4304,7 +4304,7 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
     unique_ptr<WriteSerialNumberCommand> can_command;
     can_command = gateway.provideInstance<WriteSerialNumberCommand>();
     can_command->parametrize(fpu_id, serial_number);
-    unique_ptr<I_CAN_Command> cmd(can_command.release());
+    unique_ptr<CAN_Command> cmd(can_command.release());
     gateway.sendCommand(fpu_id, cmd);
 
 

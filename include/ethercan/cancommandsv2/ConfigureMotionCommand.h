@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-#include "../I_CAN_Command.h"
+#include "../CAN_Command.h"
 
 namespace mpifps
 {
@@ -33,22 +33,23 @@ namespace mpifps
 namespace ethercanif
 {
 
-class ConfigureMotionCommand : public I_CAN_Command
+class ConfigureMotionCommand : public CAN_Command
 {
 
 public:
 
     // maximum number of sections the FPU can store
-    static const unsigned int MAX_NUM_SECTIONS=128;
+    static const unsigned int MAX_NUM_SECTIONS=256;
 
+    static const E_CAN_COMMAND command_code = CCMD_CONFIG_MOTION;
+    
     static E_CAN_COMMAND getCommandCode()
     {
-        return CCMD_CONFIG_MOTION;
+        return command_code;
     };
-
-    ConfigureMotionCommand()
+    
+    ConfigureMotionCommand() : CAN_Command(command_code)
     {
-        fpu_id = 0;
         asteps = 0;
         bsteps = 0;
         apause = false;
@@ -102,11 +103,6 @@ public:
         confirm = do_confirm;
     };
 
-    E_CAN_COMMAND getInstanceCommandCode()
-    {
-        return getCommandCode();
-    };
-
 
     // the internal member fpu_id is the logical number of the
     // fpu in the grid.
@@ -147,11 +143,6 @@ public:
     };
 
 
-    // FPU id to which message is sent
-    int getFPU_ID()
-    {
-        return fpu_id;
-    };
 
     // boolean value indicating whether
     // the driver should wait for a response
@@ -179,7 +170,6 @@ public:
     }
 
 private:
-    uint16_t fpu_id;
     int16_t asteps;
     int16_t bsteps;
     bool apause;
