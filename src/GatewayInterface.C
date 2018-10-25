@@ -735,8 +735,8 @@ void GatewayInterface::updatePendingCommand(int fpu_id,
 
         fpuArray.setPendingCommand(fpu_id,
                                    can_command->getInstanceCommandCode(),
-				   deadline,
-				   can_command->getSequenceNumber(),
+                                   deadline,
+                                   can_command->getSequenceNumber(),
                                    timeOutList);
     }
     else
@@ -812,18 +812,18 @@ SBuffer::E_SocketStatus GatewayInterface::send_buffer(unique_ptr<CAN_Command> &a
             int fpu_id = active_can_command->getFPU_ID();
             const uint16_t busid = address_map[fpu_id].bus_id;
             const uint8_t fpu_canid = address_map[fpu_id].can_id;
-	    const bool broadcast = active_can_command->doBroadcast();
+            const bool broadcast = active_can_command->doBroadcast();
             // serialize data
 #pragma message("this needs a fix for broadcasting -- a broadcast message needs to set identical sequence numbers, ideally for FPU 0")
-	    const uint8_t sequence_number = fpuArray.countSequenceNumber(fpu_id,
-									 active_can_command->expectsResponse(),
-									 broadcast);
-	    
+            const uint8_t sequence_number = fpuArray.countSequenceNumber(fpu_id,
+                                            active_can_command->expectsResponse(),
+                                            broadcast);
+
             active_can_command->SerializeToBuffer(busid,
                                                   fpu_canid,
                                                   message_len,
                                                   can_buffer,
-						  sequence_number);
+                                                  sequence_number);
 
             updatePendingSets(active_can_command, gateway_id, busid);
             // update number of queued commands

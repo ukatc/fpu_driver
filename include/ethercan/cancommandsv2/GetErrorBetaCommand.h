@@ -38,12 +38,12 @@ public:
 
 
     static const E_CAN_COMMAND command_code = CCMD_GET_COUNTER_DEVIATION;
-    
+
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;
     };
-    
+
     GetErrorBetaCommand() : CAN_Command(command_code)
     {
     };

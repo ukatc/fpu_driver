@@ -42,12 +42,12 @@ public:
     static const unsigned int MAX_NUM_SECTIONS=256;
 
     static const E_CAN_COMMAND command_code = CCMD_CONFIG_MOTION;
-    
+
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;
     };
-    
+
     ConfigureMotionCommand() : CAN_Command(command_code)
     {
         asteps = 0;
@@ -112,18 +112,18 @@ public:
                            const uint8_t fpu_canid,
                            int& buf_len,
                            t_CAN_buffer& can_buffer,
-			   const uint8_t sequence_number)
+                           const uint8_t sequence_number)
     {
 
-	set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
+        set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
 
 
 
         // flags for first and last entry
         can_buffer.message.data[2] = ( (fentry ? 1 : 0)
                                        | ((lentry ? 1 : 0) << 1)
-				       | ((confirm ? 1 : 0) << 2)
-				     );
+                                       | ((confirm ? 1 : 0) << 2)
+                                     );
         // alpha and beta steps
         // NOTE: tx2 and tx3, and tx4 and tx5 had been swapped
         // to work around a bug in the firmware. This is fixed in v2.

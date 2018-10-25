@@ -34,9 +34,9 @@ class EnableBetaCollisionProtectionCommand : public CAN_Command
 {
 
 public:
-    
+
     static const E_CAN_COMMAND command_code = CCMD_ENABLE_BETA_COLLISION_PROTECTION;
-    
+
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;

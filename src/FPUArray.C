@@ -203,45 +203,45 @@ void FPUArray::decSending()
 uint8_t FPUArray::countSequenceNumber(const int fpu_id, const bool increment, const bool broadcast)
 {
     uint8_t result;
-    
+
     pthread_mutex_lock(&grid_state_mutex);
     if (broadcast)
     {
-	if (increment)
-	{
-	    // this is an unsigned int value which is
-	    // allowed to wrap over - no problem.
-	    // the value of 0 is skipped to indicate a non-checked
-	    // number
-	    if (FPUGridState.FPU_state[fpu_id].sequence_number != 0xff)
-	    {
-		FPUGridState.FPU_state[fpu_id].sequence_number++;
-	    }
-	    else
-	    {
-		FPUGridState.FPU_state[fpu_id].sequence_number = 1;
-	    }
-	}
-	result = FPUGridState.FPU_state[fpu_id].sequence_number;
+        if (increment)
+        {
+            // this is an unsigned int value which is
+            // allowed to wrap over - no problem.
+            // the value of 0 is skipped to indicate a non-checked
+            // number
+            if (FPUGridState.FPU_state[fpu_id].sequence_number != 0xff)
+            {
+                FPUGridState.FPU_state[fpu_id].sequence_number++;
+            }
+            else
+            {
+                FPUGridState.FPU_state[fpu_id].sequence_number = 1;
+            }
+        }
+        result = FPUGridState.FPU_state[fpu_id].sequence_number;
     }
     else
     {
-	if (increment)
-	{
-	    // this is an unsigned int value which is
-	    // allowed to wrap over - no problem.
-	    if (FPUGridState.broadcast_sequence_number != 0xff)
-	    {
-		FPUGridState.broadcast_sequence_number++;
-	    }
-	    else
-	    {
-		FPUGridState.broadcast_sequence_number = 1;
-	    }
-	}
-	result = FPUGridState.broadcast_sequence_number;
+        if (increment)
+        {
+            // this is an unsigned int value which is
+            // allowed to wrap over - no problem.
+            if (FPUGridState.broadcast_sequence_number != 0xff)
+            {
+                FPUGridState.broadcast_sequence_number++;
+            }
+            else
+            {
+                FPUGridState.broadcast_sequence_number = 1;
+            }
+        }
+        result = FPUGridState.broadcast_sequence_number;
     }
-	
+
     pthread_mutex_unlock(&grid_state_mutex);
     return result;
 }
@@ -472,7 +472,7 @@ bool FPUArray::isLocked(int fpu_id) const
 // grid-global counter.
 
 void FPUArray::setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val,
-				 uint8_t sequence_number,
+                                 uint8_t sequence_number,
                                  TimeOutList& timeout_list)
 {
     pthread_mutex_lock(&grid_state_mutex);
@@ -870,7 +870,7 @@ timespec get_min_pending(const t_fpu_state& fpu)
 void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
                  const timespec& new_timeout,
                  TimeOutList& timeout_list, int &count_pending,
-		 const uint8_t sequence_number)
+                 const uint8_t sequence_number)
 {
     // assert this command is not yet pending
     assert( ((fpu.pending_command_set >> cmd_code) & 1) == 0);

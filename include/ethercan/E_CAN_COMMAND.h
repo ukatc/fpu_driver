@@ -256,30 +256,30 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
 
 
 
-	
-	/* highest priority has smallest code */
 
-	/* priorities 0x01 and 0x02 are reserved for
-	   FPU warning messages and command responses. */
+    /* highest priority has smallest code */
 
-	/* used for emergency stop, usually broadcast */
+    /* priorities 0x01 and 0x02 are reserved for
+       FPU warning messages and command responses. */
+
+    /* used for emergency stop, usually broadcast */
     case CCMD_ABORT_MOTION                       :
-	/* movement commands, usually broadcast */
+    /* movement commands, usually broadcast */
     case CCMD_EXECUTE_MOTION                     :
     case CCMD_FIND_DATUM                         :
         priority = 0x00;
         break;
 
-	/* special motion commands */
-	
+    /* special motion commands */
+
     case CCMD_LOCK_UNIT                          :
     case CCMD_UNLOCK_UNIT                        :
     case CCMD_FREE_BETA_COLLISION                :
     case CCMD_FREE_ALPHA_LIMIT_BREACH            :
         priority = 0x03;
         break;
-	
-	/* error recovery */
+
+    /* error recovery */
     case CCMD_RESET_FPU                          :
     case CCMD_RESET_STEPCOUNTER                  :
     case CCMD_ENABLE_BETA_COLLISION_PROTECTION   :
@@ -289,11 +289,11 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
         priority = 0x04;
         break;
 
-	/* motion configuration */
+    /* motion configuration */
     case CCMD_CONFIG_MOTION                      :
     case CCMD_REPEAT_MOTION                      :
     case CCMD_REVERSE_MOTION                     :
-	/* configuration and status inquiry */
+    /* configuration and status inquiry */
     case CCMD_GET_FIRMWARE_VERSION               :
     case CCMD_READ_REGISTER                    :
     case CCMD_SET_USTEP_LEVEL                  :
@@ -306,7 +306,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
         priority = 0x05;
         break;
 
-	// invalid cases
+    // invalid cases
     case CCMD_NO_COMMAND                         :
     default:
         assert(false);

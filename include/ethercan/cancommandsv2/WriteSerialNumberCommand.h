@@ -38,12 +38,12 @@ public:
 
 
     static const E_CAN_COMMAND command_code = CCMD_WRITE_SERIAL_NUMBER;
-    
+
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;
     };
-    
+
     WriteSerialNumberCommand(): CAN_Command(command_code)
     {
         memset(serial_number, 0, sizeof(serial_number));
@@ -61,9 +61,9 @@ public:
                            const uint8_t fpu_canid,
                            int& buf_len,
                            t_CAN_buffer& can_buffer,
-			   const uint8_t sequence_number)
+                           const uint8_t sequence_number)
     {
-	set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
+        set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
 
         for(int i=0; i < DIGITS_SERIAL_NUMBER; i++)
         {

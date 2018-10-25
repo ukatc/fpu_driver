@@ -36,12 +36,12 @@ class ReverseMotionCommand : public CAN_Command
 public:
 
     static const E_CAN_COMMAND command_code = CCMD_REVERSE_MOTION;
-    
+
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;
     };
-    
+
     ReverseMotionCommand() : CAN_Command(command_code)
     {
     };

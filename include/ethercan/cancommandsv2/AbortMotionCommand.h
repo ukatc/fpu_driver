@@ -38,15 +38,15 @@ class AbortMotionCommand : public CAN_Command
 public:
 
     static const E_CAN_COMMAND command_code = CCMD_ABORT_MOTION;
-    
+
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;
     };
 
-    AbortMotionCommand() : CAN_Command(command_code){};
+    AbortMotionCommand() : CAN_Command(command_code) {};
 
-    
+
 
     void parametrize(int f_id, bool broadcast)
     {

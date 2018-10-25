@@ -127,7 +127,7 @@ public:
 
     // sets pending command for one FPU.
     void setPendingCommand(int fpu_id, E_CAN_COMMAND pending_cmd, timespec tout_val,
-			   uint8_t sequence_number, TimeOutList& timeout_list);
+                           uint8_t sequence_number, TimeOutList& timeout_list);
 
 
     // sets last command for a FPU.
@@ -219,7 +219,7 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
                  const timespec& new_timeout,
                  TimeOutList& timeout_list,
                  int &count_pending,
-		 const uint8_t sequence_number);
+                 const uint8_t sequence_number);
 
 // remove a command from the pending command set, and refresh the
 // time-out list with the next time out.

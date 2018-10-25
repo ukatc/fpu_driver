@@ -37,12 +37,12 @@ class ReadSerialNumberCommand : public CAN_Command
 public:
 
     static const E_CAN_COMMAND command_code = CCMD_READ_SERIAL_NUMBER;
-    
+
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;
     };
-    
+
     ReadSerialNumberCommand(): CAN_Command(command_code)
     {
     };
