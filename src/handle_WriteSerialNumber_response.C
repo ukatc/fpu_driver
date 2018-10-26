@@ -46,12 +46,21 @@ handle_WriteSerialNumber_response(const EtherCANInterfaceConfig&config,
                                   const t_response_buf&data,
                                   const int blen, TimeOutList&  timeout_list,
                                   const E_CAN_COMMAND cmd_id,
-                                  const uin8_t response_status,
-                                  const E_MOC_ERRCODE response_errcode,
-                                  const timespec& cur_time)
+				  const uint8_t sequence_number)
 {
-    remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
-    fpu.last_updated = cur_time;
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
+
+
+    remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending, sequence_number);
+
+    if (response_errcode != 0)
+    {
+	LOG_RX(LOG_ERROR, "%18.6f : RX : "
+	       "FPU %i : writing serial number returned error code %i\n",
+	       get_realtime(),
+	       fpu_id, response_errcode);
+
+    }
 
 }
 

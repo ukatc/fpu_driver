@@ -46,17 +46,19 @@ handle_ResetFPU_response(const EtherCANInterfaceConfig&config,
                          const t_response_buf&data,
                          const int blen, TimeOutList&  timeout_list,
                          const E_CAN_COMMAND cmd_id,
-                         const uin8_t response_status,
-                         const E_MOC_ERRCODE response_errcode,
-                         const timespec& cur_time)
+			 const uint8_t sequence_number)
 {
+    const E_MOC_ERRCODE response_errcode = err_code = static_cast<E_MOC_ERRCODE>((data[3] & 0xF0) >> 4);
+    
     // clear pending time-out for reset command
-    remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+    remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending, sequence_number);
+    
     if (response_errcode == 0)
     {
         initialize_fpu(fpu);
-        fpu.state = FPST_UNINITIALIZED; // instead of unknown - we known the step count is zero
-        update_status_flags(fpu, response_status);
+	update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
+	fpu.direction_alpha = DIRST_UNKNOWN;
+	fpu.direction_beta = DIRST_UNKNOWN;
 
         if (fpu.pending_command_set != 0)
         {
@@ -73,12 +75,9 @@ handle_ResetFPU_response(const EtherCANInterfaceConfig&config,
             }
         }
     }
-    fpu.last_updated = cur_time;
     fpu.ping_ok = true; // we known the current step counter
 
     // in protocol version 1, we do not know the last movement direction
-    fpu.direction_alpha = DIRST_UNKNOWN;
-    fpu.direction_beta = DIRST_UNKNOWN;
 
 }
 

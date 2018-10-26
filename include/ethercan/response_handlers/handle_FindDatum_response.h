@@ -24,6 +24,7 @@
 #include "EtherCANInterfaceConfig.h"
 #include "ethercan/CAN_Command.h"
 #include "ethercan/TimeOutList.h"
+#include "ethercan/decode_CAN_response.h"
 
 namespace mpifps
 {
@@ -36,9 +37,7 @@ void handle_FindDatum_response(const EtherCANInterfaceConfig&config,
                                const t_response_buf&data,
                                const int blen, TimeOutList&  timeout_list,
                                const E_CAN_COMMAND cmd_id,
-                               const uint8_t response_status,
-                               const E_MOC_ERRCODE response_errcode,
-                               const timespec& cur_time);
+                               const uint8_t sequence_number);
 }
 }
 

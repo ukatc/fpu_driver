@@ -46,18 +46,16 @@ handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
                               const t_response_buf&data,
                               const int blen, TimeOutList&  timeout_list,
                               const E_CAN_COMMAND cmd_id,
-                              const uin8_t response_status,
-                              const E_MOC_ERRCODE response_errcode,
-                              const timespec& cur_time)
+                              const uint8_t sequence_number)
 {
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
+
     // clear time-out flag
-    remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+    remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending, sequence_number);
+    
     if ((response_errcode == MCE_WARN_COLLISION_DETECTED) || fpu.beta_collision)
     {
-        fpu.state = FPST_OBSTACLE_ERROR;
         fpu.movement_complete = false;
-        fpu.waveform_valid = false;
-        fpu.beta_collision = true;
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
@@ -77,15 +75,12 @@ handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
                     get_realtime(),
                     fpu_id);
     }
-    else if ((response_status & STBT_M1LIMIT) || (response_errcode == MCE_WARN_LIMIT_SWITCH_BREACH) || fpu.at_alpha_limit)
+    else if ((response_errcode == MCE_WARN_LIMIT_SWITCH_BREACH) || fpu.at_alpha_limit)
     {
-        fpu.at_alpha_limit = true;
-        fpu.state = FPST_OBSTACLE_ERROR;
         fpu.movement_complete = false;
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
-        fpu.alpha_datum_switch_active = true;
         fpu.ping_ok = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
@@ -103,12 +98,9 @@ handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
                     fpu_id);
 
     }
-    else if (response_status & STBT_ABORT_WAVE)
+    else if (fpu.state == FPST_ABORTED)
     {
-        if (fpu.state != FPST_OBSTACLE_ERROR)
-        {
-            fpu.state = FPST_ABORTED;
-        }
+	
         fpu.movement_complete = false;
         fpu.waveform_valid = false;
         fpu.ping_ok = false;
@@ -149,10 +141,6 @@ handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
                     get_realtime(),
                     fpu_id);
 
-        if (fpu.state != FPST_OBSTACLE_ERROR)
-        {
-            fpu.state = FPST_ABORTED;
-        }
         fpu.movement_complete = false;
         fpu.waveform_valid = false;
         fpu.step_timing_errcount++;
@@ -165,16 +153,11 @@ handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
         // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
         if ( (fpu.state != FPST_OBSTACLE_ERROR) && (fpu.state != FPST_ABORTED))
         {
-            fpu.state = FPST_RESTING;
             fpu.movement_complete = true;
             fpu.ping_ok = false;
         }
 
-        // in protocol version 1, we do not know the last movement direction
-        fpu.direction_alpha = DIRST_UNKNOWN;
-        fpu.direction_beta = DIRST_UNKNOWN;
     }
-    fpu.last_updated = cur_time;
 
 }
 

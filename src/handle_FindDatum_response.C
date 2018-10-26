@@ -46,19 +46,14 @@ handle_FindDatum_response(const EtherCANInterfaceConfig&config,
                           const t_response_buf&data,
                           const int blen, TimeOutList&  timeout_list,
                           const E_CAN_COMMAND cmd_id,
-                          const uin8_t response_status,
-                          const E_MOC_ERRCODE response_errcode,
-                          const timespec& cur_time)
+                          const uint8_t sequence_number)
 {
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
+
     // we do not clear the pending flag, because
     // we wait for the datum search to finish
     if (response_errcode == 0)
     {
-        // datum search was successfully started
-        fpu.state = FPST_DATUM_SEARCH;
-        // in protocol version 1, we do not know the last movement direction
-        fpu.direction_alpha = DIRST_UNKNOWN;
-        fpu.direction_beta = DIRST_UNKNOWN;
         fpu.ping_ok = false;
 
         // As an edge case, it is possible that the command has
@@ -76,12 +71,14 @@ handle_FindDatum_response(const EtherCANInterfaceConfig&config,
                         new_timeout,
                         timeout_list, count_pending, 0);
         }
+	
+	// we leave findDatum as pending command, because
+	// we have to wait for the final response.
     }
     else if (response_errcode == MCE_ERR_DATUM_ON_LIMIT_SWITCH)
     {
-        remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending, sequence_number);
 
-        fpu.state = FPST_UNINITIALIZED;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
         fpu.ping_ok = false;
@@ -93,9 +90,8 @@ handle_FindDatum_response(const EtherCANInterfaceConfig&config,
     }
     else if (response_errcode == MCE_ERR_AUTO_DATUM_UNINITIALIZED)
     {
-        remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending, sequence_number);
 
-        fpu.state = FPST_UNINITIALIZED;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
 
@@ -107,9 +103,6 @@ handle_FindDatum_response(const EtherCANInterfaceConfig&config,
 
     }
 
-    // we leave findDatum as pending command, because
-    // we have to wait for the final response.
-    fpu.last_updated = cur_time;
 
 }
 

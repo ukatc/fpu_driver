@@ -227,7 +227,8 @@ void remove_pending(const EtherCANInterfaceConfig &config,
                     t_fpu_state& fpu, int fpu_id,
                     E_CAN_COMMAND cmd_code, E_MOC_ERRCODE cmd_status,
                     TimeOutList& timeout_list,
-                    int &count_pending);
+                    int &count_pending,
+		    uint8_t msg_sequence_number);
 
 // Remove time out entries which are earlier than the expiration time
 // from the fpu pending set, and return the next time-out value from

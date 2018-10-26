@@ -46,22 +46,18 @@ handle_GetCounterDeviation_response(const EtherCANInterfaceConfig&config,
                                     const t_response_buf&data,
                                     const int blen, TimeOutList&  timeout_list,
                                     const E_CAN_COMMAND cmd_id,
-                                    const uin8_t response_status,
-                                    const E_MOC_ERRCODE response_errcode,
-                                    const timespec& cur_time)
+				    const uint8_t sequence_number)
 {
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_NOSTEPS, data);
+
     // clear time-out flag
-    remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending);
+    remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending, sequence_number);
     if (response_errcode == 0)
     {
-        const uint16_t steps_coded = (data[5] << 8) |  data[4];
-        const int bsteps = unfold_steps_deviation(steps_coded);
-        fpu.alpha_deviation = bsteps;
-    }
-    fpu.last_updated = cur_time;
-    if (fpu.state == FPST_UNKNOWN)
-    {
-        fpu.state = FPST_UNINITIALIZED;
+
+	fpu.alpha_deviation = unfold_stepcount_alpha(data[4] | (data[5] << 8));
+	fpu.beta_deviation = unfold_stepcount_beta(data[6] | (data[7] << 8));
+
     }
 
 }

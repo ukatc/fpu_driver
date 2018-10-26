@@ -46,19 +46,17 @@ handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
                              const t_response_buf&data,
                              const int blen, TimeOutList&  timeout_list,
                              const E_CAN_COMMAND cmd_id,
-                             const uin8_t response_status,
-                             const E_MOC_ERRCODE response_errcode,
-                             const timespec& cur_time)
+                             const uint8_t sequence_number)
 {
-    // clear time-out flag
-    //printf("finished: datum search for FPU %i \n", fpu_id);
-    remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+    
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
 
-    if ((response_status & STBT_M1LIMIT) || (response_errcode == MCE_WARN_LIMIT_SWITCH_BREACH))
+    // clear time-out flag
+    remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending, sequence_number);
+    
+
+    if ((fpu.at_alpha_limit) || (response_errcode == MCE_WARN_LIMIT_SWITCH_BREACH))
     {
-        fpu.alpha_datum_switch_active = true;
-        fpu.at_alpha_limit = true;
-        fpu.state = FPST_OBSTACLE_ERROR;
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
@@ -73,8 +71,6 @@ handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     }
     else if ((response_errcode == MCE_WARN_COLLISION_DETECTED) || fpu.beta_collision)
     {
-        fpu.beta_collision = true;
-        fpu.state = FPST_OBSTACLE_ERROR;
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
@@ -89,12 +85,9 @@ handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     }
     else if (response_errcode == MCE_ERR_DATUM_TIME_OUT)
     {
-        // The datum operation was timed-out by the firmware.  The
-        // only way this can regularly happen for the alpha arm is
-        // if the motor is not moving, or the alpha switch is
-        // broken. In the latter case, the alpha gearbox is
-        // possibly already destroyed.
-        fpu.state = FPST_ABORTED;
+        // The datum operation was timed-out by the firmware.
+	// This can be due to broken FPU hardware,
+	// such as a non-functioning datum switch.
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
@@ -114,18 +107,13 @@ handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
                     get_realtime(),
                     fpu_id);
     }
-    else if (response_status & STBT_ABORT_WAVE)
+    else if (fpu.state == FPST_ABORTED)
     {
-        if (fpu.state != FPST_OBSTACLE_ERROR)
-        {
-            fpu.state = FPST_ABORTED;
-        }
-        fpu.waveform_valid = false;
         fpu.ping_ok = false;
 
         LOG_RX(LOG_DEBUG, "%18.6f : RX : "
-               "while waiting for end of datum command:"
-               "movement abortion message received for FPU %i\n",
+               "while waiting for datum command:"
+               "FPU %i is now in aborted state\n",
                get_realtime(),
                fpu_id);
     }
@@ -133,7 +121,6 @@ handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     {
         if (fpu.state == FPST_DATUM_SEARCH)
         {
-            fpu.state = FPST_UNINITIALIZED;
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
             fpu.ping_ok = false;
@@ -145,19 +132,15 @@ handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     }
     else if (response_errcode != 0)
     {
-        if (fpu.state == FPST_DATUM_SEARCH)
-        {
-            fpu.state = FPST_UNINITIALIZED;
-            fpu.alpha_was_zeroed = false;
-            fpu.beta_was_zeroed = false;
-            fpu.ping_ok = false;
-        }
+	fpu.alpha_was_zeroed = false;
+	fpu.beta_was_zeroed = false;
+	fpu.ping_ok = false;
     }
     else
     {
         // response_errcode was 0 and no bad status flags were set
-
-        uint8_t exclusion_flags = data[5];
+	
+        uint8_t exclusion_flags = data[3]; // echo of request flags
         if ((exclusion_flags & DATUM_SKIP_ALPHA) == 0)
         {
             fpu.alpha_was_zeroed = true;
@@ -170,22 +153,10 @@ handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         }
         if (fpu.beta_was_zeroed && fpu.alpha_was_zeroed)
         {
-            fpu.state = FPST_AT_DATUM;
             fpu.ping_ok = true;
         }
-        else
-        {
-            // if only one arm was zeroed, the state still counts as
-            // uninitialized (zeroing only one arm is used only
-            // for testing and engineering, not for instrument operation).
-            fpu.state = FPST_UNINITIALIZED;
-        }
-        // in protocol version 1, we do not know the last movement direction
-        fpu.direction_alpha = DIRST_UNKNOWN;
-        fpu.direction_beta = DIRST_UNKNOWN;
     }
 
-    fpu.last_updated = cur_time;
 
 }
 

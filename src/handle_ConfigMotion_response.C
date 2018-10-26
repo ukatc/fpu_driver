@@ -46,10 +46,11 @@ handle_ConfigMotion_response(const EtherCANInterfaceConfig&config,
                              const t_response_buf&data,
                              const int blen, TimeOutList&  timeout_list,
                              const E_CAN_COMMAND cmd_id,
-                             const uin8_t response_status,
-                             const E_MOC_ERRCODE response_errcode,
-                             const timespec& cur_time)
+                             const uint8_t sequence_number)
 {
+    // update status fields, but not step counts (they do not fit into the response)
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_NOSTEPS, data);
+
     LOG_RX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX : handle_ConfigMotion:"
            " fpu #%u, segment %u: status=%u, error=%u\n",
            get_realtime(),
@@ -57,42 +58,22 @@ handle_ConfigMotion_response(const EtherCANInterfaceConfig&config,
            response_status, response_errcode);
 
     // clear time-out flag
-    remove_pending(config, fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending);
+    remove_pending(config, fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending, sequence_number);
     if (response_errcode != 0)
     {
         logErrorStatus(config, fpu_id, response_errcode);
-        // if the FPU was in loading state, it is switched to RESTING,
-        // otherwise unchanged.
-
-        // FIXME: decrease log level in production system to keep responsivity at maximum
+	fpu.num_waveform_segments = 0;
+	
+        // FIXME: decrease log level in production system
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "configMotion command for FPU %i failed with error code %i\n",
                get_realtime(),
                fpu_id,
                response_errcode);
-
-        if (fpu.state == FPST_LOADING)
-        {
-            fpu.state = FPST_RESTING;
-        }
     }
     else
     {
-#if (CAN_PROTOCOL_VERSION == 1)
-        fpu.num_waveform_segments = data[4];
-        // FIXME: needs to be set from response for protocol version 2
-#endif
-
-        if (response_status & STBT_WAVE_READY)
-        {
-            fpu.state = FPST_READY_FORWARD;
-            fpu.waveform_valid = true;
-            fpu.waveform_ready = true;
-        }
-        else
-        {
-            fpu.state = FPST_LOADING;
-        }
+	fpu.num_waveform_segments = data[4];
     }
 
     fpu.last_updated = cur_time;

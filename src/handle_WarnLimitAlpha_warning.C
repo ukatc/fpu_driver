@@ -46,21 +46,21 @@ handle_WarnLimitAlpha_warning(const EtherCANInterfaceConfig&config,
                               const t_response_buf&data,
                               const int blen, TimeOutList&  timeout_list,
                               const E_CAN_COMMAND cmd_id,
-                              const uin8_t response_status,
-                              const E_MOC_ERRCODE response_errcode,
-                              const timespec& cur_time)
+			      const uint8_t sequence_number)
 {
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
+
     if (fpu.state == FPST_MOVING)
     {
         // clear time-out flag
-        remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending, sequence_number);
 
     }
 
     if (fpu.state == FPST_DATUM_SEARCH)
     {
         // clear time-out flag
-        remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending, sequence_number);
     }
 
     LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -73,14 +73,9 @@ handle_WarnLimitAlpha_warning(const EtherCANInterfaceConfig&config,
                 get_realtime(),
                 fpu_id);
 
-    fpu.state = FPST_OBSTACLE_ERROR;
-    fpu.at_alpha_limit = true;
-    fpu.waveform_valid = false;
     fpu.alpha_was_zeroed = false;
     fpu.beta_was_zeroed = false;
     fpu.ping_ok = false;
-
-    fpu.last_updated = cur_time;
 
 }
 

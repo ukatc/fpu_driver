@@ -46,10 +46,10 @@ handle_WarnCollisionBeta_warning(const EtherCANInterfaceConfig&config,
                                  const t_response_buf&data,
                                  const int blen, TimeOutList&  timeout_list,
                                  const E_CAN_COMMAND cmd_id,
-                                 const uin8_t response_status,
-                                 const E_MOC_ERRCODE response_errcode,
-                                 const timespec& cur_time)
+				 const uint8_t sequence_number)
 {
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
+
     LOG_RX(LOG_ERROR, "%18.6f : RX : "
            "collision detection message received for FPU %i\n",
            get_realtime(),
@@ -70,21 +70,15 @@ handle_WarnCollisionBeta_warning(const EtherCANInterfaceConfig&config,
     if (fpu.state == FPST_DATUM_SEARCH)
     {
         // clear time-out flag
-        remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+        remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending, sequence_number);
 
     }
 
-    fpu.state = FPST_OBSTACLE_ERROR;
-    fpu.beta_collision = true;
     fpu.waveform_valid = false;
     fpu.alpha_was_zeroed = false;
     fpu.beta_was_zeroed = false;
     fpu.ping_ok = false;
 
-    // FIXME: Update step counter in protocol version 2
-    //update_steps(fpu.alpha_steps, fpu.beta_steps, data);
-
-    fpu.last_updated = cur_time;
 
 }
 

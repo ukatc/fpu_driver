@@ -43,6 +43,7 @@ _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h		\
 	ethercan/cancommandsv2/WriteSerialNumberCommand.h			\
 	ethercan/cancommandsv2/ReadSerialNumberCommand.h			\
 	ethercan/sync_utils.h ethercan/time_utils.h                             \
+	ethercan/decode_CAN_response.h                                          \
 	ethercan/response_handlers/handle_AbortMotion_response.h		     \
         ethercan/response_handlers/handle_ConfigMotion_response.h		     \
         ethercan/response_handlers/handle_EnableBetaCollisionProtection_response.h   \

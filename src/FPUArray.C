@@ -903,7 +903,7 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 
 void remove_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu, int fpu_id,
                     E_CAN_COMMAND cmd_code, E_MOC_ERRCODE cmd_status,
-                    TimeOutList& timeout_list, int &count_pending)
+                    TimeOutList& timeout_list, int &count_pending, uint8_t msg_sequence_number)
 {
     // ignore if a command was already removed by time-out expiration
 
@@ -922,28 +922,35 @@ void remove_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu, int
         return;
     }
 
-#if 0
-    LOG_RX(LOG_TRACE_CAN_MESSAGES, "fpu #%i: removing cmd code %i %i ==> %i\n", fpu_id, cmd_code,
-           fpu.pending_command_set,
-           fpu.pending_command_set & ~(((unsigned int)1) << cmd_code));
-#endif
 
 
     // iterate list to find entry and value which is to be removed
     timespec removed_val;
     int del_index;
     bool found = false;
+    uint8_t found_sequence_number;
     for(int i = 0; i < fpu.num_active_timeouts; i++)
     {
         if (fpu.cmd_timeouts[i].cmd_code == cmd_code)
         {
             del_index = i;
             removed_val = fpu.cmd_timeouts[i].tout_val;
+	    found_sequence_number = fpu.cmd_timeouts[i].sequence_number;
             found = true;
             break;
         }
     }
     assert(found);
+    // check sequence number, unless it is 0 - this value disables the check,
+    // and is not normally used
+    if (found_sequence_number != 0)
+    {
+	if (found_sequence_number != msg_sequence_number)
+	{
+	    LOG_RX(LOG_ERROR, "fpu #%i:  cmd code %i with sequence number %i received"
+		   " - wrong sequence number\n", fpu_id, cmd_code, msg_sequence_number);	    
+	}
+    }
     // move all/any following entries to previous position
     for (int i = del_index; i < (fpu.num_active_timeouts - 1); i++)
     {

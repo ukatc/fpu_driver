@@ -106,6 +106,7 @@ enum E_CAN_COMMAND
 
 };
 
+#define COMMAND_CODE_MASK 0x1f
 
 #if CAN_PROTOCOL_VERSION == 1
 /* Error Codes from FPU response messages (note some codes are obsolete
@@ -132,21 +133,6 @@ enum E_MOC_ERRCODE
     ER_TIMEDOUT       = 0x15,   // command hit driver time-out
 };
 
-
-/* Status bits in FPU response message (many only used
-   internally in the controller) */
-
-enum E_FPU_STATUS_BITS
-{
-    STBT_MSGRCV       = 1,      // message received over CANBUS
-    STBT_WAVE_READY   = (1 << 1), // waveform good and ready for execution
-    STBT_EXECUTE_WAVE = (1 << 2), // internal start flag to start executing waveform
-    STBT_RUNNING_WAVE = (1 << 3), // FPU is running the waveform
-    STBT_ABORT_WAVE   = (1 << 4), // abort waveform
-    STBT_M1LIMIT      = (1 << 5), // M1 Limit breached
-    STBT_M2LIMIT      = (1 << 6), // no longer used
-    STBT_REVERSE_WAVE = (1 << 7), // waveform to be run in reverse
-};
 
 #else
 enum E_MOC_ERRCODE
@@ -177,17 +163,25 @@ enum E_MOC_ERRCODE
 /* Status bits in FPU response message (many only used
    internally in the controller) */
 
+/* Status bits in FPU response message (many only used
+   internally in the controller) */
+
 enum E_FPU_STATUS_BITS
 {
-    STBT_MSGRCV       = 1,      // message received over CANBUS
-    STBT_WAVE_READY   = (1 << 1), // waveform good and ready for execution
-    STBT_EXECUTE_WAVE = (1 << 2), // internal start flag to start executing waveform
-    STBT_RUNNING_WAVE = (1 << 3), // FPU is running the waveform
-    STBT_ABORT_WAVE   = (1 << 4), // abort waveform
-    STBT_M1LIMIT      = (1 << 5), // M1 Limit breached
-    STBT_M2LIMIT      = (1 << 6), // no longer used
-    STBT_REVERSE_WAVE = (1 << 7), // waveform to be run in reverse
+    STBT_ALPHA_DATUM_ACTIVE   = 1,	        // alpha datum switch is active
+    STBT_BETA_DATUM_ACTIVE    = (1 << 1),	// beta datum switch is active
+    STBT_COLLISION_DETECTED   = (1 << 2),	// collision was detected
+    STBT_ALPHA_AT_LIMIT	      = (1 << 3),	// alpha limit switch active
+    STBT_FPU_LOCKED	      = (1 << 4),	// FPU is currently locked
+    STBT_ALPHA_LAST_DIRECTION = (1 << 5),	// last movement direction of alpha arm
+    STBT_BETA_LAST_DIRECTION  = (1 << 6),	// last movement direction of beta arm
+    STBT_IS_ZEROED	      = (1 << 7),	// both arms have been datumed
+    STBT_WAVEFORM_VALID	      = (1 << 8),	// loaded waveform is valid
+    STBT_WAVEFORM_READY	      = (1 << 9),	// ready to run waveform
+    STBT_WAVEFORM_REVERSED    = (1 << 10),	// waveform is in reversed mode
 };
+
+
 
 #endif
 
