@@ -48,7 +48,7 @@ handle_ReadRegister_response(const EtherCANInterfaceConfig&config,
                              const E_CAN_COMMAND cmd_id,
 			     const uint8_t sequence_number)
 {
-    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_NOSTEPS, data);
 
     // clear time-out flag
     remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode,timeout_list, count_pending, sequence_number);
