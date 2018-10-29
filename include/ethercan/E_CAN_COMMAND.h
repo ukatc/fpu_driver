@@ -68,18 +68,17 @@ enum E_CAN_COMMAND
     NUM_CAN_COMMANDS = 20,
 #else
     // commands which are not yet implemented
-    CCMD_GET_COUNTER_DEVIATION            = 16, // get alpha and beta residue count
-    CCMD_GET_FIRMWARE_VERSION             = 17, // get firmware version
-    CCMD_CHECK_INTEGRITY                  = 18, // report firmware CRC
-    CCMD_FREE_ALPHA_LIMIT_BREACH          = 19, // untangle alpha arm
-    CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    = 20, // re-enable limit switch
-    CCMD_SET_TICKS_PER_SEGMENT            = 21, // set movement time interval
-    CCMD_SET_STEPS_PER_SEGMENT            = 22, // set minimum step frequency
-    CCMD_ENABLE_MOVE                      = 23, // leave aborted state
-    CCMD_READ_SERIAL_NUMBER               = 24, // read serial number from NVRAM
-    CCMD_WRITE_SERIAL_NUMBER              = 25, // write serial number to NVRAM
+    CCMD_GET_FIRMWARE_VERSION             = 16, // get firmware version
+    CCMD_CHECK_INTEGRITY                  = 17, // report firmware CRC
+    CCMD_FREE_ALPHA_LIMIT_BREACH          = 18, // untangle alpha arm
+    CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    = 19, // re-enable limit switch
+    CCMD_SET_TICKS_PER_SEGMENT            = 20, // set movement time interval
+    CCMD_SET_STEPS_PER_SEGMENT            = 21, // set minimum step frequency
+    CCMD_ENABLE_MOVE                      = 22, // leave aborted state
+    CCMD_READ_SERIAL_NUMBER               = 23, // read serial number from NVRAM
+    CCMD_WRITE_SERIAL_NUMBER              = 24, // write serial number to NVRAM
 
-    NUM_CAN_COMMANDS = 26,
+    NUM_CAN_COMMANDS = 25,
 
 #endif
 
@@ -96,12 +95,12 @@ enum E_CAN_COMMAND
     CMSG_WARN_RACE           = 107, // step timing error
     CMSG_WARN_CANOVERFLOW    = 108, // CAN buffer overflow warning
 #else
-    CMSG_FINISHED_MOTION     = 26, // executeMotion finished
-    CMSG_FINISHED_DATUM      = 27, // findDatum finished
-    CMSG_WARN_COLLISION_BETA = 28, // collision at beta arm
-    CMSG_WARN_LIMIT_ALPHA    = 29, // limit switch at alpha arm
-    CMSG_WARN_TIMEOUT_DATUM  = 30, // datum search time out
-    CMSG_WARN_CANOVERFLOW    = 31, // CAN buffer overflow warning
+    CMSG_FINISHED_MOTION     = 25, // executeMotion finished
+    CMSG_FINISHED_DATUM      = 26, // findDatum finished
+    CMSG_WARN_COLLISION_BETA = 27, // collision at beta arm
+    CMSG_WARN_LIMIT_ALPHA    = 28, // limit switch at alpha arm
+    CMSG_WARN_TIMEOUT_DATUM  = 29, // datum search time out
+    CMSG_WARN_CANOVERFLOW    = 30, // CAN buffer overflow warning
 #endif
 
 };
@@ -291,7 +290,6 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     case CCMD_GET_FIRMWARE_VERSION               :
     case CCMD_READ_REGISTER                    :
     case CCMD_SET_USTEP_LEVEL                  :
-    case CCMD_GET_COUNTER_DEVIATION            :
     case CCMD_READ_SERIAL_NUMBER               :
     case CCMD_WRITE_SERIAL_NUMBER              :
     case CCMD_PING_FPU                           :

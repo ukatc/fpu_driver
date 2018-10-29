@@ -89,7 +89,6 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
     case CCMD_EXECUTE_MOTION                   : handler = &handle_ExecuteMotion_response; break;
     case CCMD_FIND_DATUM                       : handler = handle_FindDatum_response; break;
     case CCMD_FREE_BETA_COLLISION              : handler = &handle_FreeBetaCollision_response; break;
-    case CCMD_GET_COUNTER_DEVIATION            : handler = &handle_GetCounterDeviation_response; break;
     case CCMD_PING_FPU                         : handler = &handle_PingFPU_response; break;
     case CCMD_READ_REGISTER                    : handler = &handle_ReadRegister_response; required_length = 7; break;
     case CCMD_READ_SERIAL_NUMBER               : handler = &handle_ReadSerialNumber_response; break;

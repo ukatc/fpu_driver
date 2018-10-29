@@ -100,7 +100,6 @@ E_EtherCANErrCode CommandPool::initialize()
 #else
             case CCMD_LOCK_UNIT         :
             case CCMD_UNLOCK_UNIT       :
-            case CCMD_GET_COUNTER_DEVIATION:
             case CCMD_GET_FIRMWARE_VERSION          :
             case CCMD_SET_TICKS_PER_SEGMENT         :
             case CCMD_SET_STEPS_PER_SEGMENT         :
@@ -172,11 +171,6 @@ E_EtherCANErrCode CommandPool::initialize()
 
                 case CCMD_FIND_DATUM        :
                     ptr.reset(new FindDatumCommand());
-                    pool[i].push_back(std::move(ptr));
-                    break;
-
-                case CCMD_GET_COUNTER_DEVIATION        :
-                    ptr.reset(new GetErrorAlphaCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
 

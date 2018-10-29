@@ -37,7 +37,7 @@ class GetErrorBetaCommand : public CAN_Command
 public:
 
 
-    static const E_CAN_COMMAND command_code = CCMD_GET_COUNTER_DEVIATION;
+    static const E_CAN_COMMAND command_code = CCMD_FREE_ALPHA_LIMIT_BREACH;
 
     static E_CAN_COMMAND getCommandCode()
     {
