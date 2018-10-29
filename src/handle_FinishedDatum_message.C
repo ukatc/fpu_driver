@@ -48,7 +48,8 @@ handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
                              const E_CAN_COMMAND cmd_id,
                              const uint8_t sequence_number)
 {
-    
+    // the error code carries an extra value if only the alpha or only the beta
+    // arm was datumed.
     const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
 
     // clear time-out flag
@@ -130,7 +131,9 @@ handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
                get_realtime(),
                fpu_id);
     }
-    else if (response_errcode != 0)
+    else if (!( (response_errcode ==  MCE_FPU_OK)
+		|| (response_errcode ==  MCE_NOTIFY_DATUM_ALPHA_ONLY)
+		|| (response_errcode ==  MCE_NOTIFY_DATUM_BETA_ONLY)))
     {
 	fpu.alpha_was_zeroed = false;
 	fpu.beta_was_zeroed = false;
@@ -140,13 +143,14 @@ handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     {
         // response_errcode was 0 and no bad status flags were set
 	
-        uint8_t exclusion_flags = data[3]; // echo of request flags
-        if ((exclusion_flags & DATUM_SKIP_ALPHA) == 0)
+        if ((response_errcode ==  MCE_FPU_OK)
+	    || (response_errcode ==  MCE_NOTIFY_DATUM_ALPHA_ONLY))
         {
             fpu.alpha_was_zeroed = true;
             fpu.alpha_steps = 0;
         }
-        if ((exclusion_flags & DATUM_SKIP_BETA) == 0)
+        if (response_errcode ==  MCE_FPU_OK)
+	    || (response_errcode ==  MCE_NOTIFY_DATUM_BETA_ONLY)
         {
             fpu.beta_was_zeroed = true;
             fpu.beta_steps = 0;

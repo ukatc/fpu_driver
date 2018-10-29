@@ -246,8 +246,26 @@ E_MOC_ERRCODE update_status_flags(t_fpu_state& fpu,
     if ((UPDATE_STEPS & req_fields) != 0)
     {
 
-	fpu.alpha_steps = unfold_stepcount_alpha(data[4] | (data[5] << 8));
-	fpu.beta_steps = unfold_stepcount_beta(data[6] | (data[7] << 8));
+	// the finished_DATUM commands does not report the current step counts
+	// (at datum, they are zero), bit the residual step count when the datum
+	// position was reached. We need to check whether alpha or beta arm
+	// were datumed separately.
+	if ((fpu.last_command != CMSG_FINISHED_DATUM) || (err_code == MCE_NOTIFY_DATUM_ALPHA_ONLY))
+	{
+	    fpu.alpha_steps = unfold_stepcount_alpha(data[4] | (data[5] << 8));
+	}
+	else
+	{
+	    fpu.alpha_deviation = unfold_stepcount_alpha(data[4] | (data[5] << 8));
+	}
+	if ((fpu.last_command != CMSG_FINISHED_DATUM) || (err_code == MCE_NOTIFY_DATUM_BETA_ONLY))
+	{
+	    fpu.beta_steps = unfold_stepcount_beta(data[6] | (data[7] << 8));
+	}
+	else
+	{
+	    fpu.beta_deviation = unfold_stepcount_beta(data[6] | (data[7] << 8));
+	}
     }        
        
     
