@@ -184,12 +184,10 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
             W = DEC
             X = ACC
 
-        print("channel:", W)
 
             
         if  new_speed[W] > rest_steps:
             # we can't accelerate more
-            print("new_speed=", new_speed, ", rest_steps=", rest_steps, " - break")
             break
         
         # compute new speed from acceleration limit
@@ -197,11 +195,9 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
             tent_new_speed = min_steps
         else:
             tent_new_speed = new_speed[W] + max_change[W]
-        print("[1] tent_new_speed=", tent_new_speed)
         # check for max speed limit
         if tent_new_speed > max_steps:
             tent_new_speed = max_steps
-        print("[2] tent_new_speed=", tent_new_speed)
 
 
         # if speed exhausts available distance, cap speed
@@ -210,19 +206,14 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
         if (tent_new_speed + max_speed[X]  > rest_steps) :
             tent_new_speed = min(tent_new_speed, max_speed[X])
             
-            print("[3a] tent_new_speed=", tent_new_speed)
-
         tent_new_speed = min(tent_new_speed, rest_steps)
 
         # accept new speed step
         new_speed[W] = tent_new_speed
         steps[W].append(new_speed[W])
         max_speed[W] = tent_new_speed + max_change[W]
-        print("[4] steps[W]=", steps[W])
         rest_steps -= new_speed[W]
         
-        print("[5] rest_steps=", rest_steps, ", max_speed=", max_speed)
-
 
     if insert_rest_accelerate:
         W = ACC
@@ -238,7 +229,6 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
     while rest_steps >= min_steps:
         ins_steps = min(rest_steps, max_speed)
         bisect.insort(steps[W], ins_steps)
-        print("[6] steps[W]=", steps[W])
         rest_steps -= ins_steps
 
     steps_accelerate = steps[ACC]
