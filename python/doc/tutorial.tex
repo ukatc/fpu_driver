@@ -1947,7 +1947,9 @@ allowed if the absolute speeds before and after are not too large.
 \item When changing the movement direction, the absolute number of
   steps before the change needs to be between zero and 120 steps,
   followed by either a step number of zero, or a step number between
-  zero and 120 steps in the opposite direction.
+  zero and 120 steps in the opposite direction. Alternatively, the
+  number of steps can be the minimum step count, followed by a pause,
+  followed by the minimum step count in the other direction.
 
   
 \end{enumerate}
@@ -4644,6 +4646,9 @@ commands, or alter otherwise visible behaviour of the driver.
 \item Changed: The \texttt{check\_pathfile.py} script was adapted to
   new capabilities of firmware version 1.5.
 
+\item Added: The life time test script was partially adapted to the
+  new firmware capabilities and waveform ruleset version 4.
+  
 \end{itemize}
 
 
