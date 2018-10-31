@@ -295,8 +295,9 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
                                 wf_z, min_steps=min_steps, ruleset_version=ruleset_version)
                 
         elif smrsix == 2:
-            smrsix += 1
-            continue
+            if ruleset_version < 4:
+                smrsix += 1
+                continue
             sname = "oscillations"            
             # a period of small oscillations
             wf_z = wf_zero()
@@ -421,7 +422,8 @@ def parse_args():
                         Currently available options: 0 - no checking, 1 - strict checking with 
                         small speeds allowed (not fully supported by current firmware)
                         2 - loose checking with small speeds disallowed, as in RFE to Software ICD issue 2.1,
-                        and supported by firmware >= 1.4.4. (default: %(default)s)""")
+                        and supported by firmware >= 1.4.4,
+                        4 - supported by firmware 1.5 (default: %(default)s)""")
     
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=ALPHA_MIN_DEGREE,
                         help='minimum alpha value  (default: %(default)s)')

@@ -59,6 +59,9 @@ def parse_args():
                         default=WAVEFORM_SEGMENT_LENGTH_MS,
                         help='waveform segment length, in milliseconds (default: %(default)s)')
     
+    parser.add_argument('--max_reversal', metavar='MAX_REVERSAL', type=int,
+                        default=120,
+                        help='limit for allowing sign reversals  (default: %(default)s)')
     args = parser.parse_args()
 
     args.min_steps=int(args.min_step_frequency * args.segment_length_ms / 1000)
@@ -172,12 +175,25 @@ class rule5b:
         return (cur_count == 0) or (float(prev_count) / cur_count) <= ( args.max_acceleration ** 2)
     
 
+class rule8:
+    label = "8"
+    description = """sign reversals are only allowed with a zero-step segment between,\
+ or if both absolute counts are below the MAX_REVERSAL treshold"""
+
+    @staticmethod
+    def check(prev_count, cur_count, next_count, is_last, args):
+        return (((sign(prev_count) * sign(cur_count)) >= 0)
+                or ((abs(prev_count) <= args.max_reversal) and (abs(cur_count) <= args.max_reversal))
+    
 
 ruleset_v1 = set([rule1, rule2a, rule3, rule4, rule5, rule6, rule7])
 
 ruleset_v2 = set([rule1, rule2, rule3, rule4, rule5, rule6, rule7])
 
 ruleset_v3 = set([rule1, rule2, rule3, rule4, rule5, rule7])
+
+ruleset_v4 = set([rule1, rule2a, rule4, rule5, rule6, rule7, rule8])
+
 
 
 def get_pcn(n, steps):
@@ -263,7 +279,8 @@ if __name__ == '__main__':
 
     ruleset = { 1 : ruleset_v1,
                 2 : ruleset_v2,
-                3 : ruleset_v3 }[args.ruleset_version]
+                3 : ruleset_v3,
+                4 : ruleset_v4,}[args.ruleset_version]
 
     total_failed_rules = set()
     for filename in args.pathfile:

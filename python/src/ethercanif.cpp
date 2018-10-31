@@ -1300,7 +1300,7 @@ BOOST_PYTHON_MODULE(ethercanif)
 {
     using namespace boost::python;
 
-    scope().attr("__version__") = (strlen(VERSION) > 0) ?  (((const char*)VERSION) + 1) : "";
+    scope().attr("__version__") = (strlen(VERSION) > 0) ?  (((const char*)VERSION)) : "";
 
     scope().attr("CAN_PROTOCOL_VERSION") = CAN_PROTOCOL_VERSION;
 

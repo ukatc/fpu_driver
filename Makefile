@@ -1,9 +1,7 @@
 IDIR = ./include
 CC = "g++"
 
-# if you do not use git, comment the line below and uncomment the following line
-GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
-#GIT_VERSION := '1.4.x'
+VERSION := 1.3.2
 
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g 
 
@@ -78,28 +76,28 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 .PHONY: force clean
 
-git_version: force
-	echo '$(GIT_VERSION)' | cmp -s - $@ || echo '$(GIT_VERSION)' > $@
+version: force
+	echo '$(VERSION)' | cmp -s - $@ || echo '$(VERSION)' > $@
 
 doc/FPU-state1.pdf : doc/FPU-state1.svg
 	inkscape doc/FPU-state1.svg --export-pdf=doc/FPU-state1.pdf
 
-tutorial:	python/doc/tutorial.tex python/doc/FPU-state1.pdf git_version
+tutorial:	python/doc/tutorial.tex python/doc/FPU-state1.pdf version
 	cd python/doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
 cppcheck: force
 	cppcheck src/*.C python/src/*.cpp  -I include -I include/ethercan -I include/ethercan/cancommandsv2 --enable=all
 
-$(ODIR)/%.o: $(SRCDIR)/%.C $(DEPS) git_version
-	$(CC) $(CXXFLAGS) -DVERSION=\"$(GIT_VERSION)\" -c -o $@ $< 
+$(ODIR)/%.o: $(SRCDIR)/%.C $(DEPS) version
+	$(CC) $(CXXFLAGS) -DVERSION=\"$(VERSION)\" -c -o $@ $< 
 
 lib/libethercan.a: $(OBJ)
 	ar rcs   $@ $^ 
 
 lib: lib/libethercan.a
 
-pyext: lib/libethercan.a python/src/ethercanif.cpp $(DEPS) git_version
-	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.cpp -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(GIT_VERSION)\"
+pyext: lib/libethercan.a python/src/ethercanif.cpp $(DEPS) version
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.cpp -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(VERSION)\"
 
 style:
 	astyle src/*.C python/src/*.cpp include{,/*{,/*}}/*.h
