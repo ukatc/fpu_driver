@@ -39,7 +39,7 @@
 \begin{document}
 
 \title{Tutorial for the MOONS FPU grid driver Python library
-  module} \subtitle{For EtherCAN interface version 1.3.1 (document version \texttt{\input{../../git_version}}).}
+  module} \subtitle{For EtherCAN interface version \input{../../version}}
 
 \author{Johannes Nix}
 
@@ -303,7 +303,7 @@ the directory writable by any member of this group, using the Unix
 ``chmod'' and ``chgrp'' commands.
 
 \subsection{Supported firmware versions}
-This EtherCAN interface requires FPU firmware version 1.4.4 to support all regular
+This EtherCAN interface requires FPU firmware version 1.5.0 to support all regular
 features. Older versions of the FPU firmware are not fully supported.
 See section~\ref{sec:firmware_compatibility} for details which
 functionality is missing for older versions.
@@ -1751,7 +1751,7 @@ version are defined as follows:
 This rule set is a stricter rule-set which is designed to filter out
 any waveforms which could cause undesired behaviour in the motors.
 However, it assumes some capabilities of the FPU firmware which are
-not met by the current firmware.
+not met by firmware versions smaller than 1.5.0.
 
 
 \begin{enumerate}
@@ -1792,10 +1792,6 @@ not met by the current firmware.
   least the minimum value of 125, and at most the maximum value of
   500. Also, arbitrary sequences of zeros are allowed.
 
-\item When changing the movement direction, the absolute number of
-  steps before the change needs to be between zero and the minimum
-  step count, followed by a wave table segment with a step count of
-  zero, followed by the minimum step count with the opposite sign.
 
 \item Between consecutive step number values, the absolute value of
   the larger number can only be at most 40\% larger than the absolute
@@ -1804,6 +1800,11 @@ not met by the current firmware.
   allowed. (This maximum rate of change is also a EtherCAN interface parameter, see
   section~\ref{sec:driverinitialisation}.)
 
+\item When changing the movement direction, the absolute number of
+  steps before the change needs to be between zero and the minimum
+  step count, followed by a wave table segment with a step count of
+  zero, followed by the minimum step count with the opposite sign.
+  
   
 \end{enumerate}
 
@@ -1888,6 +1889,69 @@ with two exceptions:
   the limit for accelerating is allowed. With a default
   acceleration limit of 40\,\%, this amounts to 95\,\%.
 \end{itemize}
+
+
+\paragraph{Waveform validity rule set version 4}
+\label{sec:wfrulesetv4}
+
+This rule set matches the capabilities of firmware version 1.5.0, and
+is the default. It is almost identical to ruleset version 1, with the
+sole difference that direction changes between adjacent segments are
+allowed if the absolute speeds before and after are not too large.
+
+
+\begin{enumerate}
+
+\item All step numbers need to be integer values.
+
+\item The maximum number of entries in a waveform table is 128 for the
+  CAN protocol version 1.\footnote{In version 2 of the firmware
+    communication protocol, this limit is raised to a value of 256}
+  
+\item A waveform for one FPU can include several movement parts for
+  each arm. A movement part is a sequence of step counts which are
+  non-zero and have the same direction.  A waveform can contain an
+  arbitrary number of movement sequences with non-zero entries.
+
+  \index{step frequency!minimum and maximum}
+  \index{minimum number of steps}
+\item The first non-zero entry in any movement sequence needs to have
+  the minimum step count.  Currently, this minimum is set to a step
+  count of 125, which can be changed as a EtherCAN interface parameter. (To be
+  precise, a starting speed which is up to 5\,\% higher than this
+  minimum speed is still acceptable, which is needed for feeding in
+  output from the path planning library -- this is also a EtherCAN interface
+  parameter, see section~\ref{sec:driverinitialisation} on
+  page~\pageref{sec:driverinitialisation}. Minimum and maximum value
+  will be configurable in later versions of the firmware.)
+
+\item The last entry of a movement part in one direction can have a
+  step count between zero an the minimum step count. It must not be
+  larger than the minimum step count.
+  
+\item A single entry with a step count equal to or smaller than the
+  minimum step count is allowed. It can only be preceded or followed
+  by zero-valued entries.
+  
+\item Except the the last non-zero entry in a movement part, all step
+  numbers in a waveform need to have an absolute value which has at
+  least the minimum value of 125, and at most the maximum value of
+  500. Also, arbitrary sequences of zeros are allowed.
+
+\item Between consecutive step number values, the absolute value of
+  the larger number can only be at most 40\% larger than the absolute
+  value of the smaller number. Also, a change from zero to the minimum
+  value, or from a value not larger than the minimum value to zero is
+  allowed. (This maximum rate of change is also a EtherCAN interface parameter, see
+  section~\ref{sec:driverinitialisation}.)
+  
+\item When changing the movement direction, the absolute number of
+  steps before the change needs to be between zero and 120 steps,
+  followed by either a step number of zero, or a step number between
+  zero and 120 steps in the opposite direction.
+
+  
+\end{enumerate}
 
 
 \paragraph{Handling of validation failures}
@@ -3996,10 +4060,70 @@ zero. The function makes sure that the rules described in
 section~\ref{sec:waveform_rules} on page~\pageref{sec:waveform_rules}
 are followed.
 
+%
+\index{gen\_wf()!generating waveforms for multiple FPUs}
+If at least one of the parameters is a Python list or a numpy array,
+the other parameter will be augmented to an array if it is a scalar
+(it will be broadcasted), and the function will generate waveforms for
+multiple FPUs, one FPU for each element of the arrays. If both
+parameters are lists or arrays, their length needs to match.
+
 The return value of the function is a normal Python data structure
 which can be assigned to a Python variable, and examined like other
 Python objects (for example, the \texttt{``type()'')} builtin function
 can be used to examine the data structure).
+
+\paragraph{Generating waveforms with constant acceleration}
+\label{sec:genwf:constant-acceleration}
+\index{gen\_wf()!generating waveforms wih constant acceleration}
+\index{constant acceleration}
+The default form of \texttt{gen\_wf} creates a waveform which has
+a constant maximum speed ratio between adjacent time segments.
+This means that the FPU would accelerate up to the maximum speed,
+with the resulting torque linerly increasing over time.
+
+To provide for waveforms which have a constant maximum torque, and a
+better manoeuvrability at low speeds, there exist an alternative mode
+for waveform generation, with function parameters as follows:
+
+\begin{minted}{python}
+  fpu_commands.gen_wf(delta_alpha, delta_beta, mode='limacc', unit='degrees',
+                     max_acceleration_alpha=MOTOR_MAX_ACCELERATION,
+                     max_deceleration_alpha=MOTOR_MAX_DECELERATION,
+                     min_steps_alpha=STEPS_LOWER_LIMIT,
+                     max_steps_alpha=STEPS_UPPER_LIMIT,
+                     max_acceleration_beta=MOTOR_MAX_ACCELERATION,
+                     max_deceleration_beta=MOTOR_MAX_DECELERATION,
+                     min_steps_beta=STEPS_LOWER_LIMIT,
+                     max_steps_beta=STEPS_UPPER_LIMIT,
+                     insert_rest_accelerate=True)
+\end{minted}
+
+Here, the \texttt{mode='limacc'} keyword sets the mode to waveform
+generation with constant acceleration. For each arm, one can pass the
+minimum and maximum acceleration as a parameter, in addition to the
+minimum and maximum speed. If the \texttt{unit} parameter is changed
+to \texttt{'steps'}, the argument is integer step count, not degree.
+
+\index{gen\_wf()!jerk}
+\index{controlling jerk}
+The last parameter, \texttt{insert\_rest\_accelerate}, merits some
+further explanation. The waveform generation function goes inserting
+steps at the maximum acceleration until the maximum speed is reached,
+or the requested distance is reached. Usually, there will remain a
+small rest distance, which is between the minimum and maximum speed,
+and is inserted in the accelerating or decelerating ramp.  By default,
+these extra steps will be inserted in the accelerating ramp, causing a
+small jerk with reduced acceleration in this phase of movement. If the
+parameter is set to \texttt{False}, any extra steps will be inserted in
+the deceleration ramp.
+
+The \texttt{gen\_wf()} function does not control for jerk. If
+waveforms with limited jerks are desired, they need to be defined by
+the user.
+
+
+
 
 \subsubsection{wflib.load\_paths()}
 \index{load\_paths()}%
@@ -4435,36 +4559,61 @@ might change.
 \index{supported firmware versions}
 \index{firmware compatibility}
 
-The EtherCAN interface documented here, version 1.3.0, is compatible with firmware
-1.4.4 and newer. The following limitations apply:
+The EtherCAN interface documented here, version 1.3.2, is compatible with firmware
+1.5.0 and newer. The following limitations apply:
 
 \begin{description}
+\item[firmware versions < 1.5.0]
+  
+  \begin{itemize}
+  \item This older firmwares does not support movement of FPUs with
+    small stepcount at another point than in the final part of a
+    waveform.  It also requires an explicit pause between changes of
+    the movement direction. Therefore, they are not compatible to the
+    default waveform rulesert 4.  For these firmware versions, the
+    ruleset for waveform validity rules needs to be explicityly set to
+    ruleset 2, in both the \texttt{configMotion()} and the
+      \texttt{configPaths()} methods.
+      
+    \item For these firmware protocol versions, it is not possible to
+      configure a waveform reliably without using a confirmation for
+      every message.
+    
+  \end{itemize}
+
+  
 \item[firmware versions <= 1.4.4]
+  
 \begin{itemize}
-\item For these firmware protocol versions, it is not possible to
-  configure a waveform reliably without using a confirmation for every
-  message.
+\item For this firmware version, the ruleset for waveform validity
+  rules needs to be explicityly set to ruleset 2, in both the
+  \texttt{configMotion()} and the \texttt{configPaths()} methods.
+  
 \item The EtherCAN interface probably allows some waveforms which are not within
   the safe range of the firmware.
   \end{itemize}
 \item[firmware versions < 1.4.4]
+  
 \begin{itemize}
 \item The offset for the register address to read the firmware version needs
   to be configured manually.
 \end{itemize}
 
 \item[firmware version < 1.4.3]
+  
   \begin{itemize}
   \item The automatic datum search is not supported.
   \end{itemize}
 
 \item[firmware version < 1.3.0]
+  
   \begin{itemize}
   \item The firmware does not support reading or writing the serial number of the FPU.
     Consequently, the software protection feature in the driver is not available.
   \end{itemize}
 
 \item[firmware version < 1.1.0]
+  
   \begin{itemize}
   \item The separate selection of alpha and beta arm in the datum operation will not work.
   \end{itemize}
@@ -4478,6 +4627,23 @@ The EtherCAN interface documented here, version 1.3.0, is compatible with firmwa
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
+
+\subsection*{Changes in version 1.3.2}
+\begin{itemize}
+\item Added: To the \texttt{gen\_wf()} function, a mode
+  was added which generates waveforms with constant acceleration.
+  This is described in section~\ref{sec:genwf:constant-acceleration}
+  on page~\pageref{sec:genwf:constant-acceleration}.
+
+\item Added: Waveform validity ruleset 4 was added and set as default.
+  The detailed description of the rules can be found on
+  page~\pageref{sec:wfrulesetv4}.
+
+\item Changed: The \texttt{check\_pathfile.py} script was adapted to
+  new capabilities of firmware version 1.5.
+
+\end{itemize}
+
 
 \subsection*{Changes in version 1.3.1}
 \begin{itemize}

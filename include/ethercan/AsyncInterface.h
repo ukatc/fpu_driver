@@ -209,6 +209,13 @@ public:
                                           const unsigned int MAX_NUM_SECTIONS,
                                           const double MAX_INCREASE) const;
 
+    E_EtherCANErrCode validateWaveformsV4(const t_wtable& waveforms,
+                                          const int MIN_STEPS,
+                                          const int MAX_STEPS,
+                                          const int MAX_START_STEPS,
+                                          const unsigned int MAX_NUM_SECTIONS,
+                                          const double MAX_INCREASE) const;
+
     void logGridState(const E_LogLevel logLevel, t_grid_state& grid_state) const;
 
 protected:
