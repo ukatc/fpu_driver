@@ -24,7 +24,7 @@
 
 
 #include "FPUState.h"
-#include "ethercan/response_handlers/handle_GetCounterDeviation_response.h"
+#include "ethercan/response_handlers/handle_ResetStepCounter_response.h"
 #include "ethercan/time_utils.h"
 #include "ethercan/FPUArray.h"
 
@@ -39,26 +39,41 @@ namespace mpifps
 namespace ethercanif
 {
 
-handle_GetCounterDeviation_response(const EtherCANInterfaceConfig&config,
-                                    const int fpu_id,
-                                    t_fpu_state& fpu,
-                                    int &count_pending
-                                    const t_response_buf&data,
-                                    const int blen, TimeOutList&  timeout_list,
-                                    const E_CAN_COMMAND cmd_id,
-				    const uint8_t sequence_number)
+handle_ResetStepCounter_response(const EtherCANInterfaceConfig&config,
+				 const int fpu_id,
+				 t_fpu_state& fpu,
+				 int &count_pending
+				 const t_response_buf&data,
+				 const int blen, TimeOutList&  timeout_list,
+				 const E_CAN_COMMAND cmd_id,
+				 const uint8_t sequence_number)
 {
-    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_NOSTEPS, data);
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
 
     // clear time-out flag
     remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending, sequence_number);
+
     if (response_errcode == 0)
     {
-
-	fpu.alpha_deviation = unfold_stepcount_alpha(data[4] | (data[5] << 8));
-	fpu.beta_deviation = unfold_stepcount_beta(data[6] | (data[7] << 8));
+        fpu.ping_ok = true;
+	fpu.alpha_steps = 0;
+	fpu.beta_steps = 0;
+        LOG_RX(LOG_INFO, "%18.6f : RX : "
+               "resetStepCounter command succeeded for FPU %i\n",
+               get_realtime(),
+               fpu_id);
 
     }
+    else
+    {
+        fpu.ping_ok = false;
+
+        LOG_RX(LOG_ERROR, "%18.6f : RX : "
+               "resetStepCounter command failed for FPU %i\n",
+               get_realtime(),
+               fpu_id);
+    }
+
 
 }
 

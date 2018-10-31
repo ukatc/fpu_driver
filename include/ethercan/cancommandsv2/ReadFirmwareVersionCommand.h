@@ -18,8 +18,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef READ_SERIAL_NUMBER_COMMAND_H
-#define READ_SERIAL_NUMBER_COMMAND_H
+#ifndef READ_FIRMWARE_VERSION_COMMAND_H
+#define READ_FIRMWARE_VERSION_COMMAND_H
 
 #include <cassert>
 #include "../CAN_Command.h"
@@ -30,25 +30,25 @@ namespace mpifps
 namespace ethercanif
 {
 
-class ReadSerialNumberCommand : public CAN_Command
+class ReadFirmwareVersionCommand : public CAN_Command
 {
 
 public:
 
-    static const E_CAN_COMMAND command_code = CCMD_READ_SERIAL_NUMBER;
+    static const E_CAN_COMMAND command_code = CCMD_GET_FIRMWARE_VERSION;
 
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;
     };
 
-    ReadSerialNumberCommand(): CAN_Command(command_code)
+    ReadFirmwareVersionCommand(): CAN_Command(command_code)
     {
     };
 
 
 
-    void parametrize(int f_id, bool broadcast)
+    void parametrize(int f_id, bool broadcast=false)
     {
         fpu_id = f_id;
         bcast = broadcast;

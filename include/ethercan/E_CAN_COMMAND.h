@@ -67,7 +67,7 @@ enum E_CAN_COMMAND
 
     NUM_CAN_COMMANDS = 20,
 #else
-    // commands which are not yet implemented
+
     CCMD_GET_FIRMWARE_VERSION             = 16, // get firmware version
     CCMD_CHECK_INTEGRITY                  = 17, // report firmware CRC
     CCMD_FREE_ALPHA_LIMIT_BREACH          = 18, // untangle alpha arm

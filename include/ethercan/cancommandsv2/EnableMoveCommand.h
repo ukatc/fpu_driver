@@ -18,8 +18,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef READ_SERIAL_NUMBER_COMMAND_H
-#define READ_SERIAL_NUMBER_COMMAND_H
+#ifndef ENABLE_MOVE_COMMAND_H
+#define ENABLE_MOVE_COMMAND_H
 
 #include <cassert>
 #include "../CAN_Command.h"
@@ -30,19 +30,19 @@ namespace mpifps
 namespace ethercanif
 {
 
-class ReadSerialNumberCommand : public CAN_Command
+class EnableMoveCommand : public CAN_Command
 {
 
 public:
 
-    static const E_CAN_COMMAND command_code = CCMD_READ_SERIAL_NUMBER;
+    static const E_CAN_COMMAND command_code = CCMD_ENABLE_MOVE;
 
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;
     };
 
-    ReadSerialNumberCommand(): CAN_Command(command_code)
+    EnableMoveCommand(): CAN_Command(command_code)
     {
     };
 
@@ -59,7 +59,7 @@ public:
     {
         timespec const toval =
         {
-            /* .tv_sec = */ 1,
+            /* .tv_sec = */ 5,
             /* .tv_nsec = */ 000000000
         };
 

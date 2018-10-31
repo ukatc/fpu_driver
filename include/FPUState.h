@@ -107,6 +107,7 @@ typedef struct __attribute__((packed)) t_fpu_state
     int beta_steps;
     int alpha_deviation;
     int beta_deviation;
+    uint32_t crc32;
     // Wrapping number of minor time-outs which have been observed.
     uint16_t timeout_count;
     // Wrapping count of step timing errors observed for this FPU.

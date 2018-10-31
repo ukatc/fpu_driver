@@ -11,17 +11,16 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME ExecuteMotionCommand.h
+// NAME PingCommand.h
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef GET_STEPS_ALPHA_H
-#define GET_STEPS_ALPHA_H
+#ifndef CHECK_INTEGRITY_COMMAND_H
+#define CHECK_INTEGRITY_COMMAND_H
 
-#include <string.h>
 #include <cassert>
 #include "../CAN_Command.h"
 
@@ -31,21 +30,22 @@ namespace mpifps
 namespace ethercanif
 {
 
-class GetStepsAlphaCommand : public CAN_Command
+class CheckIntegrityCommand : public CAN_Command
 {
 
 public:
 
-    static const E_CAN_COMMAND command_code = CCMD_PING_FPU;
+    static const E_CAN_COMMAND command_code = CCMD_CHECK_INTEGRITY;
 
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;
     };
 
-    GetStepsAlphaCommand() : CAN_Command(command_code)
+    CheckIntegrityCommand(): CAN_Command(command_code)
     {
     };
+
 
 
     void parametrize(int f_id, bool broadcast)
@@ -54,18 +54,18 @@ public:
         bcast = broadcast;
     };
 
-
     // time-out period for a response to the message
     timespec getTimeOut()
     {
         timespec const toval =
         {
-            /* .tv_sec = */ 2,
-            /* .tv_nsec = */ 500000000
+            /* .tv_sec = */ 30,
+            /* .tv_nsec = */ 000000000
         };
 
         return toval;
     };
+
 
 
 };

@@ -1,5 +1,5 @@
 
-// -*- MODE: C++ -*-
+// -*- mode: c++ -*-
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Copyright 2017 UKRI. See file "LICENSE" for license information.
@@ -18,12 +18,13 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef GET_ERROR_BETA_H
-#define GET_ERROR_BETA_H
+#ifndef FREE_ALPHA_LIMIT_BRACH_COMMAND_H
+#define FREE_ALPHA_LIMIT_BRACH_COMMAND_H
 
 #include <string.h>
 #include <cassert>
 #include "../CAN_Command.h"
+#include "../../InterfaceConstants.h"
 
 namespace mpifps
 {
@@ -31,7 +32,7 @@ namespace mpifps
 namespace ethercanif
 {
 
-class GetErrorBetaCommand : public CAN_Command
+class FreeAlphaLimitBreachCommand : public CAN_Command
 {
 
 public:
@@ -44,16 +45,32 @@ public:
         return command_code;
     };
 
-    GetErrorBetaCommand() : CAN_Command(command_code)
+    FreeAlphaLimitBreachCommand() : CAN_Command(command_code),
+        request_direction(REQD_ANTI_CLOCKWISE)
     {
     };
 
 
 
-    void parametrize(int f_id, bool broadcast)
+    void parametrize(int f_id, E_REQUEST_DIRECTION request_dir)
     {
         fpu_id = f_id;
-        bcast = broadcast;
+        request_direction = request_dir;
+    };
+
+    void SerializeToBuffer(const uint8_t busid,
+                           const uint8_t fpu_canid,
+                           int& buf_len,
+                           t_CAN_buffer& can_buffer,
+                           const uint8_t sequence_number)
+    {
+
+        set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
+
+        can_buffer.message.data[2] = (request_direction == REQD_CLOCKWISE) ? 1 : 0;
+
+        buf_len += 1;
+
     };
 
 
@@ -62,12 +79,16 @@ public:
     {
         timespec const toval =
         {
-            /* .tv_sec = */ 1,
+            /* .tv_sec = */ 5,
             /* .tv_nsec = */ 0
         };
 
         return toval;
     };
+
+
+private:
+    E_REQUEST_DIRECTION request_direction;
 
 
 };

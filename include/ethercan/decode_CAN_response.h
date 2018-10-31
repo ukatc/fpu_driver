@@ -38,6 +38,7 @@ namespace ethercanif
     const UPDATE_FIELDID UPDATE_FIELDS_DEFAULT = static_cast<UPDATE_FIELDID>(UPDATE_STSWD | UPDATE_STATE | UPDATE_ECODE | UPDATE_STEPS);
     const UPDATE_FIELDID UPDATE_FIELDS_NOSTEPS = static_cast<UPDATE_FIELDID>(UPDATE_STSWD | UPDATE_STATE | UPDATE_ECODE);
     const UPDATE_FIELDID UPDATE_FIELDS_NOECODE = static_cast<UPDATE_FIELDID>(UPDATE_STSWD | UPDATE_STATE);
+    const UPDATE_FIELDID UPDATE_FIELDS_NOSTATE = UPDATE_STSWD;
     
     // test a bit in the 32-bit status word, and return 1 if set, 0 otherwise
     inline unsigned int test_bit (uint32_t stwd, E_FPU_STATUS_BITS bit)

@@ -56,6 +56,7 @@ void initialize_fpu(t_fpu_state &fpu)
     fpu.last_status               = MCE_FPU_OK;
     fpu.sequence_number           = 0;
     fpu.can_overflow_errcount     = 0;
+    fpu.crc32                     = 0;
     fpu.register_address          = 0;
     fpu.register_value            = 0;
     // the values below are not valid, they need proper

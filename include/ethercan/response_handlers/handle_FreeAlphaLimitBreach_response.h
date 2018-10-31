@@ -17,8 +17,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef HANDLE_GET_COUNTER_DEVIATION_RESPONSE_H
-#define HANDLE_GET_COUNTER_DEVIATION_RESPONSE_H
+#ifndef HANDLE_FREE_ALPHA_LIMIT_BREACH_RESPONSE_H
+#define HANDLE_FREE_ALPHA_LIMIT_BREACH_RESPONSE_H
 
 #include "FPUState.h"
 #include "EtherCANInterfaceConfig.h"
@@ -30,14 +30,14 @@ namespace mpifps
 {
 namespace ethercanif
 {
-void handle_GetCounterDeviation_response(const EtherCANInterfaceConfig&config,
-        const int fpu_id,
-        t_fpu_state& fpu,
-        int &count_pending,
-        const t_response_buf&data,
-        const int blen, TimeOutList&  timeout_list,
-        const E_CAN_COMMAND cmd_id,
-        const uint8_t sequence_number);
+void handle_FreeAlphaLimitBreach_response(const EtherCANInterfaceConfig&config,
+					  const int fpu_id,
+					  t_fpu_state& fpu,
+					  int &count_pending,
+					  const t_response_buf&data,
+					  const int blen, TimeOutList&  timeout_list,
+					  const E_CAN_COMMAND cmd_id,
+					  const uint8_t sequence_number);
 }
 }
 
