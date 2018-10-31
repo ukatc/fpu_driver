@@ -67,8 +67,7 @@ This document describes the Python programming interface for the MOONS
 Fibre Positioner Unit EtherCAN interface module.
 
 The EtherCAN interface allows to control and move Fibre Positioner
-Units (FPUsp
-) in the MOONS FPU grid by a software interface. This
+Units (FPUs) in the MOONS FPU grid by a software interface. This
 programming interface is implemented in C++. It is designed to be used
 in several different contexts: Primarily, for simultaneously
 controlling more than 1000 FPUs in the final MOONS astronomic
@@ -4075,12 +4074,12 @@ can be used to examine the data structure).
 
 \paragraph{Generating waveforms with constant acceleration}
 \label{sec:genwf:constant-acceleration}
-\index{gen\_wf()!generating waveforms wih constant acceleration}
+\index{gen\_wf()!generating waveforms with constant acceleration}
 \index{constant acceleration}
 The default form of \texttt{gen\_wf} creates a waveform which has
 a constant maximum speed ratio between adjacent time segments.
 This means that the FPU would accelerate up to the maximum speed,
-with the resulting torque linerly increasing over time.
+with the resulting torque linearly increasing over time.
 
 To provide for waveforms which have a constant maximum torque, and a
 better manoeuvrability at low speeds, there exist an alternative mode
@@ -4560,24 +4559,20 @@ might change.
 \index{firmware compatibility}
 
 The EtherCAN interface documented here, version 1.3.2, is compatible with firmware
-1.5.0 and newer. The following limitations apply:
+1.5.0 and newer. The following limitations apply for older firmware versions:
 
 \begin{description}
-\item[firmware versions < 1.5.0]
+\item[firmware versions <= 1.5.0]
   
   \begin{itemize}
-  \item This older firmwares does not support movement of FPUs with
-    small stepcount at another point than in the final part of a
-    waveform.  It also requires an explicit pause between changes of
-    the movement direction. Therefore, they are not compatible to the
-    default waveform rulesert 4.  For these firmware versions, the
-    ruleset for waveform validity rules needs to be explicityly set to
-    ruleset 2, in both the \texttt{configMotion()} and the
-      \texttt{configPaths()} methods.
       
     \item For these firmware protocol versions, it is not possible to
       configure a waveform reliably without using a confirmation for
       every message.
+    \item Using waveforms with constant acceleration will, in most
+      cases, require to set the waveform validity check parameter of
+      \texttt{configMotion()} and \texttt{configPaths()} to rule set
+      version 0 (no validity checks).
     
   \end{itemize}
 
@@ -4585,9 +4580,16 @@ The EtherCAN interface documented here, version 1.3.2, is compatible with firmwa
 \item[firmware versions <= 1.4.4]
   
 \begin{itemize}
-\item For this firmware version, the ruleset for waveform validity
-  rules needs to be explicityly set to ruleset 2, in both the
-  \texttt{configMotion()} and the \texttt{configPaths()} methods.
+  \item This older firmwares does not support movement of FPUs with
+    small step counts at another point than in the final part of a
+    waveform.  They also require an explicit pause between changes of
+    the movement direction. Therefore, they are not compatible to the
+    default waveform ruleset 4.  For these firmware versions, the
+    ruleset for waveform validity rules needs to be explicitly set to
+    ruleset 2, in both the \texttt{configMotion()} and the
+    \texttt{configPaths()} methods.
+    \item In the life time test script, the waveform rule set version
+      needs to be set to 2 in order to match the old behaviour.
   
 \item The EtherCAN interface probably allows some waveforms which are not within
   the safe range of the firmware.
@@ -4659,7 +4661,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \item A number of internal classes and types in the C++ driver were
   renamed to match the terminology of the ESO software architecture
   better, and to avoid possible confusion in future
-  discussions. Specifically, the name part ``driver'' was subsituted
+  discussions. Specifically, the name part ``driver'' was substituted
   by ``EtherCAN Interface''.  This is reflected in renaming
   \texttt{FpuDriverException} to \texttt{EtherCANException}. Also,
   member names like \texttt{driver\_state} were renamed to
