@@ -5,13 +5,13 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client sample
+// jnix      2017-10-18  Created interface class using Pablo Guiterrez' CAN client sample
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME AsyncInterface.h
 //
-// This class implements the low-level CAN driver for the MOONS fiber
+// This class implements the low-level CAN interface for the MOONS fiber
 // positioner grid
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ E_EtherCANErrCode AsyncInterface::initializeInterface()
 
     case DS_UNCONNECTED:
     case DS_CONNECTED:
-        LOG_CONTROL(LOG_ERROR, "%18.6f : initializeInterface() - driver was already initialized\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : initializeInterface() - interface was already initialized\n",
                     ethercanif::get_realtime());
         return DE_INTERFACE_ALREADY_INITIALIZED;
 
@@ -83,7 +83,7 @@ E_EtherCANErrCode AsyncInterface::initializeInterface()
                     ethercanif::get_realtime());
         return DE_ASSERTION_FAILED;
     }
-    LOG_CONTROL(LOG_DEBUG, "%18.6f : initializing driver\n",
+    LOG_CONTROL(LOG_DEBUG, "%18.6f : initializing EtherCAN interface\n",
                 ethercanif::get_realtime());
     return gateway.initialize();
 }
@@ -98,12 +98,12 @@ E_EtherCANErrCode AsyncInterface::deInitializeInterface()
         break;
 
     case DS_UNINITIALIZED:
-        LOG_CONTROL(LOG_ERROR, "%18.6f : deinitializeInterface() - error: driver is already in uninitialized state \n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : deinitializeInterface() - error: interface is already in uninitialized state \n",
                     ethercanif::get_realtime());
         return DE_INTERFACE_NOT_INITIALIZED;
 
     case DS_CONNECTED:
-        LOG_CONTROL(LOG_ERROR, "%18.6f : deinitializeInterface() - error: can't deinitialize driver, it is still connected\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : deinitializeInterface() - error: can't deinitialize interface, it is still connected\n",
                     ethercanif::get_realtime());
         return DE_INTERFACE_STILL_CONNECTED;
 
@@ -113,7 +113,7 @@ E_EtherCANErrCode AsyncInterface::deInitializeInterface()
         return DE_ASSERTION_FAILED;
     };
 
-    LOG_CONTROL(LOG_INFO, "%18.6f : deinitializing driver\n",
+    LOG_CONTROL(LOG_INFO, "%18.6f : deinitializing interface\n",
                 ethercanif::get_realtime());
     return gateway.deInitialize();
 }
@@ -123,7 +123,7 @@ E_EtherCANErrCode AsyncInterface::connect(const int ngateways, const t_gateway_a
     switch (gateway.getInterfaceState())
     {
     case DS_UNINITIALIZED:
-        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::connect(): error: driver not initialized\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::connect(): error: interface not initialized\n",
                     ethercanif::get_realtime());
         return DE_INTERFACE_NOT_INITIALIZED;
 
@@ -131,7 +131,7 @@ E_EtherCANErrCode AsyncInterface::connect(const int ngateways, const t_gateway_a
         break;
 
     case DS_CONNECTED:
-        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::connect(): error: driver already connected, needs to disconnect() first\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::connect(): error: interface already connected, needs to disconnect() first\n",
                     ethercanif::get_realtime());
         return DE_INTERFACE_ALREADY_CONNECTED;
 
@@ -156,7 +156,7 @@ E_EtherCANErrCode AsyncInterface::connect(const int ngateways, const t_gateway_a
     {
         num_gateways = ngateways;
     }
-    LOG_CONTROL(LOG_INFO, "%18.6f : GridDriver::connect(): driver is connected to %i gateways\n",
+    LOG_CONTROL(LOG_INFO, "%18.6f : GridInterface::connect(): interface is connected to %i gateways\n",
                 ethercanif::get_realtime(),
                 num_gateways);
 
@@ -169,12 +169,12 @@ E_EtherCANErrCode AsyncInterface::disconnect()
     switch (gateway.getInterfaceState())
     {
     case DS_UNINITIALIZED:
-        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::disconnect(): error, driver not initialized\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::disconnect(): error, interface not initialized\n",
                     ethercanif::get_realtime());
         return DE_INTERFACE_NOT_INITIALIZED;
 
     case DS_UNCONNECTED:
-        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::disconnect(): error, driver not connected\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::disconnect(): error, interface not connected\n",
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
 
@@ -184,7 +184,7 @@ E_EtherCANErrCode AsyncInterface::disconnect()
         break;
     }
 
-    LOG_CONTROL(LOG_DEBUG, "%18.6f : AsyncInterface::disconnect(): disconnecting driver\n",
+    LOG_CONTROL(LOG_DEBUG, "%18.6f : AsyncInterface::disconnect(): disconnecting interface\n",
                 ethercanif::get_realtime());
 
 
@@ -219,7 +219,7 @@ E_EtherCANErrCode AsyncInterface::initializeGridAsync(t_grid_state& grid_state,
 
     if (gateway.getInterfaceState() != DS_CONNECTED)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : initializeGridAsync() error: driver is not connected\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : initializeGridAsync() error: interface is not connected\n",
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
@@ -244,10 +244,10 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : resetFPUs() error: driver is not connected, can't reset FPUs\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : resetFPUs() error: interface is not connected, can't reset FPUs\n",
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
@@ -311,7 +311,7 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
 
     if (grid_state.interface_state != DS_CONNECTED)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : error: driver is not connected, can't reset FPUs\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: interface is not connected, can't reset FPUs\n",
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
@@ -566,10 +566,10 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: driver is not connected\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: interface is not connected\n",
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
@@ -800,7 +800,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
 
     if (grid_state.interface_state != DS_CONNECTED)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: driver is not connected\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: interface is not connected\n",
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
@@ -1834,7 +1834,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     }
 
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_NO_CONNECTION - no connection present\n",
@@ -1954,7 +1954,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                                  grid_state, max_wait_time, cancelled);
             if (grid_state.interface_state != DS_CONNECTED)
             {
-                LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: driver is not connected\n",
+                LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: interface is not connected\n",
                             ethercanif::get_realtime());
 
 
@@ -2082,10 +2082,10 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
 
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_NO_CONNECTION, driver is not connected\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_NO_CONNECTION, interface is not connected\n",
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
@@ -2166,7 +2166,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
     }
 
     // FIXME: This is preliminary for use in the verificaiton
-    // system. In the ICS driver, this needs to be changed to use the
+    // system. In the ICS interface, this needs to be changed to use the
     // gateway SYNC message to make sure that FPUs move with minimum
     // lag in respect to each other.
 
@@ -2293,7 +2293,7 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
 
     if (grid_state.interface_state != DS_CONNECTED)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error DE_NO_CONNECTION, driver is not connected\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error DE_NO_CONNECTION, interface is not connected\n",
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
@@ -2425,7 +2425,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_NO_CONNECTION, connection was lost\n",
@@ -2595,7 +2595,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : reverseMotion():  error DE_NO_CONNECTION, connection was lost\n",
@@ -2767,7 +2767,7 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : abortMotion():  error DE_NO_CONNECTION, connection was lost\n",
@@ -2911,7 +2911,7 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error DE_NO_CONNECTION, connection was lost\n",
@@ -2958,7 +2958,7 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error DE_NO_CONNECTION, connection was lost\n",
@@ -3000,7 +3000,7 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : pingFPUs():  error DE_NO_CONNECTION, connection was lost\n",
@@ -3097,7 +3097,7 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : enableBetaCollisionProtection():  error DE_NO_CONNECTION, connection was lost\n",
@@ -3199,7 +3199,7 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id, E_REQUEST_D
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error DE_NO_CONNECTION, connection was lost\n",
@@ -3323,7 +3323,7 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : setUStepLevel():  error DE_NO_CONNECTION, connection was lost\n",
@@ -3526,7 +3526,7 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_
 
     if (logLevel >= LOG_DEBUG)
     {
-        logp += sprintf(logp, "driver state: DS=%s,  count_timeout=%lu, count_pending=%i, nqueued=%i",
+        logp += sprintf(logp, "interface state: DS=%s,  count_timeout=%lu, count_pending=%i, nqueued=%i",
                         str_interface_state(grid_state.interface_state),
                         grid_state.count_timeout,
                         grid_state.count_pending,
@@ -3627,7 +3627,7 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : readRegister():  error DE_NO_CONNECTION, connection was lost\n",
@@ -3910,7 +3910,7 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error DE_NO_CONNECTION, connection was lost\n",
@@ -4046,7 +4046,7 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-    // check driver is connected
+    // check interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_NO_CONNECTION, connection was lost\n",
