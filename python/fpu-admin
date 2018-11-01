@@ -21,7 +21,7 @@ DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE")
 
 GATEWAY0_ADDRESS = os.environ.get("ETHERCAN_GATEWAY0", "192.168.0.10")
 
-env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, , map_size=(5*1024*1024*1024))
+env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=(5*1024*1024*1024))
 
 fpudb = env.open_db("fpu")
 

@@ -26,23 +26,31 @@
 #include "ethercan/CommandPool.h"
 // alphabetically sorted below
 #include "ethercan/cancommandsv2/AbortMotionCommand.h"
+#include "ethercan/cancommandsv2/CheckIntegrityCommand.h"
 #include "ethercan/cancommandsv2/ConfigureMotionCommand.h"
+#include "ethercan/cancommandsv2/EnableAlphaLimitProtectionCommand.h"
 #include "ethercan/cancommandsv2/EnableBetaCollisionProtectionCommand.h"
+#include "ethercan/cancommandsv2/EnableMoveCommand.h"
 #include "ethercan/cancommandsv2/ExecuteMotionCommand.h"
 #include "ethercan/cancommandsv2/FindDatumCommand.h"
+#include "ethercan/cancommandsv2/FreeAlphaLimitBreachCommand.h"
 #include "ethercan/cancommandsv2/FreeBetaCollisionCommand.h"
-#include "ethercan/cancommandsv2/GetErrorAlphaCommand.h"
-#include "ethercan/cancommandsv2/GetErrorBetaCommand.h"
-#include "ethercan/cancommandsv2/GetStepsAlphaCommand.h"
-#include "ethercan/cancommandsv2/GetStepsBetaCommand.h"
+#include "ethercan/cancommandsv2/GetFirmwareVersionCommand.h"
+#include "ethercan/cancommandsv2/LockUnitCommand.h"
 #include "ethercan/cancommandsv2/PingFPUCommand.h"
+#include "ethercan/cancommandsv2/ReadFirmwareVersionCommand.h"
 #include "ethercan/cancommandsv2/ReadRegisterCommand.h"
 #include "ethercan/cancommandsv2/ReadSerialNumberCommand.h"
 #include "ethercan/cancommandsv2/RepeatMotionCommand.h"
 #include "ethercan/cancommandsv2/ResetFPUCommand.h"
+#include "ethercan/cancommandsv2/ResetStepCounterCommand.h"
 #include "ethercan/cancommandsv2/ReverseMotionCommand.h"
+#include "ethercan/cancommandsv2/SetStepsPerSegmentCommand.h"
+#include "ethercan/cancommandsv2/SetTicksPerSegmentCommand.h"
 #include "ethercan/cancommandsv2/SetUStepLevelCommand.h"
+#include "ethercan/cancommandsv2/UnlockUnitCommand.h"
 #include "ethercan/cancommandsv2/WriteSerialNumberCommand.h"
+
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -134,6 +142,57 @@ E_EtherCANErrCode CommandPool::initialize()
             {
                 switch (i)
                 {
+
+		case CCMD_LOCK_UNIT                        :
+                    ptr.reset(new LockUnitCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+		    
+		case CCMD_UNLOCK_UNIT                      :
+                    ptr.reset(new UnlockUnitCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+		    
+		case CCMD_RESET_STEPCOUNTER                :
+                    ptr.reset(new ResetStepCounterCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+		    
+		case CCMD_GET_FIRMWARE_VERSION             :
+                    ptr.reset(new GetFirmwareVersionCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+		    
+		case CCMD_CHECK_INTEGRITY                  :
+                    ptr.reset(new CheckIntegrityCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+		    
+		case CCMD_FREE_ALPHA_LIMIT_BREACH          :
+                    ptr.reset(new FreeAlphaLimitBreachCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+		    
+		case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    :
+                    ptr.reset(new EnableAlphaLimitProtectionCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+		    
+		case CCMD_SET_TICKS_PER_SEGMENT            :
+                    ptr.reset(new SetTicksPerSegmentCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+		    
+		case CCMD_SET_STEPS_PER_SEGMENT            :
+                    ptr.reset(new SetStepsPerSegmentCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+		    
+		case CCMD_ENABLE_MOVE                      :
+                    ptr.reset(new EnableMoveCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+		    
                 case CCMD_PING_FPU        :
                     ptr.reset(new PingFPUCommand());
                     pool[i].push_back(std::move(ptr));

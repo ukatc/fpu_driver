@@ -247,9 +247,6 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     switch (cmd)
     {
 
-
-
-
     /* highest priority has smallest code */
 
     /* priorities 0x01 and 0x02 are reserved for

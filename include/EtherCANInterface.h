@@ -136,11 +136,6 @@ public:
                                         bool &finished,
                                         t_fpuset const &fpuset);
 
-
-    E_EtherCANErrCode getPositions(t_grid_state& grid_state, t_fpuset const &fpuset);
-
-    E_EtherCANErrCode getCounterDeviation(t_grid_state& grid_state, t_fpuset const &fpuset);
-
     E_EtherCANErrCode repeatMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
     E_EtherCANErrCode reverseMotion(t_grid_state& grid_state, t_fpuset const &fpuset);

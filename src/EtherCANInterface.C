@@ -393,18 +393,6 @@ E_EtherCANErrCode EtherCANInterface::unlockFPU(int fpu_id, t_grid_state& grid_st
 }
 
 
-E_EtherCANErrCode EtherCANInterface::getPositions(t_grid_state& grid_state, t_fpuset const &fpuset)
-{
-    E_GridState state_summary;
-    E_EtherCANErrCode status;
-
-    pthread_mutex_lock(&command_creation_mutex);
-    status = getPositionsAsync(grid_state, state_summary, fpuset);
-    pthread_mutex_unlock(&command_creation_mutex);
-
-    return status;
-}
-
 
 E_EtherCANErrCode EtherCANInterface::readRegister(uint16_t read_address, t_grid_state& grid_state, t_fpuset const &fpuset)
 {
@@ -432,17 +420,6 @@ E_EtherCANErrCode EtherCANInterface::getFirmwareVersion(t_grid_state& grid_state
 
 
 
-E_EtherCANErrCode EtherCANInterface::getCounterDeviation(t_grid_state& grid_state, t_fpuset const &fpuset)
-{
-    E_GridState state_summary;
-    E_EtherCANErrCode status;
-
-    pthread_mutex_lock(&command_creation_mutex);
-    status = getCounterDeviationAsync(grid_state, state_summary, fpuset);
-    pthread_mutex_unlock(&command_creation_mutex);
-
-    return status;
-}
 
 E_EtherCANErrCode EtherCANInterface::setUStepLevel(int ustep_level, t_grid_state& grid_state, t_fpuset const &fpuset)
 {

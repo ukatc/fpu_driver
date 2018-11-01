@@ -88,7 +88,7 @@ public:
     };
 
     private:
-    static_assert(sizeof(unsigned int) >= 3);
+    static_assert(sizeof(unsigned int) >= 3, "buffer too small");
     unsigned int ticks_per_segment;
 
 

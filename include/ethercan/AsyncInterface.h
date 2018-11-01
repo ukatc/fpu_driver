@@ -142,14 +142,6 @@ public:
             bool &finished,
             t_fpuset const &fpuset);
 
-    E_EtherCANErrCode getPositionsAsync(t_grid_state& grid_state,
-                                        E_GridState& state_summary,
-                                        t_fpuset const &fpuset);
-
-    E_EtherCANErrCode getCounterDeviationAsync(t_grid_state& grid_state,
-            E_GridState& state_summary,
-            t_fpuset const &fpuset);
-
     E_EtherCANErrCode repeatMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode reverseMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);

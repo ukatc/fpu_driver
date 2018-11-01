@@ -31,23 +31,31 @@
 // as they are parametrized here.
 // -- alphabetically sorted below --
 #include "ethercan/cancommandsv2/AbortMotionCommand.h"
+#include "ethercan/cancommandsv2/CheckIntegrityCommand.h"
 #include "ethercan/cancommandsv2/ConfigureMotionCommand.h"
+#include "ethercan/cancommandsv2/EnableAlphaLimitProtectionCommand.h"
 #include "ethercan/cancommandsv2/EnableBetaCollisionProtectionCommand.h"
+#include "ethercan/cancommandsv2/EnableMoveCommand.h"
 #include "ethercan/cancommandsv2/ExecuteMotionCommand.h"
 #include "ethercan/cancommandsv2/FindDatumCommand.h"
+#include "ethercan/cancommandsv2/FreeAlphaLimitBreachCommand.h"
 #include "ethercan/cancommandsv2/FreeBetaCollisionCommand.h"
-#include "ethercan/cancommandsv2/GetErrorAlphaCommand.h"
-#include "ethercan/cancommandsv2/GetErrorBetaCommand.h"
-#include "ethercan/cancommandsv2/GetStepsAlphaCommand.h"
-#include "ethercan/cancommandsv2/GetStepsBetaCommand.h"
+#include "ethercan/cancommandsv2/GetFirmwareVersionCommand.h"
+#include "ethercan/cancommandsv2/LockUnitCommand.h"
 #include "ethercan/cancommandsv2/PingFPUCommand.h"
+#include "ethercan/cancommandsv2/ReadFirmwareVersionCommand.h"
 #include "ethercan/cancommandsv2/ReadRegisterCommand.h"
 #include "ethercan/cancommandsv2/ReadSerialNumberCommand.h"
 #include "ethercan/cancommandsv2/RepeatMotionCommand.h"
 #include "ethercan/cancommandsv2/ResetFPUCommand.h"
+#include "ethercan/cancommandsv2/ResetStepCounterCommand.h"
 #include "ethercan/cancommandsv2/ReverseMotionCommand.h"
+#include "ethercan/cancommandsv2/SetStepsPerSegmentCommand.h"
+#include "ethercan/cancommandsv2/SetTicksPerSegmentCommand.h"
 #include "ethercan/cancommandsv2/SetUStepLevelCommand.h"
+#include "ethercan/cancommandsv2/UnlockUnitCommand.h"
 #include "ethercan/cancommandsv2/WriteSerialNumberCommand.h"
+
 
 
 namespace mpifps
@@ -2405,344 +2413,6 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
 }
 
 
-E_EtherCANErrCode AsyncInterface::getPositionsAsync(t_grid_state& grid_state,
-        E_GridState& state_summary, t_fpuset const &fpuset)
-{
-
-    // first, get current state of the grid
-    state_summary = gateway.getGridState(grid_state);
-    const unsigned long old_count_timeout = grid_state.count_timeout;
-    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
-    // check driver is connected
-    if (grid_state.interface_state != DS_CONNECTED)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions():  error DE_NO_CONNECTION, connection was lost\n",
-                    ethercanif::get_realtime());
-        return DE_NO_CONNECTION;
-    }
-
-
-
-    unique_ptr<GetStepsAlphaCommand> can_command1;
-    int num_skipped=0;
-    for (int i=0; i < config.num_fpus; i++)
-    {
-        // we exclude locked FPUs
-        if (! gateway.isLocked(i) )
-        {
-            if (!fpuset[i])
-            {
-                num_skipped++;
-                continue;
-            }
-            can_command1 = gateway.provideInstance<GetStepsAlphaCommand>();
-            assert(can_command1);
-            bool broadcast = false;
-            can_command1->parametrize(i, broadcast);
-            // send the command (the actual sending happens
-            // in the TX thread in the background).
-            CommandQueue::E_QueueState qstate;
-            unique_ptr<CAN_Command> cmd1(can_command1.release());
-            qstate = gateway.sendCommand(i, cmd1);
-            assert(qstate == CommandQueue::QS_OK);
-
-        }
-    }
-
-    // We do not expect the locked FPUs to respond.
-    // FIXME: This needs to be documented and checked
-    // with the firmware protocol.
-    int num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED] - num_skipped;
-
-    // fpus are now responding in parallel.
-    //
-    // As long as any fpus need to respond, wait for
-    // them to finish.
-    while ( (num_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
-    {
-        // as we do not effect any change on the grid,
-        // we need to wait for any response event,
-        // and filter out whether we are actually ready.
-
-        ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
-        double max_wait_time = -1;
-        bool cancelled = false;
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state, max_wait_time, cancelled);
-
-        // get fresh count of pending fpus.
-        // The reason we add the unsent command is that
-        // the Tx thread might not have had opportunity
-        // to send all the commands.
-        num_pending = (grid_state.count_pending + grid_state.num_queued);
-
-
-    }
-
-    if (grid_state.interface_state != DS_CONNECTED)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions():  error DE_NO_CONNECTION, connection was lost\n",
-                    ethercanif::get_realtime());
-        return DE_NO_CONNECTION;
-    }
-
-
-    unique_ptr<GetStepsBetaCommand> can_command2;
-    for (int i=0; i < config.num_fpus; i++)
-    {
-        // we exclude locked FPUs
-        if (! gateway.isLocked(i) )
-        {
-            if (!fpuset[i])
-            {
-                // num_skipped was set above
-                continue;
-            }
-            can_command2 = gateway.provideInstance<GetStepsBetaCommand>();
-            assert(can_command2);
-            bool broadcast = false;
-            can_command2->parametrize(i, broadcast);
-            // send the command (the actual sending happens
-            // in the TX thread in the background).
-            CommandQueue::E_QueueState qstate;
-            unique_ptr<CAN_Command> cmd2(can_command2.release());
-            qstate = gateway.sendCommand(i, cmd2);
-            assert(qstate == CommandQueue::QS_OK);
-
-        }
-    }
-
-    num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED] - num_skipped;
-
-    // fpus are now responding in parallel.
-    //
-    // As long as any fpus need to respond, wait for
-    // them to finish.
-    while ( (num_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
-    {
-        // as we do not effect any change on the grid,
-        // we need to wait for any response event,
-        // and filter out whether we are actually ready.
-        //state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
-
-        double max_wait_time = -1;
-        bool cancelled = false;
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state, max_wait_time, cancelled);
-
-        // get fresh count of pending fpus.
-        // The reason we add the unsent command is that
-        // the Tx thread might not have had opportunity
-        // to send all the commands.
-        num_pending = (grid_state.count_pending
-                       + grid_state.num_queued);
-
-    }
-
-    if (grid_state.interface_state != DS_CONNECTED)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions():  error DE_NO_CONNECTION, connection was lost\n",
-                    ethercanif::get_realtime());
-        return DE_NO_CONNECTION;
-    }
-
-
-    if (grid_state.count_timeout != old_count_timeout)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions(): error: DE_CAN_COMMAND_TIMEOUT_ERROR.\n",
-                    ethercanif::get_realtime());
-        return DE_CAN_COMMAND_TIMEOUT_ERROR;
-    }
-
-    if (old_count_can_overflow != grid_state.count_can_overflow)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getPositions(): error: firmware CAN buffer overflow.\n",
-                    ethercanif::get_realtime());
-        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
-    }
-
-
-
-    logGridState(config.logLevel, grid_state);
-
-    LOG_CONTROL(LOG_INFO, "%18.6f : getPositions(): positions were retrieved successfully.\n",
-                ethercanif::get_realtime());
-
-    return DE_OK;
-
-}
-
-
-
-E_EtherCANErrCode AsyncInterface::getCounterDeviationAsync(t_grid_state& grid_state,
-        E_GridState& state_summary, t_fpuset const &fpuset)
-{
-
-    // first, get current state of the grid
-    state_summary = gateway.getGridState(grid_state);
-    const unsigned long old_count_timeout = grid_state.count_timeout;
-    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
-
-    // check driver is connected
-    if (grid_state.interface_state != DS_CONNECTED)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error DE_NO_CONNECTION, connection was lost\n",
-                    ethercanif::get_realtime());
-        return DE_NO_CONNECTION;
-    }
-
-
-
-    int num_skipped = 0;
-    unique_ptr<GetErrorAlphaCommand> can_command1;
-    for (int i=0; i < config.num_fpus; i++)
-    {
-        // we exclude locked FPUs
-        if (! gateway.isLocked(i) )
-        {
-            if (!fpuset[i])
-            {
-                num_skipped++;
-                continue;
-            }
-            can_command1 = gateway.provideInstance<GetErrorAlphaCommand>();
-            assert(can_command1);
-            bool broadcast = false;
-            can_command1->parametrize(i, broadcast);
-            // send the command (the actual sending happens
-            // in the TX thread in the background).
-            CommandQueue::E_QueueState qstate;
-            unique_ptr<CAN_Command> cmd1(can_command1.release());
-            qstate = gateway.sendCommand(i, cmd1);
-            assert(qstate == CommandQueue::QS_OK);
-
-        }
-    }
-
-    // We do not expect the locked FPUs to respond.
-    // FIXME: This needs to be documented and checked
-    // with the firmware protocol.
-    int num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED] - num_skipped;
-
-    // fpus are now responding in parallel.
-    //
-    // As long as any fpus need to respond, wait for
-    // them to finish.
-    while ( (num_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
-    {
-        // as we do not effect any change on the grid,
-        // we need to wait for any response event,
-        // and filter out whether we are actually ready.
-
-        ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
-        double max_wait_time = -1;
-        bool cancelled = false;
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state, max_wait_time, cancelled);
-
-        // get fresh count of pending fpus.
-        // The reason we add the unsent command is that
-        // the Tx thread might not have had opportunity
-        // to send all the commands.
-        num_pending = (grid_state.count_pending + grid_state.num_queued);
-
-
-    }
-
-    if (grid_state.interface_state != DS_CONNECTED)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error DE_NO_CONNECTION, connection was lost\n",
-                    ethercanif::get_realtime());
-        return DE_NO_CONNECTION;
-    }
-
-    unique_ptr<GetErrorBetaCommand> can_command2;
-    for (int i=0; i < config.num_fpus; i++)
-    {
-        // we exclude locked FPUs
-        if (! gateway.isLocked(i) )
-        {
-            if (! fpuset[i])
-            {
-                // num_skipped was set above
-                continue;
-            }
-            can_command2 = gateway.provideInstance<GetErrorBetaCommand>();
-            assert(can_command2);
-            bool broadcast = false;
-            can_command2->parametrize(i, broadcast);
-            // send the command (the actual sending happens
-            // in the TX thread in the background).
-            CommandQueue::E_QueueState qstate;
-            unique_ptr<CAN_Command> cmd2(can_command2.release());
-            qstate = gateway.sendCommand(i, cmd2);
-            assert(qstate == CommandQueue::QS_OK);
-        }
-    }
-
-    num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED] - num_skipped;
-
-    // fpus are now responding in parallel.
-    //
-    // As long as any fpus need to respond, wait for
-    // them to finish.
-    while ( (num_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
-    {
-        // as we do not effect any change on the grid,
-        // we need to wait for any response event,
-        // and filter out whether we are actually ready.
-        //state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
-
-        double max_wait_time = -1;
-        bool cancelled = false;
-        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
-                                             grid_state, max_wait_time, cancelled);
-
-        // get fresh count of pending fpus.
-        // The reason we add the unsent command is that
-        // the Tx thread might not have had opportunity
-        // to send all the commands.
-        num_pending = (grid_state.count_pending
-                       + grid_state.num_queued);
-
-    }
-
-    if (grid_state.interface_state != DS_CONNECTED)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error: DE_NO_CONNECTION, connection was lost\n",
-                    ethercanif::get_realtime());
-        return DE_NO_CONNECTION;
-    }
-
-
-    if (grid_state.count_timeout != old_count_timeout)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error: DE_CAN_COMMAND_TIMEOUT_ERROR\n",
-                    ethercanif::get_realtime());
-
-        logGridState(config.logLevel, grid_state);
-
-        return DE_CAN_COMMAND_TIMEOUT_ERROR;
-    }
-
-    if (old_count_can_overflow != grid_state.count_can_overflow)
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : getCounterDeviations():  error: firmware CAN buffer overflow\n",
-                    ethercanif::get_realtime());
-
-        logGridState(config.logLevel, grid_state);
-        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
-    }
-
-
-
-    logGridState(config.logLevel, grid_state);
-
-    LOG_CONTROL(LOG_INFO, "%18.6f : getCounterDeviations(): retrieved counter deviations successfully\n",
-                ethercanif::get_realtime());
-    return DE_OK;
-
-}
 
 
 E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
