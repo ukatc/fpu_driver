@@ -955,7 +955,7 @@ class UnprotectedGridDriver (object):
 DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "/var/lib/fpudb")
 
 if DATABASE_FILE_NAME != "":
-    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=5e7)
+    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=(5*1024*1024*1024))
 else:
     env = None
 
