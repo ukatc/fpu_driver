@@ -4097,14 +4097,17 @@ better manoeuvrability at low speeds, there exist an alternative mode
 for waveform generation, with function parameters as follows:
 
 \begin{minted}{python}
-  fpu_commands.gen_wf(delta_alpha, delta_beta, mode='limacc', unit='degrees',
+  fpu_commands.gen_wf(delta_alpha, delta_beta,
+                     mode='limacc', unit='degrees',
                      max_acceleration_alpha=MOTOR_MAX_ACCELERATION,
                      max_deceleration_alpha=MOTOR_MAX_DECELERATION,
                      min_steps_alpha=STEPS_LOWER_LIMIT,
+                     min_stop_steps_alpha=None,
                      max_steps_alpha=STEPS_UPPER_LIMIT,
                      max_acceleration_beta=MOTOR_MAX_ACCELERATION,
                      max_deceleration_beta=MOTOR_MAX_DECELERATION,
                      min_steps_beta=STEPS_LOWER_LIMIT,
+                     min_stop_steps_beta=None,
                      max_steps_beta=STEPS_UPPER_LIMIT,
                      insert_rest_accelerate=True)
 \end{minted}
@@ -4114,6 +4117,35 @@ generation with constant acceleration. For each arm, one can pass the
 minimum and maximum acceleration as a parameter, in addition to the
 minimum and maximum speed. If the \texttt{unit} parameter is changed
 to \texttt{'steps'}, the argument is integer step count, not degree.
+
+If the parameters \texttt{min\_stop\_steps\_alpha} or
+\texttt{min\_stop\_steps\_beta} are not \texttt{None}, the will define
+the stopping speed, as long as the waveform is long enough to
+decelerate to that speed in the requested number of steps.
+
+If the alpha and beta parameters should be equal, a somewhat
+simpler signature can be used:
+
+\begin{minted}{python}
+  fpu_commands.gen_wf(delta_alpha, delta_beta,
+                     mode='limacc', unit='degrees',
+                     max_acceleration=MOTOR_MAX_ACCELERATION,
+                     max_deceleration=MOTOR_MAX_DECELERATION,
+                     min_steps=STEPS_LOWER_LIMIT,
+                     min_stop_steps=None,
+                     max_steps=STEPS_UPPER_LIMIT,
+                     insert_rest_accelerate=True)
+\end{minted}
+
+If these keywords are used, they apply unless the corresponding
+alpha/beta keyword is defined explicitly.
+
+If a stopping speed is defined which is smaller than the corresponding
+starting speed, and the requested number of steps or angles is small,
+the waveform may consist only consist of the deceleration stage, and
+start at a smaller speed than the starting speed.
+
+
 
 \index{gen\_wf()!jerk}
 \index{controlling jerk}
@@ -4640,6 +4672,12 @@ The EtherCAN interface documented here, version 1.3.2, is compatible with firmwa
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
+\subsection*{Changes in version 1.3.2}
+\begin{itemize}
+\item Added: to the \texttt{gen\_wf()} function in 'limited
+  acceleration' mode, an extra parameter was added which allows to
+  define a stopping speed which is different from the starting speed.
+\end{itemize}
 
 \subsection*{Changes in version 1.3.2}
 \begin{itemize}

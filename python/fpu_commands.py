@@ -154,6 +154,7 @@ def step_list_fast(nsteps, max_change=1.2,
 def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
                      max_deceleration=MOTOR_MAX_DECELERATION,
                      min_steps=STEPS_LOWER_LIMIT,
+                     min_stop_steps=STEPS_LOWER_LIMIT,
                      max_steps=STEPS_UPPER_LIMIT,
                      insert_rest_accelerate=True):
     
@@ -161,14 +162,17 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
     steps_accelerate = []
     steps_decelerate = []
 
-    new_speed = [min_steps, min_steps]
+    if min_stop_steps is None:
+        min_stop_steps = min_steps
+
+    new_speed = [min_steps, min_stop_steps]
     max_change = [max_acceleration, max_deceleration]
-    max_speed = [min_steps + max_acceleration, min_steps + max_deceleration]
+    max_speed = [min_steps + max_acceleration, min_stop_steps + max_deceleration]
     steps = [[],[]]
     ACC = 0
     DEC = 1
     while True:
-        if rest_steps < min_steps:
+        if rest_steps < min(min_steps, min_stop_steps):
             break
 
         if len(steps[ACC]) == 0:
@@ -192,7 +196,10 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
         
         # compute new speed from acceleration limit
         if len(steps[W]) == 0:
-            tent_new_speed = min_steps
+            if W == ACC:
+                tent_new_speed = min_steps
+            else:
+                tent_new_speed = min_stop_steps                
         else:
             tent_new_speed = new_speed[W] + max_change[W]
         # check for max speed limit
@@ -221,7 +228,11 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
         W = DEC
 
 
-    max_speed = min_steps
+    if W == ACC:
+        max_speed = min_steps
+    else:
+        max_speed = min_stop_steps
+        
     if len(steps[W]) > 0:
         max_speed = steps[W][-1]
         
@@ -262,20 +273,25 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
               max_acceleration_alpha=None,
               max_deceleration_alpha=None,
               min_steps_alpha=None,
+              min_stop_steps_alpha=None,
               max_steps_alpha=None,
               max_change_beta=None,
               max_acceleration_beta=None,
               max_deceleration_beta=None,
               min_steps_beta=None,
+              min_stop_steps_beta=None,
               max_steps_beta=None,
               max_change=1.2,
               max_acceleration=MOTOR_MAX_ACCELERATION,
               max_deceleration=MOTOR_MAX_DECELERATION,
               min_steps=STEPS_LOWER_LIMIT,
+              min_stop_steps=None,
               max_steps=STEPS_UPPER_LIMIT):
 
     if min_steps_alpha is None:
         min_steps_alpha = min_steps
+    if min_stop_steps_alpha is None:
+        min_stop_steps_alpha = min_stop_steps
     if max_steps_alpha is None:
         max_steps_alpha = max_steps
     if max_change_alpha is None:
@@ -287,6 +303,8 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
 
     if min_steps_beta is None:
         min_steps_beta = min_steps
+    if min_stop_steps_beta is None:
+        min_stop_steps_beta = min_stop_steps
     if max_steps_beta is None:
         max_steps_beta = max_steps
     if max_change_beta is None:
@@ -329,8 +347,15 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
                   for astep, bstep in zip(alist, blist) ]
         
     elif mode == 'fast':
-        alist = step_list_fast(asteps, max_change=max_change_alpha, min_steps=min_steps_alpha, max_steps=max_steps_alpha)
-        blist = step_list_fast(bsteps, max_change=max_change_beta, min_steps=min_steps_beta, max_steps=max_steps_beta)
+        alist = step_list_fast(asteps,
+                               max_change=max_change_alpha,
+                               min_steps=min_steps_alpha,
+                               max_steps=max_steps_alpha)
+        blist = step_list_fast(bsteps,
+                               max_change=max_change_beta,
+                               min_steps=min_steps_beta,
+                               max_steps=max_steps_beta)
+        
         max_len = max(len(alist), len(blist))
         alist = step_list_pad(alist, max_len)
         blist = step_list_pad(blist, max_len)
@@ -339,14 +364,18 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
                   for astep, bstep in zip(alist, blist) ]
     else:
         alist = step_list_limacc(asteps,
-                               max_acceleration=max_acceleration_alpha,
-                               max_deceleration=max_deceleration_alpha,
-                               min_steps=min_steps_alpha, max_steps=max_steps_alpha)
+                                 max_acceleration=max_acceleration_alpha,
+                                 max_deceleration=max_deceleration_alpha,
+                                 min_steps=min_steps_alpha,
+                                 min_stop_steps=min_stop_steps_alpha,
+                                 max_steps=max_steps_alpha)
         
         blist = step_list_limacc(bsteps,
-                               max_acceleration=max_acceleration_beta,
-                               max_deceleration=max_deceleration_beta,
-                               min_steps=min_steps_beta, max_steps=max_steps_beta)
+                                 max_acceleration=max_acceleration_beta,
+                                 max_deceleration=max_deceleration_beta,
+                                 min_steps=min_steps_beta,
+                                 min_stop_steps=min_stop_steps_beta,
+                                 max_steps=max_steps_beta)
 
         max_len = max(len(alist), len(blist))
         alist = step_list_pad(alist, max_len)
