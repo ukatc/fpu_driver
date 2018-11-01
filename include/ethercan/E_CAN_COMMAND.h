@@ -50,13 +50,13 @@ enum E_CAN_COMMAND
     CCMD_READ_REGISTER                    = 6, // read register - unused
     CCMD_PING_FPU                         = 7, // check connectivity
     CCMD_RESET_FPU                        = 8, // reset MCU
-    CCMD_FIND_DATUM                       = 9, // "automatic" datum search
+    CCMD_FIND_DATUM                       = 9, // datum search
     CCMD_RESET_STEPCOUNTER                = 10, // only for debugging
     CCMD_REPEAT_MOTION                    = 11, // re-use last waveform
     CCMD_REVERSE_MOTION                   = 12, // invert last waveform
     CCMD_ENABLE_BETA_COLLISION_PROTECTION = 13, // "ENABLE_COLLIDE"
     CCMD_FREE_BETA_COLLISION              = 14, // "FREE_COLLIDE"
-    CCMD_SET_USTEP_LEVEL                  = 15, // set stepper motorf232 micro-stepping level (1,2,4,8 supported)
+    CCMD_SET_USTEP_LEVEL                  = 15, // set stepper motor micro-stepping level (1,2,4,8 supported)
 
 #if (CAN_PROTOCOL_VERSION == 1)
     // the next two are combined in version 2
@@ -97,9 +97,9 @@ enum E_CAN_COMMAND
 #else
     CMSG_FINISHED_MOTION     = 25, // executeMotion finished
     CMSG_FINISHED_DATUM      = 26, // findDatum finished
-    CMSG_WARN_COLLISION_BETA = 27, // collision at beta arm
-    CMSG_WARN_LIMIT_ALPHA    = 28, // limit switch at alpha arm
-    CMSG_WARN_TIMEOUT_DATUM  = 29, // datum search time out
+    CMSG_WARN_COLLISION_BETA = 27, // collision detected at beta arm
+    CMSG_WARN_LIMIT_ALPHA    = 28, // limit switch breach detected at alpha arm
+    CMSG_WARN_TIMEOUT_DATUM  = 29, // datum search time-out
     CMSG_WARN_CANOVERFLOW    = 30, // CAN buffer overflow warning
 #endif
 
