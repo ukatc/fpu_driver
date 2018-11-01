@@ -75,6 +75,7 @@ void initialize_fpu(t_fpu_state &fpu)
     fpu.waveform_valid            = false;
     fpu.waveform_ready            = false;
     fpu.waveform_reversed         = false;
+    fpu.checksum_ok               = false;
     memset(&(fpu.firmware_version), 0, sizeof(fpu.firmware_version));
     memset(&(fpu.firmware_date), 0, sizeof(fpu.firmware_version));
     strcpy(fpu.serial_number,"@@@@@\0");

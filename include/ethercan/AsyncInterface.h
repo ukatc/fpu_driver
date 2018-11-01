@@ -66,6 +66,8 @@ public:
         log_repeat_count = 0;
 
         // initialize known firmware versions to zero
+	
+#pragma message("delete obsolete firmware version field")	
         memset(fpu_firmware_version, FIRMWARE_NOT_RETRIEVED, sizeof(fpu_firmware_version));
 
 #if CAN_PROTOCOL_VERSION == 1
@@ -112,6 +114,8 @@ public:
     E_EtherCANErrCode pingFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
+    
+    E_EtherCANErrCode resetStepCounterAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
             E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,
@@ -157,21 +161,47 @@ public:
 
     E_EtherCANErrCode enableBetaCollisionProtectionAsync(t_grid_state& grid_state,
             E_GridState& state_summary);
+    
+    E_EtherCANErrCode enableAlphaLimitProtectionAsync(t_grid_state& grid_state,
+						      E_GridState& state_summary);
 
     E_EtherCANErrCode freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
-            t_grid_state& grid_state,
-            E_GridState& state_summary);
+					     t_grid_state& grid_state,
+					     E_GridState& state_summary);
+
+    E_EtherCANErrCode freeAlphaLimitBreachAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
+					     t_grid_state& grid_state,
+					     E_GridState& state_summary);
+
+    E_EtherCANErrCode enableMoveAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
+				      t_grid_state& grid_state,
+				      E_GridState& state_summary);
+
 
     E_EtherCANErrCode setUStepLevelAsync(int ustep_level,
                                          t_grid_state& grid_state,
                                          E_GridState& state_summary,
                                          t_fpuset const &fpuset);
+    
+    E_EtherCANErrCode setStepsPersegmentAsync(int steps,
+					      t_grid_state& grid_state,
+					      E_GridState& state_summary,
+					      t_fpuset const &fpuset);
+    
+    E_EtherCANErrCode setTicksPerSegmentAsync(int ticks,
+					      t_grid_state& grid_state,
+					      E_GridState& state_summary,
+					      t_fpuset const &fpuset);
 
     E_EtherCANErrCode readRegisterAsync(uint16_t read_address,
                                         t_grid_state& grid_state,
                                         E_GridState& state_summary,
                                         t_fpuset const &fpuset);
 
+    E_EtherCANErrCode checkIntegrityAsync(t_grid_state& grid_state,
+					  E_GridState& state_summary,
+					  t_fpuset const &fpuset);
+    
 
     E_GridState getGridState(t_grid_state& out_state) const;
 

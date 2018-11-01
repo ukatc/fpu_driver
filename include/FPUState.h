@@ -141,6 +141,7 @@ typedef struct __attribute__((packed)) t_fpu_state
 
     unsigned int waveform_ready: 1; // FPU can execute waveform
     unsigned int waveform_reversed: 1; // false means anti-clockwise for positive step numbers
+    unsigned int checksum_ok : 1;   // integrity check did yield a valid checksum
 
 
 

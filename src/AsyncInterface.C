@@ -4211,6 +4211,61 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
     return DE_OK;
 }
 
+#pragma message "remove ignoring unused parameters"
+#pragma GCC diagnostic push
+#if CAN_PROTOCOL_VERION > 1
+#pragma GCC diagnostic warning "-Wunused-parameter"
+#else
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
+
+    E_EtherCANErrCode AsyncInterface::resetStepCounterAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset)
+    {
+	return DE_OK;
+    }
+
+
+
+    E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& grid_state,
+						      E_GridState& state_summary)
+    {
+	return DE_OK;
+    }
+
+    E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
+					     t_grid_state& grid_state,
+					     E_GridState& state_summary)
+    {
+	return DE_OK;
+    }
+
+    E_EtherCANErrCode AsyncInterface::setStepsPersegmentAsync(int steps,
+					      t_grid_state& grid_state,
+					      E_GridState& state_summary,
+					      t_fpuset const &fpuset)
+    {
+	return DE_OK;
+    }
+    
+    E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(int ticks,
+					      t_grid_state& grid_state,
+					      E_GridState& state_summary,
+					      t_fpuset const &fpuset)
+    {
+	return DE_OK;
+    }
+
+
+
+    E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
+					  E_GridState& state_summary,
+					  t_fpuset const &fpuset)
+    {
+	return DE_OK;
+    }
+
+
 
 }
 
