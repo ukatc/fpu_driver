@@ -3723,8 +3723,8 @@ E_EtherCANErrCode AsyncInterface::assureMinFirmwareVersion(const int req_fw_majo
 
     if (ecode != DE_OK)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: retrieving firmware version failed with error code %i\n",
-                    ethercanif::get_realtime(), ecode);
+        LOG_CONTROL(LOG_ERROR, "%18.6f : %s: error: retrieving firmware version failed with error code %i\n",
+                    ethercanif::get_realtime(), caller_name, ecode);
         return ecode;
     }
 
@@ -3750,7 +3750,7 @@ E_EtherCANErrCode AsyncInterface::assureMinFirmwareVersion(const int req_fw_majo
     return DE_OK;
 }
 
-// get minimum firmware version value, using cache when valid
+// get minimum firmware version value, using cache when valid, otherwise query FPUs
 E_EtherCANErrCode AsyncInterface::getMinFirmwareVersion(t_fpuset const &fpuset,
         uint8_t (&min_firmware_version)[3],
         int &min_firmware_fpu,
@@ -3796,9 +3796,9 @@ E_EtherCANErrCode AsyncInterface::getMinFirmwareVersion(t_fpuset const &fpuset,
 }
 
 void AsyncInterface::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
-        bool &was_retrieved,
-        uint8_t (&min_firmware_version)[3],
-        int &min_firmware_fpu) const
+						 bool &was_retrieved,
+						 uint8_t (&min_firmware_version)[3],
+						 int &min_firmware_fpu) const
 {
 
     min_firmware_fpu = 0;
@@ -3814,7 +3814,7 @@ void AsyncInterface::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
         }
 
         bool is_smaller = false;
-        for (int k=0; k <3; k++)
+        for (int k=0; k < 3; k++)
         {
             if (fpu_firmware_version[i][k] == FIRMWARE_NOT_RETRIEVED)
             {
@@ -3840,76 +3840,133 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
         t_fpuset const &fpuset)
 {
 
-    const int num_fields=6;
-    uint8_t response_buffer[MAX_NUM_POSITIONERS][num_fields];
-    memset(response_buffer, 0, sizeof(response_buffer));
-
-    E_EtherCANErrCode ecode;
-
-#if (CAN_PROTOCOL_VERSION > 1)
-    return DE_FIRMWARE_UNIMPLEMENTED;
-#endif
-
-    LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion(): reading firmware version with"
-                " address offset 0x%04x - make sure this matches the used firmwares\n",
-                ethercanif::get_realtime(), config.firmware_version_address_offset);
 
 
-    for (int k=0; k < num_fields; k++)
+    // first, get current state of the grid
+    state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
+
+    // check interface is connected
+    if (grid_state.interface_state != DS_CONNECTED)
     {
-        // for firmware version 1.4.4 and later, the firmware version
-        // is stored at a different address, requiring to configure the
-        // offset explicitly for different firmware versions
-        const int adr = config.firmware_version_address_offset + k;
-        ecode = readRegisterAsync(adr, grid_state, state_summary, fpuset);
-        if (ecode != DE_OK)
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getFirmwareVersion():  error DE_NO_CONNECTION, connection was lost\n",
+                    ethercanif::get_realtime());
+        return DE_NO_CONNECTION;
+    }
+
+
+
+    unique_ptr<GetFirmwareVersionCommand> can_command;
+    int num_pending = 0;
+    for (int i=0; i < config.num_fpus; i++)
+    {
+        // we exclude locked FPUs
+        if ((! gateway.isLocked(i) ) && fpuset[i])
         {
-            return ecode;
-        }
-        // copy data out of grid_state structure
-        for (int i=0; i < config.num_fpus; i++)
-        {
-            if (! fpuset[i])
-            {
-                continue;
-            }
-            if (grid_state.FPU_state[i].register_address != adr)
-            {
-                return DE_ASSERTION_FAILED;
-            }
-            response_buffer[i][k] = grid_state.FPU_state[i].register_value;
+            can_command = gateway.provideInstance<GetFirmwareVersionCommand>();
+            assert(can_command);
+            bool broadcast = false;
+            can_command->parametrize(i, broadcast);
+            // send the command (the actual sending happens
+            // in the TX thread in the background).
+            CommandQueue::E_QueueState qstate;
+            unique_ptr<CAN_Command> cmd(can_command.release());
+            qstate = gateway.sendCommand(i, cmd);
+            assert(qstate == CommandQueue::QS_OK);
+            num_pending++;
+
         }
     }
 
 
-    // copy results back to grid state structure
-    // (these results are *not* kept in the next call)
+    // fpus are now responding in parallel.
+    //
+    // As long as any fpus need to respond, wait for
+    // them to finish.
+    while ( (num_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
+    {
+        // as we do not effect any change on the grid,
+        // we need to wait for any response event,
+        // and filter out whether we are actually ready.
+
+        ///state_summary = gateway.waitForState(E_WaitTarget(TGT_TIMEOUT),
+        double max_wait_time = -1;
+        bool cancelled = false;
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state, max_wait_time, cancelled);
+
+        // get fresh count of pending fpus.
+        // The reason we add the unsent command is that
+        // the Tx thread might not have had opportunity
+        // to send all the commands.
+        num_pending = (grid_state.count_pending + grid_state.num_queued);
+
+
+    }
+
+    if (grid_state.interface_state != DS_CONNECTED)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getFirmwareVersion():  error DE_NO_CONNECTION, connection was lost\n",
+                    ethercanif::get_realtime());
+        return DE_NO_CONNECTION;
+    }
+
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getFirmwareVersion(): error: DE_CAN_COMMAND_TIMEOUT_ERROR.\n",
+                    ethercanif::get_realtime());
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+
+    if (old_count_can_overflow != grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : getFirmwareVersion(): error: firmware CAN buffer overflow.\n",
+                    ethercanif::get_realtime());
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+
+
+
+    // log result if in debug mode
+    if (config.logLevel >= LOG_INFO)
+    {
+        double log_time = ethercanif::get_realtime();
+        for(int i=0; i < config.num_fpus; i++)
+        {
+            LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion: FPU # %4i, retrieved firmware version = %i.%i.%i.\n",
+                        log_time, i, 
+			grid_state.FPU_state[i].firmware_version[0],
+			grid_state.FPU_state[i].firmware_version[1],
+			grid_state.FPU_state[i].firmware_version[2]);
+        }
+    }
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion(): values were retrieved successfully.\n",
+                ethercanif::get_realtime());
+
+
+    
+
+    // copy data from grid_state structure to internal cache.  This is
+    // done because the firmware version usually needs to be known
+    // before a command is executed, and we want to avoid duplicated
+    // state retrievals.
     for (int i=0; i < config.num_fpus; i++)
     {
-        if (! fpuset[i])
-        {
-            continue;
-        }
-
-        for (int k=0; k < num_fields; k++)
-        {
-            if (k < 3)
-            {
-                grid_state.FPU_state[i].firmware_version[k] = response_buffer[i][k];
-                fpu_firmware_version[i][k] = response_buffer[i][k];
-            }
-            else
-            {
-                grid_state.FPU_state[i].firmware_date[k-3] = response_buffer[i][k];
-            }
-        }
+	if (! fpuset[i])
+	{
+	    continue;
+	}
+	
+	memcpy(fpu_firmware_version[i],
+	       grid_state.FPU_state[i].firmware_version,
+	       sizeof(grid_state.FPU_state[i].firmware_version));
     }
 
     LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion(): retrieved firmware versions successfully\n",
                 ethercanif::get_realtime());
 
-    LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion(): WARNING: result values are not kept\n",
-                ethercanif::get_realtime());
     return DE_OK;
 
 }

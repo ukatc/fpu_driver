@@ -57,8 +57,6 @@ public:
        motion before the driver will give up. */
     const int MAX_CONFIG_MOTION_RETRIES = 5;
 
-    const uint8_t FIRMWARE_NOT_RETRIEVED = 0xff;
-
     explicit AsyncInterface(const EtherCANInterfaceConfig &config_vals)
         : config(config_vals), gateway(config_vals)
     {
@@ -67,7 +65,7 @@ public:
 
         // initialize known firmware versions to zero
 	
-#pragma message("delete obsolete firmware version field")	
+
         memset(fpu_firmware_version, FIRMWARE_NOT_RETRIEVED, sizeof(fpu_firmware_version));
 
 #if CAN_PROTOCOL_VERSION == 1
@@ -108,8 +106,6 @@ public:
 
 
     E_EtherCANErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
-
-    E_EtherCANErrCode getFirmwareVersionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode pingFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
@@ -162,6 +158,15 @@ public:
 
     E_EtherCANErrCode unlockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
 
+    // retrieve cached minimum firmware version
+    void getCachedMinFirmwareVersion(t_fpuset const &fpuset,
+                                     bool &was_retrieved,
+                                     uint8_t (&min_firmware_version)[3],
+                                     int &min_firmware_fpu) const;
+    
+    // retrieve minimum firmware version over the network
+    E_EtherCANErrCode getFirmwareVersionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
+    
     E_EtherCANErrCode enableBetaCollisionProtectionAsync(t_grid_state& grid_state,
             E_GridState& state_summary);
     
@@ -266,13 +271,7 @@ protected:
                                             int &min_firmware_fpu,
                                             t_grid_state& grid_state,
                                             E_GridState& state_summary);
-
-    // retrieve cached minimum firmware version from grid
-    void getCachedMinFirmwareVersion(t_fpuset const &fpuset,
-                                     bool &was_retrieved,
-                                     uint8_t (&min_firmware_version)[3],
-                                     int &min_firmware_fpu) const;
-
+    
     E_EtherCANErrCode readSerialNumbersAsync(t_grid_state& grid_state,
             E_GridState& state_summary, t_fpuset const &fpuset);
 
@@ -282,8 +281,10 @@ protected:
 private:
 
     int num_gateways;
-    // firmware version of each FPU, this is a work-around for protocol 1
+    
+    // cached firmware version of each FPU
     uint8_t fpu_firmware_version[MAX_NUM_POSITIONERS][3];
+    
     GatewayInterface gateway;
 #if CAN_PROTOCOL_VERSION == 1
     E_DATUM_SELECTION last_datum_arm_selection;

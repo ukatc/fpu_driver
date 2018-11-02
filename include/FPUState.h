@@ -75,6 +75,9 @@ typedef struct __attribute__((packed)) tout_entry
 // length of serial number string in state structure
 const int LEN_SERIAL_NUMBER = (ethercanif::DIGITS_SERIAL_NUMBER + 1);
 
+const uint8_t FIRMWARE_NOT_RETRIEVED = 0xff;
+
+
 typedef struct __attribute__((packed)) t_fpu_state
 {
     // time when any running command is considered timed out
