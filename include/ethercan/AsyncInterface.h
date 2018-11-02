@@ -252,12 +252,22 @@ protected:
 
     int countMoving(const t_grid_state &grid_state, t_fpuset const &fpuset) const;
 
+    // make sure we have a certain minimum firmware version
+    E_EtherCANErrCode assureMinFirmwareVersion(const int req_fw_major,
+					       const int req_fw_minor,
+					       const int req_fw_patch,
+					       const char* caller_name,
+					       t_fpuset const &fpuset,
+					       t_grid_state& grid_state);
+
+    // retrieve minimum firmware version
     E_EtherCANErrCode getMinFirmwareVersion(t_fpuset const &fpuset,
                                             uint8_t (&min_firmware_version)[3],
                                             int &min_firmware_fpu,
                                             t_grid_state& grid_state,
                                             E_GridState& state_summary);
 
+    // retrieve cached minimum firmware version from grid
     void getCachedMinFirmwareVersion(t_fpuset const &fpuset,
                                      bool &was_retrieved,
                                      uint8_t (&min_firmware_version)[3],

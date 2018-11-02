@@ -496,38 +496,10 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     }
 
 
-
-    uint8_t min_firmware_version[3];
-    int min_firmware_fpu;
-	
-    E_EtherCANErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
-
+    E_EtherCANErrCode ecode = assureMinFirmwareVersion(2, 0, 0, "findDatum()", fpuset, grid_state);
     if (ecode != DE_OK)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: retrieving firmware version failed with error code %i\n",
-                    ethercanif::get_realtime(), ecode);
-        return ecode;
-    }
-
-
-    {
-        const int req_fw_major = 2;
-        int req_fw_minor = 0;
-        int req_fw_patch = 0;
-        if ( (min_firmware_version[0] < req_fw_major)
-	     || ( (min_firmware_version[0] == req_fw_major) && (min_firmware_version[1] < req_fw_minor))
-	     || ( (min_firmware_version[0] == req_fw_major) && (min_firmware_version[1] == req_fw_minor) && (min_firmware_version[2] < req_fw_patch)))
-        {
-            // the firmware does not implement what we need
-            LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: DE_FIRMWARE_UNIMPLEMENTED"
-                        " command requires firmware version >= %i.%i.%i,"
-                        " version %i.%i.%i found in FPU %i\n",
-                        ethercanif::get_realtime(),
-                        req_fw_major, req_fw_minor, req_fw_patch,
-                        min_firmware_version[0], min_firmware_version[1], min_firmware_version[2], min_firmware_fpu);
-            return DE_FIRMWARE_UNIMPLEMENTED;
-        }
-
+	return ecode;
     }
 
     // now, get current state and time-out count of the grid
@@ -3732,6 +3704,50 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
 
     return DE_OK;
 
+}
+
+// get minimum firmware version value, using cache when valid
+E_EtherCANErrCode AsyncInterface::assureMinFirmwareVersion(const int req_fw_major,
+							   const int req_fw_minor,
+							   const int req_fw_patch,
+							   const char* caller_name,
+							   t_fpuset const &fpuset,
+							   t_grid_state& grid_state)
+{
+
+    E_GridState state_summary;
+    uint8_t min_firmware_version[3];
+    int min_firmware_fpu;
+	
+    E_EtherCANErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
+
+    if (ecode != DE_OK)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: retrieving firmware version failed with error code %i\n",
+                    ethercanif::get_realtime(), ecode);
+        return ecode;
+    }
+
+
+    {
+        if ( (min_firmware_version[0] < req_fw_major)
+	     || ( (min_firmware_version[0] == req_fw_major) && (min_firmware_version[1] < req_fw_minor))
+	     || ( (min_firmware_version[0] == req_fw_major) && (min_firmware_version[1] == req_fw_minor)
+		  && (min_firmware_version[2] < req_fw_patch)))
+        {
+            // the firmware does not implement what we need
+            LOG_CONTROL(LOG_ERROR, "%18.6f : %s: error: DE_FIRMWARE_UNIMPLEMENTED"
+                        " command requires firmware version >= %i.%i.%i,"
+                        " version %i.%i.%i found in FPU %i\n",
+                        ethercanif::get_realtime(), caller_name,
+                        req_fw_major, req_fw_minor, req_fw_patch,
+                        min_firmware_version[0], min_firmware_version[1], min_firmware_version[2], min_firmware_fpu);
+            return DE_FIRMWARE_UNIMPLEMENTED;
+        }
+
+    }
+
+    return DE_OK;
 }
 
 // get minimum firmware version value, using cache when valid
