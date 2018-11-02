@@ -134,7 +134,6 @@ public:
                                         E_GridState& state_summary,
                                         const t_wtable& waveforms,
                                         t_fpuset const &fpuset,
-                                        bool soft_protection=true,
                                         bool allow_uninitialized=false,
                                         int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
 
@@ -155,6 +154,10 @@ public:
                                        E_GridState& state_summary,
                                        t_fpuset const &fpuset);
 
+    E_EtherCANErrCode enableMoveAsync(int fpu_id,
+				      t_grid_state& grid_state,
+				      E_GridState& state_summary);
+    
     E_EtherCANErrCode lockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
 
     E_EtherCANErrCode unlockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);

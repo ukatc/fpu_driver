@@ -420,7 +420,6 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     }
 
     bool contains_auto=false;
-    bool contains_anti_clockwise=false;
     bool timeouts_disabled = (timeout_flag == DATUM_TIMEOUT_DISABLE);
 
     // if present, copy direction hint
@@ -468,7 +467,6 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
             as_string = "'clockwise'";
             break;
         case SEARCH_ANTI_CLOCKWISE:
-            contains_anti_clockwise=true;
             as_string = "'anti-clockwise'";
             break;
 
@@ -498,53 +496,24 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     }
 
 
-    // We need a version check if the beta arm is moved
-    // anti-clockwise or automatically.
-    bool fw_version_check_needed = (((arm_selection == DASEL_BOTH)
-                                     || (arm_selection == DASEL_BETA))
-                                    && (contains_auto
-                                        || contains_anti_clockwise));
 
-    // We also need a version check if the beta arm
-    // is not moved, because earlier firmware versions would
-    // move it anyway, ignoring the instruction.
-
-    fw_version_check_needed |= ((arm_selection == DASEL_ALPHA)
-                                || (arm_selection == DASEL_NONE));
-
-    // capability to disable time-outs is for firmware versions >= 1.4.3
-    fw_version_check_needed |= timeouts_disabled;
-
-    uint8_t min_firmware_version[3] = {0,0,0};
-    int min_firmware_fpu = -1;
-
+    uint8_t min_firmware_version[3];
+    int min_firmware_fpu;
+	
     E_EtherCANErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
-
-    if (fw_version_check_needed)
+    if (ecode != DE_OK)
     {
-        const int req_fw_major = 1;
+        LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: retrieving firmware version failed with error code %i\n",
+                    ethercanif::get_realtime(), ecode);
+        return ecode;
+    }
+
+
+    {
+        const int req_fw_major = 2;
         int req_fw_minor = 0;
         int req_fw_patch = 0;
-        // The following checks need to be in ascending order,
-        // so that the maximum is found.
-        if ((arm_selection == DASEL_ALPHA) || (arm_selection == DASEL_NONE))
-        {
-            req_fw_minor = 1;
-        }
-        if (contains_anti_clockwise)
-        {
-            req_fw_minor = 2;
-        }
-        else if (contains_auto)
-        {
-            req_fw_minor = 2;
-        }
-        if (timeouts_disabled)
-        {
-            req_fw_minor = 4;
-            req_fw_patch = 3;
-        }
         if ( (min_firmware_version[0] < req_fw_major)
                 || (min_firmware_version[1] < req_fw_minor)
                 || (min_firmware_version[2] < req_fw_patch))
@@ -588,11 +557,15 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
         return DE_INVALID_PAR_VALUE;
     }
 
+    // In difference to protocol v1, the ping here is not needed any
+    // more for position information.  However, we need to be sure we
+    // have a working connection, because the datum command might
+    // assume synchronous movement of multiple FPUs.
     ecode = pingFPUsAsync(grid_state, state_summary, fpuset);
 
     if (ecode != DE_OK)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : ping failed, aborting findDatum()operation \n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : ping failed, aborting findDatum() operation \n",
                     ethercanif::get_realtime());
         return ecode;
     }
@@ -740,6 +713,8 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
 }
 
 
+// helper function which limits amount of logging during wait for
+// command termination
 bool p_repeat_log(unsigned int &log_repeat_count)
 {
     unsigned int lrc = log_repeat_count++;
@@ -931,7 +906,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
     {
         // Check if command moved both arms without instruction.
         //
-        // In this case, we have firmware 1.0 on some FPUs, which will
+        // In this case, we have obsolete firmware 1.0 on some FPUs, which will
         // trigger a warning because unexpected moves can break the
         // beta arm.
         bool move_alpha = (last_datum_arm_selection == DASEL_BOTH) || (last_datum_arm_selection == DASEL_ALPHA);
@@ -1704,7 +1679,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         const t_wtable& waveforms,
         t_fpuset const &fpuset,
-        bool soft_protection,
         bool allow_uninitialized,
         int ruleset_version)
 {
@@ -1730,7 +1704,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     // and all have been initialized
     for (int i=0; i < config.num_fpus; i++)
     {
-        if (soft_protection)
         {
             E_FPU_STATE fpu_status = grid_state.FPU_state[i].state;
             if (fpu_status == FPST_OBSTACLE_ERROR)
@@ -1740,7 +1713,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                             ethercanif::get_realtime(), i);
                 return DE_UNRESOLVED_COLLISION;
             }
-            // This isn't enforced in protocol version 1,
+            // This wasn't enforced in protocol version 1,
             // because we do not have an enableMove command.
             // In protocol version 2, the user has to issue
             // enableMove first.
@@ -1828,13 +1801,14 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
         if (vwecode != DE_OK)
         {
+	    // validity check failed
             return vwecode;
         }
 
     }
 
 
-    // check interface is connected
+    // assure that interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_NO_CONNECTION - no connection present\n",
@@ -1856,6 +1830,10 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     int retry_downcount = 5;
     int alpha_cur[MAX_NUM_POSITIONERS];
     int beta_cur[MAX_NUM_POSITIONERS];
+    int confirmation_period = ((config.configmotion_confirmation_period <= 0)
+			       ? 1 :
+			       config.configmotion_confirmation_period);
+    
     while (step_index < num_steps)
     {
         const bool first_entry = (step_index == 0);
@@ -1863,7 +1841,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         const bool request_confirmation = (first_entry
                                            || last_entry
                                            || confirm_each_step
-                                           || ((step_index % 4) == 0));
+                                           || ((step_index % confirmation_period) == 0));
 
         if (first_entry)
         {
@@ -2005,7 +1983,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         step_index++;
     }
 
-    // seems not to work reliably with current firmware
+    // FIXME: did not to work reliably with v1 firmware - check
     if (grid_state.count_timeout != old_count_timeout)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN command timed out\n",
@@ -2055,6 +2033,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 }
 
 #if 0
+// TODO: this method is currently implemented in Python, so that input
+// can be passed through the software protection layer.
 E_EtherCANErrCode AsyncInterface::configPathsAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         const t_wtable& waveforms,
@@ -2119,7 +2099,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
     bool use_broadcast = true; // flag whether we can use a fast broadcast command
 
     /* check all FPUs in READY_* state have valid waveforms
-       This check intends to make sure that even in protocol version 1,
+       This check intends to make sure that
        waveforms are not used when they have been involved
        in collision or abort. */
     for (int i=0; i < config.num_fpus; i++)
@@ -2155,17 +2135,18 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
         return DE_NO_MOVABLE_FPUS;
     }
 
-    // acquire real-time priority so that consecutive broadcasts to
+    // Optionally, acquire real-time priority so that consecutive broadcasts to
     // the different gateways are really sent in the same few
-    // milliseconds.  (A lag of more than 10 - 20 milliseconds, for
-    // example caused by low memory conditions and swapping, could
-    // otherwise lead to collisions.)
+    // milliseconds. This is not needed if the EtherCAN gateway
+    // sync mechanism is used, which synchronises the executeMotion
+    // broadcast command by wire. (It might be needed if we move only
+    // a selection of FPUs, as we can't use broadcast in this case).
     if (USE_REALTIME_SCHEDULING)
     {
         set_rt_priority(CONTROL_PRIORITY);
     }
 
-    // FIXME: This is preliminary for use in the verificaiton
+    // FIXME: This is preliminary for use in the verification
     // system. In the ICS interface, this needs to be changed to use the
     // gateway SYNC message to make sure that FPUs move with minimum
     // lag in respect to each other.
@@ -2180,12 +2161,12 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
     }
     else
     {
-        // send individual commands to FPUs which are not masked out
+        // send individual commands to FPUs which are not masked out or locked
         unique_ptr<ExecuteMotionCommand> can_command;
 
         for (int i=0; i < config.num_fpus; i++)
         {
-            if (fpuset[i])
+            if (fpuset[i] && (grid_state.FPU_state[i].state != FPST_LOCKED))
             {
                 can_command = gateway.provideInstance<ExecuteMotionCommand>();
 
@@ -2197,7 +2178,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
     }
 
     // Give up real-time priority (this is important when the caller
-    // thread later enters, for example, an endless loop).
+    // thread later enters, for example, a buggy endless loop).
     if (USE_REALTIME_SCHEDULING)
     {
         unset_rt_priority();
@@ -2214,7 +2195,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
 
 }
 
-// counts the number of FPUs which will move with the given fpuset mask
+// counts the number of FPUs which are moving or will move with the given fpuset mask
 int AsyncInterface::countMoving(const t_grid_state &grid_state, t_fpuset const &fpuset) const
 {
     int num_moving = (grid_state.Counts[FPST_MOVING]
@@ -2311,6 +2292,8 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
             {
                 if (fpu.beta_collision)
                 {
+		    // new refers to that this is an event, not a state. We know the collision
+		    // is new because otherwise, the movement wouldn't have been allowed.
                     LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: DE_NEW_COLLISION detected for FPU %i.\n",
                                 ethercanif::get_realtime(), i);
                     logGridState(config.logLevel, grid_state);
@@ -2331,7 +2314,7 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
 
             // step timing errors cause an FPU to change to ABORTED
             // state. To avoid confusion, a more specific error code is
-            // returned.
+            // returned, even if it is not reflected in the enumerated state.
             if (fpu.step_timing_errcount != previous_grid_state.FPU_state[i].step_timing_errcount)
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: DE_STEP_TIMING_ERROR detected for FPU %i.\n",
@@ -2462,14 +2445,14 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
         {
             logGridState(config.logLevel, grid_state);
 
-            LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_SRILL_BUSY, FPU %i is still moving\n",
+            LOG_CONTROL(LOG_ERROR, "%18.6f : repeatMotion():  error DE_STILL_BUSY, FPU %i is still moving\n",
                         ethercanif::get_realtime(), i);
             return DE_STILL_BUSY;
         }
     }
 
     /* check some FPUs in READY_* or RESTING state have valid waveforms
-       This check intends to make sure that even in protocol version 1,
+       This check intends to make sure that
        waveforms are not used when they have been involved
        in collision or abort. */
     int count_movable = 0;
@@ -2527,14 +2510,16 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
     }
 
 #if 0
-    // in Protocol version 1, we need to send a ping
+    // in early Protocol 1 versions, we needed to send a ping
     // because reverseMotion and repeatMotion do not
     // get a response.
     return pingFPUsAsync(grid_state, state_summary);
-#else
+#endif
 
     // wait until all generated messages have been responded to
     // or have timed out.
+    // Keep in mind this command does not starts a new movement -
+    // it only re-prepares the waveform table in the FPUs.
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
         double max_wait_time = -1;
@@ -2545,7 +2530,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
         cnt_pending = (grid_state.count_pending
                        + grid_state.num_queued);
     }
-#endif
+
 
     if (grid_state.interface_state != DS_CONNECTED)
     {
@@ -2695,15 +2680,16 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
     }
 
 #if 0
-    // in Protocol version 1, we need to send a ping
+    // in Protocol version 1, we needed to send a ping
     // because reverseMotion and repeatMotion do not
     // get a response.
     return pingFPUsAsync(grid_state, state_summary, fpuset);
-#else
+#endif
 
 
     // wait until all generated messages have been responded to
-    // or have timed out.
+    // or have timed out. Note this does not starts a movement,
+    // it only reverses the waveform tables logically.
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
         double max_wait_time = -1;
@@ -2714,7 +2700,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
         cnt_pending = (grid_state.count_pending
                        + grid_state.num_queued);
     }
-#endif
+    
 
     if (grid_state.interface_state != DS_CONNECTED)
     {
@@ -2761,6 +2747,9 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
         t_fpuset const &fpuset)
 {
 
+    // NOTE: This command runs its first part without keeping
+    // the command mutex, this enables it to interrupt
+    // and preempt ongoing movements.
 
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
@@ -2828,6 +2817,7 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
     }
 
     // lock command mutex during waiting time for completion.
+    // This prevents other commands from starting.
     pthread_mutex_lock(&command_mutex);
 
 
@@ -2919,6 +2909,8 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
         return DE_NO_CONNECTION;
     }
 
+#pragma message("FIXME: implement FPU locking")
+    
     if (grid_state.count_timeout != old_count_timeout)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
@@ -2932,7 +2924,6 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-
 
 
     logGridState(config.logLevel, grid_state);
@@ -2966,6 +2957,8 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
         return DE_NO_CONNECTION;
     }
 
+#pragma message("FIXME: implement FPU locking")
+    
     if (grid_state.count_timeout != old_count_timeout)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
@@ -3010,6 +3003,9 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
 
 
     // All fpus which are not moving are pinged.
+    
+    // (we avoid bothering moving FPUs, they are resource-constrained
+    // and this could trigger malfunction)
 
     int cnt_pending = 0;
     unique_ptr<PingFPUCommand> can_command;
@@ -3018,13 +3014,15 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
         // we exclude moving FPUs, but include FPUs which are
         // searching datum.
-        if ((fpu_state.state != FPST_MOVING) && fpuset[i])
+        if (( ! ((fpu_state.state == FPST_DATUM_SEARCH)
+		 || (fpu_state.state == FPST_MOVING))) && fpuset[i])
         {
 
-            // We use a non-broadcast instance. The advantage of
-            // this is that he CAN protocol is able to reliably
-            // detect whether this command was received - for
-            // a broadcast command, this is not absolutely sure.
+            // We use a non-broadcast command instance. The advantage
+            // of this is that he CAN protocol is able to reliably
+            // detect whether this command was received - for a
+            // broadcast command, this is not absolutely sure,
+	    // only one CAN receiver sends a confirmation.
             bool broadcast = false;
             can_command = gateway.provideInstance<PingFPUCommand>();
 
@@ -3073,7 +3071,6 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-
 
 
 
@@ -4210,6 +4207,115 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
 
     return DE_OK;
 }
+
+    E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
+				      t_grid_state& grid_state,
+				      E_GridState& state_summary)
+    {
+	// first, get current state and time-out count of the grid
+	state_summary = gateway.getGridState(grid_state);
+
+	const unsigned long old_count_timeout = grid_state.count_timeout;
+	const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
+
+	// check interface is connected
+	if (grid_state.interface_state != DS_CONNECTED)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : enableMove():  error DE_NO_CONNECTION, connection was lost\n",
+			ethercanif::get_realtime());
+	    return DE_NO_CONNECTION;
+	}
+
+	if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+	{
+	    // the FPU id is out of range
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : enableMove():  error DE_INVALID_FPU_ID, FPU id out of range\n",
+			ethercanif::get_realtime());
+	    return DE_INVALID_FPU_ID;
+	}
+
+
+	// make sure no FPU is moving or finding datum
+	bool recoveryok=true;
+	for (int i=0; i < config.num_fpus; i++)
+	{
+	    t_fpu_state& fpu_state = grid_state.FPU_state[i];
+	    // we exclude moving FPUs and FPUs which are
+	    // searching datum.
+	    if ( (fpu_state.state == FPST_MOVING)
+		 && (fpu_state.state == FPST_DATUM_SEARCH))
+	    {
+		recoveryok = false;
+	    }
+	}
+
+	if (! recoveryok)
+	{
+	    // We do not allow recovery when there are any moving FPUs.  (In
+	    // that case, the user should send an abortMotion command
+	    // first.)
+
+	    logGridState(config.logLevel, grid_state);
+
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : enableMove():  error DE_STILL_BUSY, "
+			"some FPUs are still moving, if needed send abortMotion() first()\n",
+			ethercanif::get_realtime());
+	    return DE_STILL_BUSY;
+	}
+
+
+	unique_ptr<EnableMoveCommand> can_command;
+	can_command = gateway.provideInstance<EnableMoveCommand>();
+	const bool broadcast = false;
+	can_command->parametrize(fpu_id, broadcast);
+	unique_ptr<CAN_Command> cmd(can_command.release());
+	gateway.sendCommand(fpu_id, cmd);
+
+
+	int cnt_pending = 1;
+
+	while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
+	{
+	    double max_wait_time = -1;
+	    bool cancelled = false;
+	    state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+						 grid_state, max_wait_time, cancelled);
+
+	    cnt_pending = (grid_state.count_pending
+			   + grid_state.num_queued);
+	}
+
+	if (grid_state.interface_state != DS_CONNECTED)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : enableMove():  error DE_NO_CONNECTION, connection was lost\n",
+			ethercanif::get_realtime());
+	    return DE_NO_CONNECTION;
+	}
+
+	if (grid_state.count_timeout != old_count_timeout)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : enableMove():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+			ethercanif::get_realtime());
+	    return DE_CAN_COMMAND_TIMEOUT_ERROR;
+	}
+
+	if (old_count_can_overflow != grid_state.count_can_overflow)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : enableMove():  error: firmware CAN buffer overflow\n",
+			ethercanif::get_realtime());
+	    return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+	}
+
+
+
+	logGridState(config.logLevel, grid_state);
+
+	LOG_CONTROL(LOG_INFO, "%18.6f : enableMove(): command successfully sent to FPU %i\n",
+		    ethercanif::get_realtime(), fpu_id);
+
+	return DE_OK;
+    }
+
 
 #pragma message "remove ignoring unused parameters"
 #pragma GCC diagnostic push

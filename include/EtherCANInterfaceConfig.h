@@ -69,6 +69,7 @@ public:
     bool confirm_each_step; // request confirmation for each waveform step
 
     int firmware_version_address_offset;
+    int configmotion_confirmation_period;
 
     EtherCANInterfaceConfig()
         : logLevel(LOG_TRACE_CAN_MESSAGES)
@@ -83,6 +84,7 @@ public:
 
         waveform_upload_pause_us = 50000;
         confirm_each_step = true;
+	configmotion_confirmation_period = 25;
 
         firmware_version_address_offset = 0x61; // new offset for v1.3.0, matching firmware version 1.4.4
 

@@ -123,7 +123,6 @@ public:
     E_EtherCANErrCode configMotion(const t_wtable& waveforms,
                                    t_grid_state& grid_state,
                                    t_fpuset const &fpuset,
-                                   bool soft_protection=true,
                                    bool allow_uninitialized=false,
                                    int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
 
