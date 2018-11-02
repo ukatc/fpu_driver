@@ -190,13 +190,17 @@ public:
                                          t_grid_state& grid_state,
                                          E_GridState& state_summary,
                                          t_fpuset const &fpuset);
-    
-    E_EtherCANErrCode setStepsPersegmentAsync(int steps,
+
+    // set minimum and maximum number of steps per waveform segment
+    // (the upper value is ignored for now)
+    E_EtherCANErrCode setStepsPersegmentAsync(int minsteps,
+					      int maxsteps,
 					      t_grid_state& grid_state,
 					      E_GridState& state_summary,
 					      t_fpuset const &fpuset);
-    
-    E_EtherCANErrCode setTicksPerSegmentAsync(int ticks,
+
+    // set number of 100ns clock ticks per waveform segment
+    E_EtherCANErrCode setTicksPerSegmentAsync(unsigned long ticks,
 					      t_grid_state& grid_state,
 					      E_GridState& state_summary,
 					      t_fpuset const &fpuset);

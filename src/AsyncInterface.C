@@ -4419,20 +4419,238 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
 	return DE_OK;
     }
 
-    E_EtherCANErrCode AsyncInterface::setStepsPersegmentAsync(int steps,
-					      t_grid_state& grid_state,
-					      E_GridState& state_summary,
-					      t_fpuset const &fpuset)
+    E_EtherCANErrCode AsyncInterface::setStepsPersegmentAsync(int minsteps,
+							      int maxsteps,
+							      t_grid_state& grid_state,
+							      E_GridState& state_summary,
+							      t_fpuset const &fpuset)
     {
+	// first, get current state and time-out count of the grid
+	state_summary = gateway.getGridState(grid_state);
+
+	const unsigned long old_count_timeout = grid_state.count_timeout;
+	const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
+
+	// check interface is connected
+	if (grid_state.interface_state != DS_CONNECTED)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : setStepsPerSegment():  error DE_NO_CONNECTION, connection was lost\n",
+			ethercanif::get_realtime());
+	    return DE_NO_CONNECTION;
+	}
+
+	if ( (minsteps <= 0) || (minsteps > maxsteps) || (maxsteps > 5000))
+	{
+	    // value is not allowed
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : setStepsPerSegment():  error DE_INVALID_PAR_VALUE, value %i .. %i not allowed\n",
+			ethercanif::get_realtime(), minsteps, maxsteps);
+	    return DE_INVALID_PAR_VALUE;
+	}
+
+
+	for (int i=0; i < config.num_fpus; i++)
+	{
+	    t_fpu_state& fpu_state = grid_state.FPU_state[i];
+	    // we exclude moving FPUs and FPUs which are
+	    // searching datum.
+	    if ( fpu_state.state != FPST_UNINITIALIZED)
+	    {
+		// FPU state does not allows command
+		LOG_CONTROL(LOG_ERROR, "%18.6f : setStepsPerSegment():  error DE_INVALID_FPU_STATE, all FPUs "
+			    "need to be in state FPST_UNINITIALIZED\n",
+			    ethercanif::get_realtime());
+		return DE_INVALID_FPU_STATE;
+	    }
+	}
+
+
+	int cnt_pending = 0;
+	unique_ptr<SetStepsPerSegmentCommand> can_command;
+	for (int i=0; i < config.num_fpus; i++)
+	{
+	    if (!fpuset[i])
+	    {
+		continue;
+	    }
+	    // We use a non-broadcast instance. The advantage of
+	    // this is that the CAN protocol is able to reliably
+	    // detect whether this command was received - for
+	    // a broadcast command, this is not absolutely sure.
+	    bool broadcast = false;
+	    can_command = gateway.provideInstance<SetStepsPerSegmentCommand>();
+
+	    can_command->parametrize(i, minsteps, maxsteps, broadcast);
+	    unique_ptr<CAN_Command> cmd(can_command.release());
+	    gateway.sendCommand(i, cmd);
+	    cnt_pending++;
+	}
+
+	// wait until all generated commands have been responded to
+	// or have timed out.
+	while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
+	{
+	    double max_wait_time = -1;
+	    bool cancelled = false;
+	    state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+						 grid_state, max_wait_time, cancelled);
+
+	    if (grid_state.interface_state != DS_CONNECTED)
+	    {
+		LOG_CONTROL(LOG_ERROR, "%18.6f : setStepsPerSegment():  error DE_NO_CONNECTION, connection was lost\n",
+			    ethercanif::get_realtime());
+		return DE_NO_CONNECTION;
+	    }
+
+	    cnt_pending = (grid_state.count_pending
+			   + grid_state.num_queued);
+	}
+
+	if (grid_state.count_timeout != old_count_timeout)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : setStepsPerSegment():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+			ethercanif::get_realtime());
+
+	    logGridState(config.logLevel, grid_state);
+
+	    return DE_CAN_COMMAND_TIMEOUT_ERROR;
+	}
+
+	if (old_count_can_overflow != grid_state.count_can_overflow)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : setStepsPerSegment():  error: firmware CAN buffer overflow\n",
+			ethercanif::get_realtime());
+
+	    logGridState(config.logLevel, grid_state);
+
+	    return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+	}
+
+
+
+	logGridState(config.logLevel, grid_state);
+
+	LOG_CONTROL(LOG_INFO, "%18.6f : setStepsPerSegment(): command successfully sent, steps per segment set to %i .. %i\n",
+		    ethercanif::get_realtime(), minsteps, maxsteps);
+
 	return DE_OK;
+       
     }
     
-    E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(int ticks,
+    E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
+							      long ticks,
 					      t_grid_state& grid_state,
 					      E_GridState& state_summary,
 					      t_fpuset const &fpuset)
     {
+	// first, get current state and time-out count of the grid
+	state_summary = gateway.getGridState(grid_state);
+
+	const unsigned long old_count_timeout = grid_state.count_timeout;
+	const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
+
+	// check interface is connected
+	if (grid_state.interface_state != DS_CONNECTED)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : setTicksPerSegment():  error DE_NO_CONNECTION, connection was lost\n",
+			ethercanif::get_realtime());
+	    return DE_NO_CONNECTION;
+	}
+
+	if ( (ticks <= 1000) || (ticks > 1e10))
+	{
+	    // value is not allowed
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : setTicksPerSegment():  error DE_INVALID_PAR_VALUE, value %lu  not allowed\n",
+			ethercanif::get_realtime(), ticks);
+	    return DE_INVALID_PAR_VALUE;
+	}
+
+
+	for (int i=0; i < config.num_fpus; i++)
+	{
+	    t_fpu_state& fpu_state = grid_state.FPU_state[i];
+	    // we exclude moving FPUs and FPUs which are
+	    // searching datum.
+	    if ( fpu_state.state != FPST_UNINITIALIZED)
+	    {
+		// FPU state does not allows command
+		LOG_CONTROL(LOG_ERROR, "%18.6f : setTicksPerSegment():  error DE_INVALID_FPU_STATE, all FPUs "
+			    "need to be in state FPST_UNINITIALIZED\n",
+			    ethercanif::get_realtime());
+		return DE_INVALID_FPU_STATE;
+	    }
+	}
+
+
+	int cnt_pending = 0;
+	unique_ptr<SetTicksPerSegmentCommand> can_command;
+	for (int i=0; i < config.num_fpus; i++)
+	{
+	    if (!fpuset[i])
+	    {
+		continue;
+	    }
+	    // We use a non-broadcast instance. The advantage of
+	    // this is that the CAN protocol is able to reliably
+	    // detect whether this command was received - for
+	    // a broadcast command, this is not absolutely sure.
+	    bool broadcast = false;
+	    can_command = gateway.provideInstance<SetTicksPerSegmentCommand>();
+
+	    can_command->parametrize(i, ticks, broadcast);
+	    unique_ptr<CAN_Command> cmd(can_command.release());
+	    gateway.sendCommand(i, cmd);
+	    cnt_pending++;
+	}
+
+	// wait until all generated commands have been responded to
+	// or have timed out.
+	while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
+	{
+	    double max_wait_time = -1;
+	    bool cancelled = false;
+	    state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+						 grid_state, max_wait_time, cancelled);
+
+	    if (grid_state.interface_state != DS_CONNECTED)
+	    {
+		LOG_CONTROL(LOG_ERROR, "%18.6f : setTicksPerSegment():  error DE_NO_CONNECTION, connection was lost\n",
+			    ethercanif::get_realtime());
+		return DE_NO_CONNECTION;
+	    }
+
+	    cnt_pending = (grid_state.count_pending
+			   + grid_state.num_queued);
+	}
+
+	if (grid_state.count_timeout != old_count_timeout)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : setTicksPerSegment():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+			ethercanif::get_realtime());
+
+	    logGridState(config.logLevel, grid_state);
+
+	    return DE_CAN_COMMAND_TIMEOUT_ERROR;
+	}
+
+	if (old_count_can_overflow != grid_state.count_can_overflow)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : setTicksPerSegment():  error: firmware CAN buffer overflow\n",
+			ethercanif::get_realtime());
+
+	    logGridState(config.logLevel, grid_state);
+
+	    return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+	}
+
+
+
+	logGridState(config.logLevel, grid_state);
+
+	LOG_CONTROL(LOG_INFO, "%18.6f : setTicksPerSegment(): command successfully sent, ticks per segment set to %lu",
+		    ethercanif::get_realtime(), ticks);
+
 	return DE_OK;
+       
     }
 
 
