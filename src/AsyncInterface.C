@@ -2858,12 +2858,6 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
 
 }
 
-#pragma GCC diagnostic push
-#if CAN_PROTOCOL > 1
-#pragma GCC diagnostic warning "-Wunused-parameter"
-#else
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
 
 E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_state,
         E_GridState& state_summary)
@@ -2972,15 +2966,6 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
 
     return DE_OK;
 }
-#pragma GCC diagnostic pop
-
-
-#pragma GCC diagnostic push
-#if CAN_PROTOCOL > 1
-#pragma GCC diagnostic warning "-Wunused-parameter"
-#else
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
 E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_state,
         E_GridState& state_summary)
 {
@@ -3090,7 +3075,6 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
     return DE_OK;
 }
 
-#pragma GCC diagnostic pop
 
 E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary, t_fpuset const &fpuset)
@@ -4526,18 +4510,115 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
     }
 
 
-#pragma message "remove ignoring unused parameters"
-#pragma GCC diagnostic push
-#if CAN_PROTOCOL_VERION > 1
-#pragma GCC diagnostic warning "-Wunused-parameter"
-#else
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
 
 
-    E_EtherCANErrCode AsyncInterface::resetStepCounterAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset)
+    E_EtherCANErrCode AsyncInterface::resetStepCounterAsync(t_grid_state& grid_state,
+							    E_GridState& state_summary, t_fpuset const &fpuset)
     {
-	return DE_OK;
+    LOG_CONTROL(LOG_INFO, "%18.6f : resetting FPU stepcounters\n",
+                ethercanif::get_realtime());
+
+    // first, get current state and time-out count of the grid
+    state_summary = gateway.getGridState(grid_state);
+    const unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
+    // check interface is connected
+    if (grid_state.interface_state != DS_CONNECTED)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : resetStepCounter() error: interface is not connected, can't reset FPUs\n",
+                    ethercanif::get_realtime());
+        return DE_NO_CONNECTION;
+    }
+
+    // make sure no FPU is moving or finding datum
+    bool resetok=true;
+    for (int i=0; i < config.num_fpus; i++)
+    {
+        if (! fpuset[i])
+        {
+            continue;
+        }
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        // we exclude moving FPUs abd FPUs which are
+        // searching datum.
+        if ( (fpu_state.state == FPST_MOVING)
+                && (fpu_state.state == FPST_DATUM_SEARCH))
+        {
+            resetok = false;
+        }
+    }
+
+    if (! resetok)
+    {
+        // We do not perform a reset when there are moving FPUs.  (In
+        // that case, the user should send an abortMotion command
+        // first.)
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: FPUs are moving, refusing to reset FPUs. Call abortMotion first.\n",
+                    ethercanif::get_realtime());
+        return DE_STILL_BUSY;
+    }
+
+
+    int cnt_pending=0;
+    unique_ptr<ResetStepCounterCommand> can_command;
+    for (int i=0; i < config.num_fpus; i++)
+    {
+        if (!fpuset[i])
+        {
+            continue;
+        }
+        bool broadcast = false;
+        can_command = gateway.provideInstance<ResetStepCounterCommand>();
+        can_command->parametrize(i, broadcast);
+        unique_ptr<CAN_Command> cmd(can_command.release());
+        gateway.sendCommand(i, cmd);
+        cnt_pending++;
+    }
+
+
+    while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
+    {
+        double max_wait_time = -1;
+        bool cancelled = false;
+        state_summary = gateway.waitForState(E_WaitTarget(TGT_NO_MORE_PENDING),
+                                             grid_state, max_wait_time, cancelled);
+
+        cnt_pending = (grid_state.count_pending + grid_state.num_queued);
+    }
+
+
+    if (grid_state.interface_state != DS_CONNECTED)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: interface is not connected, can't reset step counters\n",
+                    ethercanif::get_realtime());
+        return DE_NO_CONNECTION;
+    }
+
+    // It is important to compare for inequality here, because
+    // count_timeout is an unsigned value which can intentionally wrap
+    // without causing undefined behaviour.
+    if (grid_state.count_timeout != old_count_timeout)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : resetStepCounter():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
+                    ethercanif::get_realtime());
+        return DE_CAN_COMMAND_TIMEOUT_ERROR;
+    }
+
+    if (old_count_can_overflow != grid_state.count_can_overflow)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : resetStepCounter():  error: firmware CAN buffer overflow\n",
+                    ethercanif::get_realtime());
+
+        return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
+    }
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : resetStepCounter: command completed succesfully\n",
+                ethercanif::get_realtime());
+
+    logGridState(config.logLevel, grid_state);
+
+    return DE_OK;
+       
     }
 
 
