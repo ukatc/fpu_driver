@@ -515,8 +515,8 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
         int req_fw_minor = 0;
         int req_fw_patch = 0;
         if ( (min_firmware_version[0] < req_fw_major)
-                || (min_firmware_version[1] < req_fw_minor)
-                || (min_firmware_version[2] < req_fw_patch))
+	     || ( (min_firmware_version[0] == req_fw_major) && (min_firmware_version[1] < req_fw_minor))
+	     || ( (min_firmware_version[0] == req_fw_major) && (min_firmware_version[1] == req_fw_minor) && (min_firmware_version[2] < req_fw_patch)))
         {
             // the firmware does not implement what we need
             LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum(): error: DE_FIRMWARE_UNIMPLEMENTED"
