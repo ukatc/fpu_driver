@@ -144,22 +144,18 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
     {
         estatus = configMotionAsync(grid_state, state_summary, cur_wtable, fpuset,
                                     allow_uninitialized, ruleset_version);
-        if (estatus != DE_OK)
+	
+        if (estatus != DE_CAN_COMMAND_TIMEOUT_ERROR)
         {
             // if connection is lost or command invalid, quit.
             break;
         }
 
-        if (state_summary == GS_READY_FORWARD)
-        {
-            // Success: All FPUs have waveforms loaded. Loading finished.
-            break;
-        }
-#if (CAN_PROTOCOL_VERSION > 1)
-#pragma message "FIXME: insert retry code here"
-#endif
-
-        break; // the command should retry a few times when running in the instrument
+        // if (state_summary == GS_READY_FORWARD)
+        // {
+        //     // Success: All FPUs have waveforms loaded. Loading finished.
+        //     break;
+        // }
 
         // we have most probably a time-out and need to load some
         // waveforms again. To do that we strip FPUs from
@@ -170,6 +166,15 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
         // complicated states like a large bird nesting
         // on top of the FPUs. Probably has to be made
         // more robust for such cases.
+	
+	LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
+		    "re-loading missing waveforms",
+		    ethercanif::get_realtime(), num_avaliable_retries);
+	
+	LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
+		    "re-loading missing waveforms",
+		    ethercanif::get_realtime(), num_avaliable_retries);
+
 
         // In this place, a down-counting iterator is used
         // so that erase() will not change the
