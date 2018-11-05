@@ -681,11 +681,11 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
         }
 
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
-        if ( (fpu_state.state != FPST_UNINITIALIZED)
-                || (fpu_state.state != FPST_AT_DATUM)
-                || (fpu_state.state != FPST_READY_FORWARD)
-                || (fpu_state.state != FPST_READY_REVERSE)
-                || (fpu_state.state != FPST_RESTING))
+        if ( (fpu_state.state == FPST_UNINITIALIZED)
+                || (fpu_state.state == FPST_AT_DATUM)
+                || (fpu_state.state == FPST_READY_FORWARD)
+                || (fpu_state.state == FPST_READY_REVERSE)
+                || (fpu_state.state == FPST_RESTING))
 
         {
 
