@@ -1968,6 +1968,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 const t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
                 // we retry if an FPU which we tried to configure and is
                 // not locked did not change to FPST_LOADING state.
+		
                 if ((fpu_state.state != FPST_LOCKED)
                         && ( ((first_entry && (! last_entry))
                               &&  (fpu_state.state != FPST_LOADING))
@@ -1980,13 +1981,13 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                         return DE_MAX_RETRIES_EXCEEDED;
                     }
                     do_retry = true;
-                    LOG_CONTROL(LOG_INFO, "%18.6f : configMotion(): warning: "
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
                                 "loading/ready state or number of waveform segments not confirmed for FPU #%i,"
                                 " retry from start! (%i retries left)\n",
                                 ethercanif::get_realtime(),
                                 fpu_id,
                                 retry_downcount);
-                    LOG_CONSOLE(LOG_INFO, "%18.6f : configMotion(): warning: "
+                    LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): warning: "
                                 "loading/ready state or number of waveform segments not confirmed for FPU #%i,"
                                 " retry from start! (%i retries left)\n",
                                 ethercanif::get_realtime(),
@@ -2021,10 +2022,10 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
     if (grid_state.count_timeout != initial_count_timeout)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN command had timed out, seems recovered by resending data\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN command had timed out, seems recovered by re-sending data\n",
                     ethercanif::get_realtime());
 	
-        LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN command had timed out, seems recovered by resending data\n",
+        LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN command had timed out, seems recovered by re-sending data\n",
                     ethercanif::get_realtime());
 
         logGridState(config.logLevel, grid_state);
