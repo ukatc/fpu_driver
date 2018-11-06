@@ -1707,9 +1707,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
 
-    // FIXME: disable checks for time-outs for now
-    const unsigned long old_count_timeout = grid_state.count_timeout;
-    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
 
     const int min_stepcount = int(floor(config.motor_minimum_frequency
@@ -1848,6 +1845,11 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     int retry_downcount = 5;
     int alpha_cur[MAX_NUM_POSITIONERS];
     int beta_cur[MAX_NUM_POSITIONERS];
+    
+    const unsigned long initial_count_timeout = grid_state.count_timeout;
+    unsigned long old_count_timeout = grid_state.count_timeout;
+    const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
+    
     while (step_index < num_steps)
     {
         const bool first_entry = (step_index == 0);
@@ -1963,14 +1965,15 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                     continue;
                 }
 
-                t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
+                const t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
                 // we retry if an FPU which we tried to configure and is
                 // not locked did not change to FPST_LOADING state.
                 if ((fpu_state.state != FPST_LOCKED)
                         && ( ((first_entry && (! last_entry))
                               &&  (fpu_state.state != FPST_LOADING))
                              || (last_entry
-                                 &&  (fpu_state.state != FPST_READY_FORWARD))))
+                                 &&  ((fpu_state.state != FPST_READY_FORWARD)
+				      || (fpu_state.num_waveform_segments != waveforms[fpu_index].steps.size() )))))
                 {
                     if (retry_downcount <= 0)
                     {
@@ -1978,7 +1981,13 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                     }
                     do_retry = true;
                     LOG_CONTROL(LOG_INFO, "%18.6f : configMotion(): warning: "
-                                "loading/ready state not confirmed for FPU #%i,"
+                                "loading/ready state or number of waveform segments not confirmed for FPU #%i,"
+                                " retry from start! (%i retries left)\n",
+                                ethercanif::get_realtime(),
+                                fpu_id,
+                                retry_downcount);
+                    LOG_CONSOLE(LOG_INFO, "%18.6f : configMotion(): warning: "
+                                "loading/ready state or number of waveform segments not confirmed for FPU #%i,"
                                 " retry from start! (%i retries left)\n",
                                 ethercanif::get_realtime(),
                                 fpu_id,
@@ -1990,7 +1999,9 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 // we start again with loading the first step
                 step_index = 0;
                 retry_downcount--;
-                continue;
+		// squelch time-out error
+		old_count_timeout = grid_state.count_timeout;
+		continue;
             }
 
         }
@@ -2000,7 +2011,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     // seems not to work reliably with current firmware
     if (grid_state.count_timeout != old_count_timeout)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN command timed out\n",
+        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN command repeatedly timed out\n",
                     ethercanif::get_realtime());
 
         logGridState(config.logLevel, grid_state);
@@ -2008,6 +2019,18 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         return DE_CAN_COMMAND_TIMEOUT_ERROR;
     }
 
+    if (grid_state.count_timeout != initial_count_timeout)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN command had timed out, seems recovered by resending data\n",
+                    ethercanif::get_realtime());
+	
+        LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN command had timed out, seems recovered by resending data\n",
+                    ethercanif::get_realtime());
+
+        logGridState(config.logLevel, grid_state);
+    }
+
+    
     if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: firmware CAN buffer overflow\n",

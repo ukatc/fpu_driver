@@ -146,7 +146,7 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
         estatus = configMotionAsync(grid_state, state_summary, cur_wtable, fpuset,
                                     soft_protection, allow_uninitialized, ruleset_version);
 	
-        if (estatus != DE_CAN_COMMAND_TIMEOUT_ERROR)
+        if ((estatus != DE_CAN_COMMAND_TIMEOUT_ERROR) && (estatus != DE_MAX_RETRIES_EXCEEDED))
         {
             // if connection is lost or command invalid, quit.
             break;
@@ -169,32 +169,37 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
         // more robust for such cases.
 	
 	LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
-		    "re-loading missing waveforms",
+		    "re-loading missing waveforms\n",
 		    ethercanif::get_realtime(), num_avaliable_retries);
 	
 	LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
-		    "re-loading missing waveforms",
+		    "re-loading missing waveforms\n",
 		    ethercanif::get_realtime(), num_avaliable_retries);
 
 
         // In this place, a down-counting iterator is used
         // so that erase() will not change the
-        // index of the next processed item. (Looks shadowy but works
+        // index of the next processed item. (Looks dangerous but works
         // as defined).
         for (t_wtable::iterator it = cur_wtable.end() - 1;
                 it != cur_wtable.begin();
                 it--)
         {
             int fpu_id = it->fpu_id;
-            printf("fpu id #%i is already at READY_FOWARD, erase it from waveform table\n",
-                   fpu_id);
             assert(fpu_id >= 0);
             assert(fpu_id < config.num_fpus);
 
-            if (grid_state.FPU_state[fpu_id].state == FPST_READY_FORWARD)
+	    const t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
+
+            if ((fpu_state.state == FPST_READY_FORWARD)
+		&& (fpu_state.num_waveform_segments == it->steps.size() ))
             {
                 // delete entry for this FPU from table -
                 // it does not need to be configured again
+		LOG_CONTROL(LOG_INFO, "%18.6f : configMotion(): fpu id #%i is already at READY_FOWARD, omit it from waveform table\n",
+			    ethercanif::get_realtime(), fpu_id);
+		LOG_CONSOLE(LOG_INFO, "%18.6f : configMotion(): fpu id #%i is already at READY_FOWARD, omit it from waveform table\n",
+			    ethercanif::get_realtime(), fpu_id);
                 cur_wtable.erase(it);
             }
         }
