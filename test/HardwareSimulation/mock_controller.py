@@ -235,8 +235,9 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
         if bpause:
             bstep=0
         bclockwise = (RX[5] >> 7) & 1
+
         
-        
+    nwave_entries = 0
     if verbose:
         print("FPU #%i command =%i , rx=%s" % (fpu_id, command_id, RX))
     
@@ -247,6 +248,7 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
 
         tx3_errflag = 0
         tx4_errcode = 0
+        nwave_entries = FPUGrid[fpu_id].nwave_entries
     
     except IndexError:
         tx3_errflag = 0xff
@@ -283,7 +285,7 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
         TX[1] = command_id
         TX[2] = getStatus(FPUGrid[fpu_id]) 
         TX[3] = tx3_errflag        
-        TX[4] = tx4_errcode
+        TX[4] = tx4_errcode if tx3_errflag != 0 else nwave_entries
         TX[5] = dummy1 = 0
         TX[6] = dummy2 = 0
         TX[7] = dummy3 = 0

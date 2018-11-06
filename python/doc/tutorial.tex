@@ -4601,7 +4601,7 @@ might change.
 \index{supported firmware versions}
 \index{firmware compatibility}
 
-The EtherCAN interface documented here, version 1.3.2, is compatible with firmware
+The EtherCAN interface documented here, version 1.3.6, is compatible with firmware
 1.5.0 and newer. The following limitations apply for older firmware versions:
 
 \begin{description}
@@ -4672,7 +4672,36 @@ The EtherCAN interface documented here, version 1.3.2, is compatible with firmwa
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
-\subsection*{Changes in version 1.3.2}
+
+
+\subsection*{Changes in version 1.3.6}
+\begin{itemize}
+\item Make re-sending \texttt{configMotion()} data more robust by
+  checking for correct FPU state and number of waveform segments.
+  Previously, re-sending waveforms was skipped if the final state of
+  the FPU was correctly \texttt{READY\_FORWARD}, but the number of
+  waveform segments too low. This could cause invalid movements due to
+  missing waveform segments. This change improves the detection of
+  such cases.
+\end{itemize}
+
+\subsection*{Changes in version 1.3.5}
+\begin{itemize}
+\item Activate additional retry code in \texttt{configMotion()}
+  command, which re-sends data if a CAN time-out occured when sending
+  waveforms.  Now, re-sending waveform data is supported for up to 50
+  times, before a fatal error is reported.
+\end{itemize}
+
+\subsection*{Changes in version 1.3.4}
+\begin{itemize}
+\item Changed: Increase maximum size of LMDB database to 5 GB for life time test.
+\item Fixed: Syntax error in fpu-admin tool.
+\item Fixed: Correct error in check for firmware version 1.5.0 .
+\end{itemize}
+
+
+\subsection*{Changes in version 1.3.3}
 \begin{itemize}
 \item Added: to the \texttt{gen\_wf()} function in 'limited
   acceleration' mode, an extra parameter was added which allows to
