@@ -107,9 +107,14 @@ public:
 
     E_EtherCANErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
+    // get count of states across FPUs in a grid or sub-set of the grid.
+    
+    void getStateCount(const t_grid_state& grid_state, t_fpuset const * const pfpuset, t_counts &counts);
+    
     E_EtherCANErrCode pingFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
-    E_EtherCANErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
+    E_EtherCANErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset,
+				     const bool include_locked_fpus=false);
     
     E_EtherCANErrCode resetStepCounterAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 

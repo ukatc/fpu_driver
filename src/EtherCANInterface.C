@@ -132,7 +132,7 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
 {
     E_EtherCANErrCode estatus = DE_OK;
     E_GridState state_summary;
-    int num_avaliable_retries = DEFAULT_NUM_RETRIES;
+    int num_avaliable_retries = config.configmotion_max_retry_count;
 
     // copies the waveforms vector
     std::vector<t_waveform> cur_wtable(waveforms);
@@ -202,6 +202,11 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
                 cur_wtable.erase(it);
             }
         }
+
+	if (cur_wtable.size() == 0)
+	{
+	    break;
+	}
 
         num_avaliable_retries--;
     }

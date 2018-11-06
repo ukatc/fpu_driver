@@ -40,7 +40,7 @@ enum E_FPU_STATE
     FPST_AT_DATUM                = 4,
     FPST_LOADING                 = 5,
     FPST_READY_FORWARD           = 6,
-    FPST_READY_REVERSE          = 7,
+    FPST_READY_REVERSE           = 7,
     FPST_MOVING                  = 8,
     FPST_RESTING                 = 9,
     FPST_ABORTED                 = 10,
