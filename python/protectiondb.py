@@ -182,11 +182,13 @@ class HealthLogDB:
         txn.put(key, repr(dict_counters))
     
     @classmethod
-    def getEntry(cls, txn, fpu, datum_cnt):
+    def getEntry(cls, txn, fpu, datum_cnt, series=None):
+        if series is None:
+            series = cls.counters
         serial_number = get_sn(fpu)
         assert(serial_number != "@@@@@")
         # we make the key to be from serial number and datum search counter
-        key = repr( (serial_number, cls.counters, { cls.datum_count : datum_cnt }))
+        key = repr( (serial_number, series, { cls.datum_count : datum_cnt }))
         val = txn.get(key)
         if val == None:
             return key, None

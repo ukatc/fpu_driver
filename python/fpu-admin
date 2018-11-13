@@ -292,7 +292,7 @@ if __name__ == '__main__' :
             num_datum_ops = counters[HealthLogDB.datum_count]
 
         if num_datum_ops == 0:
-            sus.exit(1)
+            sys.exit(1)
         
         healthlog = env.open_db("healthlog")
         with env.begin(db=healthlog) as txn:
