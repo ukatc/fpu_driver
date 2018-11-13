@@ -4735,6 +4735,11 @@ commands, or alter otherwise visible behaviour of the driver.
   buffering and missing responses, but requires firmware version 1.6.0
   or newer.
   
+\item Added: Added a diagnostic utility \texttt{get\_wtable.getwt()}
+  which can download configured waveforms from all running FPUs.  This
+  makes it possible to compare and verify the actually used waveforms
+  in the case of movement errors.
+  
 \item Changed: The default upper software protection limit for the
   beta arm was set to +140\degree\ after some beta arm collisions were
   detected when using larger ranges.
