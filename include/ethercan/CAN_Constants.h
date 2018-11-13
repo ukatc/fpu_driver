@@ -31,8 +31,11 @@ namespace mpifps
 namespace ethercanif
 {
 
-// number of can buses on one gateway
+// number of can buses on one gateway (FPU grid layout)
 const int BUSES_PER_GATEWAY =  5;
+
+// maximum number of can buses on one gateway (ethercan hardware layout)
+const int MAX_BUSES_PER_GATEWAY =  6;
 // number of FPUs on one CAN bus
 const int FPUS_PER_BUS = 76;
 
@@ -52,6 +55,8 @@ const int MAX_UNENCODED_GATEWAY_MESSAGE_BYTES = 11;
 // length of serial number stored in FPU NVRAM
 const int DIGITS_SERIAL_NUMBER=5;
 
+// pseudo bus address for gateway delay message
+const int MSG_TYPE_DELY = 6;
 
 }
 

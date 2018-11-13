@@ -68,7 +68,11 @@ public:
     long waveform_upload_pause_us; // wait time before a new waveform step is sent to the same FPU
     bool confirm_each_step; // request confirmation for each waveform step
 
+    int min_bus_repeat_delay_ms; // delay, in milliseconds, before writing to the same CAN bus
+    int min_fpu_repeat_delay_ms; // delay, in milliseconds, before writing to the same FPU
+
     int firmware_version_address_offset;
+    int can_command_priority; // maximum priority of CAN commands; this is a four-bit value
 
     EtherCANInterfaceConfig()
         : logLevel(LOG_TRACE_CAN_MESSAGES)
@@ -81,8 +85,12 @@ public:
         TCP_IdleSeconds = 10;
         TCP_KeepaliveIntervalSeconds = 1;
 
-        waveform_upload_pause_us = 50000;
+        waveform_upload_pause_us = 0;
         confirm_each_step = true;
+
+	can_command_priority = 3;
+	min_bus_repeat_delay_ms = 4; 
+	min_fpu_repeat_delay_ms = 16;
 
         firmware_version_address_offset = 0x61; // new offset for v1.3.0, matching firmware version 1.4.4
 

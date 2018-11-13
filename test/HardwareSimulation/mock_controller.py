@@ -19,6 +19,8 @@ BUSES_PER_GATEWAY =  5
 # number of FPUs on one CAN bus
 FPUS_PER_BUS = 76
 
+MSG_TYPE_DELY = 6
+
 CAN_PROTOCOL_VERSION = 1
 
 # command codes
@@ -1267,7 +1269,7 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
 gCountTotalCommands = 0
 
 def command_handler(cmd, socket, args):
-    verbose = args.debug
+    verbose = args.verbosity > 0
     global gCountTotalCommands
     gCountTotalCommands += 1
     if verbose:
@@ -1278,7 +1280,16 @@ def command_handler(cmd, socket, args):
     command_id = cmd[3]
     bus_global_id = bus_adr + gateway_id * BUSES_PER_GATEWAY
 
-    if rx_canid != 0:
+    
+    if bus_adr == MSG_TYPE_DELY:
+        rx_bytes = cmd[3:]
+        delay = rx_bytes[0]
+        if args.verbosity > 0:
+            print("CAN gateway delay command [count %i] to gw %i, bus %i: delay %i ms"
+                  % (gCountTotalCommands, gateway_id, bus_adr, delay))
+        
+        
+    elif rx_canid != 0:
         # non-broadcast message
         rx_priority = (rx_canid >> 7)
         fpu_adr_bus = rx_canid & 0x7f # this is a one-based index
