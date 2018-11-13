@@ -298,8 +298,8 @@ if __name__ == '__main__' :
         with env.begin(db=healthlog) as txn:
             for cnt in range(1, num_datum_ops+1):
                 key, val = HealthLogDB.getEntry(txn,serial_number, cnt)
-                          
-                print(key,":", val)
+                if not val is None:
+                    print(key,":", val)
         
                       
             

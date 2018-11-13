@@ -4716,6 +4716,24 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
+\subsection*{Changes in version 1.3.8}
+\begin{itemize}
+\item Fixed an aliasing bug in the processing of counters such as
+  number of datum operations, count of collisions, and so on. Thus
+  caused statistical values erroneously to be shared between different
+  FPUs which were running at the same time. Instead of updating
+  counters for each FPU separately, always the same collection of
+  counters was used. As a result, all ``counters'' values in the
+  protection database, and all values in the health log are incorrect
+  for versions sooner than v1.3.8, and should not relied upon.  To
+  discern correct data from contaminated data, the field value was
+  changed.  Values which use the replacement ``counters2'' field name
+  are stored correctly.
+  
+  
+\end{itemize}
+
+
 \subsection*{Changes in version 1.3.7}
 \begin{itemize}
 \item 

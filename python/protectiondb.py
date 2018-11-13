@@ -57,7 +57,7 @@ class ProtectionDB:
     free_beta_retries = 'bretries'
     beta_retry_count_cw = 'beta_retry_count_cw'
     beta_retry_count_acw = 'beta_retry_count_acw'
-    counters = 'counters'
+    counters = 'counters2'
     serialnumber_used = 'serialnumber_used'
     
     @staticmethod
@@ -97,7 +97,7 @@ class ProtectionDB:
         val = cls.getRawField(txn, serial_number, subkey)
         
         if subkey == cls.counters:
-            rval = INIT_COUNTERS
+            rval = INIT_COUNTERS.copy()
             if val != None:
                 rval.update(val)
             return rval
@@ -170,7 +170,7 @@ class ProtectionDB:
 
 class HealthLogDB:
     dbname = "healthlog"
-    counters = "counters"
+    counters = "counters2"
     datum_count = "datum_count"
 
     @classmethod

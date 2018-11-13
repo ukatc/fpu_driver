@@ -1897,7 +1897,7 @@ class GridDriver(UnprotectedGridDriver):
                 if gs == None:
                     _fpu = None
                     
-                self._update_counters_find_datum(self.counters[fpu_id], fpu, prev_fpu, datum_fpu)
+                self._update_counters_find_datum(fpu_id, self.counters[fpu_id], fpu, prev_fpu, datum_fpu)
                 ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
                         
 
@@ -1910,7 +1910,7 @@ class GridDriver(UnprotectedGridDriver):
         env.sync()
 
 
-    def _update_counters_find_datum(self, fpu_counters, fpu, prev_fpu, datum_fpu):
+    def _update_counters_find_datum(self, fpu_id, fpu_counters, fpu, prev_fpu, datum_fpu):
         
         fpu_counters["datum_count" ] += 1
         # discard error states, and states which were uninitialised before
