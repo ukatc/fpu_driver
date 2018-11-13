@@ -4643,26 +4643,23 @@ The EtherCAN interface documented here, version 1.3.7, is compatible with firmwa
 1.6.0 and newer. The following limitations apply for older firmware versions:
 
 \begin{description}
-  \item[firmware versions <= 1.6.0]
-    \begin{itemize}
-    \item Requires to set the driver parameter
-      \texttt{can\_command\_priority} to zero, otherwise the firmware
-      will not recognize any commands. In order to avoid problems with
-      reliabile transmission of response messages, it is recommended
-      to use newer firmware.
-  \end{itemize}
-
-\item[firmware versions <= 1.5.0]
+  
+\item[firmware versions <= 1.6.0]
   \begin{itemize}
       
     \item For these firmware protocol versions, it is not possible to
       configure a waveform reliably without using a confirmation for
       every message.
-    \item Using waveforms with constant acceleration will, in most
-      cases, require to set the waveform validity check parameter of
-      \texttt{configMotion()} and \texttt{configPaths()} to rule set
-      version 0 (no validity checks).
-    
+  \end{itemize}
+
+
+  \item[firmware versions < 1.6.0]
+    \begin{itemize}
+    \item Requires to set the driver parameter
+      \texttt{can\_command\_priority} to zero, otherwise the firmware
+      will not recognize any commands. In order to avoid problems with
+      reliable transmission of response messages, it is recommended
+      to use newer firmware.
   \end{itemize}
 
   
@@ -4727,6 +4724,9 @@ commands, or alter otherwise visible behaviour of the driver.
   commands sent to the same bus, or to the same FPU, which allows to
   avoid timing problems. For details, see section~\ref{it:ratelimits}
   on page~\pageref{it:ratelimits}.
+
+\item Changed: The parameter \texttt{waveform\_upload\_pause\_us} is
+  set to zero by default.
   
 \item Added: The driver parameter \texttt{can\_command\_priority} allows to
   set the priority of CAN commands to the firmware. By default,
