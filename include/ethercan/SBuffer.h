@@ -69,7 +69,9 @@ public:
     // this operation might block!
     E_SocketStatus encode_and_send(int sockfd,
                                    int const input_len,
-                                   const uint8_t bytes[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES]);
+                                   const uint8_t bytes[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES],
+				   int busid,
+				   int fpu_canid);
 
     // we send pending data and return the
     // result of the send command.
@@ -107,6 +109,8 @@ private:
     // swizzled to two bytes.
     static const int MAX_STUFFED_MESSAGE_LENGTH = (4 + 2 * MAX_UNENCODED_GATEWAY_MESSAGE_BYTES);
 
+    const int max_gw_delay = 0xff;
+
 
     // read buffer for data from socket
     uint8_t rbuf[MAX_STUFFED_MESSAGE_LENGTH];
@@ -116,10 +120,13 @@ private:
     int out_offset;
     // internal buffer for command
     uint8_t command_buf[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES];
+    uint8_t bus_delays[BUSES_PER_GATEWAY];
+    uint8_t fpu_delays[BUSES_PER_GATEWAY][FPUS_PER_BUS];
+    
     // length of command
     int clen;
 
-    uint8_t wbuf[MAX_STUFFED_MESSAGE_LENGTH];
+    uint8_t wbuf[2 * MAX_STUFFED_MESSAGE_LENGTH];
 
     // this isn't declared as const because sbuffer is an array member
     // in use, and C++11 lacks a pratical way to initialize this

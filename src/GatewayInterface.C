@@ -809,6 +809,12 @@ SBuffer::E_SocketStatus GatewayInterface::send_buffer(unique_ptr<CAN_Command> &a
 
             int message_len = 0;
             t_CAN_buffer can_buffer;
+	    // note that fpu_id is a virtual value if this is a
+	    // broadcast message. Broadcast messages can be detected
+	    // reliably by the property that the whole CAN identifier
+	    // field is zero.  The fpuid of these messages is,
+	    // however, set to 1 so that the gateway and bus they are
+	    // sent to can be identified normally by looking up this id.
             int fpu_id = active_can_command->getFPU_ID();
             const uint16_t busid = address_map[fpu_id].bus_id;
             const uint8_t fpu_canid = address_map[fpu_id].can_id;
@@ -825,13 +831,29 @@ SBuffer::E_SocketStatus GatewayInterface::send_buffer(unique_ptr<CAN_Command> &a
                                                   can_buffer,
                                                   sequence_number);
 
+	    // check for broadcast
+	    const int canid = (can_buffer.message.identifier & 0x7f);
+	    if (canid != 0)
+	    {
+		uint8_t priority = (can_buffer.message.identifier >> 7) & 0x0f;
+		// cap priority if it is too large
+		const int config_priority = std::min(std::max(0,config.can_command_priority),15);
+		if (priority < config_priority)
+		{
+		    priority = config_priority;
+		    can_buffer.message.identifier = ((can_buffer.message.identifier & 0x7f) |
+						     ((priority & 0x0f) << 7));
+		}
+	    }
+
             updatePendingSets(active_can_command, gateway_id, busid);
             // update number of queued commands
             fpuArray.decSending();
 
             // byte-swizzle and send buffer
             status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-                      message_len, can_buffer.bytes);
+							  message_len, can_buffer.bytes, busid,
+							  canid);
 
         }
     }

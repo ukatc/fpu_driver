@@ -292,14 +292,14 @@ if __name__ == '__main__' :
             num_datum_ops = counters[HealthLogDB.datum_count]
 
         if num_datum_ops == 0:
-            sus.exit(1)
+            sys.exit(1)
         
         healthlog = env.open_db("healthlog")
         with env.begin(db=healthlog) as txn:
             for cnt in range(1, num_datum_ops+1):
                 key, val = HealthLogDB.getEntry(txn,serial_number, cnt)
-                          
-                print(key,":", val)
+                if not val is None:
+                    print(key,":", val)
         
                       
             

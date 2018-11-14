@@ -25,7 +25,10 @@
 #include <cassert>
 #include <stdio.h>
 
+#include <algorithm>
+
 #include "ethercan/SBuffer.h"
+#include "ethercan/I_CAN_Command.h"
 #include "ethercan/time_utils.h"
 
 // FIXME: reading and writing data is technically unrelated, and
@@ -42,6 +45,9 @@ namespace mpifps
 
 namespace ethercanif
 {
+
+using std::min;
+using std::max;
 
 const uint8_t STX = 0x02;
 const uint8_t ETX = 0x03;
@@ -155,46 +161,159 @@ SBuffer::SBuffer()
     memset(rbuf, 0, sizeof(rbuf));
     memset(wbuf, 0, sizeof(wbuf));
     memset(command_buf, 0, sizeof(command_buf));
+
+    memset(bus_delays, max_gw_delay, sizeof(bus_delays));
+    memset(fpu_delays, max_gw_delay, sizeof(fpu_delays));
 }
 
 void SBuffer::setConfig(const EtherCANInterfaceConfig &config_vals)
 {
     config = config_vals;
     // config must not be changed any more, it is meant to be const
+
 }
 
 
 SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
-        int const input_len,
-        const uint8_t src[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES])
+						 int const input_len,
+						 const uint8_t src[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES],
+						 int busid,
+						 int fpu_canid)
 {
     int out_len = 0;
-    const int LINE_LEN=128;
-    char log_buffer[LINE_LEN];
 
-    int buf_idx = sprintf(log_buffer, "command bytes (len=%i)= [", input_len);
+    int gw_delay = 0;
+    const int min_bus_repeat_delay_ms = max(0, min(config.min_bus_repeat_delay_ms, max_gw_delay));
+    const int min_fpu_repeat_delay_ms = max(0, min(config.min_fpu_repeat_delay_ms, max_gw_delay));
 
-    if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
+
+    if (bus_delays[busid] < min_bus_repeat_delay_ms)
     {
-        for(int i=0; i < input_len; i++)
-        {
-            int nchars = sprintf(log_buffer + buf_idx," %02x", src[i]);
-            buf_idx += nchars;
-
-            sprintf(log_buffer + buf_idx,"]\n");
-        }
-
-
-        LOG_TX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX: encode_and_send(): sending %s",
-               ethercanif::get_realtime(),
-               log_buffer);
+	gw_delay = (min_bus_repeat_delay_ms - static_cast<unsigned int>(bus_delays[busid]));
     }
 
+    int fpu_mindelay = max_gw_delay;
+    if (fpu_canid > 0)
+    {
+	fpu_mindelay = fpu_delays[busid][fpu_canid -1];
+    }
+    else
+    {
+	for(int i = 0; i < FPUS_PER_BUS; i++)
+	{
+	    if (fpu_mindelay > fpu_delays[busid][i])
+	    {
+		fpu_mindelay = fpu_delays[busid][i];
+	    }
+	}
+    }
+    if (gw_delay < min_fpu_repeat_delay_ms - fpu_mindelay)
+    {
+	gw_delay = min_fpu_repeat_delay_ms - fpu_mindelay;
+    }
+
+    {
+	if (gw_delay > max_gw_delay)
+	{
+	    gw_delay = max_gw_delay;   
+	}
+
+	if (gw_delay > 0)
+	{
+	    t_CAN_buffer delay_msg;
+	    memset(delay_msg.bytes, 0, sizeof(delay_msg.bytes));
+	    delay_msg.message.busid = MSG_TYPE_DELY; // that's the pseudo bus number which receives a delay message
+	    delay_msg.message.identifier = 0x777; // that's from Pablo's sample code but probably irrelevant
+	    delay_msg.message.data[0] = gw_delay & 0xff;
+	    const int msg_len = 4;
+	
+	    LOG_TX(LOG_VERBOSE, "%18.6f : TX: encode_and_send(): pre-pending dummy delay = %i\n",
+		   ethercanif::get_realtime(),
+		   gw_delay);
 
 
-    encode_buffer(input_len, src, out_len, wbuf);
+	    {
+		const int LINE_LEN=128;
+		char log_buffer[LINE_LEN];
+
+		int buf_idx = sprintf(log_buffer, "delay message bytes (len=%i)= [", input_len);
+
+		if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
+		{
+		    for(int i=0; i < input_len; i++)
+		    {
+			int nchars = sprintf(log_buffer + buf_idx," %02x", delay_msg.bytes[i]);
+			buf_idx += nchars;
+
+			sprintf(log_buffer + buf_idx,"]\n");
+		    }
+
+
+		    LOG_TX(LOG_TRACE_CAN_MESSAGES, "%18.6f : TX: encode_and_send(): sending %s",
+			   ethercanif::get_realtime(),
+			   log_buffer);
+		}
+	    }
+	
+	    // (note: wbuf was increased to make room for added dummy delay message)
+	    encode_buffer(msg_len, delay_msg.bytes, out_len, wbuf);
+	}
+	
+	// count up running delay for all buses and FPUs which were not addressed
+	for(int b = 0; b <  BUSES_PER_GATEWAY; b++)
+	{
+	    if (b == busid)
+	    {
+		bus_delays[b] = 0;
+	    }
+	    else
+	    {
+		bus_delays[b] = min(bus_delays[b] + gw_delay, max_gw_delay);
+	    }
+	    
+	    for(int i = 0; i <  FPUS_PER_BUS; i++)
+	    {
+		if ((b == busid) && ((fpu_canid == 0) || (i == (fpu_canid -1)) ))
+		{
+		    // note: CAN broadcast re-sets delays for all FPUs on the same bus
+		    fpu_delays[b][i]= 0;
+		}
+		else
+		{
+		    fpu_delays[b][i] = min(fpu_delays[b][i] + gw_delay, max_gw_delay);
+		}
+	    }
+	}
+
+    }
+
+    {
+	const int LINE_LEN=128;
+	char log_buffer[LINE_LEN];
+
+	int buf_idx = sprintf(log_buffer, "command bytes (len=%i)= [", input_len);
+
+	if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
+	{
+	    for(int i=0; i < input_len; i++)
+	    {
+		int nchars = sprintf(log_buffer + buf_idx," %02x", src[i]);
+		buf_idx += nchars;
+
+		sprintf(log_buffer + buf_idx,"]\n");
+	    }
+
+
+	    LOG_TX(LOG_TRACE_CAN_MESSAGES, "%18.6f : TX: encode_and_send(): sending %s",
+		   ethercanif::get_realtime(),
+		   log_buffer);
+	}
+    }
+
+    const int out_len1 = out_len;
+    encode_buffer(input_len, src, out_len, wbuf + out_len1);
     out_offset = 0;
-    unsent_len = out_len;
+    unsent_len = out_len + out_len1;
 
     return send_pending(sockfd);
 }

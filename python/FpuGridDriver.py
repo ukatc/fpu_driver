@@ -685,6 +685,7 @@ class UnprotectedGridDriver (object):
                 wmode=Range.Warn
             self._pre_config_motion_hook(wtable, gs, fpuset, wmode=wmode)
             update_config = False
+            prev_gs = self._gd.getGridState()
             try:
                 try:
                     time.sleep(0.1)
@@ -721,8 +722,10 @@ class UnprotectedGridDriver (object):
                             print("warning: waveform table for FPU %i was not confirmed" % fpu_id)
                             del wtable[fpu_id]
 
+                        self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
                                 
                     self._post_config_motion_hook(wtable, gs, fpuset)
+
                 
         if len(wtable.keys()) < self.config.num_fpus:
             num_forward,  num_reversed, num_movable = countMovableFPUs(gs)
@@ -1275,8 +1278,12 @@ class GridDriver(UnprotectedGridDriver):
         fpuset = self.check_fpuset(fpuset)
         
         with self.lock:
+            prev_gs = self._gd.getGridState()
             self._pingFPUs(grid_state, fpuset=fpuset)
             self._refresh_positions(grid_state, fpuset=fpuset)
+            
+            for fpu_id, fpu in enumerate(grid_state.FPU):
+                self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
             
     def __del__(self):
@@ -1897,7 +1904,7 @@ class GridDriver(UnprotectedGridDriver):
                 if gs == None:
                     _fpu = None
                     
-                self._update_counters_find_datum(self.counters[fpu_id], fpu, prev_fpu, datum_fpu)
+                self._update_counters_find_datum(fpu_id, self.counters[fpu_id], fpu, prev_fpu, datum_fpu)
                 ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
                         
 
@@ -1910,7 +1917,7 @@ class GridDriver(UnprotectedGridDriver):
         env.sync()
 
 
-    def _update_counters_find_datum(self, fpu_counters, fpu, prev_fpu, datum_fpu):
+    def _update_counters_find_datum(self, fpu_id, fpu_counters, fpu, prev_fpu, datum_fpu):
         
         fpu_counters["datum_count" ] += 1
         # discard error states, and states which were uninitialised before

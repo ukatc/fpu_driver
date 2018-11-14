@@ -2957,6 +2957,53 @@ be passed:
   implemented, because the correct implementation requires significant
   structural change to the EtherCAN interface. Correspondingly, the waveform
   upload can fail.
+
+  \index{driver parameters!rate limiting of CAN commands}
+  \label{it:ratelimits}  
+
+\item[\texttt{can\_command\_priority}] This parameter allows to set
+  the minimun priority value for CAN commands from the driver to the
+  FPUs. The lower the value, the higher the actual pririty.  The
+  default value is 3, which will work for firmware versiona >= 1.6.0.
+  Earlier firmware versions will require a value of zero - otherwise,
+  commands will not be recognised. To avoid problems with missing CAN
+  responses or capacity problems in the firmware, it is recommended to
+  use the default value.
+  
+\item[\texttt{min\_bus\_repeat\_delay\_ms}] This parameter allows to
+  set a rate limit on CAN commands which go to the same CAN bus. The
+  value needs to be between zero and 255. If set to a non-zero value,
+  the driver will make sure that ``dummy delay'' messages are inserted
+  before each CAN command which have the effect that no CAN command
+  goes to this bus within less than the configured time. The larger
+  this value is, the smaller is the number of FPU commands which can
+  be send per second, and the longer the upload of waveforms will
+  take. The best throughput is probably achieved if messages are sent
+  in a round-robin manner to the different buses on the same gateway -
+  this will minimise the waiting time for each bus.
+  
+\item[\texttt{min\_fpu\_repeat\_delay\_ms}] Similar as above, this
+  parameter allows to set a rate limit for commands to individual
+  FPUs. If several commands are sent to the same FPU, the driver makes
+  sure that delay commands are inserted which should warrant that no
+  two commands arrive at the same FPU within less than the configured
+  interval. If the value of this parameter is equal or less than
+  \texttt{min\_bus\_repeat\_delay\_ms}, it has no effect. This limit
+  provides more reliable control than limits set using
+  \texttt{waveform\_upload\_pause\_us}, because the latter run in the
+  driver control context, and therefore cannot account for fluctuating
+  latencies in the transmission of commands.
+
+  This rate limit allows to quickly check whether timing of messages
+  arriving at the same FPU might cause errors or different behaviour.
+
+  Note that the above rate control commands also affect
+  \texttt{abortMotion()} commands. Typical sensible rate limit values
+  are about one or two milliseconds for all commands to the same bus,
+  and up to about 20 milliseconds for commands to the same FPUs.
+  Depending on the EtherCANB gateway implementation, it might be
+  possible to set the limit to zero.
+
   
 \end{description}
 
@@ -4601,22 +4648,27 @@ might change.
 \index{supported firmware versions}
 \index{firmware compatibility}
 
-The EtherCAN interface documented here, version 1.3.6, is compatible with firmware
-1.5.0 and newer. The following limitations apply for older firmware versions:
+The EtherCAN interface documented here, version 1.3.7, is compatible with firmware
+1.6.0 and newer. The following limitations apply for older firmware versions:
 
 \begin{description}
-\item[firmware versions <= 1.5.0]
   
+\item[firmware versions <= 1.6.0]
   \begin{itemize}
       
     \item For these firmware protocol versions, it is not possible to
       configure a waveform reliably without using a confirmation for
       every message.
-    \item Using waveforms with constant acceleration will, in most
-      cases, require to set the waveform validity check parameter of
-      \texttt{configMotion()} and \texttt{configPaths()} to rule set
-      version 0 (no validity checks).
-    
+  \end{itemize}
+
+
+  \item[firmware versions < 1.6.0]
+    \begin{itemize}
+    \item Requires to set the driver parameter
+      \texttt{can\_command\_priority} to zero, otherwise the firmware
+      will not recognize any commands. In order to avoid problems with
+      reliable transmission of response messages, it is recommended
+      to use newer firmware.
   \end{itemize}
 
   
@@ -4672,6 +4724,58 @@ The EtherCAN interface documented here, version 1.3.6, is compatible with firmwa
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
+
+\subsection*{Changes in version 1.3.8}
+\begin{itemize}
+\item Fixed an aliasing bug in the processing of counters such as
+  number of datum operations, count of collisions, and so on. This
+  caused statistical values erroneously to be shared between different
+  FPUs, when more than one FPU were running at the same time. Instead
+  of updating counters for each FPU separately, the same collection of
+  counters was used in this case. As a result, all ``counters'' values
+  in the protection database, and all values in the health log are
+  possibly incorrect for versions sooner than v1.3.8, and should not
+  relied upon.  To discern correct data from contaminated data, the
+  field value was changed.  Values which use the replacement
+  ``counters2'' field name are stored correctly.
+  
+\item Added: Example script named ``plot-fpu-counters.py'' which
+  reads the healthlog table of the position database and produces a
+  matplotlib plot of datum aberrations and their standard deviations
+  as a function of the count of datum operations. Additionally, it can
+  produce a plot showing the number of movements over calendar time.
+  
+\end{itemize}
+
+
+\subsection*{Changes in version 1.3.7}
+\begin{itemize}
+\item 
+  Added: The driver parameters \texttt{min\_bus\_repeat\_delay\_ms} and
+  \texttt{min\_fpu\_repeat\_delay\_ms} allow to set rate limits to CAN
+  commands sent to the same bus, or to the same FPU, which allows to
+  avoid timing problems. For details, see section~\ref{it:ratelimits}
+  on page~\pageref{it:ratelimits}.
+
+\item Changed: The parameter \texttt{waveform\_upload\_pause\_us} is
+  set to zero by default.
+  
+\item Added: The driver parameter \texttt{can\_command\_priority} allows to
+  set the priority of CAN commands to the firmware. By default,
+  version 1.3.7 and newer send commands with a lower priority than
+  response messages from the FPUs. This helps to avoid problems with
+  buffering and missing responses, but requires firmware version 1.6.0
+  or newer.
+  
+\item Added: Added a diagnostic utility \texttt{get\_wtable.getwt()}
+  which can download configured waveforms from all running FPUs.  This
+  makes it possible to compare and verify the actually used waveforms
+  in the case of movement errors.
+  
+\item Changed: The default upper software protection limit for the
+  beta arm was set to +140\degree\ after some beta arm collisions were
+  detected when using larger ranges.
+\end{itemize}
 
 
 \subsection*{Changes in version 1.3.6}
