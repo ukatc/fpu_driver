@@ -28,7 +28,7 @@
 #include <algorithm>
 
 #include "ethercan/SBuffer.h"
-#include "ethercan/I_CAN_Command.h"
+#include "ethercan/CAN_Command.h"
 #include "ethercan/time_utils.h"
 
 // FIXME: reading and writing data is technically unrelated, and

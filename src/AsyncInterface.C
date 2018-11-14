@@ -3861,7 +3861,7 @@ E_EtherCANErrCode AsyncInterface::assureMinFirmwareVersion(const int req_fw_majo
     uint8_t min_firmware_version[3];
     int min_firmware_fpu;
 	
-    E_EtherCANErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
+    E_EtherCANErrCode ecode = getMinFirmwareVersionAsync(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
     if (ecode != DE_OK)
     {
@@ -3893,7 +3893,7 @@ E_EtherCANErrCode AsyncInterface::assureMinFirmwareVersion(const int req_fw_majo
 }
 
 // get minimum firmware version value, using cache when valid, otherwise query FPUs
-E_EtherCANErrCode AsyncInterface::getMinFirmwareVersion(t_fpuset const &fpuset,
+E_EtherCANErrCode AsyncInterface::getMinFirmwareVersionAsync(t_fpuset const &fpuset,
         uint8_t (&min_firmware_version)[3],
         int &min_firmware_fpu,
         t_grid_state& grid_state,
@@ -4133,7 +4133,7 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
     uint8_t min_firmware_version[3] = {0,0,0};
     int min_firmware_fpu = -1;
 
-    E_EtherCANErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
+    E_EtherCANErrCode ecode = getMinFirmwareVersionAsync(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
     if (ecode != DE_OK)
     {
@@ -4315,7 +4315,7 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
 
     uint8_t min_firmware_version[3] = {0,0,0};
     int min_firmware_fpu = -1;
-    ecode = getMinFirmwareVersion(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
+    ecode = getMinFirmwareVersionAsync(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
     if ((min_firmware_version[0] < 1)
             ||(min_firmware_version[1] < 3))
@@ -4861,7 +4861,7 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id, E_REQUES
 }
 
 
-E_EtherCANErrCode AsyncInterface::setStepsPersegmentAsync(int minsteps,
+E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
 							  int maxsteps,
 							  t_grid_state& grid_state,
 							  E_GridState& state_summary,

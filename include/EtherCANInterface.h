@@ -95,6 +95,8 @@ public:
 #endif
 
 
+    int getNumFPUs() const;
+    
     E_EtherCANErrCode initializeGrid(t_grid_state& grid_state, t_fpuset const &fpuset);
 
     E_EtherCANErrCode resetFPUs(t_grid_state& grid_state, t_fpuset const &fpuset);
@@ -154,6 +156,11 @@ public:
 
     E_EtherCANErrCode getFirmwareVersion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
+    
+    E_EtherCANErrCode  getMinFirmwareVersion(t_fpuset const &fpuset,
+					     uint8_t (&min_firmware_version)[3],
+					     t_grid_state& grid_state);
+    
     E_EtherCANErrCode lockFPU(int fpu_id, t_grid_state& grid_state);
 
     E_EtherCANErrCode unlockFPU(int fpu_id, t_grid_state& grid_state);
@@ -163,13 +170,29 @@ public:
     E_EtherCANErrCode writeSerialNumber(int fpu_id, const char serial_number[],
                                         t_grid_state& grid_state);
 
-    int getNumFPUs() const;
+    E_EtherCANErrCode resetStepCounter(t_grid_state& grid_state, t_fpuset const &fpuset);
+    
+    E_EtherCANErrCode enableMove(int fpu_id, t_grid_state& grid_state);
+
+    E_EtherCANErrCode enableAlphaLimitProtection(t_grid_state& grid_state);
+
+    E_EtherCANErrCode freeAlphaLimitBreach(int fpu_id, E_REQUEST_DIRECTION request_dir,
+						t_grid_state& grid_state);
+
+    E_EtherCANErrCode setStepsPerSegment(int minsteps,
+					      int maxsteps,
+					      t_grid_state& grid_state,
+					      t_fpuset const &fpuset);
+
+    // set number of 100ns clock ticks per waveform segment
+    E_EtherCANErrCode setTicksPerSegment(unsigned long ticks,
+					      t_grid_state& grid_state,
+					      t_fpuset const &fpuset);
+
+    E_EtherCANErrCode checkIntegrity(t_grid_state& grid_state,
+				     t_fpuset const &fpuset);
 
 private:
-
-    E_EtherCANErrCode untangleFPU();
-
-    E_EtherCANErrCode clearCollision();
 
     // this mutex ensures that no new
     // command is initiated while a running

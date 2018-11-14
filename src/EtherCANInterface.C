@@ -37,21 +37,26 @@ EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values
 }
 
 
+int EtherCANInterface::getNumFPUs() const
+{
+    return config.num_fpus;
+}
+
 
 E_EtherCANErrCode EtherCANInterface::findDatum(t_grid_state& grid_state,
-        E_DATUM_SEARCH_DIRECTION * p_direction_flags,
-        E_DATUM_SELECTION arm_selection,
-        E_DATUM_TIMEOUT_FLAG timeout_flag,
-        bool count_protection,
-        t_fpuset const * const fpuset)
+					       E_DATUM_SEARCH_DIRECTION * p_direction_flags,
+					       E_DATUM_SELECTION arm_selection,
+					       E_DATUM_TIMEOUT_FLAG timeout_flag,
+					       bool count_protection,
+					       t_fpuset const * const fpuset)
 {
 
     E_EtherCANErrCode estatus = startFindDatum(grid_state,
-                                p_direction_flags,
-                                arm_selection,
-                                timeout_flag,
-                                count_protection,
-                                fpuset);
+					       p_direction_flags,
+					       arm_selection,
+					       timeout_flag,
+					       count_protection,
+					       fpuset);
 
     if (estatus != DE_OK)
     {
@@ -67,11 +72,11 @@ E_EtherCANErrCode EtherCANInterface::findDatum(t_grid_state& grid_state,
 }
 
 E_EtherCANErrCode EtherCANInterface::startFindDatum(t_grid_state& grid_state,
-        E_DATUM_SEARCH_DIRECTION * p_direction_flags,
-        E_DATUM_SELECTION arm_selection,
-        E_DATUM_TIMEOUT_FLAG timeout_flag,
-        bool count_protection,
-        t_fpuset const * const fpuset)
+						    E_DATUM_SEARCH_DIRECTION * p_direction_flags,
+						    E_DATUM_SELECTION arm_selection,
+						    E_DATUM_TIMEOUT_FLAG timeout_flag,
+						    bool count_protection,
+						    t_fpuset const * const fpuset)
 {
     E_EtherCANErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -104,9 +109,9 @@ E_EtherCANErrCode EtherCANInterface::startFindDatum(t_grid_state& grid_state,
 }
 
 E_EtherCANErrCode EtherCANInterface::waitFindDatum(t_grid_state& grid_state,
-        double &max_wait_time,
-        bool &finished,
-        t_fpuset const * const fpuset)
+						   double &max_wait_time,
+						   bool &finished,
+						   t_fpuset const * const fpuset)
 {
     E_EtherCANErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -125,9 +130,9 @@ E_EtherCANErrCode EtherCANInterface::waitFindDatum(t_grid_state& grid_state,
 
 
 E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_grid_state& grid_state,
-        t_fpuset const &fpuset,
-        bool allow_uninitialized,
-        int ruleset_version)
+						  t_fpuset const &fpuset,
+						  bool allow_uninitialized,
+						  int ruleset_version)
 
 {
     E_EtherCANErrCode estatus = DE_OK;
@@ -181,8 +186,8 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
         // index of the next processed item. (Looks dangerous but works
         // as defined).
         for (t_wtable::iterator it = cur_wtable.end() - 1;
-                it != cur_wtable.begin();
-                it--)
+	     it != cur_wtable.begin();
+	     it--)
         {
             int fpu_id = it->fpu_id;
             assert(fpu_id >= 0);
@@ -272,7 +277,7 @@ E_EtherCANErrCode EtherCANInterface::startExecuteMotion(t_grid_state& grid_state
 }
 
 E_EtherCANErrCode EtherCANInterface::waitExecuteMotion(t_grid_state& grid_state,
-        double &max_wait_time, bool &finished, t_fpuset const &fpuset)
+						       double &max_wait_time, bool &finished, t_fpuset const &fpuset)
 {
     E_EtherCANErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -356,7 +361,7 @@ E_EtherCANErrCode EtherCANInterface::abortMotion(t_grid_state& grid_state, t_fpu
 
 
 E_EtherCANErrCode EtherCANInterface::freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_dir,
-        t_grid_state& grid_state)
+						       t_grid_state& grid_state)
 {
     E_EtherCANErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -386,25 +391,6 @@ E_EtherCANErrCode EtherCANInterface::enableBetaCollisionProtection(t_grid_state&
 
 
 
-E_EtherCANErrCode EtherCANInterface::lockFPU(int fpu_id, t_grid_state& grid_state)
-{
-    grid_state.interface_state = DS_ASSERTION_FAILED;
-    return DE_FIRMWARE_UNIMPLEMENTED;
-    grid_state.interface_state = DS_ASSERTION_FAILED;
-
-    E_GridState state_summary;
-    return unlockFPUAsync(fpu_id, grid_state, state_summary);
-
-}
-
-E_EtherCANErrCode EtherCANInterface::unlockFPU(int fpu_id, t_grid_state& grid_state)
-{
-    grid_state.interface_state = DS_ASSERTION_FAILED;
-    return DE_FIRMWARE_UNIMPLEMENTED;
-
-    E_GridState state_summary;
-    return unlockFPUAsync(fpu_id, grid_state, state_summary);
-}
 
 
 
@@ -448,7 +434,7 @@ E_EtherCANErrCode EtherCANInterface::setUStepLevel(int ustep_level, t_grid_state
 }
 
 E_EtherCANErrCode EtherCANInterface::writeSerialNumber(int fpu_id, const char serial_number[],
-        t_grid_state& grid_state)
+						       t_grid_state& grid_state)
 {
     E_GridState state_summary;
     E_EtherCANErrCode status;
@@ -474,9 +460,153 @@ E_EtherCANErrCode EtherCANInterface::readSerialNumbers(t_grid_state& grid_state,
 
 
 
-int EtherCANInterface::getNumFPUs() const
+
+E_EtherCANErrCode EtherCANInterface::resetStepCounter(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
-    return config.num_fpus;
+    E_EtherCANErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+    estatus = resetStepCounterAsync(grid_state, state_summary, fpuset);
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+    
+E_EtherCANErrCode EtherCANInterface::enableMove(int fpu_id, t_grid_state& grid_state)
+{
+    E_EtherCANErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    estatus = enableMoveAsync(fpu_id, grid_state, state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+
+E_EtherCANErrCode EtherCANInterface::lockFPU(int fpu_id, t_grid_state& grid_state)
+{
+    E_EtherCANErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    estatus = lockFPUAsync(fpu_id, grid_state, state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+    
+E_EtherCANErrCode EtherCANInterface::unlockFPU(int fpu_id, t_grid_state& grid_state)
+{
+    E_EtherCANErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    estatus = unlockFPUAsync(fpu_id, grid_state, state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+
+E_EtherCANErrCode  EtherCANInterface::getMinFirmwareVersion(t_fpuset const &fpuset,
+							    uint8_t (&min_firmware_version)[3],
+							    t_grid_state& grid_state)
+{
+    E_EtherCANErrCode estatus = DE_OK;
+    E_GridState state_summary;
+    int min_firmware_fpu;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+
+    estatus = getMinFirmwareVersionAsync(fpuset,
+					 min_firmware_version,
+					 min_firmware_fpu,
+					 grid_state,
+					 state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+
+E_EtherCANErrCode EtherCANInterface::enableAlphaLimitProtection(t_grid_state& grid_state)
+{
+    E_EtherCANErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    estatus = enableAlphaLimitProtectionAsync(grid_state, state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+
+E_EtherCANErrCode EtherCANInterface::freeAlphaLimitBreach(int fpu_id, E_REQUEST_DIRECTION request_dir,
+							  t_grid_state& grid_state)
+{
+    E_EtherCANErrCode estatus = DE_OK;
+    E_GridState state_summary;
+
+    pthread_mutex_lock(&command_creation_mutex);
+
+    estatus = freeAlphaLimitBreachAsync(fpu_id, request_dir, grid_state, state_summary);
+
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return estatus;
+}
+
+E_EtherCANErrCode EtherCANInterface::setStepsPerSegment(int minsteps,
+							int maxsteps,
+							t_grid_state& grid_state,
+							t_fpuset const &fpuset)
+{
+    E_GridState state_summary;
+    E_EtherCANErrCode status;
+
+    pthread_mutex_lock(&command_creation_mutex);
+    status = setStepsPerSegmentAsync(minsteps, maxsteps, grid_state, state_summary, fpuset);
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return status;
+}
+
+// set number of 100ns clock ticks per waveform segment
+E_EtherCANErrCode EtherCANInterface::setTicksPerSegment(unsigned long ticks,
+							t_grid_state& grid_state,
+							t_fpuset const &fpuset)
+{
+    E_GridState state_summary;
+    E_EtherCANErrCode status;
+
+    pthread_mutex_lock(&command_creation_mutex);
+    status = setTicksPerSegmentAsync(ticks, grid_state, state_summary, fpuset);
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return status;
+}
+
+E_EtherCANErrCode EtherCANInterface::checkIntegrity(t_grid_state& grid_state,
+						    t_fpuset const &fpuset)
+{
+    E_GridState state_summary;
+    E_EtherCANErrCode status;
+
+    pthread_mutex_lock(&command_creation_mutex);
+    status = checkIntegrityAsync(grid_state, state_summary, fpuset);
+    pthread_mutex_unlock(&command_creation_mutex);
+
+    return status;
 }
 
 

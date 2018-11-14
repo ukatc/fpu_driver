@@ -186,11 +186,6 @@ public:
 					     t_grid_state& grid_state,
 					     E_GridState& state_summary);
 
-    E_EtherCANErrCode enableMoveAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
-				      t_grid_state& grid_state,
-				      E_GridState& state_summary);
-
-
     E_EtherCANErrCode setUStepLevelAsync(int ustep_level,
                                          t_grid_state& grid_state,
                                          E_GridState& state_summary,
@@ -198,7 +193,7 @@ public:
 
     // set minimum and maximum number of steps per waveform segment
     // (the upper value is ignored for now)
-    E_EtherCANErrCode setStepsPersegmentAsync(int minsteps,
+    E_EtherCANErrCode setStepsPerSegmentAsync(int minsteps,
 					      int maxsteps,
 					      t_grid_state& grid_state,
 					      E_GridState& state_summary,
@@ -275,11 +270,11 @@ protected:
 					       t_grid_state& grid_state);
 
     // retrieve minimum firmware version
-    E_EtherCANErrCode getMinFirmwareVersion(t_fpuset const &fpuset,
-                                            uint8_t (&min_firmware_version)[3],
-                                            int &min_firmware_fpu,
-                                            t_grid_state& grid_state,
-                                            E_GridState& state_summary);
+    E_EtherCANErrCode getMinFirmwareVersionAsync(t_fpuset const &fpuset,
+						 uint8_t (&min_firmware_version)[3],
+						 int &min_firmware_fpu,
+						 t_grid_state& grid_state,
+						 E_GridState& state_summary);
     
     E_EtherCANErrCode readSerialNumbersAsync(t_grid_state& grid_state,
             E_GridState& state_summary, t_fpuset const &fpuset);
