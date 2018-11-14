@@ -4,7 +4,7 @@ from __future__ import print_function, division
 import os
 from math import sqrt
 from ast import literal_eval
-
+import warnings
 import sys 
 import argparse
 
@@ -153,7 +153,7 @@ def plot_fpu_data(args, serial_number):
     
         ha2, = pl.plot(alpha_count_series, alpha_mean - alpha_stdev,  'r:',
                        label='alpha datum aberration (standard deviation over all time)')
-    
+
         ha3, = pl.plot(alpha_count_series, alpha_mean + alpha_stdev,  'r:')
         handles.extend([ha1, ha2, ha3])
     
@@ -171,7 +171,11 @@ def plot_fpu_data(args, serial_number):
         handles.extend([hb1, hb2, hb3])
 
     if len(handles) > 0:
-        pl.legend(handles=handles)
+        with warnings.catch_warnings():
+            # suppress warning about empty label
+            warnings.filterwarnings('ignore', """The handle .* has a label of .* which cannot be automatically added to the legend.""",
+                                    UserWarning)
+            pl.legend(handles=handles)
         pl.xlabel("count of datum ops [1]")
         pl.ylabel("steps [1]")
         pl.title("Datum aberrations for FPU %s" % serial_number)
