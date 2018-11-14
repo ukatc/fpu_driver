@@ -4716,8 +4716,16 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
-\subsection*{Changes in version 1.3.8}
+\subsection*{Changes in version 1.4.0}
 \begin{itemize}
+
+\item Added: Example script named ``plot-fpu-counters.py'' which
+  reads the healthlog table of the position database and produces a
+  matplotlib plot of datum aberrations and their standard deviations
+  as a function of the count of datum operations. Additionally, it can
+  produce a plot showing the number of movements over calendar time.
+
+  
 \item Fixed an aliasing bug in the processing of counters such as
   number of datum operations, count of collisions, and so on. This
   caused statistical values erroneously to be shared between different
@@ -4729,12 +4737,11 @@ commands, or alter otherwise visible behaviour of the driver.
   relied upon.  To discern correct data from contaminated data, the
   field value was changed.  Values which use the replacement
   ``counters2'' field name are stored correctly.
-  
-\item Added: Example script named ``plot-fpu-counters.py'' which
-  reads the healthlog table of the position database and produces a
-  matplotlib plot of datum aberrations and their standard deviations
-  as a function of the count of datum operations. Additionally, it can
-  produce a plot showing the number of movements over calendar time.
+
+\item Changed: The default maximum alpha range was decreased from
+  +172.0 to +159.0\degree, because an alpha arm limit breach was observed at
+  +160 degrees. The value can be individually increased for any FPU
+  using the \texttt{fpu-admin} tool.
   
 \end{itemize}
 
