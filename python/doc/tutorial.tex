@@ -4719,12 +4719,13 @@ commands, or alter otherwise visible behaviour of the driver.
 \subsection*{Changes in version 1.4.0}
 \begin{itemize}
 
-\item Added: Example script named ``plot-fpu-counters.py'' which
-  reads the healthlog table of the position database and produces a
-  matplotlib plot of datum aberrations and their standard deviations
-  as a function of the count of datum operations. Additionally, it can
-  produce a plot showing the number of movements over calendar time.
-
+\item Added: Example script named ``plot-fpu-counters.py'' which reads
+  the healthlog table of the position database and produces a
+  matplotlib plot of datum aberrations and their binned means and
+  estimated standard deviation as a function of the count of datum
+  operations. Additionally, it can produce a plot showing the number
+  of movements over calendar time, ad well as a chart on CAN
+  time-outs.
   
 \item Fixed an aliasing bug in the processing of counters such as
   number of datum operations, count of collisions, and so on. This
@@ -4743,6 +4744,12 @@ commands, or alter otherwise visible behaviour of the driver.
   +160 degrees. The value can be individually increased for any FPU
   using the \texttt{fpu-admin} tool.
   
+\item Improved: Some cases where CAN time-outs were not captured in
+  the health log were fixed.
+\item Fixed: The FPU error code \texttt{ER\_DATUM\_LIMIT}, sent when
+  the alpha arm is found to be on the limit switch, was previously
+  converted into an exception. This conversion is now working
+  properly.
 \end{itemize}
 
 
