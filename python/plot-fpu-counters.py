@@ -51,7 +51,7 @@ def parse_args():
                         help='plot statistics of beta datum aberrations (default: %(default)s)')
     
     parser.add_argument('-k', '--binlen', metavar='BINLEN', type=int,
-                        default=25,
+                        default=100,
                         help='number of samples combined into the mean and stdev values (default: %(default)s)')
     
     parser.add_argument('-w', '--show_number_waveforms', dest="show_number_waveforms",  action='store_true',
