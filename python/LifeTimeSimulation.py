@@ -487,6 +487,10 @@ def parse_args():
                         default="2025-12-31T12:59:59UTC",
                         help='ISO8601 time stamp of when test ends (default: %(default)s)')
 
+    parser.add_argument('--countermove_degrees', metavar='COUNTERMOVE_DEGREES', type=float,
+                        default=0.0,
+                        help='positive angle to move away from the datum position before datum op (default: %(default)s)')
+    
     parser.add_argument('-v', '--verbosity', metavar='VERBOSITY', type=int,
                         default=1,
                         help='verbosity level of progress messages (default: %(default)s)')
@@ -670,6 +674,12 @@ def rungrid(args):
                 
             if not stop_all_fpus:
                 chatty_sleep(args.chill_time, opts=args)
+
+            if args.countermove_degrees > 0:
+                wf = gen_wf(ones(args.N) * args.countermove_degrees, 0)
+                gd.configMotion(wf, grid_state)
+                gd.executeMotion(grid_state)
+                time.sleep(1.0)
 
             if verbosity > 0:
                 print("findDatum")
