@@ -673,6 +673,13 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                  " an FPU alpha arm is on its limit switch.",
                                  DE_ALPHA_ARM_ON_LIMIT_SWITCH);
         break;
+	
+    case DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH:
+        throw EtherCANException("DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH: Part of datum command rejected by"
+				" hardware because an FPU alpha arm is on its limit switch"
+				" before it started to move.",
+                                 DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH);
+        break;
 
     case DE_INCONSISTENT_STEP_COUNT:
         throw EtherCANException("The EtherCAN interface received an illegal counter value from"
