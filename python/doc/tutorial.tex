@@ -2962,9 +2962,9 @@ be passed:
   \label{it:ratelimits}  
 
 \item[\texttt{can\_command\_priority}] This parameter allows to set
-  the minimun priority value for CAN commands from the driver to the
-  FPUs. The lower the value, the higher the actual pririty.  The
-  default value is 3, which will work for firmware versiona >= 1.6.0.
+  the minimum priority value for CAN commands from the driver to the
+  FPUs. The lower the value, the higher the actual priority.  The
+  default value is 3, which will work for firmware versions >= 1.6.0.
   Earlier firmware versions will require a value of zero - otherwise,
   commands will not be recognised. To avoid problems with missing CAN
   responses or capacity problems in the firmware, it is recommended to
@@ -3001,7 +3001,7 @@ be passed:
   \texttt{abortMotion()} commands. Typical sensible rate limit values
   are about one or two milliseconds for all commands to the same bus,
   and up to about 20 milliseconds for commands to the same FPUs.
-  Depending on the EtherCANB gateway implementation, it might be
+  Depending on the EtherCAN gateway implementation, it might be
   possible to set the limit to zero.
 
   
@@ -4666,7 +4666,7 @@ The EtherCAN interface documented here, version 1.3.7, is compatible with firmwa
     \begin{itemize}
     \item Requires to set the driver parameter
       \texttt{can\_command\_priority} to zero, otherwise the firmware
-      will not recognize any commands. In order to avoid problems with
+      will not recognise any commands. In order to avoid problems with
       reliable transmission of response messages, it is recommended
       to use newer firmware.
   \end{itemize}
@@ -4728,12 +4728,13 @@ commands, or alter otherwise visible behaviour of the driver.
 \subsection*{Changes in version 1.4.0}
 \begin{itemize}
 
-\item Added: Example script named ``plot-fpu-counters.py'' which
-  reads the healthlog table of the position database and produces a
-  matplotlib plot of datum aberrations and their standard deviations
-  as a function of the count of datum operations. Additionally, it can
-  produce a plot showing the number of movements over calendar time.
-
+\item Added: Example script named ``plot-fpu-counters.py'' which reads
+  the healthlog table of the position database and produces a
+  matplotlib plot of datum aberrations and their binned means and
+  estimated standard deviation as a function of the count of datum
+  operations. Additionally, it can produce a plot showing the number
+  of movements over calendar time, ad well as a chart on CAN
+  time-outs.
   
 \item Fixed an aliasing bug in the processing of counters such as
   number of datum operations, count of collisions, and so on. This
@@ -4752,6 +4753,12 @@ commands, or alter otherwise visible behaviour of the driver.
   +160 degrees. The value can be individually increased for any FPU
   using the \texttt{fpu-admin} tool.
   
+\item Improved: Some cases where CAN time-outs were not captured in
+  the health log were fixed.
+\item Fixed: The FPU error code \texttt{ER\_DATUM\_LIMIT}, sent when
+  the alpha arm is found to be on the limit switch, was previously not
+  converted correctly into an exception. This conversion is now
+  working properly.
 \end{itemize}
 
 
@@ -4799,7 +4806,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \subsection*{Changes in version 1.3.5}
 \begin{itemize}
 \item Activate additional retry code in \texttt{configMotion()}
-  command, which re-sends data if a CAN time-out occured when sending
+  command, which re-sends data if a CAN time-out occurred when sending
   waveforms.  Now, re-sending waveform data is supported for up to 50
   times, before a fatal error is reported.
 \end{itemize}
