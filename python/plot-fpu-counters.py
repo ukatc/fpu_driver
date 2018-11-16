@@ -20,6 +20,7 @@ from protectiondb import ProtectionDB
 from protectiondb import HealthLogDB
 
 
+DATABASE_PATH = os.environ.get("FPU_DATABASE", "/var/lib/fpudb")
 
 
 def parse_args():
@@ -32,6 +33,10 @@ def parse_args():
                         default=1,
                         help='verbosity level of progress messages (default: %(default)s)')
 
+    parser.add_argument('-D', '--database_path', metavar='DATABASE_PATH', type=str,
+                        default=DATABASE_PATH,
+                        help='Path to LMDB database with health log data. See manual for more information (default: %(default)s)')
+    
     parser.add_argument('-1', '--legacy_pre_v1.3.7', dest="pre137",  action='store_true',
                         help='plot data from driver version before 1.3.7  (which is likely not valid) (default: %(default)s)')
 
@@ -60,6 +65,9 @@ def parse_args():
     parser.add_argument('-t', '--show_timeouts', dest="show_timeouts",  action='store_true',
                         help='plot number of time-outs over time (default: %(default)s)')
 
+    parser.add_argument('-f', '--figure_format', metavar='figure_format', type=str,
+                        default='',
+                        help="format for saving figures (e.g. 'png' or 'pdf')  (default: %(default)r)")
      
     args = parser.parse_args()
 #    args.stop_time = time.strptime(args.end_time, '%Y-%m-%dT%H:%M:%S%Z')
@@ -139,7 +147,7 @@ def plot_fpu_data(args, serial_number):
         num_datum_ops = counters.get(HealthLogDB.datum_count, 0)
 
     if num_datum_ops == 0:
-        print("no data found for FPU %s" % serial_number)
+        print("no data found for FPU %s - make sure that database path %r is correct" % (serial_number, args.database_path))
         sys.exit(1)
 
     series=None
@@ -221,6 +229,8 @@ def plot_fpu_data(args, serial_number):
         pl.ylabel("datum aberration steps [1]")
         pl.title("Datum aberrations for FPU %s" % serial_number)
         pl.grid()
+        if args.figure_format != '':
+            pl.savefig(("%s-aberrations." + args.figure_format) % serial_number, dpi=600, papertype='a3')
         pl.show()
 
 
@@ -262,6 +272,8 @@ def plot_fpu_data(args, serial_number):
         pl.title("statistics of datum aberrations for FPU %s" % serial_number)
         print("close plot window to continue")
         pl.grid()
+        if args.figure_format != '':
+            pl.savefig(("%s-aberrations-stats." + args.figure_format) % serial_number, dpi=600, papertype='a3')
         pl.show()
 
 
@@ -278,6 +290,8 @@ def plot_fpu_data(args, serial_number):
         pl.ylabel("count executed operations [1]")
         pl.title("Count of operations over time for FPU %s" % serial_number)
         pl.grid()
+        if args.figure_format != '':
+            pl.savefig(("%s-operation-count." + args.figure_format) % serial_number, dpi=600, papertype='a3')
         pl.show()      
 
     if args.show_timeouts:
@@ -296,18 +310,18 @@ def plot_fpu_data(args, serial_number):
         pl.ylabel("count [1]")
         pl.title("Count of time-outs over time for FPU %s" % serial_number)
         pl.grid()
+        if args.figure_format != '':
+            pl.savefig(("%s-timeout-counts." + args.figure_format) % serial_number, dpi=600, papertype='a3')
         pl.show()      
 
 
 if __name__ == '__main__' :
-    DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE")
-
-    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=(5*1024*1024*1024))
-    
-    fpudb = env.open_db("fpu")
-
 
     args = parse_args()
+    
+    env = lmdb.open(args.database_path, max_dbs=10, map_size=(5*1024*1024*1024))
+    
+    fpudb = env.open_db("fpu")
 
     for serial_number in args.serial_numbers:
         plot_fpu_data(args, serial_number)
