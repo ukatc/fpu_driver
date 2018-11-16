@@ -169,6 +169,7 @@ public:
     int fw_date_year;
     int fw_date_month;
     int fw_date_day;
+    int checksum_ok;
     std::string serial_number;
 
     WrapFPUState() {}
@@ -180,12 +181,14 @@ public:
         pending_command_set       = fpu_state.pending_command_set;
         state                     = fpu_state.state;
         last_command              = fpu_state.last_command;
+	sequence_number           = fpu_state.sequence_number;
         last_status               = fpu_state.last_status;
         alpha_steps               = fpu_state.alpha_steps;
         beta_steps                = fpu_state.beta_steps;
         alpha_deviation           = fpu_state.alpha_deviation;
         beta_deviation            = fpu_state.beta_deviation;
         timeout_count             = fpu_state.timeout_count;
+        num_active_timeouts       = fpu_state.num_active_timeouts;
         step_timing_errcount      = fpu_state.step_timing_errcount;
         can_overflow_errcount     = fpu_state.can_overflow_errcount;
         direction_alpha           = fpu_state.direction_alpha;
@@ -207,12 +210,14 @@ public:
         waveform_reversed         = fpu_state.waveform_reversed;
         register_value            = fpu_state.register_value;
         register_address          = fpu_state.register_address;
-        fw_version_major          =  fpu_state.firmware_version[0];
-        fw_version_minor          =  fpu_state.firmware_version[1];
-        fw_version_patch          =  fpu_state.firmware_version[2];
-        fw_date_year              =  fpu_state.firmware_date[0];
-        fw_date_month             =  fpu_state.firmware_date[1];
-        fw_date_day               =  fpu_state.firmware_date[2];
+        fw_version_major          = fpu_state.firmware_version[0];
+        fw_version_minor          = fpu_state.firmware_version[1];
+        fw_version_patch          = fpu_state.firmware_version[2];
+        fw_date_year              = fpu_state.firmware_date[0];
+        fw_date_month             = fpu_state.firmware_date[1];
+        fw_date_day               = fpu_state.firmware_date[2];
+	crc32                     = fpu_state.crc32;
+	checksum_ok               = fpu_state.checksum_ok;
 
         assert(strlen(fpu_state.serial_number) < LEN_SERIAL_NUMBER);
         serial_number = std::string(fpu_state.serial_number);
@@ -275,6 +280,10 @@ public:
           << "-" << fpu.fw_date_month
           << "-" << fpu.fw_date_day <<"', "
           << " 'serial_number' : \"" << fpu.serial_number << "\", "
+          << " 'crc32' : " << std::hex << std::showbase << fpu.crc32 << std::dec << ", "
+          << " 'checksum_ok' : " << fpu.checksum_ok << ", "
+          << " 'sequence_number' : " << fpu.sequence_number << ", "
+          << " 'num_active_timeouts' : " << fpu.num_active_timeouts << ", "
           << " }";
         return s.str();
     }
@@ -881,7 +890,6 @@ public:
 
     E_EtherCANErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state,
                                            list &fpu_list,
-                                           bool soft_protection=true,
                                            bool allow_uninitialized=false,
                                            int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION)
     {
@@ -930,7 +938,7 @@ public:
             wform.steps = steps;
             wtable.push_back(wform);
         }
-        E_EtherCANErrCode ecode = configMotion(wtable, grid_state, fpuset, soft_protection,
+        E_EtherCANErrCode ecode = configMotion(wtable, grid_state, fpuset,
                                                allow_uninitialized, ruleset_version);
         checkInterfaceError(ecode);
         return ecode;
@@ -965,6 +973,7 @@ public:
 
     }
 
+    
     E_EtherCANErrCode wrap_pingFPUs(WrapGridState& grid_state, list& fpu_list)
     {
         t_fpuset fpuset;
@@ -974,16 +983,6 @@ public:
         return ecode;
     }
 
-
-    E_EtherCANErrCode wrap_getPositions(WrapGridState& grid_state, list& fpu_list)
-    {
-        t_fpuset fpuset;
-        getFPUSet(fpu_list, fpuset);
-
-        E_EtherCANErrCode ecode = getPositions(grid_state, fpuset);
-        checkInterfaceError(ecode);
-        return ecode;
-    }
 
     E_EtherCANErrCode wrap_readRegister(int read_address, WrapGridState& grid_state, list& fpu_list)
     {
@@ -1010,16 +1009,7 @@ public:
         return ecode;
     }
 
-
-    E_EtherCANErrCode wrap_getCounterDeviation(WrapGridState& grid_state, list& fpu_list)
-    {
-        t_fpuset fpuset;
-        getFPUSet(fpu_list, fpuset);
-
-        E_EtherCANErrCode ecode = getCounterDeviation(grid_state, fpuset);
-        checkInterfaceError(ecode);
-        return ecode;
-    }
+    
 
     void getDatumFlags(dict& dict_modes, t_datum_search_flags &direction_flags, const t_fpuset &fpuset)
     {
@@ -1222,10 +1212,9 @@ public:
         return ecode;
     }
 
-    E_EtherCANErrCode wrap_freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_direction,
-            WrapGridState& grid_state)
+    E_EtherCANErrCode wrap_enableMove(int fpu_id, WrapGridState& grid_state)
     {
-        E_EtherCANErrCode ecode = freeBetaCollision(fpu_id, request_direction, grid_state);
+        E_EtherCANErrCode ecode = enableMove(fpu_id, grid_state);
         checkInterfaceError(ecode);
         return ecode;
     }
@@ -1240,13 +1229,22 @@ public:
         return ecode;
     }
 
+    
+    E_EtherCANErrCode wrap_freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_direction,
+            WrapGridState& grid_state)
+    {
+        E_EtherCANErrCode ecode = freeBetaCollision(fpu_id, request_direction, grid_state);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+    
     E_EtherCANErrCode wrap_enableBetaCollisionProtection(WrapGridState& grid_state)
     {
         E_EtherCANErrCode ecode = enableBetaCollisionProtection(grid_state);
         checkInterfaceError(ecode);
         return ecode;
     }
-
+    
     E_EtherCANErrCode wrap_lockFPU(int fpu_id, WrapGridState& grid_state)
     {
         E_EtherCANErrCode ecode =lockFPU(fpu_id, grid_state);
@@ -1281,6 +1279,72 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrap_resetStepCounter(WrapGridState& grid_state, list& fpu_list)
+    {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = resetStepCounter(grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+
+    }
+
+    E_EtherCANErrCode wrap_checkIntegrity(WrapGridState& grid_state, list& fpu_list)
+    {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = checkIntegrity(grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+
+    }
+    
+    boost::python::tuple wrap_getMinFirmwareVersion(WrapGridState& grid_state, list& fpu_list)
+    {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+	uint8_t min_firmware_version[3];
+
+	E_EtherCANErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, grid_state);
+        checkInterfaceError(ecode);
+        return boost::python::make_tuple(min_firmware_version[0], min_firmware_version[1], min_firmware_version[2]);
+    }
+    
+    E_EtherCANErrCode wrap_setStepsPerSegment(int min_steps, int max_steps, WrapGridState& grid_state, list& fpu_list)
+    {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = setStepsPerSegment(min_steps, max_steps, grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+    E_EtherCANErrCode wrap_setTicksPerSegment(unsigned long ticks, WrapGridState& grid_state, list& fpu_list)
+    {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = setTicksPerSegment(ticks, grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+    
+    E_EtherCANErrCode wrap_freeAlphaLimitBreach(int fpu_id, E_REQUEST_DIRECTION request_direction,
+            WrapGridState& grid_state)
+    {
+        E_EtherCANErrCode ecode = freeAlphaLimitBreach(fpu_id, request_direction, grid_state);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+    
+    E_EtherCANErrCode wrap_enableAlphaLimitProtection(WrapGridState& grid_state)
+    {
+        E_EtherCANErrCode ecode = enableAlphaLimitProtection(grid_state);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
 
 };
 
@@ -1383,19 +1447,26 @@ BOOST_PYTHON_MODULE(ethercanif)
        be used by normal EtherCAN interface client code.
      */
     enum_<E_MOC_ERRCODE>("E_MOC_ERRCODE")
-    .value("_ER_OK", ER_OK)
-    .value("_ER_COLLIDE", ER_COLLIDE)
-    .value("_ER_INVALID", ER_INVALID)
-    .value("_ER_WAVENRDY", ER_WAVENRDY)
-    .value("_ER_WAVE2BIG", ER_WAVE2BIG)
-    .value("_ER_TIMING", ER_TIMING)
-    .value("_ER_M1LIMIT", ER_M1LIMIT)
-    .value("_ER_PARAM", ER_PARAM)
-    .value("_ER_AUTO", ER_AUTO)
-    .value("_ER_OK_UNCONFIRMED", ER_OK_UNCONFIRMED)
-    .value("_ER_TIMEDOUT", ER_TIMEDOUT)
-    .value("_ER_DATUMTO", ER_DATUMTO)
-    .value("_ER_DATUM_LIMIT", ER_DATUM_LIMIT)
+    .value("MCE_FPU_OK			    ", MCE_FPU_OK		    )
+    .value("MCE_WARN_COLLISION_DETECTED	    ", MCE_WARN_COLLISION_DETECTED  )
+    .value("MCE_WARN_LIMIT_SWITCH_BREACH    ", MCE_WARN_LIMIT_SWITCH_BREACH )
+    .value("MCE_ERR_INVALID_COMMAND	    ", MCE_ERR_INVALID_COMMAND	    )
+    .value("MCE_NOTIFY_COMMAND_IGNORED	    ", MCE_NOTIFY_COMMAND_IGNORED   )
+    .value("MCE_ERR_WAVEFORM_NOT_READY	    ", MCE_ERR_WAVEFORM_NOT_READY   )
+    .value("MCE_WAVEFORM_TOO_BIG	    ", MCE_WAVEFORM_TOO_BIG	    )
+    .value("MCE_WAVEFORM_SEQUENCE	    ", MCE_WAVEFORM_SEQUENCE	    )
+    .value("MCE_WAVEFORM_BADVALUE	    ", MCE_WAVEFORM_BADVALUE	    )
+    .value("MCE_WARN_STEP_TIMING_ERROR	    ", MCE_WARN_STEP_TIMING_ERROR   )
+    .value("MCE_ERR_INVALID_PARAMETER	    ", MCE_ERR_INVALID_PARAMETER    )
+    .value("MCE_ERR_DATUM_TIME_OUT	    ", MCE_ERR_DATUM_TIME_OUT	    )
+    .value("MCE_NOTIFY_DATUM_ALPHA_ONLY	    ", MCE_NOTIFY_DATUM_ALPHA_ONLY  )
+    .value("MCE_NOTIFY_DATUM_BETA_ONLY	    ", MCE_NOTIFY_DATUM_BETA_ONLY   )
+    .value("MCE_ERR_AUTO_DATUM_UNINITIALIZED", MCE_ERR_AUTO_DATUM_UNINITIALIZED)
+    .value("MCE_ERR_DATUM_ON_LIMIT_SWITCH   ", MCE_ERR_DATUM_ON_LIMIT_SWITCH   )
+    .value("MCE_ERR_CAN_OVERFLOW_HW	    ", MCE_ERR_CAN_OVERFLOW_HW	    )
+    .value("MCE_ERR_CAN_OVERFLOW_SW	    ", MCE_ERR_CAN_OVERFLOW_SW	    )
+    .value("MCE_NO_CONFIRMATION_EXPECTED    ", MCE_NO_CONFIRMATION_EXPECTED )
+    .value("MCE_COMMAND_TIMEDOUT            ", MCE_COMMAND_TIMEDOUT         )
     .export_values();
 
     enum_<E_CAN_COMMAND>("E_CAN_COMMAND")
@@ -1403,6 +1474,17 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("CCMD_CONFIG_MOTION", CCMD_CONFIG_MOTION)
     .value("CCMD_EXECUTE_MOTION", CCMD_EXECUTE_MOTION)
     .value("CCMD_ABORT_MOTION", CCMD_ABORT_MOTION)
+    .value("CCMD_READ_REGISTER", CCMD_READ_REGISTER)
+    .value("CCMD_READ_SERIAL_NUMBER", CCMD_READ_SERIAL_NUMBER)
+    .value("CCMD_WRITE_SERIAL_NUMBER", CCMD_WRITE_SERIAL_NUMBER)
+    .value("CCMD_PING_FPU", CCMD_PING_FPU)
+    .value("CCMD_RESET_FPU", CCMD_RESET_FPU)
+    .value("CCMD_FIND_DATUM", CCMD_FIND_DATUM)
+    .value("CCMD_REPEAT_MOTION", CCMD_REPEAT_MOTION)
+    .value("CCMD_REVERSE_MOTION", CCMD_REVERSE_MOTION)
+    .value("CCMD_ENABLE_BETA_COLLISION_PROTECTION", CCMD_ENABLE_BETA_COLLISION_PROTECTION)
+    .value("CCMD_FREE_BETA_COLLISION", CCMD_FREE_BETA_COLLISION)
+    .value("CCMD_SET_USTEP_LEVEL", CCMD_SET_USTEP_LEVEL)
 #if    (CAN_PROTOCOL_VERSION == 1)
     .value("CCMD_GET_STEPS_ALPHA", CCMD_GET_STEPS_ALPHA)
     .value("CCMD_GET_STEPS_BETA", CCMD_GET_STEPS_BETA)
@@ -1411,25 +1493,15 @@ BOOST_PYTHON_MODULE(ethercanif)
 #else
     .value("CCMD_LOCK_UNIT", CCMD_LOCK_UNIT)
     .value("CCMD_UNLOCK_UNIT", CCMD_UNLOCK_UNIT)
-    .value("CCMD_GET_COUNTER_DEVIATION", CCMD_GET_COUNTER_DEVIATION)
     .value("CCMD_GET_FIRMWARE_VERSION", CCMD_GET_FIRMWARE_VERSION)
     .value("CCMD_CHECK_INTEGRITY", CCMD_CHECK_INTEGRITY)
     .value("CCMD_FREE_ALPHA_LIMIT_BREACH", CCMD_FREE_ALPHA_LIMIT_BREACH)
     .value("CCMD_ENABLE_ALPHA_LIMIT_PROTECTION", CCMD_ENABLE_ALPHA_LIMIT_PROTECTION)
-    .value("CCMD_SET_TIME_STEP", CCMD_SET_TIME_STEP)
-    .value("CCMD_SET_STEPS_PER_FRAME", CCMD_SET_STEPS_PER_FRAME)
+    .value("CCMD_SET_TICKS_PER_SEGMENT", CCMD_SET_TICKS_PER_SEGMENT)
+    .value("CCMD_SET_STEPS_PER_SEGMENT", CCMD_SET_STEPS_PER_SEGMENT)
     .value("CCMD_ENABLE_MOVE", CCMD_ENABLE_MOVE)
-#endif
-    .value("CCMD_READ_REGISTER", CCMD_READ_REGISTER)
-    .value("CCMD_PING_FPU", CCMD_PING_FPU)
-    .value("CCMD_RESET_FPU", CCMD_RESET_FPU)
-    .value("CCMD_FIND_DATUM", CCMD_FIND_DATUM)
     .value("CCMD_RESET_STEPCOUNTER", CCMD_RESET_STEPCOUNTER)
-    .value("CCMD_REPEAT_MOTION", CCMD_REPEAT_MOTION)
-    .value("CCMD_REVERSE_MOTION", CCMD_REVERSE_MOTION)
-    .value("CCMD_ENABLE_BETA_COLLISION_PROTECTION", CCMD_ENABLE_BETA_COLLISION_PROTECTION)
-    .value("CCMD_FREE_BETA_COLLISION", CCMD_FREE_BETA_COLLISION)
-    .value("CCMD_SET_USTEP_LEVEL", CCMD_SET_USTEP_LEVEL)
+#endif
 
 
 
@@ -1591,6 +1663,10 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def_readonly("fw_date_day", &WrapFPUState::fw_date_day)
     .def_readonly("register_value", &WrapFPUState::register_value)
     .def_readonly("serial_number", &WrapFPUState::serial_number)
+    .def_readonly("sequence_number", &WrapFPUState::sequence_number)
+    .def_readonly("num_active_timeouts", &WrapFPUState::num_active_timeouts)
+    .def_readonly("crc32", &WrapFPUState::crc32)
+    .def_readonly("checksum_ok", &WrapFPUState::checksum_ok)
     .def("__repr__", &WrapFPUState::to_repr)
     ;
 
@@ -1631,6 +1707,9 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def_readwrite("waveform_upload_pause_us", &EtherCANInterfaceConfig::waveform_upload_pause_us)
     .def_readwrite("firmware_version_address_offset", &EtherCANInterfaceConfig::firmware_version_address_offset)
     .def_readwrite("confirm_each_step", &EtherCANInterfaceConfig::confirm_each_step)
+    .def_readwrite("configmotion_confirmation_period", &EtherCANInterfaceConfig::configmotion_confirmation_period)
+    .def_readwrite("configmotion_max_retry_count", &EtherCANInterfaceConfig::configmotion_max_retry_count)
+    .def_readwrite("configmotion_max_resend_count", &EtherCANInterfaceConfig::configmotion_max_resend_count)
     .def_readwrite("can_command_priority", &EtherCANInterfaceConfig::can_command_priority)
     .def_readwrite("min_bus_repeat_delay_ms", &EtherCANInterfaceConfig::min_bus_repeat_delay_ms)
     .def_readwrite("min_fpu_repeat_delay_ms", &EtherCANInterfaceConfig::min_fpu_repeat_delay_ms)
@@ -1651,8 +1730,6 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def("initializeGrid", &WrapEtherCANInterface::wrap_initializeGrid)
     .def("resetFPUs", &WrapEtherCANInterface::wrap_resetFPUs)
     .def("pingFPUs", &WrapEtherCANInterface::wrap_pingFPUs)
-    .def("getPositions", &WrapEtherCANInterface::wrap_getPositions)
-    .def("getCounterDeviation", &WrapEtherCANInterface::wrap_getCounterDeviation)
     .def("findDatum", &WrapEtherCANInterface::wrap_findDatum)
     .def("startFindDatum", &WrapEtherCANInterface::wrap_startFindDatum)
     .def("waitFindDatum", &WrapEtherCANInterface::wrap_waitFindDatum)
@@ -1669,10 +1746,20 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def("readRegister", &WrapEtherCANInterface::wrap_readRegister)
     .def("getFirmwareVersion", &WrapEtherCANInterface::wrap_getFirmwareVersion)
     .def("enableBetaCollisionProtection", &WrapEtherCANInterface::wrap_enableBetaCollisionProtection)
-    .def("lockFPU", &WrapEtherCANInterface::lockFPU)
-    .def("unlockFPU", &WrapEtherCANInterface::unlockFPU)
+    .def("lockFPU", &WrapEtherCANInterface::wrap_lockFPU)
+    .def("unlockFPU", &WrapEtherCANInterface::wrap_unlockFPU)
     .def("writeSerialNumber", &WrapEtherCANInterface::wrap_writeSerialNumber)
     .def("readSerialNumbers", &WrapEtherCANInterface::wrap_readSerialNumbers)
+
+    .def("getMinfirmwareVersion", &WrapEtherCANInterface::wrap_getMinFirmwareVersion)
+    .def("resetStepCounter", &WrapEtherCANInterface::wrap_resetStepCounter)
+    .def("enableMove", &WrapEtherCANInterface::wrap_enableMove)
+    .def("enableAlphaLimitProtection", &WrapEtherCANInterface::wrap_enableAlphaLimitProtection)
+    .def("freeAlphaLimitBreach", &WrapEtherCANInterface::wrap_freeAlphaLimitBreach)
+    .def("setStepsPerSegment", &WrapEtherCANInterface::wrap_setStepsPerSegment)
+    .def("setTicksPerSegment", &WrapEtherCANInterface::wrap_setTicksPerSegment)
+    .def("checkIntegrity", &WrapEtherCANInterface::wrap_checkIntegrity)
+	
     .def_readonly("NumFPUs", &WrapEtherCANInterface::getNumFPUs)
     ;
 
