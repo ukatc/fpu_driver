@@ -13,3 +13,7 @@ GTAGS
 version
 *.org_archive
 /python/pgtest
+*.do
+/.redo
+
+
