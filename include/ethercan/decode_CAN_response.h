@@ -17,11 +17,14 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+
 #ifndef DECODE_CAN_RESPONSE_H
 #define DECODE_CAN_RESPONSE_H
 
 #include "FPUState.h"
 #include "ethercan/E_CAN_COMMAND.h"
+#include "EtherCANInterfaceConfig.h"
+#include "CAN_Command.h"
 
 namespace mpifps
 {
@@ -39,6 +42,7 @@ namespace ethercanif
     const UPDATE_FIELDID UPDATE_FIELDS_NOSTEPS = static_cast<UPDATE_FIELDID>(UPDATE_STSWD | UPDATE_STATE | UPDATE_ECODE);
     const UPDATE_FIELDID UPDATE_FIELDS_NOECODE = static_cast<UPDATE_FIELDID>(UPDATE_STSWD | UPDATE_STATE);
     const UPDATE_FIELDID UPDATE_FIELDS_NOSTATE = UPDATE_STSWD;
+    const UPDATE_FIELDID UPDATE_LAST_COMMAND = static_cast<UPDATE_FIELDID>(0);
     
     // test a bit in the 32-bit status word, and return 1 if set, 0 otherwise
     inline unsigned int test_bit (uint32_t stwd, E_FPU_STATUS_BITS bit)

@@ -39,23 +39,24 @@ namespace mpifps
 namespace ethercanif
 {
 
-handle_ConfigMotion_response(const EtherCANInterfaceConfig&config,
-                             const int fpu_id,
-                             t_fpu_state& fpu,
-                             int &count_pending
-                             const t_response_buf&data,
-                             const int blen, TimeOutList&  timeout_list,
-                             const E_CAN_COMMAND cmd_id,
-                             const uint8_t sequence_number)
+void handle_ConfigMotion_response(const EtherCANInterfaceConfig&config,
+				  const int fpu_id,
+				  t_fpu_state& fpu,
+				  int &count_pending,
+				  const t_response_buf&data,
+				  const int blen, TimeOutList&  timeout_list,
+				  const E_CAN_COMMAND cmd_id,
+				  const uint8_t sequence_number)
 {
     // update status fields, but not step counts (they do not fit into the response)
+    assert(blen == 5);
     const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_NOSTEPS, data);
 
     LOG_RX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX : handle_ConfigMotion:"
-           " fpu #%u, segment %u: status=%u, error=%u\n",
+           " fpu #%u, segment %u: status=%u\n",
            get_realtime(),
            fpu_id, fpu.num_waveform_segments,
-           response_status, response_errcode);
+           response_errcode);
 
     // clear time-out flag
     remove_pending(config, fpu, fpu_id, cmd_id, response_errcode, timeout_list, count_pending, sequence_number);
@@ -75,8 +76,6 @@ handle_ConfigMotion_response(const EtherCANInterfaceConfig&config,
     {
 	fpu.num_waveform_segments = data[4];
     }
-
-    fpu.last_updated = cur_time;
 
 }
 

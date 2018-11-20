@@ -84,7 +84,7 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS)) Makefile
 _OBJ =  EtherCANInterface.o    AsyncInterface.o FPUArray.o GridState.o \
 	CommandPool.o   GatewayInterface.o  TimeOutList.o \
 	CommandQueue.o  time_utils.o  sync_utils.o SBuffer.o \
-	handleFPUResponse.o handleTimeout.o FPUState.o
+	handleFPUResponse.o handleTimeout.o FPUState.o decode_CAN_response.o
 
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
@@ -110,9 +110,9 @@ $(ODIR)/%.o: $(SRCDIR)/%.C $(DEPS) version
 lib/libethercan.a: $(OBJ)
 	ar rcs   $@ $^ 
 
-lib: lib/libethercan.a
+libethercan: lib/libethercan.a
 
-pyext: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
+wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.C -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(VERSION)\"
 
 style:

@@ -39,20 +39,21 @@ namespace mpifps
 namespace ethercanif
 {
 
-handle_AbortMotion_response(const EtherCANInterfaceConfig&config,
-                            const int fpu_id,
-                            t_fpu_state& fpu,
-                            int &count_pending
-                            const t_response_buf&data,
-                            const int blen, TimeOutList&  timeout_list,
-                            const E_CAN_COMMAND cmd_id,
-                            const uint8_t sequence_number)
+void handle_AbortMotion_response(const EtherCANInterfaceConfig&config,
+				 const int fpu_id,
+				 t_fpu_state& fpu,
+				 int &count_pending,
+				 const t_response_buf&data,
+				 const int blen, TimeOutList&  timeout_list,
+				 const E_CAN_COMMAND cmd_id,
+				 const uint8_t sequence_number)
 {
 
+    assert(blen == 8);
     const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
     
     // clear time-out flag
-    if (response_errcode == ER_OK)
+    if (response_errcode == MCE_FPU_OK)
     {
         if (fpu.state != FPST_OBSTACLE_ERROR)
         {
@@ -62,7 +63,7 @@ handle_AbortMotion_response(const EtherCANInterfaceConfig&config,
         switch(fpu.state)
         {
         case FPST_MOVING:
-            remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending);
+            remove_pending(config, fpu, fpu_id,  CCMD_EXECUTE_MOTION, response_errcode, timeout_list, count_pending, sequence_number);
             break;
         case FPST_DATUM_SEARCH:
             remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending, sequence_number);

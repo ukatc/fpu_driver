@@ -39,16 +39,17 @@ namespace mpifps
 namespace ethercanif
 {
 
-handle_ResetFPU_response(const EtherCANInterfaceConfig&config,
-                         const int fpu_id,
-                         t_fpu_state& fpu,
-                         int &count_pending
-                         const t_response_buf&data,
-                         const int blen, TimeOutList&  timeout_list,
-                         const E_CAN_COMMAND cmd_id,
-			 const uint8_t sequence_number)
+void handle_ResetFPU_response(const EtherCANInterfaceConfig&config,
+			      const int fpu_id,
+			      t_fpu_state& fpu,
+			      int &count_pending,
+			      const t_response_buf&data,
+			      const int blen, TimeOutList&  timeout_list,
+			      const E_CAN_COMMAND cmd_id,
+			      const uint8_t sequence_number)
 {
-    const E_MOC_ERRCODE response_errcode = err_code = static_cast<E_MOC_ERRCODE>((data[3] & 0xF0) >> 4);
+    assert(blen == 8);
+    const E_MOC_ERRCODE response_errcode = static_cast<E_MOC_ERRCODE>((data[3] & 0xF0) >> 4);
     
     // clear pending time-out for reset command
     remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending, sequence_number);
@@ -69,7 +70,7 @@ handle_ResetFPU_response(const EtherCANInterfaceConfig&config,
                 {
                     const E_CAN_COMMAND can_cmd = static_cast<E_CAN_COMMAND>(cmd_code);
                     remove_pending(config, fpu, fpu_id,  can_cmd, response_errcode,
-                                   timeout_list, count_pending);
+                                   timeout_list, count_pending, sequence_number);
                 }
 
             }

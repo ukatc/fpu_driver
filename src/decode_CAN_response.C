@@ -24,6 +24,14 @@
 
 
 #include "ethercan/decode_CAN_response.h"
+#include "ethercan/time_utils.h"
+
+namespace mpifps
+{
+
+namespace ethercanif
+{
+
 
 // logs error status in CAN response
 void logErrorStatus(const EtherCANInterfaceConfig &config, int fpu_id, int err_code)
@@ -179,7 +187,7 @@ E_MOC_ERRCODE update_status_flags(t_fpu_state& fpu,
 			 const UPDATE_FIELDID req_fields,
 			 const t_response_buf& data)
 {
-    E_MOC_ERRCODE err_code = ER_OK;
+    E_MOC_ERRCODE err_code = MCE_FPU_OK;
 
     fpu.last_command = static_cast<E_CAN_COMMAND>(data[1] & 0x1f);
 
@@ -195,15 +203,15 @@ E_MOC_ERRCODE update_status_flags(t_fpu_state& fpu,
 	// assemble status word
 	uint32_t stwd = ((data[1] >> 5) & 0x07) | (data[2] << 3);
 
-    if ((UPDATE_STWD & req_fields) != 0)
+    if ((UPDATE_STSWD & req_fields) != 0)
     {
 
 	fpu.waveform_ready =       test_bit(stwd, STBT_WAVEFORM_READY);
 	fpu.at_alpha_limit =       test_bit(stwd, STBT_ALPHA_AT_LIMIT);	      
 	fpu.waveform_reversed =    test_bit(stwd, STBT_WAVEFORM_REVERSED);
 
-	fpu.alpha_was_zeroed = alpha_was_zeroed || test_bit(stwd, STBT_IS_ZEROED);
-	fpu.beta_was_zeroed = beta_was_zeroed || test_bit(stwd, STBT_IS_ZEROED);
+	fpu.alpha_was_zeroed = fpu.alpha_was_zeroed || test_bit(stwd, STBT_IS_ZEROED);
+	fpu.beta_was_zeroed = fpu.beta_was_zeroed || test_bit(stwd, STBT_IS_ZEROED);
 	fpu.is_locked = test_bit(stwd, STBT_FPU_LOCKED);
 	fpu.alpha_datum_switch_active = test_bit(stwd, STBT_ALPHA_DATUM_ACTIVE);
 	fpu.beta_datum_switch_active = test_bit(stwd, STBT_BETA_DATUM_ACTIVE);
@@ -280,7 +288,7 @@ E_MOVEMENT_DIRECTION update_direction_stopping(E_MOVEMENT_DIRECTION last_directi
     {
 
     case DIRST_CLOCKWISE:
-	return DIRST_RESTONG_LAST_CW;
+	return DIRST_RESTING_LAST_CW;
 	/* no break needed */
 
     case DIRST_ANTI_CLOCKWISE:

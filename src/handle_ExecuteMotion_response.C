@@ -39,16 +39,20 @@ namespace mpifps
 namespace ethercanif
 {
 
-handle_ExcecuteMotion_response(const EtherCANInterfaceConfig&config,
-                               const int fpu_id,
-                               t_fpu_state& fpu,
-                               int &count_pending
-                               const t_response_buf&data,
-                               const int blen, TimeOutList&  timeout_list,
-                               const E_CAN_COMMAND cmd_id,
-                               const uint8_t sequence_number)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+void handle_ExcecuteMotion_response(const EtherCANInterfaceConfig&config,
+				    const int fpu_id,
+				    t_fpu_state& fpu,
+				    int &count_pending,
+				    const t_response_buf&data,
+				    const int blen, TimeOutList&  timeout_list,
+				    const E_CAN_COMMAND cmd_id,
+				    const uint8_t sequence_number)
 {
-    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT | UPDATE_MOVING, data);
+    assert(blen == 8);
+    const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
 
     // we do not clear the time-out flag now, but rather
     // wait for CMSG_FINISHED_MOTION for that.
@@ -90,7 +94,7 @@ handle_ExcecuteMotion_response(const EtherCANInterfaceConfig&config,
                response_errcode);
 
         if ((response_errcode == MCE_ERR_WAVEFORM_NOT_READY)
-                || (response_errcode == MCE_ERR_INVALID_PARAMETER))
+	    || (response_errcode == MCE_ERR_INVALID_PARAMETER))
         {
             fpu.waveform_valid = false;
 
@@ -138,6 +142,8 @@ handle_ExcecuteMotion_response(const EtherCANInterfaceConfig&config,
 
     }
 }
+
+#pragma GCC diagnostic pop
 
 }
 
