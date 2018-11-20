@@ -1,7 +1,7 @@
 IDIR = ./include
 CC = "g++"
 
-VERSION := 1.4.0
+VERSION := v1.4.0
 
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g 
 
@@ -43,7 +43,7 @@ _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h		\
 	ethercan/sync_utils.h ethercan/time_utils.h
 
 
-DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS)) Makefile
 
 _OBJ =  EtherCANInterface.o    AsyncInterface.o FPUArray.o GridState.o \
 	CommandPool.o   GatewayInterface.o  TimeOutList.o \
@@ -76,8 +76,8 @@ lib/libethercan.a: $(OBJ)
 
 lib: lib/libethercan.a
 
-pyext: lib/libethercan.a python/src/ethercanif.cpp $(DEPS) version
-	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.cpp -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(VERSION)\"
+pyext: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.C -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(VERSION)\"
 
 style:
 	astyle src/*cpp python/src/*cpp include/{,/*{,*/{,*/}},}/*.h
