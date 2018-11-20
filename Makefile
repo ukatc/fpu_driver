@@ -1,7 +1,7 @@
 IDIR = ./include
 CC = "g++"
 
-VERSION := 1.4.0
+VERSION := v1.4.0
 
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g 
 
@@ -79,7 +79,7 @@ _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h		      \
 	ethercan/sync_utils.h ethercan/time_utils.h                                   \
 	ethercan/decode_CAN_response.h                                          
 
-DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS)) Makefile
 
 _OBJ =  EtherCANInterface.o    AsyncInterface.o FPUArray.o GridState.o \
 	CommandPool.o   GatewayInterface.o  TimeOutList.o \
@@ -95,8 +95,8 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 version: force
 	echo '$(VERSION)' | cmp -s - $@ || echo '$(VERSION)' > $@
 
-doc/FPU-state1.pdf : doc/FPU-state1.svg
-	inkscape doc/FPU-state1.svg --export-pdf=doc/FPU-state1.pdf
+python/doc/FPU-state1.pdf : python/doc/FPU-state1.svg
+	inkscape python/doc/FPU-state1.svg --export-pdf=python/doc/FPU-state1.pdf
 
 tutorial:	python/doc/tutorial.tex python/doc/FPU-state1.pdf version
 	cd python/doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
@@ -112,13 +112,13 @@ lib/libethercan.a: $(OBJ)
 
 lib: lib/libethercan.a
 
-pyext: lib/libethercan.a python/src/ethercanif.cpp $(DEPS) version
-	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.cpp -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(VERSION)\"
+pyext: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.C -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(VERSION)\"
 
 style:
 	astyle src/*.C python/src/*.cpp include{,/*{,/*}}/*.h
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ doc/*.{aux,dvi,log,out,toc,pdf}
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ doc/*.{aux,dvi,log,out,toc,pdf} python/*.so lib/*a
 
 

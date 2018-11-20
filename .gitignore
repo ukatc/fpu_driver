@@ -15,3 +15,6 @@ version
 /python/pgtest
 /doc
 /obj
+*.do
+/.redo
+

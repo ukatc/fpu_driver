@@ -45,10 +45,10 @@ enum E_FPU_STATE
     FPST_RESTING                 = 9,
     FPST_ABORTED                 = 10,
     FPST_OBSTACLE_ERROR          = 11,
-
-    NUM_FPU_STATES               = 12,
-
 };
+
+static const int NUM_FPU_STATES=12;
+
 
 // known direction of movement
 // (keep in mind that the command parameter

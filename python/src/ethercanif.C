@@ -603,6 +603,11 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 " send in spite of several retries", DE_MAX_RETRIES_EXCEEDED);
         break;
 
+    case DE_INVALID_WAVEFORM :
+        throw EtherCANException("DE_INVALID_WAVEFORM: The passed waveform does not meet some general rule.",
+                                 DE_INVALID_WAVEFORM);
+        break;
+	
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS :
         throw EtherCANException("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS: The passed waveform has too many sections.",
                                 DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS);
@@ -845,7 +850,7 @@ private:
 
 public:
 
-    WrapEtherCANInterface(const EtherCANInterfaceConfig _config) : config(_config), EtherCANInterface(_config)
+    WrapEtherCANInterface(const EtherCANInterfaceConfig _config) : EtherCANInterface(_config), config(_config)
     {
 
         E_EtherCANErrCode ecode = initializeInterface();
@@ -857,7 +862,6 @@ public:
     {
         const int actual_num_gw = len(list_gateway_addresses);
 
-        int num_gateways = 0;
         t_gateway_address address_array[MAX_NUM_GATEWAYS];
 
         if (actual_num_gw > MAX_NUM_GATEWAYS)
@@ -1371,7 +1375,7 @@ BOOST_PYTHON_MODULE(ethercanif)
 {
     using namespace boost::python;
 
-    scope().attr("__version__") = (strlen(VERSION) > 0) ?  (((const char*)VERSION)) : "";
+    scope().attr("__version__") = (strlen(VERSION) > 1) ?  (((const char*)VERSION) +1) : "?.?.?";
 
     scope().attr("CAN_PROTOCOL_VERSION") = CAN_PROTOCOL_VERSION;
 
