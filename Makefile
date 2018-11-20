@@ -59,8 +59,8 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 version: force
 	echo '$(VERSION)' | cmp -s - $@ || echo '$(VERSION)' > $@
 
-doc/FPU-state1.pdf : doc/FPU-state1.svg
-	inkscape doc/FPU-state1.svg --export-pdf=doc/FPU-state1.pdf
+python/doc/FPU-state1.pdf : python/doc/FPU-state1.svg
+	inkscape python/doc/FPU-state1.svg --export-pdf=python/doc/FPU-state1.pdf
 
 tutorial:	python/doc/tutorial.tex python/doc/FPU-state1.pdf version
 	cd python/doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;

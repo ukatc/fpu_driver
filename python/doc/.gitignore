@@ -8,3 +8,7 @@
 *.idx
 *.ilg
 *.ind
+/_minted-tutorial-tmp/
+tutorial-tmp.tex
+
+
