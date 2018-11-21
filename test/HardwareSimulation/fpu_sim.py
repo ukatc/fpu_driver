@@ -13,7 +13,8 @@ import random
 import time
 import signal
 
-MAX_WAVE_ENTRIES = 128
+MAX_WAVE_ENTRIES = 256
+LEN_SERIAL_NUMBER = 6
 
 IDXA = 0
 IDXB = 1
@@ -128,7 +129,7 @@ class FPU:
         self.at_datum = False
         self.was_initialized = False
         self.wave_ready = False
-        self.move_forward = True
+        self.wave_reversed = False
         self.running_wave = False
         self.abort_wave = False
         self.wave_valid = False
@@ -138,6 +139,14 @@ class FPU:
         self.alpha_switch_direction = 0
         self.datum_timeout = False
         self.can_overflow = False
+        self.alpha_datum_active = False
+        self.beta_datum_active = False
+        self.alpha_last_direction = 0
+        self.beta_last_direction = 0
+        self.fpu_locked = False
+        self.state = FPST_UNINITIALIZED
+        
+        
 
         fw_date = self.opts.fw_date
         
@@ -188,7 +197,7 @@ class FPU:
 
     def writeSerialNumber(self, serial_number):
         print("FPU #%i: writing serial number '%s' to NVRAM" % (self.fpu_id, serial_number))
-        assert(len(serial_number) <= 5)
+        assert(len(serial_number) <= LEN_SERIAL_NUMBER)
         self.serial_number = serial_number
         fname = "._FPU-%04i.sn" % self.fpu_id
         with open(fname,"w") as f:
@@ -200,6 +209,18 @@ class FPU:
         print("FPU #%i: reading serial number '%s' from NVRAM" % (self.fpu_id, self.serial_number))
         return self.serial_number
 
+    def getFirmwareVersion(self):
+        t =  (self.firmware_major,
+              self.firmware_minor,
+              self.firmware_patch,
+              self.firmware_year,
+              self.firmware_month,
+              self.firmware_day)
+
+        print("FPU #%i: reading firmware version '%s' from NVRAM" % t)
+        return t
+
+    
         
     def resetFPU(self, fpu_id, sleep):
         printtime()
@@ -221,7 +242,7 @@ class FPU:
         print("repeating wavetable of FPU #%i..." % fpu_id)
         if not (self.wave_valid):
             raise RuntimeError("wavetable not valid")
-        self.move_forward = True
+        self.wave_reversed = False
         self.wave_ready = True
 
     def setUStepLevel(self, ustep_level):
@@ -232,7 +253,7 @@ class FPU:
         print("reversing wavetable of FPU #%i..." % fpu_id)
         if not (self.wave_valid):
             raise RuntimeError("wavetable not valid")
-        self.move_forward = False
+        self.wave_reversed = True
         self.wave_ready = True
         
         
@@ -255,7 +276,7 @@ class FPU:
             self.nwave_entries = 0
             self.wave_ready = False
             self.wave_valid = False
-            self.move_forward = True
+            self.wave_reversed = False
             # clear abort status flag
             self.abort_wave = False 
             
@@ -378,7 +399,30 @@ class FPU:
                 raise CrashException("An min beta crash occured")        
             if (newbeta + beta_offset) > MAX_BETA_CRASH:
                 raise CrashException("An max beta crash occured")        
-                
+
+    def start_findDatum(self):
+        if self.is_collided:
+            # only send an error message
+            errcode = ER_COLLIDE
+            self.state = FPST_OBSTACLE_ERROR
+        elif self.alpha_limit_breach:
+            errcode = MCE_WARN_LIMIT_SWITCH_BREACH
+            self.state = FPST_OBSTACLE_ERROR
+        elif flag_auto_datum and (not self.was_initialized):
+            errcode = ER_AUTO # not initialized, reject automatic datum search
+            if self.state not in [FPST_LOCKED, FPST_AT_DATUM, FPST_ABORTED, FPST_OBSTACLE_ERROR]:
+                self.state = FPST_UNINITIALIZED
+        elif self.alpha_switch_on():
+            errcode = MCE_ERR_DATUM_ON_LIMIT_SWITCH # alpha on limit switch, reject datum command
+            if self.state not in [FPST_LOCKED, FPST_AT_DATUM, FPST_ABORTED, FPST_OBSTACLE_ERROR]:
+                self.state = FPST_UNINITIALIZED
+        else:
+            # send confirmation and spawn findDatum method call
+            errcode = MCE_FPU_OK
+            self.state = FPST_DATUM_SEARCH
+            
+        return errcode
+    
         
     def findDatum(self, sleep, limit_callback, collision_callback,
                   skip_alpha=False, skip_beta=False,
@@ -440,7 +484,7 @@ class FPU:
         beta_datumed = False
         use_timeout = self.opts.fw_version >= (1, 4, 0) and (not disable_timeout)
         print("FPU %i : timeouts enabled: %r" % (self.fpu_id, use_timeout))
-        
+        self.state = FPST_DATUM_SEARCH
         while True:
             # the model here is that crossing physical zero
             # edge-triggers the stop signal for both arms
@@ -481,6 +525,7 @@ class FPU:
             except LimitBreachException:
                 print("Alpha limit breach for FPU  %i" % self.fpu_id)
                 self.abort_wave = True
+                self.state = FPST_OBSTACLE_ERROR
                 break
             
             try:
@@ -488,6 +533,7 @@ class FPU:
                     print("Beta collision for FPU  %i still active" % self.fpu_id)
                     self.abort_wave = True
                     self.is_collided = True
+                    self.state = FPST_OBSTACLE_ERROR
                     break
 
                 if not beta_ready:
@@ -504,6 +550,7 @@ class FPU:
                 print("Beta collision for FPU  %i" % self.fpu_id)
                 self.abort_wave = True
                 self.is_collided = True
+                self.state = FPST_OBSTACLE_ERROR
                 break
 
             if use_timeout and (abs(new_alpha - start_alpha_steps) >= alpha_timeout_limit):
@@ -544,9 +591,16 @@ class FPU:
                 
         if alpha_datumed and beta_datumed:
             print("FPU #%i: alpha and beta datum reached" % self.fpu_id)
+            self.state = FPST_AT_DATUM
+        else:
+            if self.state not in [FPST_OBSTACLE_ERROR, FPST_ABORTED]:
+                self.state = FPST_UNINITIALIZED
 
                 
-        if not self.abort_wave:
+        if self.abort_wave:
+            if self.state != FPST_OBSTACLE_ERROR:
+                self.state = FPST_ABORTED
+        else:
 
             if not (skip_alpha or skip_beta):
                 self.at_datum = True
@@ -622,10 +676,10 @@ class FPU:
         self.running_wave = True
         self.step_timing_fault = False
         
-        if self.move_forward:
-            wt_sign = 1
-        else:
+        if self.wave_reversed:
             wt_sign = -1
+        else:
+            wt_sign = 1
 
         #simulate between 0 and 10 ms of latency
         latency_secs = random.uniform(0, 10) / 1000.
@@ -639,7 +693,7 @@ class FPU:
                 # flag was set from abortMotion command
                 break
             
-            if self.move_forward:
+            if not self.wave_reversed:
                 n = k
             else:
                 n = self.nwave_entries - k - 1

@@ -11,6 +11,7 @@ import errno
 import time
 import signal
 from warnings import warn, filterwarnings
+import textwrap 
 # state tracking
 import lmdb
 from interval import Interval, Inf, nan
@@ -34,7 +35,12 @@ from ethercanif import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  Ethe
                         SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, FPST_UNINITIALIZED,
                         FPST_LOCKED, FPST_DATUM_SEARCH, FPST_AT_DATUM, FPST_LOADING, FPST_READY_FORWARD,
                         FPST_READY_REVERSE, FPST_MOVING, FPST_RESTING, FPST_ABORTED, FPST_OBSTACLE_ERROR, DS_CONNECTED,
-                        _ER_TIMEDOUT, _ER_DATUMTO, CCMD_EXECUTE_MOTION, _ER_OK_UNCONFIRMED)
+                        MCE_FPU_OK, MCE_WARN_COLLISION_DETECTED,
+                        MCE_WARN_LIMIT_SWITCH_BREACH, MCE_ERR_INVALID_COMMAND, MCE_NOTIFY_COMMAND_IGNORED,
+                        MCE_ERR_WAVEFORM_NOT_READY, MCE_WAVEFORM_TOO_BIG, MCE_WAVEFORM_SEQUENCE, MCE_WAVEFORM_BADVALUE,
+                        MCE_WARN_STEP_TIMING_ERROR, MCE_ERR_INVALID_PARAMETER, MCE_ERR_DATUM_TIME_OUT, MCE_NOTIFY_DATUM_ALPHA_ONLY,
+                        MCE_NOTIFY_DATUM_BETA_ONLY, MCE_ERR_AUTO_DATUM_UNINITIALIZED, MCE_ERR_DATUM_ON_LIMIT_SWITCH,
+                        MCE_ERR_CAN_OVERFLOW_HW, MCE_ERR_CAN_OVERFLOW_SW, MCE_NO_CONFIRMATION_EXPECTED, MCE_COMMAND_TIMEDOUT)
 
 
 import fpu_commands as cmds
@@ -264,6 +270,12 @@ class UnprotectedGridDriver (object):
             raise InvalidParameterError("DE_INVALID_FPU_ID: a passed FPU ID is too large"
                                         " for the configured number of FPUs")
         return fpuset
+
+    def need_ping(self, grid_state, fpuset):
+        if len(fpuset) == 0:
+            fpuset = range(self.config.num_fpus)
+        return [ fpu_id if (not grid_state.FPU[fpu_id].ping_ok) for fpu_id in fpuset ]
+            
         
     
     def setUStepLevel(self, ustep_level,  gs, fpuset=[]):
@@ -363,20 +375,20 @@ class UnprotectedGridDriver (object):
             finally:
                 datum_gs = self.getGridState()
                 if was_cancelled or (rv != ethercanif.E_EtherCANErrCode.DE_OK):
-                    time.sleep(0.1)
                     try:
-                        self._pingFPUs(gs, fpuset)
+                        pingset = self.need_ping(gs, fpuset)
+                        if len(pingset) > 0 :
+                            self._pingFPUs(gs, pingset)
                     except CommandTimeout:
                         pass
 
-                time.sleep(0.1)
-                try:
-                    self._gd.getCounterDeviation(gs, fpuset)
-                    deviation_gs = gs
-                except CommandTimeout:
-                    deviation_gs = None
+                ##  try:
+                ##      self._gd.getCounterDeviation(gs, fpuset)
+                ##      deviation_gs = gs
+                ##  except CommandTimeout:
+                ##      deviation_gs = None
                     
-                self._finished_find_datum_hook(deviation_gs, prev_gs, datum_gs, search_modes=search_modes, fpuset=fpuset,
+                self._finished_find_datum_hook(prev_gs, datum_gs, search_modes=search_modes, fpuset=fpuset,
                                                was_cancelled=was_cancelled,
                                                initial_positions=initial_positions)
             
@@ -453,7 +465,6 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             
             try:
-                time.sleep(0.1)
                 rv = self._gd.startFindDatum(gs, search_modes, fpuset, selected_arm, timeout, count_protection)
                 if rv != ethercanif.E_EtherCANErrCode.DE_OK:
                     raise RuntimeError("can't search Datum, driver error code = %r" % rv)
@@ -469,8 +480,8 @@ class UnprotectedGridDriver (object):
                 raise
                 
             print("waiting for findDatum to finish..")
-            time.sleep(0.1)
             time_interval = 0.1
+            time.sleep(time_interval)
             is_ready = False
             was_aborted = False
             finished_ok = False
@@ -489,19 +500,21 @@ class UnprotectedGridDriver (object):
             finally:
                 datum_gs = self._gd.getGridState()
                 if not finished_ok:
-                    time.sleep(0.1)
+                    time.sleep(time_interval)
                     try:
-                        self._pingFPUs(gs, fpuset)
+                        pingset = self.need_ping(gs, fpuset)
+                        if len(pingset) > 0 :
+                            self._pingFPUs(gs, pingset)
                     except CommandTimeout:
                         pass
     
-                time.sleep(0.1)
-                try:
-                    self._gd.getCounterDeviation(gs, fpuset)
-                    deviation_gs = gs
-                except CommandTimeout:
-                    deviation_gs = None
-                self._finished_find_datum_hook(deviation_gs, prev_gs, datum_gs, search_modes=search_modes,
+                ##  time.sleep(time_interval)
+                ##  try:
+                ##      self._gd.getCounterDeviation(gs, fpuset)
+                ##      deviation_gs = gs
+                ##  except CommandTimeout:
+                ##      deviation_gs = None
+                self._finished_find_datum_hook(prev_gs, datum_gs, search_modes=search_modes,
                                                fpuset=fpuset, was_cancelled=(not finished_ok),
                                                initial_positions=initial_positions)
      
@@ -516,7 +529,6 @@ class UnprotectedGridDriver (object):
         
         fpuset = self.check_fpuset(fpuset)
         
-        time.sleep(0.1)
         return self._gd.pingFPUs(gs, fpuset)
 
     def pingFPUs(self, gs, fpuset=[]):
@@ -553,22 +565,26 @@ class UnprotectedGridDriver (object):
             
         return rval
 
-    def getPositions(self, gs, fpuset=[]):
-        fpuset = self.check_fpuset(fpuset)
-        
-        time.sleep(0.1)
-        try:
-            prev_gs = self._gd.getGridState()
-            rval = self._gd.getPositions(gs, fpuset)
-        finally:
-            for fpu_id, fpu in enumerate(gs.FPU):
-                self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
-        return rval
+    def getPositions(self, gs, **kwargs):
+        warnings.warn(textwrap.dedent("""This command is obsolete, use pingFPUs(). 
+        Note: In protocol v2, it is not any more needed to perform a ping as long as movement
+        commands finished without errors."""))
+
+    ##  def getPositions(self, gs, fpuset=[]):
+    ##      fpuset = self.check_fpuset(fpuset)
+    ##      
+    ##      time.sleep(0.1)
+    ##      try:
+    ##          prev_gs = self._gd.getGridState()
+    ##          rval = self._gd.getPositions(gs, fpuset)
+    ##      finally:
+    ##          for fpu_id, fpu in enumerate(gs.FPU):
+    ##              self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+    ##      return rval
 
     def readRegister(self, address, gs, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
 
-        time.sleep(0.1)
         try:
             prev_gs = self._gd.getGridState()
             rval= self._gd.readRegister(address, gs, fpuset)
@@ -581,7 +597,6 @@ class UnprotectedGridDriver (object):
     def getFirmwareVersion(self, gs, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
         
-        time.sleep(0.1)
         try:
             prev_gs = self._gd.getGridState()
             rval = self._gd.getFirmwareVersion(gs, fpuset)
@@ -605,33 +620,30 @@ class UnprotectedGridDriver (object):
     def minFirmwareVersion(self, gs, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
         
-        self.getFirmwareVersion(gs, fpuset)
-        min_version = (255,255,255)
-        for fpu_id, fpu in enumerate(gs.FPU):
-            if fpu_in_set(fpu_id, fpuset):
-                version = (fpu.fw_version_major, fpu.fw_version_minor, fpu.fw_version_patch)
-                if version < min_version:
-                    min_version = version
-                    
-        return min_version
-                             
-    def getCounterDeviation(self, gs, fpuset=[]):
-       fpuset = self.check_fpuset(fpuset)
-        
-       time.sleep(0.1)
-       try:
-           prev_gs = self._gd.getGridState()
-           rval = self._gd.getCounterDeviation(gs, fpuset)
-       finally:
-           for fpu_id, fpu in enumerate(gs.FPU):
-               self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+        return self.getMinFirmwareVersion(gs, fpuset)
 
-       return rval
+    def getCounterDeviation(self, gs, **kwargs):
+        warnings.warn(textwrap.dedent("""This command is obsolete, use gs.FPU[i].alpha_deviation and
+        gs.FPU[i].beta_deviation after findDatum()."""))
+                      
+
+    ##  ## this method is gone, use the grid state
+    ##  def getCounterDeviation(self, gs, fpuset=[]):
+    ##     fpuset = self.check_fpuset(fpuset)
+    ##      
+    ##     time.sleep(0.1)
+    ##     try:
+    ##         prev_gs = self._gd.getGridState()
+    ##         rval = self._gd.getCounterDeviation(gs, fpuset)
+    ##     finally:
+    ##         for fpu_id, fpu in enumerate(gs.FPU):
+    ##             self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+    ##  
+    ##     return rval
 
     def readSerialNumbers(self, gs, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
         
-        time.sleep(0.1)
         try:
             prev_gs = self._gd.getGridState()
             rval = self._gd.readSerialNumbers(gs, fpuset)
@@ -741,8 +753,6 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             try:
                 try:
-                    time.sleep(0.1)
-
                     try:
                         rval = self._gd.configMotion(wtable, gs, fpuset, soft_protection,
                                                      allow_uninitialized, ruleset_version)
@@ -839,7 +849,9 @@ class UnprotectedGridDriver (object):
             finally:
                 move_gs = self._gd.getGridState()
                 try:
-                    self._pingFPUs(gs, fpuset)
+                    pingset = self.need_ping(gs, fpuset)
+                    if len(pingset) > 0 :
+                        self._pingFPUs(gs, pingset)
                 except CommandTimeout:
                     pass
                 self._post_execute_motion_hook(gs, prev_gs, move_gs, fpuset)
@@ -854,7 +866,6 @@ class UnprotectedGridDriver (object):
             
         with self.lock:
             # wait a short moment to avoid spurious collision.
-            time.sleep(0.5)
             initial_positions={}
             self._start_execute_motion_hook(gs, fpuset=fpuset, initial_positions=initial_positions)
             time.sleep(0.1)
@@ -901,7 +912,9 @@ class UnprotectedGridDriver (object):
                     move_gs = self._gd.getGridState()
                     try:
                         time.sleep(0.1)
-                        self._pingFPUs(gs, fpuset)
+                        pingset = self.need_ping(gs, fpuset)
+                        if len(pingset) > 0 :
+                            self._pingFPUs(gs, pingset)
                     except CommandTimeout:
                         pass
                     # the following hook will narrow down the recorded intervals of positions
@@ -971,7 +984,6 @@ class UnprotectedGridDriver (object):
                 wmode=Range.Warn
                         
             self._pre_reverse_motion_hook(wtable, gs, fpuset, wmode=wmode)
-            time.sleep(0.1)
             try:
                 prev_gs = self._gd.getGridState()
                 rv = self._gd.reverseMotion(gs, fpuset)
@@ -1005,7 +1017,6 @@ class UnprotectedGridDriver (object):
                 wmode=Range.Warn
                 
             self._pre_repeat_motion_hook(wtable, gs, fpuset, wmode=wmode)
-            time.sleep(0.1)
             try:
                 prev_gs = self._gd.getGridState()
                 rv = self._gd.repeatMotion(gs, fpuset)
@@ -1806,7 +1817,6 @@ class GridDriver(UnprotectedGridDriver):
         while True:
             if (gs.Counts[FPST_MOVING] > 0) or (gs.Counts[FPST_DATUM_SEARCH] > 0):
                 print("_post_execute_motion_hook(): waiting for movement to finish in order to retrieve reached positions..")
-                time.sleep(0.5)
                 try:
                     self._pingFPUs(gs, fpuset=fpuset)
                 except Commandtimeout:
@@ -1858,7 +1868,6 @@ class GridDriver(UnprotectedGridDriver):
         # get fresh ping data
         self._pingFPUs(gs, fpuset=fpuset)
         
-        # super(GridDriver, self).pingFPUs(gs, fpuset=fpuset)
 
         acw_range = Interval(0, Inf)
         cw_range = Interval(-Inf, 0)
@@ -1928,16 +1937,12 @@ class GridDriver(UnprotectedGridDriver):
                     raise ProtectionError("Alpha arm of FPU %i is not in safe range"
                                           " for datum search (angle=%r, range=%r)" % (fpu_id, apos, alim))
             
-    def _finished_find_datum_hook(self, gs, prev_gs, datum_gs, search_modes=None, fpuset=[],
+    def _finished_find_datum_hook(self, prev_gs, datum_gs, search_modes=None, fpuset=[],
                                   was_cancelled=False, initial_positions={}):
         
         with env.begin(db=self.fpudb, write=True) as txn:
-            _gs = gs
-            # gs can be none if the retrieval of aberration counts failed
-            if _gs == None:
-                _gs = datum_gs
 
-            for fpu_id, fpu in enumerate(_gs.FPU):
+            for fpu_id, datum_fpu in enumerate(datum__gs.FPU):
                 if not fpu_in_set(fpu_id, fpuset):
                     continue
             
@@ -1946,17 +1951,17 @@ class GridDriver(UnprotectedGridDriver):
                 
                                                                                     
                 # set position intervals to zero, and store in DB
-                if fpu.alpha_was_zeroed:
+                if datum_fpu.alpha_was_zeroed:
                     self.a_caloffsets[fpu_id] = Interval(0)
-                    if fpu.alpha_steps == 0:
-                        self._update_apos(txn, fpu, fpu_id, Interval(0.0) + self.config.alpha_datum_offset)
+                    if datum_fpu.alpha_steps == 0:
+                        self._update_apos(txn, datum_fpu, fpu_id, Interval(0.0) + self.config.alpha_datum_offset)
                 else:
                     ## If ping_ok is set, we assume that even if the
                     ## datum operation itself did not succeed, the
                     ## step counter was successfully retrieved by a
                     ## subsequent ping, and the offset is unchanged.
-                    if fpu.ping_ok:
-                        alpha_angle, a_underflow, a_overflow = self._alpha_angle(fpu)
+                    if datum_fpu.ping_ok:
+                        alpha_angle, a_underflow, a_overflow = self._alpha_angle(datum_fpu)
                         if a_underflow or a_overflow:
                             # we know only we are in the interval between the
                             # overflow / underflow value and the datum position
@@ -1966,23 +1971,23 @@ class GridDriver(UnprotectedGridDriver):
                         else:
                             a_int = Interval(alpha_angle) + self.a_caloffsets[fpu_id]
                             
-                        self._update_apos(txn, fpu, fpu_id, a_int)
+                        self._update_apos(txn, datum_fpu, fpu_id, a_int)
 
                 
-                if fpu.beta_was_zeroed:
+                if datum_fpu.beta_was_zeroed:
                     self.b_caloffsets[fpu_id] = Interval(0)
-                    if fpu.beta_steps == 0:                        
-                        self._update_bpos(txn, fpu, fpu_id,  Interval(0.0))
+                    if datum_fpu.beta_steps == 0:                        
+                        self._update_bpos(txn, datum_fpu, fpu_id,  Interval(0.0))
 
                         if self.bretries_acw[fpu_id] > 0:
                             clockwise = False
-                            ProtectionDB.store_bretry_count(txn, fpu, clockwise, 0)
+                            ProtectionDB.store_bretry_count(txn, datum_fpu, clockwise, 0)
                         if self.bretries_cw[fpu_id] > 0:
                             clockwise = True
-                            ProtectionDB.store_bretry_count(txn, fpu, clockwise, 0)
+                            ProtectionDB.store_bretry_count(txn, datum_fpu, clockwise, 0)
                 else:
-                    if fpu.ping_ok:
-                        beta_angle, b_underflow, b_overflow = self._beta_angle(fpu)
+                    if datum_fpu.ping_ok:
+                        beta_angle, b_underflow, b_overflow = self._beta_angle(datum_fpu)
                         if b_underflow or b_overflow:
                             # we know only we are in the interval between the
                             # overflow / underflow value and the datum position
@@ -1990,43 +1995,40 @@ class GridDriver(UnprotectedGridDriver):
                         else:
                             b_int = Interval(beta_angle) + self.b_caloffsets[fpu_id]
                                                     
-                        self._update_bpos(txn, fpu, fpu_id,  b_int)
+                        self._update_bpos(txn, datum_fpu, fpu_id,  b_int)
 
                 
                 prev_fpu = prev_gs.FPU[fpu_id]
-                datum_fpu = datum_gs.FPU[fpu_id]
-                # this passes prev_fpu and fpu, to deduce the time out counts
+
+                # this passes prev_fpu and datum_fpu, to deduce the time out counts
                 self._update_error_counters(self.counters[fpu_id], prev_fpu, datum_fpu, datum_cmd=True)
-                # this passes fpu and datum_fpu, to get the counter deviations
-                _fpu = fpu
-                if gs == None:
-                    _fpu = None
+                # this passes prev_fpu and datum_fpu, to get the counter deviations
                     
-                self._update_counters_find_datum(fpu_id, self.counters[fpu_id], fpu, prev_fpu, datum_fpu)
-                ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
+                self._update_counters_find_datum(fpu_id, self.counters[fpu_id], prev_fpu, datum_fpu)
+                ProtectionDB.put_counters(txn, datum_fpu, self.counters[fpu_id])
                         
 
         with env.begin(db=self.healthlog, write=True) as txn:
-            for fpu_id, fpu in enumerate(datum_gs.FPU):
+            for fpu_id, datum_fpu in enumerate(datum_gs.FPU):
                 cnt = self.counters[fpu_id].copy()
                 cnt['unixtime'] = time.time()
-                HealthLogDB.putEntry(txn, fpu, cnt)
+                HealthLogDB.putEntry(txn, datum_fpu, cnt)
             
         env.sync()
 
 
-    def _update_counters_find_datum(self, fpu_id, fpu_counters, fpu, prev_fpu, datum_fpu):
+    def _update_counters_find_datum(self, fpu_id, fpu_counters, prev_fpu, datum_fpu):
         
         fpu_counters["datum_count" ] += 1
         # discard error states, and states which were uninitialised before
-        # fpu is none if getCounterDeviation didn't succeed. Storing
+        # fpu is none if datum command didn't succeed. Storing
         # abberrations is skipped in that case
 
         if datum_fpu.timeout_count != prev_fpu.timeout_count:
             fpu_counters["datum_timeout"] += 1
 
 
-        if (fpu != None) and (datum_fpu.last_status == 0) and (fpu.last_status == 0):
+        if (datum_fpu != None) and (datum_fpu.last_status == 0) and (fpu.last_status == 0):
             if prev_fpu.alpha_was_zeroed and fpu.alpha_was_zeroed:
                 fpu_counters["alpha_aberration_count" ] += 1
                 fpu_counters["datum_sum_alpha_aberration"] += fpu.alpha_deviation

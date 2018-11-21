@@ -162,8 +162,6 @@ enum E_MOC_ERRCODE
 /* Status bits in FPU response message (many only used
    internally in the controller) */
 
-/* Status bits in FPU response message (many only used
-   internally in the controller) */
 
 enum E_FPU_STATUS_BITS
 {

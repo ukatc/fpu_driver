@@ -9,6 +9,13 @@
 *.ilg
 *.ind
 /_minted-tutorial-tmp/
+tutorial-tmp.aux
+tutorial-tmp.fdb_latexmk
+tutorial-tmp.fls
+tutorial-tmp.idx
+tutorial-tmp.log
+tutorial-tmp.out
 tutorial-tmp.tex
+tutorial.fdb_latexmk
 
 
