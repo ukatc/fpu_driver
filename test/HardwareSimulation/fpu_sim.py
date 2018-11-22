@@ -13,8 +13,8 @@ import random
 import time
 import signal
 
-MAX_WAVE_ENTRIES = 256
-LEN_SERIAL_NUMBER = 6
+from protocol_constants import *
+
 
 IDXA = 0
 IDXB = 1
@@ -238,23 +238,45 @@ class FPU:
         print("resetting FPU #%i... ready" % fpu_id)
 
         
+
     def repeatMotion(self, fpu_id):
-        print("repeating wavetable of FPU #%i..." % fpu_id)
+        if self.state in [ FPST_READY_FORWARD, FPST_LOCKED]:
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
+        if self.state not in [FPST_READY_FORWARD, FPST_READY_REVERSE, FPST_RESTING]:
+            return MCE_ERR_INVALID_COMMAND
+
+        
+        print("reversing wavetable of FPU #%i..." % fpu_id)
         if not (self.wave_valid):
-            raise RuntimeError("wavetable not valid")
+            return MCE_ERR_WAVEFORM_NOT_READY
+        
         self.wave_reversed = False
         self.wave_ready = True
+
+        return MCE_FPU_OK
+        
 
     def setUStepLevel(self, ustep_level):
         print("setting UStepLevel for fpu # %i to %i" % (self.fpu_id, ustep_level))
         self.ustep_level = ustep_level
         
     def reverseMotion(self, fpu_id):
+        if self.state in [FPST_READY_REVERSE, FPST_LOCKED ]:
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
+        if self.state not in [FPST_READY_FORWARD, FPST_READY_REVERSE, FPST_RESTING]:
+            return MCE_ERR_INVALID_COMMAND
+
+        
         print("reversing wavetable of FPU #%i..." % fpu_id)
         if not (self.wave_valid):
-            raise RuntimeError("wavetable not valid")
+            return MCE_ERR_WAVEFORM_NOT_READY
+        
         self.wave_reversed = True
         self.wave_ready = True
+
+        return MCE_FPU_OK
         
         
 
@@ -262,15 +284,34 @@ class FPU:
 
                 asteps, apause, aclockwise,
                 bsteps, bpause, bclockwise):
-        
-        verbose = self.opts.verbosity > 4
 
-        if self.can_overflow:
-            self.can_overflow = False
-            raise BufferError("CAN buffer overflow")
+        if self.can_overflow:                  # this can have been set 
+            self.can_overflow = False          # by a Unix signal handler
+            if self.can_overflow = 'HW':
+                return MCE_ERR_CAN_OVERFLOW_HW, None
+            else:
+                return MCE_ERR_CAN_OVERFLOW_SW, None
+            
+        if self.state == FPST_LOCKED :
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
+        if self.state not in [ FPST_UNINITIALIZED,
+                               FPST_AT_DATUM,
+                               FPST_LOADING,
+                               FPST_READY_FORWARD,
+                               FPST_READY_REVERSE,
+                               FPST_RESTING]:
+            
+            return MCE_ERR_INVALID_COMMAND
+                
         
         if self.running_wave:
-            raise RuntimeError("FPU is moving")
+            return MCE_ERR_INVALID_COMMAND, None
+
+        if (self.nwave_entries == 0) and (not first):
+            return WAVEFORM_REJECTED, WAVEFORM_SEQUENCE
+        
+        verbose = self.opts.verbosity > 4
         
         if first:
             self.nwave_entries = 0
@@ -283,7 +324,11 @@ class FPU:
         n = self.nwave_entries
 
         if n  >= MAX_WAVE_ENTRIES:
-            raise IndexError
+            return WAVEFORM_REJECTED, WAVEFORM_TOO_BIG
+
+
+        nwave_entries = FPUGrid[fpu_id].nwave_entries
+    
         
         self.steps[n, IDXA] = asteps
         self.steps[n, IDXB] = bsteps
@@ -306,6 +351,9 @@ class FPU:
             else:
                 print("fpu #%i: wavetable ready (%i sections)" % (self.fpu_id, n))
 
+        return FPST_OK, WAFEFORM_OK
+
+                
     def alpha_switch_on(self, asteps=None):
         if asteps == None:
             asteps = self.alpha_steps
@@ -403,13 +451,13 @@ class FPU:
     def start_findDatum(self):
         if self.is_collided:
             # only send an error message
-            errcode = ER_COLLIDE
+            errcode = MCE_WARN_COLLISION_DETECTED
             self.state = FPST_OBSTACLE_ERROR
         elif self.alpha_limit_breach:
             errcode = MCE_WARN_LIMIT_SWITCH_BREACH
             self.state = FPST_OBSTACLE_ERROR
         elif flag_auto_datum and (not self.was_initialized):
-            errcode = ER_AUTO # not initialized, reject automatic datum search
+            errcode = MCE_ERR_AUTO_DATUM_UNINITIALIZED # not initialized, reject automatic datum search
             if self.state not in [FPST_LOCKED, FPST_AT_DATUM, FPST_ABORTED, FPST_OBSTACLE_ERROR]:
                 self.state = FPST_UNINITIALIZED
         elif self.alpha_switch_on():
@@ -512,6 +560,7 @@ class FPU:
             if self.abort_wave:
                 print("ABORTING DATUM SEARCH FOR FPU", self.fpu_id);
                 self.at_datum = False
+                self.state = FPST_ABORTED
                 break
 
 
@@ -616,11 +665,38 @@ class FPU:
             self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
             
         printtime()
+        
+        if self.is_collided:
+                # only send an error message
+                errcode = MCE_WARN_COLLISION_DETECTED
+        elif self.alpha_limit_breach:
+            errcode = MCE_WARN_LIMIT_SWITCH_BREACH
+        elif self.datum_timeout:
+            errcode = MCE_ERR_DATUM_TIME_OUT
+        elif self.alpha_switch_on():
+            errcode = MCE_ERR_DATUM_ON_LIMIT_SWITCH # alpha on limit switch, reject datum command
+        else:
+            if flag_skip_alpha and (not flag_skip_beta):
+                errcode = MCE_NOTIFY_DATUM_ALPHA_ONLY
+            elif flag_skip_beta (and not flag_skip_alpha):
+                errcode = MCE_NOTIFY_DATUM_BETA_ONLY
+            else:                
+                errcode = MCE_FPU_OK
+
+        return errcode
+
             
 
     def abortMotion(self, sleep):
-        self.abort_wave = True
-        self.was_initialized = False
+        if self.state in [ FPST_DATUM_SEARCH, FPST_MOVING ]:
+            self.abort_wave = True
+            self.was_initialized = False
+            self.state = RFPT_ABORTED
+            errcode = MCE_FPU_OK
+        else:
+            errcode = MCE_NOTIFY_COMMAND_IGNORED
+            
+        return errcode
 
 
     def freeBetaCollision(self, direction):
@@ -660,7 +736,31 @@ class FPU:
         self.is_collided = False
         self.collision_protection_active = True
 
-        
+    def start_executeMotion(self):
+        if self.is_collided:
+            # collision active, only send an error message
+            errcode = MCE_WARN_COLLISION_DETECTED
+        elif self.alpha_limit_breach:
+            errcode = MCE_WARN_LIMIT_SWITCH_BREACH
+        elif not self.wave_ready:
+            # wavetable is not ready
+            print("FPU #", self.fpu_id, ": wave table is not ready, sending response code", MCE_ERR_WAVEFORM_NOT_READY)
+            errcode =  MCE_ERR_WAVEFORM_NOT_READY
+        elif not self.wave_valid:
+            # wavetable is not valid
+            print("FPU #", self.fpu_id, ": wave table is not valid, sending response code", MCE_WAVEFORM_BADVALUE)
+            errcode =  MCE_WAVEFORM_BADVALUE
+        elif self.running_wave:
+            # FPU already moving
+            errcode = MCE_ERR_INVALID_COMMAND
+        elif self.state not in [FPST_READY_FORWARD, FPST_READY_REVERSED]:
+            errcode = MCE_ERR_INVALID_COMMAND
+        else:
+            self.state = FPST_MOVING
+            errcode = MOC_FPU_OK
+            
+        return errcode
+    
         
     def executeMotion(self, sleep, limit_callback, collision_callback):
         printtime()
@@ -691,6 +791,7 @@ class FPU:
             section = k
             if self.abort_wave:
                 # flag was set from abortMotion command
+                self.state = FPST_ABORTED
                 break
             
             if not self.wave_reversed:
@@ -725,6 +826,7 @@ class FPU:
             frame_time = 0.25
             sleep(frame_time)
             if self.abort_wave:
+                self.state = FPST_ABORTED
                 break
 
             if (delta_beta > 0) or (delta_alpha > 0):
@@ -766,6 +868,31 @@ class FPU:
                                                              new_alpha, new_beta))
         self.running_wave = False
         self.wave_ready = False
+
+        if self.is_collided:
+            # only send an error message
+            errcode = MCE_WARN_COLLISION_DETECTED
+            self.state = FPST_OBSTACLE_ERROR
+        elif self.alpha_limit_breach:
+            errcode = MCE_WARN_LIMIT_SWITCH_BREACH
+            self.state = FPST_OBSTACLE_ERROR
+        elif self.step_timing_fault:
+            # send error message
+            errcode = MCE_WARN_STEP_TIMING_ERROR
+            self.state = FPST_ABORTED
+        elif self.abort_wave:
+            # send error message
+            print("needs to fit error codes into range")
+            errcode = MCE_WARN_STEP_TIMING_ERROR
+            self.state = FPST_ABORTED
+        else:
+            # in version 1, other cases do not have
+            # status flag information
+            errcode = MOC_FPU_OK
+            self.state = FPST_RESTING
+
+        return errcode
+
             
 class SignalHandler(object):
     """Context manager for handling a signal
