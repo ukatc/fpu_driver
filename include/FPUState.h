@@ -29,6 +29,7 @@ namespace mpifps
 
 using ethercanif::E_CAN_COMMAND;
 using ethercanif::E_MOC_ERRCODE;
+using ethercanif::E_WAVEFORM_ERRCODE;
 using ethercanif::NUM_CAN_COMMANDS;
 
 enum E_FPU_STATE
@@ -103,7 +104,7 @@ typedef struct __attribute__((packed)) t_fpu_state
     E_MOC_ERRCODE last_status; /* note this is very low-level
                                   information which should only be used
                                   by the CAN driver */
-
+    E_WAVEFORM_ERRCODE waveform_status;
     // these members are the individual values
     // reported by FPU responses
     int alpha_steps;

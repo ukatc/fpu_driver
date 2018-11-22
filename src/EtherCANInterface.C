@@ -96,8 +96,10 @@ E_EtherCANErrCode EtherCANInterface::startFindDatum(t_grid_state& grid_state,
 
         break;
 
+#ifdef SHOW_FIXMES
 #if (CAN_PROTOCOL_VERSION > 1)
 #pragma message "FIXME: insert retry code here"
+#endif
 #endif
 
         num_avaliable_retries--;

@@ -64,6 +64,7 @@ void handle_ConfigMotion_response(const EtherCANInterfaceConfig&config,
     {
         logErrorStatus(config, fpu_id, response_errcode);
 	fpu.num_waveform_segments = 0;
+	fpu.waveform_status = static_cast<E_WAVEFORM_ERRCODE>(data[5]);
 	
         // FIXME: decrease log level in production system
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -75,6 +76,7 @@ void handle_ConfigMotion_response(const EtherCANInterfaceConfig&config,
     else
     {
 	fpu.num_waveform_segments = data[4];
+	fpu.waveform_status = WAVEFORM_OK;
     }
 
 }

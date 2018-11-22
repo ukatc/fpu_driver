@@ -139,8 +139,10 @@ public:
 
 
 
+#ifdef SHOW_FIXMES
 #if (CAN_PROTOCOL_VERSION > 1 )
 #pragma message "FIXME: In protocol version 2, this needs to be changed to use the gateway SYNC message."
+#endif
 #endif
 
     template<typename T> E_EtherCANErrCode broadcastMessage()

@@ -142,20 +142,29 @@ enum E_MOC_ERRCODE
     MCE_ERR_INVALID_COMMAND	     = 0x03,	// invalid command received by motion controller
     MCE_NOTIFY_COMMAND_IGNORED	     = 0x04,	// command was ignored by FPU motion controller
     MCE_ERR_WAVEFORM_NOT_READY	     = 0x05,	// waveform not ready for execution
-    MCE_WAVEFORM_TOO_BIG	     = 0x06,	// too many waveform entries
-    MCE_WAVEFORM_SEQUENCE	     = 0x07,	// transmitted waveform sequence not consistent in respect to use of first and last flags
-    MCE_WAVEFORM_BADVALUE	     = 0x08,	// the transmitted waveform value did not pass bounds checking
-    MCE_WARN_STEP_TIMING_ERROR	     = 0x09,	// Microstepping value is too high for step frequency
-    MCE_ERR_INVALID_PARAMETER	     = 0x0a,	// invalid parameter was rejected by motion controller
-    MCE_ERR_DATUM_TIME_OUT	     = 0x0b,	// datum search exceeded hardware time or step limit
-    MCE_NOTIFY_DATUM_ALPHA_ONLY	     = 0x0c,	// only the alpha arm was moved to datum
-    MCE_NOTIFY_DATUM_BETA_ONLY	     = 0x0d,	// only the beta arm was moved to datum
-    MCE_ERR_AUTO_DATUM_UNINITIALIZED = 0x0e,	// automatic datum operation was requested, but FPU is not initialized
-    MCE_ERR_DATUM_ON_LIMIT_SWITCH    = 0x0f,	// datum command was rejected because alpha arm is on limit switch
-    MCE_ERR_CAN_OVERFLOW_HW	     = 0x10,	// overflow in CAN hardware buffer
-    MCE_ERR_CAN_OVERFLOW_SW	     = 0x11,	// CAN overflow in motion controller firmware buffer
-    MCE_NO_CONFIRMATION_EXPECTED     = 0x12,    // command was sent for which no confirmation is expected
-    MCE_COMMAND_TIMEDOUT             = 0x13,    // response for CAN command is missing (timed out)
+    MCE_WAVEFORM_REJECTED	     = 0x06,	// waveform not accepted by FPU, see following enumeration for detailed cause
+    MCE_WARN_STEP_TIMING_ERROR	     = 0x07,	// Microstepping value is too high for step frequency
+    MCE_ERR_INVALID_PARAMETER	     = 0x08,	// invalid parameter was rejected by motion controller
+    MCE_ERR_DATUM_TIME_OUT	     = 0x09,	// datum search exceeded hardware time or step limit
+    MCE_NOTIFY_DATUM_ALPHA_ONLY	     = 0x0a,	// only the alpha arm was moved to datum
+    MCE_NOTIFY_DATUM_BETA_ONLY	     = 0x0b,	// only the beta arm was moved to datum
+    MCE_ERR_AUTO_DATUM_UNINITIALIZED = 0x0c,	// automatic datum operation was requested, but FPU is not initialized
+    MCE_ERR_DATUM_ON_LIMIT_SWITCH    = 0x0d,	// datum command was rejected because alpha arm is on limit switch
+    MCE_ERR_CAN_OVERFLOW_HW	     = 0x0e,	// overflow in CAN hardware buffer
+    MCE_ERR_CAN_OVERFLOW_SW	     = 0x0f,	// CAN overflow in motion controller firmware buffer
+    // the following two codes are NEVER sent by the FPU - they are used for driver-internal book-keeping
+    MCE_NO_CONFIRMATION_EXPECTED     = 0x10,    // command was sent for which no confirmation is expected
+    MCE_COMMAND_TIMEDOUT             = 0x11,    // response for CAN command is missing (timed out)
+    
+};
+
+enum E_WAVEFORM_ERRCODE
+{
+    WAVEFORM_OK		     = 0x00,	// no error
+    WAVEFORM_TOO_BIG	     = 0x01,	// too many waveform entries
+    WAVEFORM_SEQUENCE	     = 0x02,	// transmitted waveform sequence not consistent in respect to use of first and last flags
+    WAVEFORM_BADVALUE	     = 0x03,	// the transmitted waveform value did not pass bounds checking
+    WAVEFORM_UNDEFINED       = 0x04,    // no valid waveform data on FPU
 };
 
 

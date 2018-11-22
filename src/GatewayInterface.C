@@ -820,7 +820,6 @@ SBuffer::E_SocketStatus GatewayInterface::send_buffer(unique_ptr<CAN_Command> &a
             const uint8_t fpu_canid = address_map[fpu_id].can_id;
             const bool broadcast = active_can_command->doBroadcast();
             // serialize data
-#pragma message("this needs a fix for broadcasting -- a broadcast message needs to set identical sequence numbers, ideally for FPU 0")
             const uint8_t sequence_number = fpuArray.countSequenceNumber(fpu_id,
                                             active_can_command->expectsResponse(),
                                             broadcast);

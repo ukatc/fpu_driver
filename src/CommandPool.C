@@ -264,12 +264,7 @@ E_EtherCANErrCode CommandPool::initialize()
                     break;
 
                 default:
-#if (CAN_PROTOCOL_VERSION > 1)
-#pragma message "FIXME: add any missing constructors"
                     assert(0);
-#else
-                    assert(1);
-#endif
 
                 }
             }

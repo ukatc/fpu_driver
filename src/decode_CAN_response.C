@@ -57,10 +57,6 @@ void logErrorStatus(const EtherCANInterfaceConfig &config, int fpu_id, int err_c
         err_msg = "waveform not ready for execution";
         break;
 
-    case MCE_WAVEFORM_TOO_BIG:
-        err_msg = "too many waveform entries";
-        break;
-
     case MCE_WARN_STEP_TIMING_ERROR:
         err_msg = "step timing error:microstepping value is too high for step frequency";
         break;
@@ -73,18 +69,10 @@ void logErrorStatus(const EtherCANInterfaceConfig &config, int fpu_id, int err_c
         err_msg = "invalid parameter was rejected by motion controller";
         break;
 
-    case MCE_WAVEFORM_SEQUENCE:
-        err_msg = "transmitted waveform sequence not consistent in respect to use of first and last flags";
-        break;
-
-    case MCE_WAVEFORM_BADVALUE:
-        err_msg = "the transmitted waveform value did not pass bounds checking";
-        break;
-
     case MCE_ERR_DATUM_TIME_OUT:
         err_msg = "datum search exceeded hardware time or step limit";
         break;
-
+	
     case MCE_NOTIFY_DATUM_ALPHA_ONLY:
         err_msg = "only the alpha arm was moved to datum";
         break;

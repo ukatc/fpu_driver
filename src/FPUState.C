@@ -54,6 +54,7 @@ void initialize_fpu(t_fpu_state &fpu)
     fpu.step_timing_errcount      = 0;
     fpu.last_command              = CCMD_NO_COMMAND;
     fpu.last_status               = MCE_FPU_OK;
+    fpu.waveform_status           = WAVEFORM_UNDEFINED;
     fpu.sequence_number           = 0;
     fpu.can_overflow_errcount     = 0;
     fpu.crc32                     = 0;

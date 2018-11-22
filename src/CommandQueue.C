@@ -152,8 +152,10 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
         // throw a bad_alloc exception if the system is low on memory.
         // Best fix is possibly to replace std::dequeue with a
         // fixed-size ringbuffer. Should be done for version 2.
+#ifdef SHOW_FIXMES
 #if CAN_PROTOCOL_VERSION > 1
 #pragma message "FIXME: make CommandQueue::enqueue() exception-safe"
+#endif
 #endif
         fifos[gateway_id].push_back(std::move(new_command));
 
