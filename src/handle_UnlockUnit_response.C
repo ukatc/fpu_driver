@@ -40,13 +40,13 @@ namespace ethercanif
 {
 
 void handle_UnlockUnit_response(const EtherCANInterfaceConfig&config,
-				const int fpu_id,
-				t_fpu_state& fpu,
-				int &count_pending,
-				const t_response_buf&data,
-				const int blen, TimeOutList&  timeout_list,
-				const E_CAN_COMMAND cmd_id,
-				const uint8_t sequence_number)
+                                const int fpu_id,
+                                t_fpu_state& fpu,
+                                int &count_pending,
+                                const t_response_buf&data,
+                                const int blen, TimeOutList&  timeout_list,
+                                const E_CAN_COMMAND cmd_id,
+                                const uint8_t sequence_number)
 {
     assert(blen == 8);
     const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
@@ -57,7 +57,7 @@ void handle_UnlockUnit_response(const EtherCANInterfaceConfig&config,
     if (response_errcode == 0)
     {
         fpu.ping_ok = true;
-	// the state change in contained in the status word and was already updated
+        // the state change in contained in the status word and was already updated
         LOG_RX(LOG_INFO, "%18.6f : RX : "
                "unlockUnit command succeeded for FPU %i\n",
                get_realtime(),

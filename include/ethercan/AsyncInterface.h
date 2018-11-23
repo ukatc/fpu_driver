@@ -64,7 +64,7 @@ public:
         log_repeat_count = 0;
 
         // initialize known firmware versions to zero
-	
+
 
         memset(fpu_firmware_version, FIRMWARE_NOT_RETRIEVED, sizeof(fpu_firmware_version));
 
@@ -108,14 +108,14 @@ public:
     E_EtherCANErrCode initializeGridAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     // get count of states across FPUs in a grid or sub-set of the grid.
-    
+
     void getStateCount(const t_grid_state& grid_state, t_fpuset const * const pfpuset, t_counts &counts);
-    
+
     E_EtherCANErrCode pingFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset,
-				     const bool include_locked_fpus=false);
-    
+                                     const bool include_locked_fpus=false);
+
     E_EtherCANErrCode resetStepCounterAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
@@ -156,9 +156,9 @@ public:
                                        t_fpuset const &fpuset);
 
     E_EtherCANErrCode enableMoveAsync(int fpu_id,
-				      t_grid_state& grid_state,
-				      E_GridState& state_summary);
-    
+                                      t_grid_state& grid_state,
+                                      E_GridState& state_summary);
+
     E_EtherCANErrCode lockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
 
     E_EtherCANErrCode unlockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
@@ -168,23 +168,23 @@ public:
                                      bool &was_retrieved,
                                      uint8_t (&min_firmware_version)[3],
                                      int &min_firmware_fpu) const;
-    
+
     // retrieve minimum firmware version over the network
     E_EtherCANErrCode getFirmwareVersionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
-    
+
     E_EtherCANErrCode enableBetaCollisionProtectionAsync(t_grid_state& grid_state,
             E_GridState& state_summary);
-    
+
     E_EtherCANErrCode enableAlphaLimitProtectionAsync(t_grid_state& grid_state,
-						      E_GridState& state_summary);
+            E_GridState& state_summary);
 
     E_EtherCANErrCode freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
-					     t_grid_state& grid_state,
-					     E_GridState& state_summary);
+            t_grid_state& grid_state,
+            E_GridState& state_summary);
 
     E_EtherCANErrCode freeAlphaLimitBreachAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
-					     t_grid_state& grid_state,
-					     E_GridState& state_summary);
+            t_grid_state& grid_state,
+            E_GridState& state_summary);
 
     E_EtherCANErrCode setUStepLevelAsync(int ustep_level,
                                          t_grid_state& grid_state,
@@ -194,16 +194,16 @@ public:
     // set minimum and maximum number of steps per waveform segment
     // (the upper value is ignored for now)
     E_EtherCANErrCode setStepsPerSegmentAsync(int minsteps,
-					      int maxsteps,
-					      t_grid_state& grid_state,
-					      E_GridState& state_summary,
-					      t_fpuset const &fpuset);
+            int maxsteps,
+            t_grid_state& grid_state,
+            E_GridState& state_summary,
+            t_fpuset const &fpuset);
 
     // set number of 100ns clock ticks per waveform segment
     E_EtherCANErrCode setTicksPerSegmentAsync(unsigned long ticks,
-					      t_grid_state& grid_state,
-					      E_GridState& state_summary,
-					      t_fpuset const &fpuset);
+            t_grid_state& grid_state,
+            E_GridState& state_summary,
+            t_fpuset const &fpuset);
 
     E_EtherCANErrCode readRegisterAsync(uint16_t read_address,
                                         t_grid_state& grid_state,
@@ -211,9 +211,9 @@ public:
                                         t_fpuset const &fpuset);
 
     E_EtherCANErrCode checkIntegrityAsync(t_grid_state& grid_state,
-					  E_GridState& state_summary,
-					  t_fpuset const &fpuset);
-    
+                                          E_GridState& state_summary,
+                                          t_fpuset const &fpuset);
+
 
     E_GridState getGridState(t_grid_state& out_state) const;
 
@@ -263,19 +263,19 @@ protected:
 
     // make sure we have a certain minimum firmware version
     E_EtherCANErrCode assureMinFirmwareVersion(const int req_fw_major,
-					       const int req_fw_minor,
-					       const int req_fw_patch,
-					       const char* caller_name,
-					       t_fpuset const &fpuset,
-					       t_grid_state& grid_state);
+            const int req_fw_minor,
+            const int req_fw_patch,
+            const char* caller_name,
+            t_fpuset const &fpuset,
+            t_grid_state& grid_state);
 
     // retrieve minimum firmware version
     E_EtherCANErrCode getMinFirmwareVersionAsync(t_fpuset const &fpuset,
-						 uint8_t (&min_firmware_version)[3],
-						 int &min_firmware_fpu,
-						 t_grid_state& grid_state,
-						 E_GridState& state_summary);
-    
+            uint8_t (&min_firmware_version)[3],
+            int &min_firmware_fpu,
+            t_grid_state& grid_state,
+            E_GridState& state_summary);
+
     E_EtherCANErrCode readSerialNumbersAsync(t_grid_state& grid_state,
             E_GridState& state_summary, t_fpuset const &fpuset);
 
@@ -285,10 +285,10 @@ protected:
 private:
 
     int num_gateways;
-    
+
     // cached firmware version of each FPU
     uint8_t fpu_firmware_version[MAX_NUM_POSITIONERS][3];
-    
+
     GatewayInterface gateway;
 #if CAN_PROTOCOL_VERSION == 1
     E_DATUM_SELECTION last_datum_arm_selection;

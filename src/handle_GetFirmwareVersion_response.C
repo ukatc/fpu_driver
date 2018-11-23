@@ -40,13 +40,13 @@ namespace ethercanif
 {
 
 void handle_GetFirmwareVersion_response(const EtherCANInterfaceConfig&config,
-					const int fpu_id,
-					t_fpu_state& fpu,
-					int &count_pending,
-					const t_response_buf&data,
-					const int blen, TimeOutList&  timeout_list,
-					const E_CAN_COMMAND cmd_id,
-					const uint8_t sequence_number)
+                                        const int fpu_id,
+                                        t_fpu_state& fpu,
+                                        int &count_pending,
+                                        const t_response_buf&data,
+                                        const int blen, TimeOutList&  timeout_list,
+                                        const E_CAN_COMMAND cmd_id,
+                                        const uint8_t sequence_number)
 {
     // update status, without extracting error code or update state
     // (they don't fit into this response).
@@ -57,11 +57,11 @@ void handle_GetFirmwareVersion_response(const EtherCANInterfaceConfig&config,
     //
     // Note: This message has no room for an error code, we assume it
     // succeeded and set the return code to MCE_FPU_OK.
-    // 
+    //
     // Because the driver checks the version, an invalid version such
     // as (0,0,0) will be detected safely and trigger an error.
     // FIXME: Might need to be defined better.
-    
+
     E_MOC_ERRCODE response_errcode = MCE_FPU_OK;
     remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending, sequence_number);
 
@@ -78,10 +78,10 @@ void handle_GetFirmwareVersion_response(const EtherCANInterfaceConfig&config,
 
     fpu.ping_ok = true;
     LOG_RX(LOG_ERROR, "%18.6f : RX : "
-	   "GetFirmwareVersion result for FPU %i : version = %i.%i.%i, date = 20%02i-%02i-%02i/,\n",
-	   get_realtime(), fpu_id,
-	   fpu.firmware_version[0], fpu.firmware_version[1], fpu.firmware_version[2],
-	   fpu.firmware_date[0], fpu.firmware_date[1], fpu.firmware_date[2]);
+           "GetFirmwareVersion result for FPU %i : version = %i.%i.%i, date = 20%02i-%02i-%02i/,\n",
+           get_realtime(), fpu_id,
+           fpu.firmware_version[0], fpu.firmware_version[1], fpu.firmware_version[2],
+           fpu.firmware_date[0], fpu.firmware_date[1], fpu.firmware_date[2]);
 
 
 

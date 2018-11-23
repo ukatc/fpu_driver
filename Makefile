@@ -116,7 +116,7 @@ wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.C -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(VERSION)\"
 
 style:
-	astyle src/*.C python/src/*.cpp include{,/*{,/*}}/*.h
+	astyle src/*.C python/src/*.C include{,/*{,/*}}/*.h
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ doc/*.{aux,dvi,log,out,toc,pdf} python/*.so lib/*a

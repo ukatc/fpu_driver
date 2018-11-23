@@ -72,7 +72,7 @@ void logErrorStatus(const EtherCANInterfaceConfig &config, int fpu_id, int err_c
     case MCE_ERR_DATUM_TIME_OUT:
         err_msg = "datum search exceeded hardware time or step limit";
         break;
-	
+
     case MCE_NOTIFY_DATUM_ALPHA_ONLY:
         err_msg = "only the alpha arm was moved to datum";
         break;
@@ -167,13 +167,13 @@ Because some commands have so much payload that they cannot
 transmit all status data, the function takes
 a bitmask parameter which tells which fields should be updated.
 
-The bitmask depends on the command code. Normally, all fields 
+The bitmask depends on the command code. Normally, all fields
 are updated.
 */
 
 E_MOC_ERRCODE update_status_flags(t_fpu_state& fpu,
-			 const UPDATE_FIELDID req_fields,
-			 const t_response_buf& data)
+                                  const UPDATE_FIELDID req_fields,
+                                  const t_response_buf& data)
 {
     E_MOC_ERRCODE err_code = MCE_FPU_OK;
 
@@ -182,90 +182,90 @@ E_MOC_ERRCODE update_status_flags(t_fpu_state& fpu,
     // store new state of FPU.
     if ((UPDATE_STATE & req_fields) != 0)
     {
-	fpu.state = static_cast<E_FPU_STATE>(data[3] & 0x0F);
+        fpu.state = static_cast<E_FPU_STATE>(data[3] & 0x0F);
     }
 
-    
+
     // update fpu status bits from transmitted status word
     {
-	// assemble status word
-	uint32_t stwd = ((data[1] >> 5) & 0x07) | (data[2] << 3);
+        // assemble status word
+        uint32_t stwd = ((data[1] >> 5) & 0x07) | (data[2] << 3);
 
-    if ((UPDATE_STSWD & req_fields) != 0)
-    {
+        if ((UPDATE_STSWD & req_fields) != 0)
+        {
 
-	fpu.waveform_ready =       test_bit(stwd, STBT_WAVEFORM_READY);
-	fpu.at_alpha_limit =       test_bit(stwd, STBT_ALPHA_AT_LIMIT);	      
-	fpu.waveform_reversed =    test_bit(stwd, STBT_WAVEFORM_REVERSED);
+            fpu.waveform_ready =       test_bit(stwd, STBT_WAVEFORM_READY);
+            fpu.at_alpha_limit =       test_bit(stwd, STBT_ALPHA_AT_LIMIT);
+            fpu.waveform_reversed =    test_bit(stwd, STBT_WAVEFORM_REVERSED);
 
-	fpu.alpha_was_zeroed = fpu.alpha_was_zeroed || test_bit(stwd, STBT_IS_ZEROED);
-	fpu.beta_was_zeroed = fpu.beta_was_zeroed || test_bit(stwd, STBT_IS_ZEROED);
-	fpu.is_locked = test_bit(stwd, STBT_FPU_LOCKED);
-	fpu.alpha_datum_switch_active = test_bit(stwd, STBT_ALPHA_DATUM_ACTIVE);
-	fpu.beta_datum_switch_active = test_bit(stwd, STBT_BETA_DATUM_ACTIVE);
-	fpu.beta_collision = test_bit(stwd, STBT_COLLISION_DETECTED);
-	fpu.waveform_valid = test_bit(stwd, STBT_WAVEFORM_VALID);
+            fpu.alpha_was_zeroed = fpu.alpha_was_zeroed || test_bit(stwd, STBT_IS_ZEROED);
+            fpu.beta_was_zeroed = fpu.beta_was_zeroed || test_bit(stwd, STBT_IS_ZEROED);
+            fpu.is_locked = test_bit(stwd, STBT_FPU_LOCKED);
+            fpu.alpha_datum_switch_active = test_bit(stwd, STBT_ALPHA_DATUM_ACTIVE);
+            fpu.beta_datum_switch_active = test_bit(stwd, STBT_BETA_DATUM_ACTIVE);
+            fpu.beta_collision = test_bit(stwd, STBT_COLLISION_DETECTED);
+            fpu.waveform_valid = test_bit(stwd, STBT_WAVEFORM_VALID);
 
 
-	// set the direction enum according to whether the FPU is in moving state or not
-	const bool ismoving = ( (fpu.state == FPST_DATUM_SEARCH) || (fpu.state == FPST_MOVING) );
-	
-	if (ismoving)
-	{
-	    fpu.direction_alpha = test_bit(stwd, STBT_ALPHA_LAST_DIRECTION) == 1 ? DIRST_CLOCKWISE : DIRST_ANTI_CLOCKWISE;
-	    fpu.direction_beta = test_bit(stwd, STBT_BETA_LAST_DIRECTION) == 1 ? DIRST_CLOCKWISE : DIRST_ANTI_CLOCKWISE;
-	}
-	else
-	{
-	    fpu.direction_alpha = test_bit(stwd, STBT_ALPHA_LAST_DIRECTION) == 1 ? DIRST_RESTING_LAST_CW : DIRST_RESTING_LAST_ACW;
-	    fpu.direction_beta = test_bit(stwd, STBT_BETA_LAST_DIRECTION) == 1 ? DIRST_RESTING_LAST_CW : DIRST_RESTING_LAST_ACW;
-	}
-	
-	if ( test_bit(stwd, STBT_WAVEFORM_VALID) == 0)
-	{
-	    fpu.num_waveform_segments = 0;
-	}
-	
+            // set the direction enum according to whether the FPU is in moving state or not
+            const bool ismoving = ( (fpu.state == FPST_DATUM_SEARCH) || (fpu.state == FPST_MOVING) );
 
-    }
+            if (ismoving)
+            {
+                fpu.direction_alpha = test_bit(stwd, STBT_ALPHA_LAST_DIRECTION) == 1 ? DIRST_CLOCKWISE : DIRST_ANTI_CLOCKWISE;
+                fpu.direction_beta = test_bit(stwd, STBT_BETA_LAST_DIRECTION) == 1 ? DIRST_CLOCKWISE : DIRST_ANTI_CLOCKWISE;
+            }
+            else
+            {
+                fpu.direction_alpha = test_bit(stwd, STBT_ALPHA_LAST_DIRECTION) == 1 ? DIRST_RESTING_LAST_CW : DIRST_RESTING_LAST_ACW;
+                fpu.direction_beta = test_bit(stwd, STBT_BETA_LAST_DIRECTION) == 1 ? DIRST_RESTING_LAST_CW : DIRST_RESTING_LAST_ACW;
+            }
+
+            if ( test_bit(stwd, STBT_WAVEFORM_VALID) == 0)
+            {
+                fpu.num_waveform_segments = 0;
+            }
+
+
+        }
     }
 
 
     // store error status of command
     if ((UPDATE_ECODE & req_fields) != 0)
     {
-	err_code = static_cast<E_MOC_ERRCODE>((data[3] & 0xF0) >> 4);
-	fpu.last_status = err_code;
+        err_code = static_cast<E_MOC_ERRCODE>((data[3] & 0xF0) >> 4);
+        fpu.last_status = err_code;
     }
-    
+
     // update step counts, if they were transmitted
     if ((UPDATE_STEPS & req_fields) != 0)
     {
 
-	// the finished_DATUM commands does not report the current step counts
-	// (at datum, they are zero), bit the residual step count when the datum
-	// position was reached. We need to check whether alpha or beta arm
-	// were datumed separately.
-	if ((fpu.last_command != CMSG_FINISHED_DATUM) || (err_code == MCE_NOTIFY_DATUM_ALPHA_ONLY))
-	{
-	    fpu.alpha_steps = unfold_stepcount_alpha(data[4] | (data[5] << 8));
-	}
-	else
-	{
-	    fpu.alpha_deviation = unfold_stepcount_alpha(data[4] | (data[5] << 8));
-	}
-	if ((fpu.last_command != CMSG_FINISHED_DATUM) || (err_code == MCE_NOTIFY_DATUM_BETA_ONLY))
-	{
-	    fpu.beta_steps = unfold_stepcount_beta(data[6] | (data[7] << 8));
-	}
-	else
-	{
-	    fpu.beta_deviation = unfold_stepcount_beta(data[6] | (data[7] << 8));
-	}
-    }        
-       
-    
-    return err_code; 
+        // the finished_DATUM commands does not report the current step counts
+        // (at datum, they are zero), bit the residual step count when the datum
+        // position was reached. We need to check whether alpha or beta arm
+        // were datumed separately.
+        if ((fpu.last_command != CMSG_FINISHED_DATUM) || (err_code == MCE_NOTIFY_DATUM_ALPHA_ONLY))
+        {
+            fpu.alpha_steps = unfold_stepcount_alpha(data[4] | (data[5] << 8));
+        }
+        else
+        {
+            fpu.alpha_deviation = unfold_stepcount_alpha(data[4] | (data[5] << 8));
+        }
+        if ((fpu.last_command != CMSG_FINISHED_DATUM) || (err_code == MCE_NOTIFY_DATUM_BETA_ONLY))
+        {
+            fpu.beta_steps = unfold_stepcount_beta(data[6] | (data[7] << 8));
+        }
+        else
+        {
+            fpu.beta_deviation = unfold_stepcount_beta(data[6] | (data[7] << 8));
+        }
+    }
+
+
+    return err_code;
 
 
 }
@@ -276,18 +276,18 @@ E_MOVEMENT_DIRECTION update_direction_stopping(E_MOVEMENT_DIRECTION last_directi
     {
 
     case DIRST_CLOCKWISE:
-	return DIRST_RESTING_LAST_CW;
-	/* no break needed */
+        return DIRST_RESTING_LAST_CW;
+    /* no break needed */
 
     case DIRST_ANTI_CLOCKWISE:
-	return DIRST_RESTING_LAST_ACW;
-	/* no break needed */
-	
+        return DIRST_RESTING_LAST_ACW;
+    /* no break needed */
+
     case DIRST_UNKNOWN:
     default:
-	    return last_direction;
-	/* no break needed */
-	
+        return last_direction;
+        /* no break needed */
+
     }
 }
 

@@ -43,8 +43,8 @@ public:
     };
 
     SetTicksPerSegmentCommand():
-	CAN_Command(command_code),
-	ticks_per_segment(0)
+        CAN_Command(command_code),
+        ticks_per_segment(0)
     {
     };
 
@@ -54,26 +54,26 @@ public:
     {
         fpu_id = f_id;
         bcast = broadcast;
-	// unit is 100 nanosecond clock cycles
-	ticks_per_segment = ticks_per_seg;
+        // unit is 100 nanosecond clock cycles
+        ticks_per_segment = ticks_per_seg;
     };
 
     void SerializeToBuffer(const uint8_t busid,
-			   const uint8_t fpu_canid,
-			   int& buf_len,
-			   t_CAN_buffer& can_buffer,
-			   const uint8_t sequence_number)
+                           const uint8_t fpu_canid,
+                           int& buf_len,
+                           t_CAN_buffer& can_buffer,
+                           const uint8_t sequence_number)
     {
         set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
 
-	can_buffer.message.data[2] = ticks_per_segment & 0xff;
-	can_buffer.message.data[3] = (ticks_per_segment >> 8) & 0xff;
-	can_buffer.message.data[4] = (ticks_per_segment >> 16) & 0xff;
+        can_buffer.message.data[2] = ticks_per_segment & 0xff;
+        can_buffer.message.data[3] = (ticks_per_segment >> 8) & 0xff;
+        can_buffer.message.data[4] = (ticks_per_segment >> 16) & 0xff;
 
         buf_len += 3;
 
     };
-    
+
 
     // time-out period for a response to the message
     timespec getTimeOut()
@@ -87,7 +87,7 @@ public:
         return toval;
     };
 
-    private:
+private:
     static_assert(sizeof(unsigned int) >= 3, "buffer too small");
     unsigned int ticks_per_segment;
 

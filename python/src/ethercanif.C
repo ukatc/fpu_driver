@@ -181,7 +181,7 @@ public:
         pending_command_set       = fpu_state.pending_command_set;
         state                     = fpu_state.state;
         last_command              = fpu_state.last_command;
-	sequence_number           = fpu_state.sequence_number;
+        sequence_number           = fpu_state.sequence_number;
         last_status               = fpu_state.last_status;
         alpha_steps               = fpu_state.alpha_steps;
         beta_steps                = fpu_state.beta_steps;
@@ -216,8 +216,8 @@ public:
         fw_date_year              = fpu_state.firmware_date[0];
         fw_date_month             = fpu_state.firmware_date[1];
         fw_date_day               = fpu_state.firmware_date[2];
-	crc32                     = fpu_state.crc32;
-	checksum_ok               = fpu_state.checksum_ok;
+        crc32                     = fpu_state.crc32;
+        checksum_ok               = fpu_state.checksum_ok;
 
         assert(strlen(fpu_state.serial_number) < LEN_SERIAL_NUMBER);
         serial_number = std::string(fpu_state.serial_number);
@@ -605,9 +605,9 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
 
     case DE_INVALID_WAVEFORM :
         throw EtherCANException("DE_INVALID_WAVEFORM: The passed waveform does not meet some general rule.",
-                                 DE_INVALID_WAVEFORM);
+                                DE_INVALID_WAVEFORM);
         break;
-	
+
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS :
         throw EtherCANException("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS: The passed waveform has too many sections.",
                                 DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS);
@@ -687,12 +687,12 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 " an FPU alpha arm is on its limit switch.",
                                 DE_ALPHA_ARM_ON_LIMIT_SWITCH);
         break;
-	
+
     case DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH:
         throw EtherCANException("DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH: Part of datum command rejected by"
-				" hardware because an FPU alpha arm is on its limit switch"
-				" before it started to move.",
-                                 DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH);
+                                " hardware because an FPU alpha arm is on its limit switch"
+                                " before it started to move.",
+                                DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH);
         break;
 
     case DE_INCONSISTENT_STEP_COUNT:
@@ -977,7 +977,7 @@ public:
 
     }
 
-    
+
     E_EtherCANErrCode wrap_pingFPUs(WrapGridState& grid_state, list& fpu_list)
     {
         t_fpuset fpuset;
@@ -1013,7 +1013,7 @@ public:
         return ecode;
     }
 
-    
+
 
     void getDatumFlags(dict& dict_modes, t_datum_search_flags &direction_flags, const t_fpuset &fpuset)
     {
@@ -1233,7 +1233,7 @@ public:
         return ecode;
     }
 
-    
+
     E_EtherCANErrCode wrap_freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_direction,
             WrapGridState& grid_state)
     {
@@ -1241,14 +1241,14 @@ public:
         checkInterfaceError(ecode);
         return ecode;
     }
-    
+
     E_EtherCANErrCode wrap_enableBetaCollisionProtection(WrapGridState& grid_state)
     {
         E_EtherCANErrCode ecode = enableBetaCollisionProtection(grid_state);
         checkInterfaceError(ecode);
         return ecode;
     }
-    
+
     E_EtherCANErrCode wrap_lockFPU(int fpu_id, WrapGridState& grid_state)
     {
         E_EtherCANErrCode ecode =lockFPU(fpu_id, grid_state);
@@ -1304,18 +1304,18 @@ public:
         return ecode;
 
     }
-    
+
     boost::python::tuple wrap_getMinFirmwareVersion(WrapGridState& grid_state, list& fpu_list)
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
-	uint8_t min_firmware_version[3];
+        uint8_t min_firmware_version[3];
 
-	E_EtherCANErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, grid_state);
+        E_EtherCANErrCode ecode = getMinFirmwareVersion(fpuset, min_firmware_version, grid_state);
         checkInterfaceError(ecode);
         return boost::python::make_tuple(min_firmware_version[0], min_firmware_version[1], min_firmware_version[2]);
     }
-    
+
     E_EtherCANErrCode wrap_setStepsPerSegment(int min_steps, int max_steps, WrapGridState& grid_state, list& fpu_list)
     {
         t_fpuset fpuset;
@@ -1334,7 +1334,7 @@ public:
         checkInterfaceError(ecode);
         return ecode;
     }
-    
+
     E_EtherCANErrCode wrap_freeAlphaLimitBreach(int fpu_id, E_REQUEST_DIRECTION request_direction,
             WrapGridState& grid_state)
     {
@@ -1342,7 +1342,7 @@ public:
         checkInterfaceError(ecode);
         return ecode;
     }
-    
+
     E_EtherCANErrCode wrap_enableAlphaLimitProtection(WrapGridState& grid_state)
     {
         E_EtherCANErrCode ecode = enableAlphaLimitProtection(grid_state);
@@ -1477,7 +1477,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("WAVEFORM_SEQUENCE ", WAVEFORM_SEQUENCE  )
     .value("WAVEFORM_BADVALUE ", WAVEFORM_BADVALUE  )
     .export_values();
-    
+
     enum_<E_CAN_COMMAND>("E_CAN_COMMAND")
     .value("CCMD_NO_COMMAND", CCMD_NO_COMMAND)
     .value("CCMD_CONFIG_MOTION", CCMD_CONFIG_MOTION)
@@ -1768,7 +1768,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def("setStepsPerSegment", &WrapEtherCANInterface::wrap_setStepsPerSegment)
     .def("setTicksPerSegment", &WrapEtherCANInterface::wrap_setTicksPerSegment)
     .def("checkIntegrity", &WrapEtherCANInterface::wrap_checkIntegrity)
-	
+
     .def_readonly("NumFPUs", &WrapEtherCANInterface::getNumFPUs)
     ;
 

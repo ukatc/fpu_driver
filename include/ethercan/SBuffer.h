@@ -70,8 +70,8 @@ public:
     E_SocketStatus encode_and_send(int sockfd,
                                    int const input_len,
                                    const uint8_t bytes[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES],
-				   int busid,
-				   int fpu_canid);
+                                   int busid,
+                                   int fpu_canid);
 
     // we send pending data and return the
     // result of the send command.
@@ -122,7 +122,7 @@ private:
     uint8_t command_buf[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES];
     uint8_t bus_delays[BUSES_PER_GATEWAY];
     uint8_t fpu_delays[BUSES_PER_GATEWAY][FPUS_PER_BUS];
-    
+
     // length of command
     int clen;
 

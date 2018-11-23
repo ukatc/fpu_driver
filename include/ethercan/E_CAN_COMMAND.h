@@ -155,7 +155,7 @@ enum E_MOC_ERRCODE
     // the following two codes are NEVER sent by the FPU - they are used for driver-internal book-keeping
     MCE_NO_CONFIRMATION_EXPECTED     = 0x10,    // command was sent for which no confirmation is expected
     MCE_COMMAND_TIMEDOUT             = 0x11,    // response for CAN command is missing (timed out)
-    
+
 };
 
 enum E_WAVEFORM_ERRCODE

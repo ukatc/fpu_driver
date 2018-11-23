@@ -43,13 +43,13 @@ namespace ethercanif
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
 void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
-				  const int fpu_id,
-				  t_fpu_state& fpu,
-				  int &count_pending,
-				  const t_response_buf&data,
-				  const int blen, TimeOutList&  timeout_list,
-				  const E_CAN_COMMAND cmd_id,
-				  const uint8_t sequence_number)
+                                  const int fpu_id,
+                                  t_fpu_state& fpu,
+                                  int &count_pending,
+                                  const t_response_buf&data,
+                                  const int blen, TimeOutList&  timeout_list,
+                                  const E_CAN_COMMAND cmd_id,
+                                  const uint8_t sequence_number)
 {
     // the error code carries an extra value if only the alpha or only the beta
     // arm was datumed.
@@ -58,7 +58,7 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
 
     // clear time-out flag
     remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending, sequence_number);
-    
+
 
     if ((fpu.at_alpha_limit) || (response_errcode == MCE_WARN_LIMIT_SWITCH_BREACH))
     {
@@ -91,8 +91,8 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     else if (response_errcode == MCE_ERR_DATUM_TIME_OUT)
     {
         // The datum operation was timed-out by the firmware.
-	// This can be due to broken FPU hardware,
-	// such as a non-functioning datum switch.
+        // This can be due to broken FPU hardware,
+        // such as a non-functioning datum switch.
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
@@ -136,29 +136,29 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
                fpu_id);
     }
     else if (!( (response_errcode ==  MCE_FPU_OK)
-		|| (response_errcode ==  MCE_NOTIFY_DATUM_ALPHA_ONLY)
-		|| (response_errcode ==  MCE_NOTIFY_DATUM_BETA_ONLY)))
+                || (response_errcode ==  MCE_NOTIFY_DATUM_ALPHA_ONLY)
+                || (response_errcode ==  MCE_NOTIFY_DATUM_BETA_ONLY)))
     {
-	fpu.alpha_was_zeroed = false;
-	fpu.beta_was_zeroed = false;
-	fpu.ping_ok = false;
+        fpu.alpha_was_zeroed = false;
+        fpu.beta_was_zeroed = false;
+        fpu.ping_ok = false;
     }
     else
     {
         // response_errcode was 0 and no bad status flags were set
-	
+
         if ((response_errcode ==  MCE_FPU_OK)
-	    || (response_errcode ==  MCE_NOTIFY_DATUM_ALPHA_ONLY))
+                || (response_errcode ==  MCE_NOTIFY_DATUM_ALPHA_ONLY))
         {
             fpu.alpha_was_zeroed = true;
             fpu.alpha_steps = 0;
         }
         if ((response_errcode ==  MCE_FPU_OK)
-	    || (response_errcode ==  MCE_NOTIFY_DATUM_BETA_ONLY))
-	       {
-		   fpu.beta_was_zeroed = true;
-		   fpu.beta_steps = 0;
-	       }
+                || (response_errcode ==  MCE_NOTIFY_DATUM_BETA_ONLY))
+        {
+            fpu.beta_was_zeroed = true;
+            fpu.beta_steps = 0;
+        }
         if (fpu.beta_was_zeroed && fpu.alpha_was_zeroed)
         {
             fpu.ping_ok = true;

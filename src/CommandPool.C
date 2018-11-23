@@ -143,56 +143,56 @@ E_EtherCANErrCode CommandPool::initialize()
                 switch (i)
                 {
 
-		case CCMD_LOCK_UNIT                        :
+                case CCMD_LOCK_UNIT                        :
                     ptr.reset(new LockUnitCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-		    
-		case CCMD_UNLOCK_UNIT                      :
+
+                case CCMD_UNLOCK_UNIT                      :
                     ptr.reset(new UnlockUnitCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-		    
-		case CCMD_RESET_STEPCOUNTER                :
+
+                case CCMD_RESET_STEPCOUNTER                :
                     ptr.reset(new ResetStepCounterCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-		    
-		case CCMD_GET_FIRMWARE_VERSION             :
+
+                case CCMD_GET_FIRMWARE_VERSION             :
                     ptr.reset(new GetFirmwareVersionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-		    
-		case CCMD_CHECK_INTEGRITY                  :
+
+                case CCMD_CHECK_INTEGRITY                  :
                     ptr.reset(new CheckIntegrityCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-		    
-		case CCMD_FREE_ALPHA_LIMIT_BREACH          :
+
+                case CCMD_FREE_ALPHA_LIMIT_BREACH          :
                     ptr.reset(new FreeAlphaLimitBreachCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-		    
-		case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    :
+
+                case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    :
                     ptr.reset(new EnableAlphaLimitProtectionCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-		    
-		case CCMD_SET_TICKS_PER_SEGMENT            :
+
+                case CCMD_SET_TICKS_PER_SEGMENT            :
                     ptr.reset(new SetTicksPerSegmentCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-		    
-		case CCMD_SET_STEPS_PER_SEGMENT            :
+
+                case CCMD_SET_STEPS_PER_SEGMENT            :
                     ptr.reset(new SetStepsPerSegmentCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-		    
-		case CCMD_ENABLE_MOVE                      :
+
+                case CCMD_ENABLE_MOVE                      :
                     ptr.reset(new EnableMoveCommand());
                     pool[i].push_back(std::move(ptr));
                     break;
-		    
+
                 case CCMD_PING_FPU        :
                     ptr.reset(new PingFPUCommand());
                     pool[i].push_back(std::move(ptr));

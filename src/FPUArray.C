@@ -935,7 +935,7 @@ void remove_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu, int
         {
             del_index = i;
             removed_val = fpu.cmd_timeouts[i].tout_val;
-	    found_sequence_number = fpu.cmd_timeouts[i].sequence_number;
+            found_sequence_number = fpu.cmd_timeouts[i].sequence_number;
             found = true;
             break;
         }
@@ -945,11 +945,11 @@ void remove_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu, int
     // and is not normally used
     if (found_sequence_number != 0)
     {
-	if (found_sequence_number != msg_sequence_number)
-	{
-	    LOG_RX(LOG_ERROR, "fpu #%i:  cmd code %i with sequence number %i received"
-		   " - wrong sequence number\n", fpu_id, cmd_code, msg_sequence_number);	    
-	}
+        if (found_sequence_number != msg_sequence_number)
+        {
+            LOG_RX(LOG_ERROR, "fpu #%i:  cmd code %i with sequence number %i received"
+                   " - wrong sequence number\n", fpu_id, cmd_code, msg_sequence_number);
+        }
     }
     // move all/any following entries to previous position
     for (int i = del_index; i < (fpu.num_active_timeouts - 1); i++)

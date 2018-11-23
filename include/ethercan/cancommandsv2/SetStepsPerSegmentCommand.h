@@ -43,9 +43,9 @@ public:
     };
 
     SetStepsPerSegmentCommand():
-	CAN_Command(command_code),
-	min_steps_per_segment(0),
-	max_steps_per_segment(0)
+        CAN_Command(command_code),
+        min_steps_per_segment(0),
+        max_steps_per_segment(0)
     {
     };
 
@@ -55,27 +55,27 @@ public:
     {
         fpu_id = f_id;
         bcast = broadcast;
-	min_steps_per_segment = min_steps_ps;
-	max_steps_per_segment = max_steps_ps;
+        min_steps_per_segment = min_steps_ps;
+        max_steps_per_segment = max_steps_ps;
     };
 
     void SerializeToBuffer(const uint8_t busid,
-			   const uint8_t fpu_canid,
-			   int& buf_len,
-			   t_CAN_buffer& can_buffer,
-			   const uint8_t sequence_number)
+                           const uint8_t fpu_canid,
+                           int& buf_len,
+                           t_CAN_buffer& can_buffer,
+                           const uint8_t sequence_number)
     {
         set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
 
-	can_buffer.message.data[2] = min_steps_per_segment & 0xff;
-	can_buffer.message.data[3] = (min_steps_per_segment >> 8) & 0xff;
-	can_buffer.message.data[4] = max_steps_per_segment & 0xff;
-	can_buffer.message.data[5] = (max_steps_per_segment >> 8) & 0xff;
+        can_buffer.message.data[2] = min_steps_per_segment & 0xff;
+        can_buffer.message.data[3] = (min_steps_per_segment >> 8) & 0xff;
+        can_buffer.message.data[4] = max_steps_per_segment & 0xff;
+        can_buffer.message.data[5] = (max_steps_per_segment >> 8) & 0xff;
 
         buf_len += 4;
 
     };
-    
+
 
     // time-out period for a response to the message
     timespec getTimeOut()
@@ -89,7 +89,7 @@ public:
         return toval;
     };
 
-    private:
+private:
     unsigned int min_steps_per_segment;
     unsigned int max_steps_per_segment;
 

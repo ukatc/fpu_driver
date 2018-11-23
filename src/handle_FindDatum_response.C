@@ -42,13 +42,13 @@ namespace ethercanif
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
 void handle_FindDatum_response(const EtherCANInterfaceConfig&config,
-			       const int fpu_id,
-			       t_fpu_state& fpu,
-			       int &count_pending,
-			       const t_response_buf&data,
-			       const int blen, TimeOutList&  timeout_list,
-			       const E_CAN_COMMAND cmd_id,
-			       const uint8_t sequence_number)
+                               const int fpu_id,
+                               t_fpu_state& fpu,
+                               int &count_pending,
+                               const t_response_buf&data,
+                               const int blen, TimeOutList&  timeout_list,
+                               const E_CAN_COMMAND cmd_id,
+                               const uint8_t sequence_number)
 {
     assert(blen == 8);
     const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_DEFAULT, data);
@@ -74,9 +74,9 @@ void handle_FindDatum_response(const EtherCANInterfaceConfig&config,
                         new_timeout,
                         timeout_list, count_pending, 0);
         }
-	
-	// we leave findDatum as pending command, because
-	// we have to wait for the final response.
+
+        // we leave findDatum as pending command, because
+        // we have to wait for the final response.
     }
     else if (response_errcode == MCE_ERR_DATUM_ON_LIMIT_SWITCH)
     {
