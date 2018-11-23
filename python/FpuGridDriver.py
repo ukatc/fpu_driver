@@ -13,6 +13,7 @@ import signal
 from warnings import warn, filterwarnings
 # state tracking
 import lmdb
+import devicelock
 from interval import Interval, Inf, nan
 
 from fpu_constants import *
@@ -235,10 +236,12 @@ class UnprotectedGridDriver (object):
         self.wavetables_incomplete = False
 
         self._gd = ethercanif.EtherCANInterface(config)
+        self.locked_gateways = []
 
     def __del__(self):
         # the following delete is necessary to run destructors!!
         del self._gd
+        del self.locked_gateways
         self.protectionlog.close()
         os.close(self.config.fd_controllog)
         os.close(self.config.fd_txlog)
@@ -249,6 +252,12 @@ class UnprotectedGridDriver (object):
 
     def connect(self, address_list=DEFAULT_GATEWAY_ADRESS_LIST):
         with self.lock:
+            self.locked_gateways = [] # this del's and releases any previously acquired locks
+            for gw in address_list:
+                groupname = os.environ.get("MOONS_GATEWAY_ACCESS_GROUP","moons")
+                # acquire a unique inter-process lock for each gateway IP
+                dl = devicelock.DeviceLock('ethercan-gateway@%s:%i' % (gw.ip, gw.port), groupname)
+                self.locked_gateways.append(dl)
             rv = self._gd.connect(address_list)
             self._post_connect_hook(self.config)
             return rv
