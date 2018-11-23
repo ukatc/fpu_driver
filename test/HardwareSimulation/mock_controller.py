@@ -80,7 +80,7 @@ def getStatus(FPU):
     if FPU.alpha_limit_breach:
         status |= STBT_ALPHA_AT_LIMIT 
         
-    if FPU.fpu_locked:
+    if FPU.state == FPST_LOCKED:
         status |= STBT_FPU_LOCKED
         
     # the following two fields are for recovery porposes - they
@@ -249,91 +249,106 @@ def handle_abortMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 
 def handle_freeBetaCollision(fpu_id, fpu_adr_bus, bus_adr, RX):
-    command_id = RX[0]
-
-    # CAN header for gateway
-    tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_adr_bus
-    
-    TH = [ 0 ] * 3
-    TH[0] = bus_adr
-    TH[1] = (tx_canid & 0xff)
-    TH[2] = ((tx_canid >> 8) & 0xff)
 
     direction = RX[1]
-    assert( (direction == 0) or (direction == 1))
-    FPUGrid[fpu_id].freeBetaCollision(direction)
-    
-    TX = [ 0 ] * 8
-    
-    TX[0] = fpu_adr_bus
-    TX[1] = command_id
-    TX[2] = getStatus(FPUGrid[fpu_id])
-    TX[3] = errflag = 0
 
+    errcode = FPUGrid[fpu_id].freeBetaCollision(direction)
+    
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
 
     
     return TH + TX
 
 
 def handle_enableBetaCollisionProtection(fpu_id, fpu_adr_bus, bus_adr, RX):
-    command_id = RX[0]
-
-    # CAN header for gateway
-    tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_adr_bus
     
-    TH = [ 0 ] * 3
-    TH[0] = bus_adr
-    TH[1] = (tx_canid & 0xff)
-    TH[2] = ((tx_canid >> 8) & 0xff)
+    errcode = FPUGrid[fpu_id].enableBetaCollisionProtection()
     
-    FPUGrid[fpu_id].enableBetaCollisionProtection()
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
-    TX = [ 0 ] * 8
-    
-    TX[0] = fpu_adr_bus
-    TX[1] = command_id
-    TX[2] = getStatus(FPUGrid[fpu_id])
-    TX[3] = errflag = 0
+    return TH + TX
 
 
+def handle_freeAlphaLimitBreach(fpu_id, fpu_adr_bus, bus_adr, RX):
+
+    direction = RX[1]
+
+    errcode = FPUGrid[fpu_id].freeAlphaLimitBreach(direction)
+    
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
+
+    
+    return TH + TX
+
+
+def handle_enableAlphaLimitBreachProtection(fpu_id, fpu_adr_bus, bus_adr, RX):
+    
+    errcode = FPUGrid[fpu_id].enableAlphaLimitBreachProtection()
+    
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
 
 
 def handle_setUStepLevel(fpu_id, fpu_adr_bus, bus_adr, RX):
-    command_id = RX[0]
-
-    # CAN header for gateway
-    tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_adr_bus
-    
-    TH = [ 0 ] * 3
-    TH[0] = bus_adr
-    TH[1] = (tx_canid & 0xff)
-    TH[2] = ((tx_canid >> 8) & 0xff)
 
     ustep_level = RX[1]
-    if ustep_level in [1,2,4,8]:
-        FPUGrid[fpu_id].setUStepLevel(ustep_level)
-        errflag = 0
-        ecode = 0
-    else:
-        erflag = 0xff
-        ecode = ER_PARAM
-    
-    TX = [ 0 ] * 8
-    
-    TX[0] = fpu_adr_bus
-    TX[1] = command_id
-    TX[2] = getStatus(FPUGrid[fpu_id])
-    TX[3] = errflag
-    TX[4] = ecode
 
+    errcode = FPUGrid[fpu_id].setUStepLevel(ustep_level)
 
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
+
+
+def handle_setStepsPerSegment(fpu_id, fpu_adr_bus, bus_adr, RX):
+
+    min_steps_per_segment = (RX[2] << 8) | RX[3]
+    max_steps_per_segment = (RX[4] << 8) | RX[5]
+
+    errcode = FPUGrid[fpu_id].setStepsPerFrame(min_steps_per_frame, max_steps_per_frame)
+
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
+    
+    return TH + TX
+
+
+def handle_setTicksPerSegment(fpu_id, fpu_adr_bus, bus_adr, RX):
+
+    ticks_per_frame = RX[2] | (RX[3] << 8) | (RX[4] << 16)
+
+    errcode = FPUGrid[fpu_id].setTicksPerSegment(ticks_per_frame)
+
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
+    
+    return TH + TX
+
 
 
 def handle_readRegister(fpu_id, fpu_adr_bus, bus_adr, RX):
@@ -377,10 +392,6 @@ def handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
     
         TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
         TX = create_CANheader(command_id, fpu_id, seqnum, ecode=MCE_FPU_OK)
-        TX[4] = count0 = 0
-        TX[5] = count1 = 0    
-        TX[6] = count2 = 0
-        TX[7] = count3 = 0
 
         conf_msg = TH + TX 
 
@@ -393,6 +404,72 @@ def handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
     
     return None
 
+
+def handle_resetStepCounter(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
+
+
+    errcode = FPUGrid[fpu_id].resetStepCounter(fpu_id);
+
+    # response message packet        
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
+    
+    return TH + TX 
+
+
+def handle_lockUnit(fpu_id, fpu_adr_bus, bus_adr, RX):
+    
+    errcode = FPUGrid[fpu_id].lockUnit()
+    
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
+    
+    return TH + TX
+
+def handle_unlockUnit(fpu_id, fpu_adr_bus, bus_adr, RX):
+    
+    errcode = FPUGrid[fpu_id].unlockUnit()
+    
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
+    
+    return TH + TX
+
+def handle_enableMove(fpu_id, fpu_adr_bus, bus_adr, RX):
+    
+    errcode = FPUGrid[fpu_id].enableMove()
+    
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
+    
+    return TH + TX
+
+def handle_checkIntegrity(fpu_id, fpu_adr_bus, bus_adr, RX):
+    
+    crc32val = FPUGrid[fpu_id].checkIntegrity()
+    
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode,
+                          fields = (HDR_SEQNUM | HDR_COMMAND_ID | HDR_STWORD 
+                                    | HDR_FPUSTATE | HDR_ECODE) )
+    for k in range(4):
+        TX[4 + k] = 0xff & crc32val
+        crc32val = crc32val >> 8
+    
+    return TH + TX
+
+ 
 def handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, RX):
 
     tx_prio = 0x02
@@ -770,6 +847,12 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
     elif command_id == CCMD_REVERSE_MOTION                   :
         resp = handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
+    elif command_id == CCMD_ENABLE_ALPHA_LIMIT_BREACH_PROTECTION :
+        resp = handle_enableAlphaLimitBreachProtection(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+
+    elif command_id == CCMD_FREE_ALPHA_LIMIT_BREACH              :
+        resp = handle_freeAlphaLimitBreach(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+
     elif command_id == CCMD_ENABLE_BETA_COLLISION_PROTECTION :
         resp = handle_enableBetaCollisionProtection(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
@@ -788,35 +871,27 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
     elif command_id == CCMD_GET_FIRMWARE_VERSION               :
         resp = handle_getFirmwareVersion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
         
-    elif command_id == CCMD_RESET_STEPCOUNTER                :
-        pass
-
     elif command_id == CCMD_LOCK_UNIT                        :
-        pass
+        resp = handle_lockUnit(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     
     elif command_id == CCMD_UNLOCK_UNIT                      :
-        pass
-    
-    elif command_id == CCMD_GET_FIRMWARE_VERSION             :
-        pass
+        resp = handle_unlockUnit(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     
     elif command_id == CCMD_CHECK_INTEGRITY                  :
-        pass
-    
-    elif command_id == CCMD_FREE_ALPHA_LIMIT_BREACH          :
-        pass
-    
-    elif command_id == CCMD_ENABLE_ALPHA_LIMIT_PROTECTION    :
-        pass
+        resp = handle_checkIntegrity(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     
     elif command_id == CCMD_SET_TIME_STEP                    :
-        pass
+        resp = handle_setTicksPerSegment(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     
     elif command_id == CCMD_SET_STEPS_PER_FRAME              :
-        pass
+        resp = handle_setStepsPerSegment(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     
     elif command_id == CCMD_ENABLE_MOVE                      :
-        pass
+        resp = handle_enableMove(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+    
+    elif command_id == CCMD_RESET_STEPCOUNTER                :
+        resp = handle_resetStepCounter(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
+
         
     else:
         resp = handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)

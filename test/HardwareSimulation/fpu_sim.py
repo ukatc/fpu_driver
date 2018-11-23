@@ -13,6 +13,9 @@ import random
 import time
 import signal
 
+import inspect
+import hashlib
+
 from protocol_constants import *
 
 
@@ -238,6 +241,23 @@ class FPU:
         print("resetting FPU #%i... ready" % fpu_id)
 
         
+    def resetStepCounter(self, fpu_id):
+        
+        # don't allow counter reset when moving
+        if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH]:
+            return MCE_ERR_INVALID_COMMAND
+        
+        printtime()
+        print("resetting FPU #%i stepcounters !!" % fpu_id)
+        alpha_steps = self.alpha_steps
+        beta_steps = self.beta_steps
+        self.alpha_steps = 0
+        self.beta_steps = 0
+        # enlarge the modelled step mismatch re physical position
+        self.aoff_steps += alpha_steps
+        self.boff_steps += beta_steps
+
+        return MCE_FPU_OK
 
     def repeatMotion(self, fpu_id):
         if self.state in [ FPST_READY_FORWARD, FPST_LOCKED]:
@@ -258,8 +278,43 @@ class FPU:
         
 
     def setUStepLevel(self, ustep_level):
+        
+        if self.state != FPST_UNINITIALIZED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+
+        if ustep_level not in [1,2,4,8]:
+            return MCE_ERR_INVALID_PARAMETER
+        
         print("setting UStepLevel for fpu # %i to %i" % (self.fpu_id, ustep_level))
         self.ustep_level = ustep_level
+
+        return MCE_FPU_OK
+        
+    def setStepsPerSegment(self, min_steps, max_steps):
+        
+        if self.state != FPST_UNINITIALIZED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+
+        print("setting stepsPerSegment for fpu # %i to %i .. %i" % (self.fpu_id, min_steps, max_steps))
+
+        # for now, this is without consequences and not used
+        self.min_steps = min_steps
+        self.max_steps = max_steps
+        
+        return MCE_FPU_OK
+        
+    def setTicksPersegment(self, nticks):
+        
+        if self.state != FPST_UNINITIALIZED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
+        print("setting ticks per segment for fpu # %i to %i" % (self.fpu_id, nticks))
+        
+        # for now, this is without consequences and not used
+        self.ticks_per_segment = nticks
+        
+        return MCE_FPU_OK
+
         
     def reverseMotion(self, fpu_id):
         if self.state in [FPST_READY_REVERSE, FPST_LOCKED ]:
@@ -281,10 +336,12 @@ class FPU:
         
 
     def addStep(self, first, last,
-
                 asteps, apause, aclockwise,
                 bsteps, bpause, bclockwise):
 
+        if self.state == FPST_LOCKED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
         if self.can_overflow:                  # this can have been set 
             self.can_overflow = False          # by a Unix signal handler
             if self.can_overflow = 'HW':
@@ -449,6 +506,9 @@ class FPU:
                 raise CrashException("An max beta crash occured")        
 
     def start_findDatum(self):
+        if self.state == FPST_LOCKED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
         if self.is_collided:
             # only send an error message
             errcode = MCE_WARN_COLLISION_DETECTED
@@ -700,6 +760,15 @@ class FPU:
 
 
     def freeBetaCollision(self, direction):
+        if self.state == FPST_LOCKED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
+        if not ( (direction == 0) or (direction == 1)):
+            return MCE_ERR_INVALID_PARAMETER
+        
+        if not self.state == FPST_OBSTACLE_ERROR:
+            return MCE_ERR_INVALID_COMMAND
+        
         UNTANGLE_STEPS = 10
         alpha_offset = self.aoff_steps
         beta_offset = self.boff_steps
@@ -730,13 +799,68 @@ class FPU:
             self.is_collided = False
             print("FPU #%i: collision resolved" % self.fpu_id)
 
-
+        return MCE_FPU_OK
             
     def enableBetaCollisionProtection(self):
         self.is_collided = False
         self.collision_protection_active = True
+        return MCE_FPU_OK
+
+
+    def freeAlphaLimitBreach(self, direction):
+        if self.state == FPST_LOCKED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
+        if not ( (direction == 0) or (direction == 1)):
+            return MCE_ERR_INVALID_PARAMETER
+        
+        if not self.state == FPST_OBSTACLE_ERROR:
+            return MCE_ERR_INVALID_COMMAND
+        
+        UNTANGLE_STEPS = 10
+        alpha_offset = self.aoff_steps
+        alpha_offset = self.boff_steps
+        
+        self.collision_protection_active = False
+
+        old_alpha_steps = self.alpha_steps
+        
+        if direction == REQD_CLOCKWISE:
+            self.alpha_steps -= UNTANGLE_STEPS
+        else:
+            self.alpha_steps += UNTANGLE_STEPS
+
+        d_offset = self.opts.alpha_datum_offset
+        
+        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
+        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
+
+        print("freeAlphaLimitBreach: moving FPU # %i from (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg" % (
+            self.fpu_id, old_alpha_steps, self.beta_steps,
+            self.alpha_steps, self.beta_steps,
+            alpha_real_deg, beta_real_deg))
+        
+        if ((self.alpha_steps + alpha_offset) >= MAX_ALPHA) or (
+                (self.alpha_steps + alpha_offset) <= MIN_ALPHA):
+            self.alpha_limit_breach = True
+            print("FPU #%i: limit breach ongoing" % self.fpu_id)
+            
+        else:
+            self.alpha_limit_breach = False
+            print("FPU #%i: limit breach resolved" % self.fpu_id)
+
+        return MCE_FPU_OK
+            
+    def enableAlphaLimitBreachProtection(self):
+        self.is_collided = False
+        self.collision_protection_active = True
+        return MCE_FPU_OK
+    
 
     def start_executeMotion(self):
+        if self.state == FPST_LOCKED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
         if self.is_collided:
             # collision active, only send an error message
             errcode = MCE_WARN_COLLISION_DETECTED
@@ -893,6 +1017,71 @@ class FPU:
 
         return errcode
 
+    def lockUnit(self):
+        if self.state == FPST_LOCKED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+
+        # don't allow locking when moving
+        if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH]:
+            return MCE_ERR_INVALID_COMMAND
+        
+        self.state = FPST_LOCKED
+
+        return MCE_FPU_OK
+    
+    def unlockUnit(self):
+        
+        if self.state != FPST_LOCKED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+
+        if self.is_collided:
+            self.state = FPST_OBSTACLE_ERROR
+        elif self.alpha_limit_breach:
+            self.state = FPST_OBSTACLE_ERROR
+        elif self.was_initialized:
+            self.state = FPST_RESTING
+        elif self.abort_wave:
+            self.state = FPST_ABORTED
+        elif self.wave_ready:
+            if self.wave_reversed:
+                self.state = FPST_READY_REVERSE
+            else:
+                self.state = FPST_READY_FORWARD            
+        else:
+            self.state = FPST_UNINITIALIZED
+        
+        return MCE_FPU_OK
+
+    def enableMove(self):
+        
+        if self.state == FPST_LOCKED:
+            # needs unlocking first
+            return MCE_NOTIFY_COMMAND_IGNORED
+
+        # don't allow locking when moving
+        if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH]:
+            return MCE_ERR_INVALID_COMMAND
+        
+        if  (self.is_collided or  self.alpha_limit_breach or
+             self.abort_wave or ( self.state == FPST_ABORTED ) ):
+
+            if self.was_initialized :                                   
+                self.state = FPST_RESTING
+            else:
+                self.state = FPST_UNINITIALIZED
+            
+        return MCE_FPU_OK
+
+    def checkIntegrity(self):
+        # returns CRC32 checksum of 'firmware' (here, the class source code)
+        source_string = "".join(inspect.getsourcelines(FPU)[0])
+        crc32val= binascii.crc32(source_string) & 0xfffffff
+        print("CRC32 for FPU # %i = %s" % (self.fpu_id, hex(crc32val)))
+        
+        return crc32val
+              
+        
+        
             
 class SignalHandler(object):
     """Context manager for handling a signal
