@@ -257,6 +257,13 @@ For the Python module to work, the directory \texttt{/user/local/lib}
 needs to be added to the environment variable
 \texttt{LD\_LIBRARY\_PATH}.
 
+The library uses a lock file to prevent that different processes write
+simultaneously to the same gateway. To access the lock file, all user
+accounts which access the driver software need to be member of the
+Unix group defined in the environment variable
+\texttt{MOONS\_GATEWAY\_ACCESS\_GROUP}. The default name for that
+group is \texttt{"moons"}.
+ 
 Also, it is probably useful to add the \texttt{python} directory and
 the current directory to the environment variable \texttt{PYTHONPATH},
 so that the EtherCAN interface module can be found independently from the current
@@ -4646,7 +4653,7 @@ might change.
 \index{supported firmware versions}
 \index{firmware compatibility}
 
-The EtherCAN interface documented here, version 1.3.7, is compatible with firmware
+The EtherCAN interface documented here, version 1.4.1, is compatible with firmware
 1.6.0 and newer. The following limitations apply for older firmware versions:
 
 \begin{description}
@@ -4723,6 +4730,28 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
+\subsection*{Changes in version 1.4.1}
+\begin{itemize}
+
+\item Fixed: A bug in version 1.4.0 was fixed which caused an error
+  message when using the ``flash'' command of the fpu-admin tool. The
+  generated error was not critical in this case, but uncovered a fault
+  in the logging of movement counts in non-protected driver instances.
+
+\item Added: Previously, the driver did not check whether an EtherCAN
+  gateway was exclusively accessed. Connecting with several client
+  instances to the same gateway causes that gateway to mix up
+  operations (it is not designed for that), and subsequently causes
+  the driver to stop operations because they have no consistent
+  result. This can in theory also damage FPUs.
+
+  To address that, a check for exclusive access was added, which makes
+  sure that no other driver instance on the same computer will access
+  the same gateway address at the same time.
+  
+\end{itemize}
+
+
 \subsection*{Changes in version 1.4.0}
 \begin{itemize}
 
@@ -4742,7 +4771,7 @@ commands, or alter otherwise visible behaviour of the driver.
   counters was used in this case. As a result, all ``counters'' values
   in the protection database, and all values in the health log are
   possibly incorrect for versions sooner than v1.3.8, and should not
-  relied upon.  To discern correct data from contaminated data, the
+  relied upon.  To discern correct data from compromised data, the
   field value was changed.  Values which use the replacement
   ``counters2'' field name are stored correctly.
 
