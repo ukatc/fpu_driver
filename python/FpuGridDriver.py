@@ -547,8 +547,9 @@ class UnprotectedGridDriver (object):
             try:
                 rval = self._gd.resetFPUs(gs, fpuset)
             finally:
-                for fpu_id, fpu in enumerate(gs.FPU):
-                    self._update_error_counters(self.counters[fpu_id], old_state.FPU[fpu_id], fpu)
+                if self.__dict__.has_key("counters"):
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        self._update_error_counters(self.counters[fpu_id], old_state.FPU[fpu_id], fpu)
 
             self.last_wavetable = {}
             msg = "waiting for FPUs to become active.... %s"
@@ -570,8 +571,9 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             rval = self._gd.getPositions(gs, fpuset)
         finally:
-            for fpu_id, fpu in enumerate(gs.FPU):
-                self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+            if self.__dict__.has_key("counters"):
+                for fpu_id, fpu in enumerate(gs.FPU):
+                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
         return rval
 
     def readRegister(self, address, gs, fpuset=[]):
@@ -581,9 +583,10 @@ class UnprotectedGridDriver (object):
         try:
             prev_gs = self._gd.getGridState()
             rval= self._gd.readRegister(address, gs, fpuset)
-        finally:
-            for fpu_id, fpu in enumerate(gs.FPU):
-                self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+        finally:            
+            if self.__dict__.has_key("counters"):
+                for fpu_id, fpu in enumerate(gs.FPU):
+                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
         return rval
     
@@ -595,8 +598,9 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             rval = self._gd.getFirmwareVersion(gs, fpuset)
         finally:
-            for fpu_id, fpu in enumerate(gs.FPU):
-                self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+            if self.__dict__.has_key("counters"):            
+                for fpu_id, fpu in enumerate(gs.FPU):
+                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
         return rval
 
@@ -632,8 +636,9 @@ class UnprotectedGridDriver (object):
            prev_gs = self._gd.getGridState()
            rval = self._gd.getCounterDeviation(gs, fpuset)
        finally:
-           for fpu_id, fpu in enumerate(gs.FPU):
-               self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+           if self.__dict__.has_key("counters"):
+               for fpu_id, fpu in enumerate(gs.FPU):
+                   self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
        return rval
 
@@ -669,8 +674,9 @@ class UnprotectedGridDriver (object):
                 prev_gs = self._gd.getGridState()
                 rval = self._gd.writeSerialNumber(fpu_id, serial_number, gs)
             finally:
-                for fpu_id, fpu in enumerate(gs.FPU):
-                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+                if self.__dict__.has_key("counters"):
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
             return rval
 
@@ -784,7 +790,8 @@ class UnprotectedGridDriver (object):
                             print("warning: waveform table for FPU %i was not confirmed" % fpu_id)
                             del wtable[fpu_id]
 
-                        self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+                        if self.__dict__.has_key("counters"):
+                            self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
                                 
                     self._post_config_motion_hook(wtable, gs, fpuset)
 
@@ -929,8 +936,9 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             rval = self._gd.abortMotion(gs, fpuset)
         finally:
-            for fpu_id, fpu in enumerate(gs.FPU):
-                self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+            if self.__dict__.has_key("counters"):
+                for fpu_id, fpu in enumerate(gs.FPU):
+                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
         return rval
 
@@ -950,8 +958,9 @@ class UnprotectedGridDriver (object):
 
                 rv = self._gd.freeBetaCollision(fpu_id, direction, gs)
             finally:
-                for fpu_id, fpu in enumerate(gs.FPU):
-                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+                if self.__dict__.has_key("counters"):
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
             
             self._post_free_beta_collision_hook(fpu_id, direction, gs)
@@ -963,8 +972,9 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             rval = self._gd.enableBetaCollisionProtection(gs)
         finally:
-            for fpu_id, fpu in enumerate(gs.FPU):
-                self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+            if self.__dict__.has_key("counters"):
+                for fpu_id, fpu in enumerate(gs.FPU):
+                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
         return rval
 
@@ -985,8 +995,9 @@ class UnprotectedGridDriver (object):
                 prev_gs = self._gd.getGridState()
                 rv = self._gd.reverseMotion(gs, fpuset)
             finally:
-                for fpu_id, fpu in enumerate(gs.FPU):
-                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+                if self.__dict__.has_key("counters"):
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
             self._post_reverse_motion_hook(wtable, gs, fpuset)
             
@@ -1019,8 +1030,9 @@ class UnprotectedGridDriver (object):
                 prev_gs = self._gd.getGridState()
                 rv = self._gd.repeatMotion(gs, fpuset)
             finally:
-                for fpu_id, fpu in enumerate(gs.FPU):
-                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+                if self.__dict__.has_key("counters"):
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
             self._post_repeat_motion_hook(wtable, gs, fpuset)
 
@@ -1047,8 +1059,9 @@ class UnprotectedGridDriver (object):
 
             self._pingFPUs(gs, fpuset=fpuset)
         finally:
-            for fpu_id, fpu in enumerate(gs.FPU):
-                self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+            if self.__dict__.has_key("counters"):
+                for fpu_id, fpu in enumerate(gs.FPU):
+                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
             
         
