@@ -10,5 +10,9 @@
 *.ind
 /_minted-tutorial-tmp/
 tutorial-tmp.tex
+/tutorial-tmp.fdb_latexmk
+/tutorial-tmp.fls
+/tutorial.fdb_latexmk
+
 
 
