@@ -70,7 +70,7 @@ def parse_args():
                         help='verbosity: 0 - no extra output ... 5 - print extensive debug output')
 
     parser.add_argument('-V', '--protocol_version',  dest='protocol_version',
-                        default="1.4.4",
+                        default="2.0.0",
                         help='CAN protocol version')
 
     parser.add_argument('-t', '--datum_alpha_timeout_steps',  dest='datum_alpha_timeout_steps',

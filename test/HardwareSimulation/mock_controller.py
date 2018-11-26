@@ -259,7 +259,6 @@ def handle_freeBetaCollision(fpu_id, fpu_adr_bus, bus_adr, RX):
     
     TH = create_gwheader(fpu_adr_bus, bus_adr)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
-
     
     return TH + TX
 
@@ -353,29 +352,21 @@ def handle_setTicksPerSegment(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 def handle_readRegister(fpu_id, fpu_adr_bus, bus_adr, RX):
 
-    tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_adr_bus
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
     
-    TH = [ 0 ] * 3
-    TH[0] = bus_adr
-    TH[1] = (tx_canid & 0xff)
-    TH[2] = ((tx_canid >> 8) & 0xff)
+    register_address = ((RX[2] << 8) | RX[3])
 
-    TX = [0] * 8
-
-    command_id = RX[0]
-    register_address = ((RX[1] << 8) | RX[2])
-
-    TX[0] = fpu_adr_bus
-    TX[1] = command_id
-    TX[2] = getStatus(FPUGrid[fpu_id]) 
-    TX[3] = errflag = 0
-
+    
     byte = FPUGrid[fpu_id].getRegister(register_address)
-    TX[4] = byte
     
     print("fpu #%i: read from address 0x%04x yields 0x%02x" %
           (fpu_id,register_address, byte) )
+    
+    
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
+    TX[4] = byte
     
     return TH + TX 
 
@@ -471,30 +462,13 @@ def handle_checkIntegrity(fpu_id, fpu_adr_bus, bus_adr, RX):
 
  
 def handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, RX):
-
-    tx_prio = 0x02
-    tx_canid = (tx_prio << 7) | fpu_adr_bus
-
-    ## gateway header
-    TH = [ 0 ] * 3
     
-    TH[0] = bus_adr
-    TH[1] = (tx_canid & 0xff)
-    TH[2] = ((tx_canid >> 8) & 0xff)
+    seqnum = RX[0]
+    command_id = RX[1] & 0x1f
+    errcode = MCE_ERR_INVALID_COMMAND
     
-
-    command_id = RX[0]
-    
-    # response message packet
-    TX = [0] * 8
-    TX[0] = fpu_adr_bus
-    TX[1] = command_id
-    TX[2] = getStatus(FPUGrid[fpu_id])
-    TX[3] = errflag = 0xff
-    TX[4] = errcode = ER_INVALID
-    TX[5] = dummy1 = 0    
-    TX[6] = dummy2 = 0
-    TX[7] = dummy3 = 0
+    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX 
 
