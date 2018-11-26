@@ -81,11 +81,34 @@ _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h		      \
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS)) Makefile
 
-_OBJ =  EtherCANInterface.o    AsyncInterface.o FPUArray.o GridState.o \
-	CommandPool.o   GatewayInterface.o  TimeOutList.o \
-	CommandQueue.o  time_utils.o  sync_utils.o SBuffer.o \
-	handleFPUResponse.o handleTimeout.o FPUState.o decode_CAN_response.o
-
+_OBJ = EtherCANInterface.o AsyncInterface.o FPUArray.o GridState.o	\
+	CommandPool.o GatewayInterface.o TimeOutList.o CommandQueue.o	\
+	time_utils.o sync_utils.o SBuffer.o handleFPUResponse.o		\
+	handleTimeout.o FPUState.o decode_CAN_response.o		\
+	handle_AbortMotion_response.o					\
+	handle_CheckIntegrity_response.o				\
+	handle_ConfigMotion_response.o					\
+	handle_EnableAlphaLimitProtection_response.o                    \
+	handle_EnableBetaCollisionProtection_response.o			\
+	handle_EnableMove_response.o handle_ExecuteMotion_response.o	\
+	handle_FindDatum_response.o handle_FinishedDatum_message.o	\
+	handle_FinishedMotion_message.o					\
+	handle_FreeAlphaLimitBreach_response.o				\
+	handle_FreeBetaCollision_response.o				\
+	handle_GetFirmwareVersion_response.o				\
+	handle_LockUnit_response.o handle_PingFPU_response.o		\
+	handle_ReadRegister_response.o					\
+	handle_ReadSerialNumber_response.o				\
+	handle_RepeatMotion_response.o handle_ResetFPU_response.o	\
+	handle_ResetStepCounter_response.o				\
+	handle_ReverseMotion_response.o					\
+	handle_SetStepsPerSegment_response.o				\
+	handle_SetTicksPerSegment_response.o				\
+	handle_SetUStepLevel_response.o handleTimeout.o			\
+	handle_UnlockUnit_response.o handle_WarnCANOverflow_warning.o	\
+	handle_WarnCollisionBeta_warning.o				\
+	handle_WarnLimitAlpha_warning.o					\
+	handle_WriteSerialNumber_response.o
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
