@@ -341,10 +341,11 @@ class FPU:
 
         if self.state == FPST_LOCKED:
             return MCE_NOTIFY_COMMAND_IGNORED
-        
-        if self.can_overflow:                  # this can have been set 
-            self.can_overflow = False          # by a Unix signal handler
-            if self.can_overflow = 'HW':
+
+        ovflag = self.can_overflow
+        if ovflag:                     # this might having been set
+            self.can_overflow = False  # by a Unix signal handler
+            if ovflag == 'HW':
                 return MCE_ERR_CAN_OVERFLOW_HW, None
             else:
                 return MCE_ERR_CAN_OVERFLOW_SW, None
@@ -738,7 +739,7 @@ class FPU:
         else:
             if flag_skip_alpha and (not flag_skip_beta):
                 errcode = MCE_NOTIFY_DATUM_ALPHA_ONLY
-            elif flag_skip_beta (and not flag_skip_alpha):
+            elif flag_skip_beta and (not flag_skip_alpha):
                 errcode = MCE_NOTIFY_DATUM_BETA_ONLY
             else:                
                 errcode = MCE_FPU_OK
@@ -1119,7 +1120,7 @@ def collision_handler(signum, frame):
 def overflow_handler(signum, frame):
     print("generating a CAN overflow")
     for fpu_id, fpu in enumerate(FPUGrid):
-        fpu.can_overflow = True
+        fpu.can_overflow = "HW"
         
 def init_FPUGrid(options, num_fpus):        
     FPUGrid[:] = [FPU(i, options) for i in range(num_fpus) ]

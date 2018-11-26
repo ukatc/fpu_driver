@@ -38,7 +38,7 @@ namespace mpifps
 
 namespace ethercanif
 {
-
+  
 void handle_FreeBetaCollison_response(const EtherCANInterfaceConfig&config,
                                       const int fpu_id,
                                       t_fpu_state& fpu,

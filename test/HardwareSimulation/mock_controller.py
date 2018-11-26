@@ -195,10 +195,10 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
         print("FPU #%i command =%i , rx=%s" % (fpu_id, command_id, RX))
 
         
-    try:
-        errcode, wf_errcode = FPUGrid[fpu_id].addStep(first_entry, last_entry,
-                                                      astep, apause, aclockwise,
-                                                      bstep, bpause, bclockwise)
+    errcode, wf_errcode = FPUGrid[fpu_id].addStep(first_entry, last_entry,
+                                                  astep, apause, aclockwise,
+                                                  bstep, bpause, bclockwise)
+    
 
     if errcode in [ MCE_ERR_CAN_OVERFLOW_HW, MCE_ERR_CAN_OVERFLOW_SW ] :
         command_id = CMSG_WARN_CANOVERFLOW
@@ -207,7 +207,7 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
     send_confirmation = (first_entry
                          or last_entry
                          or send_response
-                         or (command_id = CMSG_WARN_CANOVERFLOW))
+                         or (command_id == CMSG_WARN_CANOVERFLOW))
         
     if send_confirmation:        
         TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
@@ -600,12 +600,12 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
             # an arm was datumed sucessfully, the transmitted step count
             # must be the datum residual error (datum aberration)
 
-            if (errcode == MCE_FPU_OK) or errcode == MCE_NOTIFY_DATUM_ALPHA_ONLY) :
+            if (errcode == MCE_FPU_OK) or (errcode == MCE_NOTIFY_DATUM_ALPHA_ONLY) :
                 count_alpha = fold_stepcount_alpha(FPUGrid[fpu_id].self.alpha_deviation)
             else:
                 count_alpha = fold_stepcount_alpha(FPUGrid[fpu_id].self.alpha_steps)
                 
-            if (errcode == MCE_FPU_OK) or errcode == MCE_NOTIFY_DATUM_ALPHA_ONLY) :
+            if (errcode == MCE_FPU_OK) or (errcode == MCE_NOTIFY_DATUM_BETA_ONLY) :
                 count_beta = fold_stepcount_beta(FPUGrid[fpu_id].self.beta_deviation)
             else:
                 count_beta = fold_stepcount_beta(FPUGrid[fpu_id].self.beta_steps)

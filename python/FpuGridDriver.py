@@ -283,7 +283,7 @@ class UnprotectedGridDriver (object):
     def need_ping(self, grid_state, fpuset):
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
-        return [ fpu_id if (not grid_state.FPU[fpu_id].ping_ok) for fpu_id in fpuset ]
+        return [ fpu_id for fpu_id in fpuset if (not grid_state.FPU[fpu_id].ping_ok) ]
             
         
     
