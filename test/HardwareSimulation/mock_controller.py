@@ -66,42 +66,42 @@ def fold_stepcount_deviation(val):
     return val
 
 
-def getStatus(FPU):
+def getStatus(fpu):
     status = 0
-    if FPU.alpha_datum_active:
+    if fpu.alpha_datum_active:
         status |=  STBT_ALPHA_DATUM_ACTIVE
         
-    if FPU.beta_datum_active:
+    if fpu.beta_datum_active:
         status |=  STBT_BETA_DATUM_ACTIVE
         
-    if FPU.is_collided:
+    if fpu.is_collided:
         status |=  STBT_COLLISION_DETECTED
         
-    if FPU.alpha_limit_breach:
+    if fpu.alpha_limit_breach:
         status |= STBT_ALPHA_AT_LIMIT 
         
-    if FPU.state == FPST_LOCKED:
+    if fpu.state == FPST_LOCKED:
         status |= STBT_FPU_LOCKED
         
     # the following two fields are for recovery porposes - they
     # don't have a meaningful value before the first movement
     # has started (we could use a third state, but this isn't worth the
     # extra bits which are expensive)
-    if FPU.alpha_last_direction == DIRST_CLOCKWISE:
+    if fpu.alpha_last_direction == DIRST_CLOCKWISE:
         status |=  ALPHA_LAST_DIRECTION
         
-    if FPU.beta_last_direction == DIRST_CLOCKWISE:
+    if fpu.beta_last_direction == DIRST_CLOCKWISE:
         status |=  beta_LAST_DIRECTION
 
     # alpha and beta state are lumped together here -
     # the common case, extra info goes in findDatum status code
-    if FPU.was_initialized:
+    if fpu.was_initialized:
         status |=  IS_ZEROED
         
-    if FPU.wave_ready:
+    if fpu.wave_ready:
         status |=  STBT_WAVEFORM_READY
         
-    if FPU.wave_reversed:
+    if fpu.wave_reversed:
         status |= STBT_WAVEFORM_REVERSED
                 
     return (status, fpu.state )
@@ -119,6 +119,8 @@ def create_gwheader(fpu_adr_bus, bus_adr, command_id):
     TH[1] = (tx_canid & 0xff)
     TH[2] = ((tx_canid >> 8) & 0xff)
 
+    return TH
+
 
 
 HDR_SEQNUM = 1
@@ -135,14 +137,14 @@ DEFAULT_HEADER = (HDR_SEQNUM | HDR_COMMAND_ID | HDR_STWORD
 def create_CANheader(command_id, fpu_id, seqnum, ecode=MCE_FPU_OK, fields=DEFAULT_HEADER):
     TX = [ 0 ] * 8
 
-    status_word, fpustate = getStatus(FPUGrid[fpu_id])
+    status_word, fpu_state = getStatus(FPUGrid[fpu_id])
     if fields & HDR_SEQNUM:
         TX[0] = seqnum
         
-    if fields & HDR_COMMANDID:
+    if fields & HDR_COMMAND_ID:
         TX[1] = command_id & 0x1f
         
-    if fields & STWORD:
+    if fields & HDR_STWORD:
         TX[1] = TX[1] |  ( ( 0x7 & status_word) << 5)
         TX[2] = 0xff & ( status_word > 3)
         
@@ -161,7 +163,8 @@ def create_CANheader(command_id, fpu_id, seqnum, ecode=MCE_FPU_OK, fields=DEFAUL
         pos_beta = fold_stepcount_beta(FPUGrid[fpu_id].beta_steps)
         TX[6] = count2 = pos_beta & 0xff
         TX[7] = count3 = (pos_beta >> 8) & 0xff
-        
+
+    return TX
         
 def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
 
@@ -257,7 +260,7 @@ def handle_freeBetaCollision(fpu_id, fpu_adr_bus, bus_adr, RX):
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
     
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
@@ -269,7 +272,7 @@ def handle_enableBetaCollisionProtection(fpu_id, fpu_adr_bus, bus_adr, RX):
     
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
@@ -284,7 +287,7 @@ def handle_freeAlphaLimitBreach(fpu_id, fpu_adr_bus, bus_adr, RX):
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
     
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
 
     
@@ -297,7 +300,7 @@ def handle_enableAlphaLimitBreachProtection(fpu_id, fpu_adr_bus, bus_adr, RX):
     
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
@@ -312,7 +315,7 @@ def handle_setUStepLevel(fpu_id, fpu_adr_bus, bus_adr, RX):
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
     
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
@@ -328,7 +331,7 @@ def handle_setStepsPerSegment(fpu_id, fpu_adr_bus, bus_adr, RX):
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
     
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
@@ -343,7 +346,7 @@ def handle_setTicksPerSegment(fpu_id, fpu_adr_bus, bus_adr, RX):
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
     
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
@@ -364,7 +367,7 @@ def handle_readRegister(fpu_id, fpu_adr_bus, bus_adr, RX):
           (fpu_id,register_address, byte) )
     
     
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     TX[4] = byte
     
@@ -417,7 +420,7 @@ def handle_lockUnit(fpu_id, fpu_adr_bus, bus_adr, RX):
     
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
@@ -428,7 +431,7 @@ def handle_unlockUnit(fpu_id, fpu_adr_bus, bus_adr, RX):
     
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
@@ -439,7 +442,7 @@ def handle_enableMove(fpu_id, fpu_adr_bus, bus_adr, RX):
     
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX
@@ -450,7 +453,7 @@ def handle_checkIntegrity(fpu_id, fpu_adr_bus, bus_adr, RX):
     
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode,
                           fields = (HDR_SEQNUM | HDR_COMMAND_ID | HDR_STWORD 
                                     | HDR_FPUSTATE | HDR_ECODE) )
@@ -467,7 +470,7 @@ def handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, RX):
     command_id = RX[1] & 0x1f
     errcode = MCE_ERR_INVALID_COMMAND
     
-    TH = create_gwheader(fpu_adr_bus, bus_adr)
+    TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
     
     return TH + TX 
@@ -821,7 +824,7 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
     elif command_id == CCMD_REVERSE_MOTION                   :
         resp = handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
-    elif command_id == CCMD_ENABLE_ALPHA_LIMIT_BREACH_PROTECTION :
+    elif command_id == CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
         resp = handle_enableAlphaLimitBreachProtection(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
     elif command_id == CCMD_FREE_ALPHA_LIMIT_BREACH              :
@@ -854,10 +857,10 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
     elif command_id == CCMD_CHECK_INTEGRITY                  :
         resp = handle_checkIntegrity(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     
-    elif command_id == CCMD_SET_TIME_STEP                    :
+    elif command_id == CCMD_SET_TICKS_PER_SEGMENT                   :
         resp = handle_setTicksPerSegment(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     
-    elif command_id == CCMD_SET_STEPS_PER_FRAME              :
+    elif command_id == CCMD_SET_STEPS_PER_SEGMENT              :
         resp = handle_setStepsPerSegment(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
     
     elif command_id == CCMD_ENABLE_MOVE                      :
