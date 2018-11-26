@@ -100,6 +100,9 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
         handler = &handle_ConfigMotion_response;
         required_length = 5;
         break;
+    case CCMD_FREE_BETA_COLLISION              :
+        handler = &handle_FreeBetaCollision_response;
+        break;
     case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
         handler = &handle_EnableBetaCollisionProtection_response;
         break;
@@ -108,9 +111,6 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
         break;
     case CCMD_FIND_DATUM                       :
         handler = &handle_FindDatum_response;
-        break;
-    case CCMD_FREE_BETA_COLLISION              :
-        handler = &handle_FreeBetaCollision_response;
         break;
     case CCMD_PING_FPU                         :
         handler = &handle_PingFPU_response;

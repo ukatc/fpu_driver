@@ -38,11 +38,11 @@ namespace mpifps
 
 namespace ethercanif
 {
-
+ 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-void handle_ExcecuteMotion_response(const EtherCANInterfaceConfig&config,
+void handle_ExecuteMotion_response(const EtherCANInterfaceConfig&config,
                                     const int fpu_id,
                                     t_fpu_state& fpu,
                                     int &count_pending,

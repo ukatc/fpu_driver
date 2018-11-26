@@ -125,7 +125,7 @@ tutorial:	python/doc/tutorial.tex python/doc/FPU-state1.pdf version
 	cd python/doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
 cppcheck: force
-	cppcheck src/*.C python/src/*.cpp  -I include -I include/ethercan -I include/ethercan/cancommandsv2 --enable=all
+	cppcheck src/*.C python/src/*.C  -I include -I include/ethercan -I include/ethercan/response_handlers -I include/ethercan/cancommandsv2 --enable=all
 
 $(ODIR)/%.o: $(SRCDIR)/%.C $(DEPS) version
 	$(CC) $(CXXFLAGS) -DVERSION=\"$(VERSION)\" -c -o $@ $< 
@@ -142,6 +142,6 @@ style:
 	astyle src/*.C python/src/*.C include{,/*{,/*}}/*.h
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ doc/*.{aux,dvi,log,out,toc,pdf} python/*.so lib/*a
+	rm -f $(ODIR)/*.o $(ODIR)/*.d *~ core $(INCDIR)/*~ doc/*.{aux,dvi,log,out,toc,pdf} python/*.so lib/*a
 
 
