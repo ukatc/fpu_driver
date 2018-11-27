@@ -17,4 +17,6 @@ version
 /obj
 *.do
 /.redo
+*.redo*.tmp
+
 
