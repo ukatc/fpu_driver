@@ -220,7 +220,7 @@ class FPU:
               self.firmware_month,
               self.firmware_day)
 
-        print("FPU #%i: reading firmware version '%s' from NVRAM" % t)
+        print("FPU #%i: reading firmware version '%s' from NVRAM" % (self.fpu_id, t))
         return t
 
     
@@ -506,7 +506,7 @@ class FPU:
             if (newbeta + beta_offset) > MAX_BETA_CRASH:
                 raise CrashException("An max beta crash occured")        
 
-    def start_findDatum(self):
+    def start_findDatum(self, auto_datum):
         if self.state == FPST_LOCKED:
             return MCE_NOTIFY_COMMAND_IGNORED
         
@@ -517,7 +517,7 @@ class FPU:
         elif self.alpha_limit_breach:
             errcode = MCE_WARN_LIMIT_SWITCH_BREACH
             self.state = FPST_OBSTACLE_ERROR
-        elif flag_auto_datum and (not self.was_initialized):
+        elif auto_datum and (not self.was_initialized):
             errcode = MCE_ERR_AUTO_DATUM_UNINITIALIZED # not initialized, reject automatic datum search
             if self.state not in [FPST_LOCKED, FPST_AT_DATUM, FPST_ABORTED, FPST_OBSTACLE_ERROR]:
                 self.state = FPST_UNINITIALIZED
@@ -737,9 +737,9 @@ class FPU:
         elif self.alpha_switch_on():
             errcode = MCE_ERR_DATUM_ON_LIMIT_SWITCH # alpha on limit switch, reject datum command
         else:
-            if flag_skip_alpha and (not flag_skip_beta):
+            if skip_alpha and (not skip_beta):
                 errcode = MCE_NOTIFY_DATUM_ALPHA_ONLY
-            elif flag_skip_beta and (not flag_skip_alpha):
+            elif skip_beta and (not skip_alpha):
                 errcode = MCE_NOTIFY_DATUM_BETA_ONLY
             else:                
                 errcode = MCE_FPU_OK

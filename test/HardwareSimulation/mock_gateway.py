@@ -111,6 +111,7 @@ def parse_args():
         version_tuple = version_tuple + [0]
         print("firmware version=", version_tuple)
     args.fw_version = tuple(version_tuple)
+    print("firmware version :", args.fw_version)
     
     del args.protocol_version # delete for safety
 

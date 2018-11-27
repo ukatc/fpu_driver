@@ -96,7 +96,7 @@ def getStatus(fpu):
     # alpha and beta state are lumped together here -
     # the common case, extra info goes in findDatum status code
     if fpu.was_initialized:
-        status |=  IS_ZEROED
+        status |=  STBT_IS_ZEROED
         
     if fpu.wave_ready:
         status |=  STBT_WAVEFORM_READY
@@ -531,8 +531,8 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
         
     print("starting findDatum for FPU %i" % fpu_id)
 
-    if len(RX) < 8:
-        print("CAN command format error, length must be 8");
+    if len(RX) > 8:
+        print("CAN command format error, length must be not larger than 8");
         return []
 
     ## gateway header
@@ -541,12 +541,8 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
     command_id = RX[1] & 0x1f
     
     TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
-    TX = create_CANheader(command_id, fpu_id, seqnum, FPST_OK)
+    TX = create_CANheader(command_id, fpu_id, seqnum, MCE_FPU_OK)
     
-    TX[5] = dummy0 = 0
-    TX[6] = dummy1 = 0
-    TX[7] = dummy2 = 0
-
     flag_skip_alpha = False
     flag_skip_beta = False
     flag_auto_datum = False
@@ -562,7 +558,8 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
     flag_disable_timeout = (skip_flag & DATUM_TIMEOUT_DISABLE) > 0
 
 
-    errcode = FPUGrid[fpu_id].start_findDatum()
+    fpu = FPUGrid[fpu_id]
+    errcode = fpu.start_findDatum(flag_auto_datum)
 
     if errcode == MCE_FPU_OK:
 
@@ -578,12 +575,13 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
 
 
             # simulate findDatum FPU operation
-            errcode = FPUGrid[fpu_id].findDatum(sleep,
-                                                limit_callback.call, collision_callback.call,
-                                                skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta,
-                                                auto_datum=flag_auto_datum,
-                                                anti_clockwise=flag_anti_clockwise,
-                                                disable_timeout=flag_disable_timeout)
+            errcode = fpu.findDatum(sleep,
+                                    limit_callback.call, collision_callback.call,
+                                    skip_alpha=flag_skip_alpha,
+                                    skip_beta=flag_skip_beta,
+                                    auto_datum=flag_auto_datum,
+                                    anti_clockwise=flag_anti_clockwise,
+                                    disable_timeout=flag_disable_timeout)
             
             print("FPU %i: findDatum command finished" % fpu_id);
 
@@ -604,17 +602,17 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
             # must be the datum residual error (datum aberration)
 
             if (errcode == MCE_FPU_OK) or (errcode == MCE_NOTIFY_DATUM_ALPHA_ONLY) :
-                count_alpha = fold_stepcount_alpha(FPUGrid[fpu_id].self.alpha_deviation)
+                count_alpha = fold_stepcount_alpha(fpu.alpha_deviation)
             else:
-                count_alpha = fold_stepcount_alpha(FPUGrid[fpu_id].self.alpha_steps)
+                count_alpha = fold_stepcount_alpha(fpu.alpha_steps)
                 
             if (errcode == MCE_FPU_OK) or (errcode == MCE_NOTIFY_DATUM_BETA_ONLY) :
-                count_beta = fold_stepcount_beta(FPUGrid[fpu_id].self.beta_deviation)
+                count_beta = fold_stepcount_beta(fpu.beta_deviation)
             else:
-                count_beta = fold_stepcount_beta(FPUGrid[fpu_id].self.beta_steps)
+                count_beta = fold_stepcount_beta(fpu.beta_steps)
                 
             TX[4] = count0 = count_alpha & 0xff
-            TX[5] = count1 = (dev_alpha >> 8) & 0xff
+            TX[5] = count1 = (count_alpha >> 8) & 0xff
     
             TX[6] = count2 = count_beta & 0xff
             TX[7] = count3 = (count_beta >> 8) & 0xff
@@ -776,9 +774,9 @@ def handle_getFirmwareVersion(fpu_id, fpu_adr_bus, bus_adr, RX):
 
     fv_major, fv_minor, fv_patch, fv_year, fv_month, fv_day = FPUGrid[fpu_id].getFirmwareVersion()
     
-    TX[3] = fv_patch
+    TX[3] = fv_major
     TX[4] = fv_minor
-    TX[5] = fv_mayor
+    TX[5] = fv_patch
 
     dateval = ((fv_year & 0x7f)
                | ((fv_month  & 0x0f ) << 7)
@@ -890,9 +888,6 @@ def command_handler(cmd, socket, args):
     gateway_id = gateway_map[socket.getsockname()]
     bus_adr = cmd[0]
     rx_canid = cmd[1] + (cmd[2] << 8)
-    # we now have the sequence number in cmd[3] alias RX[0]
-    command_id = cmd[4]
-    bus_global_id = bus_adr + gateway_id * BUSES_PER_GATEWAY
 
     
     if bus_adr == MSG_TYPE_DELY:
@@ -904,6 +899,10 @@ def command_handler(cmd, socket, args):
         
         
     elif rx_canid != 0:
+        # we now have the sequence number in cmd[3] alias RX[0]
+        command_id = cmd[4]
+        bus_global_id = bus_adr + gateway_id * BUSES_PER_GATEWAY
+        
         # non-broadcast message
         rx_priority = (rx_canid >> 7)
         fpu_adr_bus = rx_canid & 0x7f # this is a one-based index
