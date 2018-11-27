@@ -727,7 +727,7 @@ class UnprotectedGridDriver (object):
         
         return ( wtable.has_key(fpu_id)
                  and (fpu.state==target_state)
-                 and ((fpu.last_status == 0) or (allow_unconfirmed and (fpu.last_status == _ER_OK_UNCONFIRMED))))
+                 and ((fpu.last_status == 0) or (allow_unconfirmed and (fpu.last_status == MCE_NO_CONFIRMATION_EXPECTED))))
 
     
     def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None,
@@ -1823,10 +1823,10 @@ class GridDriver(UnprotectedGridDriver):
                 diff += 1 << 16
             fpu_counters["can_timeout"] += diff
             
-        if (moved_fpu.last_status == _ER_DATUMTO) or ((moved_fpu.last_status == _ER_TIMEDOUT) and datum_cmd):
+        if (moved_fpu.last_status == MCE_ERR_DATUM_TIME_OUT) or ((moved_fpu.last_status == MCE_COMMAND_TIMEDOUT) and datum_cmd):
             fpu_counters["datum_timeout"] += 1
             
-        if (moved_fpu.last_status == _ER_TIMEDOUT) and (moved_fpu.last_command == CCMD_EXECUTE_MOTION):
+        if (moved_fpu.last_status == MCE_COMMAND_TIMEDOUT) and (moved_fpu.last_command == CCMD_EXECUTE_MOTION):
             fpu_counters["movement_timeout"] += 1
         
         
@@ -1966,7 +1966,7 @@ class GridDriver(UnprotectedGridDriver):
         
         with env.begin(db=self.fpudb, write=True) as txn:
 
-            for fpu_id, datum_fpu in enumerate(datum__gs.FPU):
+            for fpu_id, datum_fpu in enumerate(datum_gs.FPU):
                 if not fpu_in_set(fpu_id, fpuset):
                     continue
             
@@ -2052,7 +2052,7 @@ class GridDriver(UnprotectedGridDriver):
             fpu_counters["datum_timeout"] += 1
 
 
-        if (datum_fpu != None) and (datum_fpu.last_status == 0) and (fpu.last_status == 0):
+        if datum_fpu.last_status == 0:
             if prev_fpu.alpha_was_zeroed and fpu.alpha_was_zeroed:
                 fpu_counters["alpha_aberration_count" ] += 1
                 fpu_counters["datum_sum_alpha_aberration"] += fpu.alpha_deviation
