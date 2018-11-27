@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <vector>
 
@@ -276,9 +277,9 @@ public:
           << " 'firmware_version' : " << fpu.fw_version_major
           << "." << fpu.fw_version_minor
           << "." << fpu.fw_version_patch << ", "
-          << " 'firmware_date' : '" << fpu.fw_date_year
-          << "-" << fpu.fw_date_month
-          << "-" << fpu.fw_date_day <<"', "
+          << " 'firmware_date' : '20" << std::setfill('0') << std::setw(2) << fpu.fw_date_year
+          << "-" << std::setfill('0') << std::setw(2) << fpu.fw_date_month
+          << "-" << std::setfill('0') << std::setw(2) << fpu.fw_date_day <<"', "
           << " 'serial_number' : \"" << fpu.serial_number << "\", "
           << " 'crc32' : " << std::hex << std::showbase << fpu.crc32 << std::dec << ", "
           << " 'checksum_ok' : " << fpu.checksum_ok << ", "
