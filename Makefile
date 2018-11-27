@@ -1,7 +1,7 @@
 IDIR = ./include
 CC = "g++"
 
-VERSION := v1.4.1
+VERSION := v1.4.2
 
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g 
 
@@ -74,9 +74,9 @@ $(ODIR)/%.o: $(SRCDIR)/%.C $(DEPS) version
 lib/libethercan.a: $(OBJ)
 	ar rcs   $@ $^ 
 
-lib: lib/libethercan.a
+libethercan: lib/libethercan.a
 
-pyext: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
+wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.C -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(VERSION)\"
 
 style:
