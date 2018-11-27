@@ -776,8 +776,9 @@ class UnprotectedGridDriver (object):
             try:
                 try:
                     try:
-                        rval = self._gd.configMotion(wtable, gs, fpuset, soft_protection,
-                                                     allow_uninitialized, ruleset_version)
+                        rval = self._gd.configMotion(wtable, gs, fpuset, allow_uninitialized,
+                                                     ruleset_version)
+                        
                     except InvalidWaveformException as e:
                         print("%f: Error %s for wtable=%r" % (
                             time.time(), e, wtable), file=self.protectionlog)
