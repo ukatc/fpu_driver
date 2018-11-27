@@ -2,7 +2,6 @@
 _*.log
 /_logs/
 /_logs
-*.d
-
+ethercanif.so.d
 
 
