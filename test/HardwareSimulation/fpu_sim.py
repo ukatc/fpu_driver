@@ -377,7 +377,8 @@ class FPU:
             self.wave_valid = False
             self.wave_reversed = False
             # clear abort status flag
-            self.abort_wave = False 
+            self.abort_wave = False
+            self.state = FPST_LOADING
             
         n = self.nwave_entries
 
@@ -385,7 +386,7 @@ class FPU:
             return WAVEFORM_REJECTED, WAVEFORM_TOO_BIG
 
 
-        nwave_entries = FPUGrid[fpu_id].nwave_entries
+        nwave_entries = self.nwave_entries
     
         
         self.steps[n, IDXA] = asteps
@@ -402,6 +403,7 @@ class FPU:
             self.wave_ready = True
             self.wave_valid = True
             n = self.nwave_entries
+            self.state = FPST_READY_FORWARD
             if verbose:
                 print("fpu #%i: wavetable ready, n=%i, content=%s" % (
                     
@@ -409,7 +411,7 @@ class FPU:
             else:
                 print("fpu #%i: wavetable ready (%i sections)" % (self.fpu_id, n))
 
-        return FPST_OK, WAFEFORM_OK
+        return MCE_FPU_OK, WAVEFORM_OK
 
                 
     def alpha_switch_on(self, asteps=None):

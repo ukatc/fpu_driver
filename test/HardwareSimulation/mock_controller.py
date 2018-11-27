@@ -167,7 +167,7 @@ def create_CANheader(command_id, fpu_id, seqnum, ecode=MCE_FPU_OK, fields=DEFAUL
 
     return TX
         
-def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
+def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbosity=0):
 
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
@@ -176,10 +176,12 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
     last_entry = (RX[2] >> 1) & 1
     send_response = (RX[2] >> 2) & 1
     
-    if first_entry and verbose:
-        print("first_entry set!")
-    if last_entry and verbose:
-        print("last_entry set!")
+    if first_entry and verbosity > 2:
+        print("handle_configMotion(): first_entry set!")
+    if last_entry and verbosity > 2:
+        print("handle_configMotion(): last_entry set!")
+    if send_response and verbosity > 2:
+        print("handle_configMotion(): response rqeusted!")
 
     apause = (RX[4] >> 6) & 1
     astep = ((RX[4] &  0x3f) << 8) + RX[4]
@@ -195,13 +197,15 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
         
     nwave_entries = 0
     
-    if verbose:
+    if verbosity > 3:
         print("FPU #%i command =%i , rx=%s" % (fpu_id, command_id, RX))
 
         
     errcode, wf_errcode = FPUGrid[fpu_id].addStep(first_entry, last_entry,
                                                   astep, apause, aclockwise,
                                                   bstep, bpause, bclockwise)
+
+    print("addStep: result is %r" % ( (errcode, wf_errcode), ))
     
 
     if errcode in [ MCE_ERR_CAN_OVERFLOW_HW, MCE_ERR_CAN_OVERFLOW_SW ] :
@@ -221,7 +225,7 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbose=0):
             TX[4] = FPUGrid[fpu_id].nwave_entries
             TX[5] = wf_errcode
         
-        confirmation = TH + TX 
+        confirmation = TH + TX[:6]
         return confirmation
     else:
         return None
@@ -701,7 +705,7 @@ def handle_repeatMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
     command_id = RX[1] & 0x1f
     
     TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
-    TX = create_CANheader(command_id, fpu_id, seqnum, FPST_OK)
+    TX = create_CANheader(command_id, fpu_id, seqnum, MCE_FPU_OK)
     
     
     return TH + TX
@@ -715,7 +719,7 @@ def handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
     command_id = RX[1] & 0x1f
     
     TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
-    TX = create_CANheader(command_id, fpu_id, seqnum, FPST_OK)
+    TX = create_CANheader(command_id, fpu_id, seqnum, MCE_FPU_OK)
 
     
     return TH + TX
@@ -806,7 +810,7 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
         resp = handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, args)
         
     elif command_id == CCMD_CONFIG_MOTION  :
-        resp = handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
+        resp = handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, verbosity=args.verbosity)
         
     elif command_id == CCMD_EXECUTE_MOTION :
         resp = handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
@@ -894,7 +898,7 @@ def command_handler(cmd, socket, args):
     if bus_adr == MSG_TYPE_DELY:
         rx_bytes = cmd[3:]
         delay = rx_bytes[0]
-        if args.verbosity > 0:
+        if args.verbosity > 5:
             print("CAN gateway delay command [count %i] to gw %i, bus %i: delay %i ms"
                   % (gCountTotalCommands, gateway_id, bus_adr, delay))
         
