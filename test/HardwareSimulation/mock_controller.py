@@ -78,6 +78,7 @@ def getStatus(fpu):
         status |=  STBT_COLLISION_DETECTED
         
     if fpu.alpha_limit_breach:
+        print("alpha limit breach flag is set")
         status |= STBT_ALPHA_AT_LIMIT 
         
     if fpu.state == FPST_LOCKED:
@@ -146,7 +147,7 @@ def create_CANheader(command_id, fpu_id, seqnum, ecode=MCE_FPU_OK, fields=DEFAUL
         
     if fields & HDR_STWORD:
         TX[1] = TX[1] |  ( ( 0x7 & status_word) << 5)
-        TX[2] = 0xff & ( status_word > 3)
+        TX[2] = 0xff & ( status_word >> 3)
         
     if fields & HDR_FPUSTATE:
         TX[3] = (fpu_state & 0x0f)

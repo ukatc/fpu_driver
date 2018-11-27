@@ -509,7 +509,8 @@ class FPU:
     def start_findDatum(self, auto_datum):
         if self.state == FPST_LOCKED:
             return MCE_NOTIFY_COMMAND_IGNORED
-        
+
+        self.was_initialized = False
         if self.is_collided:
             # only send an error message
             errcode = MCE_WARN_COLLISION_DETECTED
@@ -702,6 +703,7 @@ class FPU:
         if alpha_datumed and beta_datumed:
             print("FPU #%i: alpha and beta datum reached" % self.fpu_id)
             self.state = FPST_AT_DATUM
+            self.was_initialized = True
         else:
             if self.state not in [FPST_OBSTACLE_ERROR, FPST_ABORTED]:
                 self.state = FPST_UNINITIALIZED
@@ -998,9 +1000,11 @@ class FPU:
             # only send an error message
             errcode = MCE_WARN_COLLISION_DETECTED
             self.state = FPST_OBSTACLE_ERROR
+            self.was_initialized = False
         elif self.alpha_limit_breach:
             errcode = MCE_WARN_LIMIT_SWITCH_BREACH
             self.state = FPST_OBSTACLE_ERROR
+            self.was_initialized = False
         elif self.step_timing_fault:
             # send error message
             errcode = MCE_WARN_STEP_TIMING_ERROR
@@ -1010,6 +1014,7 @@ class FPU:
             print("needs to fit error codes into range")
             errcode = MCE_WARN_STEP_TIMING_ERROR
             self.state = FPST_ABORTED
+            self.was_initialized = False
         else:
             # in version 1, other cases do not have
             # status flag information
@@ -1037,12 +1042,15 @@ class FPU:
 
         if self.is_collided:
             self.state = FPST_OBSTACLE_ERROR
+            self.was_initialized = False
         elif self.alpha_limit_breach:
             self.state = FPST_OBSTACLE_ERROR
+            self.was_initialized = False
         elif self.was_initialized:
             self.state = FPST_RESTING
         elif self.abort_wave:
             self.state = FPST_ABORTED
+            self.was_initialized = False
         elif self.wave_ready:
             if self.wave_reversed:
                 self.state = FPST_READY_REVERSE
