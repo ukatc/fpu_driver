@@ -170,7 +170,9 @@ class UnprotectedGridDriver (object):
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
                  SocketTimeOutSeconds=20.0,
                  confirm_each_step=True,
-                 waveform_upload_pause_us=50000,
+                 waveform_upload_pause_us=0,
+                 min_bus_repeat_delay_ms = 1,
+	         min_fpu_repeat_delay_ms = 4,                 
                  alpha_datum_offset=ALPHA_DATUM_OFFSET,
                  logLevel=DEFAULT_LOGLEVEL,
                  log_dir=DEFAULT_LOGDIR,
@@ -205,6 +207,9 @@ class UnprotectedGridDriver (object):
         config.motor_max_rel_increase = motor_max_rel_increase
         config.confirm_each_step = confirm_each_step
         config.waveform_upload_pause_us = waveform_upload_pause_us
+       	config.min_bus_repeat_delay_ms = min_bus_repeat_delay_ms  
+	config.min_fpu_repeat_delay_ms = min_fpu_repeat_delay_ms 
+
         config.firmware_version_address_offset = firmware_version_address_offset
         
         flags = os.O_CREAT | os.O_APPEND | os.O_WRONLY

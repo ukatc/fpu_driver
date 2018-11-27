@@ -30,6 +30,10 @@ EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values
                 ethercanif::get_realtime(), VERSION, config.num_fpus);
     LOG_CONTROL(LOG_INFO, "%18.6f : waveform_upload_pause_us = %lu\n",
                 ethercanif::get_realtime(), config.waveform_upload_pause_us);
+    LOG_CONTROL(LOG_INFO, "%18.6f : min_bus_repeat_delay_ms = %i\n",
+                ethercanif::get_realtime(), config.min_bus_repeat_delay_ms);
+    LOG_CONTROL(LOG_INFO, "%18.6f : min_fpu_repeat_delay_ms = %i\n",
+                ethercanif::get_realtime(), config.min_fpu_repeat_delay_ms);
     LOG_CONTROL(LOG_INFO, "%18.6f : confirm_each_step = %s\n",
                 ethercanif::get_realtime(), (config.confirm_each_step ? "True" : "False"));
 
