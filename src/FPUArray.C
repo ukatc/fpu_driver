@@ -694,12 +694,14 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         char log_buf[256];
         int buf_idx=0;
         int char_cnt = 0;
+	const int sequence_number = blen > 0 ? data[0] : -1;
 
         char_cnt = sprintf(log_buf, "RX: %18.6f: dispatching response:"
                            " gateway_id=%i, bus_id=%i, can_identifier=%i,"
-                           " priority=%i, fpu_busid=%i, data[%i] = ",
+                           " priority=%i, fpu_busid=%i, sequence_number=%i, data[%i] = ",
                            ethercanif::get_realtime(),
-                           gateway_id, bus_id, can_identifier, priority, fpu_busid, blen);
+                           gateway_id, bus_id, can_identifier, priority,
+			   fpu_busid, sequence_number, blen);
         buf_idx += char_cnt;
 
         for (int i=0; i < nbytes; i++)
@@ -752,17 +754,6 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         LOG_RX(LOG_ERROR, "%18.6f : RX: CAN bus id too large (%i), ignored\n",
                ethercanif::get_realtime(),
                bus_id);
-        return;
-    }
-
-    // The redundant fpu_id is part of the version 1 protocol,
-    // version 2 gets rid of this.
-    if (data[0] != fpu_busid)
-    {
-        LOG_RX(LOG_ERROR, "%18.6f : RX invalid message for protocol 1: payload fpu_busid (%i) does"
-               " not match fpu_busid from canid (%i) - ignored.\n",
-               ethercanif::get_realtime(),
-               data[0], fpu_busid);
         return;
     }
 

@@ -24,6 +24,10 @@
 #include <endian.h>
 #include <time.h>
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
+
 #include "CAN_Constants.h"
 #include "E_CAN_COMMAND.h"
 
@@ -58,15 +62,15 @@ typedef union   __attribute__((packed))
 class CAN_Command
 {
 private:
-    const E_CAN_COMMAND _command_code = CCMD_NO_COMMAND;
+    const E_CAN_COMMAND command_code = CCMD_NO_COMMAND;
 
 public:
 
-    static const int CMD_CODE_MASK = 0x0F;
+    static const int CMD_CODE_MASK = 0x1F;
 
 
 
-    CAN_Command(E_CAN_COMMAND command_code) : _command_code(command_code), fpu_id(-1), bcast(false), sequence_number(0) {};
+    CAN_Command(E_CAN_COMMAND _command_code) : command_code(_command_code), fpu_id(-1), bcast(false), sequence_number(0) {};
 
     virtual ~CAN_Command() {};
 
@@ -74,8 +78,8 @@ public:
 
     E_CAN_COMMAND getInstanceCommandCode()
     {
-        assert(_command_code != CCMD_NO_COMMAND);
-        return _command_code;
+        assert(command_code != CCMD_NO_COMMAND);
+        return command_code;
     };
 
 
@@ -165,6 +169,9 @@ public:
         can_buffer.message.data[0] = sequence_number;
         // CAN command code
         can_buffer.message.data[1] = cmd_code & CMD_CODE_MASK;
+
+	fprintf(stderr, "setting header: busid = %i, canid = %i, priority = %i, bcast=%i, command code = %i, seqno =%i\n",
+		busid, fpu_canid, getMessagePriority(cmd_code), bcast ? 1 : 0, cmd_code, sequence_number);
 
         buflen = 5; // 3 bytes header, 2 bytes payload
     }
