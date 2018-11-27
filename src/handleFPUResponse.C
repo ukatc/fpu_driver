@@ -98,7 +98,7 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
         break;
     case CCMD_CONFIG_MOTION                    :
         handler = &handle_ConfigMotion_response;
-        required_length = 5;
+        required_length = 6;
         break;
     case CCMD_FREE_BETA_COLLISION              :
         handler = &handle_FreeBetaCollision_response;

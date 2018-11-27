@@ -49,7 +49,9 @@ void handle_ConfigMotion_response(const EtherCANInterfaceConfig&config,
                                   const uint8_t sequence_number)
 {
     // update status fields, but not step counts (they do not fit into the response)
-    assert(blen == 5);
+    assert(blen == 6); // this assertion is more to stop the compiler from nagging -
+    //                    wrong buffer lengths are checked for upstream
+    
     const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_NOSTEPS, data);
 
     LOG_RX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX : handle_ConfigMotion:"
