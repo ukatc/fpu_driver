@@ -253,6 +253,7 @@ E_MOC_ERRCODE update_status_flags(t_fpu_state& fpu,
         else
         {
             fpu.alpha_deviation = unfold_stepcount_alpha(data[4] | (data[5] << 8));
+	    fpu.alpha_steps = 0;
         }
         if ((fpu.last_command != CMSG_FINISHED_DATUM) || (err_code == MCE_NOTIFY_DATUM_BETA_ONLY))
         {
@@ -261,7 +262,9 @@ E_MOC_ERRCODE update_status_flags(t_fpu_state& fpu,
         else
         {
             fpu.beta_deviation = unfold_stepcount_beta(data[6] | (data[7] << 8));
+	    fpu.beta_steps = 0;
         }
+	self.ping_ok = int(true);
     }
 
 

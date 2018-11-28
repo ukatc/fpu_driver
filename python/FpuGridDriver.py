@@ -1849,7 +1849,14 @@ class GridDriver(UnprotectedGridDriver):
             if (gs.Counts[FPST_MOVING] > 0) or (gs.Counts[FPST_DATUM_SEARCH] > 0):
                 print("_post_execute_motion_hook(): waiting for movement to finish in order to retrieve reached positions..")
                 try:
-                    self._pingFPUs(gs, fpuset=fpuset)
+                    fpuset_refresh = []
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        if fpu.state in [FPST_MOVING, FPST_DATUM_SEARCH] or (not fpu.ping_ok):
+                            fpuset_refresh.append(fpu_id)
+                    if len(fpuset_refresh) == 0:
+                        break
+                    time.sleep(0.2)
+                    self._pingFPUs(gs, fpuset=fpuset_refresh)
                 except Commandtimeout:
                     pass
             else:
@@ -1970,7 +1977,16 @@ class GridDriver(UnprotectedGridDriver):
             
     def _finished_find_datum_hook(self, prev_gs, datum_gs, search_modes=None, fpuset=[],
                                   was_cancelled=False, initial_positions={}):
-        
+
+        fpuset_refresh = []
+        for fpu_id, fpu in enumerate(datum_gs.FPU):
+            if fpu.state in [FPST_MOVING, FPST_DATUM_SEARCH] or (not fpu.ping_ok):
+                fpuset_refresh.append(fpu_id)
+                if len(fpuset_refresh) == 0:
+                    break
+                sleep(0.1)
+                self._pingFPUs(gs, fpuset=fpuset_refresh)
+
         with env.begin(db=self.fpudb, write=True) as txn:
 
             for fpu_id, datum_fpu in enumerate(datum_gs.FPU):

@@ -121,6 +121,7 @@ void handle_ExecuteMotion_response(const EtherCANInterfaceConfig&config,
         else if ((fpu.beta_collision) || (response_errcode == MCE_WARN_COLLISION_DETECTED))
         {
             fpu.waveform_valid = false;
+            fpu.ping_ok = false;
 
             LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
                         "FPU # %i: executeMotion command got error response code 'MCE_WARN_COLLISION_DETECTED'"
@@ -131,7 +132,6 @@ void handle_ExecuteMotion_response(const EtherCANInterfaceConfig&config,
         else if (fpu.state == FPST_ABORTED)
         {
             fpu.waveform_valid = false;
-            fpu.ping_ok = false;
 
             LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
                         "FPU # %i: executeMotion command got FPU status 'FPST_ABORTED'"

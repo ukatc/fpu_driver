@@ -62,7 +62,6 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
-        fpu.ping_ok = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -84,7 +83,6 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
-        fpu.ping_ok = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -106,7 +104,6 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
 
         fpu.movement_complete = false;
         fpu.waveform_valid = false;
-        fpu.ping_ok = false;
 
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "FPU # %i: executeMotion command finished error status 'FPST_ABORTED'"
@@ -147,7 +144,6 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
         fpu.movement_complete = false;
         fpu.waveform_valid = false;
         fpu.step_timing_errcount++;
-        fpu.ping_ok = false;
 
     }
     else if (response_errcode == 0)
@@ -158,7 +154,6 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
         {
             fpu.movement_complete = true;
         }
-	fpu.ping_ok = true;
 	    
     }
 

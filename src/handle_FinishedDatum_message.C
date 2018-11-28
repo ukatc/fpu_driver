@@ -65,7 +65,6 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
-        fpu.ping_ok = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -79,7 +78,6 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
-        fpu.ping_ok = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -96,7 +94,6 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         fpu.waveform_valid = false;
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
-        fpu.ping_ok = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -114,8 +111,6 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     }
     else if (fpu.state == FPST_ABORTED)
     {
-        fpu.ping_ok = false;
-
         LOG_RX(LOG_DEBUG, "%18.6f : RX : "
                "while waiting for datum command:"
                "FPU %i is now in aborted state\n",
@@ -128,7 +123,6 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         {
             fpu.alpha_was_zeroed = false;
             fpu.beta_was_zeroed = false;
-            fpu.ping_ok = false;
         }
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "datum request rejected for FPU %i, because alpha limit switch active\n",
@@ -141,7 +135,6 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     {
         fpu.alpha_was_zeroed = false;
         fpu.beta_was_zeroed = false;
-        fpu.ping_ok = false;
     }
     else
     {
@@ -158,10 +151,6 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         {
             fpu.beta_was_zeroed = true;
             fpu.beta_steps = 0;
-        }
-        if (fpu.beta_was_zeroed && fpu.alpha_was_zeroed)
-        {
-            fpu.ping_ok = true;
         }
     }
 
