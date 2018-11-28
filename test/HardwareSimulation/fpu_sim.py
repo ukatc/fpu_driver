@@ -882,11 +882,11 @@ class FPU:
         elif self.running_wave:
             # FPU already moving
             errcode = MCE_ERR_INVALID_COMMAND
-        elif self.state not in [FPST_READY_FORWARD, FPST_READY_REVERSED]:
+        elif self.state not in [FPST_READY_FORWARD, FPST_READY_REVERSE]:
             errcode = MCE_ERR_INVALID_COMMAND
         else:
             self.state = FPST_MOVING
-            errcode = MOC_FPU_OK
+            errcode = MCE_FPU_OK
             
         return errcode
     
@@ -1020,7 +1020,7 @@ class FPU:
         else:
             # in version 1, other cases do not have
             # status flag information
-            errcode = MOC_FPU_OK
+            errcode = MCE_FPU_OK
             self.state = FPST_RESTING
 
         return errcode

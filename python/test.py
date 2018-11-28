@@ -86,6 +86,7 @@ if __name__ == '__main__':
     gd.findDatum(grid_state)
     w = gen_wf(5,3)
     gd.configMotion(w, gs)
+    gd.executeMotion(gs)
           
 
     

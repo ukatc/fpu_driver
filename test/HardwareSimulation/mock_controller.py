@@ -102,6 +102,9 @@ def getStatus(fpu):
     if fpu.wave_ready:
         status |=  STBT_WAVEFORM_READY
         
+    if fpu.wave_valid:
+        status |=  STBT_WAVEFORM_VALID
+        
     if fpu.wave_reversed:
         status |= STBT_WAVEFORM_REVERSED
                 
@@ -184,7 +187,7 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbosity=0):
         print("handle_configMotion(): response rqeusted!")
 
     apause = (RX[4] >> 6) & 1
-    astep = ((RX[4] &  0x3f) << 8) + RX[4]
+    astep = ((RX[4] &  0x3f) << 8) + RX[3]
     if apause:
         astep = 0
     aclockwise = (RX[4] >> 7) & 1
@@ -653,8 +656,8 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
         
     print("starting executeMotion for FPU %i" % fpu_id)
 
-    if len(RX) < 8:
-        print("CAN command format error, length must be 8");
+    if len(RX) > 8:
+        print("CAN command format error, length must be equal or smaller 8");
         return []
 
     seqnum = RX[0]
@@ -663,7 +666,7 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
 
     errcode = FPUGrid[fpu_id].start_executeMotion()
 
-    if errcode == MOC_FPU_OK:
+    if errcode == MCE_FPU_OK:
         
         # all OK, send confirmation and spawn executeMotion method call
 
@@ -903,40 +906,41 @@ def command_handler(cmd, socket, args):
                   % (gCountTotalCommands, gateway_id, bus_adr, delay))
         
         
-    elif rx_canid != 0:
-        # we now have the sequence number in cmd[3] alias RX[0]
+    else:
         command_id = cmd[4]
         bus_global_id = bus_adr + gateway_id * BUSES_PER_GATEWAY
-        
-        # non-broadcast message
-        rx_priority = (rx_canid >> 7)
-        fpu_adr_bus = rx_canid & 0x7f # this is a one-based index
-        fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
-        
         rx_bytes = cmd[3:]
-        if verbose:
-            print("CAN command [count %i] to gw %i, bus %i, fpu # %i (rx_priority %i), command id=%i"
-                  % (gCountTotalCommands, gateway_id, bus_adr, fpu_adr_bus, rx_priority, command_id))
+        if rx_canid != 0:
+            # we now have the sequence number in cmd[3] alias RX[0]
             
-            print("CAN command #%i to FPU %i" % (command_id, fpu_id))
-
-
-        fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
-    else:
-        # broadcast message
-        if verbose:
-            print("CAN BROADCAST command [%i] to gw %i, bus %i, command id=%i"
-                  % (gCountTotalCommands, gateway_id, bus_adr, command_id))
-
-        rx_bytes = cmd[3:]
-        for fpu_adr_bus in range(1, FPUS_PER_BUS+1):
+            # non-broadcast message
+            rx_priority = (rx_canid >> 7)
+            fpu_adr_bus = rx_canid & 0x7f # this is a one-based index
             fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
-            assert(fpu_id >= 0)
-            if fpu_id < args.NUM_FPUS:
-
-                #print("Spawning CAN command #%i to FPU %i" % (command_id, fpu_id))
-                spawn(fpu_handler, command_id, fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, args)
             
+
+            if verbose:
+                print("CAN command [count %i] to gw %i, bus %i, fpu # %i (rx_priority %i), command id=%i"
+                      % (gCountTotalCommands, gateway_id, bus_adr, fpu_adr_bus, rx_priority, command_id))
+                
+                print("CAN command #%i to FPU %i" % (command_id, fpu_id))
+    
+    
+            fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
+        else:
+            # broadcast message
+            if verbose:
+                print("CAN BROADCAST command [%i] to gw %i, bus %i, command id=%i"
+                      % (gCountTotalCommands, gateway_id, bus_adr, command_id))
+    
+            for fpu_adr_bus in range(1, FPUS_PER_BUS+1):
+                fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
+                assert(fpu_id >= 0)
+                if fpu_id < args.NUM_FPUS:
+    
+                    #print("Spawning CAN command #%i to FPU %i" % (command_id, fpu_id))
+                    spawn(fpu_handler, command_id, fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, args)
+                
 
 
 
