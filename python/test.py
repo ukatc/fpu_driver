@@ -6,7 +6,8 @@ import argparse
 import FpuGridDriver
 from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, \
-    REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE, DATUM_TIMEOUT_DISABLE
+    REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE, DATUM_TIMEOUT_DISABLE, \
+    FPST_READY_REVERSE
 
 from fpu_commands import *
 
@@ -87,6 +88,9 @@ if __name__ == '__main__':
     w = gen_wf(5,3)
     gd.configMotion(w, gs)
     gd.executeMotion(gs)
+    gd.reverseMotion(gs)
+    assert(gs.FPU[0].state == FPST_READY_REVERSE)
+    
           
 
     

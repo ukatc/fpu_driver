@@ -273,6 +273,7 @@ class FPU:
         
         self.wave_reversed = False
         self.wave_ready = True
+        self.state = FPST_READY_FORWARD
 
         return MCE_FPU_OK
         
@@ -330,6 +331,7 @@ class FPU:
         
         self.wave_reversed = True
         self.wave_ready = True
+        self.state = FPST_READY_REVERSE
 
         return MCE_FPU_OK
         
