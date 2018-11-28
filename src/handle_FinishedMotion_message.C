@@ -157,9 +157,9 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
         if ( (fpu.state != FPST_OBSTACLE_ERROR) && (fpu.state != FPST_ABORTED))
         {
             fpu.movement_complete = true;
-            fpu.ping_ok = false;
         }
-
+	fpu.ping_ok = true;
+	    
     }
 
 }
