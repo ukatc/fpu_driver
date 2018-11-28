@@ -195,7 +195,6 @@ public:
         direction_alpha           = fpu_state.direction_alpha;
         direction_beta            = fpu_state.direction_beta;
         num_waveform_segments     = fpu_state.num_waveform_segments;
-        num_active_timeouts       = fpu_state.num_active_timeouts;
         sequence_number           = fpu_state.sequence_number;
         alpha_was_zeroed          = fpu_state.alpha_was_zeroed;
         beta_was_zeroed           = fpu_state.beta_was_zeroed;
@@ -284,7 +283,6 @@ public:
           << " 'crc32' : " << std::hex << std::showbase << fpu.crc32 << std::dec << ", "
           << " 'checksum_ok' : " << fpu.checksum_ok << ", "
           << " 'sequence_number' : " << fpu.sequence_number << ", "
-          << " 'num_active_timeouts' : " << fpu.num_active_timeouts << ", "
           << " }";
         return s.str();
     }

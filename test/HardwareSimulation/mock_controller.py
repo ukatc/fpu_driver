@@ -502,7 +502,7 @@ class LimitCallback:
 
         tx_prio = 0x01
         
-        TH = create_gwheader(self.fpu_adr_bus, bus_adr, CMSG_WARN_LIMIT_ALPHA)
+        TH = create_gwheader(self.fpu_adr_bus, self.bus_adr, CMSG_WARN_LIMIT_ALPHA)
         TX = create_CANheader(CMSG_WARN_LIMIT_ALPHA, self.fpu_id, self.seqnum, MCE_WARN_LIMIT_SWITCH_BREACH)
 
         if self.verbose:
@@ -526,7 +526,7 @@ class CollisionCallback:
         if self.verbose:
             print("FPU %i: sending collision detection message" % self.fpu_id)
     
-        TH = create_gwheader(self.fpu_adr_bus, bus_adr, MCE_WARN_COLLISION_DETECTED)
+        TH = create_gwheader(self.fpu_adr_bus, self.bus_adr, MCE_WARN_COLLISION_DETECTED)
         TX = create_CANheader(CMSG_WARN_COLLISION_BETA, self.fpu_id, self.seqnum, MCE_WARN_COLLISION_DETECTED)
             
         limit_message =  TH + TX

@@ -758,7 +758,7 @@ class FPU:
         if self.state in [ FPST_DATUM_SEARCH, FPST_MOVING ]:
             self.abort_wave = True
             self.was_initialized = False
-            self.state = RFPT_ABORTED
+            self.state = FPST_ABORTED
             errcode = MCE_FPU_OK
         else:
             errcode = MCE_NOTIFY_COMMAND_IGNORED
