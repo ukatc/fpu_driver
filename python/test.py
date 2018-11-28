@@ -85,11 +85,13 @@ if __name__ == '__main__':
 
 
     gd.findDatum(grid_state)
-    w = gen_wf(5,3)
+    w = gen_wf(200,140)
     gd.configMotion(w, gs)
     gd.executeMotion(gs)
     gd.reverseMotion(gs)
     assert(gs.FPU[0].state == FPST_READY_REVERSE)
+    print("press <Ctrl>-<C> to abort")
+    gd.executeMotion(gs)
     
           
 

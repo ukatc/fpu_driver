@@ -1015,7 +1015,6 @@ class FPU:
             self.state = FPST_ABORTED
         elif self.abort_wave:
             # send error message
-            print("needs to fit error codes into range")
             errcode = MCE_WARN_STEP_TIMING_ERROR
             self.state = FPST_ABORTED
             self.was_initialized = False
