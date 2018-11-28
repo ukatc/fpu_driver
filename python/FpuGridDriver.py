@@ -638,10 +638,10 @@ class UnprotectedGridDriver (object):
                     fpu.fw_version_major, fpu.fw_version_minor, fpu.fw_version_patch,
                     fpu.fw_date_year, fpu.fw_date_month, fpu.fw_date_day))
 
-    def minFirmwareVersion(self, gs, fpuset=[]):
+    def minFirmwareVersion(self, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
-        
-        return self.getMinFirmwareVersion(gs, fpuset)
+        gs = self._gd.getGridState()
+        return self._gd.getMinFirmwareVersion(gs, fpuset)
 
     def getCounterDeviation(self, gs, **kwargs):
         warnings.warn(textwrap.dedent("""This command is obsolete, use gs.FPU[i].alpha_deviation and

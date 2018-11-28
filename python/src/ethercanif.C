@@ -1761,7 +1761,8 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def("writeSerialNumber", &WrapEtherCANInterface::wrap_writeSerialNumber)
     .def("readSerialNumbers", &WrapEtherCANInterface::wrap_readSerialNumbers)
 
-    .def("getMinfirmwareVersion", &WrapEtherCANInterface::wrap_getMinFirmwareVersion)
+
+    .def("getMinFirmwareVersion", &WrapEtherCANInterface::wrap_getMinFirmwareVersion)
     .def("resetStepCounter", &WrapEtherCANInterface::wrap_resetStepCounter)
     .def("enableMove", &WrapEtherCANInterface::wrap_enableMove)
     .def("enableAlphaLimitProtection", &WrapEtherCANInterface::wrap_enableAlphaLimitProtection)

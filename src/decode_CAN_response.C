@@ -264,7 +264,7 @@ E_MOC_ERRCODE update_status_flags(t_fpu_state& fpu,
             fpu.beta_deviation = unfold_stepcount_beta(data[6] | (data[7] << 8));
 	    fpu.beta_steps = 0;
         }
-	self.ping_ok = int(true);
+	fpu.ping_ok = int(true);
     }
 
 
