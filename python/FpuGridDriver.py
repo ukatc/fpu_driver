@@ -2188,19 +2188,6 @@ class GridDriver(UnprotectedGridDriver):
         if brcnt >= self.maxbretries[fpu_id]:
             raise ProtectionError("Retry count for FPU %i is already %i, exceeds safe maximum" % (fpu_id, brcnt))
         
-        
-    def _post_free_beta_collision_hook(self, fpu_id, direction, grid_state):
-        
-        clockwise = (direction == REQD_CLOCKWISE)
-        
-        if clockwise:
-            self.bretries_cw[fpu_id] += 1
-            cnt = self.bretries_cw[fpu_id]
-        else:
-            self.bretries_acw[fpu_id] += 1
-            cnt = self.bretries_acw[fpu_id]
-
-
         fpu = grid_state.FPU[fpu_id]
 
         if direction == REQD_CLOCKWISE:
@@ -2214,9 +2201,24 @@ class GridDriver(UnprotectedGridDriver):
         self.target_positions[fpu_id] = ( self.apositions[fpu_id], new_bpos)
         
         with env.begin(db=self.fpudb, write=True) as txn:
-            ProtectionDB.store_bretry_count(txn, fpu, clockwise, cnt)
             self._update_bpos(txn, fpu, fpu_id,  bpos.combine(new_bpos))
+        
+    def _post_free_beta_collision_hook(self, fpu_id, direction, grid_state):
+        
+        clockwise = (direction == REQD_CLOCKWISE)
+        
+        fpu = grid_state.FPU[fpu_id]
+        
+        if clockwise:
+            self.bretries_cw[fpu_id] += 1
+            cnt = self.bretries_cw[fpu_id]
+        else:
+            self.bretries_acw[fpu_id] += 1
+            cnt = self.bretries_acw[fpu_id]
 
+        
+        with env.begin(db=self.fpudb, write=True) as txn:
+            ProtectionDB.store_bretry_count(txn, fpu, clockwise, cnt)
 
         fpuset = [fpu_id]
         self._pingFPUs(grid_state, fpuset=fpuset)
