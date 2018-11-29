@@ -200,10 +200,6 @@ class UnprotectedGridDriver (object):
             warn("confirm_each_steps set to False, which reduces"
                  " confirmation requests of waveform step upload")
 
-        if waveform_upload_pause_us < 50000:
-            warn("waveform_upload_pause_us is set to smaller value."
-                 " Increase if firmware CAN overflow errors are triggered")
-
         config = EtherCANInterfaceConfig()
         config.num_fpus = nfpus
         config.SocketTimeOutSeconds = SocketTimeOutSeconds
@@ -1857,7 +1853,7 @@ class GridDriver(UnprotectedGridDriver):
                         break
                     time.sleep(0.2)
                     self._pingFPUs(gs, fpuset=fpuset_refresh)
-                except Commandtimeout:
+                except CommandTimeout:
                     pass
             else:
                 break
