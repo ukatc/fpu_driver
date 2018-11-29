@@ -377,10 +377,12 @@ def handle_readRegister(fpu_id, fpu_adr_bus, bus_adr, RX):
     
     
     TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
-    TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
-    TX[4] = byte
+    TX = create_CANheader(command_id, fpu_id, seqnum, MCE_FPU_OK)
+    TX[4] = (register_address >> 8) & 0xff
+    TX[5] = register_address & 0xff
+    TX[6] = byte
     
-    return TH + TX 
+    return TH + TX[:7]
 
 
 def handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):

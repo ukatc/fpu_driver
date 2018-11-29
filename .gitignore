@@ -18,5 +18,6 @@ version
 *.do
 /.redo
 *.redo*.tmp
+/_logs
 
 

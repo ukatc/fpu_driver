@@ -80,11 +80,8 @@ if __name__ == '__main__':
 
 
 
-    clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
-    acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(args.N)])
 
-
-    gd.findDatum(grid_state)
+    #gd.findDatum(grid_state)
     #w = gen_wf(0,155)
     #gd.configMotion(w, gs, soft_protection=False)
     #gd.executeMotion(gs)
@@ -93,9 +90,9 @@ if __name__ == '__main__':
     #print("press <Ctrl>-<C> to abort")
     #gd.executeMotion(gs)
 
-    gd.writeSerialNumber(0, "MP000", gs)
+    #gd.writeSerialNumber(0, "MP000", gs)
           
-
+    gd.readRegister(0x0001, gs)
     
 
 
