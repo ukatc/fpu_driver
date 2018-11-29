@@ -4317,15 +4317,6 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
     int min_firmware_fpu = -1;
     ecode = getMinFirmwareVersionAsync(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
-    if ((min_firmware_version[0] < 1)
-            ||(min_firmware_version[1] < 3))
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_FIRMWARE_UNIMPLEMENTED "
-                    "- FPU firmware does not provide feature\n",
-                    ethercanif::get_realtime());
-        return DE_FIRMWARE_UNIMPLEMENTED;
-    }
-
 
     // get all existing numbers
     ecode = readSerialNumbersAsync(grid_state, state_summary, fpuset);

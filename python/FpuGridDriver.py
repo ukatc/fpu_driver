@@ -37,6 +37,7 @@ from ethercanif import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  Ethe
                         FPST_LOCKED, FPST_DATUM_SEARCH, FPST_AT_DATUM, FPST_LOADING, FPST_READY_FORWARD,
                         FPST_READY_REVERSE, FPST_MOVING, FPST_RESTING, FPST_ABORTED, FPST_OBSTACLE_ERROR, DS_CONNECTED,
                         CCMD_EXECUTE_MOTION,
+                        DE_OK,
                         MCE_FPU_OK, MCE_WARN_COLLISION_DETECTED,
                         MCE_WARN_LIMIT_SWITCH_BREACH, MCE_ERR_INVALID_COMMAND, MCE_NOTIFY_COMMAND_IGNORED,
                         MCE_ERR_WAVEFORM_NOT_READY, WAVEFORM_TOO_BIG, WAVEFORM_SEQUENCE, WAVEFORM_BADVALUE,
@@ -689,6 +690,8 @@ class UnprotectedGridDriver (object):
             try:
                 prev_gs = self._gd.getGridState()
                 rval = self._gd.writeSerialNumber(fpu_id, serial_number, gs)
+                if rval == DE_OK:
+                    rval = self._gd.readSerialNumbers(gs, [fpu_id])
             finally:
                 if self.__dict__.has_key("counters"):
                     for fpu_id, fpu in enumerate(gs.FPU):
