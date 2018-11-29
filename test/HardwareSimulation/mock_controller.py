@@ -317,8 +317,8 @@ def handle_enableAlphaLimitBreachProtection(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 def handle_setUStepLevel(fpu_id, fpu_adr_bus, bus_adr, RX):
 
-    ustep_level = RX[1]
 
+    ustep_level = RX[2]
     errcode = FPUGrid[fpu_id].setUStepLevel(ustep_level)
 
     seqnum = RX[0]

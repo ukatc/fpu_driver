@@ -92,7 +92,8 @@ if __name__ == '__main__':
 
     #gd.writeSerialNumber(0, "MP000", gs)
           
-    gd.readRegister(0x0001, gs)
+    #gd.readRegister(0x0001, gs)
+    gd.setUStepLevel(0, gs)
     
 
 
