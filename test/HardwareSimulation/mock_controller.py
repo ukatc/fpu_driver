@@ -261,8 +261,9 @@ def handle_abortMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 def handle_freeBetaCollision(fpu_id, fpu_adr_bus, bus_adr, RX):
 
-    direction = RX[1]
 
+    print("mock_controller: freeBetaCollision")
+    direction = RX[2]
     errcode = FPUGrid[fpu_id].freeBetaCollision(direction)
     
     seqnum = RX[0]
@@ -491,8 +492,9 @@ def handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, RX):
 # collisions or limit switch breaks
 
 class LimitCallback:
-    def __init__(self, fpu_adr_bus, bus_adr, socket, seqnum, verbose=False):
+    def __init__(self, fpu_id, fpu_adr_bus, bus_adr, socket, seqnum, verbose=False):
         self.socket = socket
+        self.fpu_id = fpu_id
         self.fpu_adr_bus = fpu_adr_bus
         self.bus_adr = bus_adr
         self.verbose=verbose
@@ -512,8 +514,9 @@ class LimitCallback:
         encode_and_send(limit_message, self.socket, verbose=self.verbose)
 
 class CollisionCallback:
-    def __init__(self, fpu_adr_bus, bus_adr, socket, seqnum, verbose=False):
+    def __init__(self, fpu_id, fpu_adr_bus, bus_adr, socket, seqnum, verbose=False):
         self.socket = socket
+        self.fpu_id = fpu_id
         self.fpu_adr_bus = fpu_adr_bus
         self.bus_adr = bus_adr
         self.verbose = verbose
@@ -578,8 +581,8 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
 
             # instantiate two objects which can send collision messages
             # if needed
-            limit_callback = LimitCallback(fpu_adr_bus, bus_adr, socket, seqnum)
-            collision_callback = CollisionCallback(fpu_adr_bus, bus_adr, socket, seqnum)
+            limit_callback = LimitCallback(fpu_id, fpu_adr_bus, bus_adr, socket, seqnum)
+            collision_callback = CollisionCallback(fpu_id, fpu_adr_bus, bus_adr, socket, seqnum)
 
 
             # simulate findDatum FPU operation
@@ -673,8 +676,8 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
         def executeMotion_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
             # instantiate callbacks
-            limit_callback = LimitCallback(fpu_adr_bus, bus_adr, socket, seqnum)
-            collision_callback = CollisionCallback(fpu_adr_bus, bus_adr, socket, seqnum)
+            limit_callback = LimitCallback(fpu_id, fpu_adr_bus, bus_adr, socket, seqnum)
+            collision_callback = CollisionCallback(fpu_id, fpu_adr_bus, bus_adr, socket, seqnum)
             
             # simulate executeMotion FPU operation
             errcode = FPUGrid[fpu_id].executeMotion(sleep, limit_callback.call, collision_callback.call)

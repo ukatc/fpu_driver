@@ -811,6 +811,7 @@ class FPU:
     def enableBetaCollisionProtection(self):
         self.is_collided = False
         self.collision_protection_active = True
+        self.state = FPST_UNINITIALIZED
         return MCE_FPU_OK
 
 
