@@ -32,24 +32,56 @@ FPUGrid = []
 # INS_POS_LOW2      = -180.000  # Lower travel limit of positioner beta arm (deg)
 # INS_POS_HIGH2     =  150.000  # Upper travel limit of positioner beta arm (deg)
 
-# The alpha values below are relative from the datum switch
+# offset between displayed angles (which are always
+# instrument coordinates) and angle relative to datum positions.
+
+ALPHA_DATUM_OFFSET=-180.0
+BETA_DATUM_OFFSET=0.0
+
+# range allowed by software protection (copied from fpu_constants.py)
+ALPHA_MIN_DEGREE = -180.2
+ALPHA_MAX_DEGREE = +159.0
+
+ALPHA_MIN_HARDSTOP_DEGREE = -183.2
+ALPHA_MAX_HARDSTOP_DEGREE = +181.8
+
+BETA_MIN_DEGREE = -179.3
+BETA_MAX_DEGREE = 140.0
+
+BETA_MIN_HWPROT_DEGREE = -181.0
+BETA_MAX_HWPROT_DEGREE = 145.0
+
+
+
+
+# The alpha RDEGREE values below are relative from the datum switch
 # (datum=zero).  (For displayed alpha angles, the conventional angle
 # at datum is added.)
-ALPHA_MIN_DEGREE = 0
-ALPHA_MAX_DEGREE = 358.8
-BETA_MIN_DEGREE = -179.3
-BETA_MAX_DEGREE = 150.3
-BETA_DATUM_SWITCH_MAX_DEGREE = -0.2
-BETA_DATUM_SWITCH_MIN_DEGREE = -5
 
-ALPHA_LIMIT_MIN_DEGREE = ALPHA_MIN_DEGREE - 0.2 # this is the actual datum switch
-ALPHA_LIMIT_MAX_DEGREE = ALPHA_MAX_DEGREE + 0.2
-BETA_LIMIT_MIN_DEGREE  = BETA_MIN_DEGREE - 0.1
-BETA_LIMIT_MAX_DEGREE  = BETA_MAX_DEGREE + 0.1
+
+ALPHA_BUFFER = 0.2
+ALPHA_MIN_RDEGREE = ALPHA_MIN_DEGREE - ALPHA_DATUM_OFFSET + ALPHA_BUFFER
+ALPHA_MAX_RDEGREE = ALPHA_MAX_DEGREE - ALPHA_DATUM_OFFSET - ALPHA_BUFFER
+BETA_DATUM_SWITCH_MAX_RDEGREE = -0.2
+BETA_DATUM_SWITCH_MIN_RDEGREE = -5
+
+ALPHA_LIMIT_MIN_RDEGREE = ALPHA_MIN_DEGREE - ALPHA_DATUM_OFFSET # this is the actual relative datum switch point
+ALPHA_LIMIT_MAX_RDEGREE = ALPHA_MAX_DEGREE - ALPHA_DATUM_OFFSET
+
+BETA_BUFFER = 0.2
+BETA_LIMIT_MIN_RDEGREE  = BETA_MIN_DEGREE - BETA_BUFFER
+BETA_LIMIT_MAX_RDEGREE  = BETA_MAX_DEGREE + BETA_BUFFER
+
+assert(ALPHA_MIN_RDEGREE < ALPHA_MAX_RDEGREE)
+assert(ALPHA_LIMIT_MIN_RDEGREE < ALPHA_MIN_RDEGREE)
+assert(ALPHA_MAX_RDEGREE < ALPHA_LIMIT_MAX_RDEGREE)
+
+assert(BETA_LIMIT_MIN_RDEGREE < BETA_MIN_DEGREE)
+assert(BETA_MIN_DEGREE < BETA_MAX_DEGREE)
+assert(BETA_MAX_DEGREE < BETA_LIMIT_MAX_RDEGREE)
 
 AlphaGearRatio 	= 2050.175633 # actual gear ratio
 BetaGearRatio 	= 1517.662482 # actual gear ratio
-
 
 # There are 20 steps per revolution on the non-geared side, so:
 StepsPerRevolution = 20.0
@@ -60,27 +92,28 @@ DegreePerRevolution = 360.0
 StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
 StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
 
-ALPHA_SWITCH_WIDTH = 1
-
-ALPHA_CRASH_MARGIN = 2
+ALPHA_SWITCH_WIDTH = 2.0
 
 
-ALPHA_ZERO = 0
-MIN_ALPHA_ON = int(ALPHA_LIMIT_MIN_DEGREE  * StepsPerDegreeAlpha)
-MIN_ALPHA_OFF = int((ALPHA_LIMIT_MIN_DEGREE - ALPHA_SWITCH_WIDTH) * StepsPerDegreeAlpha)
-MAX_ALPHA_ON = int(ALPHA_LIMIT_MAX_DEGREE  * StepsPerDegreeAlpha)
-MAX_ALPHA_OFF = int((ALPHA_LIMIT_MAX_DEGREE + ALPHA_SWITCH_WIDTH) * StepsPerDegreeAlpha)
 
-MIN_ALPHA_CRASH = int((ALPHA_LIMIT_MIN_DEGREE - ALPHA_SWITCH_WIDTH - ALPHA_CRASH_MARGIN) * StepsPerDegreeAlpha)
-MAX_ALPHA_CRASH = int((ALPHA_LIMIT_MAX_DEGREE + ALPHA_SWITCH_WIDTH + ALPHA_CRASH_MARGIN) * StepsPerDegreeAlpha)
+# step counts where switches go on and off
+MIN_ALPHA_ON = int(ALPHA_LIMIT_MIN_RDEGREE  * StepsPerDegreeAlpha)
+MIN_ALPHA_OFF = int((ALPHA_LIMIT_MIN_RDEGREE - ALPHA_SWITCH_WIDTH) * StepsPerDegreeAlpha)
 
+MAX_ALPHA_ON = int(ALPHA_LIMIT_MAX_RDEGREE  * StepsPerDegreeAlpha)
+MAX_ALPHA_OFF = int((ALPHA_LIMIT_MAX_RDEGREE + ALPHA_SWITCH_WIDTH) * StepsPerDegreeAlpha)
 
-MIN_BETA = int(BETA_LIMIT_MIN_DEGREE * StepsPerDegreeBeta)
-MAX_BETA = int(BETA_LIMIT_MAX_DEGREE * StepsPerDegreeBeta)
+# point where collision detection is triggered by reeaching beta range limit
+MIN_BETA = int(BETA_LIMIT_MIN_RDEGREE * StepsPerDegreeBeta)
+MAX_BETA = int(BETA_LIMIT_MAX_RDEGREE * StepsPerDegreeBeta)
 
-BETA_CRASH_MARGIN = 0.5
-MIN_BETA_CRASH = int((BETA_LIMIT_MIN_DEGREE - BETA_CRASH_MARGIN) * StepsPerDegreeBeta)
-MAX_BETA_CRASH = int((BETA_LIMIT_MAX_DEGREE + BETA_CRASH_MARGIN) * StepsPerDegreeBeta)
+# step counts where alpha hardware limits kick in
+MIN_ALPHA_CRASH = int((ALPHA_MIN_HARDSTOP_DEGREE - ALPHA_DATUM_OFFSET) * StepsPerDegreeAlpha)
+MAX_ALPHA_CRASH = int((ALPHA_MAX_HARDSTOP_DEGREE - ALPHA_DATUM_OFFSET) * StepsPerDegreeAlpha)
+
+# point where beta arm would crash
+MIN_BETA_CRASH = int(BETA_MIN_HWPROT_DEGREE * StepsPerDegreeBeta)
+MAX_BETA_CRASH = int(BETA_MAX_HWPROT_DEGREE * StepsPerDegreeBeta)
 
 
 # E_REQUEST_DIRECTION
@@ -187,8 +220,8 @@ class FPU:
             else:
                 alpha_switch_bit = self.alpha_switch_on(self.alpha_steps)
                 beta_angle = (self.beta_steps + self.boff_steps) / StepsPerDegreeBeta 
-                beta_switch_bit = ( beta_angle >= BETA_DATUM_SWITCH_MIN_DEGREE) and (
-                    beta_angle <= BETA_DATUM_SWITCH_MAX_DEGREE)
+                beta_switch_bit = ( beta_angle >= BETA_DATUM_SWITCH_MIN_RDEGREE) and (
+                    beta_angle <= BETA_DATUM_SWITCH_MAX_RDEGREE)
                 byte = 0
                 if alpha_switch_bit:
                     byte |= 1
@@ -827,7 +860,7 @@ class FPU:
         
         UNTANGLE_STEPS = 10
         alpha_offset = self.aoff_steps
-        alpha_offset = self.boff_steps
+        beta_offset = self.boff_steps
         
         self.collision_protection_active = False
 
@@ -848,8 +881,8 @@ class FPU:
             self.alpha_steps, self.beta_steps,
             alpha_real_deg, beta_real_deg))
         
-        if ((self.alpha_steps + alpha_offset) >= MAX_ALPHA) or (
-                (self.alpha_steps + alpha_offset) <= MIN_ALPHA):
+        if ((self.alpha_steps + alpha_offset) >= MAX_ALPHA_ON) or (
+                (self.alpha_steps + alpha_offset) <= MIN_ALPHA_ON):
             self.alpha_limit_breach = True
             print("FPU #%i: limit breach ongoing" % self.fpu_id)
             
@@ -951,9 +984,9 @@ class FPU:
         
             if self.opts.verbosity > 0:
                 alpha_swon = self.alpha_switch_on(new_alpha)
-                print("section %i: moving FPU %i by (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg, alpha_switch_on=%r" % (
+                print("section %i: moving FPU %i by (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg, alpha_switch_on=%r, MAX_ALPHA_ON=%i" % (
                     n, self.fpu_id, delta_alpha, delta_beta, new_alpha, new_beta,
-                    alpha_real_deg, beta_real_deg, alpha_swon))
+                    alpha_real_deg, beta_real_deg, alpha_swon, MAX_ALPHA_ON))
             
             frame_time = 0.25
             sleep(frame_time)

@@ -7,7 +7,7 @@ import FpuGridDriver
 from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, \
     REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE, DATUM_TIMEOUT_DISABLE, \
-    FPST_READY_REVERSE
+    FPST_READY_REVERSE, LimitBreachError
 
 from fpu_commands import *
 
@@ -81,10 +81,15 @@ if __name__ == '__main__':
 
 
 
-    #gd.findDatum(grid_state)
-    #w = gen_wf(0,155)
-    #gd.configMotion(w, gs, soft_protection=False)
-    #gd.executeMotion(gs)
+    gd.findDatum(grid_state)
+    w = gen_wf(-5, 0)
+    gd.configMotion(w, gs, soft_protection=False)
+    try:
+        gd.executeMotion(gs)
+    except FpuGridDriver.LimitBreachError as ex:
+        print(ex)
+        gd.freeAlphaLimitBreach(0, REQD_ANTI_CLOCKWISE, gs)
+        
     #gd.reverseMotion(gs)
     #assert(gs.FPU[0].state == FPST_READY_REVERSE)
     #print("press <Ctrl>-<C> to abort")
@@ -93,7 +98,7 @@ if __name__ == '__main__':
     #gd.writeSerialNumber(0, "MP000", gs)
           
     #gd.readRegister(0x0001, gs)
-    gd.setUStepLevel(0, gs)
+    #gd.setUStepLevel(0, gs)
     
 
 

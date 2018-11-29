@@ -266,6 +266,9 @@ def handle_freeBetaCollision(fpu_id, fpu_adr_bus, bus_adr, RX):
     direction = RX[2]
     errcode = FPUGrid[fpu_id].freeBetaCollision(direction)
     
+    if errcode != MCE_FPU_OK:
+        print("freeBetaCollision for FPU %i: error code %r" % (fpu_id, errcode))
+    
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
     
@@ -289,9 +292,12 @@ def handle_enableBetaCollisionProtection(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 def handle_freeAlphaLimitBreach(fpu_id, fpu_adr_bus, bus_adr, RX):
 
-    direction = RX[1]
+    direction = RX[2]
 
     errcode = FPUGrid[fpu_id].freeAlphaLimitBreach(direction)
+
+    if errcode != MCE_FPU_OK:
+        print("freeAlphaLimitBreach for FPU %i: error code %r" % (fpu_id, errcode))
     
     seqnum = RX[0]
     command_id = RX[1] & 0x1f

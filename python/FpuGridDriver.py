@@ -978,6 +978,7 @@ class UnprotectedGridDriver (object):
                 prev_gs = self._gd.getGridState()
 
                 rv = self._gd.freeBetaCollision(fpu_id, direction, gs)
+                status = gs.FPU[fpu_id].last_status
             finally:
                 if self.__dict__.has_key("counters"):
                     for fpu_id, fpu in enumerate(gs.FPU):
@@ -986,7 +987,7 @@ class UnprotectedGridDriver (object):
             
             self._post_free_beta_collision_hook(fpu_id, direction, gs)
             
-        return rv
+        return rv, status
     
     def enableBetaCollisionProtection(self, gs):
         try:
@@ -999,6 +1000,44 @@ class UnprotectedGridDriver (object):
 
         return rval
 
+
+    def _pre_free_alpha_limit_breach_hook(self, fpu_id,direction, gs):
+        pass
+
+    def _post_free_alpha_limit_breach_hook(self, fpu_id,direction, gs):
+        pass
+    
+    def freeAlphaLimitBreach(self, fpu_id, direction, gs, soft_protection=True):
+
+        with self.lock:        
+            if soft_protection:
+                self._pre_free_alpha_limit_breach_hook(fpu_id,direction, gs)
+            try:
+                prev_gs = self._gd.getGridState()
+
+                rv = self._gd.freeAlphaLimitBreach(fpu_id, direction, gs)
+                status = gs.FPU[fpu_id].last_status
+            finally:
+                if self.__dict__.has_key("counters"):
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+
+            
+            self._post_free_alpha_limit_breach_hook(fpu_id, direction, gs)
+            
+        return rv, status
+    
+    def enableAlphaLimitProtection(self, gs):
+        try:
+            prev_gs = self._gd.getGridState()
+            rval = self._gd.enableAlphaLimitProtection(gs)
+        finally:
+            if self.__dict__.has_key("counters"):
+                for fpu_id, fpu in enumerate(gs.FPU):
+                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+
+        return rval
+    
     def reverseMotion(self, gs, fpuset=[], soft_protection=True):
         fpuset = self.check_fpuset(fpuset)
         
@@ -1138,11 +1177,17 @@ class GridDriver(UnprotectedGridDriver):
         maxbretries = {}
         bretries_cw = {}
         bretries_acw = {}
+        maxaretries = {}
+        aretries_cw = {}
+        aretries_acw = {}
         counters = {}
         in_dicts = { ProtectionDB.alpha_positions : apositions,
                      ProtectionDB.beta_positions : bpositions,
                      ProtectionDB.waveform_table : wtabs, ProtectionDB.waveform_reversed : wf_reversed,
                      ProtectionDB.alpha_limits : alimits, ProtectionDB.beta_limits : blimits,
+                     ProtectionDB.free_alpha_retries : maxaretries,
+                     ProtectionDB.alpha_retry_count_cw : aretries_cw,
+                     ProtectionDB.alpha_retry_count_acw : aretries_acw,
                      ProtectionDB.free_beta_retries : maxbretries,
                      ProtectionDB.beta_retry_count_cw : bretries_cw,
                      ProtectionDB.beta_retry_count_acw : bretries_acw,
@@ -1164,6 +1209,9 @@ class GridDriver(UnprotectedGridDriver):
                                 ProtectionDB.waveform_reversed,
                                 ProtectionDB.alpha_limits,
                                 ProtectionDB.beta_limits,
+                                ProtectionDB.free_alpha_retries,
+                                ProtectionDB.alpha_retry_count_cw,
+                                ProtectionDB.alpha_retry_count_acw,
                                 ProtectionDB.free_beta_retries,
                                 ProtectionDB.beta_retry_count_cw,
                                 ProtectionDB.beta_retry_count_acw,
@@ -1192,6 +1240,9 @@ class GridDriver(UnprotectedGridDriver):
         self.blimits = blimits
         self.a_caloffsets = a_caloffsets
         self.b_caloffsets = b_caloffsets
+        self.maxaretries = maxaretries
+        self.aretries_cw = aretries_cw
+        self.aretries_acw = aretries_acw
         self.maxbretries = maxbretries
         self.bretries_cw = bretries_cw
         self.bretries_acw = bretries_acw
@@ -1844,20 +1895,22 @@ class GridDriver(UnprotectedGridDriver):
         # What do we here if FPUs are still moving
         # (this would happen in case of an error)?
         # Solution for now: wait.
-        while True:
+        for k in range(50):
             if (gs.Counts[FPST_MOVING] > 0) or (gs.Counts[FPST_DATUM_SEARCH] > 0):
                 print("_post_execute_motion_hook(): waiting for movement to finish in order to retrieve reached positions..")
                 try:
                     fpuset_refresh = []
                     for fpu_id, fpu in enumerate(gs.FPU):
-                        if fpu.state in [FPST_MOVING, FPST_DATUM_SEARCH] or (not fpu.ping_ok):
+                        if fpu.state in [FPST_MOVING, FPST_DATUM_SEARCH]:
                             fpuset_refresh.append(fpu_id)
                     if len(fpuset_refresh) == 0:
                         break
+                    fpuset_ping_notok = self.need_ping(gs, fpuset)
+                    fpuset_refresh.extend(fpuset_ping_notok)
                     time.sleep(0.2)
                     self._pingFPUs(gs, fpuset=fpuset_refresh)
                 except CommandTimeout:
-                    pass
+                    break
             else:
                 break
         # The assumption here is that the offsets did not change, even
@@ -2228,6 +2281,52 @@ class GridDriver(UnprotectedGridDriver):
         self._refresh_positions(grid_state, fpuset=fpuset)
 
 
+    def _pre_free_alpha_limit_breach_hook(self, fpu_id, direction, grid_state):
+        
+        if direction == REQD_CLOCKWISE:
+            brcnt = self.aretries_cw[fpu_id]
+        else:
+            brcnt = self.aretries_acw[fpu_id]
+            
+        if brcnt >= self.maxaretries[fpu_id]:
+            raise ProtectionError("Retry count for FPU %i is already %i, exceeds safe maximum" % (fpu_id, brcnt))
+        
+        fpu = grid_state.FPU[fpu_id]
+
+        if direction == REQD_CLOCKWISE:
+            diff = - FREE_ALPHA_STEPCOUNT
+        else:
+            diff = FREE_ALPHA_STEPCOUNT
+
+        apos = self.apositions[fpu_id]
+        new_apos = apos + diff / StepsPerDegreeAlpha
+
+        self.target_positions[fpu_id] = ( new_apos, self.bpositions[fpu_id])
+        
+        with env.begin(db=self.fpudb, write=True) as txn:
+            self._update_apos(txn, fpu, fpu_id,  apos.combine(new_apos))
+        
+    def _post_free_alpha_limit_breach_hook(self, fpu_id, direction, grid_state):
+        
+        clockwise = (direction == REQD_CLOCKWISE)
+        
+        fpu = grid_state.FPU[fpu_id]
+        
+        if clockwise:
+            self.aretries_cw[fpu_id] += 1
+            cnt = self.aretries_cw[fpu_id]
+        else:
+            self.aretries_acw[fpu_id] += 1
+            cnt = self.aretries_acw[fpu_id]
+
+        
+        with env.begin(db=self.fpudb, write=True) as txn:
+            ProtectionDB.store_aretry_count(txn, fpu, clockwise, cnt)
+
+        fpuset = [fpu_id]
+        self._pingFPUs(grid_state, fpuset=fpuset)
+        self._refresh_positions(grid_state, fpuset=fpuset)
+        
     def configPaths(self, paths, grid_state, fpuset=[], soft_protection=True, check_protection=None,
                     allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION, reverse=False):
         """This methods takes a path which was loaded using wflib.load_path, and 
