@@ -56,7 +56,11 @@ class ProtectionDB:
     beta_limits = 'blimits'
     free_beta_retries = 'bretries'
     beta_retry_count_cw = 'beta_retry_count_cw'
-    beta_retry_count_acw = 'beta_retry_count_acw'
+    beta_retry_count_acw = 'beta_retry_count_acw' 
+    
+    free_alpha_retries = 'aretries'
+    alpha_retry_count_cw = 'alpha_retry_count_cw'
+    alpha_retry_count_acw = 'alpha_retry_count_acw'
     counters = 'counters2'
     serialnumber_used = 'serialnumber_used'
     
@@ -80,12 +84,19 @@ class ProtectionDB:
         val = [interval, offset]
         ProtectionDB.putField(txn, serial_number, subkey, val)
         
-    @staticmethod
-    def getRawField(txn, serial_number, subkey):
+    @classmethod
+    def getRawField(cls, txn, serial_number, subkey):
         key = str((serial_number, subkey))
         data = txn.get(key)
         if data == None:
-            return None
+            # auto-upgrade code for CAN protocol V2
+            if subkey in [ cls.free_alpha_retries,
+                           cls.alpha_retry_count_cw,
+                           cls.alpha_retry_count_acw, ]:
+                return 0
+            else:
+                return None
+            
         val = literal_eval(data)
         return val
 
@@ -107,6 +118,9 @@ class ProtectionDB:
 
         if subkey in [cls.waveform_table,
                       cls.waveform_reversed,
+                      cls.free_alpha_retries,
+                      cls.alpha_retry_count_cw,
+                      cls.alpha_retry_count_acw,
                       cls.free_beta_retries,
                       cls.beta_retry_count_cw,
                       cls.beta_retry_count_acw,
@@ -154,6 +168,16 @@ class ProtectionDB:
             subkey = cls.beta_retry_count_cw
         else:
             subkey = cls.beta_retry_count_acw
+
+        cls.putField(txn, fpu.serial_number, subkey, cnt)
+
+    @classmethod
+    def store_aretry_count(cls, txn, fpu, clockwise, cnt):
+
+        if clockwise :
+            subkey = cls.alpha_retry_count_cw
+        else:
+            subkey = cls.alpha_retry_count_acw
 
         cls.putField(txn, fpu.serial_number, subkey, cnt)
 

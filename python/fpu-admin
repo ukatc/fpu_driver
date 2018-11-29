@@ -111,9 +111,13 @@ if __name__ == '__main__' :
         n = argv.index("--reinitialize")
         del argv[n]
         
-    if "--reuse_sn" in argv:
+    if ("--reuse_sn" in argv) or ("--reuse-sn" in argv):
         reuse_sn = True
-        n = argv.index("--reuse_sn")
+        try:
+            n = argv.index("--reuse_sn")
+        except ValueError:
+            n = argv.index("--reuse-sn")
+            
         del argv[n]
     else:
         reuse_sn = False
@@ -174,9 +178,14 @@ if __name__ == '__main__' :
             pdb.putField(txn, sn, pdb.waveform_reversed, waveform_reversed)
             pdb.putInterval(txn, sn, pdb.alpha_limits, Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE), alpha_offset)
             pdb.putInterval(txn, sn, pdb.beta_limits, Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE), BETA_DATUM_OFFSET)
+            
             pdb.putField(txn, sn, pdb.free_beta_retries, DEFAULT_FREE_BETA_RETRIES)
             pdb.putField(txn, sn, pdb.beta_retry_count_cw, 0)
             pdb.putField(txn, sn, pdb.beta_retry_count_acw, 0)
+            
+            pdb.putField(txn, sn, pdb.free_alpha_retries, DEFAULT_FREE_ALPHA_RETRIES)
+            pdb.putField(txn, sn, pdb.alpha_retry_count_cw, 0)
+            pdb.putField(txn, sn, pdb.alpha_retry_count_acw, 0)
             pdb.putField(txn, sn, pdb.counters, init_counters)
 
     if command == "flash":
@@ -249,6 +258,19 @@ if __name__ == '__main__' :
             val = str(bretries)
             pdb.putField(txn, serial_number, pdb.free_beta_retries, val)
               
+    elif command == "aretries":
+        if len(argv) != 4:
+            print("usage: aretries <serial_number> <nretries>")
+            exit(1)
+            
+        serial_number = argv[2]
+        aretries = int(argv[3])
+        
+
+        with env.begin(write=True,db=fpudb) as txn:
+            val = str(aretries)
+            pdb.putField(txn, serial_number, pdb.free_alpha_retries, val)
+              
               
 
     elif command == "list":
@@ -271,6 +293,9 @@ if __name__ == '__main__' :
                             pdb.free_beta_retries,
                             pdb.beta_retry_count_cw,
                             pdb.beta_retry_count_acw,
+                            pdb.free_alpha_retries,
+                            pdb.alpha_retry_count_cw,
+                            pdb.alpha_retry_count_acw,
                             pdb.counters,
                             pdb.serialnumber_used]:
                 
