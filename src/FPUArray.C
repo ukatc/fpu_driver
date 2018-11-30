@@ -544,7 +544,7 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
     timespec next_key;
     pthread_mutex_lock(&grid_state_mutex);
 
-    int old_count_pending = FPUGridState.count_pending;
+    unsigned int old_count_pending = FPUGridState.count_pending;
     bool state_count_changed = false;
 
     while (true)
@@ -860,7 +860,7 @@ timespec get_min_pending(const t_fpu_state& fpu)
 
 void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
                  const timespec& new_timeout,
-                 TimeOutList& timeout_list, int &count_pending,
+                 TimeOutList& timeout_list, unsigned int &count_pending,
                  const uint8_t sequence_number)
 {
     // assert this command is not yet pending
@@ -894,7 +894,7 @@ void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
 
 void remove_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu, int fpu_id,
                     E_CAN_COMMAND cmd_code, E_MOC_ERRCODE cmd_status,
-                    TimeOutList& timeout_list, int &count_pending, uint8_t msg_sequence_number)
+                    TimeOutList& timeout_list, unsigned int &count_pending, uint8_t msg_sequence_number)
 {
     // ignore if a command was already removed by time-out expiration
 
@@ -978,7 +978,7 @@ void remove_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu, int
 
 timespec expire_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu,
                         int fpu_id, const timespec& expiration_time,
-                        int &count_pending, unsigned long &count_timeouts)
+                        unsigned int &count_pending, unsigned long &count_timeouts)
 {
 
     // remove all commands in the pending set which have a timeout

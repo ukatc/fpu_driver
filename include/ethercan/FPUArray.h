@@ -218,7 +218,7 @@ private:
 void add_pending(t_fpu_state& fpu, int fpu_id, E_CAN_COMMAND cmd_code,
                  const timespec& new_timeout,
                  TimeOutList& timeout_list,
-                 int &count_pending,
+                 unsigned int &count_pending,
                  const uint8_t sequence_number);
 
 // remove a command from the pending command set, and refresh the
@@ -227,7 +227,7 @@ void remove_pending(const EtherCANInterfaceConfig &config,
                     t_fpu_state& fpu, int fpu_id,
                     E_CAN_COMMAND cmd_code, E_MOC_ERRCODE cmd_status,
                     TimeOutList& timeout_list,
-                    int &count_pending,
+                    unsigned int &count_pending,
                     uint8_t msg_sequence_number);
 
 // Remove time out entries which are earlier than the expiration time
@@ -235,7 +235,7 @@ void remove_pending(const EtherCANInterfaceConfig &config,
 // the remaining set (or MAX_TIMESPEC if the set is empty)
 timespec expire_pending(const EtherCANInterfaceConfig &config,
                         t_fpu_state& fpu, int fpu_id, const timespec& expiration_time,
-                        int  &count_pending, unsigned long &count_timeouts);
+                        unsigned int  &count_pending, unsigned long &count_timeouts);
 
 
 

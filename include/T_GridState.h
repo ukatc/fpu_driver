@@ -54,10 +54,10 @@ typedef struct
     unsigned long count_can_overflow;
 
     // number of commands awaiting a response.
-    int count_pending;
+    unsigned int count_pending;
 
     // number of queued commands
-    int num_queued;
+    unsigned int num_queued;
 
 
     // seqeucne number for broadcast commands

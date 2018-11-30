@@ -291,7 +291,7 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
     }
 
 
-    int cnt_pending=0;
+    unsigned int cnt_pending=0;
     unique_ptr<ResetFPUCommand> can_command;
     for (int i=0; i < config.num_fpus; i++)
     {
@@ -942,6 +942,10 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
 
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-overflow"
+
+
 E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
         const int MIN_STEPS,
         const int MAX_STEPS,
@@ -955,6 +959,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
 
     const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
+
+    
 
     if (MIN_STEPS > MAX_STEPS)
     {
@@ -1651,6 +1657,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
 
     return DE_OK;
 }
+
+#pragma GCC diagnostic pop
 
 
 E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
@@ -2480,7 +2488,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
        This check intends to make sure that
        waveforms are not used when they have been involved
        in collision or abort. */
-    int count_movable = 0;
+    unsigned int count_movable = 0;
     for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state fpu = grid_state.FPU_state[i];
@@ -2506,7 +2514,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
 
     // All fpus which are in RESTING or READY_FORWARD state get a repeatMotion message.
 
-    int cnt_pending = 0;
+    unsigned int cnt_pending = 0;
     unique_ptr<RepeatMotionCommand> can_command;
     for (int i=0; i < config.num_fpus; i++)
     {
@@ -2646,7 +2654,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
        This check intends to make sure that even in protocol version 1,
        waveforms are not used when they have been involved
        in collision or abort. */
-    int count_movable = 0;
+    unsigned int count_movable = 0;
     for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state fpu = grid_state.FPU_state[i];
@@ -2672,7 +2680,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
 
     // All fpus which are in RESTING or READY_FORWARD state get a reverseMotion message.
 
-    int cnt_pending = 0;
+    unsigned int cnt_pending = 0;
     unique_ptr<ReverseMotionCommand> can_command;
     for (int i=0; i < config.num_fpus; i++)
     {
@@ -2955,7 +2963,7 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
     gateway.sendCommand(fpu_id, cmd);
 
 
-    int cnt_pending = 1;
+    unsigned int cnt_pending = 1;
 
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
@@ -3050,7 +3058,7 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
     gateway.sendCommand(fpu_id, cmd);
 
 
-    int cnt_pending = 1;
+    unsigned int cnt_pending = 1;
 
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
@@ -3117,7 +3125,7 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
     // (we avoid bothering moving FPUs, they are resource-constrained
     // and this could trigger malfunction)
 
-    int cnt_pending = 0;
+    unsigned int cnt_pending = 0;
     unique_ptr<PingFPUCommand> can_command;
     for (int i=0; i < config.num_fpus; i++)
     {
@@ -3254,7 +3262,7 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
         gateway.sendCommand(i, cmd);
     }
 
-    int cnt_pending = config.num_fpus;
+    unsigned int cnt_pending = config.num_fpus;
 
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
@@ -3370,7 +3378,7 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id,
     gateway.sendCommand(fpu_id, cmd);
 
 
-    int cnt_pending = 1;
+    unsigned int cnt_pending = 1;
 
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
@@ -3480,7 +3488,7 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
     }
 
 
-    int cnt_pending = 0;
+    unsigned int cnt_pending = 0;
     unique_ptr<SetUStepLevelCommand> can_command;
     for (int i=0; i < config.num_fpus; i++)
     {
@@ -3758,7 +3766,7 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
     const uint8_t bank = (read_address >> 8) & 0xff;
     const uint8_t address_low_part = read_address & 0xff;
     unique_ptr<ReadRegisterCommand> can_command;
-    int num_pending = 0;
+    unsigned int num_pending = 0;
     for (int i=0; i < config.num_fpus; i++)
     {
         // we exclude locked FPUs
@@ -4000,7 +4008,7 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
 
 
     unique_ptr<GetFirmwareVersionCommand> can_command;
-    int num_pending = 0;
+    unsigned int num_pending = 0;
     for (int i=0; i < config.num_fpus; i++)
     {
         // we exclude locked FPUs
@@ -4373,7 +4381,7 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
     gateway.sendCommand(fpu_id, cmd);
 
 
-    int cnt_pending = 1;
+    unsigned int cnt_pending = 1;
 
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
@@ -4483,7 +4491,7 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
     gateway.sendCommand(fpu_id, cmd);
 
 
-    int cnt_pending = 1;
+    unsigned int cnt_pending = 1;
 
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
@@ -4577,7 +4585,7 @@ E_EtherCANErrCode AsyncInterface::resetStepCounterAsync(t_grid_state& grid_state
     }
 
 
-    int cnt_pending=0;
+    unsigned int cnt_pending=0;
     unique_ptr<ResetStepCounterCommand> can_command;
     for (int i=0; i < config.num_fpus; i++)
     {
@@ -4697,7 +4705,7 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
         gateway.sendCommand(i, cmd);
     }
 
-    int cnt_pending = config.num_fpus;
+    unsigned int cnt_pending = config.num_fpus;
 
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
@@ -4807,7 +4815,7 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id, E_REQUES
     gateway.sendCommand(fpu_id, cmd);
 
 
-    int cnt_pending = 1;
+    unsigned int cnt_pending = 1;
 
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
@@ -4897,7 +4905,7 @@ E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
     }
 
 
-    int cnt_pending = 0;
+    unsigned int cnt_pending = 0;
     unique_ptr<SetStepsPerSegmentCommand> can_command;
     for (int i=0; i < config.num_fpus; i++)
     {
@@ -5014,7 +5022,7 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
     }
 
 
-    int cnt_pending = 0;
+    unsigned int cnt_pending = 0;
     unique_ptr<SetTicksPerSegmentCommand> can_command;
     for (int i=0; i < config.num_fpus; i++)
     {
@@ -5108,7 +5116,7 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
 
 
     unique_ptr<CheckIntegrityCommand> can_command;
-    int num_pending = 0;
+    unsigned int num_pending = 0;
     for (int i=0; i < config.num_fpus; i++)
     {
         // we exclude locked FPUs

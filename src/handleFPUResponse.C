@@ -76,12 +76,12 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                        int fpu_id, t_fpu_state& fpu,
                        const t_response_buf& data,
                        const int blen, TimeOutList& timeout_list,
-                       int &count_pending)
+                       unsigned int &count_pending)
 {
     void (*handler) (const EtherCANInterfaceConfig&,
                      const int,
                      t_fpu_state&,
-                     int &,
+                     unsigned int &,
                      const t_response_buf&,
                      const int,
                      TimeOutList&t,
