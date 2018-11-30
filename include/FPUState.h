@@ -32,7 +32,7 @@ using ethercanif::E_MOC_ERRCODE;
 using ethercanif::E_WAVEFORM_ERRCODE;
 using ethercanif::NUM_CAN_COMMANDS;
 
-enum E_FPU_STATE
+enum E_FPU_STATE : uint8_t
 {
     FPST_UNKNOWN                 = 0,
     FPST_UNINITIALIZED           = 1,
@@ -54,7 +54,7 @@ static const int NUM_FPU_STATES=12;
 // known direction of movement
 // (keep in mind that the command parameter
 // is differently encoded)
-enum E_MOVEMENT_DIRECTION
+enum E_MOVEMENT_DIRECTION : uint8_t
 {
     DIRST_UNKNOWN          = 0,
     DIRST_ANTI_CLOCKWISE   = 3, // we could also use WYDDERSHINS here

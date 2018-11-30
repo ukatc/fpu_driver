@@ -31,7 +31,7 @@ namespace mpifps
 namespace ethercanif
 {
 
-enum E_CAN_COMMAND
+enum E_CAN_COMMAND : uint8_t
 {
 
     CCMD_NO_COMMAND                       = 0, // reserved
@@ -110,7 +110,7 @@ enum E_CAN_COMMAND
 #if CAN_PROTOCOL_VERSION == 1
 /* Error Codes from FPU response messages (note some codes are obsolete
    or only used internally */
-enum E_MOC_ERRCODE
+enum E_MOC_ERRCODE : uint8_t
 {
     ER_OK             = 0x00,   // no error
     ER_STALLX         = 0x01,   // x motor stall (obsolete)
@@ -134,7 +134,7 @@ enum E_MOC_ERRCODE
 
 
 #else
-enum E_MOC_ERRCODE
+enum E_MOC_ERRCODE : uint8_t
 {
     MCE_FPU_OK			     = 0x00,	// no error
     MCE_WARN_COLLISION_DETECTED	     = 0x01,	// beta collision warning
@@ -158,7 +158,7 @@ enum E_MOC_ERRCODE
 
 };
 
-enum E_WAVEFORM_ERRCODE
+enum E_WAVEFORM_ERRCODE : uint8_t
 {
     WAVEFORM_OK		     = 0x00,	// no error
     WAVEFORM_TOO_BIG	     = 0x01,	// too many waveform entries
@@ -210,37 +210,7 @@ enum E_DATUM_TIMEOUT_FLAG
 };
 
 
-
-// this uses the unsigned specifier because
-// the representation of signed bitfields is
-// implementation-defined
-typedef struct t_fpu_status_flags
-{
-#if (CAN_PROTOCOL_VERSION == 1)
-    unsigned int message_received : 1; // unused
-    unsigned int waveform_ready : 1;
-    unsigned int _internal_execute_wave : 1; // only internally used
-    unsigned int running_wave : 1; // waveform is being executed
-    unsigned int abort_wave : 1;
-    unsigned int alpha_limit_active;
-    unsigned int _unused_m2limit_switch_active: 1; // no longer used
-    unsigned int waveform_reversed : 1;
-#else
-    unsigned int alpha_datum_switch_active : 1;
-    unsigned int beta_datum_switch_active : 1;
-    unsigned int beta_collision_detected : 1;
-    unsigned int alpha_limitswitch_active : 1;
-    unsigned int is_locked : 1;
-    unsigned int dir_alpha : 1;
-    unsigned int dir_beta : 1;
-    unsigned int was_initialized : 1;
-    unsigned int waveform_valid : 1;
-    unsigned int waveform_ready : 1;
-    unsigned int waveform_reversed : 1; // 0 means anti-clockwise for positive step numbers
-#endif
-} t_fpu_status_flags;
-
-
+ 
 // defines 4-bit priority value of CAN message
 inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
 {
