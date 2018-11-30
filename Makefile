@@ -3,7 +3,10 @@ CC = "g++"
 
 VERSION := v1.4.2
 
-CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g 
+CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
+-DDEBUG -g -O2 -finline-functions -Wstrict-aliasing -march=native	\
+-Wshadow -Wcast-qual -Wmissing-declarations -Wundef -Wlogical-op	\
+-Wredundant-decls -Wfloat-equal -Wstrict-overflow=4
 
 ODIR = ./objects
 
@@ -125,7 +128,8 @@ tutorial:	python/doc/tutorial.tex python/doc/FPU-state1.pdf version
 	cd python/doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
 cppcheck: force
-	cppcheck src/*.C python/src/*.C  -I include -I include/ethercan -I include/ethercan/response_handlers -I include/ethercan/cancommandsv2 --enable=all
+	cppcheck src/*.C python/src/*.C  -I include -I include/ethercan -I include/ethercan/response_handlers \
+        -I include/ethercan/cancommandsv2 --enable=all
 
 $(ODIR)/%.o: $(SRCDIR)/%.C $(DEPS) version
 	$(CC) $(CXXFLAGS) -DVERSION=\"$(VERSION)\" -c -o $@ $< 
@@ -136,7 +140,7 @@ lib/libethercan.a: $(OBJ)
 libethercan: lib/libethercan.a
 
 wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
-	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.C -L./lib  -lethercan -lboost_python -g -DVERSION=\"$(VERSION)\"
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.C -L./lib  -lethercan -lboost_python $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
 
 style:
 	astyle src/*.C python/src/*.C include{,/*{,/*}}/*.h
