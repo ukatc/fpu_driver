@@ -1095,26 +1095,32 @@ class FPU:
         return MCE_FPU_OK
     
     def unlockUnit(self):
-        
+         
         if self.state != FPST_LOCKED:
             return MCE_NOTIFY_COMMAND_IGNORED
 
+        # we try to restore the pervious state -
+        # modulo any collisions which have occured since!
+        
         if self.is_collided:
             self.state = FPST_OBSTACLE_ERROR
             self.was_initialized = False
         elif self.alpha_limit_breach:
             self.state = FPST_OBSTACLE_ERROR
             self.was_initialized = False
-        elif self.was_initialized:
-            self.state = FPST_RESTING
         elif self.abort_wave:
             self.state = FPST_ABORTED
             self.was_initialized = False
-        elif self.wave_ready:
-            if self.wave_reversed:
-                self.state = FPST_READY_REVERSE
+        elif self.was_initialized :
+            if (self.alpha_steps == 0) and (self.beta_steps == 0):
+                self.state = FPST_AT_DATUM
+            elif (self.wave_ready and self.wave_valid):
+                if self.wave_reversed:
+                    self.state = FPST_READY_REVERSE
+                else:
+                    self.state = FPST_READY_FORWARD            
             else:
-                self.state = FPST_READY_FORWARD            
+                self.state = FPST_RESTING
         else:
             self.state = FPST_UNINITIALIZED
         
@@ -1122,21 +1128,15 @@ class FPU:
 
     def enableMove(self):
         
-        if self.state == FPST_LOCKED:
-            # needs unlocking first
-            return MCE_NOTIFY_COMMAND_IGNORED
-
         # don't allow locking when moving
         if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH]:
             return MCE_ERR_INVALID_COMMAND
         
-        if  (self.is_collided or  self.alpha_limit_breach or
-             self.abort_wave or ( self.state == FPST_ABORTED ) ):
-
-            if self.was_initialized :                                   
-                self.state = FPST_RESTING
-            else:
-                self.state = FPST_UNINITIALIZED
+        if self.state not in [FPST_ABORTED, FPST_UNINITIALIZED]:
+            # (if locked, needs unlocking first)
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
+        self.state = FPST_RESTING
             
         return MCE_FPU_OK
 
