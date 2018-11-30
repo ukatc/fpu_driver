@@ -404,7 +404,7 @@ class FPU:
         if (self.nwave_entries == 0) and (not first):
             return WAVEFORM_REJECTED, WAVEFORM_SEQUENCE
         
-        verbose = self.opts.verbosity > 4
+        verbose = self.opts.verbosity > 9
         
         if first:
             self.nwave_entries = 0
@@ -464,6 +464,7 @@ class FPU:
         if new_alpha == self.alpha_steps:
             return
         old_switch = self.alpha_switch_on(self.alpha_steps)
+        
         new_switch = self.alpha_switch_on(new_alpha)
 
         out_direction = (new_alpha < MIN_ALPHA_ON) or (new_alpha > MAX_ALPHA_ON)
@@ -492,6 +493,8 @@ class FPU:
             and (cur_direction == alpha_last_direction)):
             self.alpha_limit_breach = True
             self.was_initialized = False
+            self.wave_ready = False
+            self.wave_valid = False
             print("LIMIT BREACH detected: last pos = %f, new pos =%f"
                   "alpha move: old switch = %r, new switch=%r"
                   "last_dirction = %i, cur_direction=%i"
@@ -525,16 +528,22 @@ class FPU:
             self.beta_steps = MIN_BETA
             self.is_collided = True
             self.was_initialized = False
+            self.wave_ready = False
+            self.wave_valid = False
             collision_callback(self)
             raise BetaCollisionException("a beta arm collision was detected (due to running into the lower stop)")
         elif ((newbeta + beta_offset) > MAX_BETA) and self.collision_protection_active:
             self.is_collided = True
             self.was_initialized = False
             self.beta_steps = MAX_BETA
+            self.wave_ready = False
+            self.wave_valid = False
             collision_callback(self)
             raise BetaCollisionException("a beta arm collision was detected (due to running into the upper stop)")
         elif self.is_collided :
             self.was_initialized = False
+            self.wave_ready = False
+            self.wave_valid = False
             collision_callback(self)
             raise BetaCollisionException("a beta arm collision was detected (due to signal)")
         else:
@@ -791,6 +800,8 @@ class FPU:
         if self.state in [ FPST_DATUM_SEARCH, FPST_MOVING ]:
             self.abort_wave = True
             self.was_initialized = False
+            self.wave_ready = False
+            self.wave_valid = False
             self.state = FPST_ABORTED
             errcode = MCE_FPU_OK
         else:
@@ -880,21 +891,22 @@ class FPU:
             self.fpu_id, old_alpha_steps, self.beta_steps,
             self.alpha_steps, self.beta_steps,
             alpha_real_deg, beta_real_deg))
-        
-        if ((self.alpha_steps + alpha_offset) >= MAX_ALPHA_ON) or (
-                (self.alpha_steps + alpha_offset) <= MIN_ALPHA_ON):
-            self.alpha_limit_breach = True
-            print("FPU #%i: limit breach ongoing" % self.fpu_id)
-            
-        else:
+
+        if self.alpha_switch_on(self.alpha_steps):
             self.alpha_limit_breach = False
             print("FPU #%i: limit breach resolved" % self.fpu_id)
-
+        else:
+            if ((self.alpha_steps + alpha_offset) >= MAX_ALPHA_OFF) or (
+                    (self.alpha_steps + alpha_offset) <= MIN_ALPHA_OFF):
+                self.alpha_limit_breach = True
+            print("FPU #%i: limit breach ongoing" % self.fpu_id)
+            
         return MCE_FPU_OK
             
     def enableAlphaLimitBreachProtection(self):
-        self.is_collided = False
+        self.alpha_limit_breach = False
         self.collision_protection_active = True
+        self.state = FPST_RESTING
         return MCE_FPU_OK
     
 
@@ -984,9 +996,9 @@ class FPU:
         
             if self.opts.verbosity > 0:
                 alpha_swon = self.alpha_switch_on(new_alpha)
-                print("section %i: moving FPU %i by (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg, alpha_switch_on=%r, MAX_ALPHA_ON=%i" % (
+                print("section %i: moving FPU %i by (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg, alpha_switch_on=%r" % (
                     n, self.fpu_id, delta_alpha, delta_beta, new_alpha, new_beta,
-                    alpha_real_deg, beta_real_deg, alpha_swon, MAX_ALPHA_ON))
+                    alpha_real_deg, beta_real_deg, alpha_swon))
             
             frame_time = 0.25
             sleep(frame_time)

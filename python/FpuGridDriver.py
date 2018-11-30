@@ -1338,8 +1338,11 @@ class GridDriver(UnprotectedGridDriver):
                 aangle, a_underflow, a_overflow = self._alpha_angle(fpu)
                 bangle, b_underflow, b_overflow = self._beta_angle(fpu)
                 if active:
-                    wf_arange, wf_brange = self.configured_ranges.get(fi, (Interval(), Interval()))
                     prefix="active"
+                    if fpu.waveform_valid:
+                        wf_arange, wf_brange = self.configured_ranges.get(fi, (Interval(), Interval()))
+                    else:
+                        wf_arange, wf_brange = Interval(), Interval()
                 else:
                     wf_arange, wf_brange = self.configuring_ranges.get(fi, (Interval(), Interval()))
                     prefix="last"
