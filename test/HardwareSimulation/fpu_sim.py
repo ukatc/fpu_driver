@@ -276,6 +276,9 @@ class FPU:
         
     def resetStepCounter(self, fpu_id):
         
+        if self.state == FPST_LOCKED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
         # don't allow counter reset when moving
         if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH]:
             return MCE_ERR_INVALID_COMMAND
@@ -312,6 +315,9 @@ class FPU:
         
 
     def setUStepLevel(self, ustep_level):
+        
+        if self.state == FPST_LOCKED:
+            return MCE_NOTIFY_COMMAND_IGNORED
         
         if self.state != FPST_UNINITIALIZED:
             return MCE_NOTIFY_COMMAND_IGNORED
@@ -584,6 +590,7 @@ class FPU:
                   skip_alpha=False, skip_beta=False,
                   auto_datum=False, anti_clockwise=False,
                   disable_timeout=False):
+
         
         printtime()
         wait_interval_sec = 0.1
@@ -797,6 +804,9 @@ class FPU:
             
 
     def abortMotion(self, sleep):
+        if self.state == FPST_LOCKED:
+            return MCE_NOTIFY_COMMAND_IGNORED
+        
         if self.state in [ FPST_DATUM_SEARCH, FPST_MOVING ]:
             self.abort_wave = True
             self.was_initialized = False

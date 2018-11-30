@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
 
     gd.findDatum(grid_state)
-    w = gen_wf(-5, 0)
+    w = gen_wf(3, 0)
     gd.configMotion(w, gs, soft_protection=False)
     try:
         gd.executeMotion(gs)

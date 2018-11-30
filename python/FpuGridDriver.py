@@ -1128,6 +1128,37 @@ class UnprotectedGridDriver (object):
         return [angles[k] for k in fpuset ]
 
 
+    def lockFPU(self, fpu_id, gs):
+
+        with self.lock:        
+            try:
+                prev_gs = self._gd.getGridState()
+
+                rv = self._gd.lockFPU(fpu_id, gs)
+                status = gs.FPU[fpu_id].last_status
+            finally:
+                if self.__dict__.has_key("counters"):
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+                        
+        return rv, status
+
+    def unlockFPU(self, fpu_id, gs):
+
+        with self.lock:        
+            try:
+                prev_gs = self._gd.getGridState()
+
+                rv = self._gd.unlockFPU(fpu_id, gs)
+                status = gs.FPU[fpu_id].last_status
+            finally:
+                if self.__dict__.has_key("counters"):
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+                        
+        return rv, status
+    
+
 DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "/var/lib/fpudb")
 
 if DATABASE_FILE_NAME != "":

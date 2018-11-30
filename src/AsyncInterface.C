@@ -567,6 +567,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
         return ecode;
     }
 
+    bool all_fpus_locked = true;
     // check no FPUs have ongoing collisions
     for (int i=0; i < config.num_fpus; i++)
     {
@@ -619,7 +620,20 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
         {
             LOG_CONTROL(LOG_INFO, "%18.6f : skipping findDAtum(): FPU #%i is locked and will not be moved.\n",
                         ethercanif::get_realtime(), i);
+            LOG_CONSOLE(LOG_INFO, "%18.6f : skipping findDAtum(): FPU #%i is locked and will not be moved.\n",
+                        ethercanif::get_realtime(), i);
         }
+	else
+	{
+	    all_fpus_locked = false;
+	}
+    }
+    
+    if(all_fpus_locked)
+    {
+	LOG_CONTROL(LOG_INFO, "%18.6f : findDAtum(): All addressed FPUs are locked, datum command ignored.\n",
+		    ethercanif::get_realtime());
+	return DE_FPUS_LOCKED;
     }
 
     // check that beta arms are in allowed half-plane
@@ -1724,6 +1738,47 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
     }
 
+    bool some_fpus_locked=false;
+    const int num_loading =  waveforms.size();
+    
+    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    {
+
+	const int fpu_id = waveforms[fpu_index].fpu_id;
+	if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+	{
+	    // the FPU id is out of range
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::configMotion(): FPU id '%i' is out of range"
+			"needs to be between 0 and %i\n",
+			ethercanif::get_realtime(),
+			fpu_id, (config.num_fpus - 1));
+	    return DE_INVALID_FPU_ID;
+	}
+
+	if (! fpuset[fpu_id])
+	{
+	    continue;
+	}
+
+	t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
+	if (fpu_state.state == FPST_LOCKED)
+	{
+	    LOG_CONTROL(LOG_INFO, "%18.6f : configMotion(): FPU #%i is locked, skipping. Unlock first to move.\n",
+			ethercanif::get_realtime(), fpu_id);
+	    LOG_CONSOLE(LOG_INFO, "%18.6f : configMotion(): FPU #%i is locked, skipping. Unlock first to move.\n",
+			ethercanif::get_realtime(), fpu_id);
+
+	    some_fpus_locked = true;
+	}
+    }
+
+    if (some_fpus_locked)
+    {
+	return DE_FPUS_LOCKED;
+    }
+    
+	    
+
     {
 
         const int max_stepcount = int(ceil(config.motor_maximum_frequency
@@ -1806,7 +1861,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     bool configured_fpus[MAX_NUM_POSITIONERS];
     memset(configured_fpus, 0, sizeof(configured_fpus));
 
-    const int num_loading =  waveforms.size();
     const bool confirm_each_step = config.confirm_each_step;
 
     int step_index = 0;
@@ -1857,30 +1911,12 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 usleep(config.waveform_upload_pause_us);
             }
             int fpu_id = waveforms[fpu_index].fpu_id;
-            if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
-            {
-                // the FPU id is out of range
-                LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::configMotion(): FPU id '%i' is out of range"
-                            "needs to be between 0 and %i\n",
-                            ethercanif::get_realtime(),
-                            fpu_id, (config.num_fpus - 1));
-                return DE_INVALID_FPU_ID;
-            }
 
             if (! fpuset[fpu_id])
             {
                 continue;
             }
 
-            t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
-            if (fpu_state.state == FPST_LOCKED)
-            {
-                LOG_CONTROL(LOG_INFO, "%18.6f : configMotion(): FPU #%i is locked, skipping. Unlock first to move.\n",
-                            ethercanif::get_realtime(), fpu_id);
-                LOG_CONSOLE(LOG_INFO, "%18.6f : configMotion(): FPU #%i is locked, skipping. Unlock first to move.\n",
-                            ethercanif::get_realtime(), fpu_id);
-            }
-            else
             {
                 // get a command buffer
                 can_command = gateway.provideInstance<ConfigureMotionCommand>();
@@ -2120,8 +2156,9 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
     }
 
 
-    int num_moving = 0; // Number of FPUs which will move
+    unsigned int num_moving = 0; // Number of FPUs which will move
     bool use_broadcast = true; // flag whether we can use a fast broadcast command
+    unsigned int num_locked = 0;
 
     /* check all FPUs in READY_* state have valid waveforms
        This check intends to make sure that
@@ -2150,14 +2187,29 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
 
             num_moving++;
         }
+	else if (fpu_status == FPST_LOCKED)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): FPU %i is locked, will skip movement command\n",
+			ethercanif::get_realtime(), i);
+	    num_locked++;
+	}
     }
 
 
     if (num_moving == 0)
     {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_NO_MOVABLE_FPUS: no FPUs present which can move\n",
-                    ethercanif::get_realtime());
-        return DE_NO_MOVABLE_FPUS;
+	if (num_locked > 0)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_FPUS_LOCKED: No FPUs ready to move, some are locked\n",
+			ethercanif::get_realtime());
+	    return DE_FPUS_LOCKED;
+	}
+	else
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_NO_MOVABLE_FPUS: no FPUs present which can move\n",
+			ethercanif::get_realtime());
+	    return DE_NO_MOVABLE_FPUS;
+	}
     }
 
     // Optionally, acquire real-time priority so that consecutive broadcasts to
