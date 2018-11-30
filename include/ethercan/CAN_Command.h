@@ -89,9 +89,9 @@ public:
                                    const uint8_t fpu_canid,
                                    int& buf_len,
                                    t_CAN_buffer& can_buffer,
-                                   const uint8_t sequence_number)
+                                   const uint8_t _sequence_number)
     {
-        set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
+        set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, _sequence_number);
     };
 
 
@@ -131,7 +131,7 @@ public:
     // sequence number in a member variable
     void set_msg_header(t_CAN_buffer& can_buffer, int& buflen,
                         const uint8_t busid, const uint8_t fpu_canid,
-                        const bool bcast, const uint8_t _sequence_number)
+                        const bool _bcast, const uint8_t _sequence_number)
     {
         // zero buffer to make sure no spurious DLEs are sent
         bzero(&can_buffer.message, sizeof(can_buffer.message));
@@ -141,6 +141,7 @@ public:
         // we use bit 7 to 10 for the command code,
         // and bit 0 to 6 for the FPU bus id.
         assert(fpu_canid <= FPUS_PER_BUS);
+	bcast = _bcast;
         if (! bcast)
         {
             assert(fpu_canid > 0);

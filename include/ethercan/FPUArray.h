@@ -239,7 +239,15 @@ timespec expire_pending(const EtherCANInterfaceConfig &config,
 
 
 
+// helper functions
+bool check_all_fpus_updated(int num_fpus,
+                            t_grid_state& old_grid_state,
+                            const t_grid_state& grid_state);
+
+timespec get_min_pending(const t_fpu_state& fpu);
+
 }
+
 
 }
 

@@ -71,10 +71,10 @@ public:
                            const uint8_t fpu_canid,
                            int& buf_len,
                            t_CAN_buffer& can_buffer,
-                           const uint8_t sequence_number)
+                           const uint8_t _sequence_number)
     {
 
-        set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, sequence_number);
+        set_msg_header(can_buffer, buf_len, busid, fpu_canid, bcast, _sequence_number);
 
         bool skip_alpha = false;
         bool skip_beta = false;

@@ -296,6 +296,14 @@ private:
 
 };
 
+// some helper functions for logging
+
+bool p_repeat_log(unsigned int &log_repeat_count);
+    
+const char * str_interface_state(const E_InterfaceState interface_state);
+
+const char * str_fpu_state(const E_FPU_STATE state);
+
 } // end of namespace
 
 } // end of namespace

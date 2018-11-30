@@ -253,13 +253,18 @@ private:
 
 };
 
+// function to create sockets
+
+int make_socket(const EtherCANInterfaceConfig &config, const char *ip, uint16_t port);
+
 
 // functions for enabling / disabling real-time scheduling
 // for time-critical broadcast commands.
 
-void set_rt_priority(int prio);
+void set_rt_priority(const EtherCANInterfaceConfig &config, int prio);
 
 void unset_rt_priority();
+
 
 // real-time priority values for threads
 const int CONTROL_PRIORITY = 1;

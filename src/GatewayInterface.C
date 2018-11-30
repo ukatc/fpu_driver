@@ -1245,7 +1245,7 @@ void* GatewayInterface::threadRxFun()
 // FPUs which did respond.
 void GatewayInterface::handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES], int const clen)
 {
-    t_CAN_buffer* can_msg = (t_CAN_buffer*) command_buffer;
+    t_CAN_buffer const * const can_msg = (t_CAN_buffer const * const) command_buffer;
 
     // do basic filtering for correctness, and
     // call fpu-secific handler.

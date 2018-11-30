@@ -101,9 +101,7 @@ E_EtherCANErrCode EtherCANInterface::startFindDatum(t_grid_state& grid_state,
         break;
 
 #ifdef SHOW_FIXMES
-#if (CAN_PROTOCOL_VERSION > 1)
 #pragma message "FIXME: insert retry code here"
-#endif
 #endif
 
         num_avaliable_retries--;
@@ -228,20 +226,29 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
 
 }
 
-#pragma GCC diagnostic push
-#if CAN_PROTOCOL_VERION > 1
-#pragma GCC diagnostic warning "-Wunused-parameter"
-#else
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
-
 E_EtherCANErrCode EtherCANInterface::initializeGrid(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
-    grid_state.interface_state = DS_ASSERTION_FAILED;
+    
 
-    return DE_FIRMWARE_UNIMPLEMENTED;
+    E_EtherCANErrCode rv = pingFPUs(grid_state, fpuset);
+
+    if (rv != DE_OK)
+    {
+	return rv;
+    }
+
+    rv = getFirmwareVersion(grid_state, fpuset);
+
+    if (rv != DE_OK)
+    {
+	return rv;
+    }
+
+    rv = readSerialNumbers(grid_state, fpuset);
+
+    return rv;
 }
-#pragma GCC diagnostic pop
+
 
 E_EtherCANErrCode EtherCANInterface::resetFPUs(t_grid_state& grid_state, t_fpuset const &fpuset)
 {

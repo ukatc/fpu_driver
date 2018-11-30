@@ -1,1 +1,1 @@
--I./include -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g -O2 -finline-functions -Wstrict-aliasing -march=native
+-I./include -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g -O2 -finline-functions -Wstrict-aliasing -march=native -Wshadow -Wcast-qual  -Wmissing-declarations -Wundef -Wlogical-op -Wredundant-decls -Wfloat-equal  

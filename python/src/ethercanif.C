@@ -1355,6 +1355,9 @@ public:
 
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
+
 PyObject* EtherCANExceptionClass(const char* name, PyObject* baseTypeObj = PyExc_Exception)
 {
     using std::string;
@@ -1369,6 +1372,7 @@ PyObject* EtherCANExceptionClass(const char* name, PyObject* baseTypeObj = PyExc
     bp::scope().attr(name) = bp::handle<>(bp::borrowed(typeObj));
     return typeObj;
 }
+#pragma GCC diagnostic pop
 
 BOOST_PYTHON_MODULE(ethercanif)
 {

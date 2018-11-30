@@ -2160,7 +2160,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
     // a selection of FPUs, as we can't use broadcast in this case).
     if (USE_REALTIME_SCHEDULING)
     {
-        set_rt_priority(CONTROL_PRIORITY);
+        set_rt_priority(config, CONTROL_PRIORITY);
     }
 
     // FIXME: This is preliminary for use in the verification
@@ -2785,7 +2785,7 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
     // otherwise lead to collisions.)
     if (USE_REALTIME_SCHEDULING)
     {
-        set_rt_priority(CONTROL_PRIORITY);
+        set_rt_priority(config, CONTROL_PRIORITY);
     }
 
     // this sends the abortMotion command directly.  It is implemented
@@ -2932,9 +2932,9 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
     // we exclude moving FPUs and FPUs which are
     // searching datum.
     if ( (fpu_state.state == FPST_MOVING)
-            && (fpu_state.state == FPST_DATUM_SEARCH))
+            || (fpu_state.state == FPST_DATUM_SEARCH))
     {
-        // We do not allow lockng of moving FPUs.  (In
+        // We do not allow locking of moving FPUs.  (In
         // that case, the user should send an abortMotion command
         // first.)
 
@@ -3223,7 +3223,7 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
             // we exclude moving FPUs and FPUs which are
             // searching datum.
             if ( (fpu_state.state == FPST_MOVING)
-                    && (fpu_state.state == FPST_DATUM_SEARCH))
+                    || (fpu_state.state == FPST_DATUM_SEARCH))
             {
                 recoveryok = false;
                 moving_fpuid = i;
@@ -3339,7 +3339,7 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id,
             // we exclude moving FPUs and FPUs which are
             // searching datum.
             if ( (fpu_state.state == FPST_MOVING)
-                    && (fpu_state.state == FPST_DATUM_SEARCH))
+                    || (fpu_state.state == FPST_DATUM_SEARCH))
             {
                 recoveryok = false;
                 moving_fpuid = i;
@@ -4452,7 +4452,7 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
         // we exclude moving FPUs and FPUs which are
         // searching datum.
         if ( (fpu_state.state == FPST_MOVING)
-                && (fpu_state.state == FPST_DATUM_SEARCH))
+                || (fpu_state.state == FPST_DATUM_SEARCH))
         {
             enableok = false;
             fpuid_moving = i;
@@ -4560,7 +4560,7 @@ E_EtherCANErrCode AsyncInterface::resetStepCounterAsync(t_grid_state& grid_state
         // we exclude moving FPUs abd FPUs which are
         // searching datum.
         if ( (fpu_state.state == FPST_MOVING)
-                && (fpu_state.state == FPST_DATUM_SEARCH))
+                || (fpu_state.state == FPST_DATUM_SEARCH))
         {
             resetok = false;
         }
@@ -4669,7 +4669,7 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
         // we exclude moving FPUs and FPUs which are
         // searching datum.
         if ( (fpu_state.state == FPST_MOVING)
-                && (fpu_state.state == FPST_DATUM_SEARCH))
+                || (fpu_state.state == FPST_DATUM_SEARCH))
         {
             recoveryok = false;
         }
@@ -4779,7 +4779,7 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id, E_REQUES
         // we exclude moving FPUs and FPUs which are
         // searching datum.
         if ( (fpu_state.state == FPST_MOVING)
-                && (fpu_state.state == FPST_DATUM_SEARCH))
+                || (fpu_state.state == FPST_DATUM_SEARCH))
         {
             recoveryok = false;
         }

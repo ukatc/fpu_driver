@@ -57,7 +57,7 @@ void handle_ReadSerialNumber_response(const EtherCANInterfaceConfig&config,
 
     memset(fpu.serial_number, 0, sizeof(fpu.serial_number));
     static_assert(DIGITS_SERIAL_NUMBER < sizeof(fpu.serial_number), "buffer overflow");
-    strncpy(fpu.serial_number, (char*) (data + 2), DIGITS_SERIAL_NUMBER);
+    memcpy(fpu.serial_number, (const uint8_t*) (data + 2), DIGITS_SERIAL_NUMBER);
 
     LOG_RX(LOG_VERBOSE, "%18.6f : RX : "
            "Serial number for FPU %i is reported as %s\n",
