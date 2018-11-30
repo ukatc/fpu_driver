@@ -8,6 +8,12 @@ CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
 -Wshadow -Wcast-qual -Wmissing-declarations -Wundef -Wlogical-op	\
 -Wredundant-decls -Wfloat-equal -Wstrict-overflow=4
 
+# flags for link time optimized build of wrapper
+CXXFLAGS_LTO = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
+-DDEBUG -g -O2 -finline-functions -Wstrict-aliasing -march=native	\
+-Wshadow -Wcast-qual -Wmissing-declarations -Wundef -Wlogical-op	\
+-Wredundant-decls -Wfloat-equal -flto
+
 ODIR = ./objects
 
 LDIR = ./lib
@@ -139,8 +145,17 @@ lib/libethercan.a: $(OBJ)
 
 libethercan: lib/libethercan.a
 
-wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
-	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so python/src/ethercanif.C -L./lib  -lethercan -lboost_python $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
+wrapper-nolto: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so \
+            python/src/ethercanif.C -L./lib  -lethercan -lboost_python $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
+
+# This target variant is using link time optimization, aka LTO,
+# to build the python test module directly.
+# LTO is probably useful because we have many small handler functions which
+# run in performance-critical loops.
+wrapper:  python/src/ethercanif.C $(SRCDIR)/*.C $(DEPS) version
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so $(CXXFLAGS_LTO)\
+            python/src/ethercanif.C $(SRCDIR)/*.C    -lboost_python  -DVERSION=\"$(VERSION)\"
 
 style:
 	astyle src/*.C python/src/*.C include{,/*{,/*}}/*.h
