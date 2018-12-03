@@ -82,9 +82,10 @@ if __name__ == '__main__':
 
 
     gd.findDatum(grid_state)
-    w = gen_wf(3, 0)
+    w = gen_wf(50, 0)
     gd.configMotion(w, gs, soft_protection=False)
     try:
+        print("press <Ctrl>-<C> to abort")
         gd.executeMotion(gs)
     except FpuGridDriver.LimitBreachError as ex:
         print(ex)
@@ -92,7 +93,6 @@ if __name__ == '__main__':
         
     #gd.reverseMotion(gs)
     #assert(gs.FPU[0].state == FPST_READY_REVERSE)
-    #print("press <Ctrl>-<C> to abort")
     #gd.executeMotion(gs)
 
     #gd.writeSerialNumber(0, "MP000", gs)
@@ -100,5 +100,4 @@ if __name__ == '__main__':
     #gd.readRegister(0x0001, gs)
     #gd.setUStepLevel(0, gs)
     
-
 

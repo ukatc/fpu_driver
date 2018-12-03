@@ -562,7 +562,6 @@ class FPU:
         if self.state == FPST_LOCKED:
             return MCE_NOTIFY_COMMAND_IGNORED
 
-        self.was_initialized = False
         if self.is_collided:
             # only send an error message
             errcode = MCE_WARN_COLLISION_DETECTED
@@ -581,6 +580,7 @@ class FPU:
         else:
             # send confirmation and spawn findDatum method call
             errcode = MCE_FPU_OK
+            self.was_initialized = False
             self.state = FPST_DATUM_SEARCH
             
         return errcode
@@ -1128,15 +1128,16 @@ class FPU:
 
     def enableMove(self):
         
-        # don't allow locking when moving
+        # don't allow command when moving
         if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH]:
             return MCE_ERR_INVALID_COMMAND
         
         if self.state not in [FPST_ABORTED, FPST_UNINITIALIZED]:
             # (if locked, needs unlocking first)
             return MCE_NOTIFY_COMMAND_IGNORED
-        
+        print("FPU # %i: setting state to FPST_RESTING" % self.fpu_id)
         self.state = FPST_RESTING
+        self.was_initialized = True
             
         return MCE_FPU_OK
 

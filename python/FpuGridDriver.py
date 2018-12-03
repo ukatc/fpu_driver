@@ -1158,6 +1158,21 @@ class UnprotectedGridDriver (object):
                         
         return rv, status
     
+    def enableMove(self, fpu_id, gs):
+
+        with self.lock:        
+            try:
+                prev_gs = self._gd.getGridState()
+
+                rv = self._gd.enableMove(fpu_id, gs)
+                
+                status = gs.FPU[fpu_id].last_status
+            finally:
+                if self.__dict__.has_key("counters"):
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+                        
+        return rv, status
 
 DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "/var/lib/fpudb")
 
@@ -1515,7 +1530,7 @@ class GridDriver(UnprotectedGridDriver):
                 # fetch current positions
                 self._pingFPUs(grid_state)
     
-            self._refresh_positions(grid_state)
+                self._refresh_positions(grid_state)
             
         super(GridDriver, self).__del__()
         
@@ -2162,15 +2177,15 @@ class GridDriver(UnprotectedGridDriver):
 
 
         if datum_fpu.last_status == 0:
-            if prev_fpu.alpha_was_zeroed and fpu.alpha_was_zeroed:
+            if prev_fpu.alpha_was_zeroed and datum_fpu.alpha_was_zeroed:
                 fpu_counters["alpha_aberration_count" ] += 1
-                fpu_counters["datum_sum_alpha_aberration"] += fpu.alpha_deviation
-                fpu_counters["datum_sqsum_alpha_aberration"] += (fpu.alpha_deviation ** 2)
+                fpu_counters["datum_sum_alpha_aberration"] += datum_fpu.alpha_deviation
+                fpu_counters["datum_sqsum_alpha_aberration"] += (datum_fpu.alpha_deviation ** 2)
             
-            if prev_fpu.beta_was_zeroed and fpu.beta_was_zeroed:
+            if prev_fpu.beta_was_zeroed and datum_fpu.beta_was_zeroed:
                 fpu_counters["beta_aberration_count" ] += 1
-                fpu_counters["datum_sum_beta_aberration"] += fpu.beta_deviation
-                fpu_counters["datum_sqsum_beta_aberration"] += (fpu.beta_deviation ** 2)
+                fpu_counters["datum_sum_beta_aberration"] += datum_fpu.beta_deviation
+                fpu_counters["datum_sqsum_beta_aberration"] += (datum_fpu.beta_deviation ** 2)
             
             
 
