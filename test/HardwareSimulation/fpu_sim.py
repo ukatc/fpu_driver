@@ -1132,7 +1132,7 @@ class FPU:
         if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH]:
             return MCE_ERR_INVALID_COMMAND
         
-        if self.state not in [FPST_ABORTED, FPST_UNINITIALIZED]:
+        if self.state not in [FPST_ABORTED, FPST_UNINITIALIZED, FPST_RESTING]:
             # (if locked, needs unlocking first)
             return MCE_NOTIFY_COMMAND_IGNORED
         print("FPU # %i: setting state to FPST_RESTING" % self.fpu_id)
