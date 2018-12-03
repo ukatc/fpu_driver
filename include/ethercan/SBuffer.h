@@ -119,7 +119,7 @@ private:
     int unsent_len;
     int out_offset;
     // internal buffer for command
-    uint8_t command_buf[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES];
+    t_CAN_buffer command_buf;
     uint8_t bus_delays[BUSES_PER_GATEWAY];
     uint8_t fpu_delays[BUSES_PER_GATEWAY][FPUS_PER_BUS];
 

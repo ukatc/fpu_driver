@@ -160,7 +160,7 @@ SBuffer::SBuffer()
     // zero out buffers - this is defensive
     memset(rbuf, 0, sizeof(rbuf));
     memset(wbuf, 0, sizeof(wbuf));
-    memset(command_buf, 0, sizeof(command_buf));
+    memset(command_buf.bytes, 0, sizeof(command_buf.bytes));
 
     memset(bus_delays, max_gw_delay, sizeof(bus_delays));
     memset(fpu_delays, max_gw_delay, sizeof(fpu_delays));
@@ -472,7 +472,7 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
 
     for (int i=0; i < rsize; i++)
     {
-        bool frame_complete = decode_and_append_byte(command_buf,  clen, sync, dle,  rbuf[i]);
+        bool frame_complete = decode_and_append_byte(command_buf.bytes,  clen, sync, dle,  rbuf[i]);
 
         if (frame_complete)
         {

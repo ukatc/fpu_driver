@@ -1268,32 +1268,26 @@ void* GatewayInterface::threadRxFun()
 // This method parses any CAN response, dispatches it and stores
 // result in fpu state array. It also clears any time-out flags for
 // FPUs which did respond.
-void GatewayInterface::handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES], int const clen)
+void GatewayInterface::handleFrame(int const gateway_id, const t_CAN_buffer& can_msg, int const clen)
 {
-    t_CAN_buffer const * const can_msg = (t_CAN_buffer const * const) command_buffer;
 
     // do basic filtering for correctness, and
     // call fpu-secific handler.
-    if (can_msg == nullptr)
-    {
-        LOG_RX(LOG_ERROR, "RX %18.6f: error:  invalid CAN message (empty)- ignoring.\n",
-               ethercanif::get_realtime());
-    }
-    else if (clen < 3)
+    if (clen < 3)
     {
         LOG_RX(LOG_ERROR, "RX %18.6f : error: invalid CAN message (length is only %i)- ignoring.\n",
                ethercanif::get_realtime(), clen);
     }
     else
     {
-        const uint8_t busid = can_msg->message.busid;
-        const uint16_t can_identifier = can_msg->message.identifier;
+        const uint8_t busid = can_msg.message.busid;
+        const uint16_t can_identifier = can_msg.message.identifier;
 
         fpuArray.dispatchResponse(fpu_id_by_adr,
                                   gateway_id,
                                   busid,
                                   can_identifier,
-                                  can_msg->message.data,
+                                  can_msg.message.data,
                                   clen -3, timeOutList);
     }
 }

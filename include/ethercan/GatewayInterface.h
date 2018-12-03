@@ -205,7 +205,7 @@ private:
                                         int gateway_id);
 
     // interface method which handles decoded CAN response messages
-    virtual void handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES], int const clen);
+    virtual void handleFrame(int const gateway_id, const t_CAN_buffer& command_buffer, int const clen);
 
 
     void updatePendingCommand(int fpu_id,

@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include "CAN_Constants.h"
+#include "CAN_Command.h"
 namespace mpifps
 {
 
@@ -39,7 +40,7 @@ public:
     // method to handle any incoming CAN response message.
     // the implementation will set the appropiate status information
     // for the corresponsing FPUs
-    virtual void handleFrame(int const gateway_id, uint8_t const command_buffer[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES], int const clen) = 0;
+    virtual void handleFrame(int const gateway_id, const t_CAN_buffer& command_buffer, int const clen) = 0;
 };
 
 }
