@@ -6,13 +6,13 @@ VERSION := v1.4.2
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
 -DDEBUG -g -O2 -finline-functions -Wstrict-aliasing -march=native	\
 -Wshadow -Wcast-qual -Wmissing-declarations -Wundef -Wlogical-op	\
--Wredundant-decls -Wfloat-equal -Wstrict-overflow=4
+-Wredundant-decls -Wfloat-equal -Wstrict-overflow=4 -Wunused-result
 
 # flags for link time optimized build of wrapper
 CXXFLAGS_LTO = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
 -DDEBUG -g -O2 -finline-functions -Wstrict-aliasing -march=native	\
 -Wshadow -Wcast-qual -Wmissing-declarations -Wundef -Wlogical-op	\
--Wredundant-decls -Wfloat-equal -flto
+-Wredundant-decls -Wfloat-equal -Wunused-result -flto
 
 ODIR = ./objects
 

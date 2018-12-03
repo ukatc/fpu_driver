@@ -165,7 +165,14 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
         {
             uint64_t val = 1;
 
-            write(EventDescriptorNewCommand, &val, sizeof(val));
+            int rv = write(EventDescriptorNewCommand, &val, sizeof(val));
+	    if (rv != sizeof(val))
+	    {
+		LOG_CONTROL(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error: command queue event notification failed, errno=%i\n",
+			    ethercanif::get_realtime(), errno);
+		LOG_CONSOLE(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error: command queue event notification failed, errno =%i\n",
+			    ethercanif::get_realtime(), errno);
+	    }
         }
 
         pthread_mutex_unlock(&queue_mutex);

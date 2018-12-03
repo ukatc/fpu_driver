@@ -566,7 +566,17 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
                 exit_threads.store(true, std::memory_order_release);
                 // also signal termination via eventfd, to inform epoll()
                 uint64_t val = 2;
-                write(DescriptorCloseEvent, &val, sizeof(val));
+                int rv = write(DescriptorCloseEvent, &val, sizeof(val));
+		if (rv != sizeof(val))
+		{
+		    LOG_CONTROL(LOG_ERROR, "%18.6f : GatewayInterface - System error: disconnect event notification failed, errno=%i\n",
+				ethercanif::get_realtime(), errno);
+		    LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface - System error: disconnect event notification failed, errno=%i\n",
+				ethercanif::get_realtime(), errno);
+		    
+		    ecode = DE_ASSERTION_FAILED;
+		}
+
 
                 // wait for rx thread to terminate
                 pthread_join(rx_thread, NULL);
@@ -667,7 +677,14 @@ E_EtherCANErrCode GatewayInterface::disconnect()
     // Write to close-event descriptor to make epoll calls return
     // without waiting for time-out.
     uint64_t val = 2;
-    write(DescriptorCloseEvent, &val, sizeof(val));
+    int rv = write(DescriptorCloseEvent, &val, sizeof(val));
+    if (rv != sizeof(val))
+    {
+	LOG_CONTROL(LOG_ERROR, "%18.6f : GatewayInterface::disconnect() - System error: event notification failed, errno=%i\n",
+		    ethercanif::get_realtime(), errno);
+	LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface::disconnect() - System error: event notification failed, errno=%i\n",
+		    ethercanif::get_realtime(), errno);
+    }
 
 
     // (both threads have to exit now!)
@@ -987,7 +1004,15 @@ void* GatewayInterface::threadTxFun()
         {
             // we need to read the descriptor to clear the event.
             uint64_t val;
-            read(DescriptorCommandEvent, &val, sizeof(val));
+            int rv = read(DescriptorCommandEvent, &val, sizeof(val));
+	    if (rv != sizeof(val))
+	    {
+		LOG_TX(LOG_ERROR, "%18.6f : GatewayInterface::ThreadTXfun(): clearing event notification failed, errno=%i\n",
+			    ethercanif::get_realtime(), errno);
+		LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface::ThreadTXfun(): clearing event notification failed, errno=%i\n",
+			    ethercanif::get_realtime(), errno);
+	    }
+	    
         }
 
         // check all writable file descriptors for readiness
