@@ -2164,7 +2164,7 @@ class GridDriver(UnprotectedGridDriver):
                 fpuset_refresh.append(fpu_id)
                 if len(fpuset_refresh) == 0:
                     break
-                sleep(0.1)
+                time.sleep(0.1)
                 self._pingFPUs(gs, fpuset=fpuset_refresh)
 
         with env.begin(db=self.fpudb, write=True) as txn:
