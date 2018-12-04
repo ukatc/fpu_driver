@@ -2165,7 +2165,7 @@ class GridDriver(UnprotectedGridDriver):
                 if len(fpuset_refresh) == 0:
                     break
                 time.sleep(0.1)
-                self._pingFPUs(gs, fpuset=fpuset_refresh)
+                self._pingFPUs(datum_gs, fpuset=fpuset_refresh)
 
         with env.begin(db=self.fpudb, write=True) as txn:
 
