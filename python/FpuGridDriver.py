@@ -596,7 +596,7 @@ class UnprotectedGridDriver (object):
             alpha_target = new_alpha_steps / StepsPerDegreeAlpha + self.config.alpha_datum_offset
             beta_target = new_beta_steps / StepsPerDegreeBeta 
 
-            self._reset_counter_hook(old_state, gs, fpuset=fpuset)
+            self._reset_counter_hook(alpha_target, beta_target, old_state, gs, fpuset=fpuset)
             
         return rval
     
@@ -1389,7 +1389,7 @@ class GridDriver(UnprotectedGridDriver):
             time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
 
 
-    def _reset_counter_hook(self, old_state, new_state, alpha_target, beta_target, fpuset=[]):
+    def _reset_counter_hook(self, alpha_target, beta_target, old_state, new_state, fpuset=[]):
         """similar to reset_hook, but run after resetStepCounter and
         only updating the caloffsets.
         """
