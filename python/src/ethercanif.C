@@ -1282,13 +1282,13 @@ public:
         return ecode;
     }
 
-    E_EtherCANErrCode wrap_resetStepCounter(long alpha_steps, long beta_steps,
-					    WrapGridState& grid_state, list& fpu_list)
+    E_EtherCANErrCode wrap_resetStepCounters(long alpha_steps, long beta_steps,
+					     WrapGridState& grid_state, list& fpu_list)
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
-        E_EtherCANErrCode ecode = resetStepCounter(alpha_steps, beta_steps, grid_state, fpuset);
+        E_EtherCANErrCode ecode = resetStepCounters(alpha_steps, beta_steps, grid_state, fpuset);
         checkInterfaceError(ecode);
         return ecode;
 
@@ -1766,7 +1766,7 @@ BOOST_PYTHON_MODULE(ethercanif)
 
 
     .def("getMinFirmwareVersion", &WrapEtherCANInterface::wrap_getMinFirmwareVersion)
-    .def("resetStepCounter", &WrapEtherCANInterface::wrap_resetStepCounter)
+    .def("resetStepCounters", &WrapEtherCANInterface::wrap_resetStepCounters)
     .def("enableMove", &WrapEtherCANInterface::wrap_enableMove)
     .def("enableAlphaLimitProtection", &WrapEtherCANInterface::wrap_enableAlphaLimitProtection)
     .def("freeAlphaLimitBreach", &WrapEtherCANInterface::wrap_freeAlphaLimitBreach)

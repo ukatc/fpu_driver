@@ -170,7 +170,7 @@ public:
     E_EtherCANErrCode writeSerialNumber(int fpu_id, const char serial_number[],
                                         t_grid_state& grid_state);
 
-    E_EtherCANErrCode resetStepCounter(long alpha_steps, long beta_steps,
+    E_EtherCANErrCode resetStepCounters(long alpha_steps, long beta_steps,
 				       t_grid_state& grid_state, t_fpuset const &fpuset);
 
     E_EtherCANErrCode enableMove(int fpu_id, t_grid_state& grid_state);

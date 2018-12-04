@@ -581,17 +581,20 @@ class UnprotectedGridDriver (object):
     def _reset_counter_hook(self, old_state, gs, fpuset=[]):
         pass
     
-    def resetStepCounters(self, gs, alpha_steps=0, beta_steps=0, fpuset=[]):
+    def resetStepCounters(self, new_alpha_steps, new_beta_steps, gs, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
         
         with self.lock:        
             old_state = self.getGridState()
             try:
-                rval = self._gd.resetStepCounters(alpha_steps, beta_steps, gs, fpuset)
+                rval = self._gd.resetStepCounters(new_alpha_steps, new_beta_steps, gs, fpuset)
             finally:
                 if self.__dict__.has_key("counters"):
                     for fpu_id, fpu in enumerate(gs.FPU):
                         self._update_error_counters(self.counters[fpu_id], old_state.FPU[fpu_id], fpu)
+
+            alpha_target = new_alpha_steps / StepsPerDegreeAlpha + self.config.alpha_datum_offset
+            beta_target = new_beta_steps / StepsPerDegreeBeta 
 
             self._reset_counter_hook(old_state, gs, fpuset=fpuset)
             
@@ -1386,7 +1389,7 @@ class GridDriver(UnprotectedGridDriver):
             time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
 
 
-    def _reset_counter_hook(self, old_state, new_state, fpuset=[]):
+    def _reset_counter_hook(self, old_state, new_state, alpha_target, beta_target, fpuset=[]):
         """similar to reset_hook, but run after resetStepCounter and
         only updating the caloffsets.
         """
@@ -1401,15 +1404,23 @@ class GridDriver(UnprotectedGridDriver):
             alpha_angle, a_underflow, a_overflow = self._alpha_angle(fpu)
             if a_underflow or a_overflow:
                 print("_reset_counter_hook(): warning: reported alpha step counter is at underflow / overflow value")
-            self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - alpha_angle
+                self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - alpha_target
+            else:
+                self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - alpha_angle
 
             beta_angle, b_underflow, b_overflow = self._beta_angle(fpu)
             if b_underflow or b_overflow:
                 print("_reset_counter_hook(): warning: reported beta step counter is at underflow / overflow value")
-            self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - beta_angle
+                self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - beta_target
+            else:
+                self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - beta_angle
 
+            print("reset_counter_hook(): FPU %i: alpha counted angle = %f, offset = %r" % (fpu_id, alpha_angle,
+                                                                                             self.a_caloffsets[fpu_id]))
+            print("reset_counter_hook(): FPU %i: beta counted angle = %f, offset = %r" % (fpu_id, beta_angle,
+                                                                                            self.b_caloffsets[fpu_id]))
 
-        print("%f: _reset_hook(): new a_caloffsets = %r, b_cal_offsets=%r" % (
+        print("%f: _reset_counter_hook(): new a_caloffsets = %r, b_cal_offsets=%r" % (
             time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
         
     def trackedAngles(self, gs=None, fpuset=[], show_offsets=False, active=False, retrieve=False):

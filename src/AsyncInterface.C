@@ -4590,7 +4590,7 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
 
 
 
-E_EtherCANErrCode AsyncInterface::resetStepCounterAsync(long alpha_steps, long beta_steps,
+E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long beta_steps,
 							t_grid_state& grid_state,
 							E_GridState& state_summary, t_fpuset const &fpuset)
 {

@@ -474,15 +474,15 @@ E_EtherCANErrCode EtherCANInterface::readSerialNumbers(t_grid_state& grid_state,
 
 
 
-E_EtherCANErrCode EtherCANInterface::resetStepCounter(long alpha_steps, long beta_steps,
+E_EtherCANErrCode EtherCANInterface::resetStepCounters(long alpha_steps, long beta_steps,
 						      t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_EtherCANErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     pthread_mutex_lock(&command_creation_mutex);
-    estatus = resetStepCounterAsync(alpha_steps, beta_steps,
-				    grid_state, state_summary, fpuset);
+    estatus = resetStepCountersAsync(alpha_steps, beta_steps,
+				     grid_state, state_summary, fpuset);
     pthread_mutex_unlock(&command_creation_mutex);
 
     return estatus;

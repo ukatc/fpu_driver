@@ -57,8 +57,6 @@ void handle_ResetStepCounter_response(const EtherCANInterfaceConfig&config,
     if (response_errcode == 0)
     {
         fpu.ping_ok = true;
-        fpu.alpha_steps = 0;
-        fpu.beta_steps = 0;
         LOG_RX(LOG_INFO, "%18.6f : RX : "
                "resetStepCounter command succeeded for FPU %i\n",
                get_realtime(),
