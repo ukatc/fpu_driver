@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
 
     gd.findDatum(grid_state)
-    w = gen_wf(50, 0)
+    w = gen_wf(10, 0)
     gd.configMotion(w, gs, soft_protection=False)
     try:
         print("press <Ctrl>-<C> to abort")

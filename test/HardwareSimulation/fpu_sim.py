@@ -274,7 +274,7 @@ class FPU:
         print("resetting FPU #%i... ready" % fpu_id)
 
         
-    def resetStepCounter(self, fpu_id):
+    def resetStepCounter(self, new_alpha_steps, new_beta_steps):
         
         if self.state == FPST_LOCKED:
             return MCE_NOTIFY_COMMAND_IGNORED
@@ -284,14 +284,17 @@ class FPU:
             return MCE_ERR_INVALID_COMMAND
         
         printtime()
-        print("resetting FPU #%i stepcounters !!" % fpu_id)
-        alpha_steps = self.alpha_steps
-        beta_steps = self.beta_steps
-        self.alpha_steps = 0
-        self.beta_steps = 0
+        print("resetting FPU #%i stepcounters to (%i, %i)" % (self.fpu_id, new_alpha_steps, new_beta_steps))
+        old_alpha_steps = self.alpha_steps
+        old_beta_steps = self.beta_steps
+        self.alpha_steps = new_alpha_steps
+        self.beta_steps = new_beta_steps
         # enlarge the modelled step mismatch re physical position
-        self.aoff_steps += alpha_steps
-        self.boff_steps += beta_steps
+        self.aoff_steps += (old_alpha_steps - new_alpha_steps)
+        self.boff_steps += (old_beta_steps - new_beta_steps)
+        # we set initialized to "false" because the values are no more
+        # defined by the datum position
+        self.was_initialized = False
 
         return MCE_FPU_OK
 

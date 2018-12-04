@@ -418,8 +418,15 @@ def handle_resetFPU(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
 def handle_resetStepCounter(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
+    alpha_steps = RX[2] | (RX[3] << 8) | (RX[4] << 16)
+    if alpha_steps >= (1 << 23):
+        alpha_steps -= (1 << 24)
+        
+    beta_steps = RX[5] | (RX[6] << 8) | (RX[7] << 16)
+    if beta_steps >= (1 << 23):
+        beta_steps -= (1 << 24)
 
-    errcode = FPUGrid[fpu_id].resetStepCounter(fpu_id);
+    errcode = FPUGrid[fpu_id].resetStepCounter(alpha_steps, beta_steps);
 
     # response message packet        
     seqnum = RX[0]
