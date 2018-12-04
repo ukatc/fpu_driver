@@ -173,6 +173,8 @@ void SBuffer::setConfig(const EtherCANInterfaceConfig &config_vals)
 
 }
 
+#pragma GCC push_options
+#pragma GCC optimize ("O2")
 
 SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
         int const input_len,
@@ -293,11 +295,15 @@ SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
 
         int buf_idx = sprintf(log_buffer, "command bytes (len=%i)= [", input_len);
 
-        if (config.logLevel >= LOG_TRACE_CAN_MESSAGES)
+        if ((buf_idx > 0) && (config.logLevel >= LOG_TRACE_CAN_MESSAGES))
         {
             for(int i=0; i < input_len; i++)
             {
                 int nchars = sprintf(log_buffer + buf_idx," %02x", src[i]);
+		if (nchars <= 0)
+		{
+		    break;
+		}
                 buf_idx += nchars;
 
                 sprintf(log_buffer + buf_idx,"]\n");
@@ -317,6 +323,7 @@ SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
 
     return send_pending(sockfd);
 }
+#pragma GCC pop_options
 
 
 SBuffer::E_SocketStatus SBuffer::send_pending(int sockfd)
