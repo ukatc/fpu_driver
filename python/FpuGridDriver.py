@@ -578,6 +578,25 @@ class UnprotectedGridDriver (object):
             
         return rval
 
+    def _reset_counter_hook(self, old_state, gs, fpuset=[]):
+        pass
+    
+    def resetStepCounters(self, gs, alpha_steps=0, beta_steps=0, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        
+        with self.lock:        
+            old_state = self.getGridState()
+            try:
+                rval = self._gd.resetStepCounters(alpha_steps, beta_steps, gs, fpuset)
+            finally:
+                if self.__dict__.has_key("counters"):
+                    for fpu_id, fpu in enumerate(gs.FPU):
+                        self._update_error_counters(self.counters[fpu_id], old_state.FPU[fpu_id], fpu)
+
+            self._reset_counter_hook(old_state, gs, fpuset=fpuset)
+            
+        return rval
+    
 
     def getPositions(self, gs, **kwargs):
         warnings.warn(textwrap.dedent("""This command is obsolete, use pingFPUs(). 
@@ -1365,7 +1384,34 @@ class GridDriver(UnprotectedGridDriver):
 
         print("%f: _reset_hook(): new a_caloffsets = %r, b_cal_offsets=%r" % (
             time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
+
+
+    def _reset_counter_hook(self, old_state, new_state, fpuset=[]):
+        """similar to reset_hook, but run after resetStepCounter and
+        only updating the caloffsets.
+        """
+        
+        for fpu_id, fpu in enumerate(new_state.FPU):
+            if not fpu_in_set(fpu_id, fpuset):
+                continue
                         
+            # these offsets are the difference between the calibrated
+            # angle and the uncalibrated angle - after a findDatum,
+            # they are set to zero
+            alpha_angle, a_underflow, a_overflow = self._alpha_angle(fpu)
+            if a_underflow or a_overflow:
+                print("_reset_counter_hook(): warning: reported alpha step counter is at underflow / overflow value")
+            self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - alpha_angle
+
+            beta_angle, b_underflow, b_overflow = self._beta_angle(fpu)
+            if b_underflow or b_overflow:
+                print("_reset_counter_hook(): warning: reported beta step counter is at underflow / overflow value")
+            self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - beta_angle
+
+
+        print("%f: _reset_hook(): new a_caloffsets = %r, b_cal_offsets=%r" % (
+            time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
+        
     def trackedAngles(self, gs=None, fpuset=[], show_offsets=False, active=False, retrieve=False):
         """lists tracked angles, offset, and waveform span
         for configured waveforms, for each FPU"""

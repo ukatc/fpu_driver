@@ -1282,12 +1282,13 @@ public:
         return ecode;
     }
 
-    E_EtherCANErrCode wrap_resetStepCounter(WrapGridState& grid_state, list& fpu_list)
+    E_EtherCANErrCode wrap_resetStepCounter(long alpha_steps, long beta_steps,
+					    WrapGridState& grid_state, list& fpu_list)
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
-        E_EtherCANErrCode ecode = resetStepCounter(grid_state, fpuset);
+        E_EtherCANErrCode ecode = resetStepCounter(alpha_steps, beta_steps, grid_state, fpuset);
         checkInterfaceError(ecode);
         return ecode;
 

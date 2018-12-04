@@ -116,7 +116,8 @@ public:
     E_EtherCANErrCode resetFPUsAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset,
                                      const bool include_locked_fpus=false);
 
-    E_EtherCANErrCode resetStepCounterAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
+    E_EtherCANErrCode resetStepCounterAsync(long alpha_steps, long beta_steps,
+					    t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
     E_EtherCANErrCode startAutoFindDatumAsync(t_grid_state& grid_state, E_GridState& state_summary,
             E_DATUM_SEARCH_DIRECTION * p_direction_flags=nullptr,

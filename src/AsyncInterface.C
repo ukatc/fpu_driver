@@ -4590,11 +4590,10 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
 
 
 
-E_EtherCANErrCode AsyncInterface::resetStepCounterAsync(t_grid_state& grid_state,
-        E_GridState& state_summary, t_fpuset const &fpuset)
+E_EtherCANErrCode AsyncInterface::resetStepCounterAsync(long alpha_steps, long beta_steps,
+							t_grid_state& grid_state,
+							E_GridState& state_summary, t_fpuset const &fpuset)
 {
-    LOG_CONTROL(LOG_INFO, "%18.6f : resetting FPU stepcounters\n",
-                ethercanif::get_realtime());
 
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
@@ -4607,6 +4606,26 @@ E_EtherCANErrCode AsyncInterface::resetStepCounterAsync(t_grid_state& grid_state
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
+
+    // check range
+
+    if ((alpha_steps >= (1l << 24))
+	||(alpha_steps < (- (1l << 24)))
+	||(beta_steps >= (1l << 24))
+	||(beta_steps < (- (1l << 24))))
+	    
+    {
+	LOG_CONTROL(LOG_ERROR, "%18.6f : resetStepCounter():  error DE_INVALID_PAR_VALUE,"
+		    "new step counters need to be valid signed 24 bit values, passed values are"
+		    "(%li, %li) = (0x%0lx, 0x%0lx)\n",
+		    ethercanif::get_realtime(),
+		    alpha_steps, beta_steps,
+		    alpha_steps, beta_steps);
+	return DE_INVALID_PAR_VALUE;
+    }
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : resetting FPU stepcounters to (%li, %li)\n",
+                ethercanif::get_realtime(), alpha_steps, beta_steps);
 
     // make sure no FPU is moving or finding datum
     bool resetok=true;
@@ -4647,7 +4666,7 @@ E_EtherCANErrCode AsyncInterface::resetStepCounterAsync(t_grid_state& grid_state
         }
         bool broadcast = false;
         can_command = gateway.provideInstance<ResetStepCounterCommand>();
-        can_command->parametrize(i, broadcast);
+        can_command->parametrize(i, broadcast, alpha_steps, beta_steps);
         unique_ptr<CAN_Command> cmd(can_command.release());
         gateway.sendCommand(i, cmd);
         cnt_pending++;
