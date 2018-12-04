@@ -294,6 +294,14 @@ class UnprotectedGridDriver (object):
         fpuset = self.check_fpuset(fpuset)
         return self._gd.setUStepLevel(ustep_level, gs, fpuset)
 
+    def setTicksPerSegment(self, nticks,  gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        return self._gd.setTicksPerSegment(nticks, gs, fpuset)
+
+    def setStepsPerSegment(self, min_steps, max_steps,  gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+        return self._gd.setStepsPerSegment(min_steps, max_steps, gs, fpuset)
+
     def getSwitchStates(self, gs, fpuset=[]):
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
@@ -1195,6 +1203,19 @@ class UnprotectedGridDriver (object):
                         self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
                         
         return rv, status
+    
+    def checkIntegrity(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+
+        try:
+            prev_gs = self._gd.getGridState()
+            rval= self._gd.checkIntegrity(gs, fpuset)
+        finally:            
+            if self.__dict__.has_key("counters"):
+                for fpu_id, fpu in enumerate(gs.FPU):
+                    self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
+
+        return rval
 
 DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "/var/lib/fpudb")
 
@@ -1586,8 +1607,9 @@ class GridDriver(UnprotectedGridDriver):
             if grid_state.interface_state == DS_CONNECTED:
                 # fetch current positions
                 self._pingFPUs(grid_state)
-    
-                self._refresh_positions(grid_state)
+
+                if self.__dict__.has_key("a_caloffsets") and self.__dict__.has_key("b_caloffsets"):
+                    self._refresh_positions(grid_state)
             
         super(GridDriver, self).__del__()
         

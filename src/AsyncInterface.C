@@ -5068,7 +5068,7 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
         return DE_NO_CONNECTION;
     }
 
-    if ( (ticks <= 1000) || (ticks > 1e10))
+    if ( (ticks <= 1000) || (ticks > ((1l << 23) -1)))
     {
         // value is not allowed
         LOG_CONTROL(LOG_ERROR, "%18.6f : setTicksPerSegment():  error DE_INVALID_PAR_VALUE, value %lu  not allowed\n",

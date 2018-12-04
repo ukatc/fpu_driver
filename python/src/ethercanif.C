@@ -280,7 +280,7 @@ public:
           << "-" << std::setfill('0') << std::setw(2) << fpu.fw_date_month
           << "-" << std::setfill('0') << std::setw(2) << fpu.fw_date_day <<"', "
           << " 'serial_number' : \"" << fpu.serial_number << "\", "
-          << " 'crc32' : " << std::hex << std::showbase << fpu.crc32 << std::dec << ", "
+          << " 'crc32' : " << std::hex << std::showbase << std::setfill('0') << std::setw(8) << fpu.crc32 << std::dec << ", "
           << " 'checksum_ok' : " << fpu.checksum_ok << ", "
           << " 'sequence_number' : " << fpu.sequence_number << ", "
           << " }";

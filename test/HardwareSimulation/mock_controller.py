@@ -338,10 +338,10 @@ def handle_setUStepLevel(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 def handle_setStepsPerSegment(fpu_id, fpu_adr_bus, bus_adr, RX):
 
-    min_steps_per_segment = (RX[2] << 8) | RX[3]
-    max_steps_per_segment = (RX[4] << 8) | RX[5]
+    min_steps_per_segment = (RX[3] << 8) | RX[2]
+    max_steps_per_segment = (RX[5] << 8) | RX[4]
 
-    errcode = FPUGrid[fpu_id].setStepsPerFrame(min_steps_per_frame, max_steps_per_frame)
+    errcode = FPUGrid[fpu_id].setStepsPerSegment(min_steps_per_segment, max_steps_per_segment)
 
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
@@ -473,7 +473,7 @@ def handle_enableMove(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 def handle_checkIntegrity(fpu_id, fpu_adr_bus, bus_adr, RX):
     
-    crc32val = FPUGrid[fpu_id].checkIntegrity()
+    crc32val, errcode = FPUGrid[fpu_id].checkIntegrity()
     
     seqnum = RX[0]
     command_id = RX[1] & 0x1f

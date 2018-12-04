@@ -14,7 +14,8 @@ import time
 import signal
 
 import inspect
-import hashlib
+#import hashlib
+import binascii
 
 from protocol_constants import *
 
@@ -346,7 +347,7 @@ class FPU:
         
         return MCE_FPU_OK
         
-    def setTicksPersegment(self, nticks):
+    def setTicksPerSegment(self, nticks):
         
         if self.state != FPST_UNINITIALIZED:
             return MCE_NOTIFY_COMMAND_IGNORED
@@ -1147,10 +1148,10 @@ class FPU:
     def checkIntegrity(self):
         # returns CRC32 checksum of 'firmware' (here, the class source code)
         source_string = "".join(inspect.getsourcelines(FPU)[0])
-        crc32val= binascii.crc32(source_string) & 0xfffffff
+        crc32val= binascii.crc32(source_string) & 0xffffffff
         print("CRC32 for FPU # %i = %s" % (self.fpu_id, hex(crc32val)))
-        
-        return crc32val
+        # ok
+        return crc32val, MCE_FPU_OK
               
         
         
