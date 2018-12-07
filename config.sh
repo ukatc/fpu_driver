@@ -1,4 +1,4 @@
-ODIR="objects"
+ODIR="object"
 SRCDIR="src"
 IDIR="include"
 LIBDIR="lib"

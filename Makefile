@@ -14,7 +14,7 @@ CXXFLAGS_LTO = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
 -Wshadow -Wcast-qual -Wmissing-declarations -Wundef -Wlogical-op	\
 -Wredundant-decls -Wfloat-equal -Wunused-result -flto
 
-ODIR = ./objects
+ODIR = ./object
 
 LDIR = ./lib
 
