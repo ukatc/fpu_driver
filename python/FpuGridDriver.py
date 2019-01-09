@@ -171,7 +171,7 @@ class UnprotectedGridDriver (object):
                  SocketTimeOutSeconds=20.0,
                  confirm_each_step=True,
                  waveform_upload_pause_us=0,
-                 min_bus_repeat_delay_ms = 1,
+                 min_bus_repeat_delay_ms = 2,
 	         min_fpu_repeat_delay_ms = 4,                 
                  alpha_datum_offset=ALPHA_DATUM_OFFSET,
                  logLevel=DEFAULT_LOGLEVEL,
@@ -377,13 +377,11 @@ class UnprotectedGridDriver (object):
             finally:
                 datum_gs = self.getGridState()
                 if was_cancelled or (rv != ethercanif.E_EtherCANErrCode.DE_OK):
-                    time.sleep(0.1)
                     try:
                         self._pingFPUs(gs, fpuset)
                     except CommandTimeout:
                         pass
 
-                time.sleep(0.1)
                 try:
                     self._gd.getCounterDeviation(gs, fpuset)
                     deviation_gs = gs
@@ -467,7 +465,6 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             
             try:
-                time.sleep(0.1)
                 rv = self._gd.startFindDatum(gs, search_modes, fpuset, selected_arm, timeout, count_protection)
                 if rv != ethercanif.E_EtherCANErrCode.DE_OK:
                     raise RuntimeError("can't search Datum, driver error code = %r" % rv)
@@ -483,7 +480,6 @@ class UnprotectedGridDriver (object):
                 raise
                 
             print("waiting for findDatum to finish..")
-            time.sleep(0.1)
             time_interval = 0.1
             is_ready = False
             was_aborted = False
@@ -503,13 +499,11 @@ class UnprotectedGridDriver (object):
             finally:
                 datum_gs = self._gd.getGridState()
                 if not finished_ok:
-                    time.sleep(0.1)
                     try:
                         self._pingFPUs(gs, fpuset)
                     except CommandTimeout:
                         pass
     
-                time.sleep(0.1)
                 try:
                     self._gd.getCounterDeviation(gs, fpuset)
                     deviation_gs = gs
@@ -530,7 +524,6 @@ class UnprotectedGridDriver (object):
         
         fpuset = self.check_fpuset(fpuset)
         
-        time.sleep(0.1)
         return self._gd.pingFPUs(gs, fpuset)
 
     def pingFPUs(self, gs, fpuset=[]):
@@ -571,7 +564,6 @@ class UnprotectedGridDriver (object):
     def getPositions(self, gs, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
         
-        time.sleep(0.1)
         try:
             prev_gs = self._gd.getGridState()
             rval = self._gd.getPositions(gs, fpuset)
@@ -584,7 +576,6 @@ class UnprotectedGridDriver (object):
     def readRegister(self, address, gs, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
 
-        time.sleep(0.1)
         try:
             prev_gs = self._gd.getGridState()
             rval= self._gd.readRegister(address, gs, fpuset)
@@ -598,7 +589,6 @@ class UnprotectedGridDriver (object):
     def getFirmwareVersion(self, gs, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
         
-        time.sleep(0.1)
         try:
             prev_gs = self._gd.getGridState()
             rval = self._gd.getFirmwareVersion(gs, fpuset)
@@ -636,7 +626,6 @@ class UnprotectedGridDriver (object):
     def getCounterDeviation(self, gs, fpuset=[]):
        fpuset = self.check_fpuset(fpuset)
         
-       time.sleep(0.1)
        try:
            prev_gs = self._gd.getGridState()
            rval = self._gd.getCounterDeviation(gs, fpuset)
@@ -650,7 +639,6 @@ class UnprotectedGridDriver (object):
     def readSerialNumbers(self, gs, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
         
-        time.sleep(0.1)
         try:
             prev_gs = self._gd.getGridState()
             rval = self._gd.readSerialNumbers(gs, fpuset)
@@ -761,8 +749,6 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             try:
                 try:
-                    time.sleep(0.1)
-
                     try:
                         rval = self._gd.configMotion(wtable, gs, fpuset, soft_protection,
                                                      allow_uninitialized, ruleset_version)
@@ -875,13 +861,10 @@ class UnprotectedGridDriver (object):
             
         with self.lock:
             # wait a short moment to avoid spurious collision.
-            time.sleep(0.5)
             initial_positions={}
             self._start_execute_motion_hook(gs, fpuset=fpuset, initial_positions=initial_positions)
-            time.sleep(0.1)
             prev_gs = self._gd.getGridState() # get last FPU states and timeout counters
             try:
-                time.sleep(0.1)
                 rv = self._gd.startExecuteMotion(gs, fpuset)
             except InvalidStateException as e:
                 self._cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
@@ -995,7 +978,6 @@ class UnprotectedGridDriver (object):
                 wmode=Range.Warn
                         
             self._pre_reverse_motion_hook(wtable, gs, fpuset, wmode=wmode)
-            time.sleep(0.1)
             try:
                 prev_gs = self._gd.getGridState()
                 rv = self._gd.reverseMotion(gs, fpuset)
@@ -1030,7 +1012,6 @@ class UnprotectedGridDriver (object):
                 wmode=Range.Warn
                 
             self._pre_repeat_motion_hook(wtable, gs, fpuset, wmode=wmode)
-            time.sleep(0.1)
             try:
                 prev_gs = self._gd.getGridState()
                 rv = self._gd.repeatMotion(gs, fpuset)
