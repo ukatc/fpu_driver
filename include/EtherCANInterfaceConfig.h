@@ -89,8 +89,8 @@ public:
         confirm_each_step = true;
 
 	can_command_priority = 3;
-	min_bus_repeat_delay_ms = 4; 
-	min_fpu_repeat_delay_ms = 16;
+	min_bus_repeat_delay_ms = 2; 
+	min_fpu_repeat_delay_ms = 4;
 
         firmware_version_address_offset = 0x61; // new offset for v1.3.0, matching firmware version 1.4.4
 
