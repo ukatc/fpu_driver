@@ -2017,7 +2017,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                 " retry from start! (%i retries left)\n",
                                 ethercanif::get_realtime(),
                                 fpu_id,
-                               resend_downcount);
+                                resend_downcount);
+		    
                     LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): warning: "
                                 "loading/ready state or number of waveform segments not confirmed for FPU #%i,"
                                 " retry from start! (%i retries left)\n",
@@ -2033,12 +2034,12 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
             if (do_retry)
             {
                 // we start again with loading the first step
-                // (re-sending data for all FPUs).
+		// (re-sending data for all FPUs).
                 step_index = 0;
                 resend_downcount--;
-                // squelch time-out error
-                old_count_timeout = grid_state.count_timeout;
-                continue;
+		// squelch time-out error
+		old_count_timeout = grid_state.count_timeout;
+		continue;
             }
 
         }

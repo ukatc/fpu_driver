@@ -180,10 +180,10 @@ class UnprotectedGridDriver (object):
                  SocketTimeOutSeconds=20.0,
                  confirm_each_step=True,
                  waveform_upload_pause_us=0,
-                 min_bus_repeat_delay_ms = 1,
-	         min_fpu_repeat_delay_ms = 4,
                  configmotion_max_retry_count=5,
                  configmotion_max_resend_count=10,
+                 min_bus_repeat_delay_ms = 2,
+	         min_fpu_repeat_delay_ms = 4,
                  alpha_datum_offset=ALPHA_DATUM_OFFSET,
                  logLevel=DEFAULT_LOGLEVEL,
                  log_dir=DEFAULT_LOGDIR,
@@ -204,6 +204,10 @@ class UnprotectedGridDriver (object):
             warn("confirm_each_steps set to False, which reduces"
                  " confirmation requests of waveform step upload")
 
+        if min_bus_repeat_delay_ms < 2:
+            warn("min_bus_repeat_delay_ms is set to value below 2."
+                 " Increase if CAN time-outs are triggered")
+
         config = EtherCANInterfaceConfig()
         config.num_fpus = nfpus
         config.SocketTimeOutSeconds = SocketTimeOutSeconds
@@ -213,6 +217,8 @@ class UnprotectedGridDriver (object):
         config.motor_max_start_frequency= motor_max_start_frequency
         config.motor_max_rel_increase = motor_max_rel_increase
         config.confirm_each_step = confirm_each_step
+        config.configmotion_max_retry_count = configmotion_max_retry_count
+        config.configmotion_max_resend_count = configmotion_max_resend_count
         config.waveform_upload_pause_us = waveform_upload_pause_us
        	config.min_bus_repeat_delay_ms = min_bus_repeat_delay_ms  
 	config.min_fpu_repeat_delay_ms = min_fpu_repeat_delay_ms 

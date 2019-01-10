@@ -80,6 +80,12 @@ public:
     // will be resent silently on a
     // low level
     int can_command_priority; // maximum priority of CAN commands; this is a four-bit value
+    int configmotion_max_retry_count; // number of times time-outs
+				      // will be reported and missing
+				      // data is send again
+    int configmotion_max_resend_count; // number of times all data
+				       // will be resent silently on a
+				       // low level
 
     EtherCANInterfaceConfig()
         : logLevel(LOG_TRACE_CAN_MESSAGES)
@@ -95,12 +101,12 @@ public:
         waveform_upload_pause_us = 0;
         confirm_each_step = true;
         configmotion_confirmation_period = 25;
-        configmotion_max_retry_count = 10;
-        configmotion_max_resend_count = 5;
-
         can_command_priority = 3;
-        min_bus_repeat_delay_ms = 4;
-        min_fpu_repeat_delay_ms = 16;
+
+	min_bus_repeat_delay_ms = 2; 
+	min_fpu_repeat_delay_ms = 4;
+	configmotion_max_retry_count = 10;
+	configmotion_max_resend_count = 5;
 
         firmware_version_address_offset = 0x61; // new offset for v1.3.0, matching firmware version 1.4.4
 

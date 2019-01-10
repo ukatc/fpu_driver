@@ -20,5 +20,7 @@ version
 /.redo
 *.redo*.tmp
 /_logs
+/object
+
 
 
