@@ -65,7 +65,7 @@ def parse_args():
                         default=DEBUG,
                         help='print received binary commands and responses')
     
-    parser.add_argument('-v', '--verbosity', dest='verbosity',  
+    parser.add_argument('-v', '--verbosity', dest='verbosity',  type=int,
                         default=1,
                         help='verbosity: 0 - no extra output ... 5 - print extensive debug output')
 
