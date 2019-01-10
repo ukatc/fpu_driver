@@ -57,7 +57,14 @@ def initialize_FPUs(args):
     # with actual hardware, which can be damaged by out-of-range
     # movements.
     
-    gd = FpuGridDriver.UnprotectedGridDriver(args.N, logLevel=FpuGridDriver.LOG_INFO)
+    gd = FpuGridDriver.UnprotectedGridDriver(args.N,
+                                             min_bus_repeat_delay_ms=0,
+                                             min_fpu_repeat_delay_ms=0,
+                                             # disable re-sending CAN messages in case of time-outs
+                                             # (return an error instead)
+                                             configmotion_max_retry_count=0, 
+                                             configmotion_max_resend_count=0,
+                                             logLevel=FpuGridDriver.LOG_INFO)
     if args.mockup:
         gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                             for p in [4700, 4701, 4702] ]

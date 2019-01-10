@@ -1842,7 +1842,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     const bool confirm_each_step = config.confirm_each_step;
 
     int step_index = 0;
-    int retry_downcount = 5;
+    int resend_downcount = config.configmotion_max_resend_count;
     int alpha_cur[MAX_NUM_POSITIONERS];
     int beta_cur[MAX_NUM_POSITIONERS];
     
@@ -1976,7 +1976,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                  &&  ((fpu_state.state != FPST_READY_FORWARD)
 				      || (fpu_state.num_waveform_segments != waveforms[fpu_index].steps.size() )))))
                 {
-                    if (retry_downcount <= 0)
+                    if (resend_downcount <= 0)
                     {
                         return DE_MAX_RETRIES_EXCEEDED;
                     }
@@ -1986,20 +1986,28 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                 " retry from start! (%i retries left)\n",
                                 ethercanif::get_realtime(),
                                 fpu_id,
-                                retry_downcount);
+                                resend_downcount);
                     LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): warning: "
                                 "loading/ready state or number of waveform segments not confirmed for FPU #%i,"
                                 " retry from start! (%i retries left)\n",
                                 ethercanif::get_realtime(),
                                 fpu_id,
-                                retry_downcount);
+                                resend_downcount);
+		    
+                    LOG_CONSOLE(LOG_INFO, "%18.6f : configMotion(): warning: "
+                                "loading/ready state not confirmed for FPU #%i,"
+                                " retry from start! (%i retries left)\n",
+                                ethercanif::get_realtime(),
+                                fpu_id,
+                                resend_downcount);
                 }
             }
             if (do_retry)
             {
                 // we start again with loading the first step
+		// (re-sending data for all FPUs).
                 step_index = 0;
-                retry_downcount--;
+                resend_downcount--;
 		// squelch time-out error
 		old_count_timeout = grid_state.count_timeout;
 		continue;
@@ -3707,7 +3715,7 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
         // searching datum.
         if ( fpu_state.state != FPST_UNINITIALIZED)
         {
-            // FPU state does not allows command
+            // FPU state does not allow command
             LOG_CONTROL(LOG_ERROR, "%18.6f : setUStepLevel():  error DE_INVALID_FPU_STATE, all FPUs "
                         "need to be in state FPST_UNINITIALIZED\n",
                         ethercanif::get_realtime());

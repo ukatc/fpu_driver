@@ -15,5 +15,7 @@ version
 /python/pgtest
 *.do
 /.redo
+/_logs
+/object
 
 

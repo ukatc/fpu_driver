@@ -28,12 +28,22 @@ EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values
 
     LOG_CONTROL(LOG_INFO, "%18.6f : starting driver version '%s' for %i FPUs\n",
                 ethercanif::get_realtime(), VERSION, config.num_fpus);
+
     LOG_CONTROL(LOG_INFO, "%18.6f : waveform_upload_pause_us = %lu\n",
                 ethercanif::get_realtime(), config.waveform_upload_pause_us);
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : configmotion_max_retry_count = %i\n",
+                ethercanif::get_realtime(), config.configmotion_max_retry_count);
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : configmotion_max_resend_count = %i\n",
+                ethercanif::get_realtime(), config.configmotion_max_resend_count);
+
     LOG_CONTROL(LOG_INFO, "%18.6f : min_bus_repeat_delay_ms = %i\n",
                 ethercanif::get_realtime(), config.min_bus_repeat_delay_ms);
+
     LOG_CONTROL(LOG_INFO, "%18.6f : min_fpu_repeat_delay_ms = %i\n",
                 ethercanif::get_realtime(), config.min_fpu_repeat_delay_ms);
+
     LOG_CONTROL(LOG_INFO, "%18.6f : confirm_each_step = %s\n",
                 ethercanif::get_realtime(), (config.confirm_each_step ? "True" : "False"));
 
@@ -137,7 +147,7 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
 {
     E_EtherCANErrCode estatus = DE_OK;
     E_GridState state_summary;
-    int num_avaliable_retries = DEFAULT_NUM_RETRIES;
+    int num_avaliable_retries = config.configmotion_max_retry_count + 1;
 
     // copies the waveforms vector
     std::vector<t_waveform> cur_wtable(waveforms);
@@ -207,6 +217,11 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
                 cur_wtable.erase(it);
             }
         }
+
+	if (cur_wtable.size() == 0)
+	{
+	    break;
+	}
 
         num_avaliable_retries--;
     }
