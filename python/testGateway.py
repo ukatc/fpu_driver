@@ -102,6 +102,10 @@ if __name__ == '__main__':
 
     gd, grid_state = initialize_FPUs(args)
 
+    print("retrieving firmware versions...")
+    gd.printFirmwareVersion(grid_state)
+
+
     print("issuing %i %s commands to %i FPUs:" % (args.K, args.command, args.N))
     
     if args.command == "configMotion":
