@@ -32,6 +32,10 @@ def parse_args():
     parser.add_argument('--gateway_address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
     
+    parser.add_argument('-D', '--bus_repeat_dummy_delay',  metavar='BUS_REPEAT_DUMMY_DELAY',
+                        type=int, default=0,
+                        help='Dummy delay inserted before writing to the same bus (default: %(default)s).')
+    
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=NUM_FPUS,
                         help='Number of adressed FPUs (default: %(default)s).')
     
@@ -58,7 +62,7 @@ def initialize_FPUs(args):
     # movements.
     
     gd = FpuGridDriver.UnprotectedGridDriver(args.N,
-                                             min_bus_repeat_delay_ms=0,
+                                             min_bus_repeat_delay_ms=args.bus_repeat_dummy_delay,
                                              min_fpu_repeat_delay_ms=0,
                                              # disable re-sending CAN messages in case of time-outs
                                              # (return an error instead)
