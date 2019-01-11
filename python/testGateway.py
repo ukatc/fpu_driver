@@ -120,22 +120,25 @@ if __name__ == '__main__':
         messages_per_command = args.N
 
     start_time = time.time()
-    for k in range(args.K):
-        if args.command == "ping":
-            gd.pingFPUs(grid_state)
-        elif args.command == "configMotion":
-            # we need to pass 'allow_uninitialized' because the FPUs are
-            # not datumed
-            gd.configMotion(waveform, grid_state, allow_uninitialized=True)
-        else:
-            raise ValueError("command type %s not recognized" % args.command)
-            
-        print(".",end='')
-        sys.stdout.flush()
-    print("")
-    elapsed_time_sec =  time.time() - start_time
-    nmsgs = messages_per_command * args.K
-    print("%i messages in %7.2f seconds = %7.1f messages/sec" % (nmsgs, elapsed_time_sec, nmsgs / elapsed_time_sec))
+    nmsgs = 0
+    try:
+        for k in range(args.K):
+            if args.command == "ping":
+                gd.pingFPUs(grid_state)
+            elif args.command == "configMotion":
+                # we need to pass 'allow_uninitialized' because the FPUs are
+                # not datumed
+                gd.configMotion(waveform, grid_state, allow_uninitialized=True)
+            else:
+                raise ValueError("command type %s not recognized" % args.command)
+    
+            nmsgs += messages_per_command
+            print(".",end='')
+            sys.stdout.flush()
+        print("")
+    finally:
+        elapsed_time_sec =  time.time() - start_time
+        print("%i messages in %7.2f seconds = %7.1f messages/sec" % (nmsgs, elapsed_time_sec, nmsgs / elapsed_time_sec))
           
 
     
