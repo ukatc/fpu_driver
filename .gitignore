@@ -10,6 +10,7 @@ GRTAGS
 GSYMS
 GTAGS
 /object
+/objects
 version
 *.org_archive
 /python/pgtest
