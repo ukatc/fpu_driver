@@ -101,6 +101,8 @@ verification software is being developed. The underlying hardware
 protocol will only be exposed as much as necessary to understand the
 possible states of the hardware.
 
+
+
 \subsection{Required knowledge and order of presentation}
 \index{Python!introduction}
 \index{Python!further information}
@@ -227,7 +229,7 @@ switch back to the master branch, issue the command
 \index{EtherCAN interface!building}
 To build the Python library module,
 change the working directory to \texttt{fpu\_driver},
-and issue the command \mint{bash}|make pyext|
+and issue the command \mint{bash}|make wrapper|
 
 In order for this to work, the required dependencies need to be
 installed. For the MOONS workstation, this is always the case. To
@@ -2949,6 +2951,9 @@ be passed:
   the same FPU. The value is an integer number in microsecond units,
   and for EtherCAN interface version 1.2.0 and newer, it is 50\,000 by default. If
   the value is zero, no waiting is done.
+  
+  This parameter is deprecated because its effect is is somewhat
+  unreliable, use \texttt{min\_fpu\_repeat\_delay\_ms} instead.
 
 \label{it:confirm_each_step}  
 \item[\texttt{confirm\_each\_step}] This keyword parameter is a
@@ -2974,30 +2979,45 @@ be passed:
   commands will not be recognised. To avoid problems with missing CAN
   responses or capacity problems in the firmware, it is recommended to
   use the default value.
+
+\index{configmotion\_max\_resend\_count}  
+\item[\texttt{configmotion\_max\_resend\_count}] This parameter
+  defines how often the \texttt{configMotion()} command should silently
+  try to resend CAN messages if a CAN time-out is encountered.
+  Setting this value to a number higher than zero increases
+  robustness against connection problems during path configuration.
+  (It does however not solve connection problems in general).
   
+\index{configmotion\_max\_retry\_count}  
+\item[\texttt{configmotion\_max\_retry\_count}] Similar to the preceding
+  parameter, this parameter defines how often the \texttt{configMotion()}
+  command should try to repair a failed configuration command by
+  issuing the command again for the FPUs which reported failures.
+  As above, this can enhance robustness, because configMotion messages
+  are the most frequent type of messages, but it cannot recover
+  from lost movement commands.
+    
 \item[\texttt{min\_bus\_repeat\_delay\_ms}] This parameter allows to
   set a rate limit on CAN commands which go to the same CAN bus. The
-  value needs to be between zero and 255. If set to a non-zero value,
-  the driver will make sure that ``dummy delay'' messages are inserted
-  before each CAN command which have the effect that no CAN command
-  goes to this bus within less than the configured time. The larger
-  this value is, the smaller is the number of FPU commands which can
-  be send per second, and the longer the upload of waveforms will
-  take. The best throughput is probably achieved if messages are sent
-  in a round-robin manner to the different buses on the same gateway -
-  this will minimise the waiting time for each bus.
+  value needs to be between zero and 255. If set to a non-zero integer
+  value of $n$, the driver will make sure that ``dummy delay''
+  messages are inserted before each CAN command which have the effect
+  that no CAN command goes to this bus within less than $n-1$
+  milliseconds. The larger this value is, the smaller is the number of
+  FPU commands which can be send per second, and the longer the upload
+  of waveforms will take. The best throughput is probably achieved if
+  messages are sent in a round-robin manner to the different buses on
+  the same gateway - this will minimise the waiting time for each bus.
   
 \item[\texttt{min\_fpu\_repeat\_delay\_ms}] Similar as above, this
   parameter allows to set a rate limit for commands to individual
-  FPUs. If several commands are sent to the same FPU, the driver makes
-  sure that delay commands are inserted which should warrant that no
-  two commands arrive at the same FPU within less than the configured
-  interval. If the value of this parameter is equal or less than
-  \texttt{min\_bus\_repeat\_delay\_ms}, it has no effect. This limit
-  provides more reliable control than limits set using
-  \texttt{waveform\_upload\_pause\_us}, because the latter run in the
-  driver control context, and therefore cannot account for fluctuating
-  latencies in the transmission of commands.
+  FPUs. If several commands are sent to the same FPU, a value of $n$
+  makes sure that delay commands are inserted which should warrant
+  that no two commands arrive at the same FPU within less than $n-1$
+  milliseconds. If the value of this parameter is equal or less than
+  \texttt{min\_bus\_repeat\_delay\_ms}, it has no extra effect. This
+  limit provides more reliable control than limits set using
+  \texttt{waveform\_upload\_pause\_us}, and is therefore preferable.
 
   This rate limit allows to quickly check whether timing of messages
   arriving at the same FPU might cause errors or different behaviour.
@@ -5531,7 +5551,7 @@ the subdirectory "/lib".
 Run
 
   \begin{minted}{bash}
-    $ make pyext
+    $ make wrapper
   \end{minted}    
 
 This builds the binary extension module \verb+fpu_driver.so+
