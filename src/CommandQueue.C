@@ -161,8 +161,12 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 
         // if we changed from an empty queue to a non-empty one,
         // signal an event to notify any waiting poll.
-        if ((was_empty) && (EventDescriptorNewCommand >= 0))
-        {
+        if (was_empty)
+	{
+          pthread_cond_broadcast(&cond_queue_append);
+
+	  if (EventDescriptorNewCommand >= 0)
+          {
             uint64_t val = 1;
 
             int rv = write(EventDescriptorNewCommand, &val, sizeof(val));
@@ -174,7 +178,6 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 			    ethercanif::get_realtime(), errno);
 	    }
         }
-
         pthread_mutex_unlock(&queue_mutex);
     }
 
