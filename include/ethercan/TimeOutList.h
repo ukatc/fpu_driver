@@ -84,6 +84,8 @@ private:
     // This method is not thread-safe!
     const timespec minKey();
 
+    const timespec search_min();
+
 
     timespec TimeOutsByID[MAX_NUM_POSITIONERS];
     // this mutex protects the list form concurrent access
