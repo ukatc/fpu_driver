@@ -135,10 +135,15 @@ if __name__ == '__main__':
             nmsgs += messages_per_command
             print(".",end='')
             sys.stdout.flush()
+            if ((k +1) % 100) == 0:
+                elapsed_time_sec =  time.time() - start_time
+                print("%i messages in %7.2f seconds = %7.1f messages/sec"
+                      % (nmsgs, elapsed_time_sec, nmsgs / elapsed_time_sec))
         print("")
     finally:
         elapsed_time_sec =  time.time() - start_time
-        print("%i messages in %7.2f seconds = %7.1f messages/sec" % (nmsgs, elapsed_time_sec, nmsgs / elapsed_time_sec))
+        print("%i messages in %7.2f seconds = %7.1f messages/sec"
+              % (nmsgs, elapsed_time_sec, nmsgs / elapsed_time_sec))
           
 
     
