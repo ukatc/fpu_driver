@@ -115,7 +115,7 @@ if __name__ == '__main__':
     if args.command == "configMotion":
         # pre-generate a waveform table
         waveform = gen_wf(300, [170] * args.N)
-        messages_per_command = len(waveform) * len(waveform[0])
+        messages_per_command = args.N * len(waveform[0])
     else:
         messages_per_command = args.N
 
