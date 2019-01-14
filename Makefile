@@ -4,13 +4,13 @@ CC = "g++"
 VERSION := v2.0.2
 
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
--DDEBUG -g -O2 -finline-functions -Wstrict-aliasing -march=native	\
+-DDEBUG -g -O3 -finline-functions -Wstrict-aliasing -march=native	\
 -Wshadow -Wcast-qual -Wmissing-declarations -Wundef -Wlogical-op	\
 -Wredundant-decls -Wfloat-equal -Wstrict-overflow=4 -Wunused-result
 
 # flags for link time optimized build of wrapper
 CXXFLAGS_LTO = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
--DDEBUG -g -O2 -finline-functions -Wstrict-aliasing -march=native	\
+-DDEBUG -g -O3 -finline-functions -Wstrict-aliasing -march=native	\
 -Wshadow -Wcast-qual -Wmissing-declarations -Wundef -Wlogical-op	\
 -Wredundant-decls -Wfloat-equal -Wunused-result -flto
 
@@ -121,8 +121,53 @@ _OBJ = EtherCANInterface.o AsyncInterface.o FPUArray.o GridState.o	\
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
+_SRC = AsyncInterface.C CommandPool.C CommandQueue.C			\
+	decode_CAN_response.C EtherCANInterface.C FPUArray.C		\
+	FPUState.C GatewayInterface.C GridState.C			\
+	handle_AbortMotion_response.C					\
+	handle_CheckIntegrity_response.C				\
+	handle_ConfigMotion_response.C					\
+	handle_EnableAlphaLimitProtection_response.C			\
+	handle_EnableBetaCollisionProtection_response.C			\
+	handle_EnableMove_response.C handle_ExecuteMotion_response.C	\
+	handle_FindDatum_response.C handle_FinishedDatum_message.C	\
+	handle_FinishedMotion_message.C handleFPUResponse.C		\
+	handle_FreeAlphaLimitBreach_response.C				\
+	handle_FreeBetaCollision_response.C				\
+	handle_GetFirmwareVersion_response.C				\
+	handle_LockUnit_response.C handle_PingFPU_response.C		\
+	handle_ReadRegister_response.C					\
+	handle_ReadSerialNumber_response.C				\
+	handle_RepeatMotion_response.C handle_ResetFPU_response.C	\
+	handle_ResetStepCounter_response.C				\
+	handle_ReverseMotion_response.C					\
+	handle_SetStepsPerSegment_response.C				\
+	handle_SetTicksPerSegment_response.C				\
+	handle_SetUStepLevel_response.C handleTimeout.C			\
+	handle_UnlockUnit_response.C handle_WarnCANOverflow_warning.C	\
+	handle_WarnCollisionBeta_warning.C				\
+	handle_WarnLimitAlpha_warning.C					\
+	handle_WriteSerialNumber_response.C SBuffer.C sync_utils.C	\
+	TimeOutList.C time_utils.C 
+
+SRC = $(patsubst %,$(SRCDIR)/%,$(_SRC))
 
 .PHONY: force clean
+
+# This target builds the default wrapper, without link time optimization.
+
+wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so \
+            python/src/ethercanif.C -L./lib  -lethercan -lboost_python $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
+
+# This target variant is using link time optimization, aka LTO,
+# to build the python test module directly.
+# LTO is probably useful because we have many small handler functions which
+# run in performance-critical loops.
+wrapper-lto:  python/src/ethercanif.C $(SRC) $(DEPS) version
+	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so $(CXXFLAGS_LTO)\
+            python/src/ethercanif.C $(SRC)    -lboost_python  -DVERSION=\"$(VERSION)\"
+
 
 version: force
 	echo '$(VERSION)' | cmp -s - $@ || echo '$(VERSION)' > $@
@@ -130,6 +175,8 @@ version: force
 python/doc/FPU-state1.pdf : python/doc/FPU-state1.svg
 	inkscape python/doc/FPU-state1.svg --export-pdf=python/doc/FPU-state1.pdf
 
+# This builds the documentation. Some extra LaTeX packages, fonts, the minted package,
+# and inkscape are required for this.
 tutorial:	python/doc/tutorial.tex python/doc/FPU-state1.pdf version
 	cd python/doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
 
@@ -145,17 +192,6 @@ lib/libethercan.a: $(OBJ)
 
 libethercan: lib/libethercan.a
 
-wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
-	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so \
-            python/src/ethercanif.C -L./lib  -lethercan -lboost_python $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
-
-# This target variant is using link time optimization, aka LTO,
-# to build the python test module directly.
-# LTO is probably useful because we have many small handler functions which
-# run in performance-critical loops.
-wrapper-lto:  python/src/ethercanif.C $(SRCDIR)/*.C $(DEPS) version
-	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so $(CXXFLAGS_LTO)\
-            python/src/ethercanif.C $(SRCDIR)/*.C    -lboost_python  -DVERSION=\"$(VERSION)\"
 
 style:
 	astyle src/*.C python/src/*.C include{,/*{,/*}}/*.h
