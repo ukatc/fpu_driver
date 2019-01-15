@@ -163,7 +163,7 @@ wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 # This target variant is using link time optimization, aka LTO,
 # to build the python test module directly.
 # LTO is probably useful because we have many small handler functions which
-# run in performance-critical loops.
+# run in performance-critical loops. (With version v2.0.2, now checked to run correctly)
 wrapper-lto:  python/src/ethercanif.C $(SRC) $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so $(CXXFLAGS_LTO)\
             python/src/ethercanif.C $(SRC)    -lboost_python  -DVERSION=\"$(VERSION)\"
