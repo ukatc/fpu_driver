@@ -3,7 +3,7 @@ CC = "g++"
 
 VERSION := v1.5.0
 
-CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -g 
+CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -O2 -g 
 
 ODIR = ./objects
 
