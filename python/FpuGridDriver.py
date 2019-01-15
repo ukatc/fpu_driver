@@ -168,7 +168,7 @@ def countMovableFPUs(gs):
     
 class UnprotectedGridDriver (object):
     def __init__(self, nfpus=DEFAULT_NUM_FPUS,
-                 SocketTimeOutSeconds=20.0,
+                 SocketTimeOutSeconds=100.0,
                  confirm_each_step=True,
                  waveform_upload_pause_us=0,
                  configmotion_max_retry_count=5,

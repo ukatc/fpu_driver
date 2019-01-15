@@ -87,7 +87,7 @@ public:
 
         // set default time-out values
 
-        SocketTimeOutSeconds = 20.0;
+        SocketTimeOutSeconds = 100.0;
         TCP_IdleSeconds = 10;
         TCP_KeepaliveIntervalSeconds = 1;
 
