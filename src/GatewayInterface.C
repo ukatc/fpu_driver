@@ -999,10 +999,10 @@ void* GatewayInterface::threadTxFun()
             ssize_t rval = read(DescriptorCommandEvent, &val, sizeof(val));
 	    if (rval == -1)
 	    {
-		LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::threadTxFun() : "
-			    "GatewayInterface::connect() - read() failed: %s",
-			    ethercanif::get_realtime(),
-			    strerror(errno));
+		LOG_TX(LOG_ERROR, "%18.6f : error: GridDriver::threadTxFun() : "
+		       "GatewayInterface::connect() - read() failed: %s",
+		       ethercanif::get_realtime(),
+		       strerror(errno));
 		    
 	    }
 	    

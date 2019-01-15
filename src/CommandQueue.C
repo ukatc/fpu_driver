@@ -19,6 +19,7 @@
 
 #include <unistd.h>
 #include <cassert>
+#include <string.h>
 
 #include "ethercan/sync_utils.h"
 #include "ethercan/CommandQueue.h"
@@ -167,7 +168,16 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
           {
             uint64_t val = 1;
 
-            write(EventDescriptorNewCommand, &val, sizeof(val));
+            ssize_t rval = write(EventDescriptorNewCommand, &val, sizeof(val));
+	    if (rval == -1)
+	    {
+		LOG_CONTROL(LOG_ERROR, "%18.6f : error: CommandQueue::enqueue() : "
+			    "write() failed when appending new command object: %s",
+			    ethercanif::get_realtime(),
+			    strerror(errno));
+		    
+	    }
+
           }
     }
 
