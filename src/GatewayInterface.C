@@ -566,7 +566,16 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
                 exit_threads.store(true, std::memory_order_release);
                 // also signal termination via eventfd, to inform epoll()
                 uint64_t val = 2;
-                write(DescriptorCloseEvent, &val, sizeof(val));
+                ssize_t rval = write(DescriptorCloseEvent, &val, sizeof(val));
+		if (rval == -1)
+		{
+		    LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+				"GatewayInterface::connect() - write() failed,"
+				"when handling failed RX thread creation: %s",
+				ethercanif::get_realtime(),
+				strerror(errno));
+		    
+		}
 
                 // wait for rx thread to terminate
                 pthread_join(rx_thread, NULL);
@@ -667,7 +676,15 @@ E_EtherCANErrCode GatewayInterface::disconnect()
     // Write to close-event descriptor to make epoll calls return
     // without waiting for time-out.
     uint64_t val = 2;
-    write(DescriptorCloseEvent, &val, sizeof(val));
+    ssize_t rval = write(DescriptorCloseEvent, &val, sizeof(val));
+    if (rval == -1)
+    {
+	LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::disconnect() : "
+		    "GatewayInterface::disconnect() - write() failed: %s",
+		    ethercanif::get_realtime(),
+		    strerror(errno));
+		    
+    }
 
 
     // (both threads have to exit now!)
@@ -979,7 +996,16 @@ void* GatewayInterface::threadTxFun()
         {
             // we need to read the descriptor to clear the event.
             uint64_t val;
-            read(DescriptorCommandEvent, &val, sizeof(val));
+            ssize_t rval = read(DescriptorCommandEvent, &val, sizeof(val));
+	    if (rval == -1)
+	    {
+		LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::threadTxFun() : "
+			    "GatewayInterface::connect() - read() failed: %s",
+			    ethercanif::get_realtime(),
+			    strerror(errno));
+		    
+	    }
+	    
         }
 
         // check all writable file descriptors for readiness
