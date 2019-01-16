@@ -109,12 +109,15 @@ if __name__ == '__main__':
     print("retrieving firmware versions...")
     gd.printFirmwareVersion(grid_state)
 
+    if gd.minFirmwareVersion(grid_state) < (1,6,0):
+        print("WARNING: uses obsolete firmware version, message priorities are incorrect")
+
 
     print("issuing %i %s commands to %i FPUs:" % (args.K, args.command, args.N))
     
     if args.command == "configMotion":
-        # pre-generate a waveform table
-        waveform = gen_wf(300, [170] * args.N)
+        # pre-generate a waveform table with many entries
+        waveform = gen_wf([325] * args.N, 5, max_change=1.03)
         messages_per_command = args.N * len(waveform[0])
     else:
         messages_per_command = args.N
