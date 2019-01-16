@@ -22,7 +22,7 @@
 
 #include "E_LogLevel.h"
 #include "InterfaceConstants.h"
-
+#include "ethercan/CAN_Constants.h"
 
 namespace mpifps
 {
@@ -71,6 +71,9 @@ public:
     int min_bus_repeat_delay_ms; // delay, in milliseconds, before writing to the same CAN bus
     int min_fpu_repeat_delay_ms; // delay, in milliseconds, before writing to the same FPU
 
+    int SocketWriteBufferSize; // write buffer size for sockets, in bytes - influences maximum latency
+                               /* note that the kernel duplicates this value */
+
     int firmware_version_address_offset;
     int can_command_priority; // maximum priority of CAN commands; this is a four-bit value
     int configmotion_max_retry_count; // number of times time-outs
@@ -96,6 +99,9 @@ public:
 	can_command_priority = 3;
 	min_bus_repeat_delay_ms = 2; 
 	min_fpu_repeat_delay_ms = 4;
+
+	SocketWriteBufferSize = (MAX_NUM_POSITIONERS * ethercanif::MAX_STUFFED_MESSAGE_LENGTH * 3) / 2;
+	
 	configmotion_max_retry_count = 10;
 	configmotion_max_resend_count = 5;
 

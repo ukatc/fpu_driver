@@ -107,7 +107,6 @@ private:
     // each message byte could be encoded as two bytes.  We have two
     // start bytes, two stop bytes, and any payload byte can be
     // swizzled to two bytes.
-    static const int MAX_STUFFED_MESSAGE_LENGTH = (4 + 2 * MAX_UNENCODED_GATEWAY_MESSAGE_BYTES);
 
     const int max_gw_delay = 0xff;
 

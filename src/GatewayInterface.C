@@ -245,6 +245,35 @@ int make_socket(const EtherCANInterfaceConfig &config, const char *ip, uint16_t 
         return -1;
     }
 
+
+
+    socklen_t optlen = sizeof(config.SocketWriteBufferSize);
+    errstate = setsockopt(sck, SOL_SOCKET, SO_SNDBUF, &config.SocketWriteBufferSize, optlen);
+
+    if (errstate < 0)
+    {
+	LOG_CONTROL(LOG_ERROR, "%18.6f : make_socket(): socket error: setting SO_SNDBUF to %i failed!\n", ethercanif::get_realtime(), config.SocketWriteBufferSize);
+	LOG_CONSOLE(LOG_ERROR, "%18.6f : make_socket(): socket error: setting SO_SNDBUF to %i failed!\n", ethercanif::get_realtime(), config.SocketWriteBufferSize);
+	
+        close(sck);
+        return -1;
+    }
+
+    {
+	int sndsize=0;
+	errstate = getsockopt(sck, SOL_SOCKET, SO_SNDBUF, &sndsize, &optlen);
+
+	if ((errstate >= 0) && (optlen == sizeof(config.SocketWriteBufferSize)))
+	{
+	    LOG_CONTROL(LOG_INFO, "%18.6f : make_socket(): socket write buffer size for socket %i set to %i bytes\n", ethercanif::get_realtime(), sck, sndsize);
+	}
+	else
+	{
+	    LOG_CONTROL(LOG_INFO, "%18.6f : make_socket(): warning: could not confirm buffer size for socket %i\n",
+			ethercanif::get_realtime(), sck);
+	}
+    }
+    
 #if 0
     if (config.SocketTimeOutSeconds > 0)
     {
