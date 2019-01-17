@@ -227,7 +227,7 @@ SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
 	    delay_msg.message.data[0] = gw_delay & 0xff;
 	    const int msg_len = 4;
 	
-	    LOG_TX(LOG_VERBOSE, "%18.6f : TX: encode_and_send(): pre-pending dummy delay = %i\n",
+	    LOG_TX(LOG_TRACE_CAN_MESSAGES, "%18.6f : TX: encode_and_send(): pre-pending dummy delay = %i\n",
 		   ethercanif::get_realtime(),
 		   gw_delay);
 
