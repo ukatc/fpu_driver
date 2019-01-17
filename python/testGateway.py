@@ -73,8 +73,9 @@ def initialize_FPUs(args):
                                              # set log level to low value
                                              # (try FpuGridDriver.LOG_TRACE_CAN_MESSAGES to have
                                              # every CAN message logged)
-                                             log_dir="./_logs",
-                                             logLevel=FpuGridDriver.LOG_INFO)
+                                             logLevel=FpuGridDriver.LOG_TRACE_CAN_MESSAGES,
+                                             #logLevel=FpuGridDriver.LOG_INFO,
+                                             log_dir="./_logs")
     if args.mockup:
         # test against fast hardware simulation
         gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
