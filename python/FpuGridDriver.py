@@ -1217,11 +1217,24 @@ class UnprotectedGridDriver (object):
 
         return rval
 
-DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "/var/lib/fpudb")
+# a good value is "/var/lib/fpudb"
+# the empty string disables LMDB usage (can only use unprotected driver)
+DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "")
+
 
 if DATABASE_FILE_NAME != "":
-    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=(5*1024*1024*1024))
+    # needs 64 bit (large file support) for normal database size
+    # The file is mapped into virtual memory but it does NOT
+    # use that amount of RAM!
+    if platform.architecture()[0] == "64bit":
+        dbsize = 5*1024*1024*1024 # 5 GiB
+    else:
+        dbsize = 5*1024*1024 # 5 MiB
+        print("warning: 32 bit system, won't support large files for LMDB storage of extended logs")
+        
+    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=db_size)
 else:
+    print("No FPU database configured, can only run unprotected driver")
     env = None
 
 def get_duplicates(idlist):
