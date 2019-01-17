@@ -5,6 +5,7 @@ import os
 from ast import literal_eval
 
 from sys import argv, exit
+import platform
 import argparse
 
 import lmdb
