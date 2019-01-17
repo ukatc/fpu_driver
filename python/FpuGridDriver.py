@@ -1233,7 +1233,8 @@ if DATABASE_FILE_NAME != "":
         dbsize = 5*1024*1024 # 5 MiB
         print("warning: 32 bit system, won't support large files for LMDB storage of extended logs")
         
-    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=db_size)
+    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=dbsize)
+
 else:
     print("No FPU database configured, can only run unprotected driver")
     env = None
