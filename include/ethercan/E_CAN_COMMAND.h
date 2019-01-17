@@ -205,7 +205,9 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
 {
 
 #if (CAN_PROTOCOL_VERSION == 1)
-    // protocol version 1 requires a priority of zero.
+    // for firmware versions before 1.6.0, protocol version 1 required a priority of zero.
+    // for version 1.6.0 and newer, the highest value can be set with
+    // the configuration parameter can_command_priority, and should be 3 or higher.
     return 0;
 #endif
 
@@ -222,7 +224,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     /* movement commands, usually broadcast */
     case CCMD_EXECUTE_MOTION                     :
     case CCMD_FIND_DATUM                         :
-        priority = 0x02;
+        priority = 0x03;
         break;
 
     /* motion configuration */
@@ -248,7 +250,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
 #endif
     case CCMD_REPEAT_MOTION                      :
     case CCMD_REVERSE_MOTION                     :
-        priority = 0x03;
+        priority = 0x04;
         break;
 
     /* status inquiry */
