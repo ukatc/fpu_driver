@@ -1060,11 +1060,18 @@ class UnprotectedGridDriver (object):
         return [angles[k] for k in fpuset ]
 
 
-DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "/var/lib/fpudb")
+# a good value is "/var/lib/fpudb"
+DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "")
 
 if DATABASE_FILE_NAME != "":
-    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=(5*1024*1024*1024))
+    # needs 64 bit (large file support) for normal database size
+    if platform.architecture()[0] == "64bit":
+        dbsize = 5*1024*1024*1024
+    else:
+        dbsize = 5*1024*1024        
+    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=db_size)
 else:
+    print("No FPU database configured, can only run unprotected driver")
     env = None
 
 def get_duplicates(idlist):
