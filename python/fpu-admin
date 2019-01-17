@@ -28,7 +28,7 @@ if platform.architecture()[0] == "64bit":
 else:
     dbsize = 5*1024*1024
     
-env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=db_size)
+env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=dbsize)
 fpudb = env.open_db("fpu")
 
 

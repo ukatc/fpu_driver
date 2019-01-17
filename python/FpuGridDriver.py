@@ -1070,7 +1070,7 @@ if DATABASE_FILE_NAME != "":
         dbsize = 5*1024*1024*1024
     else:
         dbsize = 5*1024*1024        
-    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=db_size)
+    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=dbsize)
 else:
     print("No FPU database configured, can only run unprotected driver")
     env = None
