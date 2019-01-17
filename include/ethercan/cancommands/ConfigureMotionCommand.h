@@ -188,7 +188,7 @@ public:
     {
         const struct timespec  toval =
         {
-            /* .tv_sec = */ 60,
+            /* .tv_sec = */ 100,
             /* .tv_nsec = */ 0
         };
 
