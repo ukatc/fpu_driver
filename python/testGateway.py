@@ -39,10 +39,10 @@ def parse_args():
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=NUM_FPUS,
                         help='Number of adressed FPUs (default: %(default)s).')
     
-    parser.add_argument('-K', '--COUNT_COMMANDS',  metavar='COUNT_COMMANDS', dest='K', type=int, default=100,
+    parser.add_argument('-K', '--COUNT_COMMANDS',  metavar='COUNT_COMMANDS', dest='K', type=int, default=6000000,
                         help='COUNT of high-level commands (default: %(default)s).')
     
-    parser.add_argument('--command', metavar='COMMAND', type=str, default="ping",
+    parser.add_argument('--command', metavar='COMMAND', type=str, default="configMotion",
                         help='CAN command which is sent in test. COMMAND can be either '
                         '"ping" or "configMotion" (default: %(default)r)')
     
@@ -61,15 +61,22 @@ def initialize_FPUs(args):
     # with actual hardware, which can be damaged by out-of-range
     # movements.
     
-    gd = FpuGridDriver.UnprotectedGridDriver(args.N,
+    gd = FpuGridDriver.UnprotectedGridDriver(args.N, # number of FPUs
+                                             # dummy delay before sending to the same bus
                                              min_bus_repeat_delay_ms=args.bus_repeat_dummy_delay,
+                                             # dummy delay before sending to the same FPU
                                              min_fpu_repeat_delay_ms=0,
-                                             # disable re-sending CAN messages in case of time-outs
-                                             # (return an error instead)
+                                             # disable re-sending some CAN command messages in case of time-outs
+                                             # (directly return an error instead)                                             
                                              configmotion_max_retry_count=0, 
                                              configmotion_max_resend_count=0,
+                                             # set log level to low value
+                                             # (try FpuGridDriver.LOG_TRACE_CAN_MESSAGES to have
+                                             # every CAN message logged)
+                                             log_dir="./_logs",
                                              logLevel=FpuGridDriver.LOG_INFO)
     if args.mockup:
+        # test against fast hardware simulation
         gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                             for p in [4700, 4701, 4702] ]
     else:
@@ -80,7 +87,7 @@ def initialize_FPUs(args):
 
     # We monitor the FPU grid by a variable which is
     # called grid_state, and reflects the state of
-    # all FPUs.
+    # all FPUs when each command returns.
     grid_state = gd.getGridState()
 
     if args.resetFPU:
@@ -88,13 +95,15 @@ def initialize_FPUs(args):
         gd.resetFPUs(grid_state)
         print("OK")
 
-    # warn about unprotected, low-level access
+    # warn about unprotected, low-level access (this driver class does
+    # not use LMDB, and therefore cannot protect precious FPU hardware
+    # against potentially destructive movements)
     if gd is not FpuGridDriver.GridDriver:
         print("Warning: This driver class should *not* be used in combination"
               " with real mechanical FPU hardware, which can be damaged by out-of-range"
               " movements.")
 
-
+    
     return gd, grid_state
 
 
@@ -113,19 +122,24 @@ if __name__ == '__main__':
         print("WARNING: uses obsolete firmware version, message priorities are incorrect")
 
 
-    print("issuing %i %s commands to %i FPUs:" % (args.K, args.command, args.N))
+    print("testGateway: issuing %i %s commands with dummyDelay=%i to %i FPUs:" %
+          (args.K, args.command, args.bus_repeat_dummy_delay, args.N))
     
     if args.command == "configMotion":
-        # pre-generate a waveform table with many entries
+        # pre-generate a waveform table with about the maximum number of entries
+        # (each entry becomes an individual message)
         waveform = gen_wf([325] * args.N, 5, max_change=1.03)
         messages_per_command = args.N * len(waveform[0])
+        report_interval = 10
     else:
         messages_per_command = args.N
+        report_interval = 100
 
     start_time = time.time()
     nmsgs = 0
+    num_commands = (args.K + messages_per_command -1) // messages_per_command
     try:
-        for k in range(args.K):
+        for k in range(num_commands):
             if args.command == "ping":
                 gd.pingFPUs(grid_state)
             elif args.command == "configMotion":
@@ -138,7 +152,7 @@ if __name__ == '__main__':
             nmsgs += messages_per_command
             print(".",end='')
             sys.stdout.flush()
-            if ((k +1) % 100) == 0:
+            if ((k +1) % report_interval) == 0:
                 elapsed_time_sec =  time.time() - start_time
                 print("%i messages in %7.2f seconds = %7.1f messages/sec"
                       % (nmsgs, elapsed_time_sec, nmsgs / elapsed_time_sec))
