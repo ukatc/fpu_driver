@@ -73,12 +73,6 @@ public:
 
     int firmware_version_address_offset;
     int configmotion_confirmation_period;
-    int configmotion_max_retry_count; // number of times time-outs
-    // will be reported and missing
-    // data is send again
-    int configmotion_max_resend_count; // number of times all data
-    // will be resent silently on a
-    // low level
     int can_command_priority; // maximum priority of CAN commands; this is a four-bit value
     int configmotion_max_retry_count; // number of times time-outs
 				      // will be reported and missing
