@@ -1955,6 +1955,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 return DE_NO_CONNECTION;
             }
             bool do_retry = false;
+	    bool max_retries_exceeded = false;
             //int num_loading =  waveforms.size();
             for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
             {
@@ -1978,7 +1979,22 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 {
                     if (resend_downcount <= 0)
                     {
-                        return DE_MAX_RETRIES_EXCEEDED;
+			LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
+				    "loading/ready state or number of waveform segments not confirmed for FPU #%i"
+				    " (%i retries left)\n",
+				    ethercanif::get_realtime(),
+				    fpu_id,
+				    resend_downcount);
+			LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): warning: "
+				    "loading/ready state or number of waveform segments not confirmed for FPU #%i"
+				    " (%i retries left)\n",
+				    ethercanif::get_realtime(),
+				    fpu_id,
+				    resend_downcount);
+			
+			max_retries_exceeded = true;
+			continue;
+			
                     }
                     do_retry = true;
                     LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
@@ -1986,7 +2002,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                 " retry from start! (%i retries left)\n",
                                 ethercanif::get_realtime(),
                                 fpu_id,
-                                resend_downcount);
+                               resend_downcount);
                     LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): warning: "
                                 "loading/ready state or number of waveform segments not confirmed for FPU #%i,"
                                 " retry from start! (%i retries left)\n",
@@ -1994,14 +2010,12 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                 fpu_id,
                                 resend_downcount);
 		    
-                    LOG_CONSOLE(LOG_INFO, "%18.6f : configMotion(): warning: "
-                                "loading/ready state not confirmed for FPU #%i,"
-                                " retry from start! (%i retries left)\n",
-                                ethercanif::get_realtime(),
-                                fpu_id,
-                                resend_downcount);
                 }
             }
+	    if (max_retries_exceeded)
+	    {
+		return DE_MAX_RETRIES_EXCEEDED;
+	    }
             if (do_retry)
             {
                 // we start again with loading the first step
