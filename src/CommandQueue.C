@@ -163,28 +163,29 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
         // signal an event to notify any waiting poll.
         if (was_empty)
 	{
-          pthread_cond_broadcast(&cond_queue_append);
+	    pthread_cond_broadcast(&cond_queue_append);
 
-	  if (EventDescriptorNewCommand >= 0)
-          {
-            uint64_t val = 1;
-
-            int rv = write(EventDescriptorNewCommand, &val, sizeof(val));
-	    if (rv != sizeof(val))
+	    if (EventDescriptorNewCommand >= 0)
 	    {
-		LOG_CONTROL(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error: command queue event notification failed, errno=%i\n",
-			    ethercanif::get_realtime(), errno);
-		LOG_CONSOLE(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error: command queue event notification failed, errno =%i\n",
-			    ethercanif::get_realtime(), errno);
+		uint64_t val = 1;
+
+		int rv = write(EventDescriptorNewCommand, &val, sizeof(val));
+		if (rv != sizeof(val))
+		{
+		    LOG_CONTROL(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error: command queue event notification failed, errno=%i\n",
+				ethercanif::get_realtime(), errno);
+		    LOG_CONSOLE(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error: command queue event notification failed, errno =%i\n",
+				ethercanif::get_realtime(), errno);
+		}
 	    }
-	  }
-        }
-        pthread_mutex_unlock(&queue_mutex);
-    }
+	}
 
-    return QS_OK;
+	pthread_mutex_unlock(&queue_mutex);
 
     }
+
+	return QS_OK;
+}
     
 
 unique_ptr<CAN_Command> CommandQueue::dequeue(int gateway_id)
