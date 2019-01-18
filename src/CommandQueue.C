@@ -177,13 +177,15 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 		LOG_CONSOLE(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error: command queue event notification failed, errno =%i\n",
 			    ethercanif::get_realtime(), errno);
 	    }
+	  }
         }
         pthread_mutex_unlock(&queue_mutex);
     }
 
     return QS_OK;
 
-}
+    }
+    
 
 unique_ptr<CAN_Command> CommandQueue::dequeue(int gateway_id)
 {

@@ -149,7 +149,7 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
     pthread_mutex_lock(&command_creation_mutex);
 
 
-    while (num_avaliable_retries > 0)
+    while (true)
     {
         estatus = configMotionAsync(grid_state, state_summary, cur_wtable, fpuset,
                                     allow_uninitialized, ruleset_version);
@@ -160,11 +160,8 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
             break;
         }
 
-        // if (state_summary == GS_READY_FORWARD)
-        // {
-        //     // Success: All FPUs have waveforms loaded. Loading finished.
-        //     break;
-        // }
+        num_avaliable_retries--;
+	
 
         // we have most probably a time-out and need to load some
         // waveforms again. To do that we strip FPUs from
@@ -176,13 +173,27 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
         // on top of the FPUs. Probably has to be made
         // more robust for such cases.
 
-        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
-                    "re-loading missing waveforms\n",
-                    ethercanif::get_realtime(), num_avaliable_retries);
-
-        LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
-                    "re-loading missing waveforms\n",
-                    ethercanif::get_realtime(), num_avaliable_retries);
+	if (num_avaliable_retries > 0)
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
+			"re-loading missing waveforms\n",
+			ethercanif::get_realtime(), num_avaliable_retries);
+	
+	    LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
+			"re-loading missing waveforms\n",
+			ethercanif::get_realtime(), num_avaliable_retries);
+	}
+	else
+	{
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
+			"giving up\n",
+			ethercanif::get_realtime(), num_avaliable_retries);
+	
+	    LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
+			"giving up\n",
+			ethercanif::get_realtime(), num_avaliable_retries);
+	    break;
+	}
 
 
         // In this place, a down-counting iterator is used
@@ -217,7 +228,6 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
             break;
         }
 
-        num_avaliable_retries--;
     }
 
     pthread_mutex_unlock(&command_creation_mutex);
