@@ -229,12 +229,12 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     /* priorities 0x01 and 0x02 are reserved for
        FPU warning messages and command responses. */
 
-    /* used for emergency stop, usually broadcast */
+    /* used for emergency stop, usually broadcast with priority zero */
     case CCMD_ABORT_MOTION                       :
-    /* movement commands, usually broadcast */
+    /* movement commands, usually broadcast with priority zero */
     case CCMD_EXECUTE_MOTION                     :
     case CCMD_FIND_DATUM                         :
-        priority = 0x00;
+        priority = 0x03;
         break;
 
     /* special motion commands */
@@ -243,7 +243,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     case CCMD_UNLOCK_UNIT                        :
     case CCMD_FREE_BETA_COLLISION                :
     case CCMD_FREE_ALPHA_LIMIT_BREACH            :
-        priority = 0x03;
+        priority = 0x04;
         break;
 
     /* error recovery */
@@ -253,7 +253,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION      :
     case CCMD_CHECK_INTEGRITY                    :
     case CCMD_ENABLE_MOVE                        :
-        priority = 0x04;
+        priority = 0x05;
         break;
 
     /* motion configuration */
@@ -269,7 +269,7 @@ inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
     case CCMD_PING_FPU                           :
     case CCMD_SET_TICKS_PER_SEGMENT              :
     case CCMD_SET_STEPS_PER_SEGMENT              :
-        priority = 0x05;
+        priority = 0x06;
         break;
 
     // invalid cases
