@@ -26,21 +26,25 @@ def parse_args():
     parser.add_argument('--resetFPU',   default=False, action='store_true',
                         help='reset FPU controller so that earlier aborts / collisions are ignored')
 
-    parser.add_argument('--gateway_port', metavar='GATEWAY_PORT', type=int, default=4700,
+    parser.add_argument('--gateway-port', metavar='GATEWAY_PORT', type=int, default=4700,
                         help='EtherCAN gateway port number (default: %(default)s)')
 
-    parser.add_argument('--gateway_address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
+    parser.add_argument('--gateway-address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
     
-    parser.add_argument('-D', '--bus_repeat_dummy_delay',  metavar='BUS_REPEAT_DUMMY_DELAY',
+    parser.add_argument('-D', '--bus-repeat-dummy-delay',  metavar='BUS_REPEAT_DUMMY_DELAY',
                         type=int, default=0,
                         help='Dummy delay inserted before writing to the same bus (default: %(default)s).')
     
-    parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=NUM_FPUS,
+    parser.add_argument('-N', '--NUM-FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=NUM_FPUS,
                         help='Number of adressed FPUs (default: %(default)s).')
     
-    parser.add_argument('-K', '--COUNT_COMMANDS',  metavar='COUNT_COMMANDS', dest='K', type=int, default=6000000,
+    parser.add_argument('-K', '--COUNT-COMMANDS',  metavar='COUNT_COMMANDS', dest='K', type=int, default=6000000,
                         help='COUNT of high-level commands (default: %(default)s).')
+    
+    parser.add_argument('-t', '--trace-messages',   default=False, action='store_true',
+                        help="enable log level LOG_TRACE_CAN_MESSAGES which will log "
+                        "all sent and received CAN messages (this requires some amount of disk space).")
     
     parser.add_argument('--command', metavar='COMMAND', type=str, default="configMotion",
                         help='CAN command which is sent in test. COMMAND can be either '
@@ -60,6 +64,11 @@ def initialize_FPUs(args):
     # Warning: This driver class should *not* be used in combination
     # with actual hardware, which can be damaged by out-of-range
     # movements.
+
+    if args.trace_messages:
+        loglevel = FpuGridDriver.LOG_TRACE_CAN_MESSAGES
+    else:
+        loglevel = FpuGridDriver.LOG_INFO
     
     gd = FpuGridDriver.UnprotectedGridDriver(args.N, # number of FPUs
                                              # dummy delay before sending to the same bus
@@ -73,8 +82,7 @@ def initialize_FPUs(args):
                                              # set log level to low value
                                              # (try FpuGridDriver.LOG_TRACE_CAN_MESSAGES to have
                                              # every CAN message logged)
-                                             logLevel=FpuGridDriver.LOG_TRACE_CAN_MESSAGES,
-                                             #logLevel=FpuGridDriver.LOG_INFO,
+                                             logLevel=loglevel,
                                              log_dir="./_logs")
     if args.mockup:
         # test against fast hardware simulation
