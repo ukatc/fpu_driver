@@ -4,7 +4,11 @@ INSTALLATION OF FPU DRIVER
 PREREQUISITES
 =============
 
-1) for the C++ driver and static library
+1) A 64-bit Linux system with kernel 2.6 or newer.  (Debian >= 9,
+   Ubuntu >= 17.10, Scientific Linux >= 2017, Arch Linux are all
+   supported).
+
+2) for the C++ driver and static library
 
  * gcc-4.9 (essentially, with support for C++11)
  * Linux-2.6 or newer (requiring support for eventfd)
@@ -12,11 +16,29 @@ PREREQUISITES
  * liblmdb0 (Lightning Memory database, aka LMDB)
  * lmdb-utils (contains backup utility for LMDB)
 
-2) for the test code and Python bindings
+3) for the test code and Python bindings
 
  * Python-2.7
  * boost-1-66 , which can be downloaded from http://www.boost.org/users/download/
  * python-lmdb (Python bindings)
+
+
+4) For running the hardware simulation
+
+ * Python-2.7 or Python-3.5
+ * the gevent module (pip install gevent)
+
+5) for generating the documentation from scratch (normally not needed)
+
+* LaTeX, for example tex-live
+
+* the minted package
+
+* python-pygments or pygments (normally contained in tex-live)
+
+* inkscape (to generate pictures from SVG vector drawings)
+
+
 
 INSTALLATION
 ============
@@ -114,20 +136,22 @@ gateway which responds to messages as specified by the hardware
 protocol. To run it, change into a new terminal window and
 issue
 
-# cd testing
+# cd test/HardwareSimulation
 
 python2 mock_gateway.py
 
 
 This test code opens three socket connections on localhost and will
-display received messages and commands. It will not necessarily
-run with the same speed as the hardware but should match the
-hardware protocol faithfully.
+display received messages and commands. Depending on available CPU
+power, will not necessarily run with exactly the same speed as the
+real hardware but should match the hardware protocol faithfully. The
+parameter "-N" allows to set the number of simulated FPUs.
 
-[In future,] Use the command line option "--help" to check for additional features,
-such as simulating communication failures etc.
+Use the command line option "--help" or "-h" to check for additional
+features, such as simulating communication failures etc.
 
 In another terminal window, you can run the tests:
+cd python
 python2 -i test_mock/test_findDatum.py
 and so on.
 
