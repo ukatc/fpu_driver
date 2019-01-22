@@ -75,16 +75,17 @@ instrument. Important secondary uses are verifying and calibrating the
 components of the positioning system, developing and testing of
 algorithms for complex higher layers of the instrument control system,
 and engineering and development of related systems and verification
-software such as image analysis. For this second use, a Python driver
-is available, which derives the lion's share of its functionality by
-the C++ EtherCAN interface, while adding a small amount of
-functionality which is only required for testing, or experimental.
+software such as image analysis. For this secondary uses, a Python
+module is available, which derives the lion's share of its
+functionality by the C++ EtherCAN interface, while adding a small
+amount of functionality which is only required for testing, or still
+experimental.
 
 Using the final verification software will not require the users to
 know how to program Python.  However, several parts of the
-verification software system and the instrument control software are
-entirely or initially developed and tested in Python.  The Python
-driver library documented here has the function to make the
+verification software system and the MOONS instrument control software
+(ICS) are initially developed and tested in Python.  The Python
+interface module documented here has the function to make the
 functionality of the C++ EtherCAN interface accessible from Python. As
 such, the goal of this document is to describe a toolbox which can be
 used to manipulate and test the FPUs as easily as possible, while the
@@ -109,29 +110,32 @@ is reaching its end of life in 2020, has some differences to Python
 3. However this description will proceed in a way that differences to
 Python 3 are minimised.
 
-\index{git!further information}
-\index{git!getting or updating a repository}
-Also, in order to retrieve the current version of the library, the
-user needs to have a minimum knowledge of the git version control
-system. This is explained, for example, in
+\index{git!further information} \index{git!getting or updating a
+  repository} Also, in order to retrieve the current version of the
+library, the user needs to have a minimum knowledge of either
+subversion or the git version control system. This is explained, for
+example, in
 ``\href{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}{getting
-  a git repository}\footnote{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}''.
+  a git
+  repository}\footnote{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}''.
 
 \paragraph{Order of presentation}
-The order of presentation is divided in three parts, as follows: The
-first part represents a tutorial aiming at explaining quickly how to
-use the software. In section~\ref{sec:settingup}, it is explained how
-the EtherCAN interface module is configured. Then, in
+The order of presentation is divided in three parts, as follows:
+
+\begin{enumerate}
+\item The first part represents a tutorial aiming at explaining quickly how
+to use the software. In section~\ref{sec:settingup}, it is explained
+how the EtherCAN interface module is configured. Then, in
 section~\ref{sec:minimalexample}, a minimal example is presented. As
 additional required knowledge, in section~\ref{sec:protectionrules}
 the rules for using the software protection layer, and in
 section~\ref{sec:datumswitchcheck}, a procedure to verify that the
 datum switches are working at all are explained. It is recommended to
 read all of these sections before starting to operate the FPUs, and
-make sure that the datum switches work before using any
-datum operation.
+make sure that the datum switches work before using any datum
+operation.
 
-The second part forms a manual which provides more complete
+\item The second part forms a manual which provides more complete
 information on how to operate the FPUs, and how to solve
 problems. Section~\ref{sec:commontasks} explains how to perform common
 tasks. Section~\ref{sec:errorhandling} explains how errors are
@@ -142,11 +146,12 @@ collisions and limit switch breaches are handled. The final section
 of that part, section~\ref{sec:multifpu}, explains how multiple FPUs
 can be handled, especially in complex recovery scenarios.
 
-The third part is the reference part, section~\ref{sec:reference}.
+\item The third part is the reference part, section~\ref{sec:reference}.
 It lists all available commands with a comprehensive list of all their
 options, and also documents the hierarchy of exceptions.
 Additionally, section~\ref{sec:changelog} contains a detailed reverse
 chronological list of changes to commands.
+\end{enumerate}
 
 Finally, there is an Appendix part. It lists additional examples
 (section~\ref{sec:moreexamples}), gives a full list of software
@@ -160,19 +165,34 @@ the test gateway (section~\ref{sec:runningthegateway}).
 \index{EtherCAN interface!building}
 
 This section deals with retrieving, installing and configuring the
-EtherCAN interface module. On the MOONS workstation, it can be skipped because the
-FPU EtherCAN interface is already installed.  In this case, you can proceed
-directly with section~\ref{sec:minimalexample} on
-page~\pageref{sec:minimalexample}.
+EtherCAN interface module. On the MOONS workstation at UKATC, it can
+be skipped because the FPU EtherCAN interface is already installed.
+In this case, you can proceed directly with
+section~\ref{sec:minimalexample} on page~\pageref{sec:minimalexample}.
+
+\subsection{Installing required dependencies for a new installation}
+For a new installation, a number of required dependencies should be
+installed on a 64-bit Linux system. The detailed list of dependencies,
+and how to install them is explained in
+Appendix~\ref{sec:installationfromscratch} on
+page~\pageref{sec:installationfromscratch}.
+
 
 \subsection{Getting the source code}
 
-To set up the library module, it is first
-necessary to retrieve a current copy of its source code.
-On the moons-pc01 workstation, this can be done using the
-command \mint{bash}|git clone /home/jnix/fpu_driver|
-This creates a new directory with the name \texttt{fpu\_driver}
-and populates it with the source code.
+To set up the library module, it is first necessary to retrieve a
+current copy of its source code.
+
+\subsubsection{Using a packed archive}
+Without direct access, this can be done by unpacking a tar archive
+with the latest sources.
+
+
+\subsubsection{Using network access}
+On the moons-pc01 workstation, this can be done using the command
+\mint{bash}|git clone /home/jnix/fpu_driver| This creates a new
+directory with the name \texttt{fpu\_driver} and populates it with the
+source code.
 
 Alternatively, a fresh copy can be retrieved from the UKATC dalriada
 server. Doing this this requires a personal user account on that
@@ -185,7 +205,7 @@ the command
 After entering the password for user \texttt{carl}, the
 source code is copied into the new folder \texttt{fpu\_driver}.
 
-\subsection{Refreshing the source code}
+\paragraph{Refreshing the source code from git}
 \index{EtherCAN interface!building!update or change version}
 To refresh the source code, change the
 working directory to \texttt{fpu\_driver},
@@ -193,6 +213,19 @@ and issue the command
 
 \mint{bash}|git pull|
 
+\subsubsection{Using the ESO subversion repository}
+
+This repository contains the current development version of the module
+for hardware protocol 2. It can be retrieved using the URL
+\url{http://svnhq1.hq.eso.org/p1/branches/MOONS/FibrePositioner/MOONS2/ICS/mpifps/}.
+
+The \texttt{"make"} commands described in the following need to be run
+in the top-level folder. This uses a temporary \texttt{Makefile} which
+ignores the other ICS components. Running the code from this
+development branch requires to run either the included EtherCAN
+hardware simulation (as described in
+Appendix~\ref{sec:runningthegateway}), or compatible FPU firmware for
+hardware protocol v2.
 
 \subsection{Building specific revisions}
 \index{git!get specific version}
@@ -204,11 +237,11 @@ working version.
 In some cases, it might be required to
 use a specific revision of the library.
 Assuming that we need, as an example,
-to build version 1.0.0 of the library,
+to build version 1.5.2 of the library,
 checking out this revision is done with the
 command
 
-\mint{bash}|git checkout v1.0.0|
+\mint{bash}|git checkout v1.5.2|
 
 After this, one can proceed with building the library as normal. To
 switch back to the master branch, issue the command
@@ -223,46 +256,48 @@ change the working directory to \texttt{fpu\_driver},
 and issue the command \mint{bash}|make wrapper|
 
 In order for this to work, the required dependencies need to be
-installed. For the MOONS workstation, this is always the case. To
-install these dependencies on other computers, follow the detailed
-instructions in the appendix section~\ref{sec:installationfromscratch}
-on page~\pageref{sec:installationfromscratch}.  A more concise summary
-is given in the text file ``\texttt{doc/INSTALL}''.
+installed. For the MOONS workstation at UK ATC, this is always the
+case. To install these dependencies on other computers, follow the
+detailed instructions in the appendix
+section~\ref{sec:installationfromscratch} on
+page~\pageref{sec:installationfromscratch}.  A more concise summary is
+given in the text file ``\texttt{python/doc/INSTALL}''.
 
 \subsection{Enabling debug output of CAN messages}
 
-Previous versions of the EtherCAN interface required to change macros in the C
-source code to enable low-level logging of CAN commands.  Beginning
-with EtherCAN interface version 0.5.3, a very comprehensive log of sent and
-received CAN messages is enabled by default. For long running tests,
-the logging might need to be set to a lower level of detail in order
-to keep the used disk space in reasonable limits.  See
+Beginning with EtherCAN interface version 0.5.3, a very comprehensive
+log of sent and received CAN messages is enabled by default. For long
+running tests, the logging might need to be set to a lower level of
+detail in order to keep the used disk space in reasonable limits.  See
 section~\ref{sec:logging} on page~\pageref{sec:logging} for the
 location of these logs, and any further details.
 
 
 \subsection{Environment configuration}
+\label{sec:environmentconfiguration}
 \index{EtherCAN interface!configuration}
 \index{setup!environment variables}
 \index{environment variables}
 
 For the Python module to work, the directory \texttt{/user/local/lib}
-needs to be added to the environment variable
+(or, more general, the path to which the boost::python library is
+installed to) needs to be added to the environment variable
 \texttt{LD\_LIBRARY\_PATH}.
 
-The library uses a lock file to prevent that different processes write
-simultaneously to the same gateway. To access the lock file, all user
-accounts which access the driver software need to be member of the
-Unix group defined in the environment variable
+Further, the library uses a lock file to prevent that different
+processes send simultaneously commands to the same gateway. To access
+the lock file, all user accounts which use the driver software need to
+be member of the Unix group defined in the environment variable
 \texttt{MOONS\_GATEWAY\_ACCESS\_GROUP}. The default name for that
 group is \texttt{"moons"}.
  
-Also, it is probably useful to add the \texttt{python} directory and
-the current directory to the environment variable \texttt{PYTHONPATH},
-so that the EtherCAN interface module can be found independently from the current
-working directory.  Assuming a standard Ubuntu or Debian setup, this
-can be done by adding the following lines to the file \texttt{.bashrc}
-in the user-specific home directory:
+Also, it is probably useful to add the \texttt{python} directory
+within the driver package, and also the current directory to the
+environment variable \texttt{PYTHONPATH}, so that the EtherCAN
+interface module can be found independently from the current working
+directory.  Assuming a standard Ubuntu or Debian setup, this can be
+done by adding the following lines to the file \texttt{.bashrc} in the
+user-specific home directory:
 
 \begin{minted}{bash}
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
@@ -279,19 +314,22 @@ directory in the PATH environment variable, like this:
 
  
 Further, it is recommended to set the default log directory to point
-to a file system which has a lot of free space, for example:
+to a file system which is writable and has a lot of free space, for
+example:
 \begin{minted}{bash}
   export FPU_INTERFACE_DEFAULT_LOGDIR=/moonsdata/logfiles
 \end{minted}
 
 \index{software protection!configuration}
 \index{software protection!access permissions}
-This version of the EtherCAN interface uses a position database, which tracks
-positions and state of FPUs at any point in time. Importantly, this
-database needs to be \emph{global} for the workstation on which the
-EtherCAN interface software is running. To configure it, the environment variable
-\texttt{FPU\_DATABASE} needs to be set in the configuration file
-\texttt{/etc/profile} as follows:
+%
+One more setting is required: This version of the EtherCAN interface
+uses a position database, which tracks positions and state of FPUs at
+any point in time. Importantly, this database needs to be
+\emph{global} (that is, for all users) for the workstation on which
+the EtherCAN interface software is running. To configure it, the
+environment variable \texttt{FPU\_DATABASE} needs to be set in the
+configuration file \texttt{/etc/profile} as follows:
 
 \index{software protection!environment variables}
 \index{LMDB database!environment setup}
@@ -301,6 +339,10 @@ EtherCAN interface software is running. To configure it, the environment variabl
   export FPU_DATABASE
 \end{minted}
 
+If this variable is not set, the FPU position database will not be
+used. In this case, the hardware protection capability, which is
+implemented in the Python wrapper, is not available.
+
 \index{LMDB database!access permissions}
 The directory specified has to be created to be writable by any user
 which runs an FPU EtherCAN interface. It is therefore necessary to set up any user
@@ -308,10 +350,24 @@ which runs the FPU EtherCAN interface to belong to the same user group, and make
 the directory writable by any member of this group, using the Unix
 ``chmod'' and ``chgrp'' commands.
 
+\paragraph{Note on memory usage}
+\index{virtual memory usage}
+\index{troubleshooting!memory consumption}%
+\index{memory leak|see{virtual memory usage}}%
+%
+As a side note, the FPU position database uses LMDB to enable
+fail-safe storage and logging. This is a fast, thread-safe key-value
+storage which uses large memory-mapped files.  LMDB can often use a
+large amount of virtual memory. This is not a bug and especially not a
+memory leak, as only a small fraction of this data is actually loaded
+into RAM.
+
+
 \subsection{Supported firmware versions}
-This EtherCAN interface requires FPU firmware version 1.5.0 to support all regular
-features. Older versions of the FPU firmware are not fully supported.
-See section~\ref{sec:firmware_compatibility} for details which
+This EtherCAN interface requires FPU firmware version 1.6.0 to support
+all regular features. Older versions of the FPU firmware are not fully
+supported, and do not handle CAN message priorities correctly.  See
+section~\ref{sec:firmware_compatibility} for details which
 functionality is missing for older versions.
 
 \subsection{Hardware configuration and addressing}
@@ -344,13 +400,13 @@ From the selected gateway, the messages are then forwarded to up to
 five CAN buses. Each bus connected to a gateway is identified with a
 number as well, and is connected to up to 72 (currently, 67) FPUs.
 \index{DIP switch} To identify each FPU in a setup with many FPUs,
-they have to use a CAN ID which is unique on each bus, and is
-different from zero. This ID is physically configured by manually
+they have to use a CAN ID which is unique on each bus, \emph{and is
+  different from zero}. This ID is physically configured by manually
 toggling a DIP switch in the FPU's electronics board. The current
-EtherCAN interface uses a fixed continuous mapping (basically, array indexing)
-from the translation of FPU IDs to gateway number, bus number, and CAN
-ID\footnote{Future versions of the software will relax this
-  restriction}.
+EtherCAN interface uses a fixed continuous mapping (basically, array
+indexing) from the translation of FPU IDs to gateway number, bus
+number, and CAN ID\footnote{Future versions of the software will relax
+  this restriction}.
 
 This results in that each FPU has a physical address with three
 elements: gateway number, bus number, and CAN ID.
@@ -366,10 +422,15 @@ elements: gateway number, bus number, and CAN ID.
 \index{software protection!configuration and setup}
 \index{LMDB database!initialisation}
 
-\paragraph{initialising an FPU}
+\paragraph{Initialising an FPU}
+
+(Note: This step can be skipped if the LMDB protection feature is not
+used, for example when only testing electronic components rather than
+mechanical hardware. In this case, only a limited ``unprotected''
+driver layer is available.)
 
 Before any FPU can be used with the EtherCAN interface, two commands
-need to be performed to configure it:
+need to be performed to configure the hardware protection feature:
 
 \begin{enumerate}
 \item The serial number of the FPU needs to be flashed to the
@@ -475,15 +536,15 @@ section~\ref{sec:healthlog}. More commands and options are shown if the
 tool is run with the command-line option ``-h'' or ``--help''.
 
 \subsection{Database maintenance}
-\index{LMDB database!maintenance, backup}
-The position database is required to operate the FPUs and will also
-hold some data gathered during calibration of the FPUs. It is
-therefore quite important to back it up regularly.  It can be backed
-up by copying the content of the directory defined in the
+\index{LMDB database!maintenance, backup} The position database is
+required to operate the FPUs in the normal (protected) operation mode,
+and will also hold some data gathered during calibration of the
+FPUs. It is therefore necessary to back it up regularly.  It can be
+backed up by copying the content of the directory defined in the
 \verb+$FPU_DATABASE+ environment variable. For this, the dedicated
 backup tool for LMDB, \texttt{mdb\_copy} should to be
-used. \texttt{mdb\_copy} can also back-up a database which is in use,
-for example during long-running lifetime tests.
+used. \texttt{mdb\_copy} is safe for backing up a database which is in
+use at the same time.
 
 The database can be used by several EtherCAN interface instances at once, each of
 them controlling different FPUs. When the involved EtherCAN interfaces are not
@@ -494,11 +555,15 @@ information in the database will remain valid.
 \label{sec:protectionintro}
 \index{hardware protection!function}
 \index{soft\_protection flag}
+\paragraph{Protecting instrument hardware}
 The FPU control chain uses a layered approach to make sure that fibre
-positioner units do not get damaged.  At the bottom layer, there is an
-electronic collision protection, which will switch off the motors and
-send a warning message if two FPUs touch each other. This protection
-level is called ``hardware protection''.
+positioner units do not get damaged.
+
+\paragraph{Hardware protection}
+At the bottom layer, there is an electronic collision protection,
+which will switch off the motors and send a warning message if two
+FPUs touch each other. This protection level is called ``hardware
+protection''.
 
 \index{wear and tear} \index{avoiding hardware damage}
 
@@ -510,13 +575,15 @@ hardware protection should be used only at an emergency
 level. Furthermore, some situations are not covered by it,
 specifically if the FPU arms are moved into the dead zones.
 
-For these two reasons, the EtherCAN interface software performs comprehensive
-additional checks which should ideally ensure that no out-of-range
-movements occur. These checks are performed every time an FPU is
-moved, or configured to move, and are named ``software protection''.
-For all normal movements of FPUs, this protection should be left
-active.
+\paragraph{Software protection}
+For these two reasons, the EtherCAN interface software performs
+comprehensive additional checks which should ideally ensure that no
+out-of-range movements occur. These checks are performed every time an
+FPU is moved, or configured to move, and are named ``software
+protection''.  For all normal movements of FPUs, this protection
+should be left active.
 
+\paragraph{Deactivating the software protection}
 In some situations, specifically if the hardware protection or the
 alpha datum switch needs to be tested, it can be necessary to switch
 off and deactivate this software protection layer. This can be done
@@ -530,6 +597,11 @@ FPUMovementSafetySpecification.docx, the actual RFE to software ICD
 document, and additional hardware and firmware documentation), to
 assess which operations are safe.
 
+It is also possible to de-activate any protection by using a special
+driver class with the name \texttt{UnprotectedGridDriver}. This class
+is useful for testing purposes, but should not be used with valuable
+hardware.
+
 
 
 \subsection{Communication protocol versions}
@@ -539,7 +611,7 @@ assess which operations are safe.
 sends commands to the fibre positioner units, which use a specific
 communication protocol. This protocol needs to match the FPUs firmware
 and its capabilities. The current version of the EtherCAN interface (version
-1.0.x) uses ``communication protocol version 1.3'', which has some
+1.6.x) uses ``communication protocol version 1.6'', which has some
 restrictions in functionality.
 
 A significant difference in the hardware protection capabilities is
@@ -549,8 +621,8 @@ section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
 
 
 The functionality described in this document is supported by EtherCAN interface
-versions equal or newer than 1.0.0 and an FPU  firmware that supports the
-CAN protocol version 1.3 or later. Earlier firmware versions do not
+versions equal or newer than 1.5.2 and an FPU  firmware that supports the
+CAN protocol version 1.6.0 or later. Earlier firmware versions do not
 support all described features.
 
 The next sections are intended as a tutorial on how to control and
@@ -1117,14 +1189,15 @@ allowed, and designed to include the following error conditions:
 \index{ambiguous positions}
 \index{ProtectionError!due to ambiguous  position}
 %
-When movements are interrupted, due to errors like
-collisions, or due to \texttt{abortMotion} messages, it is possible
-that positions become ambiguous. It can happen that such an ambiguous
-position prevents the software protection from allowing a new
-movement.  For example, if the beta arm is only known to be in a range
-between -10.0\degree\ and +10.0\degree\ degrees, the software protection cannot decide
-whether it should be moved clock-wise or anti-clockwise. In this case,
-an error is thrown.
+When movements are interrupted, due to errors like collisions, or due
+to \texttt{abortMotion} messages, it is possible that positions become
+ambiguous. Normally, ambiguous positions are resolved by issuing a
+\texttt{findDatum()} command.  It can however happen that such an
+ambiguous position prevents the software protection from allowing a
+new movement.  For example, if the beta arm is only known to be in a
+range between -10.0\degree\ and +10.0\degree\ degrees, the software
+protection cannot decide whether it should be moved clock-wise or
+anti-clockwise. In this case, an error is thrown.
 
 There are three ways to handle such a situation:
 
@@ -3062,12 +3135,12 @@ firmware versions (as long as the firmware supports the specific
 command mode).
 
 Note that using the \texttt{fpuset} parameter is not in all cases the
-best option if FPUs need to be handled independently. Alternative
-approaches are to instantiate separate driver objects which connect to
+best option if FPUs need to be handled independently. An alternative
+approach id to instantiate separate driver objects which connect to
 different gateways. In such an set-up, each gateway will need an
-individual IP, and should also get an individual MAC address. This can
-be done within the same python program, or in different programs which
-can operate completely independently.
+individual IP address, and should also have an individual MAC
+address. This can be done either within the same python program, or in
+different programs which can operate completely independently.
 
 
 \subsubsection{connect()}
@@ -4664,8 +4737,9 @@ might change.
 \index{supported firmware versions}
 \index{firmware compatibility}
 
-The EtherCAN interface documented here, version 1.4.1, is compatible with firmware
-1.6.0 and newer. The following limitations apply for older firmware versions:
+The EtherCAN interface documented here, version 1.5.2, requires
+firmware version 1.6.0 or newer. The following limitations apply for
+older firmware versions:
 
 \begin{description}
   
@@ -4674,17 +4748,19 @@ The EtherCAN interface documented here, version 1.4.1, is compatible with firmwa
       
     \item For these firmware protocol versions, it is not possible to
       configure a waveform reliably without using a confirmation for
-      every message.
+      every message -- this is only supported by the upcoming hardware
+      protocol 2.
   \end{itemize}
 
 
   \item[firmware versions < 1.6.0]
     \begin{itemize}
-    \item Requires to set the driver parameter
-      \texttt{can\_command\_priority} to zero, otherwise the firmware
-      will not recognise any commands. In order to avoid problems with
-      reliable transmission of response messages, it is recommended
-      to use newer firmware.
+    \item Requires to set the driver keyword parameter
+      \texttt{can\_command\-priority} to zero, otherwise the firmware
+      will not recognise any commands. All CAN priorities will be set
+      to zero (which is incorrect). In order to avoid problems with
+      unreliable transmission of response messages, it is strongly
+      recommended to use newer firmware.
   \end{itemize}
 
   
@@ -4741,9 +4817,59 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
+\subsection*{Changes in version 1.5.2}
+\begin{itemize}
+\item Added: Use of LMDB can now be disabled by clearing the
+  environment variable \texttt{FPU\_DATABASE}.  This requires to use
+  the undocumented class \texttt{UnprotectedGridDriver} in place of
+  \texttt{GridDriver}.
+
+\item Added: Add option to set socket write buffer size in \texttt{EtherCanInterfaceConfig} class.
+  
+\item Fixed: Fixed some compiler warnings which have been added in g++ 7.2.0 (re-enabling compilation on Ubuntu 17.10)
+
+\item Added: Default file size for LMDB is now set to a supported size if a 32-bit system platform is detected.
+  The amount of movements that can be logged is limited in this case.
+
+\item Changed: Set time-out value for CAN messages to 100 seconds for
+  both \texttt{configMotion} and \texttt{pingFPUs} messages.
+
+\item Changed: Fix Makefile so that explicit file lists are used for
+  source files in place of wild cards. This allows to share folders
+  with ICS code in the MOONS ICS subversion repository.
+  
+\end{itemize}
+
+\subsection*{Changes in version 1.5.1}
+\begin{itemize}
+
+\item  Added: \texttt{testGateway.py}  script was added, which allows to soak-test the
+  EtherCAN gateway by sending many CAN messages in quick succession.
+
+\item Changed: Remove small pauses which were inserted at the level of
+  the Python wrapper, when executing several commands.
+  
+\end{itemize}
+
+\subsection*{Changes in version 1.5.0}
+\begin{itemize}
+
+\item  Internal optimisation: Data structure which keeps next time-out was optimised, which reduces
+  the CPU load significantly.
+
+\item Fixed: Add missing event signal (broadcast of condition variable) when new commands arrive
+  to empty command queue, further speeding up sending of commands.
+
+\item Changed: Set default DummyDelay value to 2, making sure that the
+  minimum waiting time is one millisecond.
+  
+\end{itemize}
+
+
 \subsection*{Changes in version 1.4.1}
 \begin{itemize}
 
+  
 \item Fixed: A bug in version 1.4.0 was fixed which caused an error
   message when using the ``flash'' command of the fpu-admin tool. The
   generated error was not critical in this case, but uncovered a fault
@@ -4752,13 +4878,13 @@ commands, or alter otherwise visible behaviour of the driver.
 \item Added: Previously, the driver did not check whether an EtherCAN
   gateway was exclusively accessed. Connecting with several client
   instances to the same gateway causes that gateway to mix up
-  operations (it is not designed for that), and subsequently causes
+  operations, which it is not designed for. This subsequently causes
   the driver to stop operations because they have no consistent
   result. This can in theory also damage FPUs.
 
-  To address that, a check for exclusive access was added, which makes
-  sure that no other driver instance on the same computer will access
-  the same gateway address at the same time.
+  To address that, a check for exclusive access was added to the
+  Python layer, making sure that no other driver instance on the same
+  computer will access the same gateway address at the same time.
   
 \end{itemize}
 
@@ -5346,6 +5472,9 @@ as needed. Here is an overview what each script does:
 \begin{description}
 \item[test\_pingFPU.py] issues a pingFPU command and reports the positions
 \item[test\_printSerialNumbers.py] retrieves and prints the serial numbers of all FPUs.
+\item[testGateway.py] test the EtherCAN gateway by sending a large
+  number of CAN commands, checking that all commands are confirmed
+  correctly, and computing the average rate of CAN messages per seconds.
 \item[test\_getPositions.py] retrieves and lists the step counters of the FPUs
 \item[test\_configMotion.py] configures a movement by defining a wavetable as a Python literal
 \item[test\_executeMotion.py] configures and executes a movement
@@ -5372,6 +5501,24 @@ as needed. Here is an overview what each script does:
 \index{boost libraries!retrieving}
 \index{git!installation}
 
+\subsection{Platform requirements}
+
+The EtherCAN interface and Python layer has been tested on Scientific
+Linux 2017, Ubuntu 17.10 (codename Artful Aardvark), Debian 9
+(codename Stretch), and Arch Linux (2018.08.01). As a minimum, it
+requires a Linux kernel with version 2.6 or newer.
+
+The Python module is configured and tested to use Python 2.7.  No
+major adaptations, but some minor changes in the configuration of
+\texttt{boost::python} are expected for running it in Python 3.
+
+It is highly recommended to use a 64-bit system
+installation. Otherwise the logging capacity in LMDB is limited by the
+file size limit of the system kernel, and file sizes larger than 2 GiB
+require a kernel compiled with large file support (LFS), which is not
+enabled by default in 32-bit Linux.
+
+
 \subsection{Prerequisites}
 
 \begin{enumerate}
@@ -5394,10 +5541,6 @@ These should be available on all current Linux systems.
 \item Python-2.7
 \item boost-1-66 , which can be downloaded from \url{http://www.boost.org/users/download/}
 \item python-lmdb
-\item git-2.1 (not mandatory\footnote{Git is used to automatically add a version
-  string to the python module. If needed, it can be substituted in the
-  makefile, by replacing the definition \texttt{GIT\_VERSION} by a
-  suitable constant value.})
 \end{itemize}
 
 
@@ -5494,22 +5637,23 @@ should add the directory with the boost header files (by default
 variable \verb+CPLUS_INCLUDE_PATH+, so that gcc can find them when
 building the module.
 
-Boost libraries require re-compiling when system upgrades are
-performed.
+The boost::python library may require re-compiling when system
+upgrades are performed.
 
 \subsubsection{Installing the python-gevent module}
 \index{gevent module}
-The Python mock-up gateway uses the gevent
-library which is used to serve parallel requests
-using asynchronous code. In difference to
-Python3's asyncio, it is available both in
-Python2 and Python3.
+%
+The Python mock-up gateway uses the gevent library which is used to
+serve parallel requests using asynchronous code. In difference to
+Python3's asyncio, it is available both in Python2 and Python3. The
+present version (1.6.0) runs with Python 2. It can emulate several
+generations of firmware versions.
 
 On Scientific Linux / Fedora / RHEL, it can be installed
 as follows by the root user:
 
   \begin{minted}{bash}
-    # yum install python-gevent
+    root$ yum install python-gevent
   \end{minted}    
 
 
@@ -5534,8 +5678,8 @@ Python module.  Build the FPU driver library as follows:
     $ make lib
   \end{minted}    
 
-This places the static library libethercan.a into
-the subdirectory "/lib".
+This places the static library libethercan.a into the subdirectory
+"/lib". It can be used in any C++ program.
 
 \subsubsection{Building the python module}
 
@@ -5549,6 +5693,11 @@ This builds the binary extension module \verb+fpu_driver.so+
 and places it into the subdirectory \verb+/python+.
 In the same subdirectory, there are some test
 scripts which can be used to test the module.
+
+After installing the dependencies, several configuration parameters
+need to be set. These are explained in
+section~\ref{sec:environmentconfiguration} on
+page~\pageref{sec:environmentconfiguration} ff.
 
 \subsubsection{Generating the documentation}
 \index{documentation!generating}
@@ -5569,21 +5718,23 @@ command
 \end{minted}
 to generate the documentation\footnote{If the document is generated
   from scratch, it is necessary to repeat this command three times to
-  update the list of contents.}. The generated document has the path
-name \texttt{doc/tutorial.pdf}.
+  update the list of contents.}.
+
+The generated document has the path name
+\texttt{python/doc/tutorial.pdf}.
 
 
 \section{Running the test gateway simulator}
 \label{sec:runningthegateway}
 \index{EtherCAN simulator}
 \subsection{Running the gateway simulator normally}
-In the sub-directory /testing, the package contains a mock-up test
-gateway which responds to messages as specified by the hardware
-protocol. To run it, change into a new terminal window and
-issue
+In the sub-directory \texttt{/test/HardwareSimulation}, the package
+contains a mock-up test gateway which responds to messages as
+specified by the hardware protocol. To run it, change into a new
+terminal window and issue
 
   \begin{minted}{bash}
-    $ cd testing
+    $ cd test/HardwareSimulation
     $ python2 mock_gateway.py
   \end{minted}    
 
@@ -5593,6 +5744,9 @@ display received messages and commands. It will not necessarily run
 with the same speed as the hardware but should match the hardware
 protocol specification faithfully. Run the script with the option
 ``-h'' to see useful options.
+
+Most test scripts will set suitable port numbers and IP addresses when
+run with the ``--mockup'' option.
 
 \subsection{Running the test gateway with debug output}
 
@@ -5609,7 +5763,7 @@ when running it. This can be done quickly with the command
 
 
 
-[In future,] Use the command line option "--help" to check for additional features,
+Use the command line option "--help" to check for additional features,
 such as simulating communication failures etc.
 
 In another terminal window, you can run the tests:
@@ -5623,8 +5777,9 @@ variable \texttt{NUM\_FPUS} to a smaller values (the default is 1000).
 The same is achieved using the option ``-N''.  Usually, this makes
 little visible difference. Keep in mind, however, that surplus
 simulated FPUs respond to broadcast commands, which is reported by the
-EtherCAN interface, and recorded in the logs. Simulating too few FPUs results in
-CAN timeout errors.
+EtherCAN interface, and recorded in the logs. Conversely, simulating
+too few FPUs will result in CAN timeout errors when any commands are
+sent to the missing FPUs.
 
 \index{aborting!movements|see{abortMotion}}
 \printindex
