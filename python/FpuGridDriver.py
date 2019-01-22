@@ -24,7 +24,7 @@ from protectiondb import ProtectionDB, HealthLogDB
 import fpu_commands
 
 import ethercanif
-assert(ethercanif.CAN_PROTOCOL_VERSION == 1), "requires ethercanif module for CAN protocol version 1!"
+assert(ethercanif.CAN_PROTOCOL_VERSION == 2), "requires ethercanif module for CAN protocol version 2!"
 
 from ethercanif import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  EtherCANInterfaceConfig,
                         REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE,
