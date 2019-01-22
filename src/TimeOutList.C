@@ -292,6 +292,9 @@ const timespec TimeOutList::search_min()
     return min_val;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-overflow"
+#pragma GCC diagnostic error "-Wstrict-overflow=2"
 
 // get and remove item with minimum value
 TimeOutList::t_toentry TimeOutList::pop()
@@ -368,6 +371,7 @@ TimeOutList::t_toentry TimeOutList::pop()
     return result;
 }
 
+#pragma GCC diagnostic pop
 
 // this function retrieves the minimum time-out
 // time for each FPU in the FPU grid which

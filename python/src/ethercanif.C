@@ -891,6 +891,10 @@ public:
 
     };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-overflow"
+#pragma GCC diagnostic error "-Wstrict-overflow=2"
+
     E_EtherCANErrCode configMotionWithDict(dict& dict_waveforms, WrapGridState& grid_state,
                                            list &fpu_list,
                                            bool allow_uninitialized=false,
@@ -947,6 +951,7 @@ public:
         return ecode;
 
     };
+#pragma GCC diagnostic pop
 
     WrapGridState wrap_getGridState()
     {
