@@ -1,6 +1,7 @@
 *.aux
 *.log
 /_minted-tutorial/
+/_minted-manual/
 *.dvi
 *.out
 *.toc
@@ -9,6 +10,8 @@
 *.ilg
 *.ind
 /_minted-tutorial-tmp/
+/_minted-manual-tmp/
+tutorial-tmp.aux
 tutorial-tmp.aux
 tutorial-tmp.fdb_latexmk
 tutorial-tmp.fls
@@ -17,5 +20,12 @@ tutorial-tmp.log
 tutorial-tmp.out
 tutorial-tmp.tex
 tutorial.fdb_latexmk
+manual-tmp.fdb_latexmk
+manual-tmp.fls
+manual-tmp.idx
+manual-tmp.log
+manual-tmp.out
+manual-tmp.tex
+manual.fdb_latexmk
 
 

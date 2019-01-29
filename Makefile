@@ -172,13 +172,13 @@ wrapper-lto:  python/src/ethercanif.C $(SRC) $(DEPS) version
 version: force
 	echo '$(VERSION)' | cmp -s - $@ || echo '$(VERSION)' > $@
 
-python/doc/FPU-state1.pdf : python/doc/FPU-state1.svg
-	inkscape python/doc/FPU-state1.svg --export-pdf=python/doc/FPU-state1.pdf
+python/doc/FPU-state2.pdf : python/doc/FPU-state2.svg
+	inkscape python/doc/FPU-state2.svg --export-pdf=python/doc/FPU-state2.pdf
 
 # This builds the documentation. Some extra LaTeX packages, fonts, the minted package,
 # and inkscape are required for this.
-tutorial:	python/doc/tutorial.tex python/doc/FPU-state1.pdf version
-	cd python/doc; pdflatex --shell-escape tutorial.tex; makeindex tutorial ; pdflatex --shell-escape tutorial.tex;
+manual:	python/doc/manual.tex python/doc/FPU-state2.pdf version
+	cd python/doc; pdflatex --shell-escape manual.tex; makeindex manual ; pdflatex --shell-escape manual.tex;
 
 cppcheck: force
 	cppcheck src/*.C python/src/*.C  -I include -I include/ethercan -I include/ethercan/response_handlers \

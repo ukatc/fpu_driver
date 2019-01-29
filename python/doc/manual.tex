@@ -1,6 +1,6 @@
 % -*- mode: latex; eval: (flyspell-mode 1) -*-
-%\documentclass[fontsize=12,a4paper]{scrreprt}
-\documentclass[11pt,a4paper]{report}
+\documentclass[fontsize=12,a4paper]{scrreprt}
+%\documentclass[11pt,a4paper]{report}
 
 \usepackage[T1]{fontenc}
 
@@ -35,6 +35,11 @@
 \usepackage{makeidx}
 \usepackage{amsmath}
 
+\usepackage{tocloft}
+%\setlength\cftsectionnumwidth{4em}
+\setlength{\cftsecnumwidth}{2.5em}
+\setlength{\cftsubsecnumwidth}{3.5em}
+
 \DeclareMathOperator{\round}{round}
 
 \makeindex
@@ -44,21 +49,22 @@
 
 
 \pagestyle{headings}
+
 \begin{document}
 
-\title{Tutorial for the MOONS FPU grid driver Python library
+\title{Manual for the MOONS FPU grid driver Python library
   module (For EtherCAN interface version \input{../../version}) }
 
 
 \author{Johannes Nix}
 
 \maketitle
+\pagenumbering{roman}
 
 \tableofcontents
 
-
-\section{Introduction}
-\subsection{Related documents}
+\chapter{Introduction}
+\section{Related documents}
 
 \begin{tabular}{|ll|}
   \hline
@@ -71,9 +77,9 @@
 \end{tabular}
 
 
-\subsection{Purpose of this document}
+\section{Purpose of this document}
 This document describes the Python programming interface for the MOONS
-Fibre Positioner Unit EtherCAN interface module.
+Fibre Positioner Unit EtherCAN interface module, protocol version 2.
 
 The EtherCAN interface allows to control and move Fibre Positioner
 Units (FPUs) in the MOONS FPU grid by a software interface. This
@@ -102,9 +108,7 @@ verification software is being developed. The underlying hardware
 protocol will only be exposed as much as necessary to understand the
 possible states of the hardware.
 
-
-
-\subsection{Required knowledge and order of presentation}
+\section{Required knowledge}
 \index{Python!introduction}
 \index{Python!further information}
 
@@ -128,8 +132,8 @@ example, in
   a git
   repository}\footnote{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}''.
 
-\paragraph{Order of presentation}
-The order of presentation is divided in three parts, as follows:
+\section{Order of presentation}
+The order of presentation is divided in four parts, as follows:
 
 \begin{enumerate}
 \item The first part represents a tutorial aiming at explaining quickly how
@@ -160,501 +164,41 @@ It lists all available commands with a comprehensive list of all their
 options, and also documents the hierarchy of exceptions.
 Additionally, section~\ref{sec:changelog} contains a detailed reverse
 chronological list of changes to commands.
+
+\item Finally, there is an Appendix part. It lists additional examples
+  (section~\ref{sec:moreexamples}), gives a full list of software
+  dependencies and how to install the software from scratch
+  (section~\ref{sec:installationfromscratch}), and explains how to run
+  the test gateway (section~\ref{sec:runningthegateway}).
 \end{enumerate}
 
-Finally, there is an Appendix part. It lists additional examples
-(section~\ref{sec:moreexamples}), gives a full list of software
-dependencies and how to install the software from scratch
-(section~\ref{sec:installationfromscratch}), and explains how to run
-the test gateway (section~\ref{sec:runningthegateway}).
 
-\section{Setting up the library module}
-\label{sec:settingup}
-\index{driver|see{also: EtherCAN interface}}
-\index{EtherCAN interface!building}
 
-This section deals with retrieving, installing and configuring the
-EtherCAN interface module. On the MOONS workstation at UKATC, it can
-be skipped because the FPU EtherCAN interface is already installed.
-In this case, you can proceed directly with
-section~\ref{sec:minimalexample} on page~\pageref{sec:minimalexample}.
-
-\subsection{Installing required dependencies for a new installation}
-For a new installation, a number of required dependencies should be
-installed on a 64-bit Linux system. The detailed list of dependencies,
-and how to install them is explained in
-Appendix~\ref{sec:installationfromscratch} on
-page~\pageref{sec:installationfromscratch}.
-
-
-\subsection{Getting the source code}
-
-To set up the library module, it is first necessary to retrieve a
-current copy of its source code.
-
-\subsubsection{Using a packed archive}
-Without direct access, this can be done by unpacking a tar archive
-with the latest sources.
-
-
-\subsubsection{Using network access}
-On the moons-pc01 workstation, this can be done using the command
-\mint{bash}|git clone /home/jnix/fpu_driver| This creates a new
-directory with the name \texttt{fpu\_driver} and populates it with the
-source code.
-
-Alternatively, a fresh copy can be retrieved from the UKATC dalriada
-server. Doing this this requires a personal user account on that
-server. Assuming the account name is \texttt{carl}, this is done by
-the command
-\index{git!repository setup}
-
-\mint{bash}|git clone carl@dalriada/sw/sw4/jnix/MOONS/fpu_EtherCAN interface|
-
-After entering the password for user \texttt{carl}, the
-source code is copied into the new folder \texttt{fpu\_driver}.
-
-\paragraph{Refreshing the source code from git}
-\index{EtherCAN interface!building!update or change version}
-To refresh the source code, change the
-working directory to \texttt{fpu\_driver},
-and issue the command
-
-\mint{bash}|git pull|
-
-\subsubsection{Using the ESO subversion repository}
-
-This repository contains the current development version of the module
-for hardware protocol 2. It can be retrieved using the URL
-\url{http://svnhq1.hq.eso.org/p1/branches/MOONS/FibrePositioner/MOONS2/ICS/mpifps/}.
-
-The \texttt{"make"} commands described in the following need to be run
-in the top-level folder. This uses a temporary \texttt{Makefile} which
-ignores the other ICS components. Running the code from this
-development branch requires to run either the included EtherCAN
-hardware simulation (as described in
-Appendix~\ref{sec:runningthegateway}), or compatible FPU firmware for
-hardware protocol v2.
-
-\subsection{Building specific revisions}
-\index{git!get specific version}
-\index{EtherCAN interface!building!specific version}
-In the default case, the library is build from
-the master branch of the git repository.
-The master branch contains the most current
-working version.
-In some cases, it might be required to
-use a specific revision of the library.
-Assuming that we need, as an example,
-to build version 1.5.2 of the library,
-checking out this revision is done with the
-command
-
-\mint{bash}|git checkout v1.5.2|
-
-After this, one can proceed with building the library as normal. To
-switch back to the master branch, issue the command
-
-\mint{bash}|git checkout master|
-
-
-\subsection{Building the library module}
-\index{EtherCAN interface!building}
-To build the Python library module,
-change the working directory to \texttt{fpu\_driver},
-and issue the command \mint{bash}|make wrapper|
-
-In order for this to work, the required dependencies need to be
-installed. For the MOONS workstation at UK ATC, this is always the
-case. To install these dependencies on other computers, follow the
-detailed instructions in the appendix
-section~\ref{sec:installationfromscratch} on
-page~\pageref{sec:installationfromscratch}.  A more concise summary is
-given in the text file ``\texttt{python/doc/INSTALL}''.
-
-\subsection{Enabling debug output of CAN messages}
-
-Beginning with EtherCAN interface version 0.5.3, a very comprehensive
-log of sent and received CAN messages is enabled by default. For long
-running tests, the logging might need to be set to a lower level of
-detail in order to keep the used disk space in reasonable limits.  See
-section~\ref{sec:logging} on page~\pageref{sec:logging} for the
-location of these logs, and any further details.
-
-
-\subsection{Environment configuration}
-\label{sec:environmentconfiguration}
-\index{EtherCAN interface!configuration}
-\index{setup!environment variables}
-\index{environment variables}
-
-For the Python module to work, the directory \texttt{/user/local/lib}
-(or, more general, the path to which the boost::python library is
-installed to) needs to be added to the environment variable
-\texttt{LD\_LIBRARY\_PATH}.
-
-Further, the library uses a lock file to prevent that different
-processes send simultaneously commands to the same gateway. To access
-the lock file, all user accounts which use the driver software need to
-be member of the Unix group defined in the environment variable
-\texttt{MOONS\_GATEWAY\_ACCESS\_GROUP}. The default name for that
-group is \texttt{"moons"}.
- 
-Also, it is probably useful to add the \texttt{python} directory
-within the driver package, and also the current directory to the
-environment variable \texttt{PYTHONPATH}, so that the EtherCAN
-interface module can be found independently from the current working
-directory.  Assuming a standard Ubuntu or Debian setup, this can be
-done by adding the following lines to the file \texttt{.bashrc} in the
-user-specific home directory:
-
-\begin{minted}{bash}
-  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-  export PYTHONPATH=$PYTHONPATH:$HOME/fpu_driver/python:.
-\end{minted}
-
-To run the \texttt{fpu-admin} Python script, which manages the FPU
-position database, it is also recommended to include the above
-directory in the PATH environment variable, like this:
-
-\begin{minted}{bash}
-  export PATH=$PATH:$HOME/fpu_driver/python
-\end{minted}
-
- 
-Further, it is recommended to set the default log directory to point
-to a file system which is writable and has a lot of free space, for
-example:
-\begin{minted}{bash}
-  export FPU_INTERFACE_DEFAULT_LOGDIR=/moonsdata/logfiles
-\end{minted}
-
-\index{software protection!configuration}
-\index{software protection!access permissions}
-%
-One more setting is required: This version of the EtherCAN interface
-uses a position database, which tracks positions and state of FPUs at
-any point in time. Importantly, this database needs to be
-\emph{global} (that is, for all users) for the workstation on which
-the EtherCAN interface software is running. To configure it, the
-environment variable \texttt{FPU\_DATABASE} needs to be set in the
-configuration file \texttt{/etc/profile} as follows:
-
-\index{software protection!environment variables}
-\index{LMDB database!environment setup}
-%
-\begin{minted}{bash}
-  FPU_DATABASE=/var/lib/fpudb
-  export FPU_DATABASE
-\end{minted}
-
-If this variable is not set, the FPU position database will not be
-used. In this case, the hardware protection capability, which is
-implemented in the Python wrapper, is not available.
-
-\index{LMDB database!access permissions}
-The directory specified has to be created to be writable by any user
-which runs an FPU EtherCAN interface. It is therefore necessary to set up any user
-which runs the FPU EtherCAN interface to belong to the same user group, and make
-the directory writable by any member of this group, using the Unix
-``chmod'' and ``chgrp'' commands.
-
-\paragraph{Note on memory usage}
-\index{virtual memory usage}
-\index{troubleshooting!memory consumption}%
-\index{memory leak|see{virtual memory usage}}%
-%
-As a side note, the FPU position database uses LMDB to enable
-fail-safe storage and logging. This is a fast, thread-safe key-value
-storage which uses large memory-mapped files.  LMDB can often use a
-large amount of virtual memory. This is not a bug and especially not a
-memory leak, as only a small fraction of this data is actually loaded
-into RAM.
-
-
-\subsection{Supported firmware versions}
-This EtherCAN interface requires FPU firmware version 1.6.0 to support
-all regular features. Older versions of the FPU firmware are not fully
-supported, and do not handle CAN message priorities correctly.  See
-section~\ref{sec:firmware_compatibility} for details which
-functionality is missing for older versions.
-
-\subsection{Hardware configuration and addressing}
-\index{addressing!FPUs}
-\index{indexing FPUs}
-\index{FPU IDs!configuration}
-\index{CAN ID}
-\index{FPU!addressing}
-\index{FPU!hardware configuration}
-\index{networking!FPU addressing}
-Messages to an individual FPU are sent using a logical number, the FPU
-ID, which starts at 0 and goes up to a maximum value. Gaps in the
-sequence of used logical numbers are not supported.
-
-The messages from the EtherCAN interface to FPUs are transported by two layers of
-hardware.
-
-\index{EtherCAN gateway!configuration} \index{IP address!of EtherCAN
-  connection} \index{port number!of EtherCAN connection} First, the
-messages are transmitted by an Ethernet socket connection to up to
-three EtherCAN gateways. To connect to each gateway, its IP address
-and port number are used. The default IP number, to which the EtherCAN
-gateway card is configured, is "\texttt{192.168.0.10}", and the
-connection uses port 4700 by default. In this case, the EtherCAN
-gateway (or if several are used, all of them) needs to be connected to
-a private network interface to which IP packets to network
-\texttt{192.168.0.0/24} are routed.
-
-From the selected gateway, the messages are then forwarded to up to
-five CAN buses. Each bus connected to a gateway is identified with a
-number as well, and is connected to up to 72 (currently, 67) FPUs.
-\index{DIP switch} To identify each FPU in a setup with many FPUs,
-they have to use a CAN ID which is unique on each bus, \emph{and is
-  different from zero}. This ID is physically configured by manually
-toggling a DIP switch in the FPU's electronics board. The current
-EtherCAN interface uses a fixed continuous mapping (basically, array
-indexing) from the translation of FPU IDs to gateway number, bus
-number, and CAN ID\footnote{Future versions of the software will relax
-  this restriction}.
-
-This results in that each FPU has a physical address with three
-elements: gateway number, bus number, and CAN ID.
-
-\emph{For addressing a single FPU, this simply means that its CAN ID
-  needs to be set to one, which means its DIP switch needs to be set
-  to the delivered configuration. That FPU then needs to be connected
-  to the first bus on the first gateway}.
-
-
-\subsection{Configuring serial numbers and setting initial positions}
-\label{sec:setinitialposition}
-\index{software protection!configuration and setup}
-\index{LMDB database!initialisation}
-
-\paragraph{Initialising an FPU}
-
-(Note: This step can be skipped if the LMDB protection feature is not
-used, for example when only testing electronic components rather than
-mechanical hardware. In this case, only a limited ``unprotected''
-driver layer is available.)
-
-Before any FPU can be used with the EtherCAN interface, two commands
-need to be performed to configure the hardware protection feature:
-
-\begin{enumerate}
-\item The serial number of the FPU needs to be flashed to the
-  NVRAM of the FPU motion controller. This allows the software
-  to recognise the FPU.
-\item The initial position of the alpha and beta arm needs to
-  be stored in the FPU database.
-\end{enumerate}
-
-To do this, the FPU needs to be connected to the EtherCAN gateway with
-a known logical ID, determined by the CAN bus ID explained
-above. Also, the gateway needs to be connected to the workstation.
-
-Let's assume that the serial number is represented by the shell
-variable \texttt{serialnumber}, the logical FPU id by the variable
-\texttt{fpu\_id}, the initial alpha arm position by
-\texttt{alpha\_position}, and the beta arm position by
-\texttt{beta\_position}. The angular positions are given in degrees,
-and with the coordinate offsets used in the instrument. By default,
-this means the alpha datum position is at -180\degree\ degrees, and the beta
-datum position at zero degrees.
-
-Then, the following two commands need to be issued:
-
-\begin{minted}{bash}
-  fpu-admin flash ${serialnumber} ${fpu_id}
-  fpu-admin init ${serialnumber}${alpha_position} ${beta_position}
-\end{minted}
-
-The first command writes the serial number to the NVRAM of the FPU
-controller. This needs to be done only once (except when the
-electronics PCB of that FPU is replaced by another PCB). The serial
-number must never be used for another FPU. (As a protective measure,
-the command checks that the serial number wasn't used before. This
-check can be disabled by passing the \texttt{--reuse\_sn} flag.)
-
-The second command stores the position of the FPU in the position
-database. The position has to be qualitatively correct whether the
-alpha arm is in the safe zone and whether the beta arm needs to move
-into a clock-wise or anti-clockwise direction to datum. It is also
-possible to specify position ranges as measurement uncertainty
-intervals in the form of Python list literals, enclosed in double
-quotes:
-\index{software protection!handling ambiguous positions}
-\index{ambiguous positions} 
-\begin{minted}{bash}
-  fpu-admin init ${serialnumber} "[0, 1.5]" "[3, 6.5]"
-\end{minted}
-
-
-Importantly, storing the position has to be repeated when it should
-occur that the stored position is not matching the actual
-position. Apart from driver bugs, this can only happen if the FPU is
-moved by something else than the FPU EtherCAN interface.
-
-\paragraph{Viewing FPU position dates}
-
-The database record can be viewed and verified by using the command
-
-\begin{minted}{bash}
-  fpu-admin list1 ${serialnumber}
-\end{minted}
-
-Assuming the initial positions were alpha = -179\degree\ degrees and beta =
-1\degree\ degrees, this should show data similar to the following output:
-
-\begin{minted}{python}
-jnix@nippes:~/MOONS/fpu_driver/python$ ./fpu-admin list1 PT01
-['./fpu-admin', 'list1', 'PT01']
-('PT01', 'apos') : [[-179.0, -179.0], -180.0]
-('PT01', 'bpos') : [[1.0, 1.0], 0.0]
-('PT01', 'wf_reversed') : False
-('PT01', 'alimits') : [[-180.0, 179.6], -180.0]
-('PT01', 'blimits') : [[-179.3, 150.3], 0.0]
-('PT01', 'bretries') : 3
-('PT01', 'beta_retry_count_cw') : 0
-('PT01', 'beta_retry_count_acw') : 0
-  ....
-\end{minted}
-
-What can be seen from the above example is that both the alpha
-position ('apos') and the beta position ('bpos') are stored as a
-braced pair of identical numbers, followed by an additional
-number. The number pair indicates the position, and the additional
-number indicates the offset of the datum position, which is by default
--180\degree\ degrees for the alpha arm, and 0\degree\ degrees for the beta arm. One
-could ask why the arm positions are represented as a number pair. The
-reason is simple: The database is designed so that it can, if
-required, represent uncertainty around the arm positions as an
-position interval. In that case, the number pairs would represent
-start and end of an interval of possible positions.
-
-The intervals ``alimits'' and ``blimits'' describe the ranges which
-are considered safe by the software. They can be adjusted on an
-per-FPU basis if required, using \texttt{fpu-admin alimits} and
-\texttt{fpu-admin blimits}.
-
-The \texttt{fpu-admin} tool can also be used to print a list of datum
-aberrations (the difference between the ideal datum position, and the
-step count at which datum was actually found), and a time-series of
-counters. This is described in the reference part in
-section~\ref{sec:healthlog}. More commands and options are shown if the
-tool is run with the command-line option ``-h'' or ``--help''.
-
-\subsection{Database maintenance}
-\index{LMDB database!maintenance, backup} The position database is
-required to operate the FPUs in the normal (protected) operation mode,
-and will also hold some data gathered during calibration of the
-FPUs. It is therefore necessary to back it up regularly.  It can be
-backed up by copying the content of the directory defined in the
-\verb+$FPU_DATABASE+ environment variable. For this, the dedicated
-backup tool for LMDB, \texttt{mdb\_copy} should to be
-used. \texttt{mdb\_copy} is safe for backing up a database which is in
-use at the same time.
-
-The database can be used by several EtherCAN interface instances at once, each of
-them controlling different FPUs. When the involved EtherCAN interfaces are not
-running, FPUs can be switched from one gateway to another one - the
-information in the database will remain valid.
-
-\subsection{Software protection flag}
-\label{sec:protectionintro}
-\index{hardware protection!function}
-\index{soft\_protection flag}
-\paragraph{Protecting instrument hardware}
-The FPU control chain uses a layered approach to make sure that fibre
-positioner units do not get damaged.
-
-\paragraph{Hardware protection}
-At the bottom layer, there is an electronic collision protection,
-which will switch off the motors and send a warning message if two
-FPUs touch each other. This protection level is called ``hardware
-protection''.
-
-\index{wear and tear} \index{avoiding hardware damage}
-
-However, even if a direct damage should be avoided by this protection,
-activating it involves that the motors are suddenly stopped, which
-decreases the precision and can significantly increase wear and tear,
-thus reducing the life time of the stopped FPU. Therefore, the
-hardware protection should be used only at an emergency
-level. Furthermore, some situations are not covered by it,
-specifically if the FPU arms are moved into the dead zones.
-
-\paragraph{Software protection}
-For these two reasons, the EtherCAN interface software performs
-comprehensive additional checks which should ideally ensure that no
-out-of-range movements occur. These checks are performed every time an
-FPU is moved, or configured to move, and are named ``software
-protection''.  For all normal movements of FPUs, this protection
-should be left active.
-
-\paragraph{Deactivating the software protection}
-In some situations, specifically if the hardware protection or the
-alpha datum switch needs to be tested, it can be necessary to switch
-off and deactivate this software protection layer. This can be done
-using the ``\texttt{soft\_protection}'' keyword argument when calling
-the corresponding EtherCAN interface methods. Passing the value
-``\texttt{soft\_protection=False}'' will switch the software
-protection check off. When this is done, the entire responsibility
-with operating the FPUs safely is with the user. It is highly
-recommended to refer to additional documentation (especially
-FPUMovementSafetySpecification.docx, the actual RFE to software ICD
-document, and additional hardware and firmware documentation), to
-assess which operations are safe.
-
-It is also possible to de-activate any protection by using a special
-driver class with the name \texttt{UnprotectedGridDriver}. This class
-is useful for testing purposes, but should not be used with valuable
-hardware.
-
-
-
-\subsection{Communication protocol versions}
-\index{protocol!see{\ CAN protocol}} \index{CAN protocol!versions}
-\index{protocol!versions}
-\index{CAN protocol versions! version 1 capabilities} The FPU EtherCAN interface
-sends commands to the fibre positioner units, which use a specific
-communication protocol. This protocol needs to match the FPUs firmware
-and its capabilities. The current version of the EtherCAN interface (version
-1.6.x) uses ``communication protocol version 1.6'', which has some
-restrictions in functionality.
-
-A significant difference in the hardware protection capabilities is
-that cases in which the alpha arm of the FPU hits the limit switch
-need to be manually recovered from. This is explained in
-section~\ref{sec:recovery} on page~\pageref{sec:recovery}.
-
-
-The functionality described in this document is supported by EtherCAN interface
-versions equal or newer than 1.5.2 and an FPU  firmware that supports the
-CAN protocol version 1.6.0 or later. Earlier firmware versions do not
-support all described features.
-
-The next sections are intended as a tutorial on how to control and
-operate FPUs. As usual, the operations are presented so that the most
-basic concepts are introduced first, and more difficult commands and
-concepts which build on that later. For this reason, it is first shown
-in section~\ref{sec:minimalexample} how to perform basic movements,
-before explaining in section~\ref{sec:datumswitchcheck} how the switch
-operation is tested. Nevertheless, it is highly recommended to have
-test the switch operation tested before doing any further operations
-with the FPU.
-
-\begin{warning}
-  \textbf{WARNING: Before first issuing a \texttt{findDatum()}
-    command, make positively sure that both the alpha arm datum switch
-    and the beta datum switch work. Especially for the alpha arms,
-    defective datum switches will likely cause the datum command to
-    damage the hardware. The EtherCAN interface software cannot protect against
-    this.}
-\end{warning}
-
-
-\section{A minimal example}
+This tutorial part assumes that the driver software is already
+installed and configured to run. When this is not the case,
+section~\ref{sec:settingup} on page~\pageref{sec:settingup} explains
+how to do this.
+
+\section{Compatibility}
+The driver software described in this manual uses
+the CAN protocol 2, and requires a matching firmware version
+for protocol 2 in order to work. Firmware versions for
+protocol 1 and 2 cannot be mixed.
+
+For the Python interface, there are very little visible
+changes. Recovery of alpha limit breaches is substantially easier. All
+movement operations transmit the last direction of movement.  A
+further small visible change is that internal error codes of CAN
+commands have different names. Another, conceptually larger change is
+that the state of the FPU is now tracked by the FPU firmware, not the
+driver software. This has the effect that even when the driver program
+was terminated, it is not necessary to initialise FPUs again if they
+were not powered down.
+
+\pagenumbering{arabic}
+\part{Tutorial}
+
+\chapter{A minimal example}
 \label{sec:minimalexample}
 \index{example script}\index{movements!example}
 \index{connect()!example}
@@ -734,7 +278,7 @@ print("ready")
 \end{minted}
 
 
-\subsection{Import statements}
+\section{Import statements}
 \index{import statements}
 
 The import statements in lines 1 -- 4 load the following modules and
@@ -764,7 +308,7 @@ configurations:
  
 \end{itemize}
 
-\subsection{Grid driver object}
+\section{Grid driver object}
 \index{EtherCAN interface!instantiation}
 
 In line 10 of the example script, the used number of FPUs is set to
@@ -772,7 +316,7 @@ one, and in line 11, the FPU grid EtherCAN interface is initialised with that
 value. The returned object, which is here referenced by the Python variable
 ``\texttt{gd}'', is always required to access the FPUs.
 
-\subsection{Driver methods}
+\section{Driver methods}
 \index{networking!see{also connect()}}
 \index{connect()}
 \index{EtherCAN interface!how to call methods}
@@ -800,7 +344,7 @@ terminates\footnote{However if required, you can use the statements
 
 
 
-\subsection{Grid state variable}
+\section{Grid state variable}
 \index{grid\_state variable!introduction} Almost all commands to the EtherCAN interface
 receive and return a snapshot of the current state of the used FPU
 (or, if there are several, of all FPUs). That snapshot is passed in a
@@ -823,7 +367,7 @@ alternative name which many of the example scripts use is the name
 these names are simply Python variable names, which can be arbitrarily
 chosen by the author of a script.
 
-\subsection{Moving the FPU around}
+\section{Moving the FPU around}
 \index{movements!example}
 \index{movements!overview}
 The example script then proceeds to use three methods to move
@@ -852,7 +396,7 @@ the FPUs:
 
 \end{description}
 
-\subsection{Utility functions}
+\section{Utility functions}
 \index{list\_angles()|see{countedAngles()}}
 \index{countedAngles()!example}
 \index{list\_positions()!example}
@@ -883,7 +427,7 @@ data, and displaying information about the FPU state:
 \end{description}
 
 
-\subsection{Interactive inspection of the FPU state}
+\section{Interactive inspection of the FPU state}
 \index{fpu\_state!interactive inspection}
 \index{fpu\_state|see{~\emph{also} FPU state}}
 \index{Python!running interactively}
@@ -1009,7 +553,7 @@ the EtherCAN interface was started, and no collisions, limit switch breaches, or
 abortMotion commands have happened since.
 \end{sloppypar}
 
-\subsubsection*{Capturing interactive output}
+\subsection*{Capturing interactive output}
 \index{capturing output} \index{troubleshooting!capturing output} To
 investigate and communicate any difficulties or errors, it is
 sometimes helpful to capture the interactive output. A helpful tool
@@ -1019,7 +563,7 @@ information, please consult the ``script'' man page.
 
 
 
-\subsection{FPU states}
+\section{FPU states}
 \index{state|see{FPU!FSM states}} \index{Finite State
   Machine|see{FPU!FSM states}} \index{FPU!states, how to query}
 \index{FPU!FSM states!overview} \index{FPU!FSM states!table}
@@ -1085,9 +629,9 @@ OBSTACLE\_ERROR& The FPU has either detected a collision of the
 
 \begin{figure}
 \index{FPU!states!allowed transitions}
-  \includegraphics[width=1\textwidth]{FPU-state1.pdf}
+  \includegraphics[width=1\textwidth]{FPU-state2.pdf}
   \caption{Allowed state transitions of a single FPU for CAN protocol
-    version 1, and the associated EtherCAN interface commands and CAN messages.}
+    version 2, and the associated EtherCAN interface commands and CAN messages.}
   \label{fig:states}
 \end{figure}
 
@@ -1105,10 +649,10 @@ different states.
 \index{FPU!possible state transitions}
 Figure~\ref{fig:states} on page~\pageref{fig:states} shows, as a
 reference, the states of the FPU, and the possible state transitions
-and commands which are allowed in protocol version 1.
+and commands which are allowed in protocol version 2.
 
 
-\section{Rules to maintain integrity of the software protection}
+\chapter{Rules to maintain integrity of the software protection}
 \label{sec:protectionrules}
 \index{software protection!limitations}
 \index{software protection!usage rules}
@@ -1117,7 +661,7 @@ The software protection makes it easier to ensure that the FPUs are
 not damaged by out-of-bounds movements or operations that are not
 supported by the firmware.
 
-\subsection{Rules to observe}
+\section{Rules to observe}
 The protection relies on a few conditions that must be strictly
 observed at all times to keep the tracked positions valid. These
 conditions are as follows:
@@ -1159,7 +703,7 @@ conditions are as follows:
 \end{warning}
 
 
-\subsection{Allowed operations and covered cases}
+\section{Allowed operations and covered cases}
 \index{software protection!allowed operations and conditions}
 If the above conditions are observed, the following operations are
 allowed, and designed to include the following error conditions:
@@ -1181,8 +725,7 @@ allowed, and designed to include the following error conditions:
   \texttt{freeBetaCollision()} command.
 \item Temporary or permanent loss of connectivity on the CAN bus.
 \item Loss of the Ethernet connection to the EtherCAN gateways.
-\item As of protocol v1, manual recovery of alpha arm limit switch
-  breaches.
+\item Recovery of alpha arm limit switch breaches.
 \item Disconnecting an FPU from one EtherCAN gateway, and connecting
   it to another gateway connected to the same host workstation. 
 \item Hard power-off or loss of power of the workstation which hosts
@@ -1192,7 +735,7 @@ allowed, and designed to include the following error conditions:
     ZFS, and should not use disk encryption.}.
 \end{itemize}
 
-\subsection{Handling ambiguous positions}
+\section{Handling ambiguous positions}
 \index{software protection!handling ambiguous positions}
 \index{ambiguous positions|see{software protection}}
 \index{ambiguous positions}
@@ -1242,7 +785,497 @@ The next section explains how to test the proper functioning of the
 datum switch hardware in a safe way.
 
 
-\section{Checking the datum and limit switches}
+\part{Manual}
+
+\chapter{Setting up the library module}
+\label{sec:settingup}
+\index{driver|see{also: EtherCAN interface}}
+\index{EtherCAN interface!building}
+
+This section deals with retrieving, installing and configuring the
+EtherCAN interface module. On the MOONS workstation at UKATC, it can
+be skipped because the FPU EtherCAN interface is already installed.
+In this case, you can proceed directly with
+section~\ref{sec:minimalexample} on page~\pageref{sec:minimalexample}.
+
+\section{Installing required dependencies for a new installation}
+For a new installation, a number of required dependencies should be
+installed on a 64-bit Linux system. The detailed list of dependencies,
+and how to install them is explained in
+Appendix~\ref{sec:installationfromscratch} on
+page~\pageref{sec:installationfromscratch}.
+
+
+\section{Getting the source code}
+
+To set up the library module, it is first necessary to retrieve a
+current copy of its source code.
+
+\subsection{Using a packed archive}
+Without direct access, this can be done by unpacking a tar archive
+with the latest sources.
+
+
+\subsection{Using network access}
+On the moons-pc01 workstation, this can be done using the command
+\mint{bash}|git clone /home/jnix/fpu_driver| This creates a new
+directory with the name \texttt{fpu\_driver} and populates it with the
+source code.
+
+Alternatively, a fresh copy can be retrieved from the UKATC dalriada
+server. Doing this this requires a personal user account on that
+server. Assuming the account name is \texttt{carl}, this is done by
+the command
+\index{git!repository setup}
+
+\mint{bash}|git clone carl@dalriada/sw/sw4/jnix/MOONS/fpu_EtherCAN interface|
+
+After entering the password for user \texttt{carl}, the
+source code is copied into the new folder \texttt{fpu\_driver}.
+
+\paragraph{Refreshing the source code from git}
+\index{EtherCAN interface!building!update or change version}
+To refresh the source code, change the
+working directory to \texttt{fpu\_driver},
+and issue the command
+
+\mint{bash}|git pull|
+
+\subsection{Using the ESO subversion repository}
+
+This repository contains the current development version of the module
+for hardware protocol 2. It can be retrieved using the URL
+\url{http://svnhq1.hq.eso.org/p1/branches/MOONS/FibrePositioner/MOONS2/ICS/mpifps/}.
+
+The \texttt{"make"} commands described in the following need to be run
+in the top-level folder. This uses a temporary \texttt{Makefile} which
+ignores the other ICS components. Running the code from this
+development branch requires to run either the included EtherCAN
+hardware simulation (as described in
+Appendix~\ref{sec:runningthegateway}), or compatible FPU firmware for
+hardware protocol v2.
+
+\section{Building specific revisions}
+\index{git!get specific version}
+\index{EtherCAN interface!building!specific version}
+In the default case, the library is build from
+the master branch of the git repository.
+The master branch contains the most current
+working version.
+In some cases, it might be required to
+use a specific revision of the library.
+Assuming that we need, as an example,
+to build version 1.5.2 of the library,
+checking out this revision is done with the
+command
+
+\mint{bash}|git checkout v1.5.2|
+
+After this, one can proceed with building the library as normal. To
+switch back to the master branch, issue the command
+
+\mint{bash}|git checkout master|
+
+
+\section{Building the library module}
+\index{EtherCAN interface!building}
+To build the Python library module,
+change the working directory to \texttt{fpu\_driver},
+and issue the command \mint{bash}|make wrapper|
+
+In order for this to work, the required dependencies need to be
+installed. For the MOONS workstation at UK ATC, this is always the
+case. To install these dependencies on other computers, follow the
+detailed instructions in the appendix
+section~\ref{sec:installationfromscratch} on
+page~\pageref{sec:installationfromscratch}.  A more concise summary is
+given in the text file ``\texttt{python/doc/INSTALL}''.
+
+\section{Enabling debug output of CAN messages}
+
+Beginning with EtherCAN interface version 0.5.3, a very comprehensive
+log of sent and received CAN messages is enabled by default. For long
+running tests, the logging might need to be set to a lower level of
+detail in order to keep the used disk space in reasonable limits.  See
+section~\ref{sec:logging} on page~\pageref{sec:logging} for the
+location of these logs, and any further details.
+
+
+\section{Environment configuration}
+\label{sec:environmentconfiguration}
+\index{EtherCAN interface!configuration}
+\index{setup!environment variables}
+\index{environment variables}
+
+For the Python module to work, the directory \texttt{/user/local/lib}
+(or, more general, the path to which the boost::python library is
+installed to) needs to be added to the environment variable
+\texttt{LD\_LIBRARY\_PATH}.
+
+Further, the library uses a lock file to prevent that different
+processes send simultaneously commands to the same gateway. To access
+the lock file, all user accounts which use the driver software need to
+be member of the Unix group defined in the environment variable
+\texttt{MOONS\_GATEWAY\_ACCESS\_GROUP}. The default name for that
+group is \texttt{"moons"}.
+ 
+Also, it is probably useful to add the \texttt{python} directory
+within the driver package, and also the current directory to the
+environment variable \texttt{PYTHONPATH}, so that the EtherCAN
+interface module can be found independently from the current working
+directory.  Assuming a standard Ubuntu or Debian setup, this can be
+done by adding the following lines to the file \texttt{.bashrc} in the
+user-specific home directory:
+
+\begin{minted}{bash}
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+  export PYTHONPATH=$PYTHONPATH:$HOME/fpu_driver/python:.
+\end{minted}
+
+To run the \texttt{fpu-admin} Python script, which manages the FPU
+position database, it is also recommended to include the above
+directory in the PATH environment variable, like this:
+
+\begin{minted}{bash}
+  export PATH=$PATH:$HOME/fpu_driver/python
+\end{minted}
+
+ 
+Further, it is recommended to set the default log directory to point
+to a file system which is writable and has a lot of free space, for
+example:
+\begin{minted}{bash}
+  export FPU_INTERFACE_DEFAULT_LOGDIR=/moonsdata/logfiles
+\end{minted}
+
+\index{software protection!configuration}
+\index{software protection!access permissions}
+%
+One more setting is required: This version of the EtherCAN interface
+uses a position database, which tracks positions and state of FPUs at
+any point in time. Importantly, this database needs to be
+\emph{global} (that is, for all users) for the workstation on which
+the EtherCAN interface software is running. To configure it, the
+environment variable \texttt{FPU\_DATABASE} needs to be set in the
+configuration file \texttt{/etc/profile} as follows:
+
+\index{software protection!environment variables}
+\index{LMDB database!environment setup}
+%
+\begin{minted}{bash}
+  FPU_DATABASE=/var/lib/fpudb
+  export FPU_DATABASE
+\end{minted}
+
+If this variable is not set, the FPU position database will not be
+used. In this case, the hardware protection capability, which is
+implemented in the Python wrapper, is not available.
+
+\index{LMDB database!access permissions}
+The directory specified has to be created to be writable by any user
+which runs an FPU EtherCAN interface. It is therefore necessary to set up any user
+which runs the FPU EtherCAN interface to belong to the same user group, and make
+the directory writable by any member of this group, using the Unix
+``chmod'' and ``chgrp'' commands.
+
+\paragraph{Note on memory usage}
+\index{virtual memory usage}
+\index{troubleshooting!memory consumption}%
+\index{memory leak|see{virtual memory usage}}%
+%
+As a side note, the FPU position database uses LMDB to enable
+fail-safe storage and logging. This is a fast, thread-safe key-value
+storage which uses large memory-mapped files.  LMDB can often use a
+large amount of virtual memory. This is not a bug and especially not a
+memory leak, as only a small fraction of this data is actually loaded
+into RAM.
+
+
+\section{Supported firmware versions}
+This EtherCAN interface requires FPU firmware version 1.6.0 to support
+all regular features. Older versions of the FPU firmware are not fully
+supported, and do not handle CAN message priorities correctly.  See
+section~\ref{sec:firmware_compatibility} for details which
+functionality is missing for older versions.
+
+\section{Hardware configuration and addressing}
+\index{addressing!FPUs}
+\index{indexing FPUs}
+\index{FPU IDs!configuration}
+\index{CAN ID}
+\index{FPU!addressing}
+\index{FPU!hardware configuration}
+\index{networking!FPU addressing}
+Messages to an individual FPU are sent using a logical number, the FPU
+ID, which starts at 0 and goes up to a maximum value. Gaps in the
+sequence of used logical numbers are not supported.
+
+The messages from the EtherCAN interface to FPUs are transported by two layers of
+hardware.
+
+\index{EtherCAN gateway!configuration} \index{IP address!of EtherCAN
+  connection} \index{port number!of EtherCAN connection} First, the
+messages are transmitted by an Ethernet socket connection to up to
+three EtherCAN gateways. To connect to each gateway, its IP address
+and port number are used. The default IP number, to which the EtherCAN
+gateway card is configured, is "\texttt{192.168.0.10}", and the
+connection uses port 4700 by default. In this case, the EtherCAN
+gateway (or if several are used, all of them) needs to be connected to
+a private network interface to which IP packets to network
+\texttt{192.168.0.0/24} are routed.
+
+From the selected gateway, the messages are then forwarded to up to
+five CAN buses. Each bus connected to a gateway is identified with a
+number as well, and is connected to up to 72 (currently, 67) FPUs.
+\index{DIP switch} To identify each FPU in a setup with many FPUs,
+they have to use a CAN ID which is unique on each bus, \emph{and is
+  different from zero}. This ID is physically configured by manually
+toggling a DIP switch in the FPU's electronics board. The current
+EtherCAN interface uses a fixed continuous mapping (basically, array
+indexing) from the translation of FPU IDs to gateway number, bus
+number, and CAN ID\footnote{Future versions of the software will relax
+  this restriction}.
+
+This results in that each FPU has a physical address with three
+elements: gateway number, bus number, and CAN ID.
+
+\emph{For addressing a single FPU, this simply means that its CAN ID
+  needs to be set to one, which means its DIP switch needs to be set
+  to the delivered configuration. That FPU then needs to be connected
+  to the first bus on the first gateway}.
+
+
+\section{Configuring serial numbers and setting initial positions}
+\label{sec:setinitialposition}
+\index{software protection!configuration and setup}
+\index{LMDB database!initialisation}
+
+\paragraph{Initialising an FPU}
+
+(Note: This step can be skipped if the LMDB protection feature is not
+used, for example when only testing electronic components rather than
+mechanical hardware. In this case, only a limited ``unprotected''
+driver layer is available.)
+
+Before any FPU can be used with the EtherCAN interface, two commands
+need to be performed to configure the hardware protection feature:
+
+\begin{enumerate}
+\item The serial number of the FPU needs to be flashed to the
+  NVRAM of the FPU motion controller. This allows the software
+  to recognise the FPU.
+\item The initial position of the alpha and beta arm needs to
+  be stored in the FPU database.
+\end{enumerate}
+
+To do this, the FPU needs to be connected to the EtherCAN gateway with
+a known logical ID, determined by the CAN bus ID explained
+above. Also, the gateway needs to be connected to the workstation.
+
+Let's assume that the serial number is represented by the shell
+variable \texttt{serialnumber}, the logical FPU id by the variable
+\texttt{fpu\_id}, the initial alpha arm position by
+\texttt{alpha\_position}, and the beta arm position by
+\texttt{beta\_position}. The angular positions are given in degrees,
+and with the coordinate offsets used in the instrument. By default,
+this means the alpha datum position is at -180\degree\ degrees, and the beta
+datum position at zero degrees.
+
+Then, the following two commands need to be issued:
+
+\begin{minted}{bash}
+  fpu-admin flash ${serialnumber} ${fpu_id}
+  fpu-admin init ${serialnumber}${alpha_position} ${beta_position}
+\end{minted}
+
+The first command writes the serial number to the NVRAM of the FPU
+controller. This needs to be done only once (except when the
+electronics PCB of that FPU is replaced by another PCB). The serial
+number must never be used for another FPU. (As a protective measure,
+the command checks that the serial number wasn't used before. This
+check can be disabled by passing the \texttt{--reuse\_sn} flag.)
+
+The second command stores the position of the FPU in the position
+database. The position has to be qualitatively correct whether the
+alpha arm is in the safe zone and whether the beta arm needs to move
+into a clock-wise or anti-clockwise direction to datum. It is also
+possible to specify position ranges as measurement uncertainty
+intervals in the form of Python list literals, enclosed in double
+quotes:
+\index{software protection!handling ambiguous positions}
+\index{ambiguous positions} 
+\begin{minted}{bash}
+  fpu-admin init ${serialnumber} "[0, 1.5]" "[3, 6.5]"
+\end{minted}
+
+
+Importantly, storing the position has to be repeated when it should
+occur that the stored position is not matching the actual
+position. Apart from driver bugs, this can only happen if the FPU is
+moved by something else than the FPU EtherCAN interface.
+
+\paragraph{Viewing FPU position dates}
+
+The database record can be viewed and verified by using the command
+
+\begin{minted}{bash}
+  fpu-admin list1 ${serialnumber}
+\end{minted}
+
+Assuming the initial positions were alpha = -179\degree\ degrees and beta =
+1\degree\ degrees, this should show data similar to the following output:
+
+\begin{minted}{python}
+jnix@nippes:~/MOONS/fpu_driver/python$ ./fpu-admin list1 PT01
+['./fpu-admin', 'list1', 'PT01']
+('PT01', 'apos') : [[-179.0, -179.0], -180.0]
+('PT01', 'bpos') : [[1.0, 1.0], 0.0]
+('PT01', 'wf_reversed') : False
+('PT01', 'alimits') : [[-180.0, 179.6], -180.0]
+('PT01', 'blimits') : [[-179.3, 150.3], 0.0]
+('PT01', 'bretries') : 3
+('PT01', 'beta_retry_count_cw') : 0
+('PT01', 'beta_retry_count_acw') : 0
+  ....
+\end{minted}
+
+What can be seen from the above example is that both the alpha
+position ('apos') and the beta position ('bpos') are stored as a
+braced pair of identical numbers, followed by an additional
+number. The number pair indicates the position, and the additional
+number indicates the offset of the datum position, which is by default
+-180\degree\ degrees for the alpha arm, and 0\degree\ degrees for the beta arm. One
+could ask why the arm positions are represented as a number pair. The
+reason is simple: The database is designed so that it can, if
+required, represent uncertainty around the arm positions as an
+position interval. In that case, the number pairs would represent
+start and end of an interval of possible positions.
+
+The intervals ``alimits'' and ``blimits'' describe the ranges which
+are considered safe by the software. They can be adjusted on an
+per-FPU basis if required, using \texttt{fpu-admin alimits} and
+\texttt{fpu-admin blimits}.
+
+The \texttt{fpu-admin} tool can also be used to print a list of datum
+aberrations (the difference between the ideal datum position, and the
+step count at which datum was actually found), and a time-series of
+counters. This is described in the reference part in
+section~\ref{sec:healthlog}. More commands and options are shown if the
+tool is run with the command-line option ``-h'' or ``--help''.
+
+\section{Database maintenance}
+\index{LMDB database!maintenance, backup} The position database is
+required to operate the FPUs in the normal (protected) operation mode,
+and will also hold some data gathered during calibration of the
+FPUs. It is therefore necessary to back it up regularly.  It can be
+backed up by copying the content of the directory defined in the
+\verb+$FPU_DATABASE+ environment variable. For this, the dedicated
+backup tool for LMDB, \texttt{mdb\_copy} should to be
+used. \texttt{mdb\_copy} is safe for backing up a database which is in
+use at the same time.
+
+The database can be used by several EtherCAN interface instances at once, each of
+them controlling different FPUs. When the involved EtherCAN interfaces are not
+running, FPUs can be switched from one gateway to another one - the
+information in the database will remain valid.
+
+\section{Software protection flag}
+\label{sec:protectionintro}
+\index{hardware protection!function}
+\index{soft\_protection flag}
+\paragraph{Protecting instrument hardware}
+The FPU control chain uses a layered approach to make sure that fibre
+positioner units do not get damaged.
+
+\paragraph{Hardware protection}
+At the bottom layer, there is an electronic collision protection,
+which will switch off the motors and send a warning message if two
+FPUs touch each other. This protection level is called ``hardware
+protection''.
+
+\index{wear and tear} \index{avoiding hardware damage}
+
+However, even if a direct damage should be avoided by this protection,
+activating it involves that the motors are suddenly stopped, which
+decreases the precision and can significantly increase wear and tear,
+thus reducing the life time of the stopped FPU. Therefore, the
+hardware protection should be used only at an emergency
+level. Furthermore, some situations are not covered by it,
+specifically if the FPU arms are moved into the dead zones.
+
+\paragraph{Software protection}
+For these two reasons, the EtherCAN interface software performs
+comprehensive additional checks which should ideally ensure that no
+out-of-range movements occur. These checks are performed every time an
+FPU is moved, or configured to move, and are named ``software
+protection''.  For all normal movements of FPUs, this protection
+should be left active.
+
+\paragraph{Deactivating the software protection}
+In some situations, specifically if the hardware protection or the
+alpha datum switch needs to be tested, it can be necessary to switch
+off and deactivate this software protection layer. This can be done
+using the ``\texttt{soft\_protection}'' keyword argument when calling
+the corresponding EtherCAN interface methods. Passing the value
+``\texttt{soft\_protection=False}'' will switch the software
+protection check off. When this is done, the entire responsibility
+with operating the FPUs safely is with the user. It is highly
+recommended to refer to additional documentation (especially
+FPUMovementSafetySpecification.docx, the actual RFE to software ICD
+document, and additional hardware and firmware documentation), to
+assess which operations are safe.
+
+It is also possible to de-activate any protection by using a special
+driver class with the name \texttt{UnprotectedGridDriver}. This class
+is useful for testing purposes, but should not be used with valuable
+hardware.
+
+
+
+\section{Communication protocol versions}
+\index{protocol!see{\ CAN protocol}} \index{CAN protocol!versions}
+\index{protocol!versions}
+\index{CAN protocol versions! version 1 capabilities} The FPU EtherCAN interface
+sends commands to the fibre positioner units, which use a specific
+communication protocol. This protocol needs to match the FPUs firmware
+and its capabilities. The current version of the EtherCAN interface (version
+2.0.x) uses ``communication protocol version 2.0'', which has some
+differences to earlier versions.
+
+A significant difference in the hardware protection capabilities is
+that cases in which the alpha arm of the FPU hits the limit switch can
+be recovered in exactly the same way as a beta arm collision. This is
+explained in section~\ref{sec:recovery} on
+page~\pageref{sec:recovery}.
+
+
+The functionality described in this document is supported by EtherCAN
+interface versions equal or newer than 2.1.0 and an FPU firmware that
+supports the CAN protocol version 2.0.x or later. Earlier firmware
+versions do not work with this driver software version.
+
+The next sections are intended as a tutorial on how to control and
+operate FPUs. As usual, the operations are presented so that the most
+basic concepts are introduced first, and more difficult commands and
+concepts which build on that later. For this reason, it is first shown
+in section~\ref{sec:minimalexample} how to perform basic movements,
+before explaining in section~\ref{sec:datumswitchcheck} how the switch
+operation is tested. Nevertheless, it is highly recommended to have
+test the switch operation tested before doing any further operations
+with the FPU.
+
+\begin{warning}
+  \textbf{WARNING: Before first issuing a \texttt{findDatum()}
+    command, make positively sure that both the alpha arm datum switch
+    and the beta datum switch work. Especially for the alpha arms,
+    defective datum switches will likely cause the datum command to
+    damage the hardware. The EtherCAN interface software cannot protect against
+    this.}
+\end{warning}
+
+
+
+\chapter{Checking the datum and limit switches}
 \label{sec:datumswitchcheck}
 \index{limit switch!testing}
 \index{datum switch!testing}
@@ -1257,7 +1290,7 @@ probably damage the FPU irreparably.
 The following section describes how to check that the datum and limit
 switches of an FPU are working.
 
-\subsection{How to retrieve the switch state}
+\section{How to retrieve the switch state}
 \index{alpha limit switch!checking state}
 \index{limit switch!check the state}
 
@@ -1273,7 +1306,7 @@ point, one can use the command
 to retrieve the state of the switches.
 
 
-\subsection{Required information}
+\section{Required information}
 
 To begin this test, it is necessary to know the exact safe operation
 ranges of the alpha and beta arm. These values depend on hardware and
@@ -1285,7 +1318,7 @@ operation is (-180\degree, 0\degree) degrees, that both switches are off at
 positions (-175\degree, 5.0\degree), and both switches on at positions (-180.2\degree,
 -0.2\degree).
 
-\subsection{Test procedure, explained step-by-step}
+\section{Test procedure, explained step-by-step}
 To test the datum switches, perform the following steps:
 
 \begin{enumerate}
@@ -1379,14 +1412,14 @@ If this test does not have the expected result, the cause is likely to
 be a hardware failure, which makes the FPU unusable until it is
 resolved.
 
-\section{Common tasks}
+\chapter{Common tasks}
 \label{sec:commontasks}
 
 The following sections describe several common tasks
 and describes which commands can be used to perform them.
 
 
-\subsection{Checking the connection}
+\section{Checking the connection}
 \index{networking!check}
 \index{networking!example}
 \index{errors!connection}
@@ -1459,7 +1492,7 @@ probably broken.
 
 
 
-\subsection{Getting the current position}
+\section{Getting the current position}
 \index{position information!retrieving} \index{FPU!position!retrieving
   the} \index{FPU!position|see{position}} We already saw how to use
 the \texttt{pingFPUs()} method of the driver object. This method also
@@ -1525,13 +1558,13 @@ of NaN values.
 
 
 
-\subsection{Moving the FPU to the datum position}
+\section{Moving the FPU to the datum position}
 \label{sec:finddatumreference}
 \index{calibration of arm positions|see{datum search}}
 \index{FPU!datum}
 \index{commands!findDatum()!extended example}
 \index{datum search!command}
-\subsubsection{Performing a datum search}
+\subsection{Performing a datum search}
 
 \paragraph{Automatic search}
 
@@ -1553,7 +1586,7 @@ parameters for the datum search can be found in
 section~\ref{sec:finddatum} on page~\pageref{sec:finddatum}.
 
 
-\subsubsection{Independent operation of alpha and Beta arm}
+\subsection{Independent operation of alpha and Beta arm}
 
 The FPU verification procedure requires that the alpha and beta arms
 of the FPU can be moved independently to the datum position.  To
@@ -1564,15 +1597,10 @@ keyword argument are \texttt{DASEL\_BOTH, DASEL\_ALPHA}, and
 \texttt{DASEL\_BETA}.  \texttt{DASEL\_BOTH} is the default behaviour:
 Both alpha and beta arm are moved to the datum position. The value
 \texttt{DASEL\_ALPHA} moves only the alpha arm, and the value
-\texttt{DASEL\_BETA} will move only the beta arm\footnote{Moving alpha
-  and beta arms separately depends on a minor firmware update to
-  protocol version 1.1 which enables this feature. The EtherCAN interface software
-  will perform a check to make sure the firmware has the right
-  version, or rise an exception of the class
-  \texttt{DE\_FIRMWARE\_UNIMPLEMENTED}.}.
+\texttt{DASEL\_BETA} will move only the beta arm.
 
 
-\subsubsection{Restricting a datum search to a subset of FPUs}
+\subsection{Restricting a datum search to a subset of FPUs}
 \label{sec:restricteddatumsearch}
 \index{datum search!for a subset of FPUs} \index{restricting a command
   to a subset of FPUs!example} \index{movements!of a subset of FPUs}
@@ -1593,10 +1621,10 @@ explanation can be found in section~\ref{sec:subsets} on
 page~\pageref{sec:subsets}.
 
 
-\subsection{Moving the FPU}
+\section{Moving the FPU}
 \index{FPU!moving}
 \index{executeMotion()!extended example}
-\subsubsection{Overview}
+\subsection{Overview}
 To move the FPU in a precise and safe way, four steps are necessary:
 
 \begin{enumerate}
@@ -1617,7 +1645,7 @@ automatically generate a protocol-conforming waveform where we merely
 pass two values which define how much the alpha and beta arms should
 move.
 
-\subsubsection{Definition of movement directions}
+\subsection{Definition of movement directions}
 \index{movements!definition of directions}
 
 The FPU EtherCAN interface uses uniformly the following convention
@@ -1644,7 +1672,7 @@ angles:
     convention, the alpha datum position is at $-180.0\degree$.
 \end{itemize}
 
-\subsubsection{Moving by an angle}
+\subsection{Moving by an angle}
 \index{movements!moving by a certain angle}
 \index{waveforms!defining!using gen\_wf()}
 \index{waveforms!how to generate!example}
@@ -1684,7 +1712,7 @@ blocks and returns when the FPUs have finished moving.  In the case
 that there is an error, for example a collision, a Python exception
 will be raised.
 
-\subsubsection{Precision of generated waveforms}
+\subsection{Precision of generated waveforms}
 
 \index{rounding errors!in waveforms}
 \index{waveforms!rounding to whole steps}
@@ -1716,7 +1744,7 @@ procedures like engineering measurements. Such procedures must
 carefully take the error stemming from rounding to step counts into
 account, and to correct for it so that it does not accumulate.
 
-\subsubsection{Generating waveforms for multiple FPUs}
+\subsection{Generating waveforms for multiple FPUs}
 \index{waveforms!for multiple FPUs!example}
 The function \texttt{gen\_wf()} can also generate waveform tables for
 multiple FPUs. This is done by passing a list, or a numpy array,
@@ -1734,7 +1762,7 @@ angle of the second FPU, and so on.
 
 See section~\ref{sec:genwf} for further details.
 
-\subsubsection{Restricting a movement to a subset of FPUs}
+\subsection{Restricting a movement to a subset of FPUs}
 \index{movements!of a subset of FPUs} \index{restricting!the
   executeMotion() command} In the verification system, it is necessary
 to move FPUs selectively.
@@ -1759,7 +1787,7 @@ will move only FPUs 2,4,8, and 17, and ignore the states of the other
 FPUs.
 
 
-\subsubsection{Manually defining a waveform table}
+\subsection{Manually defining a waveform table}
 \label{sec:waveform_rules}
 \index{waveforms!defining!manually}
 \paragraph{Waveform syntax}
@@ -1821,7 +1849,7 @@ slice of the movement, the alpha arm should move 125 steps
 counter-clockwise, and the beta arm should move 125 steps
 clockwise,'' and so on.
 
-\subsubsection{Waveform validity rules}
+\subsection{Waveform validity rules}
 \label{sec:validity_rulesets}
 \index{waveforms!validity rules}
 \index{validity rules for waveforms!explanation}
@@ -1846,9 +1874,8 @@ not met by firmware versions smaller than 1.5.0.
 
 \item All step numbers need to be integer values.
 
-\item The maximum number of entries in a waveform table is 128 for the
-  CAN protocol version 1.\footnote{In version 2 of the firmware
-    communication protocol, this limit is raised to a value of 256}
+\item The maximum number of entries in a waveform table is 256 (for
+  the CAN protocol version 2).
   
 \item A waveform for one FPU can include several movement parts for
   each arm. A movement part is a sequence of step counts which are
@@ -1913,9 +1940,9 @@ all known restrictions of FPU firmware version 1.4.4.
 
 \item All step numbers need to be integer values.
 
-\item The maximum number of entries in a waveform table is 128 for the
-  CAN protocol version 1.\footnote{In version 2 of the firmware
-    communication protocol, this limit is raised to a value of 256}
+\item The maximum number of entries in a waveform table is
+  256.\footnote{In the old version 1 of the communication
+    protocol, the limit was 128 entries.}
   
 \item A waveform for one FPU can include several movement parts for
   each arm. A movement part is a sequence of step counts which are
@@ -1992,9 +2019,8 @@ allowed if the absolute speeds before and after are not too large.
 
 \item All step numbers need to be integer values.
 
-\item The maximum number of entries in a waveform table is 128 for the
-  CAN protocol version 1.\footnote{In version 2 of the firmware
-    communication protocol, this limit is raised to a value of 256}
+\item The maximum number of entries in a waveform table is 256 (for
+  CAN protocol version 2).
   
 \item A waveform for one FPU can include several movement parts for
   each arm. A movement part is a sequence of step counts which are
@@ -2055,7 +2081,7 @@ list of waveform error messages and codes is given in
 section~\ref{sec:errorcodes} on page~\pageref{sec:errorcodes} ff.
 \end{sloppypar}
 
-\subsubsection{Errors during movements}
+\subsection{Errors during movements}
 Movement operations can result in errors caused by collisions, limit
 switch breaches, connection failures, or hardware failures. Such
 errors generate an exception of type \texttt{MovementError} during the
@@ -2067,7 +2093,7 @@ how to resolve collisions and limit switch breaches.
 
 
 
-\subsection{Aborting a movement}
+\section{Aborting a movement}
 \index{movements!aborting} \index{abortMotion()!example} In the case
 that one wants to abort a \texttt{findDatum()} or a
 \texttt{executeMotion()} operation, one can press
@@ -2101,7 +2127,7 @@ current Python script when the method returns.\footnote{
   \texttt{SIGQUIT} signal.}
 
 
-\subsection{Reversing a movement}
+\section{Reversing a movement}
 \index{movements!reversing}
 \index{FPU!return to start}
 Often, an FPU has been moved away from the datum position, and it is
@@ -2123,7 +2149,7 @@ become invalid (for example due to a collision when the FPU is
 resting).
 
 
-\subsection{Repeating a movement}
+\section{Repeating a movement}
 \index{movements!repeating}
 Sometimes, a waveform for moving in a certain direction has been
 configured, and this movement just needs to be repeated.  This is
@@ -2134,10 +2160,10 @@ gd.repeatMotion(grid_state)
 \end{minted}
 
 
-\subsection{Configuring absolute movements or paths}
+\section{Configuring absolute movements or paths}
 \label{sec:configuringmovementpaths}
 
-\subsubsection{Avoidance of rounding errors}
+\subsection{Avoidance of rounding errors}
 \index{imprecise movements!avoiding}%
 \index{rounding errors!avoiding}%
 \index{rounding errors!origin}%
@@ -2169,7 +2195,7 @@ target positions will always be within 0.5 steps of the desired target
 positions.
 
 
-\subsubsection{Loading and executing paths generated by the path generator software}
+\subsection{Loading and executing paths generated by the path generator software}
 \label{sec:loadingpaths}
 \index{executing path generator waveforms}%
 \index{loading path generator waveforms} %
@@ -2260,7 +2286,7 @@ Identical to a relative waveform, a path can be reversed by the
 check paths for conflicts or collisions, so that the path planning
 software needs to ensure that no conflicts will occur.
 
-\subsubsection{Manually configuring movement paths}
+\subsection{Manually configuring movement paths}
 \label{sec:manuallyconfiguringpaths}%
 \index{using paths!defining paths manually}%
 \index{absolute movement paths!defining manually}%
@@ -2289,7 +2315,7 @@ executing, rounded to whole steps using \texttt{round()}, and with a
 maximum error of half a step.
 
 
-\subsection{Example scripts}
+\section{Example scripts}
 
 Section~\ref{sec:moreexamples} on page~\pageref{sec:moreexamples}
 describes a number of additional example scripts which can be used and
@@ -2304,7 +2330,8 @@ constructs and functions are explained in the Python Library
 Reference\footnote{see \url{https://docs/python.org/2.7/}}.
 
 
-\section{Error handling and exceptions}
+
+\chapter{Error handling and exceptions}
 \label{sec:errorhandling}
 \index{exceptions}
 \index{errors!during movements!handling}
@@ -2347,7 +2374,7 @@ testing, and correct discovery of fault conditions, such as
 collisions. A full explanation on how to handle exceptions in Python can
 be found at \url{https://docs.python.org/2.7/tutorial/errors.html}.
 
-\section{Health log of FPU counters}
+\chapter{Health log of FPU counters}
 \label{sec:healthlog}
 
 For each \texttt{executeMotion()} and \texttt{findDatum()} command,
@@ -2405,9 +2432,9 @@ This constant of each record the following fields:
 
 \end{description}
 
-\section{Logging}
+\chapter{Logging}
 \label{sec:logging}
-\subsection{Log files}
+\section{Log files}
 \index{logging}
 \index{logging!files}
 \index{troubleshooting!capturing and examining CAN messages}
@@ -2432,7 +2459,7 @@ files:
 \end{description}
 
 
-\subsection{Logging options}
+\section{Logging options}
 \index{logging!options}
 Details of logging can be adjusted by passing keyword
 arguments to the driver constructor. The available options are:
@@ -2534,15 +2561,15 @@ arguments to the driver constructor. The available options are:
     
 \end{description}
 
-\subsection{Display of time in the logs}
+\section{Display of time in the logs}
 \index{time stamps}
 \index{logging!time values}
-\subsubsection{Used time format in logs}
+\subsection{Used time format in logs}
 At the beginning of each line, the log files show the value of the
 UNIX time as time stamp, which is the fractional number of seconds
 since January 1, 1970 in the UTC time zone. 
 
-\subsubsection{Converting to and from UNIX time stamps}
+\subsection{Converting to and from UNIX time stamps}
 
 To convert the timestamps in the log files, the following
 shell commands are useful:
@@ -2578,7 +2605,7 @@ Fri 18 May 11:34:34 UTC 2018
 displays a given time stamp in the UTC (universal coordinated time)
 time zone.
 
-\subsubsection{Relationship to internal time-keeping}
+\subsection{Relationship to internal time-keeping}
 Calendar dates and times are not always continuous, due to clock
 adjustments and introduction of leap seconds. In some cases, this can
 cause problems, for example spurious time-outs can appear.. Therefore,
@@ -2588,7 +2615,7 @@ fields are logged, such as the time when an FPU received its last
 command, these times are converted to the UNIX timestamp, too.
 
 
-\section{Recovery from collisions and limit breaches}
+\chapter{Recovery from collisions and limit breaches}
 \label{sec:recovery}
 \index{recovery of movement errors}
 \index{movements!errors!recovery}
@@ -2600,21 +2627,22 @@ hardware needs to handle collisions in a way that no damage results
 and communicate such situations back to the higher layers of the
 software. The following section explains how this is achieved.
 
-\subsection{What happens when a collision or limit switch breach occurs}
+\section{What happens when a collision or limit switch breach occurs}
 \index{collisions!effect}
 \index{limit switch breach!effect}
 \index{collisions!explanation}
 \index{limit switch breach!explanation}
-\subsubsection{Detection of obstacles}
+\subsection{Detection of obstacles}
 
 Situations in which the movement of the hardware is obstructed are
 either collisions between FPUs or limit switch breaches of the alpha
-arm. For hardware protocol versions <= 1.3, limit switch breaches are
-detected when the alpha arm detects a transition where the limit
-switch is on and goes off. All other cases of obstruction are
-considered collisions, which is detected by electrical circuits that
-protect the beta arm. This includes movements where the beta arm is
-moved out of its allowed range and hits the hard stop.
+arm. Limit switch breaches are detected when the alpha arm detects a
+transition where the limit switch is on and goes off for a clock-wise
+movement, or an activation of the switch for a counterclockwise
+movement. All other cases of obstruction are considered collisions,
+which is detected by electrical circuits that protect the beta
+arm. This includes movements where the beta arm is moved out of its
+allowed range and hits the hard stop.
 
 When a collision or limit switch breach occurs, the FPU electronic
 hardware stops any movement, and sends a message to the EtherCAN interface. On
@@ -2627,7 +2655,7 @@ flags \texttt{beta\_collision} and \texttt{at\_alpha\_limit} are set
 accordingly, and the flag \texttt{was\_zeroed} is cleared.
 
 
-\subsubsection{Errors are turned into exceptions}
+\subsection{Errors are turned into exceptions}
 
 \begin{sloppypar}
 If any movement operation or \texttt{findDatum()} command is going on,
@@ -2642,7 +2670,7 @@ the cause of the error in \texttt{try \ldots except} clauses.  If the
 generated exception is not caught, this terminates the Python script.
 \end{sloppypar}
 
-\subsubsection{Collisions and limit switch breaches while the FPUs are not moving}
+\subsection{Collisions and limit switch breaches while the FPUs are not moving}
 \index{collisions!while FPUs are not moving} It is also possible that
 a collision occurs while an FPU is \emph{not} moving and the EtherCAN interface
 not executing a command.  In this case, the internal
@@ -2666,7 +2694,7 @@ In the general case, this can be a complex question. The
 \texttt{grid\_state} structure is designed to provide a host of
 information for making this decision.
 
-\subsection{Resolution of a beta arm collision}
+\section{Resolution of a beta arm collision}
 \label{sec:betacollisionresolution}.
 \index{errors!resolution of collisions}
 \index{collisions!resolution}
@@ -2695,9 +2723,7 @@ the numerical ID of the FPU, which is zero for a single-FPU
 grid. Then, calling the method \texttt{freeBetaCollision()} moves the
 collided FPU into the direction passed in the second parameter -
 clockwise, or anti-clockwise, as determined from assessing the FPUs
-arm positions. When using the protocol version 1, it can be necessary
-to retrieve an update for position and state of the FPU using the
-\texttt{pingFPUs()} command.
+arm positions.
 
 Calling \texttt{freeBetaCollision()} might need to be repeated a few
 times, and verified using visual inspection, or camera pictures. When
@@ -2708,57 +2734,12 @@ waveforms become invalid, a new movement needs to be configured using
 \texttt{configMotion()} at this point. To make movements precise, a
 new datum search is required at that point.
 
-\subsection{Resolution of an alpha limit switch breach}
-\index{limit switch breach!resolution}
-\index{errors!resolution of limit switch breaches}
-\index{limit switch breach|see{collision}}
-For firmware and CAN protocol  version 2, limit switch
-breaches can be handled in an analogous way as the
-beta arm collisions. For CAN protocol version 1,
-is option is not available. Instead, the following
-steps are required:
-
-\begin{minted}[linenos]{python}
-  # Determine and write down the last movement of the FPU before
-  # running into the limit switch. Let's assume
-  # the alpha arm was moved with a positive sign.
-
-  # reset the FPU to allow for movements
-  gd.resetFPUs(grid_state)
-
-  # move the FPU into the opposite direction
-  waveform = gen_wf(-5, 0)
-  gd.configMotion(waveform, grid_state, soft_protection=False,
-                  allow_uninitialized=True)
-  gd.executeMotion(grid_state)
-  # A second limit switch breach exception will happen here!
-
-  # reset the FPU again, to clear the second breach state
-  gd.resetFPUs(grid_state)
-
-  gd.findDatum(grid_state)
-  
-\end{minted}
-  
-
-What these operations do is basically to clear the breach state, and
-to manually move the FPU.  The flag \texttt{soft\_protection=False} in
-line 10 is required because the starting point of the movement
-is not in the safe range of angles.
-
-After this, the FPU can be moved, but because moving it causes it to
-cross the limit switch a second time, for hardware protocol versions
-<= 1.3, another limit switch breach message is generated, and the FPU
-needs to be reset and moved manually for a second time.
-
-\index{limit switch breach} \index{dead zone} \textbf{Specific for
-  hardware protocol <= 1.3: After a limit breach, the alpha arm is in
-  a dead zone in which no hardware protection is possible.  Especially
-  for protocol versions <= 1.3, it is very important that, when
-  resolving such a limit switch breach, the FPU is not moved into the
-  same direction as it was moving when triggering the breach.
-  Otherwise, the FPU would run into the hard stop, and there is no
-  further protection which could prevent damage in this case}.
+\section{Resolution of an alpha limit switch breach}
+\index{limit switch breach!resolution} \index{errors!resolution of
+  limit switch breaches} \index{limit switch breach|see{collision}}
+For firmware and CAN protocol version 2, limit switch breaches can be
+handled in the same way as beta arm collisions, using corresponding
+commands for the alpha arm.
 
 \begin{warning}
   \textbf{WARNING: When resolving an alpha arm limit switch breach,
@@ -2766,41 +2747,37 @@ needs to be reset and moved manually for a second time.
     collision protection is active in this state!}
 \end{warning}
 
-\subsection{Limitations of CAN protocol version 1}
-\index{CAN protocol versions!protocol 1 limitations}
-The following are the main limitations and functional
-differences for protocol version 1:
+\section{Changes in CAN protocol version 2}
+\index{CAN protocol versions!protocol 2 limitations}
+The following are the main changes between protocol version 2
+and the older version 1:
 
 \begin{itemize}
-\item There is no automatic recovery method for alpha limit switch
-  breaches. Limit switch breaches place the alpha arm in a dead zone
-  and need to be recovered manually. Doing this, it must be carefully
-  observed to move the FPU in the correct direction, on order to
-  prevent the risk of damage. Especially, a datum search must never be
-  used during an active alpha limit switch breach.
+\item Alpha limit switch breaches can be recovered automatically. The
+  risk of damage caused by starting a datum search during a limit
+  switch breach is reduced.
+
 
 \item In protocol version 2, transitions and allowed commands are
-  checked much stricter than in protocol 1.  This results in a
-  somewhat reduced flexibility, however the stricter checking also
+  checked much stricter than in protocol 1.  The stricter checking
   allows to make stronger assumptions about the current state, and
   that makes it possible to perform automatic recovery of multiple
   collided FPUs.
   
-\item In some cases, protocol 1 is not able to detect lost messages,
-  so that state information might be stale. Also, the FPU can lose
-  messages from the EtherCAN interface software when it is busy or overloaded. 
+\item Protocol 2 is able to detect lost messages in almost all
+  situations. This is accompanied with robustness changes of message
+  handling in the FPU firmware and the EtherCAN gateway.
   
 
-\item It is not possible to lock or unlock FPUs, in order to exclude
-  FPUs from movement commands.
+\item It is possible to lock and unlock individual FPUs, which can be
+  used to make sure that they are not moved unintentionally.
   
-\item Waveforms are more restricted, and uploading waveforms might
-  take a longer time, especially if the waveform has a large number of
-  steps.
+\item Waveforms can be longer and waveform upload time can be tweaked
+  to be faster.
   
 \end{itemize}
 
-\section{Outline on management of multiple FPUs}
+\chapter{Outline on management of multiple FPUs}
 \label{sec:multifpu}
 \index{FPU!controlling multiple}
 \index{grid state!overall state}
@@ -2809,7 +2786,7 @@ This section attempts to give a broad overview on how a grid with 1000
 or more FPUs can be managed by higher levels of the instrument
 software.
 
-\subsection{Retrieving individual states}
+\section{Retrieving individual states}
 The EtherCAN interface software can effortlessly send and receive commands to up
 to 1005 FPUs. The only requirement is that the grid driver object is
 initialised with that number of FPUs, and the corresponding number of
@@ -2819,7 +2796,7 @@ is retrieved, it contains the states of \emph{all} FPUs in the
 of FPU number 900 is, we simply have to query
 \verb+grid_state.FPU[900]+.
 
-\subsection{Accessing the counts of states in an FPU grid}
+\section{Accessing the counts of states in an FPU grid}
 To make managing such a high number of FPUs easier, there exist a few
 additional functions. One feature is that \texttt{grid\_state}
 variable has a member named \texttt{Counts}, which is an array that
@@ -2843,7 +2820,7 @@ returns the number of FPUs in \texttt{RESTING} state. Because FPUs are
 always in exactly one state, the numbers in \texttt{Counts} always sum
 up to the number of FPUs.
 
-\subsection{Summarising the FPU grid state}
+\section{Summarising the FPU grid state}
 In addition, there is a function with the name
 \texttt{getGridStateSummary(grid\_state)} which maps the different
 states of the set of FPUs to a single value. Such a mapping reduces
@@ -2869,7 +2846,7 @@ to move. In the same way, if 990 FPUs are in state ``\texttt{RESTING}'',
 the resulting overall state is \texttt{OBSTACLE\_ERROR}.
 
 
-\subsection{Thread-safety and concurrency}
+\section{Thread-safety and concurrency}
 All EtherCAN interface methods are thread-safe, so they can be used in a GUI
 environment, for example.
 
@@ -2882,7 +2859,7 @@ management substantially less complex. The exception from this is the
 \texttt{abortMotion()} method, which can be sent at any time, from any
 thread.
 
-\subsection{Waiting for movement operations to finish}
+\section{Waiting for movement operations to finish}
 \index{waitForState()}
 \index{waiting for a command to finish}
 \index{movements!waiting for command completion}
@@ -2898,11 +2875,10 @@ collision and need to be disentangled guided by geometric information
 and a high-level resolution strategy.
 
 
-
-\section{Reference}
+\part{Reference}
 \label{sec:reference}
 
-\subsection{Retrieving information about the EtherCAN interface version}
+\section{Retrieving information about the EtherCAN interface version}
 \index{version information!retrieving EtherCAN interface and CAN protocol version!reference}
 \index{networking!CAN protocol!retrieving version}
 There are two attributes of the \texttt{FpuGridDriver} module
@@ -2910,24 +2886,24 @@ which allow to retrieve version information:
 
 The standard attribute \texttt{FpuGridDriver.\_\_version\_\_} returns
 the latest git version label of the EtherCAN interface. The first letter is stripped, so
-that ``v0.9.3'' turns into ``0.9.3''. This version number is
+that ``v2.0.3'' turns into ``2.0.3''. This version number is
 authoritative when testing whether a EtherCAN interface API or documentation is
 valid for the installed module.
 
 The attribute \texttt{FpuGridDriver.CAN\_PROTOCOL\_VERSION} displays
-the major version number of the CAN protocol against which the EtherCAN interface
-was compiled, it can be ``1'' or ``2''. This version number needs to
-match the version of the firmware which is running on the FPUs,
-otherwise the EtherCAN interface will not work. The version numbers of the FPU
-firmware can be retrieved and checked using the
-\texttt{printFirmwareVersion()} and \texttt{minFirmwareVersion()}
-commands which are described in
+the major version number of the CAN protocol against which the
+EtherCAN interface was compiled, it can be ``1'' or ``2''. This
+version number needs to match the version of the firmware which is
+running on the FPUs, otherwise the EtherCAN interface will not
+work. The version numbers of the FPU firmware can be retrieved and
+checked using the \texttt{printFirmwareVersion()} and
+\texttt{minFirmwareVersion()} commands which are described in
 sections~\ref{sec:printfirmwareversion} and
 \ref{sec:minfirmwareversion} on
 page~\pageref{sec:printfirmwareversion}.
 
 
-\subsection{Driver initialisation}
+\section{Driver initialisation}
 \label{sec:driverinitialisation}
 \index{driver!initialisation!reference}
 The driver is initialised by calling the class constructor
@@ -3106,10 +3082,10 @@ be passed:
 \end{description}
 
 
-\subsection{Commands and driver methods}
+\section{Commands and driver methods}
 \label{sec:commands}
 
-\subsubsection{Addressing a subset of FPUs}
+\subsection{Addressing a subset of FPUs}
 \label{sec:subsets}
 \index{addressing!a subset of FPUs} In some situations, it is required
 to send commands only to a sub-set if fibre positioners. In the ICS,
@@ -3152,7 +3128,7 @@ address. This can be done either within the same python program, or in
 different programs which can operate completely independently.
 
 
-\subsubsection{connect()}
+\subsection{connect()}
 \label{sec:connect}
 \index{connect()!reference} \index{networking!ip and port
   configuration} \index{EtherCAN gateway!configuration} \index{IP
@@ -3179,7 +3155,7 @@ It is possible that different driver instances are initialised at the
 same time, which connect to different gateways, that is, each instance
 controls its own grid, or group of FPUs.
 
-\subsubsection{getFirmwareVersion()}
+\subsection{getFirmwareVersion()}
 \label{sec:getfirmwareversion}
 \index{commands!getFirmwareVersion()}
 \index{version information!retrieving FPU firmware versions}
@@ -3203,12 +3179,9 @@ by passing a list of integer FPU IDs to the parameter
   gd.getFirmwareVersion(grid_state, fpuset=[0,1,2,5,10])
 \end{minted}
 
-Note: Due to limitations in the CAN protocol version 1, this
-information is only available directly after the firmware version was
-retrieved.
 
 
-\subsubsection{printFirmwareVersion()}
+\subsection{printFirmwareVersion()}
 \index{commands!printFirmwareVersion()}
 \label{sec:printfirmwareversion}
 
@@ -3219,7 +3192,7 @@ As the \texttt{getFirmwareVersion()} method, the method accepts an
 \texttt{fpuset} keyword parameter which restricts the output to the fpu IDs
 listed in the parameter.
 
-\subsubsection{minFirmwareVersion()}
+\subsection{minFirmwareVersion()}
 \label{sec:minfirmwareversion}
 \index{commands!minFirmwareVersion()}
 \index{checking the firmware version}
@@ -3239,7 +3212,7 @@ tuples can be compared like strings. For example, the statement
 will either make sure that the firmware version is at least 1.3.0, or
 abort the running script.
 
-\subsubsection{readSerialNumbers()}
+\subsection{readSerialNumbers()}
 \index{commands!readSerialNumbers()}
 \index{serial numbers!reading}
 
@@ -3249,13 +3222,11 @@ The command
 \end{minted}
 reads the serial numbers of the FPUs and places them into the
 \texttt{grid\_state} variable into the field named
-\texttt{serial\_number}. For CAN protocol version 1, the serial number
-can be any sequence of up to five printable ASCII chars.
+\texttt{serial\_number}. For CAN protocol version 2, the serial number
+can be any sequence of up to six printable ASCII chars.
 
-This command requires an FPU firmware version of equal or larger than
-1.3.0.
 
-\subsubsection{printSerialNumbers()}
+\subsection{printSerialNumbers()}
 \index{commands!printSerialNumbers()}
 \index{serial numbers!displaying}
 
@@ -3268,7 +3239,7 @@ parameter is a list of the FPU IDs which will be printed. By default,
 the numbers for all FPUs will be displayed.
 
 
-\subsubsection{writeSerialNumber()}
+\subsection{writeSerialNumber()}
 \index{commands!writeSerialNumber()}
 \index{serial numbers!writing}
 
@@ -3280,9 +3251,9 @@ sends the serial number in the string \texttt{snstring}
 to the FPU with ID \texttt{fpu\_id} and writes it
 to the FPU controller NVRAM.
 
-For CAN protocol version 1, the serial number can be any unique
-sequence of up to five printable ASCII characters, for example
-\texttt{"PT137"}.
+For CAN protocol version 2, the serial number can be any unique
+sequence of up to six printable ASCII characters, for example
+\texttt{"PT1001"}.
 
 \begin{sloppypar}
 \index{DE\_DUPLICATE\_SERIAL\_NUMBER} The command will be rejected and
@@ -3293,7 +3264,7 @@ the grid.
 
 
 
-\subsubsection{getGridState()}
+\subsection{getGridState()}
 \index{getGridState()!reference}
 The method \texttt{FpuGridDriver.getGridState()} creates and returns
 an instance of the grid state object:
@@ -3317,7 +3288,7 @@ can however be useful to refresh its state by calling
 \texttt{getGridState()} again, because the state of the FPU grid might
 still be changing after the failed command has returned.
 
-\subsubsection{getSwitchStates()}
+\subsection{getSwitchStates()}
 \index{commands!getSwitchStates()}
 \index{alpha limit switch!querying state}
 \index{beta datum switch!querying state}
@@ -3341,7 +3312,7 @@ The result will look like that:
 
 
 
-\subsubsection{pingFPUs()}
+\subsection{pingFPUs()}
 \begin{sloppypar}
 \index{pingFPUs()!reference} \index{networking!checking the connection!reference} The method
 \texttt{FpuGridDriver.pingFPUs(grid\_state)} connects to each FPU and
@@ -3362,7 +3333,7 @@ section~\ref{sec:listpositions} and ~\ref{sec:listangles} on
 page~\pageref{sec:listpositions} ff.
 
 
-\subsubsection{countedAngles()}
+\subsection{countedAngles()}
 \label{sec:countedangles}
 \index{methods!countedAngles()}
 \index{countedAngles()!reference}
@@ -3398,7 +3369,7 @@ set, causes it to retrieve and list only values for the passed FPU
 IDs.
 
 
-\subsubsection{trackedAngles()}
+\subsection{trackedAngles()}
 \label{sec:trackedangles}
 \index{methods!trackedAngles()}
 \index{trackedAngles()!reference}
@@ -3502,7 +3473,7 @@ present on the FPUs, but which are currently not in executable state.
 actually not any more executable, for example if the FPU has been
 reset, or if it had a collision).
 
-\subsubsection{findDatum()}
+\subsection{findDatum()}
 \label{sec:finddatum}
 \index{commands!findDatum()!reference}
 \index{findDatum()!reference}
@@ -3560,9 +3531,7 @@ like this:
 If the value of this parameter is \texttt{DASEL\_BOTH}, it shows the
 default behaviour. If it is \texttt{DASEL\_ALPHA}, only the alpha arm
 is datumed, if it is \texttt{DASEL\_BETA}, only the beta arm is
-datumed. This feature requires the FPU firmware to support the CAN
-protocol version 1.1. Otherwise, a
-\texttt{DE\_FIRMWARE\_UNIMPLEMENTED} exception is thrown.
+datumed.
 \end{sloppypar}
 
 \paragraph{Software protection}
@@ -3712,7 +3681,7 @@ FPU, this leads to a \texttt{HardwareProtectionError}.
 
 
 
-\subsubsection{configMotion()}
+\subsection{configMotion()}
 \label{sec:configmotion}
 \index{commands!configMotion()!reference}
 \index{configMotion()!reference}
@@ -3736,10 +3705,6 @@ can be used to generate a suitable waveform table. (The
 \texttt{gen\_wf()} function is described in section~\ref{sec:genwf} on
 page~\pageref{sec:genwf}.)
 
-In CAN protocol version 1, the command is normally only accepted if
-all addressed FPUs are in state \texttt{AT\_DATUM} or \texttt{RESTING}.
-This requires that each FPU was moved to the datum position before, using
-the \texttt{findDatum()} method.
 
 \paragraph{Moving uninitialised FPUs}
 \index{datum search!alpha arm at negative position}
@@ -3807,20 +3772,20 @@ waveform table, and whose IDs are in the fpuset list. If
 table will be configured.
 
 
-\subsubsection{getCurrentWaveTables()}
+\subsection{getCurrentWaveTables()}
 \index{commands!getCurrentWaveTables()} The method
 \texttt{getCurrentWaveTables()} retrieves the currently valid, or the
 last configured waveform tables as a dictionary, one entry for each
 FPU.
 
 
-\subsubsection{getReversed()}
+\subsection{getReversed()}
 \index{commands!getReversed()} The method \texttt{getReversed()}
 retrieves for each currently configured, or last configured waveform
 table whether it was configured for the forward or reverse direction.
 
 
-\subsubsection{configPaths()}
+\subsection{configPaths()}
 \label{sec:configpaths}
 \index{commands!configPaths()!reference}
 \index{configMotion()!reference}
@@ -3854,7 +3819,7 @@ method calls the former after checking for the correct current
 position.
 
 
-\subsubsection{executeMotion()}
+\subsection{executeMotion()}
 \index{commands!executeMotion()!reference}
 \index{executeMotion()!reference}
 
@@ -3922,7 +3887,7 @@ such a condition is resolved.
 
 
 
-\subsubsection{reverseMotion()}
+\subsection{reverseMotion()}
 \index{commands!reverseMotion()!reference}
 \index{reverseMotion()!reference}
 \index{movements!reversing!reference}
@@ -3955,7 +3920,7 @@ therefore reversing the movement is ill-defined, and a new
 state.
 
 
-\subsubsection{repeatMotion()}
+\subsection{repeatMotion()}
 \index{commands!repeatMotion!reference}
 \index{repeatMotion!reference}
 \index{movements!repeating!reference}
@@ -3986,7 +3951,7 @@ such an event, and a new \texttt{findDatum} command is needed to
 restore the calibrated state.
 
 
-\subsubsection{abortMotion()}
+\subsection{abortMotion()}
 \index{commands!abortMotion()!reference}
 \index{abortMotion()!reference}
 \index{aborting!movements!reference}
@@ -4012,13 +3977,11 @@ until all FPUs have send a confirmation, and returns.
 
 After an \texttt{abortMotion()} command, FPUs which are in the state
 \texttt{ABORTED} will not be able to move again before this state is
-resolved. In protocol version 1, this can only be done by resetting
-the FPUs, which also clears the step counter calibration and resets
-the counter to zero\footnote{In protocol version 2, there are
-  additional commands available which simplify handling this state}.
+resolved. In protocol version 2, this can be done using the
+\texttt{enableMove} command.
 
 
-\subsubsection{resetFPUs()}
+\subsection{resetFPUs()}
 \index{resetFPUs()!reference}
 \index{FPU!resetting!reference}
 \index{clearing FPU state}
@@ -4032,7 +3995,7 @@ As \texttt{findDatum()} and \texttt{executeMotion()}, the command
 accepts an \texttt{fpuset} key parameter which restricts the operation
 to the FPU IDs passed as a list.
 
-\subsubsection{freeBetaCollision()}
+\subsection{freeBetaCollision()}
 \index{commands!freeBetaCollision()!reference}
 \index{freeBetaCollision()!reference}
 \index{collisions!how to handle}
@@ -4073,7 +4036,7 @@ this protection should normally not be necessary and can lead to
 breaking the FPU.
 
 
-\subsubsection{enableBetaCollisionProtection()}
+\subsection{enableBetaCollisionProtection()}
 \index{commands!enableBetaCollisionProtection()!reference}
 \index{enableBetaCollisionProtection()!reference}
 \index{collisions!how to handle!reference}
@@ -4086,7 +4049,7 @@ safely. If the collision has not been resolved successfully, another
 \texttt{CollisionError} exception is raised, and the FPU state is set
 again to \texttt{OBSTACLE\_ERROR}.
 
-\subsubsection{readRegister()}
+\subsection{readRegister()}
 \label{sec:readregister}
 \index{commands!readRegister()}
 \index{reading memory from the FPU controller}
@@ -4121,7 +4084,7 @@ the parameter \texttt{fpuset} is set to a non-empty list of FPU IDs,
 the operation is restricted to these FPUs.
 
 
-\subsection{Utility functions}
+\section{Utility functions}
 
 The following functions are not part of the driver object, but are
 contained in the module \texttt{fpu\_commands}, which needs to be
@@ -4129,7 +4092,7 @@ imported separately. They are implemented in pure Python. It is
 encouraged to inspect their implementation and modify a copy if a
 somewhat different functionality is desired.
 
-\subsubsection{list\_positions()}
+\subsection{list\_positions()}
 \label{sec:listpositions}
 \index{functions!list\_positions()} \index{list\_positions()!reference}
 The function \texttt{fpu\_commands.list\_positions(grid\_state)}
@@ -4145,7 +4108,7 @@ whether this arm was initialised by searching for the datum position.
 If the keyword argument \texttt{show\_zeroed} is passed with a value of
 \texttt{False}, the last two parameters are not shown.
 
-\subsubsection{list\_angles()}
+\subsection{list\_angles()}
 \label{sec:listangles}
 \index{functions!list\_angles()}
 \index{list\_angles()!reference}
@@ -4174,7 +4137,7 @@ automatically updates the grid state data to the current position.
 Also, in difference to \texttt{list\_angles()}, it is not necessary
   to pass the alpha datum offset if a non-standard offset was used.
 
-\subsubsection{list\_states()}
+\subsection{list\_states()}
 \label{sec:liststates}
 \index{functions!list\_states()}
 \index{list\_states()}
@@ -4182,19 +4145,19 @@ Also, in difference to \texttt{list\_angles()}, it is not necessary
 The function \texttt{list\_states(grid\_state)} lists the state of all
 FPUs. This allows, for example, to see quicker which FPUs have run into an error.
 
-\subsubsection{list\_deviations()}
+\subsection{list\_deviations()}
 This command lists the counter deviations of each FPU after the last
 datum search, that is, the residual value of the alpha and beta step
 counters when the datum switch was hit.
 
-\subsubsection{list\_timeouts()}
+\subsection{list\_timeouts()}
 \index{time-outs!listing} This command lists the time-out count for
 each FPU. Note that the internally used values are unsigned 16-bit
 values which wrap around when they overflow -- you should not depend
 on the assumption they increase monotonically.
 
 
-\subsubsection{gen\_wf()}
+\subsection{gen\_wf()}
 \label{sec:genwf}
 
 \index{functions!gen\_wf()}
@@ -4312,7 +4275,7 @@ the user.
 
 
 
-\subsubsection{wflib.load\_paths()}
+\subsection{wflib.load\_paths()}
 \index{load\_paths()}%
 \index{configPaths()!loading a path}%
 \index{mocpath library}%
@@ -4345,7 +4308,7 @@ checks as the EtherCAN interface, and marks each step which does not conform to
 all rules, along with the unsatisfied rule.
 
 
-\subsubsection{wflib.load\_waveform()}
+\subsection{wflib.load\_waveform()}
 \index{load\_waveform()}%
 \index{configMotion()!loading a path as a waveform}%
 %
@@ -4440,9 +4403,9 @@ alpha switch occur, for example caused by vibration.
 If one of the parameters is a NaN value, an \texttt{assertionError}
 exception is raised.
 
-\subsection{Helper scripts}
+\section{Helper scripts}
 
-\subsubsection{initializeGrid.py}
+\subsection{initializeGrid.py}
 \label{sec:initializegrid}
 \index{initializeGrid script}
 \index{initial datum operation}
@@ -4469,10 +4432,10 @@ Further options to this script can be listed by using the
 \texttt{-\,-help} option.
 
 
-\subsection{Errors}
+\section{Errors}
 \label{sec:errors}
 
-\subsubsection{Exception Hierarchy}
+\subsection{Exception Hierarchy}
 \label{sec:ExceptionsReference}
 \index{exceptions!hierarchy}
 \index{collisions!types}
@@ -4505,7 +4468,7 @@ The hierarchy of exceptions used by the Python module is as follows:
 
 \end{verbatim}
 
-\subsubsection{Error codes}
+\subsection{Error codes}
 \label{sec:errorcodes}
 \index{errors!detailed error codes}
 \index{error codes}
@@ -4741,92 +4704,32 @@ might change.
 
 \end{verbatim}
 
-\section{Firmware compatibility}
+\chapter{Firmware compatibility}
 \label{sec:firmware_compatibility}
 \index{supported firmware versions}
 \index{firmware compatibility}
 
-The EtherCAN interface documented here, version 1.5.2, requires
-firmware version 1.6.0 or newer. The following limitations apply for
+The EtherCAN interface documented here, version 2.1.0, requires
+firmware version 2.0.0 or newer. The following limitations apply for
 older firmware versions:
 
 \begin{description}
-  
-\item[firmware versions <= 1.6.0]
-  \begin{itemize}
-      
-    \item For these firmware protocol versions, it is not possible to
-      configure a waveform reliably without using a confirmation for
-      every message -- this is only supported by the upcoming hardware
-      protocol 2.
-  \end{itemize}
 
+\item[firmware versions <= 2.0.0] These firmware versions are not
+  supported by this driver version.
 
-  \item[firmware versions < 1.6.0]
-    \begin{itemize}
-    \item Requires to set the driver keyword parameter
-      \texttt{can\_command\-priority} to zero, otherwise the firmware
-      will not recognise any commands. All CAN priorities will be set
-      to zero (which is incorrect). In order to avoid problems with
-      unreliable transmission of response messages, it is strongly
-      recommended to use newer firmware.
-  \end{itemize}
-
-  
-\item[firmware versions <= 1.4.4]
-  
-\begin{itemize}
-  \item This older firmwares does not support movement of FPUs with
-    small step counts at another point than in the final part of a
-    waveform.  They also require an explicit pause between changes of
-    the movement direction. Therefore, they are not compatible to the
-    default waveform ruleset 4.  For these firmware versions, the
-    ruleset for waveform validity rules needs to be explicitly set to
-    ruleset 2, in both the \texttt{configMotion()} and the
-    \texttt{configPaths()} methods.
-    \item In the life time test script, the waveform rule set version
-      needs to be set to 2 in order to match the old behaviour.
-  
-\item The EtherCAN interface probably allows some waveforms which are not within
-  the safe range of the firmware.
-  \end{itemize}
-\item[firmware versions < 1.4.4]
-  
-\begin{itemize}
-\item The offset for the register address to read the firmware version needs
-  to be configured manually.
-\end{itemize}
-
-\item[firmware version < 1.4.3]
-  
-  \begin{itemize}
-  \item The automatic datum search is not supported.
-  \end{itemize}
-
-\item[firmware version < 1.3.0]
-  
-  \begin{itemize}
-  \item The firmware does not support reading or writing the serial number of the FPU.
-    Consequently, the software protection feature in the driver is not available.
-  \end{itemize}
-
-\item[firmware version < 1.1.0]
-  
-  \begin{itemize}
-  \item The separate selection of alpha and beta arm in the datum operation will not work.
-  \end{itemize}
   
 \end{description}
 
 
-\section{Changelog}
+\chapter{Changelog}
 \label{sec:changelog}
 
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
-\subsection*{Changes in version 1.5.2}
+\section{Changes in version 1.5.2}
 \begin{itemize}
 \item Added: Use of LMDB can now be disabled by clearing the
   environment variable \texttt{FPU\_DATABASE}.  This requires to use
@@ -4849,7 +4752,7 @@ commands, or alter otherwise visible behaviour of the driver.
   
 \end{itemize}
 
-\subsection*{Changes in version 1.5.1}
+\section{Changes in version 1.5.1}
 \begin{itemize}
 
 \item  Added: \texttt{testGateway.py}  script was added, which allows to soak-test the
@@ -4860,7 +4763,7 @@ commands, or alter otherwise visible behaviour of the driver.
   
 \end{itemize}
 
-\subsection*{Changes in version 1.5.0}
+\section{Changes in version 1.5.0}
 \begin{itemize}
 
 \item  Internal optimisation: Data structure which keeps next time-out was optimised, which reduces
@@ -4875,7 +4778,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \end{itemize}
 
 
-\subsection*{Changes in version 1.4.1}
+\section{Changes in version 1.4.1}
 \begin{itemize}
 
   
@@ -4898,7 +4801,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \end{itemize}
 
 
-\subsection*{Changes in version 1.4.0}
+\section{Changes in version 1.4.0}
 \begin{itemize}
 
 \item Added: Example script named ``plot-fpu-counters.py'' which reads
@@ -4935,7 +4838,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \end{itemize}
 
 
-\subsection*{Changes in version 1.3.7}
+\section{Changes in version 1.3.7}
 \begin{itemize}
 \item 
   Added: The driver parameters \texttt{min\_bus\_repeat\_delay\_ms} and
@@ -4965,7 +4868,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \end{itemize}
 
 
-\subsection*{Changes in version 1.3.6}
+\section{Changes in version 1.3.6}
 \begin{itemize}
 \item Make re-sending \texttt{configMotion()} data more robust by
   checking for correct FPU state and number of waveform segments.
@@ -4976,7 +4879,7 @@ commands, or alter otherwise visible behaviour of the driver.
   such cases.
 \end{itemize}
 
-\subsection*{Changes in version 1.3.5}
+\section{Changes in version 1.3.5}
 \begin{itemize}
 \item Activate additional retry code in \texttt{configMotion()}
   command, which re-sends data if a CAN time-out occurred when sending
@@ -4984,7 +4887,7 @@ commands, or alter otherwise visible behaviour of the driver.
   times, before a fatal error is reported.
 \end{itemize}
 
-\subsection*{Changes in version 1.3.4}
+\section{Changes in version 1.3.4}
 \begin{itemize}
 \item Changed: Increase maximum size of LMDB database to 5 GB for life time test.
 \item Fixed: Syntax error in fpu-admin tool.
@@ -4992,14 +4895,14 @@ commands, or alter otherwise visible behaviour of the driver.
 \end{itemize}
 
 
-\subsection*{Changes in version 1.3.3}
+\section{Changes in version 1.3.3}
 \begin{itemize}
 \item Added: to the \texttt{gen\_wf()} function in 'limited
   acceleration' mode, an extra parameter was added which allows to
   define a stopping speed which is different from the starting speed.
 \end{itemize}
 
-\subsection*{Changes in version 1.3.2}
+\section{Changes in version 1.3.2}
 \begin{itemize}
 \item Added: To the \texttt{gen\_wf()} function, a mode
   was added which generates waveforms with constant acceleration.
@@ -5019,7 +4922,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \end{itemize}
 
 
-\subsection*{Changes in version 1.3.1}
+\section{Changes in version 1.3.1}
 \begin{itemize}
 \item Fixed: The documented value for indicating an overflow in the
   communicated step counter of the alpha arm had an off-by-one error.
@@ -5048,7 +4951,7 @@ commands, or alter otherwise visible behaviour of the driver.
   which implements most of its functionality.
 \end{itemize}
 
-\subsection*{Changes in version 1.3.0}
+\section{Changes in version 1.3.0}
 \begin{itemize}
 \item Compatibility: By default, this FPU EtherCAN interface version is compatible
   with firmware version 1.4.4 upwards. To use it with earlier firmware
@@ -5161,7 +5064,7 @@ commands, or alter otherwise visible behaviour of the driver.
   
 \end{itemize}
 
-\subsection*{Changes in version 1.2.0}
+\section{Changes in version 1.2.0}
 \begin{itemize}
 \item Compatibility: This EtherCAN interface version is not compatible with later
   developed firmware versions of v1.4.4 or higher. The reason is that
@@ -5217,7 +5120,7 @@ commands, or alter otherwise visible behaviour of the driver.
   
 \end{itemize}
   
-\subsection*{Changes in version 1.1.1}
+\section{Changes in version 1.1.1}
 \begin{itemize}
 \item Added: The \texttt{configMotion()}, \texttt{repeatMotion()}, and
   \texttt{reverseMotion()} commands all now print the number of
@@ -5260,7 +5163,7 @@ commands, or alter otherwise visible behaviour of the driver.
   number of additional places, to filter out invalid parameters.
 \end{itemize}
 
-\subsection*{Changes in version 1.1.0}
+\section{Changes in version 1.1.0}
 \begin{itemize}
 \item Added: The FPU database now contains counters for the number of
   movements, number of datum operations, collisions, limit switch
@@ -5312,7 +5215,7 @@ commands, or alter otherwise visible behaviour of the driver.
  
 
 
-\subsection*{Changes in version 1.0.0}
+\section{Changes in version 1.0.0}
 \begin{itemize}
 \item Added protection layer which disables most unsafe movements
   unless explicitly enabled by switching off a flag. This is described
@@ -5361,19 +5264,19 @@ commands, or alter otherwise visible behaviour of the driver.
   
 \end{itemize}
 
-\subsection*{Changes in version 0.7.2}
+\section{Changes in version 0.7.2}
 \begin{itemize}
 \item added \texttt{getSwitchStates()} command to read out
   the datum switch states.  
 \end{itemize}
 
 
-\subsection*{Changes in version 0.7.1}
+\section{Changes in version 0.7.1}
 \begin{itemize}
 \item fixed spelling error in name of command \texttt{writeSerialNumber()}
   
 \end{itemize}
-\subsection*{Changes in version 0.7.0}
+\section{Changes in version 0.7.0}
 \begin{itemize}
 \item The \texttt{readSerialNumbers()}, \texttt{writeSerialNumber()},
   and \texttt{printSerialNumbers()} methods have been added.
@@ -5400,7 +5303,7 @@ commands, or alter otherwise visible behaviour of the driver.
   to use the new default range of alpha arm angle values between -180 and 180.
 \end{itemize}
 
-\subsection*{Changes in version 0.6.0}
+\section{Changes in version 0.6.0}
 \begin{itemize}
 \item The \texttt{findDatum()} method now automatic moves the beta
   arm into the correct direction if the FPU has been initialised before.
@@ -5428,7 +5331,7 @@ commands, or alter otherwise visible behaviour of the driver.
 
 
 
-\subsection*{Changes in version 0.5.4}
+\section{Changes in version 0.5.4}
 \begin{itemize}
 \item Fixed bug in C++ EtherCAN interface which caused \texttt{OBSTACLE\_ERROR}
   state to be overwritten by \texttt{ABORTED} message after an FPU
@@ -5438,13 +5341,13 @@ commands, or alter otherwise visible behaviour of the driver.
   additionally logged to standard error, so that they are not overlooked.
 \end{itemize}
 
-\subsection*{Changes in version 0.5.3}
+\section{Changes in version 0.5.3}
 \begin{itemize}
 \item Added optional logging of commands and CAN messages, which
   is enabled by default (described in section~\ref{sec:logging}).
 \end{itemize}
 
-\subsection*{Changes in version 0.5.2}
+\section{Changes in version 0.5.2}
 \begin{itemize}
 \item the \texttt{findDatum()} method has an additional keyword
   argument which allows to select only the alpha or only the beta arm
@@ -5465,9 +5368,10 @@ commands, or alter otherwise visible behaviour of the driver.
 \item The EtherCAN simulator has an option to simulate protocol version 1.1
 \end{itemize}
 
+\part{Appendix}
 \appendix
 
-\section{Additional examples}
+\chapter{Additional examples}
 \label{sec:moreexamples}
 
 The \texttt{python} directory in the driver package contains
@@ -5488,8 +5392,8 @@ as needed. Here is an overview what each script does:
 \item[test\_configMotion.py] configures a movement by defining a wavetable as a Python literal
 \item[test\_executeMotion.py] configures and executes a movement
 \item[test\_findDatum.py] performs a datum search
-\item[test\_findDatumAlpha.py] performs a datum search only for the alpha arm (CAN protocol version 1.1 firmware required)
-\item[test\_findDatumBeta.py] performs a datum search only for the beta arm (CAN protocol version 1.1 firmware required)
+\item[test\_findDatumAlpha.py] performs a datum search only for the alpha arm
+\item[test\_findDatumBeta.py] performs a datum search only for the beta arm
 \item[test\_repeatMotion.py] uses the repeatMotion command to perform a movement repeatedly
 \item[test\_warnCollisionAlpha.py] generates a alpha limit breach message
 \item[test\_warnCollisionBeta.py] generates a beta collision message
@@ -5503,14 +5407,14 @@ as needed. Here is an overview what each script does:
   manually using the \verb+<Ctrl>-<c>+ key combination.
 \end{description}
 
-\section{Dependency requirements and installation}
+\chapter{Dependency requirements and installation}
 \label{sec:installationfromscratch}
 \index{EtherCAN interface!building}
 \index{EtherCAN interface!building requirements and dependencies}
 \index{boost libraries!retrieving}
 \index{git!installation}
 
-\subsection{Platform requirements}
+\section{Platform requirements}
 
 The EtherCAN interface and Python layer has been tested on Scientific
 Linux 2017, Ubuntu 17.10 (codename Artful Aardvark), Debian 9
@@ -5528,7 +5432,7 @@ require a kernel compiled with large file support (LFS), which is not
 enabled by default in 32-bit Linux.
 
 
-\subsection{Prerequisites}
+\section{Prerequisites}
 
 \begin{enumerate}
   \item For the C++ EtherCAN interface and static library
@@ -5570,9 +5474,9 @@ Note that Python might need to be called with the command name
 \texttt{python2} on newer systems.
 
 
-\subsection{Installation of FPU EtherCAN interface module}
+\section{Installation of FPU EtherCAN interface module}
 \index{EtherCAN interface!installing}
-\subsubsection{Installing boost libraries}
+\subsection{Installing boost libraries}
 \index{boost libraries!installing}
 Recent Boost libraries are required to build the Python module, which
 is needed in the verification system (but not in the final ICS
@@ -5649,7 +5553,7 @@ building the module.
 The boost::python library may require re-compiling when system
 upgrades are performed.
 
-\subsubsection{Installing the python-gevent module}
+\subsection{Installing the python-gevent module}
 \index{gevent module}
 %
 The Python mock-up gateway uses the gevent library which is used to
@@ -5677,7 +5581,7 @@ On Ubuntu or Debian, install it as follows:
 
 
 
-\subsubsection{Building the C++ EtherCAN interface library}
+\subsection{Building the C++ EtherCAN interface library}
 \index{EtherCAN interface!building!commands}
 The FPU EtherCAN interface is a static library which becomes included in the
 Python module.  Build the FPU driver library as follows:
@@ -5690,7 +5594,7 @@ Python module.  Build the FPU driver library as follows:
 This places the static library libethercan.a into the subdirectory
 "/lib". It can be used in any C++ program.
 
-\subsubsection{Building the python module}
+\subsection{Building the python module}
 
 Run
 
@@ -5708,7 +5612,7 @@ need to be set. These are explained in
 section~\ref{sec:environmentconfiguration} on
 page~\pageref{sec:environmentconfiguration} ff.
 
-\subsubsection{Generating the documentation}
+\subsection{Generating the documentation}
 \index{documentation!generating}
 
 The documentation source is managed along with the EtherCAN interface sources.  To
@@ -5733,10 +5637,10 @@ The generated document has the path name
 \texttt{python/doc/tutorial.pdf}.
 
 
-\section{Running the test gateway simulator}
+\chapter{Running the test gateway simulator}
 \label{sec:runningthegateway}
 \index{EtherCAN simulator}
-\subsection{Running the gateway simulator normally}
+\section{Running the gateway simulator normally}
 In the sub-directory \texttt{/test/HardwareSimulation}, the package
 contains a mock-up test gateway which responds to messages as
 specified by the hardware protocol. To run it, change into a new
@@ -5757,7 +5661,7 @@ protocol specification faithfully. Run the script with the option
 Most test scripts will set suitable port numbers and IP addresses when
 run with the ``--mockup'' option.
 
-\subsection{Running the test gateway with debug output}
+\section{Running the test gateway with debug output}
 
 In normal operation, the test gateway shows for each FPU the main
 commands it receives. In some situations, such as when debugging the

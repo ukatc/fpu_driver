@@ -208,7 +208,7 @@ class FPU:
         elif register_address == 1 + fwa_offset:
             return self.firmware_minor
         elif register_address == 2 + fwa_offset:
-            return self.firmware_patch
+             return self.firmware_patch
         elif register_address == 3 + fwa_offset:
             return self.firmware_year
         elif register_address == 4 + fwa_offset:
@@ -384,9 +384,6 @@ class FPU:
                 asteps, apause, aclockwise,
                 bsteps, bpause, bclockwise):
 
-        if self.state == FPST_LOCKED:
-            return MCE_NOTIFY_COMMAND_IGNORED
-
         ovflag = self.can_overflow
         if ovflag:                     # this might having been set
             self.can_overflow = False  # by a Unix signal handler
@@ -398,8 +395,7 @@ class FPU:
         if self.state == FPST_LOCKED :
             return MCE_NOTIFY_COMMAND_IGNORED
         
-        if self.state not in [ FPST_UNINITIALIZED,
-                               FPST_AT_DATUM,
+        if self.state not in [ FPST_AT_DATUM,
                                FPST_LOADING,
                                FPST_READY_FORWARD,
                                FPST_READY_REVERSE,
@@ -428,6 +424,7 @@ class FPU:
         n = self.nwave_entries
 
         if n  >= MAX_WAVE_ENTRIES:
+            self.state = FPST_RESTING
             return WAVEFORM_REJECTED, WAVEFORM_TOO_BIG
 
 
@@ -565,6 +562,10 @@ class FPU:
     def start_findDatum(self, auto_datum):
         if self.state == FPST_LOCKED:
             return MCE_NOTIFY_COMMAND_IGNORED
+
+        if self.state in [FPST_ABORTED, FPST_OBSTACLE_ERROR, FPST_LOADING,
+                          FPST_DATUM_SEARCH, FPST_MOVING]:
+            return MCE_ERR_INVALID_COMMAND
 
         if self.is_collided:
             # only send an error message
@@ -818,6 +819,15 @@ class FPU:
             self.wave_valid = False
             self.state = FPST_ABORTED
             errcode = MCE_FPU_OK
+        elif self.state in [ FPST_LOADING, READY_FORWARD, READY_REVERSE ]:
+            self.wave_ready = False
+            self.wave_valid = False
+            errcode = MCE_FPU_OK            
+            self.state = FPST_RESTING
+        elif self.state == FPST_RESTING:
+            self.wave_ready = False
+            self.wave_valid = False
+            errcode = MCE_FPU_OK            
         else:
             errcode = MCE_NOTIFY_COMMAND_IGNORED
             
@@ -868,8 +878,11 @@ class FPU:
             
     def enableBetaCollisionProtection(self):
         self.is_collided = False
+        self.is_initialized = False
+        self.wave_ready = False
+        self.wave_valid = False
         self.collision_protection_active = True
-        self.state = FPST_UNINITIALIZED
+        self.state = FPST_RESTING
         return MCE_FPU_OK
 
 
@@ -920,6 +933,9 @@ class FPU:
     def enableAlphaLimitBreachProtection(self):
         self.alpha_limit_breach = False
         self.collision_protection_active = True
+        self.is_initialized = False
+        self.wave_ready = False
+        self.wave_valid = False
         self.state = FPST_RESTING
         return MCE_FPU_OK
     
@@ -931,8 +947,10 @@ class FPU:
         if self.is_collided:
             # collision active, only send an error message
             errcode = MCE_WARN_COLLISION_DETECTED
+            self.state = FPST_OBSTACLE_ERROR
         elif self.alpha_limit_breach:
             errcode = MCE_WARN_LIMIT_SWITCH_BREACH
+            self.state = FPST_OBSTA CLE_ERROR
         elif not self.wave_ready:
             # wavetable is not ready
             print("FPU #", self.fpu_id, ": wave table is not ready, sending response code", MCE_ERR_WAVEFORM_NOT_READY)
@@ -1093,6 +1111,11 @@ class FPU:
         # don't allow locking when moving
         if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH]:
             return MCE_ERR_INVALID_COMMAND
+
+        if self.state == FPST_ABORTED:
+            self.was_initialized = False
+            self.wave_valid = False
+            self.wave_ready = False
         
         self.state = FPST_LOCKED
 
@@ -1111,9 +1134,6 @@ class FPU:
             self.was_initialized = False
         elif self.alpha_limit_breach:
             self.state = FPST_OBSTACLE_ERROR
-            self.was_initialized = False
-        elif self.abort_wave:
-            self.state = FPST_ABORTED
             self.was_initialized = False
         elif self.was_initialized :
             if (self.alpha_steps == 0) and (self.beta_steps == 0):
@@ -1136,16 +1156,19 @@ class FPU:
         if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH]:
             return MCE_ERR_INVALID_COMMAND
         
-        if self.state not in [FPST_ABORTED, FPST_UNINITIALIZED, FPST_RESTING]:
+        if self.state not in [FPST_ABORTED, FPST_UNINITIALIZED, FPST_RESTING,
+                              FPST_READY_FORWARD, FPST_READY_REVERSE]:
             # (if locked, needs unlocking first)
             return MCE_NOTIFY_COMMAND_IGNORED
         print("FPU # %i: setting state to FPST_RESTING" % self.fpu_id)
         self.state = FPST_RESTING
-        self.was_initialized = True
             
         return MCE_FPU_OK
 
     def checkIntegrity(self):
+        if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH,
+                           FPST_READY_FORWARD, FPST_READY_REVERSED]:
+            return MCE_ERR_INVALID_COMMAND
         # returns CRC32 checksum of 'firmware' (here, the class source code)
         source_string = "".join(inspect.getsourcelines(FPU)[0])
         crc32val= binascii.crc32(source_string) & 0xffffffff
