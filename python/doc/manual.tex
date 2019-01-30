@@ -50,6 +50,8 @@
 
 \pagestyle{headings}
 
+\usepackage{minitoc}
+
 \begin{document}
 
 \title{Manual for the MOONS FPU grid driver Python library
@@ -60,6 +62,10 @@
 
 \maketitle
 \pagenumbering{roman}
+
+\dominitoc
+
+
 
 \tableofcontents
 
@@ -133,31 +139,37 @@ example, in
   repository}\footnote{https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository}''.
 
 \section{Order of presentation}
-The order of presentation is divided in four parts, as follows:
+The presentation is divided in four parts, as follows:
 
 \begin{enumerate}
-\item The first part represents a tutorial aiming at explaining quickly how
-to use the software. In section~\ref{sec:settingup}, it is explained
-how the EtherCAN interface module is configured. Then, in
-section~\ref{sec:minimalexample}, a minimal example is presented. As
-additional required knowledge, in section~\ref{sec:protectionrules}
-the rules for using the software protection layer, and in
-section~\ref{sec:datumswitchcheck}, a procedure to verify that the
-datum switches are working at all are explained. It is recommended to
-read all of these sections before starting to operate the FPUs, and
-make sure that the datum switches work before using any datum
-operation.
+\item The first part represents a tutorial aiming at explaining
+  quickly how to use the software. This also introduces basic concepts
+  which are essential for understanding the subsequent manual part.
+  In section~\ref{sec:minimalexample}, a minimal example is
+  presented. As additional required knowledge, in
+  section~\ref{sec:protectionrules} the rules for using the software
+  protection layer are explained. It is recommended to read all of
+  these sections before starting to operate the FPUs, and make sure
+  that the datum switches work before using any datum operation.
 
 \item The second part forms a manual which provides more complete
-information on how to operate the FPUs, and how to solve
-problems. Section~\ref{sec:commontasks} explains how to perform common
-tasks. Section~\ref{sec:errorhandling} explains how errors are
-handled, and can be processed in scripts. Section~\ref{sec:logging}
-details how comprehensive logs of the commands send to each FPU can be
-accessed and interpreted. section~\ref{sec:recovery} explains how
-collisions and limit switch breaches are handled. The final section
-of that part, section~\ref{sec:multifpu}, explains how multiple FPUs
-can be handled, especially in complex recovery scenarios.
+  information on how to operate the FPUs, and how to solve
+  problems. In section~\ref{sec:settingup}, it is explained how the
+  EtherCAN interface module is configured. The following sections are
+  based heavily on the information given in the tutorial:
+  Section~\ref{sec:datumswitchcheck} describes an important procedure
+  which verifies that the datum switches are working.
+  Section~\ref{sec:commontasks} explains how to perform a number of
+  common tasks. Section~\ref{sec:errorhandling} explains how errors
+  are handled, and can be processed in
+  scripts. Section~\ref{sec:logging} details how comprehensive logs of
+  the commands send to each FPU can be accessed and
+  interpreted. Section~\ref{sec:healthlog} explains how the FPU health
+  and performance counters are accessed, and what they mean.
+  Section~\ref{sec:recovery} explains how collisions and limit switch
+  breaches are handled. The final section of that part,
+  section~\ref{sec:multifpu}, explains how multiple FPUs can be
+  handled, especially in complex recovery scenarios.
 
 \item The third part is the reference part, section~\ref{sec:reference}.
 It lists all available commands with a comprehensive list of all their
@@ -174,44 +186,73 @@ chronological list of changes to commands.
 
 
 
-This tutorial part assumes that the driver software is already
-installed and configured to run. When this is not the case,
-section~\ref{sec:settingup} on page~\pageref{sec:settingup} explains
-how to do this.
-
 \section{Compatibility}
-The driver software described in this manual uses
-the CAN protocol 2, and requires a matching firmware version
-for protocol 2 in order to work. Firmware versions for
-protocol 1 and 2 cannot be mixed.
+The driver software described in this manual uses the CAN protocol 2,
+and requires a matching firmware version for protocol 2 in order to
+work. Firmware versions for protocol 1 and 2 cannot be mixed, and an
+FPU with firmware version 1 will not respond correctly to a version 2
+driver.
 
-For the Python interface, there are very little visible
-changes. Recovery of alpha limit breaches is substantially easier. All
-movement operations transmit the last direction of movement.  A
-further small visible change is that internal error codes of CAN
-commands have different names. Another, conceptually larger change is
-that the state of the FPU is now tracked by the FPU firmware, not the
-driver software. This has the effect that even when the driver program
-was terminated, it is not necessary to initialise FPUs again if they
-were not powered down.
+A conceptually large internal change is that the state of the FPU is
+now tracked by the FPU firmware, not more by the driver software. This
+has the visible effect that even when the driver program was
+terminated, it is not necessary to initialise FPUs again if they were
+not powered down.
+
+For the Python interface however, there are very little visible
+changes:
+\begin{itemize}
+\item The \texttt{getPositions()} command has been completely replaced
+  by the \texttt{pingFPUs()} command.
+\item The \texttt{getCounterDeviations()} command is obsolete, because
+  after a \texttt{findDatum()} operation, the residual error is
+  reported automatically and stored in the FPU state.
+\item Recovery of alpha limit breaches is substantially easier (and
+  should also, due to changes to the movement ranges, be much safer).
+\item All movement operations transmit the last direction of
+    movement, and store it in the FPU state struct.
+  \item FPUs with aborted movements can be recovered by using
+    the new \texttt{enableMove} command.
+  \item There is a new \texttt{checkIntegrity()} command which returns
+    a checksum of the FPU firmware.
+  \item FPUs can now be locked and unlocked, which is needed in
+    instrument operation.
+  \item The serial numbers and firmware versions do not need to be
+    retrieved repeatedly, they are also stored in the FPU state data.
+    
+  \item A further small visible change is that error codes of CAN
+    commands have different symbol names. Because this part of the API
+    is now more or less stable, these symbols may be accessed via the
+    \texttt{last\_status} flag, and used in test scripts. The driver
+    error codes and the exception hierarchy which were already exposed
+    in version 1 are unchanged.
+    
+\end{itemize}
 
 \pagenumbering{arabic}
 \part{Tutorial}
 
+\textbf{Note:} This tutorial part assumes that the driver software is
+already installed and configured to run. When this is not the case,
+section~\ref{sec:settingup} on page~\pageref{sec:settingup} explains
+how to do this.
+
+
 \chapter{A minimal example}
 \label{sec:minimalexample}
 \index{example script}\index{movements!example}
-\index{connect()!example}
-\index{EtherCAN interface!initialisation!example}
-\index{getGridState()!example}
-\index{gen\_wf()!example}
-\index{configMotion()!example}
-\index{executeMotion()!example}
-\index{findDatum()!example}
-\index{version information!retrieving EtherCAN interface and CAN protocol version!example}
-The following listing shows a minimal example of the
-EtherCAN interface usage, and explains the underlying concepts
-step by step.
+\index{connect()!example} \index{EtherCAN
+  interface!initialisation!example} \index{getGridState()!example}
+\index{gen\_wf()!example} \index{configMotion()!example}
+\index{executeMotion()!example} \index{findDatum()!example}
+\index{version information!retrieving EtherCAN interface and CAN
+  protocol version!example}
+
+\minitoc
+
+
+The following listing shows a minimal example of the EtherCAN
+interface usage, and explains the underlying concepts step by step.
 
 Importantly, the example assumes that the FPUs have been powered on
 before, and the datum switches have been verified to work
@@ -657,6 +698,8 @@ and commands which are allowed in protocol version 2.
 \index{software protection!limitations}
 \index{software protection!usage rules}
 
+\minitoc
+
 The software protection makes it easier to ensure that the FPUs are
 not damaged by out-of-bounds movements or operations that are not
 supported by the firmware.
@@ -675,8 +718,7 @@ conditions are as follows:
     positions: exit the driver, and only after correcting re-start the
     driver.
     
-  \item Do not use any old versions of the EtherCAN interface prior to version
-    1.0.0, which do not update the position database.
+  \item Do not use any obsolete versions of the EtherCAN interface.
     
   \item Never power-cycle (turn off and on again) an FPU while the
     EtherCAN interface is connected. If an FPU needs to be re-started, exit the
@@ -791,6 +833,9 @@ datum switch hardware in a safe way.
 \label{sec:settingup}
 \index{driver|see{also: EtherCAN interface}}
 \index{EtherCAN interface!building}
+
+\minitoc
+
 
 This section deals with retrieving, installing and configuring the
 EtherCAN interface module. On the MOONS workstation at UKATC, it can
@@ -992,13 +1037,14 @@ into RAM.
 
 
 \section{Supported firmware versions}
-This EtherCAN interface requires FPU firmware version 1.6.0 to support
+This EtherCAN interface requires FPU firmware version 2.0.x to support
 all regular features. Older versions of the FPU firmware are not fully
 supported, and do not handle CAN message priorities correctly.  See
 section~\ref{sec:firmware_compatibility} for details which
 functionality is missing for older versions.
 
 \section{Hardware configuration and addressing}
+\label{sec:hardwareaddressing}
 \index{addressing!FPUs}
 \index{indexing FPUs}
 \index{FPU IDs!configuration}
@@ -1044,6 +1090,10 @@ elements: gateway number, bus number, and CAN ID.
   to the delivered configuration. That FPU then needs to be connected
   to the first bus on the first gateway}.
 
+\textbf{Note:} The current hard-wired address mapping between FPU
+logical numbers and the (gateway number, bus number, CAN ID) tuple
+will be made more flexible in future versions of the EtherCAN
+interface. The current mapping will remain the default value.
 
 \section{Configuring serial numbers and setting initial positions}
 \label{sec:setinitialposition}
@@ -1082,6 +1132,12 @@ this means the alpha datum position is at -180\degree\ degrees, and the beta
 datum position at zero degrees.
 
 Then, the following two commands need to be issued:
+%
+\index{initializing serial numbers!using fpu-admin tool}%
+\index{configuring serial numbers!using fpu-admin tool}%
+\index{serial numbers!initial assignment using fpu-admin tool}%
+\index{ProtectionError!caused by identical serial numbers, how to prevent}%
+\index{troubleshooting!how to prevent ProtectionError caused by identical serial numbers}%
 
 \begin{minted}{bash}
   fpu-admin flash ${serialnumber} ${fpu_id}
@@ -1415,6 +1471,8 @@ resolved.
 \chapter{Common tasks}
 \label{sec:commontasks}
 
+\minitoc
+
 The following sections describe several common tasks
 and describes which commands can be used to perform them.
 
@@ -1483,13 +1541,88 @@ page~\pageref{sec:errors}.
 If the connection to a gateway is lost, the \texttt{connect()} method
 of the EtherCAN interface needs to be called again to re-establish it.
 
+\index{troubleshooting!connection errors}%
+\index{troubleshooting!CAN time-outs}%
+%
 If a specific FPU does not respond, each command to it will result in
 a time-out, until it responds again. Other FPUs will be unaffected.
-Failures to respond can be caused by cabling problems. Another very
-likely cause of error are hardware failures which prevent FPU
+Failures to respond can be caused by cabling problems, a missing
+termination resistance on the CAN bus, or an invalid CAN id
+configuration (which is explained in
+section~\ref{sec:hardwareaddressing} on
+page~\pageref{sec:hardwareaddressing}). Another very likely cause of
+command time-out errors are hardware failures which prevent FPU
 operations from completing. In this case, the involved FPUs are
 probably broken.
 
+
+\section{Checking the FPU firmware, its integrity, and the FPU serial numbers}
+
+After having a working connection, it is useful to check for the
+correct firmware version, the firmware integrity, and the serial
+number of the addressed FPUs.
+
+\subsection{Checking the protocol version}
+\index{checking for a correct protocol version}%
+%
+The value \texttt{FpuGridDriver.CAN\_PROTOCOL\_VERSION}
+returns the major version number of the CAN protocol
+which the driver implements. Because a script might
+not work as expected, it can be useful to check it
+automatically in the top level python script like that:
+
+\begin{minted}{python}
+  assert(FpuGridDriver.CAN_PROTOCOL_VERSION == 2)
+\end{minted}
+
+
+\subsection{Checking the firmware version}
+\index{check firmware version of FPU}%
+\index{troubleshooting!checking firmware version}%
+Next, the version of the firmware running on the FPUs can be checked
+with the command
+
+\begin{minted}{python}
+  gd.printFirmwareVersion(grid_state)
+\end{minted}
+
+It returns a list of FPUs with the corresponding version of the
+version and data of the firmware in the FPU's motion controller.
+
+It is possible that some tests rely on a certain minimum
+firmware version being present on the controllers.
+This can be checked with the method
+
+\begin{minted}{python}
+  gd.minFirmwareVersion() >= (2, 0, 3)
+\end{minted}
+
+
+\subsection{Checking the firmware integrity}
+
+As best practice, any important tests should also check beforehand
+the integrity of the flashed firmware. This can be done with
+the following command:
+
+\begin{minted}{python}
+  gd.checkIntegrity(grid_state)
+\end{minted}
+
+FPUs with equal firmware versions should have equal checksums, of
+course (different serial numbers do not affect the checksum).
+
+\subsection{Listing the serial numbers}
+
+Finally, in any verification procedures, it is important to positively
+verify that the FPU specimens under test have their identity correctly
+attached. This can be done with the command:
+
+\begin{minted}{python}
+  gd.printSerialNumbers(grid_state)
+\end{minted}
+
+All the above commands accept a keyword argument "\texttt{fpuset}"
+which allows to limit the result to a certain subset of FPUs.
 
 
 \section{Getting the current position}
@@ -1857,10 +1990,10 @@ clockwise,'' and so on.
 
 When you define waveforms, they have to conform to a fairly large
 number of rules and conditions to make sure that the FPU firmware can
-actually execute them. These rules are versioned, and the used rule
-set can be selected by passing the \texttt{ruleset\_version} keyword
-argument to the \texttt{configMotion()} method.  The rules for each
-version are defined as follows:
+actually execute them reliably. These rules are versioned, and the
+used rule set can be selected by passing the \texttt{ruleset\_version}
+keyword argument to the \texttt{configMotion()} method.  The rules for
+each version are defined as follows:
 
 \paragraph{Waveform validity rule set version 1}
 
@@ -2094,8 +2227,10 @@ how to resolve collisions and limit switch breaches.
 
 
 \section{Aborting a movement}
-\index{movements!aborting} \index{abortMotion()!example} In the case
-that one wants to abort a \texttt{findDatum()} or a
+\index{movements!aborting}%
+\index{abortMotion()!example}%
+%
+In the case that one wants to abort a \texttt{findDatum()} or a
 \texttt{executeMotion()} operation, one can press
 \verb+<Control>-<c>+. This terminates the movement in about 0.1
 seconds. \footnote{Under the hood, this generates a \texttt{SIGINT}
@@ -2315,6 +2450,42 @@ executing, rounded to whole steps using \texttt{round()}, and with a
 maximum error of half a step.
 
 
+\section{Locking and unlocking FPUs}
+\label{sec:lockingFPUs}%
+\index{lockFPU() command!example}%
+\index{unlockFPU() command!example}%
+\index{locking and unlocking FPUs!example}%
+\index{deactivating FPUs}%
+\index{troubleshooting!disabling damaged FPUs}%
+\index{disabling FPUs}%
+%
+In the instrument operation, it can be necessary to block specific FPUs from
+further movements. This is for example the case if an FPU is damaged,
+or close to a damaged unit. The affected FPUs can be brought into a
+safe position, and then their activity disabled, so that they would
+not participate in movements. The way to do this is using the
+\texttt{lockFPU()} and \texttt{unlockFPU()} driver methods:
+
+\begin{minted}{python}
+  gd.lockFPU(fpu_id, grid_state)
+\end{minted}
+
+\begin{minted}{python}
+  gd.unlockFPUs(fpu_id, grid_state)
+\end{minted}
+
+Locking an FPU is possible in any state except when they are currently
+moving (in this case, they would need to be stopped first, using an
+\texttt{abortMotion()} command). When locked, an FPU ignores any
+command except the \texttt{unlockFPU()} or the \texttt{resetFPUs()}
+command.
+
+When FPUs are unlocked, they return, as far as possible, to their
+previous state.
+
+
+
+
 \section{Example scripts}
 
 Section~\ref{sec:moreexamples} on page~\pageref{sec:moreexamples}
@@ -2439,6 +2610,9 @@ This constant of each record the following fields:
 \index{logging!files}
 \index{troubleshooting!capturing and examining CAN messages}
 \index{troubleshooting!tracking the FPU grid state}
+
+\minitoc
+
 
 By default, the EtherCAN interface logs commands and CAN messages to text files
 which are created in the subdirectory \texttt{\_log} of the current
@@ -2620,6 +2794,8 @@ command, these times are converted to the UNIX timestamp, too.
 \index{recovery of movement errors}
 \index{movements!errors!recovery}
 
+\minitoc
+
 Because the FPUs are controlled individually, and the  EtherCAN interface
 has absolutely no concept of their geometric configuration, it cannot
 take care to move them so that collisions are avoided.  Instead, the
@@ -2707,7 +2883,8 @@ following snippet shows how to use them:
 
 \begin{minted}[linenos]{python}
   from FpuGridDriver import REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE
-  fpu_id = 0
+  fpu_id = 3
+  grid_state.FPU[fpu_id].direction_beta
   gd.freeBetaCollision(fpu_id, REQD_CLOCKWISE, grid_state)
   # required for firmware version 1
   gd.pingFPUs(grid_state)
@@ -2719,11 +2896,12 @@ The effect of these lines is as follows:
 In line 1, the symbols \texttt{REQD\_CLOCKWISE} and
 \texttt{REQD\_ANTI\_CLOCKWISE} are imported. They are used to define
 the movement direction. Then, the parameter \texttt{fpu\_id} is set to
-the numerical ID of the FPU, which is zero for a single-FPU
-grid. Then, calling the method \texttt{freeBetaCollision()} moves the
-collided FPU into the direction passed in the second parameter -
-clockwise, or anti-clockwise, as determined from assessing the FPUs
-arm positions.
+the numerical ID of the FPU, which is zero for a single-FPU grid. We
+retrieve the last direction of movement of the arm using the
+\texttt{direction\_beta} field of the FPU status record.  Then,
+calling the method \texttt{freeBetaCollision()} moves the collided FPU
+into the direction passed in the second parameter - clockwise, or
+anti-clockwise, as determined from assessing the FPUs arm positions.
 
 Calling \texttt{freeBetaCollision()} might need to be repeated a few
 times, and verified using visual inspection, or camera pictures. When
@@ -2738,8 +2916,20 @@ new datum search is required at that point.
 \index{limit switch breach!resolution} \index{errors!resolution of
   limit switch breaches} \index{limit switch breach|see{collision}}
 For firmware and CAN protocol version 2, limit switch breaches can be
-handled in the same way as beta arm collisions, using corresponding
-commands for the alpha arm.
+handled in the same way as beta arm collisions, using the corresponding
+commands \texttt{freeAlphaLimitBreach()} and \texttt{enableAlphaLimitProtection()} for the alpha arm:
+
+\begin{minted}[linenos]{python}
+  from FpuGridDriver import REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE
+  fpu_id = 3
+  grid_state.FPU[fpu_id].direction_alpha
+  gd.freeAlphaLimitBreach(grid_state)
+  # required for firmware version 1
+  gd.pingFPUs(grid_state)
+  gd.enableAlphaLimitProtection(grid_state)
+\end{minted}
+
+
 
 \begin{warning}
   \textbf{WARNING: When resolving an alpha arm limit switch breach,
@@ -2776,6 +2966,9 @@ and the older version 1:
   to be faster.
   
 \end{itemize}
+
+
+
 
 \chapter{Outline on management of multiple FPUs}
 \label{sec:multifpu}
@@ -2878,37 +3071,97 @@ and a high-level resolution strategy.
 \part{Reference}
 \label{sec:reference}
 
-\section{Retrieving information about the EtherCAN interface version}
+\chapter{Aspects relevant for all commands}
+
+\section{Retrieving the EtherCAN interface version}
 \index{version information!retrieving EtherCAN interface and CAN protocol version!reference}
 \index{networking!CAN protocol!retrieving version}
 There are two attributes of the \texttt{FpuGridDriver} module
 which allow to retrieve version information:
 
 The standard attribute \texttt{FpuGridDriver.\_\_version\_\_} returns
-the latest git version label of the EtherCAN interface. The first letter is stripped, so
-that ``v2.0.3'' turns into ``2.0.3''. This version number is
-authoritative when testing whether a EtherCAN interface API or documentation is
-valid for the installed module.
+the latest version label of the EtherCAN interface. The first letter
+is stripped, so that ``v2.0.3'' turns into ``2.0.3''. This version
+number is authoritative when testing whether a EtherCAN interface API
+or documentation is valid for the installed module.
 
 The attribute \texttt{FpuGridDriver.CAN\_PROTOCOL\_VERSION} displays
 the major version number of the CAN protocol against which the
 EtherCAN interface was compiled, it can be ``1'' or ``2''. This
 version number needs to match the version of the firmware which is
-running on the FPUs, otherwise the EtherCAN interface will not
-work. The version numbers of the FPU firmware can be retrieved and
-checked using the \texttt{printFirmwareVersion()} and
-\texttt{minFirmwareVersion()} commands which are described in
+running on the FPUs, otherwise the EtherCAN interface will not work
+(and will even fail to produce meaningful error diagnostics). The
+version numbers of the FPU firmware can be retrieved and checked using
+the \texttt{printFirmwareVersion()} and \texttt{minFirmwareVersion()}
+commands which are described in
 sections~\ref{sec:printfirmwareversion} and
 \ref{sec:minfirmwareversion} on
 page~\pageref{sec:printfirmwareversion}.
 
 
-\section{Driver initialisation}
+\section{Addressing a subset of FPUs}
+\label{sec:subsets}
+\index{addressing!a subset of FPUs} In some situations, it is required
+to send commands only to a sub-set if fibre positioners. In the ICS,
+this is the case in certain recovery scenarios.  In the FPU
+verification system, the need for this arises when several FPUs are
+installed on the kinetic mount and connected to the same
+gateway. Here, we want to move and test only one FPU at a time. The
+normal mode of commands like \texttt{findDatum()} and
+\texttt{executeMotion()} would move all FPUs which are connected.
+
+To restrict the group-wise commands to a sub-set of FPUs, all
+corresponding commands have a parameter \texttt{fpuset}.  This
+parameter is by default an empty list, which has the effect that the
+command is sent to all FPUs. If the parameter is set to an integer
+list of FPU Ids, the command is sent only to the listed FPUs.
+For example, the command
+
+\begin{minted}{python}
+ gd.findDatum(gs, fpuset=[1,3,5,7,11])
+\end{minted}
+will send a \texttt{findDatum()} command only to the FPUs with the ids
+1,3,5,7, and 11.
+
+An invalid FPU Id will cause a \texttt{INVALID\_PARAMETER\_EXCEPTION}
+to be thrown.
+
+For details how subsets are handled in the \texttt{configMotion()}
+command, see section~\ref{sec:configmotion}.
+
+This feature requires a EtherCAN interface version >= 0.6.0 and works with all
+firmware versions (as long as the firmware supports the specific
+command mode).
+
+Note that using the \texttt{fpuset} parameter is not in all cases the
+best option if FPUs need to be handled independently. An alternative
+approach id to instantiate separate driver objects which connect to
+different gateways. In such an set-up, each gateway will need an
+individual IP address, and should also have an individual MAC
+address. This can be done either within the same python program, or in
+different programs which can operate completely independently.
+
+
+\chapter{Driver and connection initialisation}
 \label{sec:driverinitialisation}
 \index{driver!initialisation!reference}
+
+\minitoc
+
+\section{Instantiating the driver class}
+
 The driver is initialised by calling the class constructor
 \texttt{FpuGridDriver.GridDriver()}, and assigning it to a Python
-variable. The constructor has one integer parameter, which is the
+variable:
+
+\begin{minted}{python}
+  from FpuGridDriver import GridDriver
+  
+  NUM_FPUS = 20 # set number of FPUs to 20
+  gd = GridDriver(NUM_FPUS)
+\end{minted}
+
+The constructor has one integer parameter, which is the
 number of FPUs which will be used. The maximum value for this number
 is defined at compile time in the EtherCAN interface, and is currently 1005.
 
@@ -2926,7 +3179,34 @@ message, and in the log output.
 \end{sloppypar}
 
 \label{sec:driverparams}
-The class constructor has several optional arguments. Arguments which
+The class constructor has several optional arguments:
+\begin{minted}{python}
+  gd = GridDriver(NUM_FPUS,
+                  SocketTimeOutSeconds=20.0,
+                  confirm_each_step=True,
+                  waveform_upload_pause_us=0,
+                  configmotion_max_retry_count=5,
+                  configmotion_max_resend_count=10,
+                  min_bus_repeat_delay_ms = 2,
+                  min_fpu_repeat_delay_ms = 4,
+                  alpha_datum_offset=ALPHA_DATUM_OFFSET,
+                  logLevel=DEFAULT_LOGLEVEL,
+                  log_dir=DEFAULT_LOGDIR,
+                  motor_minimum_frequency=MOTOR_MIN_STEP_FREQUENCY,  
+                  motor_maximum_frequency=MOTOR_MAX_STEP_FREQUENCY, 
+                  motor_max_start_frequency=MOTOR_MAX_START_FREQUENCY,
+                  motor_max_rel_increase=MAX_ACCELERATION_FACTOR,
+                  firmware_version_address_offset=0x61,
+                  protection_logfile="_{start_timestamp}-fpu_protection.log",
+                  control_logfile="_{start_timestamp}-fpu_control.log",
+                  tx_logfile = "_{start_timestamp}-fpu_tx.log",
+                  rx_logfile = "_{start_timestamp}-fpu_rx.log",
+                  start_timestamp="ISO8601")
+\end{minted}
+
+
+
+Arguments which
 control the logging are explained in section~\ref{sec:logging}.
 Additionally, the following keyword arguments can
 be passed:
@@ -3082,53 +3362,10 @@ be passed:
 \end{description}
 
 
-\section{Commands and driver methods}
-\label{sec:commands}
-
-\subsection{Addressing a subset of FPUs}
-\label{sec:subsets}
-\index{addressing!a subset of FPUs} In some situations, it is required
-to send commands only to a sub-set if fibre positioners. In the ICS,
-this is the case in certain recovery scenarios.  In the FPU
-verification system, the need for this arises when several FPUs are
-installed on the kinetic mount and connected to the same
-gateway. Here, we want to move and test only one FPU at a time. The
-normal mode of commands like \texttt{findDatum()} and
-\texttt{executeMotion()} would move all FPUs which are connected.
-
-To restrict the group-wise commands to a sub-set of FPUs, all
-corresponding commands have a parameter \texttt{fpuset}.  This
-parameter is by default an empty list, which has the effect that the
-command is sent to all FPUs. If the parameter is set to an integer
-list of FPU Ids, the command is sent only to the listed FPUs.
-For example, the command
-
-\begin{minted}{python}
- gd.findDatum(gs, fpuset=[1,3,5,7,11])
-\end{minted}
-will send a \texttt{findDatum()} command only to the FPUs with the ids
-1,3,5,7, and 11.
-
-An invalid FPU Id will cause a \texttt{INVALID\_PARAMETER\_EXCEPTION}
-to be thrown.
-
-For details how subsets are handled in the \texttt{configMotion()}
-command, see section~\ref{sec:configmotion}.
-
-This feature requires a EtherCAN interface version >= 0.6.0 and works with all
-firmware versions (as long as the firmware supports the specific
-command mode).
-
-Note that using the \texttt{fpuset} parameter is not in all cases the
-best option if FPUs need to be handled independently. An alternative
-approach id to instantiate separate driver objects which connect to
-different gateways. In such an set-up, each gateway will need an
-individual IP address, and should also have an individual MAC
-address. This can be done either within the same python program, or in
-different programs which can operate completely independently.
 
 
-\subsection{connect()}
+
+\section{connect()}
 \label{sec:connect}
 \index{connect()!reference} \index{networking!ip and port
   configuration} \index{EtherCAN gateway!configuration} \index{IP
@@ -3155,7 +3392,41 @@ It is possible that different driver instances are initialised at the
 same time, which connect to different gateways, that is, each instance
 controls its own grid, or group of FPUs.
 
-\subsection{getFirmwareVersion()}
+\chapter{Configuring FPU serial numbers}
+
+\section{writeSerialNumber()}
+\index{commands!writeSerialNumber()}
+\index{serial numbers!writing}
+
+The command
+\begin{minted}{python}
+  gd.writeSerialNumber(fpu_id, snstring, grid_state)
+\end{minted}
+sends the serial number in the string \texttt{snstring}
+to the FPU with ID \texttt{fpu\_id} and writes it
+to the FPU controller NVRAM.
+
+For CAN protocol version 2, the serial number can be any unique
+sequence of up to six printable ASCII characters, for example
+\texttt{"PT1001"}.
+
+\begin{sloppypar}
+\index{DE\_DUPLICATE\_SERIAL\_NUMBER} The command will be rejected and
+will return the error value \texttt{DE\_DUPLICATE\_SERIAL\_NUMBER}
+when the serial number already is stored in another connected FPU in
+the grid.
+\end{sloppypar}
+
+This command is supported by the \texttt{UnprotectedGridDriver} class,
+which does not provide protected movement commands. This allows to
+configure FPUs which initially do not have a unique serial number,
+because they have identical firmware.
+
+\chapter{Querying FPU state and configuration}
+
+\minitoc
+
+\section{getFirmwareVersion()}
 \label{sec:getfirmwareversion}
 \index{commands!getFirmwareVersion()}
 \index{version information!retrieving FPU firmware versions}
@@ -3181,7 +3452,7 @@ by passing a list of integer FPU IDs to the parameter
 
 
 
-\subsection{printFirmwareVersion()}
+\section{printFirmwareVersion()}
 \index{commands!printFirmwareVersion()}
 \label{sec:printfirmwareversion}
 
@@ -3192,7 +3463,7 @@ As the \texttt{getFirmwareVersion()} method, the method accepts an
 \texttt{fpuset} keyword parameter which restricts the output to the fpu IDs
 listed in the parameter.
 
-\subsection{minFirmwareVersion()}
+\section{minFirmwareVersion()}
 \label{sec:minfirmwareversion}
 \index{commands!minFirmwareVersion()}
 \index{checking the firmware version}
@@ -3212,7 +3483,7 @@ tuples can be compared like strings. For example, the statement
 will either make sure that the firmware version is at least 1.3.0, or
 abort the running script.
 
-\subsection{readSerialNumbers()}
+\section{readSerialNumbers()}
 \index{commands!readSerialNumbers()}
 \index{serial numbers!reading}
 
@@ -3226,7 +3497,7 @@ reads the serial numbers of the FPUs and places them into the
 can be any sequence of up to six printable ASCII chars.
 
 
-\subsection{printSerialNumbers()}
+\section{printSerialNumbers()}
 \index{commands!printSerialNumbers()}
 \index{serial numbers!displaying}
 
@@ -3239,32 +3510,50 @@ parameter is a list of the FPU IDs which will be printed. By default,
 the numbers for all FPUs will be displayed.
 
 
-\subsection{writeSerialNumber()}
-\index{commands!writeSerialNumber()}
-\index{serial numbers!writing}
+\section{checkIntegrity()}
+\index{commands!checkIntegrity()}%
+\index{verify integrity of firmware}%
+\index{firmware checksum}%
+\index{CRC32 checksum of firmware}%
+\index{troubleshooting!verify integrity of firmware image}%
 
 The command
 \begin{minted}{python}
-  gd.writeSerialNumber(fpu_id, snstring, grid_state)
+  gd.checkIntegrity(grid_state, fpuset=[], verbose=True)
 \end{minted}
-sends the serial number in the string \texttt{snstring}
-to the FPU with ID \texttt{fpu\_id} and writes it
-to the FPU controller NVRAM.
+computes a firmware CRC32 check-sum on all addressed FPUs, and returns
+the 32-bit checksum in the member field 'crc32' of the
+\texttt{grid\_state} variable for the corresponding FPU. By default,
+the result is printed, when the command is issued like this:
 
-For CAN protocol version 2, the serial number can be any unique
-sequence of up to six printable ASCII characters, for example
-\texttt{"PT1001"}.
+\begin{minted}{python}
+  gd.checkIntegrity(grid_state, fpuset=[])
+\end{minted}
 
-\begin{sloppypar}
-\index{DE\_DUPLICATE\_SERIAL\_NUMBER} The command will be rejected and
-will return the error value \texttt{DE\_DUPLICATE\_SERIAL\_NUMBER}
-when the serial number already is stored in another connected FPU in
-the grid.
-\end{sloppypar}
+This checksum allows to verify whether a firmware image has the
+intended data. For example, it can detect when the image in the motion
+controller flash memory was altered due to memory corruption, or if
+the firmware image was changed and the version number update was
+forgotten. The checksum is computed in a way such that it is not
+affected by changing the serial number.
+
+This command is intended to be run regularly in the operational FPU
+grid, to detect any system failures at an early stage.
+The \texttt{"verbose"} keyword allows to suppress the printing
+of the CRC32 value. The following code shows how to
+retrieve the value for FPU number 17 as a number:
+
+\begin{minted}{python}
+  gd.checkIntegrity(grid_state, fpuset=[], verbose=False)
+  grid_state.FPU[17].crc32
+\end{minted}
 
 
+Because it is somewhat time-consuming, the command can not be run when
+the FPU is moving or when it is in \texttt{READY\_FORWARD} or
+\texttt{READY\_REVERSED} state.
 
-\subsection{getGridState()}
+\section{getGridState()}
 \index{getGridState()!reference}
 The method \texttt{FpuGridDriver.getGridState()} creates and returns
 an instance of the grid state object:
@@ -3288,7 +3577,7 @@ can however be useful to refresh its state by calling
 \texttt{getGridState()} again, because the state of the FPU grid might
 still be changing after the failed command has returned.
 
-\subsection{getSwitchStates()}
+\section{getSwitchStates()}
 \index{commands!getSwitchStates()}
 \index{alpha limit switch!querying state}
 \index{beta datum switch!querying state}
@@ -3312,7 +3601,7 @@ The result will look like that:
 
 
 
-\subsection{pingFPUs()}
+\section{pingFPUs()}
 \begin{sloppypar}
 \index{pingFPUs()!reference} \index{networking!checking the connection!reference} The method
 \texttt{FpuGridDriver.pingFPUs(grid\_state)} connects to each FPU and
@@ -3333,7 +3622,7 @@ section~\ref{sec:listpositions} and ~\ref{sec:listangles} on
 page~\pageref{sec:listpositions} ff.
 
 
-\subsection{countedAngles()}
+\section{countedAngles()}
 \label{sec:countedangles}
 \index{methods!countedAngles()}
 \index{countedAngles()!reference}
@@ -3369,7 +3658,7 @@ set, causes it to retrieve and list only values for the passed FPU
 IDs.
 
 
-\subsection{trackedAngles()}
+\section{trackedAngles()}
 \label{sec:trackedangles}
 \index{methods!trackedAngles()}
 \index{trackedAngles()!reference}
@@ -3473,7 +3762,9 @@ present on the FPUs, but which are currently not in executable state.
 actually not any more executable, for example if the FPU has been
 reset, or if it had a collision).
 
-\subsection{findDatum()}
+\chapter{Calibration commands}
+
+\section{findDatum()}
 \label{sec:finddatum}
 \index{commands!findDatum()!reference}
 \index{findDatum()!reference}
@@ -3679,14 +3970,16 @@ FPU, this leads to a \texttt{HardwareProtectionError}.
 
 
 
+\chapter{Commands for configuring and executing FPU movements}
+
+\minitoc
 
 
-\subsection{configMotion()}
+\section{configMotion()}
 \label{sec:configmotion}
 \index{commands!configMotion()!reference}
-\index{configMotion()!reference}
-\index{configMotion()|see{rounding errors}}
-The method
+\index{configMotion()!reference} \index{configMotion()|see{rounding
+    errors}} The method
 \begin{minted}{python}
   FpuGridDriver.configMotion(wavetable, grid_state, fpuset=[],
                              soft_protection=True,
@@ -3772,20 +4065,20 @@ waveform table, and whose IDs are in the fpuset list. If
 table will be configured.
 
 
-\subsection{getCurrentWaveTables()}
+\section{getCurrentWaveTables()}
 \index{commands!getCurrentWaveTables()} The method
 \texttt{getCurrentWaveTables()} retrieves the currently valid, or the
 last configured waveform tables as a dictionary, one entry for each
 FPU.
 
 
-\subsection{getReversed()}
+\section{getReversed()}
 \index{commands!getReversed()} The method \texttt{getReversed()}
 retrieves for each currently configured, or last configured waveform
 table whether it was configured for the forward or reverse direction.
 
 
-\subsection{configPaths()}
+\section{configPaths()}
 \label{sec:configpaths}
 \index{commands!configPaths()!reference}
 \index{configMotion()!reference}
@@ -3819,7 +4112,7 @@ method calls the former after checking for the correct current
 position.
 
 
-\subsection{executeMotion()}
+\section{executeMotion()}
 \index{commands!executeMotion()!reference}
 \index{executeMotion()!reference}
 
@@ -3887,7 +4180,7 @@ such a condition is resolved.
 
 
 
-\subsection{reverseMotion()}
+\section{reverseMotion()}
 \index{commands!reverseMotion()!reference}
 \index{reverseMotion()!reference}
 \index{movements!reversing!reference}
@@ -3920,7 +4213,7 @@ therefore reversing the movement is ill-defined, and a new
 state.
 
 
-\subsection{repeatMotion()}
+\section{repeatMotion()}
 \index{commands!repeatMotion!reference}
 \index{repeatMotion!reference}
 \index{movements!repeating!reference}
@@ -3951,37 +4244,88 @@ such an event, and a new \texttt{findDatum} command is needed to
 restore the calibrated state.
 
 
-\subsection{abortMotion()}
+\section{abortMotion()}
 \index{commands!abortMotion()!reference}
 \index{abortMotion()!reference}
 \index{aborting!movements!reference}
 \index{movements!aborting!reference}
+\index{stopping movements}
 
 
 \begin{sloppypar}
 The method \texttt{FpuGridDriver.abortMotion(fpu\_state)} terminates
 any movement and datum search operation, and puts any moving FPUs into
-\texttt{ABORTED} state. On an FPU which is not moving, it has no
-effect.  The \texttt{abortMotion()} method is also automatically
-called if the key combination \verb+<Control>-<c>+ is called during a
-movement operation or a datum search, or if the Python process
-receives a \texttt{SIGINT} Unix signal.
+\texttt{ABORTED} state. FPUs which are in state \texttt{readyForward}
+or \texttt{readyReversed}, are put inot state \texttt{RESTING}.  On
+other FPUs which are not moving it has no effect.  The
+\texttt{abortMotion()} method is also automatically called if the key
+combination \verb+<Control>-<c>+ is called during a movement operation
+or a datum search, or if the Python process receives a \texttt{SIGINT}
+Unix signal.
 \end{sloppypar}
 
 Similar to other commands, the method is thread-safe, but it has a
 slightly different behaviour in that it pre-empts other commands: If
-other driver methods are called while an operation is ongoing, they
-wait until the previous operation is completed. In contrary, the
-\texttt{abortMotion()} method cancels all ongoing operations, waits
-until all FPUs have send a confirmation, and returns.
+other driver methods are called while another operation is ongoing,
+they wait until the previous operation is completed. In contrary, the
+\texttt{abortMotion()} method cancels all ongoing operations,
+including unsent commands, waits until all FPUs have send a
+confirmation, and returns.
 
 After an \texttt{abortMotion()} command, FPUs which are in the state
 \texttt{ABORTED} will not be able to move again before this state is
 resolved. In protocol version 2, this can be done using the
 \texttt{enableMove} command.
 
+\chapter{Special methods for managing FPU state}
+\minitoc
 
-\subsection{resetFPUs()}
+\section{lockFPU()}
+\label{sec:lockFPU}
+\index{commands!lockFPU()!reference} \index{lockFPU()!reference}
+\index{locking FPUs!reference}
+
+The \texttt{lockFPU()} command allows to disable a specific FPU so
+that it will not move and does not accept any new movement
+configuration.  While locked, it will react to no commands except the
+\texttt{unlockFPU} and the \texttt{resetFPUs()} commands.
+The signature of the method is:
+
+\begin{minted}{python}
+  FpuGridDriver.lockFPU(fpu_id, grid_state)
+\end{minted}
+
+
+Locking an FPU is possible in any state except when they are currently
+moving (in this case, it needs to be stopped first, using the
+\texttt{abortMotion()} command).
+
+
+\section{unlockFPU()}
+\label{sec:unlockFPU}
+\index{commands!unlockFPU()!reference}
+\index{unlockFPU()!reference}
+\index{unlocking FPUs!reference}
+
+The \texttt{unlockFPU()} command allows to enable a specific FPU so
+that it becomes unlocked and moves again.  
+The signature of the method is:
+
+\begin{minted}{python}
+  FpuGridDriver.unlockFPU(fpu_id, grid_state)
+\end{minted}
+
+
+When the FPU is unlocked, it returns, as far as possible, to its
+previous state. If a collision or a limit switch breach has occurred
+while it was locked, it changes into the state
+\texttt{OBSTACLE\_ERROR}.
+
+
+
+
+
+\section{resetFPUs()}
 \index{resetFPUs()!reference}
 \index{FPU!resetting!reference}
 \index{clearing FPU state}
@@ -3995,7 +4339,7 @@ As \texttt{findDatum()} and \texttt{executeMotion()}, the command
 accepts an \texttt{fpuset} key parameter which restricts the operation
 to the FPU IDs passed as a list.
 
-\subsection{freeBetaCollision()}
+\section{freeBetaCollision()}
 \index{commands!freeBetaCollision()!reference}
 \index{freeBetaCollision()!reference}
 \index{collisions!how to handle}
@@ -4019,6 +4363,21 @@ direction in which the FPU should be moved. The \texttt{grid\_state}
 variable is updated accordingly.
 \end{sloppypar}
 
+\index{troubleshooting!determining last direction of movement}%
+\index{direction of movement!determining}
+\index{beta collision!direction}
+\index{collision!direction}
+The FPU state parameter \texttt{direction\_beta} can be used to
+determine the last direction in which the beta arm was moving before
+the collision. Assuming that the collision affected FPU number 5,
+the parameter can be printed using the following code:
+
+\begin{minted}{python}
+  grid_state = gd.getGridState()
+  grid_state.FPU[11].direction_beta
+\end{minted}
+
+
 After resolving the collision, the command
 \texttt{enableBetaCollisionProtection()} needs to be called, to return
 the FPU back into a movable state.  Also, the flags which indicate
@@ -4036,7 +4395,7 @@ this protection should normally not be necessary and can lead to
 breaking the FPU.
 
 
-\subsection{enableBetaCollisionProtection()}
+\section{enableBetaCollisionProtection()}
 \index{commands!enableBetaCollisionProtection()!reference}
 \index{enableBetaCollisionProtection()!reference}
 \index{collisions!how to handle!reference}
@@ -4049,7 +4408,115 @@ safely. If the collision has not been resolved successfully, another
 \texttt{CollisionError} exception is raised, and the FPU state is set
 again to \texttt{OBSTACLE\_ERROR}.
 
-\subsection{readRegister()}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{freeAlphaLimitBreach()}
+\index{commands!freeAlphaLimitBreach()!reference}
+\index{freeAlphaLimitBreach()!reference}
+\index{collisions!how to handle}
+
+The command
+\begin{minted}{python}
+  FpuGridDriver.freeAlphaLimitBreach(fpu_id, direction, fpu_state,
+                                  soft_protection=True)
+\end{minted}
+allows to conveniently resolve a limit switch breach of the alpha arm
+(also called ``alpha limit breach'') without completely losing the
+step counter information. This is done by moving the FPU a small
+number of steps (about 10 steps) into a specified direction.
+
+\index{troubleshooting!determining last direction of movement}%
+\index{direction of movement!determining}
+\index{alpha limit breach!direction}
+The FPU state parameter \texttt{direction\_alpha} can be used to
+determine the last direction in which the alpha arm was moving before
+the breach. Assuming that the limit breach affected FPU number 11,
+the parameter can be printed using the following code:
+
+\begin{minted}{python}
+  grid_state = gd.getGridState()
+  grid_state.FPU[11].direction_alpha
+\end{minted}
+
+
+Please note that a visual inspection of the FPU and a
+verification of the actual position is highly advisable.
+
+\begin{sloppypar}
+The parameter \texttt{fpu\_id} identifies the FPU which shall be
+moved. The parameter \texttt{direction} can be one of
+\texttt{FpuGridDriver.REQD\_CLOCKWISE} or
+\texttt{FpuGridDriver.REQD\_ANTI\_CLOCKWISE}, and indicates the
+direction in which the FPU should be moved. The \texttt{grid\_state}
+variable is updated accordingly.
+\end{sloppypar}
+
+After resolving the limit breach, the command
+\texttt{enableAlphaLimitProtection()} needs to be called, to return
+the FPU back into a movable state.  Also, the flags which indicate
+that the alpha and beta step counters have been zeroed are cleared,
+because the step counters cannot longer accurately reflect the
+position. Therefore, a new \texttt{findDatum()} operation needs to be
+performed, possibly after first moving the beta arm to a safe sector.
+
+The driver counts how many times the command tries to move the FPU
+into the same direction, and throws a \texttt{ProtectionError}
+exception if the number exceeds a the threshold stored in the database
+for that FPU. This check can be disabled by passing the keyword
+parameter \texttt{check\_protection=false} to the command. Disabling
+this protection should normally not be necessary and can lead to
+breaking the FPU.
+
+\begin{warning}
+  \textbf{WARNING: Keep in mind that the alpha arm after a limit
+    breach is close to the hard stop. The correct direction of
+    movement should be checked and verified before making even small
+    movements. Repeated limit breaches can indicate a failure of the
+    alpha datum switch, which will cause damage to the FPU.}
+\end{warning}
+
+
+\section{enableAlphaLimitProtection()}
+\index{commands!enableAlphaLimitProtection()!reference}
+\index{enableAlphaLimitProtection()!reference}
+\index{collisions!how to handle!reference}
+
+The command \texttt{FpuGridDriver.enableAlphaLimitProtection(fpuid,
+  grid\_state)} resolves the limit breach state of one FPU by changing
+its state from \texttt{OBSTACLE\_ERROR} to \texttt{RESTING}.  This
+re-activates the limit breach protection, and allows to operate the
+FPU safely. If the collision has not been resolved successfully,
+another \texttt{CollisionError} exception is raised, and the FPU state
+is set again to \texttt{OBSTACLE\_ERROR}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{resetStepCounters()}
+\index{resetStepCounters()!reference}
+\index{FPU!resetting step counters}
+\index{step counters!resetting}
+\index{troubleshooting!resetting step counters}
+\index{engineering!resetting step counters}
+
+The \texttt{resetStepCounters()} command allows to
+set the step counters to zero or another new value:
+
+\begin{minted}{python}
+  gd.resetStepCounters(new_alpha_steps, new_beta_steps, grid_state, fpuset=[])
+\end{minted}
+
+Here, \texttt{alpha\_steps} and \texttt{beta\_steps} are the new
+counter values. This are signed 24-bit values. The command can be
+restricted to a sub-set of FPUs.
+
+The method is primarily intended for engineering and testing purposes,
+because usually, the software protection layer will keep track and
+update any offset between the FPU step counter and the actual
+position.
+
+
+\section{readRegister()}
 \label{sec:readregister}
 \index{commands!readRegister()}
 \index{reading memory from the FPU controller}
@@ -4084,7 +4551,9 @@ the parameter \texttt{fpuset} is set to a non-empty list of FPU IDs,
 the operation is restricted to these FPUs.
 
 
-\section{Utility functions}
+\chapter{Utility functions}
+
+\minitoc
 
 The following functions are not part of the driver object, but are
 contained in the module \texttt{fpu\_commands}, which needs to be
@@ -4092,7 +4561,7 @@ imported separately. They are implemented in pure Python. It is
 encouraged to inspect their implementation and modify a copy if a
 somewhat different functionality is desired.
 
-\subsection{list\_positions()}
+\section{list\_positions()}
 \label{sec:listpositions}
 \index{functions!list\_positions()} \index{list\_positions()!reference}
 The function \texttt{fpu\_commands.list\_positions(grid\_state)}
@@ -4108,7 +4577,7 @@ whether this arm was initialised by searching for the datum position.
 If the keyword argument \texttt{show\_zeroed} is passed with a value of
 \texttt{False}, the last two parameters are not shown.
 
-\subsection{list\_angles()}
+\section{list\_angles()}
 \label{sec:listangles}
 \index{functions!list\_angles()}
 \index{list\_angles()!reference}
@@ -4137,7 +4606,7 @@ automatically updates the grid state data to the current position.
 Also, in difference to \texttt{list\_angles()}, it is not necessary
   to pass the alpha datum offset if a non-standard offset was used.
 
-\subsection{list\_states()}
+\section{list\_states()}
 \label{sec:liststates}
 \index{functions!list\_states()}
 \index{list\_states()}
@@ -4145,19 +4614,19 @@ Also, in difference to \texttt{list\_angles()}, it is not necessary
 The function \texttt{list\_states(grid\_state)} lists the state of all
 FPUs. This allows, for example, to see quicker which FPUs have run into an error.
 
-\subsection{list\_deviations()}
+\section{list\_deviations()}
 This command lists the counter deviations of each FPU after the last
 datum search, that is, the residual value of the alpha and beta step
 counters when the datum switch was hit.
 
-\subsection{list\_timeouts()}
+\section{list\_timeouts()}
 \index{time-outs!listing} This command lists the time-out count for
 each FPU. Note that the internally used values are unsigned 16-bit
 values which wrap around when they overflow -- you should not depend
 on the assumption they increase monotonically.
 
 
-\subsection{gen\_wf()}
+\section{gen\_wf()}
 \label{sec:genwf}
 
 \index{functions!gen\_wf()}
@@ -4275,7 +4744,7 @@ the user.
 
 
 
-\subsection{wflib.load\_paths()}
+\section{wflib.load\_paths()}
 \index{load\_paths()}%
 \index{configPaths()!loading a path}%
 \index{mocpath library}%
@@ -4308,7 +4777,7 @@ checks as the EtherCAN interface, and marks each step which does not conform to
 all rules, along with the unsatisfied rule.
 
 
-\subsection{wflib.load\_waveform()}
+\section{wflib.load\_waveform()}
 \index{load\_waveform()}%
 \index{configMotion()!loading a path as a waveform}%
 %
@@ -4403,9 +4872,9 @@ alpha switch occur, for example caused by vibration.
 If one of the parameters is a NaN value, an \texttt{assertionError}
 exception is raised.
 
-\section{Helper scripts}
+\chapter{Helper scripts}
 
-\subsection{initializeGrid.py}
+\section{initializeGrid.py}
 \label{sec:initializegrid}
 \index{initializeGrid script}
 \index{initial datum operation}
@@ -4432,10 +4901,10 @@ Further options to this script can be listed by using the
 \texttt{-\,-help} option.
 
 
-\section{Errors}
+\chapter{Errors}
 \label{sec:errors}
 
-\subsection{Exception Hierarchy}
+\section{Exception Hierarchy}
 \label{sec:ExceptionsReference}
 \index{exceptions!hierarchy}
 \index{collisions!types}
@@ -4468,7 +4937,7 @@ The hierarchy of exceptions used by the Python module is as follows:
 
 \end{verbatim}
 
-\subsection{Error codes}
+\section{Error codes}
 \label{sec:errorcodes}
 \index{errors!detailed error codes}
 \index{error codes}
@@ -4704,6 +5173,38 @@ might change.
 
 \end{verbatim}
 
+
+\chapter{Initialising a driver instance for unconfigured FPUs}
+
+\index{initializing serial numbers}%
+\index{configuring serial numbers}%
+\index{serial numbers!initial assignment}%
+\index{UnprotectedGridDriver class}%
+\index{ProtectionError!caused by identical serial numbers, how to prevent}%
+\index{troubleshooting!how to prevent ProtectionError caused by identical serial numbers}%
+
+
+When the FPU are flashed with the same firmware, they will initially
+have the same pre-defined serial number. To work correctly, a unique
+serial number needs to be assigned to each FPU.  Actually, the
+\texttt{FpuGridDriver} class will throw an error if one attempts to
+connect it to several FPUs which have the same serial number.
+
+This poses a kind of chicken-and-egg problem: For assigning a serial
+number, a driver instance needs to connect to the FPUs, which the
+standard driver instance will not do for safety reasons. To overcome
+this problem, a special EtherCAN interface driver class exists, which
+has the name \textbf{\texttt{UnprotectedGridDriver}}. This class does
+not use any protection features which are based on the unique serial
+number. Therefore, it can connect to unconfigured FPUs. This allows to
+use an instance of this class to flash FPUs with a new serial number,
+using the \texttt{writeSerialNumnber()} method. The
+\texttt{UnprotectedGridDriver} also has methods for moving
+FPUs. However, the new positions of the FPUs are not registered in the
+LMDB position database, therefore it is not possible to operate FPUs
+safely with this class.
+
+
 \chapter{Firmware compatibility}
 \label{sec:firmware_compatibility}
 \index{supported firmware versions}
@@ -4724,6 +5225,7 @@ older firmware versions:
 
 \chapter{Changelog}
 \label{sec:changelog}
+
 
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
@@ -5388,7 +5890,6 @@ as needed. Here is an overview what each script does:
 \item[testGateway.py] test the EtherCAN gateway by sending a large
   number of CAN commands, checking that all commands are confirmed
   correctly, and computing the average rate of CAN messages per seconds.
-\item[test\_getPositions.py] retrieves and lists the step counters of the FPUs
 \item[test\_configMotion.py] configures a movement by defining a wavetable as a Python literal
 \item[test\_executeMotion.py] configures and executes a movement
 \item[test\_findDatum.py] performs a datum search
@@ -5413,6 +5914,8 @@ as needed. Here is an overview what each script does:
 \index{EtherCAN interface!building requirements and dependencies}
 \index{boost libraries!retrieving}
 \index{git!installation}
+
+\minitoc
 
 \section{Platform requirements}
 
@@ -5627,14 +6130,14 @@ the FPU state diagram.
 From the folder \texttt{fpu\_driver}, run the
 command
 \begin{minted}{bash}
-  make tutorial
+  make manual
 \end{minted}
 to generate the documentation\footnote{If the document is generated
   from scratch, it is necessary to repeat this command three times to
   update the list of contents.}.
 
 The generated document has the path name
-\texttt{python/doc/tutorial.pdf}.
+\texttt{python/doc/manual.pdf}.
 
 
 \chapter{Running the test gateway simulator}
@@ -5695,6 +6198,11 @@ too few FPUs will result in CAN timeout errors when any commands are
 sent to the missing FPUs.
 
 \index{aborting!movements|see{abortMotion}}
+
+\phantomsection
+\cleardoublepage
+\addcontentsline{toc}{chapter}{\indexname}
+
 \printindex
 
 \end{document}

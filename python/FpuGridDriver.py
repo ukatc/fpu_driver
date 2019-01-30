@@ -1216,7 +1216,7 @@ class UnprotectedGridDriver (object):
                         
         return rv, status
     
-    def checkIntegrity(self, gs, fpuset=[]):
+    def checkIntegrity(self, gs, fpuset=[], verbose=True):
         fpuset = self.check_fpuset(fpuset)
 
         try:
@@ -1227,6 +1227,14 @@ class UnprotectedGridDriver (object):
                 for fpu_id, fpu in enumerate(gs.FPU):
                     self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
+        if verbose:
+            for fpu_id, fpu in enumerate(gs.FPU):
+                if fpu_in_set(fpu_id, fpuset):
+                    print("FPU %i firmware checksum: %s" % (
+                        fpu_id,
+                        fpu.crc32))
+
+                    
         return rval
 
 # a good value is "/var/lib/fpudb"

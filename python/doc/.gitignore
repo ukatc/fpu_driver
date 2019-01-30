@@ -27,5 +27,6 @@ manual-tmp.log
 manual-tmp.out
 manual-tmp.tex
 manual.fdb_latexmk
-
+manual.maf
+manual.mtc*
 
