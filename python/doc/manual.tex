@@ -1753,6 +1753,19 @@ group of FPUs, like the \texttt{resetFPUs()}. A more detailed
 explanation can be found in section~\ref{sec:subsets} on
 page~\pageref{sec:subsets}.
 
+\subsection{Moving an FPU which has not been datumed}
+\index{moving!an FPU which was not datumed}%
+\index{troubleshooting!moving an FPU without initialisation}
+%
+In some cases, it might be necessary to move an FPU which was not
+datumed. Normally, this is prevented by the fact that an FPU does not
+accept any movement configuration when it is in \texttt{UNINITIALIZED}
+state. In the case that an uninitialized FPU needs to be moved, this
+can be enabled by sending it a \texttt{enableMove()} command. This is
+explained further in section~\ref{sec:useanableMove} on
+page~\pageref{sec:useanableMove}.
+
+
 
 \section{Moving the FPU}
 \index{FPU!moving}
@@ -2230,6 +2243,7 @@ how to resolve collisions and limit switch breaches.
 \index{movements!aborting}%
 \index{abortMotion()!example}%
 %
+\subsection{Stopping an FPU}
 In the case that one wants to abort a \texttt{findDatum()} or a
 \texttt{executeMotion()} operation, one can press
 \verb+<Control>-<c>+. This terminates the movement in about 0.1
@@ -2260,6 +2274,34 @@ current Python script when the method returns.\footnote{
   terminated using the UNIX \texttt{kill} shell command, or using
   \texttt{<Control-\textbackslash>}, which generates a
   \texttt{SIGQUIT} signal.}
+
+
+\subsection{Resolving an ABORTED state}
+\label{sec:useanableMove}
+\index{ABORTED state! resolving}
+\index{troubleshooting!resolving ABORTED state}
+\index{moving!an ABORTED FPU}
+After an \texttt{abortMotion()} command, FPUs which were moving are
+put into the state \texttt{ABORTED}. They will not be able to move
+again before this state is resolved. In protocol version 2, this can
+(and should) be done using the \texttt{enableMove} command, so that it
+is not necessary to reset or power-cycle the FPU. This command
+can be used as following:
+
+\begin{minted}{python}
+  # fpu_id = 7
+  gd.unlockFPU(7, grid_state)
+\end{minted}
+
+This sends the \texttt{enableMove()} command to FPU id number 7, and
+puts it into \texttt{RESTING} state.
+
+The command can also be used to bypass the requirement that all FPUs
+after powering on need to be put into \texttt{AT\_DATUM} state first,
+before they can be moved normally. Requiring that a datum operation
+was performed first is safer and required to make the operation
+precise, but it may not be possible in some cases.
+
 
 
 \section{Reversing a movement}
@@ -4275,7 +4317,9 @@ confirmation, and returns.
 After an \texttt{abortMotion()} command, FPUs which are in the state
 \texttt{ABORTED} will not be able to move again before this state is
 resolved. In protocol version 2, this can be done using the
-\texttt{enableMove} command.
+\texttt{enableMove} command, so that it is not necessary to reset or
+power-cycle the FPU.
+
 
 \chapter{Special methods for managing FPU state}
 \minitoc
@@ -4323,21 +4367,28 @@ while it was locked, it changes into the state
 
 
 
+\section{enableMove()}
+\index{enableMove()!reference}
+\index{FPU!enabling Movements!reference}
+\index{leaving the ABORTED state}
+\index{ABORTED state!leaving}
 
+The command
+\begin{minted}{python}
+  FpuGridDriver.enableMove(fpu_id, grid_state)
+\end{minted}
+allows an FPU to get out of an \texttt{ABORTED} or
+\texttt{UNINITIALISED} state without resetting the FPU. It addresses
+one specific FPU whose number is passed as a parameter.
 
-\section{resetFPUs()}
-\index{resetFPUs()!reference}
-\index{FPU!resetting!reference}
-\index{clearing FPU state}
+The purpose of this command is to provide the ability to bypass the
+FPU state machine in specific situations, without circumventing the
+protection which the state machine provides.
 
-\texttt{FpuGridDriver.resetFPUs(fpu\_state)} resets all FPUs to their
-power-on state. All step counters are reset to zero, the datum flag is
-cleared, and the FPU state is set to \texttt{UNINITIALIZED}. This
-command is useful to get out of specific error states. 
+If an FPU is in \texttt{ABORTED} or in \texttt{UNINITIALISED} state,
+the state is changed to \texttt{RESTING}. Otherwise, the command is
+rejected.
 
-As \texttt{findDatum()} and \texttt{executeMotion()}, the command
-accepts an \texttt{fpuset} key parameter which restricts the operation
-to the FPU IDs passed as a list.
 
 \section{freeBetaCollision()}
 \index{commands!freeBetaCollision()!reference}
@@ -4549,6 +4600,26 @@ This value is overwritten by other operations and becomes invalid with
 the next method call which writes to the \texttt{gs} structure.  If
 the parameter \texttt{fpuset} is set to a non-empty list of FPU IDs,
 the operation is restricted to these FPUs.
+
+\section{resetFPUs()}
+\index{resetFPUs()!reference}
+\index{FPU!resetting!reference}
+\index{clearing FPU state}
+
+\texttt{FpuGridDriver.resetFPUs(fpu\_state)} resets all FPUs to their
+power-on state. All step counters are reset to zero, the datum flag is
+cleared, and the FPU state is set to \texttt{UNINITIALIZED}. This
+command is useful to get out of specific error states. 
+
+As \texttt{findDatum()} and \texttt{executeMotion()}, the command
+accepts an \texttt{fpuset} key parameter which restricts the operation
+to the FPU IDs passed as a list.
+
+After an \texttt{abortMotion()} command, FPUs which are in the state
+\texttt{ABORTED} will not be able to move again before this state is
+resolved. In protocol version 2, this can be done using the
+\texttt{enableMove} command, so that it is not necessary to reset the
+FPU.
 
 
 \chapter{Utility functions}
