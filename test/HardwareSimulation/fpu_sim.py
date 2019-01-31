@@ -950,7 +950,7 @@ class FPU:
             self.state = FPST_OBSTACLE_ERROR
         elif self.alpha_limit_breach:
             errcode = MCE_WARN_LIMIT_SWITCH_BREACH
-            self.state = FPST_OBSTA CLE_ERROR
+            self.state = FPST_OBSTACLE_ERROR
         elif not self.wave_ready:
             # wavetable is not ready
             print("FPU #", self.fpu_id, ": wave table is not ready, sending response code", MCE_ERR_WAVEFORM_NOT_READY)
