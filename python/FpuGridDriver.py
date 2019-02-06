@@ -2138,7 +2138,7 @@ class GridDriver(UnprotectedGridDriver):
                 
                 if search_modes[fpu_id] == SEARCH_AUTO :
 
-                    if not fpu.beta_was_zeroed :
+                    if not fpu.beta_was_referenced :
                         if not blim.contains(bpos):
                             # arm is completely out of range, probably needs manual move
                             raise ProtectionError("Beta arm of FPU %i is not in safe range"
@@ -2212,7 +2212,7 @@ class GridDriver(UnprotectedGridDriver):
                 
                                                                                     
                 # set position intervals to zero, and store in DB
-                if datum_fpu.alpha_was_zeroed:
+                if datum_fpu.alpha_was_referenced:
                     self.a_caloffsets[fpu_id] = Interval(0)
                     if datum_fpu.alpha_steps == 0:
                         self._update_apos(txn, datum_fpu, fpu_id, Interval(0.0) + self.config.alpha_datum_offset)
@@ -2235,7 +2235,7 @@ class GridDriver(UnprotectedGridDriver):
                         self._update_apos(txn, datum_fpu, fpu_id, a_int)
 
                 
-                if datum_fpu.beta_was_zeroed:
+                if datum_fpu.beta_was_referenced:
                     self.b_caloffsets[fpu_id] = Interval(0)
                     if datum_fpu.beta_steps == 0:                        
                         self._update_bpos(txn, datum_fpu, fpu_id,  Interval(0.0))
@@ -2290,12 +2290,12 @@ class GridDriver(UnprotectedGridDriver):
 
 
         if datum_fpu.last_status == 0:
-            if prev_fpu.alpha_was_zeroed and datum_fpu.alpha_was_zeroed:
+            if prev_fpu.alpha_was_referenced and datum_fpu.alpha_was_referenced:
                 fpu_counters["alpha_aberration_count" ] += 1
                 fpu_counters["datum_sum_alpha_aberration"] += datum_fpu.alpha_deviation
                 fpu_counters["datum_sqsum_alpha_aberration"] += (datum_fpu.alpha_deviation ** 2)
             
-            if prev_fpu.beta_was_zeroed and datum_fpu.beta_was_zeroed:
+            if prev_fpu.beta_was_referenced and datum_fpu.beta_was_referenced:
                 fpu_counters["beta_aberration_count" ] += 1
                 fpu_counters["datum_sum_beta_aberration"] += datum_fpu.beta_deviation
                 fpu_counters["datum_sqsum_beta_aberration"] += (datum_fpu.beta_deviation ** 2)

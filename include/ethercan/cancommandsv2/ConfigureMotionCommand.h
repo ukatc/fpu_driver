@@ -56,15 +56,15 @@ public:
         bpause = false;
         aclockwise = false;
         bclockwise = false;
-        fentry = false;
-        lentry = false;
+        fsegment = false;
+        lsegment = false;
         confirm = true;
     };
 
     void parametrize(int f_id,
                      int16_t alpha_steps,
                      int16_t beta_steps,
-                     bool first_entry, bool last_entry,
+                     bool first_segment, bool last_segment,
                      const int MIN_STEPCOUNT,
                      bool do_confirm)
     {
@@ -98,8 +98,8 @@ public:
         aclockwise = alpha_clockwise;
         bpause = beta_pause;
         bclockwise = beta_clockwise;
-        fentry = first_entry;
-        lentry = last_entry;
+        fsegment = first_segment;
+        lsegment = last_segment;
         confirm = do_confirm;
     };
 
@@ -119,9 +119,9 @@ public:
 
 
 
-        // flags for first and last entry
-        can_buffer.message.data[2] = ( (fentry ? 1 : 0)
-                                       | ((lentry ? 1 : 0) << 1)
+        // flags for first and last segment
+        can_buffer.message.data[2] = ( (fsegment ? 1 : 0)
+                                       | ((lsegment ? 1 : 0) << 1)
                                        | ((confirm ? 1 : 0) << 2)
                                      );
         // alpha and beta steps
@@ -148,7 +148,7 @@ public:
     // the driver should wait for a response
     bool expectsResponse()
     {
-        // send response if this is the first or last entry
+        // send response if this is the first or last segment
         return confirm;
     };
 
@@ -176,8 +176,8 @@ private:
     bool bpause;
     bool aclockwise;
     bool bclockwise;
-    bool fentry;
-    bool lentry;
+    bool fsegment;
+    bool lsegment;
     bool confirm;
 
 

@@ -55,9 +55,30 @@ void handle_AbortMotion_response(const EtherCANInterfaceConfig&config,
     // clear time-out flag
     if (response_errcode == MCE_FPU_OK)
     {
-        if (fpu.state != FPST_OBSTACLE_ERROR)
+        switch  (fpu.state)
         {
+	case  FPST_MOVING:
+	case FPST_DATUM_SEARCH:
             fpu.state = FPST_ABORTED;
+	    fpu.waveform_ready =0;
+	    fpu.waveform_valid =0;
+	    break;
+
+	case FPST_LOADING:
+	case FPST_READY_FORWARD:
+	case FPST_READY_REVERSE:
+	    fpu.state = FPST_RESTING;
+	    fpu.waveform_ready =0;
+	    fpu.waveform_valid =0;
+	    break;
+
+	case FPST_RESTING:
+	case FPST_AT_DATUM:
+	    fpu.waveform_ready =0;
+	    break;
+
+	default:
+	    break;
         }
         // remove executeMotion from pending commands
         switch(fpu.state)

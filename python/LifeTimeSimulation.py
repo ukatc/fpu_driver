@@ -568,7 +568,8 @@ def initialize_FPU(args):
     
     
     print("issuing findDatum:")
-    gd.findDatum(grid_state, timeout=DATUM_TIMEOUT_DISABLE)
+    #gd.findDatum(grid_state, timeout=DATUM_TIMEOUT_DISABLE)
+    gd.findDatum(grid_state)
     print("findDatum finished")
 
     # We can use grid_state to display the starting position

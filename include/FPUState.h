@@ -127,10 +127,10 @@ typedef struct __attribute__((packed)) t_fpu_state
     uint8_t register_value;  // single-byte response value for readRegister command
     uint8_t sequence_number; // number of last pending / received command
     unsigned int num_waveform_segments: 9; /* number of loaded waveform segements */
-    unsigned int alpha_was_zeroed: 1; /* alpha steps are validly calibrated by
+    unsigned int alpha_was_referenced: 1; /* alpha steps are validly calibrated by
                                          finding datum.  This is required
                                          for any science observations. */
-    unsigned int beta_was_zeroed: 1; /* beta steps are validly calibrated by
+    unsigned int beta_was_referenced: 1; /* beta steps are validly calibrated by
                                         finding datum.  This is required
                                         for any science observations. */
     unsigned int is_locked: 1;  // FPU was locked by operator

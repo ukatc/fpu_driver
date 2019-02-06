@@ -198,8 +198,8 @@ E_MOC_ERRCODE update_status_flags(t_fpu_state& fpu,
             fpu.at_alpha_limit =       test_bit(stwd, STBT_ALPHA_AT_LIMIT);
             fpu.waveform_reversed =    test_bit(stwd, STBT_WAVEFORM_REVERSED);
 
-            fpu.alpha_was_zeroed = fpu.alpha_was_zeroed || test_bit(stwd, STBT_IS_ZEROED);
-            fpu.beta_was_zeroed = fpu.beta_was_zeroed || test_bit(stwd, STBT_IS_ZEROED);
+            fpu.alpha_was_referenced = fpu.alpha_was_referenced || test_bit(stwd, STBT_IS_REFERENCED);
+            fpu.beta_was_referenced = fpu.beta_was_referenced || test_bit(stwd, STBT_IS_REFERENCED);
             fpu.is_locked = test_bit(stwd, STBT_FPU_LOCKED);
             fpu.alpha_datum_switch_active = test_bit(stwd, STBT_ALPHA_DATUM_ACTIVE);
             fpu.beta_datum_switch_active = test_bit(stwd, STBT_BETA_DATUM_ACTIVE);

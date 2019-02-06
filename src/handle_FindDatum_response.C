@@ -82,8 +82,8 @@ void handle_FindDatum_response(const EtherCANInterfaceConfig&config,
     {
         remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending, sequence_number);
 
-        fpu.alpha_was_zeroed = false;
-        fpu.beta_was_zeroed = false;
+        fpu.alpha_was_referenced = false;
+        fpu.beta_was_referenced = false;
         fpu.ping_ok = false;
 
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -95,8 +95,8 @@ void handle_FindDatum_response(const EtherCANInterfaceConfig&config,
     {
         remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending, sequence_number);
 
-        fpu.alpha_was_zeroed = false;
-        fpu.beta_was_zeroed = false;
+        fpu.alpha_was_referenced = false;
+        fpu.beta_was_referenced = false;
 
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "error:"

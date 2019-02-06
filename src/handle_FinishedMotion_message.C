@@ -60,8 +60,8 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
     {
         fpu.movement_complete = false;
         fpu.waveform_valid = false;
-        fpu.alpha_was_zeroed = false;
-        fpu.beta_was_zeroed = false;
+        fpu.alpha_was_referenced = false;
+        fpu.beta_was_referenced = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -81,8 +81,8 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
     {
         fpu.movement_complete = false;
         fpu.waveform_valid = false;
-        fpu.alpha_was_zeroed = false;
-        fpu.beta_was_zeroed = false;
+        fpu.alpha_was_referenced = false;
+        fpu.beta_was_referenced = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "

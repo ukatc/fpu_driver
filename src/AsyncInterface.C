@@ -647,7 +647,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
             }
             const int BETA_DATUM_LIMIT = -5 * STEPS_PER_DEGREE_BETA;
             int beta_steps = grid_state.FPU_state[i].beta_steps;
-            bool beta_initialized = grid_state.FPU_state[i].beta_was_zeroed;
+            bool beta_initialized = grid_state.FPU_state[i].beta_was_referenced;
 
             E_DATUM_SEARCH_DIRECTION beta_mode = direction_flags[i];
 
@@ -1053,7 +1053,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
                 const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
                 const int xa = abs(xs);
 
-                // absolute value of step count of next entry, or zero if at end
+                // absolute value of step count of next segment, or zero if at end
                 const int xa_next = ( (sidx == (num_steps -1))
                                       ? 0
                                       :  abs(((chan_idx == 0)
@@ -1093,7 +1093,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
                                            // the step count can be smaller than MIN_STEPS)
                                            || ( (xa == 0)
                                                 && (xa_last < MAX_START_STEPS))
-                                           // or, a single entry with a small number of steps,
+                                           // or, a single segment with a small number of steps,
                                            // followed by a pause or end of the table
                                            || ( (xa <= MAX_START_STEPS)
                                                 && (xa_last == 0)
@@ -1267,7 +1267,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
                                            || ( (xa == 0)
                                                 && (xa_last >= MIN_STEPS)
                                                 && (xa_last <= MAX_START_STEPS))
-                                           // or, a single entry with a small number of steps,
+                                           // or, a single segment with a small number of steps,
                                            // preceded by a pause
                                            || ( (xa <= MAX_START_STEPS)
                                                 && (xa >= MIN_STEPS)
@@ -1447,7 +1447,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
                                            // or, has stopped to move, from any speed
                                            || ( (xa == 0)
                                                 && (xa_last >= MIN_STEPS))
-                                           // or, a single entry with a small number of steps,
+                                           // or, a single segment with a small number of steps,
                                            // preceded by a pause
                                            || ( (xa <= MAX_START_STEPS)
                                                 && (xa >= MIN_STEPS)
@@ -1584,7 +1584,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
                 const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
                 const int xa = abs(xs);
 
-                // absolute value of step count of next entry, or zero if at end
+                // absolute value of step count of next segment, or zero if at end
                 const int xa_next = ( (sidx == (num_steps -1))
                                       ? 0
                                       :  abs(((chan_idx == 0)
@@ -1629,7 +1629,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
                                            // different sign (this would work for firmware 1.5.0)
                                            || ( (xa <= MAX_DCHANGE_STEPS)
                                                 && (xa_last <= MAX_DCHANGE_STEPS))
-                                           // or, a single entry with a small number of steps,
+                                           // or, a single segment with a small number of steps,
                                            // followed by a pause or end of the table
                                            || ( (xa <= MAX_START_STEPS)
                                                 && (xa_last == 0)
@@ -1725,8 +1725,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
         if (!allow_uninitialized)
         {
-            if ( ! (grid_state.FPU_state[i].alpha_was_zeroed
-                    && grid_state.FPU_state[i].beta_was_zeroed))
+            if ( ! (grid_state.FPU_state[i].alpha_was_referenced
+                    && grid_state.FPU_state[i].beta_was_referenced))
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_FPUS_NOT_CALIBRATED"
                             " - FPU %i is not calibrated and soft_protection flag was not cleared\n",
@@ -1878,14 +1878,14 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
     while (step_index < num_steps)
     {
-        const bool first_entry = (step_index == 0);
-        const bool last_entry = (step_index == (num_steps-1));
-        const bool request_confirmation = (first_entry
-                                           || last_entry
+        const bool first_segment = (step_index == 0);
+        const bool last_segment = (step_index == (num_steps-1));
+        const bool request_confirmation = (first_segment
+                                           || last_segment
                                            || confirm_each_step
                                            || ((step_index % confirmation_period) == 0));
 
-        if (first_entry)
+        if (first_segment)
         {
             // get current step number to track positions
             memset(alpha_cur,0,sizeof(alpha_cur));
@@ -1926,8 +1926,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 can_command->parametrize(fpu_id,
                                          step.alpha_steps,
                                          step.beta_steps,
-                                         first_entry,
-                                         last_entry,
+                                         first_segment,
+                                         last_segment,
                                          min_stepcount,
                                          request_confirmation);
 
@@ -1986,9 +1986,9 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 // not locked did not change to FPST_LOADING state.
 
                 if ((fpu_state.state != FPST_LOCKED)
-                        && ( ((first_entry && (! last_entry))
+                        && ( ((first_segment && (! last_segment))
                               &&  (fpu_state.state != FPST_LOADING))
-                             || (last_entry
+                             || (last_segment
                                  &&  ((fpu_state.state != FPST_READY_FORWARD)
                                       || (fpu_state.num_waveform_segments != waveforms[fpu_index].steps.size() )))))
                 {
@@ -3751,8 +3751,8 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_
                             fpu.beta_steps,
                             (fpu.alpha_steps / STEPS_PER_DEGREE_ALPHA) + config.alpha_datum_offset,
                             fpu.beta_steps / STEPS_PER_DEGREE_BETA,
-                            fpu.alpha_was_zeroed,
-                            fpu.beta_was_zeroed,
+                            fpu.alpha_was_referenced,
+                            fpu.beta_was_referenced,
                             fpu.waveform_valid,
                             fpu.waveform_ready,
                             fpu.last_command,
@@ -5198,6 +5198,31 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+    constexpr int allowed_states =       ( ( 1 << FPST_UNKNOWN                 )
+					   & ( 1 << FPST_UNINITIALIZED           )
+					   & ( 1 << FPST_LOCKED                  )
+					   & ( 1 << FPST_AT_DATUM                )
+					   & ( 1 << FPST_RESTING                 )
+					   & ( 1 << FPST_ABORTED                 )
+					   & ( 1 << FPST_OBSTACLE_ERROR          ));
+
+    for (int i=0; i < config.num_fpus; i++)
+    {
+        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        // we exclude moving FPUs, FPUs which are
+        // searching datum, and FPUS in LOADING state.
+        if (fpuset[i]
+	    && ( fpu_state.state < NUM_FPU_STATES)
+	    && (! ( (1 << fpu_state.state) & allowed_states)))
+        {
+            // FPU state does not allows command
+            LOG_CONTROL(LOG_ERROR, "%18.6f : checkIntegrity():  error DE_INVALID_FPU_STATE, all FPUs "
+                        "need to be in one of states UNINITIALIZED, LOCKED, AT_DATUM,"
+			" RESTING, ABORTED, or OBSTACLE_ERROR\n",
+                        ethercanif::get_realtime());
+            return DE_INVALID_FPU_STATE;
+        }
+    }
 
 
     unique_ptr<CheckIntegrityCommand> can_command;
@@ -5277,8 +5302,16 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
         double log_time = ethercanif::get_realtime();
         for(int i=0; i < config.num_fpus; i++)
         {
-            LOG_CONTROL(LOG_INFO, "%18.6f : checkIntegrity: FPU # %4i : CRC32 checksum 0X%04x.\n",
-                        log_time, i, grid_state.FPU_state[i].crc32);
+	    if (grid_state.FPU_state[i].last_status == MCE_FPU_OK)
+	    {
+		LOG_CONTROL(LOG_INFO, "%18.6f : checkIntegrity: FPU # %4i : CRC32 checksum 0X%04x.\n",
+			    log_time, i, grid_state.FPU_state[i].crc32);
+	    }
+	    else
+	    {
+		LOG_CONTROL(LOG_INFO, "%18.6f : checkIntegrity: FPU # %4i : status response error code %i.\n",
+			    log_time, i, grid_state.FPU_state[i].last_status);
+	    }
 
         }
     }

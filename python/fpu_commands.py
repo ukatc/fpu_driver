@@ -29,7 +29,7 @@ def list_positions(gs, num_fpus=None, show_zeroed=True):
         num_fpus = len(gs.FPU)
     if show_zeroed:
         return [ (gs.FPU[i].alpha_steps, gs.FPU[i].beta_steps,
-                  gs.FPU[i].alpha_was_zeroed, gs.FPU[i].beta_was_zeroed)
+                  gs.FPU[i].alpha_was_referenced, gs.FPU[i].beta_was_referenced)
                  for i in range(num_fpus)]
     else:
         return [ (gs.FPU[i].alpha_steps, gs.FPU[i].beta_steps)
@@ -51,8 +51,8 @@ def list_angles(gs,
     nan = float('NaN')
     tvalid = lambda zeroed : 1.0 if (zeroed or show_uninitialized) else nan
     # the following line uses Python3 float division
-    return [ ((gs.FPU[i].alpha_steps / asteps_per_deg + alpha_datum_offset)* tvalid(gs.FPU[i].alpha_was_zeroed),
-              gs.FPU[i].beta_steps / bsteps_per_deg * tvalid(gs.FPU[i].beta_was_zeroed)) for i in range(num_fpus)]
+    return [ ((gs.FPU[i].alpha_steps / asteps_per_deg + alpha_datum_offset)* tvalid(gs.FPU[i].alpha_was_referenced),
+              gs.FPU[i].beta_steps / bsteps_per_deg * tvalid(gs.FPU[i].beta_was_referenced)) for i in range(num_fpus)]
 
  
 def list_deviations(gs, num_fpus=None):

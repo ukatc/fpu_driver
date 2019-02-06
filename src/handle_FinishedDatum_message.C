@@ -63,8 +63,8 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     if ((fpu.at_alpha_limit) || (response_errcode == MCE_WARN_LIMIT_SWITCH_BREACH))
     {
         fpu.waveform_valid = false;
-        fpu.alpha_was_zeroed = false;
-        fpu.beta_was_zeroed = false;
+        fpu.alpha_was_referenced = false;
+        fpu.beta_was_referenced = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -76,8 +76,8 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     else if ((response_errcode == MCE_WARN_COLLISION_DETECTED) || fpu.beta_collision)
     {
         fpu.waveform_valid = false;
-        fpu.alpha_was_zeroed = false;
-        fpu.beta_was_zeroed = false;
+        fpu.alpha_was_referenced = false;
+        fpu.beta_was_referenced = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -92,8 +92,9 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         // This can be due to broken FPU hardware,
         // such as a non-functioning datum switch.
         fpu.waveform_valid = false;
-        fpu.alpha_was_zeroed = false;
-        fpu.beta_was_zeroed = false;
+        fpu.alpha_was_referenced = false;
+        fpu.beta_was_referenced = false;
+	fpu.state = FPST_UNINITIALIZED;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -121,8 +122,8 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
     {
         if (fpu.state == FPST_DATUM_SEARCH)
         {
-            fpu.alpha_was_zeroed = false;
-            fpu.beta_was_zeroed = false;
+            fpu.alpha_was_referenced = false;
+	    fpu.state = FPST_UNINITIALIZED;	    
         }
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "datum request rejected for FPU %i, because alpha limit switch active\n",
@@ -133,8 +134,8 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
                 || (response_errcode ==  MCE_NOTIFY_DATUM_ALPHA_ONLY)
                 || (response_errcode ==  MCE_NOTIFY_DATUM_BETA_ONLY)))
     {
-        fpu.alpha_was_zeroed = false;
-        fpu.beta_was_zeroed = false;
+        fpu.alpha_was_referenced = false;
+        fpu.beta_was_referenced = false;
     }
     else
     {
@@ -143,13 +144,13 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         if ((response_errcode ==  MCE_FPU_OK)
                 || (response_errcode ==  MCE_NOTIFY_DATUM_ALPHA_ONLY))
         {
-            fpu.alpha_was_zeroed = true;
+            fpu.alpha_was_referenced = true;
             fpu.alpha_steps = 0;
         }
         if ((response_errcode ==  MCE_FPU_OK)
                 || (response_errcode ==  MCE_NOTIFY_DATUM_BETA_ONLY))
         {
-            fpu.beta_was_zeroed = true;
+            fpu.beta_was_referenced = true;
             fpu.beta_steps = 0;
         }
     }

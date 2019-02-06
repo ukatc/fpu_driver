@@ -181,7 +181,7 @@ enum E_FPU_STATUS_BITS
     STBT_FPU_LOCKED	      = (1 << 4),	// FPU is currently locked
     STBT_ALPHA_LAST_DIRECTION = (1 << 5),	// last movement direction of alpha arm
     STBT_BETA_LAST_DIRECTION  = (1 << 6),	// last movement direction of beta arm
-    STBT_IS_ZEROED	      = (1 << 7),	// both arms have been datumed
+    STBT_IS_REFERENCED	      = (1 << 7),	// both arms have been datumed
     STBT_WAVEFORM_VALID	      = (1 << 8),	// loaded waveform is valid
     STBT_WAVEFORM_READY	      = (1 << 9),	// ready to run waveform
     STBT_WAVEFORM_REVERSED    = (1 << 10),	// waveform is in reversed mode

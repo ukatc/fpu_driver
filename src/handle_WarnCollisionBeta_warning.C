@@ -79,8 +79,8 @@ void handle_WarnCollisionBeta_warning(const EtherCANInterfaceConfig&config,
     }
 
     fpu.waveform_valid = false;
-    fpu.alpha_was_zeroed = false;
-    fpu.beta_was_zeroed = false;
+    fpu.alpha_was_referenced = false;
+    fpu.beta_was_referenced = false;
     fpu.ping_ok = false;
 
 

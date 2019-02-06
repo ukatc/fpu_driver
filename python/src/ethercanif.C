@@ -147,8 +147,8 @@ class WrapFPUState : public t_fpu_state
 
 public:
 
-    bool alpha_was_zeroed;
-    bool beta_was_zeroed;
+    bool alpha_was_referenced;
+    bool beta_was_referenced;
     bool is_locked;
     bool ping_ok;
     bool alpha_datum_switch_active;
@@ -196,8 +196,8 @@ public:
         direction_beta            = fpu_state.direction_beta;
         num_waveform_segments     = fpu_state.num_waveform_segments;
         sequence_number           = fpu_state.sequence_number;
-        alpha_was_zeroed          = fpu_state.alpha_was_zeroed;
-        beta_was_zeroed           = fpu_state.beta_was_zeroed;
+        alpha_was_referenced      = fpu_state.alpha_was_referenced;
+        beta_was_referenced       = fpu_state.beta_was_referenced;
         ping_ok                   = fpu_state.ping_ok;
         is_locked                 = fpu_state.is_locked;
         movement_complete         = fpu_state.movement_complete;
@@ -261,8 +261,8 @@ public:
           << " 'sequence_number' : " << fpu.sequence_number << ", "
           << " 'ping_ok' : " << fpu.ping_ok << ", "
           << " 'movement_complete' : " << fpu.movement_complete << ", "
-          << " 'alpha_was_zeroed' : " << fpu.alpha_was_zeroed << ", "
-          << " 'beta_was_zeroed' : " << fpu.beta_was_zeroed << ", "
+          << " 'alpha_was_referenced' : " << fpu.alpha_was_referenced << ", "
+          << " 'beta_was_referenced' : " << fpu.beta_was_referenced << ", "
           << " 'is_locked' : " << fpu.is_locked << ", "
           << " 'alpha_datum_switch_active' : " << fpu.alpha_datum_switch_active << ", "
           << " 'beta_datum_switch_active' : " << fpu.beta_datum_switch_active << ", "
@@ -1658,8 +1658,8 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def_readonly("timeout_count", &WrapFPUState::timeout_count)
     .def_readonly("num_active_timeouts", &WrapFPUState::num_active_timeouts)
     .def_readonly("sequence_number", &WrapFPUState::sequence_number)
-    .def_readonly("alpha_was_zeroed", &WrapFPUState::alpha_was_zeroed)
-    .def_readonly("beta_was_zeroed", &WrapFPUState::beta_was_zeroed)
+    .def_readonly("alpha_was_referenced", &WrapFPUState::alpha_was_referenced)
+    .def_readonly("beta_was_referenced", &WrapFPUState::beta_was_referenced)
     .def_readonly("is_locked", &WrapFPUState::is_locked)
     .def_readonly("alpha_datum_switch_active", &WrapFPUState::alpha_datum_switch_active)
     .def_readonly("beta_datum_switch_active", &WrapFPUState::beta_datum_switch_active)
