@@ -17,5 +17,8 @@ version
 /.redo
 /_logs
 /object
+python/doc/_minted-manual/
+python/doc/manual.maf
+python/doc/manual.mtc*
 
 
