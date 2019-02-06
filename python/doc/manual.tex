@@ -469,6 +469,8 @@ data, and displaying information about the FPU state:
 
 
 \section{Interactive inspection of the FPU state}
+\label{sec:fpu_states_interactive_inspection}
+%
 \index{fpu\_state!interactive inspection}
 \index{fpu\_state|see{~\emph{also} FPU state}}
 \index{Python!running interactively}
@@ -484,7 +486,7 @@ data, and displaying information about the FPU state:
 \index{grid state!position|see{position information}}
 \index{grid state!datum flags}
 \index{datum search!flag inspection}
-\label{sec:fpustate}
+
 The grid state variable holds a large amount of detail information
 about the current state of FPUs. This is by design, because upper
 layers of the software need to be able to deal with complex scenarios
@@ -522,50 +524,90 @@ issuing findDatum:
 findDatum finished
 the starting position (in degrees) is: [(-180.0, 0.0)]
 >>> grid_state.FPU[0]
-{ 'last_updated' : 61604074.942,  'pending_command_set' : 0,
-  'state' : 'READY_FORWARD',  'last_command' : 9,  'last_status' : 0,
-  'alpha_steps' : 0,  'beta_steps' : 0,
-  'alpha_deviation' : 0,  'beta_deviation' : 0,
-  'timeout_count' : 0,  'step_timing_errcount' : 0,
-  'direction_alpha' : 0,  'direction_beta' : 0,
-  'num_waveform_segments' : 0,  'num_active_timeouts' : 0,
-  'sequence_number' : 0,  'ping_ok' : 1,  'movement_complete' : 0,
-  'alpha_was_zeroed' : 1,  'beta_was_zeroed' : 1,
-  'is_locked' : 0,  'alpha_datum_switch_active' : 0,
+{ 'last_updated' : 662758.71746,
+  'pending_command_set' : 0,
+  'state' : 'FPST_READY_FORWARD',
+  'last_command' : 1,
+  'last_status' : 0,
+  'alpha_steps' : 0,
+  'beta_steps' : 0,
+  'alpha_deviation' : 14,
+  'beta_deviation' : -3,
+  'timeout_count' : 0,
+  'step_timing_errcount' : 0,
+  'can_overflow_errcount' : 0,
+  'direction_alpha' : 6,
+  'direction_beta' : 6,
+  'num_waveform_segments' : 19,
+  'num_active_timeouts' : 0,
+  'sequence_number' : 26,
+  'ping_ok' : 1,
+  'movement_complete' : 0,
+  'alpha_was_referenced' : 1,
+  'beta_was_referenced' : 1,
+  'is_locked' : 0,
+  'alpha_datum_switch_active' : 0,
   'beta_datum_switch_active' : 0,
-  'at_alpha_limit' : 0,  'beta_collision' : 0,
-  'waveform_valid' : 1,  'waveform_ready' : 1,  'waveform_reversed' : 0,
-  'register_address' : 0,  'register_value' : 0x1,
-  'firmware_version' : 1.3.0,  'firmware_date' : '0-0-0',
-  'serial_number' : "102",  }
+  'at_alpha_limit' : 0,
+  'beta_collision' : 0,
+  'waveform_valid' : 1,
+  'waveform_ready' : 1,
+  'waveform_reversed' : 0,
+  'register_address' : 0,
+  'register_value' : 0,
+  'firmware_version' : 2.0.0,
+  'firmware_date' : '2018-01-01',
+  'serial_number' : "MP000",
+  'crc32' : 00000000,
+  'checksum_ok' : 0,
+  'sequence_number' : 26,  }
+>>>
 >>> gd.countedAngles(grid_state)
 [(-180.0, 0.0)]
 >>> gd.executeMotion(grid_state)
-fpu_driver.E_DriverErrCode.DE_OK
->>> grid_state.FPU[0]
-{ 'last_updated' : 61604357.008,
-  'pending_command_set' : 0,
-  'state' : 'RESTING',  'last_command' : 7,  'last_status' : 0,
-  'alpha_steps' : 5125,  'beta_steps' : 1264,
-  'alpha_deviation' : 0,  'beta_deviation' : 0,
-  'timeout_count' : 0,  'step_timing_errcount' : 0,
-  'direction_alpha' : 0,  'direction_beta' : 0,
-  'num_waveform_segments' : 0,  'num_active_timeouts' : 0,
-  'sequence_number' : 0,  'ping_ok' : 1,
-  'movement_complete' : 1,
-  'alpha_was_zeroed' : 1,  'beta_was_zeroed' : 1,
-  'is_locked' : 0,  'alpha_datum_switch_active' : 0,
-  'beta_datum_switch_active' : 0,
-  'at_alpha_limit' : 0,  'beta_collision' : 0,
-  'waveform_valid' : 1,  'waveform_ready' : 0,
-  'waveform_reversed' : 0,
-  'register_address' : 0,  'register_value' : 0x1,
-  'firmware_version' : 1.3.0,  'firmware_date' : '0-0-0',
-  'serial_number' : "102",  }
-
+ethercanif.E_EtherCANErrCode.DE_OK
 >>> gd.countedAngles(grid_state)
-[(-136.00385502825844, 14.991475555234816), ]
+[(-135.00385502825844, 15.003335899819655)]
+>>> grid_state.FPU[0]
+{ 'last_updated' : 662997.43726,
+  'pending_command_set' : 0,
+  'state' : 'FPST_RESTING',
+  'last_command' : 7,
+  'last_status' : 0,
+  'alpha_steps' : 5125,
+  'beta_steps' : 1265,
+  'alpha_deviation' : -15,
+  'beta_deviation' : -13,
+  'timeout_count' : 0,
+  'step_timing_errcount' : 0,
+  'can_overflow_errcount' : 0,
+  'direction_alpha' : 6,
+  'direction_beta' : 6,
+  'num_waveform_segments' : 19,
+  'num_active_timeouts' : 0,
+  'sequence_number' : 29,
+  'ping_ok' : 1,
+  'movement_complete' : 1,
+  'alpha_was_referenced' : 1,
+  'beta_was_referenced' : 1,
+  'is_locked' : 0,
+  'alpha_datum_switch_active' : 0,
+  'beta_datum_switch_active' : 0,
+  'at_alpha_limit' : 0,
+  'beta_collision' : 0,
+  'waveform_valid' : 1,
+  'waveform_ready' : 0,
+  'waveform_reversed' : 0,
+  'register_address' : 0,
+  'register_value' : 0,
+  'firmware_version' : 2.0.0,
+  'firmware_date' : '2018-01-01',
+  'serial_number' : "MP000",
+  'crc32' : 00000000,
+  'checksum_ok' : 0,
+  'sequence_number' : 29,  }
 >>>
+
 \end{minted}
 
 In this listing, entering the expression \verb+grid_state.FPU[0]+
@@ -588,7 +630,7 @@ of the FPU changes from \texttt{READY\_FORWARD} to
 utility function mentioned before is normally (that is, if at least
 one datum search was completed) just a scaled and shifted version of
 the ``alpha\_steps'' and ``beta\_steps'' fields. The flags
-\texttt{alpha\_was\_zeroed} and \texttt{beta\_was\_zeroed} are set to
+\texttt{alpha\_was\_referenced} and \texttt{beta\_was\_referenced} are set to
 \texttt{True} when the datum position was reached at least once since
 the EtherCAN interface was started, and no collisions, limit switch breaches, or
 abortMotion commands have happened since.
@@ -605,10 +647,15 @@ information, please consult the ``script'' man page.
 
 
 \section{FPU states}
-\index{state|see{FPU!FSM states}} \index{Finite State
-  Machine|see{FPU!FSM states}} \index{FPU!states, how to query}
-\index{FPU!FSM states!overview} \index{FPU!FSM states!table}
-\index{FPU!FSM states|see{~\emph{also} fpu\_state}} The state of an
+\label{sec:fpu_states}
+\index{state|see{FPU!FSM states}}%
+\index{Finite State Machine|see{FPU!FSM states}}%
+\index{FPU!states, how to query}%
+\index{FPU!FSM states!overview}%
+\index{FPU!FSM states!table}%
+\index{FPU!FSM states|see{~\emph{also} fpu\_state}}%
+%
+The state of an
 FPU is summarised in a enumeration value, which is stored in the
 attribute ``\texttt{state}''. For example, the state of FPU 0 can be
 retrieved by
@@ -2867,10 +2914,10 @@ hardware stops any movement, and sends a message to the EtherCAN interface. On
 receiving such a message, the EtherCAN interface changes the state of the FPU in
 the internal \texttt{grid\_state} structure. This is reflected in the
 status flags of the FPU, which were discussed above in section
-\ref{sec:fpustate} on page \pageref{sec:fpustate}.  The \texttt{state}
+\ref{sec:fpu_states_interactive_inspection} on page \pageref{sec:fpu_states_interactive_inspection}.  The \texttt{state}
 field of the FPU is set to the value \texttt{OBSTACLE\_ERROR}, the
 flags \texttt{beta\_collision} and \texttt{at\_alpha\_limit} are set
-accordingly, and the flag \texttt{was\_zeroed} is cleared.
+accordingly, and the flag \texttt{was\_referenced} is cleared.
 
 
 \subsection{Errors are turned into exceptions}
@@ -3036,9 +3083,10 @@ To make managing such a high number of FPUs easier, there exist a few
 additional functions. One feature is that \texttt{grid\_state}
 variable has a member named \texttt{Counts}, which is an array that
 summarises the state of all FPUs. As discussed in
-section~\ref{sec:fpustate} on page~\pageref{sec:fpustate} and the
-following section, each FPU has a field with the name
-``\texttt{state}''. Its type is an enumeration value describing its
+section~\ref{sec:fpu_states_interactive_inspection} on
+page~\pageref{sec:fpu_states_interactive_inspection} and the following
+section, each FPU has a field with the name ``\texttt{state}''. Its
+type is an enumeration value describing its
 state. Table~\ref{tab:fpustates} on page~\pageref{tab:fpustates} lists
 these enumeration values.
 
@@ -5379,6 +5427,16 @@ older firmware versions:
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
+
+\section*{Changes in version 2.0.5}
+\begin{itemize}
+\item Adapt field names in FPU state struct to protocol specification
+  (renaming \texttt{was\_zeroed} to \texttt{was\_referenced}).
+\item Added: example script \texttt{example-short-script.py} for code shown in
+  section~\ref{sec:fpu_states_interactive_inspection}.
+\item Updated: Listing of FPU state fields in example for interactive inspection.
+\end{itemize}
+
 
 \section*{Changes in version 1.5.2}
 \begin{itemize}
