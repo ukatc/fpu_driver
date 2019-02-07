@@ -477,7 +477,7 @@ class FPU:
                   and (alpha_steps < MAX_ALPHA_OFF))))
 
 
-    def move_alpha(self, new_alpha, limit_callback):
+    def move_alpha(self, new_alpha, limit_callback=None):
 
         if new_alpha == self.alpha_steps:
             return
@@ -520,7 +520,8 @@ class FPU:
                      old_switch, new_switch,
                      alpha_last_direction, cur_direction))
 
-            limit_callback(self)
+            if limit_callback is not None:
+                limit_callback(self)
 
             if (new_alpha + alpha_offset) < MIN_ALPHA_OFF:
                 self.alpha_steps = MIN_ALPHA_OFF
@@ -665,6 +666,10 @@ class FPU:
         print("FPU %i : timeouts enabled: %r" % (self.fpu_id, use_timeout))
         self.state = FPST_DATUM_SEARCH
 
+        simulate_failure_alpha = self.fpu_id in self.opts.fail_datum_alpha
+        simulate_failure_beta = self.fpu_id in self.opts.fail_datum_beta
+
+
         while True:
             # the model here is that crossing physical zero
             # edge-triggers the stop signal for both arms
@@ -678,13 +683,13 @@ class FPU:
             alpha_crossed_zero = alpha_crossed_zero or alpha_zero_crossing
 
 
-            alpha_ready = alpha_crossed_zero or skip_alpha
-            beta_ready = beta_crossed_zero or skip_beta
+            alpha_ready = (alpha_crossed_zero and (not simulate_failure_alpha)) or skip_alpha
+            beta_ready = (beta_crossed_zero and (not simulate_failure_beta)) or skip_beta
 
 
             if alpha_ready and beta_ready:
-                alpha_datumed = alpha_ready and (not skip_alpha)
-                beta_datumed = beta_ready and (not skip_beta)
+                alpha_datumed = alpha_ready and (not skip_alpha) and (not simulate_failure_alpha)
+                beta_datumed = beta_ready and (not skip_beta) and (not simulate_failure_beta)
                 break
 
             sleep(wait_interval_sec)
@@ -700,13 +705,16 @@ class FPU:
             try:
                 if not alpha_ready:
                     new_alpha = self.alpha_steps + int(alpha_speed)
+                    # FIXME: verify that passing limit_callback is correct
                     self.move_alpha(new_alpha, limit_callback)
+                    # self.move_alpha(new_alpha, None)
                 else:
                     new_alpha = self.alpha_steps
             except LimitBreachException:
-                print("Alpha limit breach for FPU  %i" % self.fpu_id)
                 self.abort_wave = True
                 self.state = FPST_OBSTACLE_ERROR
+                self.alpha_limit_breach = False
+                self.datum_timeout=True
                 break
 
             try:
@@ -719,7 +727,8 @@ class FPU:
 
                 if not beta_ready:
                     # this is much simplified: search until crossing the zero point
-                    if not beta_crossed_zero:
+                    if (not beta_crossed_zero) or simulate_failure_beta:
+
                         new_beta = self.beta_steps + int(beta_speed * beta_sign)
                         self.move_beta(new_beta, collision_callback)
                     else:
@@ -734,20 +743,24 @@ class FPU:
                 self.state = FPST_OBSTACLE_ERROR
                 break
 
-            if use_timeout and (abs(new_alpha - start_alpha_steps) >= alpha_timeout_limit):
+            alpha_timeout = use_timeout and (abs(new_alpha - start_alpha_steps) >= alpha_timeout_limit)
+
+            if alpha_timeout:
                 print("FPU %i: step number exceeds alpha time-out step count of %i, aborting" % (self.fpu_id, alpha_timeout_limit))
                 self.abort_wave = True
                 self.datum_timeout = True
-                alpha_datumed = alpha_ready and (not skip_alpha)
-                beta_datumed = beta_ready and (not skip_beta)
+                alpha_datumed = alpha_ready and (not skip_alpha) and (not simulate_failure_alpha)
+                beta_datumed = beta_ready and (not skip_beta) and (not simulate_failure_beta)
                 break
 
-            if use_timeout and (abs(new_beta - start_beta_steps) >= beta_timeout_limit):
+            beta_timeout = use_timeout and (abs(new_beta - start_beta_steps) >= beta_timeout_limit)
+
+            if beta_timeout:
                 print("FPU %i: step number exceeds beta time-out step count of %i, aborting" % (self.fpu_id, beta_timeout_limit))
                 self.abort_wave = True
                 self.datum_timeout = True
-                alpha_datumed = alpha_ready and (not skip_alpha)
-                beta_datumed = beta_ready and (not skip_beta)
+                alpha_datumed = alpha_ready and (not skip_alpha) and (not simulate_failure_alpha)
+                beta_datumed = beta_ready and (not skip_beta) and (not simulate_failure_beta)
                 break
 
 
@@ -778,7 +791,7 @@ class FPU:
             if self.state not in [FPST_OBSTACLE_ERROR, FPST_ABORTED]:
                 self.state = FPST_UNINITIALIZED
 
-        if self.abort_wave:
+        if self.abort_wave or self.datum_timeout:
             if self.state != FPST_OBSTACLE_ERROR:
                 self.state = FPST_ABORTED
         else:
