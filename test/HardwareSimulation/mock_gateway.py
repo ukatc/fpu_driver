@@ -102,6 +102,12 @@ def parse_args():
     parser.add_argument('-B', '--beta-start',  type=float, dest='beta_start',
                         default=0.0,
                         help='simulated offset of beta arm at start')
+
+    parser.add_argument('-fda', '--fail-datum-alpha', type=int, action='append', default=[],
+                        help="list of units which simulate a failure of the alpha datum operation, sending a time-out response")
+    
+    parser.add_argument('-fdb', '--fail-datum-beta', type=int, action='append', default=[],
+                        help="list of units which simulate a failure of the beta datum operation, sending a time-out response")
     
     args = parser.parse_args()
     

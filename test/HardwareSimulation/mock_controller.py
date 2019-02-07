@@ -839,13 +839,12 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
 
             # instantiate two objects which can send collision messages
             # if needed
-            limit_callback = LimitCallback(fpu_adr_bus, bus_adr, socket)
             collision_callback = CollisionCallback(fpu_adr_bus, bus_adr, socket)
 
 
             # simulate findDatum FPU operation
             FPUGrid[fpu_id].findDatum(sleep,
-                                      limit_callback.call, collision_callback.call,
+                                      collision_callback.call,
                                       skip_alpha=flag_skip_alpha, skip_beta=flag_skip_beta,
                                       auto_datum=flag_auto_datum,
                                       anti_clockwise=flag_anti_clockwise,
