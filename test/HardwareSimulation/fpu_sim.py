@@ -12,6 +12,7 @@ import numpy as np
 import random
 import time
 import signal
+import sys
 
 MAX_WAVE_ENTRIES = 128
 
@@ -446,6 +447,8 @@ class FPU:
         simulate_failure_beta = self.fpu_id in self.opts.fail_datum_beta
         
         while True:
+            print(" %i" % self.fpu_id, end='')
+            sys.stdout.flush()
             # the model here is that crossing physical zero
             # edge-triggers the stop signal for both arms
             

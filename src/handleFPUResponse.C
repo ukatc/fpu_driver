@@ -794,6 +794,20 @@ void handleFPUResponse(const EtherCANInterfaceConfig& config,
                             timeout_list, count_pending);
             }
         }
+        else if (response_errcode == ER_COLLIDE)
+        {
+            remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);
+
+            fpu.state = FPST_UNINITIALIZED;
+            fpu.alpha_was_zeroed = false;
+            fpu.beta_was_zeroed = false;
+            fpu.ping_ok = false;
+
+            LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "findDatum request rejected for FPU %i, because collision is active\n",
+                   get_realtime(),
+                   fpu_id);
+        }
         else if (response_errcode == ER_DATUM_LIMIT)
         {
             remove_pending(config, fpu, fpu_id,  CCMD_FIND_DATUM, response_errcode, timeout_list, count_pending);

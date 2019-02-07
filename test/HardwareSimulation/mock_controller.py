@@ -809,12 +809,15 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
     
     if FPUGrid[fpu_id].is_collided:
         # only send an error message
+        print("rejecting findDatum for FPU %i : is collided" % fpu_id)
         TX[3] = errflag = 0xff
         TX[4] = errcode = ER_COLLIDE
     elif flag_auto_datum and (not FPUGrid[fpu_id].was_initialized):
+        print("rejecting findDatum for FPU %i : auto flag set and not intialized" % fpu_id)
         TX[3] = errflag = 0xff
         TX[4] = errcode = ER_AUTO # not initialized, reject automatic datum search
     elif (FPUGrid[fpu_id].opts.fw_version >= (1, 4, 0)) and FPUGrid[fpu_id].alpha_switch_on():
+        print("rejecting findDatum for FPU %i : alpha on limit switch" % fpu_id)
         TX[3] = errflag = 0xff
         TX[4] = errcode = ER_DATUM_LIMIT # alpha on limit switch, reject datum command
         TX[5] = 0

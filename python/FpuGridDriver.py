@@ -28,7 +28,7 @@ assert(ethercanif.CAN_PROTOCOL_VERSION == 1), "requires ethercanif module for CA
 from ethercanif import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  EtherCANInterfaceConfig,
                         REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE,
                         DEFAULT_WAVEFORM_RULSET_VERSION,
-                        EtherCANException, MovementError, CollisionError, LimitBreachError,
+                        EtherCANException, MovementError, CollisionError, LimitBreachError, FirmwareTimeoutError,
                         AbortMotionError, StepTimingError, InvalidStateException, SystemFailure,
                         InvalidParameterError, SetupError, InvalidWaveformException, ConnectionFailure,
                         SocketFailure, CommandTimeout, ProtectionError, HardwareProtectionError,

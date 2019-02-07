@@ -497,7 +497,7 @@ def parse_args():
 
      
     args = parser.parse_args()
-    args.stop_time = time.strptime(args.end_time, '%Y-%m-%dT%H:%M:%S%Z')
+    args.stop_time = time.strptime(args.end_time, )
 
     args.min_steps=int(args.min_step_frequency * args.segment_length_ms / 1000)
     args.max_steps=int(ceil(args.max_step_frequency * args.segment_length_ms / 1000))
