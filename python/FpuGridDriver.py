@@ -717,7 +717,8 @@ class UnprotectedGridDriver (object):
 
     
     def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None,
-                     allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION):
+                     allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION,
+                     warn_unsafe=True):
         """ 
         Configures movement by sending a waveform table to a group of FPUs.
         Call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
@@ -750,7 +751,11 @@ class UnprotectedGridDriver (object):
             if soft_protection:
                 wmode=Range.Error
             else:
-                wmode=Range.Warn
+                if warn_unsafe:
+                    wmode=Range.Warn
+                else:
+                    wmode = None
+                    
             self._pre_config_motion_hook(wtable, gs, fpuset, wmode=wmode)
             update_config = False
             prev_gs = self._gd.getGridState()
