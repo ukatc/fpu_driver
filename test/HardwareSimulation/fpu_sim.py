@@ -74,6 +74,7 @@ MAX_ALPHA_CRASH = int((ALPHA_LIMIT_MAX_DEGREE + ALPHA_SWITCH_WIDTH + ALPHA_CRASH
 
 MIN_BETA = int(BETA_LIMIT_MIN_DEGREE * StepsPerDegreeBeta)
 MAX_BETA = int(BETA_LIMIT_MAX_DEGREE * StepsPerDegreeBeta)
+BETA_CTEST = MAX_BETA / 3 
 
 BETA_CRASH_MARGIN = 0.5
 MIN_BETA_CRASH = int((BETA_LIMIT_MIN_DEGREE - BETA_CRASH_MARGIN) * StepsPerDegreeBeta)
@@ -139,6 +140,7 @@ class FPU:
         self.alpha_switch_direction = 0
         self.datum_timeout = False
         self.can_overflow = False
+        self.coll_test = False
 
         fw_date = self.opts.fw_date
         
@@ -371,6 +373,14 @@ class FPU:
             self.beta_steps = MAX_BETA
             collision_callback(self)
             raise BetaCollisionException("a beta arm collision was detected (due to running into the upper stop)")
+        elif ((newbeta + beta_offset) > BETA_CTEST) and self.coll_test and self.collision_protection_active:
+            self.is_collided = True
+            self.was_initialized = False
+            self.beta_steps = BETA_CTEST
+            self.coll_test = False
+            collision_callback(self)
+            raise BetaCollisionException("a beta arm collision was detected (due to running"
+                                         " into the the simulated verification trap)")
         elif self.is_collided :
             self.was_initialized = False
             collision_callback(self)
@@ -763,12 +773,21 @@ def overflow_handler(signum, frame):
     print("generating a CAN overflow")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.can_overflow = True
+
+def colltest_handler(signum, frame):
+    try:
+        fpu_id = int(open("/var/tmp/colltest.fpuid").readline())
+        print("setting collision test flag for FPU # %i" % fpu_id)
+        FPUGrid[fpu_id].coll_test = True
+    except:
+        pass
         
 def init_FPUGrid(options, num_fpus):        
     FPUGrid[:] = [FPU(i, options) for i in range(num_fpus) ]
     signal.signal(signal.SIGHUP, reset_handler)
     signal.signal(signal.SIGUSR1, collision_handler)
     signal.signal(signal.SIGUSR2, overflow_handler)
+    signal.signal(signal.SIGRTMIN, colltest_handler)
     
         
         

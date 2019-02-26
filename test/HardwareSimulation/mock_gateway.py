@@ -13,7 +13,8 @@ coroutines.
 from __future__ import print_function
 
 import argparse
-
+import atexit
+    
 from gevent.server import StreamServer
 from gevent.pool import Pool
 from gevent.monkey import patch_all
@@ -136,6 +137,11 @@ if __name__ == '__main__':
     print("listening to ports:", args.ports)
     print("listening to ports:", args.ports)
     print("number of FPUs    :", args.NUM_FPUS)
+
+    pidpath = "/var/tmp/mock-gateway.pid"
+    atexit.register(os.unlink, pidpath)
+    with open(pidpath,"w") as f:
+        f.write("%s\n" % os.getpid())
     
     fpu_sim.init_FPUGrid(args, args.NUM_FPUS)
     mock_controller.gateway_map = { (ip, args.ports[i]) : i for i in range(len(args.ports))  }

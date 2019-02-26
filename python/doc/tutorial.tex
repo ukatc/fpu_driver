@@ -200,7 +200,7 @@ server. Assuming the account name is \texttt{carl}, this is done by
 the command
 \index{git!repository setup}
 
-\mint{bash}|git clone carl@dalriada/sw/sw4/jnix/MOONS/fpu_EtherCAN interface|
+\mint{bash}|git clone carl@dalriada:/sw/sw4/jnix/MOONS/fpu_driver|
 
 After entering the password for user \texttt{carl}, the
 source code is copied into the new folder \texttt{fpu\_driver}.
@@ -4817,6 +4817,15 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
+\subsection*{Changes in version 1.5.3}
+\begin{itemize}
+\item Fixed minor bugs in build instructions.
+\item Several small internal changes needed for testing verification rig software.
+\item Added: Change to allow EtherCAN mock up to simulate obstacle for test of collision detection.
+\item Changed: Optionally, made some methods and functions such as \texttt{countedAngles()}
+  quieter.
+\end{itemize}
+  
 \subsection*{Changes in version 1.5.2}
 \begin{itemize}
 \item Added: Use of LMDB can now be disabled by clearing the
@@ -5544,6 +5553,24 @@ These should be available on all current Linux systems.
 \end{itemize}
 
 
+A more complete list of probably needed packages for a Debian system is
+\begin{itemize}
+\item gcc-6.3
+\item liblmdb0
+\item lmdb-utils
+\item python-2.7
+\item python-dev
+\item python-numpy
+\item python-lmdb
+\item python-pip
+\item python-gevent
+\item git
+\item git-man
+\item git-svn
+\item subversion
+\end{itemize}
+
+
 \item For loading paths from the path generator software
 \begin{itemize}
 \item For this functionality, the \texttt{mocpath} python library
@@ -5553,7 +5580,11 @@ These should be available on all current Linux systems.
   This dependency is only required when the \texttt{wflib} library
   module is loaded. Installing \texttt{mocpath} possibly requires
   installation of further commonly available dependencies, namely
-  \texttt{numpy}, \texttt{scipy}, and \texttt{matplotlib}.
+  \texttt{numpy}, \texttt{scipy}, and \texttt{matplotlib}\footnote{At
+    ROE, getting the latter two packages requires an installation of
+    miniconda2, which means that the above mentioned packages like
+    python-lmdb also need to be installed into the miniconda
+    environment.}.
 \end{itemize}
 \end{enumerate}
 
@@ -5621,6 +5652,13 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 \end{verbatim}
 
 to your shell configuration (usually, \verb+$HOME/.bashrc+).
+If the installation target set by \texttt{--prefix} was, for example,
+\texttt{\$HOME}, the setting needs to be adjusted to
+\begin{verbatim}
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
+\end{verbatim}
+
+
 Also, for building the Python module, it might be needed
 to add something like
 
@@ -5635,10 +5673,16 @@ If the boost libraries are installed to a non-default location, you
 should add the directory with the boost header files (by default
 \verb+/usr/local/include+) to the path configured in the environment
 variable \verb+CPLUS_INCLUDE_PATH+, so that gcc can find them when
-building the module.
+building the module. For the example above, that would be
 
-The boost::python library may require re-compiling when system
-upgrades are performed.
+\begin{verbatim}
+export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:$HOME/include
+\end{verbatim}
+
+
+The boost::python library may (rarely) require re-compiling when
+far-reaching system upgrades are performed (such as an update of the
+system's C library). Otherwise, no further changes to it are needed.
 
 \subsubsection{Installing the python-gevent module}
 \index{gevent module}
