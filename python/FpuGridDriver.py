@@ -18,7 +18,7 @@ import devicelock
 from interval import Interval, Inf, nan
 
 from fpu_constants import *
-from protectiondb import ProtectionDB, HealthLogDB
+from protectiondb import ProtectionDB, HealthLogDB, open_database_env
 
 import fpu_commands
 
@@ -1073,19 +1073,6 @@ class UnprotectedGridDriver (object):
         return [angles[k] for k in fpuset ]
 
 
-# a good value is "/var/lib/fpudb"
-DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE", "")
-
-if DATABASE_FILE_NAME != "":
-    # needs 64 bit (large file support) for normal database size
-    if platform.architecture()[0] == "64bit":
-        dbsize = 5*1024*1024*1024
-    else:
-        dbsize = 5*1024*1024        
-    env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=dbsize)
-else:
-    print("No FPU database configured, can only run unprotected driver")
-    env = None
 
 def get_duplicates(idlist):
     duplicates = {} 
@@ -1095,9 +1082,15 @@ def get_duplicates(idlist):
     return duplicates
     
 class GridDriver(UnprotectedGridDriver):
-    def __init__(self, *args, **kwargs):
-        if env == None:
-            raise ValueError("The environment variable FPU_DATABASE needs to be set to the directory path of the LMDB position database!")
+    def __init__(self, *args, env=None, mockup=False, **kwargs):
+        if env is None:
+            env = open_database_env(mockup=mockup)
+            
+        if env is None:
+            raise ValueError("The environment variable FPU_DATABASE needs to"
+                             " be set to the directory path of the LMDB position database!")
+        
+        self.env = env
         
         super(GridDriver,self).__init__(*args, **kwargs)
 
@@ -1109,8 +1102,8 @@ class GridDriver(UnprotectedGridDriver):
             self.configured_ranges = {}
 
     def _post_connect_hook(self, config):
-        self.fpudb = env.open_db(ProtectionDB.dbname)
-        self.healthlog = env.open_db(HealthLogDB.dbname)
+        self.fpudb = self.env.open_db(ProtectionDB.dbname)
+        self.healthlog = self.env.open_db(HealthLogDB.dbname)
         
         grid_state = self.getGridState()
         self.readSerialNumbers(grid_state)
@@ -1148,7 +1141,7 @@ class GridDriver(UnprotectedGridDriver):
             a_caloffsets.append(Interval(0.0))
             b_caloffsets.append(Interval(0.0))
             
-            with env.begin(db=self.fpudb) as txn:
+            with self.env.begin(db=self.fpudb) as txn:
                 for subkey in [ ProtectionDB.alpha_positions,
                                 ProtectionDB.beta_positions,
                                 ProtectionDB.waveform_table,
@@ -1342,7 +1335,7 @@ class GridDriver(UnprotectedGridDriver):
 
         """
         inconsistency_abort = False
-        with env.begin(db=self.fpudb, write=True) as txn:
+        with self.env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(grid_state.FPU):
                 if not fpu_in_set(fpu_id, fpuset):
                     continue
@@ -1384,7 +1377,7 @@ class GridDriver(UnprotectedGridDriver):
                 self._update_apos(txn, fpu, fpu_id, new_alpha, store=store)
                 self._update_bpos(txn, fpu, fpu_id, new_beta, store=store)
                 
-        env.sync()
+        self.env.sync()
 
         print("%f: refresh_positions(): new apositions = %r, bpositions = %r" % (
             time.time(), self.apositions, self.bpositions),
@@ -1581,7 +1574,7 @@ class GridDriver(UnprotectedGridDriver):
     # this can possibly be deleted
     # but do we want to store the full wavetable ?
     def _save_wtable_direction(self, fpu_id_list, is_reversed=False, grid_state=None):
-        with env.begin(db=self.fpudb, write=True) as txn:
+        with self.env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id in fpu_id_list:
                 fpu = grid_state.FPU[fpu_id]
                 
@@ -1605,7 +1598,7 @@ class GridDriver(UnprotectedGridDriver):
                 
         self._save_wtable_direction(wtable.keys(), is_reversed=False, grid_state=gs)
         # save the changed waveform tables
-        with env.begin(db=self.fpudb, write=True) as txn:
+        with self.env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, wentry in wtable.items():
                 fpu = gs.FPU[fpu_id]
                 ProtectionDB.storeWaveform(txn, fpu, wentry)
@@ -1750,7 +1743,7 @@ class GridDriver(UnprotectedGridDriver):
         
         self._pingFPUs(gs, fpuset=fpuset)
         
-        with env.begin(db=self.fpudb, write=True) as txn:
+        with self.env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
                 if not fpu_in_set(fpu_id, fpuset):
                     continue
@@ -1774,7 +1767,7 @@ class GridDriver(UnprotectedGridDriver):
                     
                     ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
                     
-        env.sync()
+        self.env.sync()
      
 
     def _cancel_execute_motion_hook(self, gs, fpuset, initial_positions=None):
@@ -1783,7 +1776,7 @@ class GridDriver(UnprotectedGridDriver):
 
         """
         
-        with env.begin(db=self.fpudb, write=True) as txn:
+        with self.env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id in initial_positions.keys():
                 if not fpu_in_set(fpu_id, fpuset):
                     continue
@@ -1800,7 +1793,7 @@ class GridDriver(UnprotectedGridDriver):
                                                          cancel=True)
                 ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
                 
-        env.sync()
+        self.env.sync()
         print("%f: _cancel_execute_motion_hook(): movement cancelled" % time.time(),
               file=self.protectionlog)
 
@@ -1864,7 +1857,7 @@ class GridDriver(UnprotectedGridDriver):
 
         self._refresh_positions(gs, fpuset=fpuset)
 
-        with env.begin(db=self.fpudb, write=True) as txn:
+        with self.env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id in fpuset:
                 
                 moved_fpu = move_gs.FPU[fpu_id]
@@ -1963,7 +1956,7 @@ class GridDriver(UnprotectedGridDriver):
     def _finished_find_datum_hook(self, gs, prev_gs, datum_gs, search_modes=None, fpuset=[],
                                   was_cancelled=False, initial_positions={}):
         
-        with env.begin(db=self.fpudb, write=True) as txn:
+        with self.env.begin(db=self.fpudb, write=True) as txn:
             _gs = gs
             # gs can be none if the retrieval of aberration counts failed
             if _gs == None:
@@ -2038,13 +2031,13 @@ class GridDriver(UnprotectedGridDriver):
                 ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
                         
 
-        with env.begin(db=self.healthlog, write=True) as txn:
+        with self.env.begin(db=self.healthlog, write=True) as txn:
             for fpu_id, fpu in enumerate(datum_gs.FPU):
                 cnt = self.counters[fpu_id].copy()
                 cnt['unixtime'] = time.time()
                 HealthLogDB.putEntry(txn, fpu, cnt)
             
-        env.sync()
+        self.env.sync()
 
 
     def _update_counters_find_datum(self, fpu_id, fpu_counters, fpu, prev_fpu, datum_fpu):
@@ -2083,7 +2076,7 @@ class GridDriver(UnprotectedGridDriver):
         # we allow 0.5 degree of imprecision. This is mainly for the
         # FPU simulator which steps at discrete intervals
         
-        with env.begin(db=self.fpudb, write=True) as txn:
+        with self.env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(gs.FPU):
                 if not fpu_in_set(fpu_id, fpuset):
                     continue
@@ -2141,14 +2134,14 @@ class GridDriver(UnprotectedGridDriver):
                 
                 self.target_positions[fpu_id] = (atarget, btarget)
                     
-        env.sync()
+        self.env.sync()
  
                 
 
     def _cancel_find_datum_hook(self, gs, search_modes,  selected_arm=None,
                                fpuset=[], initial_positions={}):
 
-        with env.begin(db=self.fpudb, write=True) as txn:
+        with self.env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id in initial_positions.keys():
                 # get last stored positions
                 apos, bpos = initial_positions[fpu_id]
@@ -2160,7 +2153,7 @@ class GridDriver(UnprotectedGridDriver):
                 
                 self.target_positions[fpu_id] = (apos, bpos)
                 
-        env.sync()
+        self.env.sync()
         print("%f: _cancel_find_datum_hook(): movement cancelled" % time.time(),
               file=self.protectionlog)
 
@@ -2200,7 +2193,7 @@ class GridDriver(UnprotectedGridDriver):
 
         self.target_positions[fpu_id] = ( self.apositions[fpu_id], new_bpos)
         
-        with env.begin(db=self.fpudb, write=True) as txn:
+        with self.env.begin(db=self.fpudb, write=True) as txn:
             ProtectionDB.store_bretry_count(txn, fpu, clockwise, cnt)
             self._update_bpos(txn, fpu, fpu_id,  bpos.combine(new_bpos))
 
