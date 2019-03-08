@@ -4,7 +4,7 @@ from __future__ import print_function
 import types
 from ast import literal_eval
 from interval import Interval, Inf, nan
-
+import platform
 
 INIT_COUNTERS = {
     "unixtime" : 0,
@@ -218,3 +218,27 @@ class HealthLogDB:
             return key, None
         
         return key, literal_eval(val)    
+
+
+
+def open_database_env(mockup=False):
+    if mockup:
+        database_file_name = os.environ.get("FPU_DATABASE_MOCKUP", "")
+        if database_file_name == "":
+            database_file_name = os.environ.get("FPU_DATABASE", "") + "_mockup"
+    else:
+        # a good value is "/var/lib/fpudb"
+        database_file_name = os.environ.get("FPU_DATABASE", "")
+    
+    if database_file_name != "":
+        # needs 64 bit (large file support) for normal database size
+        if platform.architecture()[0] == "64bit":
+            dbsize = 5*1024*1024*1024
+        else:
+            dbsize = 5*1024*1024        
+        env = lmdb.open(database_file_name, max_dbs=10, map_size=dbsize)
+    else:
+        print("No FPU database configured, can only run unprotected driver")
+        env = None
+
+    return env

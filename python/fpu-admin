@@ -11,8 +11,7 @@ import argparse
 import lmdb
 from interval import Interval
 from protectiondb import ProtectionDB as pdb
-from protectiondb import INIT_COUNTERS
-from protectiondb import HealthLogDB
+from protectiondb import INIT_COUNTERS, HealthLogDB, open_database_env
 
 from fpu_constants import *
 
@@ -22,14 +21,7 @@ DATABASE_FILE_NAME = os.environ.get("FPU_DATABASE")
 
 GATEWAY0_ADDRESS = os.environ.get("ETHERCAN_GATEWAY0", "192.168.0.10")
 
-# needs 64 bit OS (specifically, large file support) for normal database size
-if platform.architecture()[0] == "64bit":
-    dbsize = 5*1024*1024*1024
-else:
-    dbsize = 5*1024*1024
-    
-env = lmdb.open(DATABASE_FILE_NAME, max_dbs=10, map_size=dbsize)
-fpudb = env.open_db("fpu")
+
 
 
 if os.environ.get("MOCKUP","") != "":
@@ -137,6 +129,13 @@ if __name__ == '__main__' :
         del argv[k]
         gateway_address = [ FpuGridDriver.GatewayAddress(hostname, 4700) ]
 
+    env = open_database_env(mockup=is_mockup)
+            
+    if env is None:
+        raise ValueError("The environment variable FPU_DATABASE needs to"
+                     " be set to the directory path of the LMDB position database!")
+
+    fpudb = env.open_db("fpu")
               
     command = argv[1]
 
