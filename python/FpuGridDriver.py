@@ -1082,7 +1082,7 @@ def get_duplicates(idlist):
     return duplicates
     
 class GridDriver(UnprotectedGridDriver):
-    def __init__(self, *args, env=None, mockup=False, **kwargs):
+    def __init__(self, NFPUS, env=None, mockup=False, *args, **kwargs):
         if env is None:
             env = open_database_env(mockup=mockup)
             
@@ -1091,8 +1091,9 @@ class GridDriver(UnprotectedGridDriver):
                              " be set to the directory path of the LMDB position database!")
         
         self.env = env
-        
-        super(GridDriver,self).__init__(*args, **kwargs)
+        print("args=", args, "kwargs=", repr(kwargs))
+        #super(GridDriver,self).__init__(*args, **kwargs)
+        UnprotectedGridDriver.__init__(self, NFPUS, *args, **kwargs)
 
         with self.lock:
             # position intervals which are being configured by configMotion
@@ -1408,13 +1409,14 @@ class GridDriver(UnprotectedGridDriver):
     def __del__(self):
         # if connection is live, gets and stores
         # the positions before exiting
-        with self.lock:
-            grid_state = self.getGridState()
-            if grid_state.interface_state == DS_CONNECTED:
-                # fetch current positions
-                self._pingFPUs(grid_state)
-    
-            self._refresh_positions(grid_state)
+        if self.__dict__.has_key("lock"):
+            with self.lock:
+                grid_state = self.getGridState()
+                if grid_state.interface_state == DS_CONNECTED:
+                    # fetch current positions
+                    self._pingFPUs(grid_state)
+        
+                self._refresh_positions(grid_state)
             
         super(GridDriver, self).__del__()
         
