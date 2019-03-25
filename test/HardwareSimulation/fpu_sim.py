@@ -58,6 +58,12 @@ BETA_MAX_HWPROT_DEGREE = 145.0
 # The alpha RDEGREE values below are relative from the datum switch
 # (datum=zero).  (For displayed alpha angles, the conventional angle
 # at datum is added.)
+ALPHA_MIN_DEGREE = 0
+ALPHA_MAX_DEGREE = -(-180.0) + 170.0
+BETA_MIN_DEGREE = -179.3
+BETA_MAX_DEGREE = 150.3
+BETA_DATUM_SWITCH_MAX_DEGREE = -0.2
+BETA_DATUM_SWITCH_MIN_DEGREE = -5
 
 
 ALPHA_BUFFER = 0.2
