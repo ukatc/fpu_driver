@@ -462,7 +462,7 @@ void translate_interface_error(EtherCANException const& e)
     case DE_FIRMWARE_CAN_BUFFER_OVERFLOW:
         PyErr_SetString(CAN_OverflowExceptionTypeObj, e.what());
         break;
-	
+
     case DE_INVALID_WAVEFORM :
     case DE_INVALID_WAVEFORM_TAIL:
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:
@@ -541,7 +541,7 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
 				 " because the FPU firmware buffer was full.",
                                  DE_FIRMWARE_CAN_BUFFER_OVERFLOW);
         break;
-	
+
     case DE_INSUFFICENT_NUM_GATEWAYS:
         throw EtherCANException("DE_INSUFFICENT_NUM_GATEWAYS: The number of EtherCAN gateways"
                                  " configured is insufficient for the configured number of FPUs",
@@ -598,7 +598,7 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
         throw EtherCANException("DE_INVALID_WAVEFORM: The passed waveform does not meet some general rule.",
                                  DE_INVALID_WAVEFORM);
         break;
-	
+
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS :
         throw EtherCANException("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS: The passed waveform has too many sections.",
                                  DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS);
@@ -678,7 +678,7 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                  " an FPU alpha arm is on its limit switch.",
                                  DE_ALPHA_ARM_ON_LIMIT_SWITCH);
         break;
-	
+
     case DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH:
         throw EtherCANException("DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH: Part of datum command rejected by"
 				" hardware because an FPU alpha arm is on its limit switch"
@@ -1633,7 +1633,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def_readwrite("motor_max_rel_increase", &EtherCANInterfaceConfig::motor_max_rel_increase)
     .def_readwrite("logLevel", &EtherCANInterfaceConfig::logLevel)
     .def_readwrite("waveform_upload_pause_us", &EtherCANInterfaceConfig::waveform_upload_pause_us)
-    .def_readwrite("firmware_version_address_offset", &EtherCANInterfaceConfig::firmware_version_address_offset)	
+    .def_readwrite("firmware_version_address_offset", &EtherCANInterfaceConfig::firmware_version_address_offset)
     .def_readwrite("confirm_each_step", &EtherCANInterfaceConfig::confirm_each_step)
     .def_readwrite("configmotion_max_retry_count", &EtherCANInterfaceConfig::configmotion_max_retry_count)
     .def_readwrite("configmotion_max_resend_count", &EtherCANInterfaceConfig::configmotion_max_resend_count)
