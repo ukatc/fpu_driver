@@ -6,6 +6,7 @@ import platform
 import threading
 
 import pdb
+import traceback
 import os
 from os import path
 import errno
@@ -784,7 +785,7 @@ class UnprotectedGridDriver (object):
 
     def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None,
                      allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION,
-                     warn_unsafe=True):
+                     warn_unsafe=True, verbosity=3):
         """
         Configures movement by sending a waveform table to a group of FPUs.
         Call signature is configMotion({ fpuid0 : {(asteps,bsteps), (asteps, bsteps), ...], fpuid1 : { ... }, ...}})
@@ -865,8 +866,7 @@ class UnprotectedGridDriver (object):
 
                     self._post_config_motion_hook(wtable, gs, fpuset)
 
-
-        if len(wtable.keys()) < self.config.num_fpus:
+        if (len(wtable.keys()) < self.config.num_fpus) and (verbosity > 0):
             num_forward,  num_reversed, num_movable = countMovableFPUs(gs)
             if num_reversed > 0:
                 print("%i wave tables added: now %i out of %i FPUs configured to move, %i of them reversed." % (
@@ -1090,7 +1090,7 @@ class UnprotectedGridDriver (object):
 
         return rval
 
-    def reverseMotion(self, gs, fpuset=[], soft_protection=True):
+    def reverseMotion(self, gs, fpuset=[], soft_protection=True, verbosity=3):
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
@@ -1113,7 +1113,7 @@ class UnprotectedGridDriver (object):
             self._post_reverse_motion_hook(wtable, gs, fpuset)
 
         num_configured = len(fpuset) if (len(fpuset) != 0) else self.config.num_fpus
-        if num_configured < self.config.num_fpus:
+        if (num_configured < self.config.num_fpus) and (verbosity > 0):
             num_forward,  num_reversed, num_movable = countMovableFPUs(gs)
             if num_forward > 0:
                 print("%i wave tables reversed: now %i out of %i FPUs configured to move, %i of them forward." % (
@@ -1478,7 +1478,6 @@ class GridDriver(UnprotectedGridDriver):
     def trackedAngles(self, gs=None, fpuset=[], show_offsets=False, active=False, retrieve=False):
         """lists tracked angles, offset, and waveform span
         for configured waveforms, for each FPU"""
-
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
@@ -1487,52 +1486,49 @@ class GridDriver(UnprotectedGridDriver):
 
             if gs is None:
                 gs = self.getGridState()
-
-            for fi in fpuset:
-                fpu = gs.FPU[fi]
-                aangle, a_underflow, a_overflow = self._alpha_angle(fpu)
-                bangle, b_underflow, b_overflow = self._beta_angle(fpu)
-                if active:
-                    prefix="active"
-                    if fpu.waveform_valid:
-                        wf_arange, wf_brange = self.configured_ranges.get(fi, (Interval(), Interval()))
-                    else:
-                        wf_arange, wf_brange = Interval(), Interval()
-                else:
-                    wf_arange, wf_brange = self.configuring_ranges.get(fi, (Interval(), Interval()))
-                    prefix="last"
-
-                if show_offsets and (gs != None):
-                    if a_underflow:
-                        aflag = "!u"
-                    elif a_overflow:
-                        aflag = "!o"
-                    else:
-                        aflag = ""
-
-                    if b_underflow:
-                        bflag = "!u"
-                    elif a_overflow:
-                        bflag = "!o"
-                    else:
-                        bflag = ""
-
-                    print("%f : " % time.time(), file=self.protectionlog, end='')
-                    for f in [sys.stdout, self.protectionlog]:
-                        print("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
-                              " stepcount angle= ({!s}{!s}, {!s}{!s}), {!s}_wform_range=({!s},{!s})".
-                              format(fi, self.apositions[fi],self.bpositions[fi],
-                                     self.a_caloffsets[fi], self.b_caloffsets[fi],
-                                     aangle, aflag, bangle, bflag,
-                                     prefix, wf_arange, wf_brange), file=f)
-                else:
-                    print("%f : " % time.time(), file=self.protectionlog, end='')
-                    for f in [sys.stdout, self.protectionlog]:
-                        print("FPU #{}: angle = ({!s}, {!s}), {!s}_wform_range=({!s},{!s})".
-                              format(fi, self.apositions[fi],self.bpositions[fi],
-                                     prefix, wf_arange, wf_brange), file=f)
             if retrieve:
                 return [ (self.apositions[fi],self.bpositions[fi]) for fi in fpuset ]
+            else:
+                for fi in fpuset:
+                    fpu = gs.FPU[fi]
+                    aangle, a_underflow, a_overflow = self._alpha_angle(fpu)
+                    bangle, b_underflow, b_overflow = self._beta_angle(fpu)
+                    if active:
+                        wf_arange, wf_brange = self.configured_ranges.get(fi, (Interval(), Interval()))
+                        prefix="active"
+                    else:
+                        wf_arange, wf_brange = self.configuring_ranges.get(fi, (Interval(), Interval()))
+                        prefix="last"
+
+                    if show_offsets and (gs != None):
+                        if a_underflow:
+                            aflag = "!u"
+                        elif a_overflow:
+                            aflag = "!o"
+                        else:
+                            aflag = ""
+
+                        if b_underflow:
+                            bflag = "!u"
+                        elif a_overflow:
+                            bflag = "!o"
+                        else:
+                            bflag = ""
+
+                        print("%f : " % time.time(), file=self.protectionlog, end='')
+                        for f in [sys.stdout, self.protectionlog]:
+                            print("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
+                                  " stepcount angle= ({!s}{!s}, {!s}{!s}), {!s}_wform_range=({!s},{!s})".
+                                  format(fi, self.apositions[fi],self.bpositions[fi],
+                                         self.a_caloffsets[fi], self.b_caloffsets[fi],
+                                         aangle, aflag, bangle, bflag,
+                                         prefix, wf_arange, wf_brange), file=f)
+                    else:
+                        print("%f : " % time.time(), file=self.protectionlog, end='')
+                        for f in [sys.stdout, self.protectionlog]:
+                            print("FPU #{}: angle = ({!s}, {!s}), {!s}_wform_range=({!s},{!s})".
+                                  format(fi, self.apositions[fi],self.bpositions[fi],
+                                         prefix, wf_arange, wf_brange), file=f)
 
 
     def _update_apos(self, txn, fpu, fpu_id, new_apos, store=True):
@@ -2119,7 +2115,6 @@ class GridDriver(UnprotectedGridDriver):
         # get fresh ping data
         self._pingFPUs(gs, fpuset=fpuset)
 
-
         acw_range = Interval(0, Inf)
         cw_range = Interval(-Inf, 0)
         for fpu_id, fpu in enumerate(gs.FPU):
@@ -2279,7 +2274,6 @@ class GridDriver(UnprotectedGridDriver):
                 cnt = self.counters[fpu_id].copy()
                 cnt['unixtime'] = time.time()
                 HealthLogDB.putEntry(txn, datum_fpu, cnt)
-
         self.env.sync()
 
 
