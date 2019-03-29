@@ -1264,7 +1264,6 @@ class GridDriver(UnprotectedGridDriver):
                              " be set to the directory path of the LMDB position database!")
 
         self.env = env
-        print("args=", args, "kwargs=", repr(kwargs))
         #super(GridDriver,self).__init__(*args, **kwargs)
         UnprotectedGridDriver.__init__(self, NFPUS, *args, **kwargs)
 
