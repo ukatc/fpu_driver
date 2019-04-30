@@ -492,7 +492,6 @@ class UnprotectedGridDriver (object):
                 self._cancel_find_datum_hook(gs, fpuset,initial_positions=initial_positions)
                 raise
 
-            print("waiting for findDatum to finish..")
             time_interval = 0.1
             is_ready = False
             was_aborted = False
@@ -550,7 +549,7 @@ class UnprotectedGridDriver (object):
     def _reset_hook(self, old_state, gs, fpuset=[]):
         pass
 
-    def resetFPUs(self, gs, fpuset=[]):
+    def resetFPUs(self, gs, fpuset=[], verbose=True):
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
@@ -563,13 +562,15 @@ class UnprotectedGridDriver (object):
                         self._update_error_counters(self.counters[fpu_id], old_state.FPU[fpu_id], fpu)
 
             self.last_wavetable = {}
-            msg = "waiting for FPUs to become active.... %s"
+            msg = "resetFPUs(): waiting for FPUs to become active.... %s"
             w = "|/-\\"
             for k in range(24):
                 time.sleep(0.1)
-                print(msg % w[k%4], end="\r")
+                if verbose:
+                    print(msg % w[k%4], end="\r")
                 sys.stdout.flush()
-            print(msg % "OK")
+            if verbose:
+                print(msg % "OK")
             self._reset_hook(old_state, gs, fpuset=fpuset)
 
         return rval
@@ -1254,7 +1255,7 @@ class GridDriver(UnprotectedGridDriver):
         print("%f: _reset_hook(): new a_caloffsets = %r, b_cal_offsets=%r" % (
             time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
 
-    def trackedAngles(self, gs=None, fpuset=[], show_offsets=False, active=False, retrieve=False):
+    def trackedAngles(self, gs=None, fpuset=[], show_offsets=False, active=False, retrieve=False, display=True):
         """lists tracked angles, offset, and waveform span
         for configured waveforms, for each FPU"""
 
@@ -1272,6 +1273,7 @@ class GridDriver(UnprotectedGridDriver):
             if retrieve:
                 return [ (self.apositions[fi],self.bpositions[fi]) for fi in fpuset ]
             else:
+                s = ""
                 for fi in fpuset:
                     fpu = gs.FPU[fi]
                     aangle, a_underflow, a_overflow = self._alpha_angle(fpu)
@@ -1298,21 +1300,23 @@ class GridDriver(UnprotectedGridDriver):
                         else:
                             bflag = ""
 
-                        print("%f : " % time.time(), file=self.protectionlog, end='')
-                        for f in [sys.stdout, self.protectionlog]:
-                            print("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
-                                  " stepcount angle= ({!s}{!s}, {!s}{!s}), {!s}_wform_range=({!s},{!s})".
-                                  format(fi, self.apositions[fi],self.bpositions[fi],
-                                         self.a_caloffsets[fi], self.b_caloffsets[fi],
-                                         aangle, aflag, bangle, bflag,
-                                         prefix, wf_arange, wf_brange), file=f)
+                        s += ("FPU #{}: angle = ({!s}, {!s}), offsets = ({!s}, {!s}),"
+                              " stepcount angle= ({!s}{!s}, {!s}{!s}), {!s}_wform_range=({!s},{!s})\n".
+                              format(fi, self.apositions[fi],self.bpositions[fi],
+                                     self.a_caloffsets[fi], self.b_caloffsets[fi],
+                                     aangle, aflag, bangle, bflag,
+                                     prefix, wf_arange, wf_brange))
                     else:
-                        print("%f : " % time.time(), file=self.protectionlog, end='')
-                        for f in [sys.stdout, self.protectionlog]:
-                            print("FPU #{}: angle = ({!s}, {!s}), {!s}_wform_range=({!s},{!s})".
-                                  format(fi, self.apositions[fi],self.bpositions[fi],
-                                         prefix, wf_arange, wf_brange), file=f)
+                        s += ("FPU #{}: angle = ({!s}, {!s}), {!s}_wform_range=({!s},{!s})\n".
+                              format(fi, self.apositions[fi],self.bpositions[fi],
+                                     prefix, wf_arange, wf_brange))
 
+                print("%f : " % time.time(), file=self.protectionlog, end='')
+                print(s, file=self.protectionlog)
+                if display:
+                    print(s, sys.stdout)
+                else:
+                    return s
 
     def _update_apos(self, txn, fpu, fpu_id, new_apos, store=True):
         self.apositions[fpu_id] = new_apos
@@ -1856,7 +1860,7 @@ class GridDriver(UnprotectedGridDriver):
         # that FPU is not yet at target.
         for fpu_id in fpuset:
             if gs.FPU[fpu_id].state != FPST_RESTING:
-                print("_post_execute_motion_hook(): retaining interval positions for FPU id %i" % fpu_id)
+                # print("_post_execute_motion_hook(): retaining interval positions for FPU id %i" % fpu_id)
                 self.target_positions[fpu_id] = (self.apositions[fpu_id].copy(),
                                                  self.bpositions[fpu_id].copy())
 
