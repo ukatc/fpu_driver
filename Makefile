@@ -1,9 +1,9 @@
 IDIR = ./include
 CC = "g++"
 
-VERSION := v1.5.3
+VERSION := v1.5.4
 
-CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -O2 -g 
+CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC -DDEBUG -O2 -g
 
 ODIR = ./objects
 
@@ -69,10 +69,10 @@ cppcheck: force
 	cppcheck src/*.C python/src/*.cpp  -I include -I include/ethercan -I include/ethercan/cancommands --enable=all
 
 $(ODIR)/%.o: $(SRCDIR)/%.C $(DEPS) version
-	$(CC) $(CXXFLAGS) -DVERSION=\"$(VERSION)\" -c -o $@ $< 
+	$(CC) $(CXXFLAGS) -DVERSION=\"$(VERSION)\" -c -o $@ $<
 
 lib/libethercan.a: $(OBJ)
-	ar rcs   $@ $^ 
+	ar rcs   $@ $^
 
 libethercan: lib/libethercan.a
 
@@ -84,5 +84,3 @@ style:
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ doc/*.{aux,dvi,log,out,toc,pdf} python/*.so lib/*a
-
-

@@ -19,11 +19,11 @@
 %\usepackage{charter} % works quite good
 %\usepackage[urw-garamond]{mathdesign} %
 %\usepackage[garamond]{mathdesign} %
-%\usepackage{ebgaramond} % 
+%\usepackage{ebgaramond} %
 %\usepackage[bitstream-charter]{mathdesign}
 
 %\usepackage{gentium} % looks very good
-%\usepackage{sourcecodepro} % 
+%\usepackage{sourcecodepro} %
 \usepackage{lmodern}
 \usepackage[T1]{fontenc}
 \usepackage{makeidx}
@@ -290,7 +290,7 @@ the lock file, all user accounts which use the driver software need to
 be member of the Unix group defined in the environment variable
 \texttt{MOONS\_GATEWAY\_ACCESS\_GROUP}. The default name for that
 group is \texttt{"moons"}.
- 
+
 Also, it is probably useful to add the \texttt{python} directory
 within the driver package, and also the current directory to the
 environment variable \texttt{PYTHONPATH}, so that the EtherCAN
@@ -312,7 +312,7 @@ directory in the PATH environment variable, like this:
   export PATH=$PATH:$HOME/fpu_driver/python
 \end{minted}
 
- 
+
 Further, it is recommended to set the default log directory to point
 to a file system which is writable and has a lot of free space, for
 example:
@@ -475,7 +475,7 @@ possible to specify position ranges as measurement uncertainty
 intervals in the form of Python list literals, enclosed in double
 quotes:
 \index{software protection!handling ambiguous positions}
-\index{ambiguous positions} 
+\index{ambiguous positions}
 \begin{minted}{bash}
   fpu-admin init ${serialnumber} "[0, 1.5]" "[3, 6.5]"
 \end{minted}
@@ -702,7 +702,7 @@ print("the starting position (in degrees) is:",
        gd.countedAngles(grid_state))
 
 # Generate a waveform which moves the alpha arm by +45
-# degree, and the beta arm by +15 degree. 
+# degree, and the beta arm by +15 degree.
 
 alpha_move = 45
 beta_move = 15
@@ -734,7 +734,7 @@ configurations:
 \begin{itemize}
 \item In line 1, the print function and the division operator is
   configured to work as in Python 3.
-  
+
 \item ``\texttt{import FpuGridDriver}'' in line 2 loads the driver
   library module. (If this import command fails, check that both
   \verb+LD_LIBRARY_PATH+ and \verb+PYTHONPATH+ have the right values.)
@@ -752,7 +752,7 @@ configurations:
   few utility commands which help to display positions and to generate
   movement waveforms.
 
- 
+
 \end{itemize}
 
 \subsection{Grid driver object}
@@ -858,7 +858,7 @@ data, and displaying information about the FPU state:
   degree units. In these coordinates, the datum positions serve as a
   point of reference. Their value are normally -180 degree for the
   alpha datum position, and 0 degree for the beta datum positions.
-  
+
 \item[\texttt{gen\_wf()}] is a function which takes an (alpha,beta)
   pair of angle values, scaled in degrees, and generates a valid
   waveform which can be send to the FPU.  The waveform which is passed
@@ -1031,7 +1031,7 @@ retrieved by
 \begin{tabular}{|l|p{0.7\textwidth}|}
   \hline
   \textbf{State name} & \textbf{Description} \\
-  \hline 
+  \hline
 UNKNOWN & The state of the FPU is not known, the EtherCAN interface needs to
 be connected to the EtherCAN gateway first and retrieve the state.\\
 \hline
@@ -1121,10 +1121,10 @@ conditions are as follows:
     instance is controlling such an FPU, before correcting the stored
     positions: exit the driver, and only after correcting re-start the
     driver.
-    
+
   \item Do not use any old versions of the EtherCAN interface prior to version
     1.0.0, which do not update the position database.
-    
+
   \item Never power-cycle (turn off and on again) an FPU while the
     EtherCAN interface is connected. If an FPU needs to be re-started, exit the
     program which uses the driver, restart the FPU, and start up the
@@ -1175,7 +1175,7 @@ allowed, and designed to include the following error conditions:
 \item As of protocol v1, manual recovery of alpha arm limit switch
   breaches.
 \item Disconnecting an FPU from one EtherCAN gateway, and connecting
-  it to another gateway connected to the same host workstation. 
+  it to another gateway connected to the same host workstation.
 \item Hard power-off or loss of power of the workstation which hosts
   the driver program or the database (note that this can disrupt other
   software which is not designed for that)\footnote{The hosting
@@ -1281,7 +1281,7 @@ To test the datum switches, perform the following steps:
 
 \begin{enumerate}
 \item If the EtherCAN interface is connected, disconnect it first.
-  
+
 \item Make sure that the FPU database contains the correct alpha and
   beta arm positions for the FPU which is examined. Do this using
   the command
@@ -1304,34 +1304,34 @@ To test the datum switches, perform the following steps:
   This indicates that the alpha arm is at position -180\degree\ degrees,
   using a datum offset of -180\degree\ degrees, and the beta arm is at
   0\degree\ degrees.
-  
+
   If the positions are not correct, proceed as described in
   section~\ref{sec:setinitialposition} on
   page~\pageref{sec:setinitialposition}. The further explanation
   assumes that the FPU position is at the numbers shown above.
 
 \item Connect the EtherCAN interface and run a \texttt{pingFPUs()} command.
-  
+
 \item Move the FPU so that it is within the normal range, and with
   certainty not touching the datum switches.
-  
+
   As a normal movement configuration requires
   that a datum search has been performed before,
   it is necessary to pass the \texttt{allow\_uninitialized=True}
   flag to the configMotion command:
-  
+
   \begin{minted}{python}
     w = gen_wf(5,5)
     gd.configMotion(w, gs, allow_uninitialized=True)
     gd.executeMotion(gs)
   \end{minted}
-  
+
 \item Verify that both switches are off:
-    
+
   \begin{minted}{python}
     gd.getSwitchStates(gs)
   \end{minted}
-  
+
 \item Now, move the FPU so that it just activates the datum
   switches. The movement interval needed depends on firmware version
   and offsets used.  In addition to the options used in the first
@@ -1363,7 +1363,7 @@ To test the datum switches, perform the following steps:
                       soft_protection=False)
       gd.executeMotion(gs)
     \end{minted}
-        
+
 \end{enumerate}
 
 If this test does not have the expected result, the cause is likely to
@@ -1389,7 +1389,7 @@ the connection to the CAN gateway and of the FPUs is.
 This can be achieved by the following commands:
 \begin{minted}{python}
 grid_state = gd.getGridState()
-grid_state.interface_state  
+grid_state.interface_state
 \end{minted}
 The return value is the connection state of the EtherCAN interface, which is
 \texttt{DS\_CONNECTED} if the connection is live.  In the case that the
@@ -1419,7 +1419,7 @@ be thrown, like in this log file:
 
 \index{exceptions!example}
 \begin{minted}{python}
-  $ python -i test_mockup/test_asyncMotion.py 
+  $ python -i test_mockup/test_asyncMotion.py
 connect: Connection refused
 Traceback (most recent call last):
   File "test_mockup/test_asyncMotion.py", line 12, in <module>
@@ -1428,7 +1428,7 @@ Traceback (most recent call last):
     return self._gd.connect(address_list)
     fpu_driver.ConnectionFailure: DE_NO_CONNECTION: The FPU Driver
     is not connected to a gateway.
->>> 
+>>>
 \end{minted}
 
 
@@ -1537,7 +1537,7 @@ This is done by the command
 \end{minted}
 
 It is also recommend to move the FPUs to the datum position
-before powering off. 
+before powering off.
 
 A detailed description of all possible
 parameters for the datum search can be found in
@@ -1600,7 +1600,7 @@ To move the FPU in a precise and safe way, four steps are necessary:
 
 \item Sending the waveform to the FPU
 \item Starting the movement
-  
+
 \end{enumerate}
 
 There are two options for defining the waveform. The simpler one is to
@@ -1782,7 +1782,7 @@ structure into its components:
 
 \begin{itemize}
   \index{waveforms!syntax}
-  
+
 \item At the top layer, we have a Python dictionary. Generally,
   dictionaries contain a set of different \emph{keys}, and for each
   key there is an associated \emph{value}. For a waveform, the key of
@@ -1840,7 +1840,7 @@ not met by firmware versions smaller than 1.5.0.
 \item The maximum number of entries in a waveform table is 128 for the
   CAN protocol version 1.\footnote{In version 2 of the firmware
     communication protocol, this limit is raised to a value of 256}
-  
+
 \item A waveform for one FPU can include several movement parts for
   each arm. A movement part is a sequence of step counts which are
   non-zero and have the same direction.  A waveform can contain an
@@ -1861,11 +1861,11 @@ not met by firmware versions smaller than 1.5.0.
 \item The last entry of a movement part in one direction can have a
   step count between zero an the minimum step count. It must not be
   larger than the minimum step count.
-  
+
 \item A single entry with a step count equal to or smaller than the
   minimum step count is allowed. It can only be preceded or followed
   by zero-valued entries.
-  
+
 \item Except the the last non-zero entry in a movement part, all step
   numbers in a waveform need to have an absolute value which has at
   least the minimum value of 125, and at most the maximum value of
@@ -1883,8 +1883,8 @@ not met by firmware versions smaller than 1.5.0.
   steps before the change needs to be between zero and the minimum
   step count, followed by a wave table segment with a step count of
   zero, followed by the minimum step count with the opposite sign.
-  
-  
+
+
 \end{enumerate}
 
 \paragraph{Waveform validity rule set version 2}
@@ -1907,7 +1907,7 @@ all known restrictions of FPU firmware version 1.4.4.
 \item The maximum number of entries in a waveform table is 128 for the
   CAN protocol version 1.\footnote{In version 2 of the firmware
     communication protocol, this limit is raised to a value of 256}
-  
+
 \item A waveform for one FPU can include several movement parts for
   each arm. A movement part is a sequence of step counts which are
   non-zero and have the same direction.  A waveform can contain an
@@ -1920,23 +1920,23 @@ all known restrictions of FPU firmware version 1.4.4.
   numbers in a waveform need to have an absolute value which has at
   least the minimum value of 125, and at most the maximum value of
   500. Also, arbitrary sequences of zeros are allowed.
-  
+
 \item The first non-zero entry in any movement sequence needs to be
   between the minimum step count (125) and the starting speed (138).
-  
+
 \item Except for the very last entry in a waveform, the last non-zero
   entry in any movement sequence needs to be between the minimum step
   count (125) and the starting speed (138).
-  
+
 \item Only the very last entry of a waveform can have a step count
   between zero and the minimum step count. It also can be larger than
   the minimum step count (causing a stop with a high deceleration or
   jerk value).
-  
+
 \item A single entry with a step count equal to or larger than the
   minimum step count, but not larger than the starting speed is
   allowed. It can only be preceded or followed by zero-valued entries.
-  
+
 \item When changing the movement direction, the absolute number of
   steps before the change needs to be at least the minimum step count,
   followed by a wave table segment with a step count of zero, followed
@@ -1952,7 +1952,7 @@ all known restrictions of FPU firmware version 1.4.4.
   rate of change is also a EtherCAN interface parameter, see
   section~\ref{sec:driverinitialisation}.
 
-  
+
 \end{enumerate}
 
 \paragraph{Waveform validity rule set version 3}
@@ -1986,7 +1986,7 @@ allowed if the absolute speeds before and after are not too large.
 \item The maximum number of entries in a waveform table is 128 for the
   CAN protocol version 1.\footnote{In version 2 of the firmware
     communication protocol, this limit is raised to a value of 256}
-  
+
 \item A waveform for one FPU can include several movement parts for
   each arm. A movement part is a sequence of step counts which are
   non-zero and have the same direction.  A waveform can contain an
@@ -2007,11 +2007,11 @@ allowed if the absolute speeds before and after are not too large.
 \item The last entry of a movement part in one direction can have a
   step count between zero an the minimum step count. It must not be
   larger than the minimum step count.
-  
+
 \item A single entry with a step count equal to or smaller than the
   minimum step count is allowed. It can only be preceded or followed
   by zero-valued entries.
-  
+
 \item Except the the last non-zero entry in a movement part, all step
   numbers in a waveform need to have an absolute value which has at
   least the minimum value of 125, and at most the maximum value of
@@ -2023,7 +2023,7 @@ allowed if the absolute speeds before and after are not too large.
   value, or from a value not larger than the minimum value to zero is
   allowed. (This maximum rate of change is also a EtherCAN interface parameter, see
   section~\ref{sec:driverinitialisation}.)
-  
+
 \item When changing the movement direction, the absolute number of
   steps before the change needs to be between zero and 120 steps,
   followed by either a step number of zero, or a step number between
@@ -2031,7 +2031,7 @@ allowed if the absolute speeds before and after are not too large.
   number of steps can be the minimum step count, followed by a pause,
   followed by the minimum step count in the other direction.
 
-  
+
 \end{enumerate}
 
 
@@ -2142,7 +2142,7 @@ step units, or carefully corrected by the reported actual position
 before each new movement. This is easily understood by considering that
 
 \[
-\round(1.4 + 1.4 + 1.4)\neq \round(1.4) + \round(1.4) + \round(1.4) 
+\round(1.4 + 1.4 + 1.4)\neq \round(1.4) + \round(1.4) + \round(1.4)
 \]
 
 - the left hand side evaluates to 4, the right hand side to 3, and the
@@ -2317,7 +2317,7 @@ Exceptions fall roughly into the following categories:
 \index{errors!categories}
 
 \begin{description}
-  \item[SetupError] An invalid configuration 
+  \item[SetupError] An invalid configuration
   \item[InvalidParameterError] Invalid parameters to a command, for example addressing an FPU
     ID which is not existent or not configured.
   \item[InvalidStateException] Issuing a command which is invalid at the current state of
@@ -2358,12 +2358,12 @@ of the \texttt{findDatum()} command.
 This constant of each record the following fields:
 
 \begin{description}
- 
+
 \item[unixtime] The UNIX time (number of seconds since January 1,
   1970). This corresponds to the time stamps in the EtherCAN interface log.
-  
+
 \item[datum\_count] Count of datum operations for this FPU.
-  
+
   \item[executed\_waveforms] Number of executed waveforms.
 
   \item[alpha\_starts] Number of times the alpha arm started to move.
@@ -2376,18 +2376,18 @@ This constant of each record the following fields:
   \item[sign\_alpha\_last\_direction] Sign of last alpha movement.
   \item[sign\_beta\_last\_direction] Sign of last beta movement.
 
-    
+
   \item[collisions] Number of collisions detected for this FPU.
   \item[limit\_breaches] Number of alpha limit breaches detected.
   \item[datum\_timeout] Number of time-outs for the datum command (including both CAN timeouts, and hardware time-outs).
   \item[movement\_timeout] Number of time-outs during movements.
   \item[can\_timeout] Number of CAN timeouts during both datum and movements.
-    
+
   \item[alpha\_aberration\_count] Number of counted alpha aberrations,
     that is the number of steps which the alpha step counter had when
     the datum switch was found the last time. This count does not include
     uninitialised datum searches.
-    
+
   \item[beta\_aberration\_count] Number of counted beta aberrations.
   \item[datum\_sum\_alpha\_aberration] Sum of alpha aberrations, which can be used to compute the mean.
   \item[datum\_sum\_beta\_aberration] Sum of beta aberrations.
@@ -2414,12 +2414,12 @@ files:
 \begin{description}
 \item[\texttt{\_\{start\_timestamp\}-fpu\_control.log}] contains all
   send high-level commands, and the resulting state of the FPU grid.
-  
+
 \item[\texttt{\_\{start\_timestamp\}-fpu\_tx.log}] contains all CAN messages which were sent to individual FPUs.
 \item[\texttt{\_\{start\_timestamp\}-fpu\_rx.log}] contains all CAN
   messages which were received, including errors messages sent because
   of collisions and limit switch breaches.
-  
+
 \end{description}
 
 
@@ -2435,12 +2435,12 @@ arguments to the driver constructor. The available options are:
   \hline
   \textbf{log level} & \textbf{Description} \\
   \hline
-    LOG\_ERROR & 
+    LOG\_ERROR &
     Log only critical errors and important warnings, such as collision
     messages and message time-outs. \\
 
     \hline
-    LOG\_INFO & 
+    LOG\_INFO &
     Also log summary of each command send to the FPU grid, and
     overall statistics for FPU states (e.g. number of FPUs which
     have reached the datum position) \\
@@ -2484,8 +2484,8 @@ arguments to the driver constructor. The available options are:
     of the EtherCAN interface and might delay processing of critical error
     responses. It is not designed to be used during normal instrument
     operation. \\
- 
-  
+
+
   \hline
 \end{tabular}
 \end{centering}
@@ -2501,7 +2501,7 @@ arguments to the driver constructor. The available options are:
   \texttt{LOG\_TRACE\_CAN\_COMMANDS}. If the environment variable
   \texttt{FPU\_DRIVER\_DEFAULT\_LOGLEVEL} is set, its value is used as
   the default level.
-  
+
   \item [log\_dir] -- sets the directory or folder into which the log
     files are written. A tilde followed by a slash (``\~/``) expands
     to the user home directory, also environment variables
@@ -2522,7 +2522,7 @@ arguments to the driver constructor. The available options are:
     default value is \verb+"ISO8601"+ which is expanded to a string of
     the form \verb+yyyy-mm-ddThh:MM:SS+, denominating the current time
     in ISO format.
-    
+
 \end{description}
 
 \subsection{Display of time in the logs}
@@ -2531,7 +2531,7 @@ arguments to the driver constructor. The available options are:
 \subsubsection{Used time format in logs}
 At the beginning of each line, the log files show the value of the
 UNIX time as time stamp, which is the fractional number of seconds
-since January 1, 1970 in the UTC time zone. 
+since January 1, 1970 in the UTC time zone.
 
 \subsubsection{Converting to and from UNIX time stamps}
 
@@ -2561,7 +2561,7 @@ allows to convert a time stamp found in a log file to
 the local time.
 
 \begin{minted}{bash}
-  
+
   # convert the UNIX time stamp "152657976" to UTC, and display it
 moons@moons-pc:~/MOONS/fpu_driver$ TZ=UTC date -d ``@1526643274''
 Fri 18 May 11:34:34 UTC 2018
@@ -2728,9 +2728,9 @@ steps are required:
   gd.resetFPUs(grid_state)
 
   gd.findDatum(grid_state)
-  
+
 \end{minted}
-  
+
 
 What these operations do is basically to clear the breach state, and
 to manually move the FPU.  The flag \texttt{soft\_protection=False} in
@@ -2776,19 +2776,19 @@ differences for protocol version 1:
   allows to make stronger assumptions about the current state, and
   that makes it possible to perform automatic recovery of multiple
   collided FPUs.
-  
+
 \item In some cases, protocol 1 is not able to detect lost messages,
   so that state information might be stale. Also, the FPU can lose
-  messages from the EtherCAN interface software when it is busy or overloaded. 
-  
+  messages from the EtherCAN interface software when it is busy or overloaded.
+
 
 \item It is not possible to lock or unlock FPUs, in order to exclude
   FPUs from movement commands.
-  
+
 \item Waveforms are more restricted, and uploading waveforms might
   take a longer time, especially if the waveform has a large number of
   steps.
-  
+
 \end{itemize}
 
 \section{Outline on management of multiple FPUs}
@@ -2992,7 +2992,7 @@ be passed:
   \item[\texttt{motor\_maximum\_frequency=2000}] As above, this value
   defines the \emph{maximum} number of motor steps per second. The
   above warning about safety applies to this parameter as well.
-  
+
 \item[\texttt{motor\_max\_start\_frequency=525}] Analogous to the
   above two items, this parameter defines the maximum number of steps
   at the beginning and ending of a waveform.  Ideally, the value
@@ -3002,24 +3002,24 @@ be passed:
   correction steps. Therefore, this value provides some tolerance for
   such deviations. The above warning for
   \texttt{motor\_minimum\_frequency} applies to this parameter, too.
-  
+
 \item[\texttt{motor\_max\_rel\_increase=1.4}] This defines the maximum
   relative factor with which the speed can change between two waveform
   sections. It applies symmetrically to both increasing and decreasing
   speeds: The larger value must be not larger than the smaller value
   times this factor.
-  
+
 \label{it:waveform_upload_pause_ms}
 \item[\texttt{waveform\_upload\_pause\_us}] This keyword parameter
   allows to configure a small pause between sending waveform steps to
   the same FPU. The value is an integer number in microsecond units,
   and for EtherCAN interface version 1.2.0 and newer, it is 50\,000 by default. If
   the value is zero, no waiting is done.
-  
+
   This parameter is deprecated because its effect is is somewhat
   unreliable, use \texttt{min\_fpu\_repeat\_delay\_ms} instead.
 
-\label{it:confirm_each_step}  
+\label{it:confirm_each_step}
 \item[\texttt{confirm\_each\_step}] This keyword parameter is a
   Boolean value which controls whether the EtherCAN interface waits for a
   confirming response for each waveform element that is sent to an
@@ -3033,7 +3033,7 @@ be passed:
   upload can fail.
 
   \index{driver parameters!rate limiting of CAN commands}
-  \label{it:ratelimits}  
+  \label{it:ratelimits}
 
 \item[\texttt{can\_command\_priority}] This parameter allows to set
   the minimum priority value for CAN commands from the driver to the
@@ -3044,15 +3044,15 @@ be passed:
   responses or capacity problems in the firmware, it is recommended to
   use the default value.
 
-\index{configmotion\_max\_resend\_count}  
+\index{configmotion\_max\_resend\_count}
 \item[\texttt{configmotion\_max\_resend\_count}] This parameter
   defines how often the \texttt{configMotion()} command should silently
   try to resend CAN messages if a CAN time-out is encountered.
   Setting this value to a number higher than zero increases
   robustness against connection problems during path configuration.
   (It does however not solve connection problems in general).
-  
-\index{configmotion\_max\_retry\_count}  
+
+\index{configmotion\_max\_retry\_count}
 \item[\texttt{configmotion\_max\_retry\_count}] Similar to the preceding
   parameter, this parameter defines how often the \texttt{configMotion()}
   command should try to repair a failed configuration command by
@@ -3060,7 +3060,7 @@ be passed:
   As above, this can enhance robustness, because configMotion messages
   are the most frequent type of messages, but it cannot recover
   from lost movement commands.
-    
+
 \item[\texttt{min\_bus\_repeat\_delay\_ms}] This parameter allows to
   set a rate limit on CAN commands which go to the same CAN bus. The
   value needs to be between zero and 255. If set to a non-zero integer
@@ -3072,7 +3072,7 @@ be passed:
   of waveforms will take. The best throughput is probably achieved if
   messages are sent in a round-robin manner to the different buses on
   the same gateway - this will minimise the waiting time for each bus.
-  
+
 \item[\texttt{min\_fpu\_repeat\_delay\_ms}] Similar as above, this
   parameter allows to set a rate limit for commands to individual
   FPUs. If several commands are sent to the same FPU, a value of $n$
@@ -3093,7 +3093,7 @@ be passed:
   Depending on the EtherCAN gateway implementation, it might be
   possible to set the limit to zero.
 
-  
+
 \end{description}
 
 
@@ -3189,7 +3189,7 @@ The firmware creation date is stored in the fields
 The command can be restricted to a certain subset of FPUs
 by passing a list of integer FPU IDs to the parameter
 \texttt{fpuset}, like this:
-  
+
 \begin{minted}{python}
   gd.getFirmwareVersion(grid_state, fpuset=[0,1,2,5,10])
 \end{minted}
@@ -3408,7 +3408,7 @@ The driver method
                               show_offsets=False, active=False)
 \end{minted}
 
-displays the current tracked positions of FPUs, 
+displays the current tracked positions of FPUs,
 the angles derived from the step counter values, and the
 offset between the two. It is useful to assess whether
 an intended movement command will be within the safe range
@@ -3430,7 +3430,7 @@ An example output of the command looks like this:
            0.0), last_wform_range=([],[])
 \end{minted}
 
-Here,the current actual angle is at position alpha=-180\degree, beta=0\degree\ 
+Here,the current actual angle is at position alpha=-180\degree, beta=0\degree\
 degrees.  The angles derived from the step counts are identical, and
 the offsets are zero. When the FPU is moved by an angle of alpha=10 degree
 and beta = 20\degree\ degrees, the output looks like this:
@@ -3442,8 +3442,8 @@ and beta = 20\degree\ degrees, the output looks like this:
   >>> gd.executeMotion(gs)
   fpu_driver.E_DriverErrCode.DE_OK
   >>> gd.trackedAngles(gs)
-  FPU 0: angle = (-170.009, 19.9965), offsets = (0, 0), 
-         stepcount angle= (-170.00, 19.99), 
+  FPU 0: angle = (-170.009, 19.9965), offsets = (0, 0),
+         stepcount angle= (-170.00, 19.99),
          last_wform_range=([-180.0, -170.00],[0.0, 19.99])
 >>>
 \end{minted}
@@ -3509,7 +3509,7 @@ The full signature of the \texttt{findDatum()} method is
 \begin{minted}{python}
   FpuGridDriver.findDatum(grid_state,
                           selected_arm=DASEL_BOTH, fpuset=[],
-                          soft_protection=True, count_protection=True, 
+                          soft_protection=True, count_protection=True,
                           support_uninitialized_auto=True,
                           timeout=DATUM_ENABLE_TIMEOUT)
 \end{minted}
@@ -3603,7 +3603,7 @@ Such a manual search was required to be performed in previous versions
 of the EtherCAN interface, earlier than version 1.1.0. For current EtherCAN interface
 versions, while still possible, this is not necessary any more since
 the position database keeps track of the actual positions, when the
-system is powered off.  
+system is powered off.
 
 \paragraph{Disabling protection flags}
 It is possible to disable the software protection by passing the
@@ -3959,7 +3959,7 @@ that a valid waveform table is present and that FPUs are either in
 no effect). It configures the FPU so that on the next
 \texttt{executeMotion} command, the waveforms will be executed in
 forward direction, and puts the FPUs into \texttt{READY\_FORWARD}
-state. 
+state.
 \end{sloppypar}
 
 Similar to the \texttt{configMotion()} command, the command checks
@@ -4017,7 +4017,7 @@ the counter to zero\footnote{In protocol version 2, there are
 \texttt{FpuGridDriver.resetFPUs(fpu\_state)} resets all FPUs to their
 power-on state. All step counters are reset to zero, the datum flag is
 cleared, and the FPU state is set to \texttt{UNINITIALIZED}. This
-command is useful to get out of specific error states. 
+command is useful to get out of specific error states.
 
 As \texttt{findDatum()} and \texttt{executeMotion()}, the command
 accepts an \texttt{fpuset} key parameter which restricts the operation
@@ -4651,8 +4651,8 @@ might change.
     DE_NO_CONNECTION = 403,
 
 
-    // A CAN buffer overflow message was received, meaning 
-    // that more commands were received at once than the FPU firmware 
+    // A CAN buffer overflow message was received, meaning
+    // that more commands were received at once than the FPU firmware
     // and its CAN implementation were able to process. This
     // is similar to a COMMAND_TIMEOUT_ERROR, except that we
     // know that the last message wasn't processed.
@@ -4742,10 +4742,10 @@ firmware version 1.6.0 or newer. The following limitations apply for
 older firmware versions:
 
 \begin{description}
-  
+
 \item[firmware versions <= 1.6.0]
   \begin{itemize}
-      
+
     \item For these firmware protocol versions, it is not possible to
       configure a waveform reliably without using a confirmation for
       every message -- this is only supported by the upcoming hardware
@@ -4763,9 +4763,9 @@ older firmware versions:
       recommended to use newer firmware.
   \end{itemize}
 
-  
+
 \item[firmware versions <= 1.4.4]
-  
+
 \begin{itemize}
   \item This older firmwares does not support movement of FPUs with
     small step counts at another point than in the final part of a
@@ -4777,36 +4777,36 @@ older firmware versions:
     \texttt{configPaths()} methods.
     \item In the life time test script, the waveform rule set version
       needs to be set to 2 in order to match the old behaviour.
-  
+
 \item The EtherCAN interface probably allows some waveforms which are not within
   the safe range of the firmware.
   \end{itemize}
 \item[firmware versions < 1.4.4]
-  
+
 \begin{itemize}
 \item The offset for the register address to read the firmware version needs
   to be configured manually.
 \end{itemize}
 
 \item[firmware version < 1.4.3]
-  
+
   \begin{itemize}
   \item The automatic datum search is not supported.
   \end{itemize}
 
 \item[firmware version < 1.3.0]
-  
+
   \begin{itemize}
   \item The firmware does not support reading or writing the serial number of the FPU.
     Consequently, the software protection feature in the driver is not available.
   \end{itemize}
 
 \item[firmware version < 1.1.0]
-  
+
   \begin{itemize}
   \item The separate selection of alpha and beta arm in the datum operation will not work.
   \end{itemize}
-  
+
 \end{description}
 
 
@@ -4819,13 +4819,21 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 1.5.3}
 \begin{itemize}
+\item Changes which improve integration with verification software
+\item Additional argument in constructor of \texttt{FPUGridDriver}, which allows to
+  pass an opened LMDB database.
+\item Making several driver methods quieter, to decrease noise in console log
+\end{itemize}
+
+\subsection*{Changes in version 1.5.3}
+\begin{itemize}
 \item Fixed minor bugs in build instructions.
 \item Several small internal changes needed for testing verification rig software.
 \item Added: Change to allow EtherCAN mock up to simulate obstacle for test of collision detection.
 \item Changed: Optionally, made some methods and functions such as \texttt{countedAngles()}
   quieter.
 \end{itemize}
-  
+
 \subsection*{Changes in version 1.5.2}
 \begin{itemize}
 \item Added: Use of LMDB can now be disabled by clearing the
@@ -4834,7 +4842,7 @@ commands, or alter otherwise visible behaviour of the driver.
   \texttt{GridDriver}.
 
 \item Added: Add option to set socket write buffer size in \texttt{EtherCanInterfaceConfig} class.
-  
+
 \item Fixed: Fixed some compiler warnings which have been added in g++ 7.2.0 (re-enabling compilation on Ubuntu 17.10)
 
 \item Added: Default file size for LMDB is now set to a supported size if a 32-bit system platform is detected.
@@ -4846,7 +4854,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \item Changed: Fix Makefile so that explicit file lists are used for
   source files in place of wild cards. This allows to share folders
   with ICS code in the MOONS ICS subversion repository.
-  
+
 \end{itemize}
 
 \subsection*{Changes in version 1.5.1}
@@ -4857,7 +4865,7 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \item Changed: Remove small pauses which were inserted at the level of
   the Python wrapper, when executing several commands.
-  
+
 \end{itemize}
 
 \subsection*{Changes in version 1.5.0}
@@ -4871,14 +4879,14 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \item Changed: Set default DummyDelay value to 2, making sure that the
   minimum waiting time is one millisecond.
-  
+
 \end{itemize}
 
 
 \subsection*{Changes in version 1.4.1}
 \begin{itemize}
 
-  
+
 \item Fixed: A bug in version 1.4.0 was fixed which caused an error
   message when using the ``flash'' command of the fpu-admin tool. The
   generated error was not critical in this case, but uncovered a fault
@@ -4894,7 +4902,7 @@ commands, or alter otherwise visible behaviour of the driver.
   To address that, a check for exclusive access was added to the
   Python layer, making sure that no other driver instance on the same
   computer will access the same gateway address at the same time.
-  
+
 \end{itemize}
 
 
@@ -4908,7 +4916,7 @@ commands, or alter otherwise visible behaviour of the driver.
   operations. Additionally, it can produce a plot showing the number
   of movements over calendar time, ad well as a chart on CAN
   time-outs.
-  
+
 \item Fixed an aliasing bug in the processing of counters such as
   number of datum operations, count of collisions, and so on. This
   caused statistical values erroneously to be shared between different
@@ -4925,7 +4933,7 @@ commands, or alter otherwise visible behaviour of the driver.
   +172.0 to +159.0\degree, because an alpha arm limit breach was observed at
   +160 degrees. The value can be individually increased for any FPU
   using the \texttt{fpu-admin} tool.
-  
+
 \item Improved: Some cases where CAN time-outs were not captured in
   the health log were fixed.
 \item Fixed: The FPU error code \texttt{ER\_DATUM\_LIMIT}, sent when
@@ -4937,7 +4945,7 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \subsection*{Changes in version 1.3.7}
 \begin{itemize}
-\item 
+\item
   Added: The driver parameters \texttt{min\_bus\_repeat\_delay\_ms} and
   \texttt{min\_fpu\_repeat\_delay\_ms} allow to set rate limits to CAN
   commands sent to the same bus, or to the same FPU, which allows to
@@ -4946,19 +4954,19 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \item Changed: The parameter \texttt{waveform\_upload\_pause\_us} is
   set to zero by default.
-  
+
 \item Added: The driver parameter \texttt{can\_command\_priority} allows to
   set the priority of CAN commands to the firmware. By default,
   version 1.3.7 and newer send commands with a lower priority than
   response messages from the FPUs. This helps to avoid problems with
   buffering and missing responses, but requires firmware version 1.6.0
   or newer.
-  
+
 \item Added: Added a diagnostic utility \texttt{get\_wtable.getwt()}
   which can download configured waveforms from all running FPUs.  This
   makes it possible to compare and verify the actually used waveforms
   in the case of movement errors.
-  
+
 \item Changed: The default upper software protection limit for the
   beta arm was set to +140\degree\ after some beta arm collisions were
   detected when using larger ranges.
@@ -5015,7 +5023,7 @@ commands, or alter otherwise visible behaviour of the driver.
 
 \item Added: The life time test script was partially adapted to the
   new firmware capabilities and waveform ruleset version 4.
-  
+
 \end{itemize}
 
 
@@ -5029,7 +5037,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \item Added: A explanation on the origin of rounding errors, and how
   to configure absolute paths manually was added in
   section~\ref{sec:manuallyconfiguringpaths}.
-  
+
 \item A number of internal classes and types in the C++ driver were
   renamed to match the terminology of the ESO software architecture
   better, and to avoid possible confusion in future
@@ -5041,7 +5049,7 @@ commands, or alter otherwise visible behaviour of the driver.
   module was changed from \texttt{fpu\_driver} to \texttt{ethercanif}.
 
   Normal scripts should continue to work without any change.
-  
+
 
 \item The documentation was adapted to reflect the new distinction
   between the Python driver class, and the C++ communication interface
@@ -5074,8 +5082,8 @@ commands, or alter otherwise visible behaviour of the driver.
   always padded at the beginning of the shorter movement, not
   at the end or both ends. This ensures that the firmware
   can generate small step numbers with appropriate frequency.
-  
-  
+
+
 \item Added: The \texttt{configMotion()} command has now an additional
   version parameter, \texttt{ruleset\_version} which allows to disable
   the waveform validity check, or use a different version of the rule
@@ -5101,7 +5109,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \item Improved: The error message for the case that the driver has to
   abort operation because the FPU step counters are inconsistent has
   been clarified and completed with some helpful details.
-  
+
 \item Fixed: Handling of cases where the step counter overflows after
   a reset of an FPU was improved.  (Correct handling of step counter
   overflow requires some additional firmware support, which should
@@ -5116,26 +5124,26 @@ commands, or alter otherwise visible behaviour of the driver.
   counts. See sections~\ref{sec:loadingpaths} on
   page~\pageref{sec:loadingpaths} for more information, and
   section~\ref{sec:configpaths} for a full reference.
-  
+
 \item Added: A \texttt{load\_paths()} function was added which
   can load the output from the path generator software
   and use it as a waveform for the \texttt{configPaths()} method.
   For details, see section~\ref{sec:loadingpaths} on
   page~\pageref{sec:loadingpaths}.
-  
+
 \item Added: A \texttt{load\_waveform()} function was added which can
   load the output from the path generator software and use it as a
   waveform for the \texttt{configMotion()} method.  This function
   should only be used in special circumstances, as no protection
   against collisions is conserved.
-  
-  
+
+
 \item Added: The EtherCAN interface checks for CAN buffer overflow error messages
   which have been added in firmware version 1.4.4\,.  The new
   exception type \texttt{CAN\_BufferOverflowException} has been added
   for reporting this error. See section~\ref{sec:ExceptionsReference}
   for details.
-  
+
 \item Added: The EtherCAN interface has two additional parameters.  The first,
   named \texttt{waveform\_upload\_pause\_ms}, allows to select a
   higher upload speed for the upload of waveforms to the FPUs.  The
@@ -5152,13 +5160,13 @@ commands, or alter otherwise visible behaviour of the driver.
   driver instance is created. In earlier driver versions, these
   parameters were not passed correctly, which could cause rejection of
   waveforms which were matching the changed limits.
-  
+
 \item Added: operations in the driver protection layer have been
   added to the logging, in a new log file with the suffix \texttt{*\_protection.log}.
-  
+
 \item Fixed: A bug was fixed in the logging of the total number of
   steps for the alpha and beta arm in the LMDB position database.
-  
+
 \end{itemize}
 
 \subsection*{Changes in version 1.2.0}
@@ -5167,10 +5175,10 @@ commands, or alter otherwise visible behaviour of the driver.
   developed firmware versions of v1.4.4 or higher. The reason is that
   these later version store the firmware version information in a
   different binary location which can't be found by the EtherCAN interface.
-  
+
 \item Added: Life time test script which generates relatively
   realistic movements in a continuous loop.
-  
+
 \item Added: Some information on why the movement configuration using
   \texttt{gen\_wf()} needs to round angles to entire steps, and the
   consequences of this has been added.
@@ -5183,7 +5191,7 @@ commands, or alter otherwise visible behaviour of the driver.
   temporal order of the forward movement. This had the effect that
   waveforms were rejected which were actually safe, which is now
   fixed.
-    
+
 \item Added: The \texttt{gen\_wf()} function now provides a keyword
   parameter \texttt{units='steps'} which allows to configure exact
   movements, without rounding errors.
@@ -5192,7 +5200,7 @@ commands, or alter otherwise visible behaviour of the driver.
   \texttt{--gateway\_address <ipaddress>} which allows to flash
   FPUs which are connected to a gateway with an IP address different
   from the default.
-  
+
 \item Added: The EtherCAN interface has now initialisation parameters which
   allow to configure the minimum and maximum speed of the stepper
   motors.
@@ -5214,9 +5222,9 @@ commands, or alter otherwise visible behaviour of the driver.
   set to \texttt{/var/run/fpudb}. However the /var/run directory is
   automatically cleared on system boot, so the default was changed to
   \texttt{var/lib/fpudb}.
-  
+
 \end{itemize}
-  
+
 \subsection*{Changes in version 1.1.1}
 \begin{itemize}
 \item Added: The \texttt{configMotion()}, \texttt{repeatMotion()}, and
@@ -5234,19 +5242,19 @@ commands, or alter otherwise visible behaviour of the driver.
 \item Changed: The \texttt{trackedAngles()} now can show the currently
   active waveforms (instead of the last configured waveforms), if the
   keyword argument \texttt{active} is set to \texttt{True}.
-  
+
 \item Fixed: During execution of the \texttt{findDatum()} command, a
   safety tolerance of 0.5\degree\ degrees had been added. The shady goal of
   this was to make simulations easier. This was dropped since it
   caused confusion and made error recovery from hardware datum
   time-outs more difficult than needed. Instead, simulations were
   fixed to return an exact datum position by default.
-  
+
 \item Fixed: If only a subset of FPUs was configured to move directly
   after a \texttt{resetFPUs()} command, a following
   \texttt{executeMotion()} command could trigger a Python KeyError
   exception.
-  
+
 \item Fixed: Value of alpha datum angle updated to
   -180\degree\ degrees. Version numbers in explanations updated.
 
@@ -5287,13 +5295,13 @@ commands, or alter otherwise visible behaviour of the driver.
   extra option to disable the above time-out safety check, which is
   available for firmware version 1.4.3. See the reference section on
   the datum command.
-  
+
 \item Added: To the FPU \& EtherCAN simulation, support
-  was added for hardware 1 protocol l.4. 
-  
+  was added for hardware 1 protocol l.4.
+
 \item Fixed: The maximum number of FPUs on one CAN bus was changed
   from 67 to 76.
-  
+
 \item Fixed: The fpu status field \texttt{timeout\_count}, a wrapping
   16-bit counter, is now incremented every time a CAN time-out occurs.
 
@@ -5307,9 +5315,9 @@ commands, or alter otherwise visible behaviour of the driver.
   initial states had been stored but were erroneously
   references to objects which were then mutated. This lead
   to errors in state tracking.
-  
+
 \end{itemize}
- 
+
 
 
 \subsection*{Changes in version 1.0.0}
@@ -5336,8 +5344,8 @@ commands, or alter otherwise visible behaviour of the driver.
   information, see section~\ref{sec:finddatum}.
 
 \item Movements configured using \texttt{configMotion()} are checked
-  to make sure they are always within a safe range of angles.  
-  
+  to make sure they are always within a safe range of angles.
+
 \item The \texttt{configMotion()} command has an additional parameter
   \texttt{allow\_uninitialized}, now needed to configure movements
   where no datum command was completed before. Details of this are
@@ -5350,52 +5358,52 @@ commands, or alter otherwise visible behaviour of the driver.
 \item It is now possible to view the last configured waveforms and
   their direction, using the \texttt{getCurrentWaveTables()} and
   \texttt{getReversed()} commands.
- 
+
 \item The EtherCAN simulator has been updated to include new
   information on safe operational ranges of the FPU hardware and
   current firmware.
-  
+
 \item Fixed bug in code which should have waited for a reverse
   movement to complete, causing the \texttt{executeMotion()} command
   to return prematurely to the Python command line.
-  
+
 \end{itemize}
 
 \subsection*{Changes in version 0.7.2}
 \begin{itemize}
 \item added \texttt{getSwitchStates()} command to read out
-  the datum switch states.  
+  the datum switch states.
 \end{itemize}
 
 
 \subsection*{Changes in version 0.7.1}
 \begin{itemize}
 \item fixed spelling error in name of command \texttt{writeSerialNumber()}
-  
+
 \end{itemize}
 \subsection*{Changes in version 0.7.0}
 \begin{itemize}
 \item The \texttt{readSerialNumbers()}, \texttt{writeSerialNumber()},
   and \texttt{printSerialNumbers()} methods have been added.
-  
+
 \item The EtherCAN interface now logs alpha arm angles with a configurable offset
   parameter for the datum position, named
   \texttt{alpha\_datum\_offset}. The default value is
   $-180.0\degree$.  The same parameter can be set in the
   \texttt{list\_angles()} function.
-  
+
 \item Some information and warnings about hardware safety precautions
   have been updated.
-  
+
 \item The \texttt{check\_protection} keyword has been replaced
   with the \texttt{soft\_protection} keyword, to clarify
   the difference between driver-level (software) and
   hardware protection.
-  
+
 \item The EtherCAN and FPU simulator has been updated to CAN protocol
   1.3.0, allowing to store FPU serial numbers in a file, and accepting
   a further keyword argument \texttt{alpha\_datum\_offset}.
-  
+
 \item The \texttt{CalibrationPositioning.py} script has been updated
   to use the new default range of alpha arm angle values between -180 and 180.
 \end{itemize}
@@ -5404,7 +5412,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \begin{itemize}
 \item The \texttt{findDatum()} method now automatic moves the beta
   arm into the correct direction if the FPU has been initialised before.
-  
+
 \item All FPU commands which concern multiple FPUs, such as
   \texttt{findDatum(), executeMotion(), resetFPUs()}, and so on, now
   have an additional \texttt{fpuset} keyword parameter. It can be set
@@ -5412,7 +5420,7 @@ commands, or alter otherwise visible behaviour of the driver.
   restricted. For details, see section~\ref{sec:restricteddatumsearch}
   on page~\pageref{sec:restricteddatumsearch}, and
   section~\ref{sec:subsets} on page~\pageref{sec:subsets}.
-  
+
 \item The EtherCAN interface methods \texttt{getFirmwareVersion()},
   \texttt{printFirmwareVersion()}, and \\
   \texttt{minFirmwareVersion()}
@@ -5423,7 +5431,7 @@ commands, or alter otherwise visible behaviour of the driver.
 \item As a low-level debugging tool, the \texttt{readRegister()}
   command allows to read bytes from the FPU controller memory.  It is
   described in section~\ref{sec:readregister}.
-  
+
 \end{itemize}
 
 
@@ -5498,7 +5506,7 @@ as needed. Here is an overview what each script does:
 \item[test\_detectBetaCollision.py] provokes a beta arm collision
 \item[test\_warnStepTimingError.py] generates a step timing error
   in the mock-up EtherCAN gateway by setting the uStepLevel to a high
-  value  
+  value
 \item[test\_abortMotion.py]  configures a movement which can be aborted
   manually using the \verb+<Ctrl>-<c>+ key combination.
 \end{description}
@@ -5533,7 +5541,7 @@ enabled by default in 32-bit Linux.
 \begin{enumerate}
   \item For the C++ EtherCAN interface and static library
 
-    
+
 \begin{itemize}
 \item gcc-4.9 (essentially, with support for C++11)
 \item Linux-2.6 or newer (requiring support for eventfd)
@@ -5608,10 +5616,10 @@ libraries is very likely an essential part of your Linux system, so do
 \item for security, verify boost package signature using gnupg
 
 \item unpack boost package:
-  
+
   \begin{minted}{bash}
     $ tar xzf boost_1_66_0.tar.gz
-  \end{minted}    
+  \end{minted}
 
 \item build package:
 
@@ -5627,7 +5635,7 @@ libraries is very likely an essential part of your Linux system, so do
   \begin{minted}{bash}
     $ su
     # ./b2 install
-  \end{minted}    
+  \end{minted}
 \end{itemize}
 
 In the case that the package  should \emph{not} be installed
@@ -5698,14 +5706,14 @@ as follows by the root user:
 
   \begin{minted}{bash}
     root$ yum install python-gevent
-  \end{minted}    
+  \end{minted}
 
 
 On Ubuntu or Debian, install it as follows:
 
   \begin{minted}{bash}
     $ pip install --user gevent
-  \end{minted}    
+  \end{minted}
 
 (This command needs to be run as root, and without the \texttt{--user}
   option, in order to install under \texttt{/usr/local}).
@@ -5720,7 +5728,7 @@ Python module.  Build the FPU driver library as follows:
   \begin{minted}{bash}
     $ cd fpu_driver
     $ make lib
-  \end{minted}    
+  \end{minted}
 
 This places the static library libethercan.a into the subdirectory
 "/lib". It can be used in any C++ program.
@@ -5731,7 +5739,7 @@ Run
 
   \begin{minted}{bash}
     $ make wrapper
-  \end{minted}    
+  \end{minted}
 
 This builds the binary extension module \verb+fpu_driver.so+
 and places it into the subdirectory \verb+/python+.
@@ -5780,7 +5788,7 @@ terminal window and issue
   \begin{minted}{bash}
     $ cd test/HardwareSimulation
     $ python2 mock_gateway.py
-  \end{minted}    
+  \end{minted}
 
 
 This test code opens three socket connections on localhost and will
@@ -5803,7 +5811,7 @@ when running it. This can be done quickly with the command
 
   \begin{minted}{bash}
     $ DEBUG=1 python2 mock_gateway.py
-  \end{minted}    
+  \end{minted}
 
 
 
@@ -5813,7 +5821,7 @@ such as simulating communication failures etc.
 In another terminal window, you can run the tests:
   \begin{minted}{bash}
     $ python2 -i test_mock/test_findDatum.py
-  \end{minted}    
+  \end{minted}
 and so on.
 
 Apart from \texttt{DEBUG}, it is also possible to set the environment
