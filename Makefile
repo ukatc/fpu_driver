@@ -1,7 +1,7 @@
 IDIR = ./include
 CC = "g++"
 
-VERSION := v2.0.5
+VERSION := v2.1.0
 
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
 -DDEBUG -g -O3 -finline-functions -Wstrict-aliasing -march=native	\
@@ -86,7 +86,7 @@ _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h		      \
 	ethercan/response_handlers/handle_WarnLimitAlpha_warning.h		      \
 	ethercan/response_handlers/handle_WriteSerialNumber_response.h                \
 	ethercan/sync_utils.h ethercan/time_utils.h                                   \
-	ethercan/decode_CAN_response.h                                          
+	ethercan/decode_CAN_response.h
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS)) Makefile
 
@@ -148,7 +148,7 @@ _SRC = AsyncInterface.C CommandPool.C CommandQueue.C			\
 	handle_WarnCollisionBeta_warning.C				\
 	handle_WarnLimitAlpha_warning.C					\
 	handle_WriteSerialNumber_response.C SBuffer.C sync_utils.C	\
-	TimeOutList.C time_utils.C 
+	TimeOutList.C time_utils.C
 
 SRC = $(patsubst %,$(SRCDIR)/%,$(_SRC))
 
@@ -185,10 +185,10 @@ cppcheck: force
         -I include/ethercan/cancommandsv2 --enable=all
 
 $(ODIR)/%.o: $(SRCDIR)/%.C $(DEPS) version
-	$(CC) $(CXXFLAGS) -DVERSION=\"$(VERSION)\" -c -o $@ $< 
+	$(CC) $(CXXFLAGS) -DVERSION=\"$(VERSION)\" -c -o $@ $<
 
 lib/libethercan.a: $(OBJ)
-	ar rcs   $@ $^ 
+	ar rcs   $@ $^
 
 libethercan: lib/libethercan.a
 
@@ -197,5 +197,3 @@ style:
 
 clean:
 	rm -f $(ODIR)/*.o $(ODIR)/*.d *~ core $(INCDIR)/*~ doc/*.{aux,dvi,log,out,toc,pdf} python/*.so lib/*a
-
-

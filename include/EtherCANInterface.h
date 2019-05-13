@@ -126,7 +126,7 @@ public:
                                    t_grid_state& grid_state,
                                    t_fpuset const &fpuset,
                                    bool allow_uninitialized=false,
-                                   int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
+                                   int ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION);
 
     E_EtherCANErrCode executeMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
