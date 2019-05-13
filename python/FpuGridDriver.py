@@ -28,7 +28,7 @@ assert(ethercanif.CAN_PROTOCOL_VERSION == 1), "requires ethercanif module for CA
 
 from ethercanif import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  EtherCANInterfaceConfig,
                         REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE,
-                        DEFAULT_WAVEFORM_RULSET_VERSION,
+                        DEFAULT_WAVEFORM_RULESET_VERSION,
                         EtherCANException, MovementError, CollisionError, LimitBreachError, FirmwareTimeoutError,
                         AbortMotionError, StepTimingError, InvalidStateException, SystemFailure,
                         InvalidParameterError, SetupError, InvalidWaveformException, ConnectionFailure,
@@ -724,7 +724,7 @@ class UnprotectedGridDriver (object):
 
 
     def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None,
-                     allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION,
+                     allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION,
                      warn_unsafe=True, verbosity=3):
         """
         Configures movement by sending a waveform table to a group of FPUs.
@@ -2213,7 +2213,7 @@ class GridDriver(UnprotectedGridDriver):
 
 
     def configPaths(self, paths, grid_state, fpuset=[], soft_protection=True, check_protection=None,
-                    allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION, reverse=False):
+                    allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION, reverse=False):
         """This methods takes a path which was loaded using wflib.load_path, and
         passes it to the configMotion method. All normal checks apply.
         In addition, the start point of the passed path must match the

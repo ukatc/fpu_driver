@@ -132,7 +132,7 @@ public:
                                         t_fpuset const &fpuset,
                                         bool soft_protection=true,
                                         bool allow_uninitialized=false,
-                                        int ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION);
+                                        int ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION);
 
     E_EtherCANErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
 
