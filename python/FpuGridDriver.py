@@ -1530,7 +1530,7 @@ class GridDriver(UnprotectedGridDriver):
                 print("%f : " % time.time(), file=self.protectionlog, end='')
                 print(s, file=self.protectionlog)
                 if display:
-                    print(s, sys.stdout)
+                    print(s, file=sys.stdout)
                 else:
                     return s
 
