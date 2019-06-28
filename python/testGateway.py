@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from __future__ import print_function, division
 
 import os
@@ -29,7 +30,7 @@ def parse_args():
     parser.add_argument('--gateway-port', metavar='GATEWAY_PORT', type=int, default=4700,
                         help='EtherCAN gateway port number (default: %(default)s)')
 
-    parser.add_argument('--gateway-address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
+    parser.add_argument('--gateway-address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.11",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
     
     parser.add_argument('-D', '--bus-repeat-dummy-delay',  metavar='BUS_REPEAT_DUMMY_DELAY',
@@ -139,10 +140,10 @@ if __name__ == '__main__':
         # (each entry becomes an individual message)
         waveform = gen_wf([325] * args.N, 5, max_change=1.03)
         messages_per_command = args.N * len(waveform[0])
-        report_interval = 10
+        report_interval = 2
     else:
         messages_per_command = args.N
-        report_interval = 100
+        report_interval = 20
 
     start_time = time.time()
     nmsgs = 0
@@ -163,8 +164,8 @@ if __name__ == '__main__':
             sys.stdout.flush()
             if ((k +1) % report_interval) == 0:
                 elapsed_time_sec =  time.time() - start_time
-                print("%i messages in %7.2f seconds = %7.1f messages/sec"
-                      % (nmsgs, elapsed_time_sec, nmsgs / elapsed_time_sec))
+                print("%i messages in %7.2f seconds = %7.1f messages/sec, count_timeouts = %i"
+                      % (nmsgs, elapsed_time_sec, nmsgs / elapsed_time_sec, grid_state.count_timeout))
         print("")
     finally:
         elapsed_time_sec =  time.time() - start_time
