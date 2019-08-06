@@ -138,6 +138,12 @@ if __name__ == '__main__':
         waveform = gen_wf([325] * args.N, 5, max_change=1.03)
         messages_per_command = args.N * len(waveform[0])
         report_interval = 2
+
+        # Send an enableMove command to each FPU,
+        # to unlock uninitialized FPUs.
+        for fpu_id in range(args.N):
+            gd.enableMove(fpu_id, grid_state)
+
     else:
         messages_per_command = args.N
         report_interval = 20
