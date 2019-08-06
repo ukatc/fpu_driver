@@ -5428,7 +5428,23 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
+\subsection*{Changes in version 2.1.0}
+\begin{itemize}
+\item Merged a number of changes for the FPU verification system,
+  such as optionally disabling output.
+\item Can now pass the FPU database as an external initialization
+  parameter to the FPU driver class.
+\item Bugfix: Adjust duration of waveform segments to 125 milliseconds.
+\item Bugfix: Adjust maximum number of waveform segments to 256.
+\item Changed: \texttt{configMotion()} parameters changed to allow for
+  faster upload of waveform data.
+\end{itemize}
+
+
 \section*{Changes in version 2.0.5}
+\begin{itemize}
+\item First tested version of driver with CAN protocol v2 support.
+\end{itemize}
 
 \subsection*{Changes in version 1.5.5}
 \begin{itemize}
