@@ -77,7 +77,7 @@ const double STEPS_PER_DEGREE_BETA = (STEPS_PER_REVOLUTION * BETA_GEAR_RATIO) / 
 
 const double ALPHA_DATUM_OFFSET = -180.0;
 
-const double WAVEFORM_SEGMENT_DURATION_MS = 250; // duration of one segment of a waveform
+const double WAVEFORM_SEGMENT_DURATION_MS = 125; // duration of one segment of a waveform
 
 const int DEFAULT_WAVEFORM_RULESET_VERSION = 4;
 }
