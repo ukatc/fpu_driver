@@ -80,6 +80,7 @@ def initialize_FPUs(args):
                                              # (directly return an error instead)
                                              configmotion_max_retry_count=0,
                                              configmotion_max_resend_count=0,
+                                             confirm_each_step=False,
                                              # set log level to low value
                                              # (try FpuGridDriver.LOG_TRACE_CAN_MESSAGES to have
                                              # every CAN message logged)
