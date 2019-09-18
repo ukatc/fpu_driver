@@ -355,8 +355,8 @@ class UnprotectedGridDriver (object):
                                fpuset=[], initial_positions={}):
         pass
 
-    def _finished_find_datum_hook(self, gs, prev_gs, datum_gs, search_modes=None,
-                               fpuset=[], initial_positions={}):
+    def _finished_find_datum_hook(self, prev_gs, datum_gs, search_modes=None,
+                               fpuset=[], was_cancelled=False, initial_positions={}):
         pass
 
     def findDatumB(self, gs, search_modes={},
@@ -2201,10 +2201,6 @@ class GridDriver(UnprotectedGridDriver):
 
 
         with self.env.begin(db=self.fpudb, write=True) as txn:
-            _gs = gs
-            # gs can be none if the retrieval of aberration counts failed
-            if _gs == None:
-                _gs = datum_gs
 
             for fpu_id, datum_fpu in enumerate(datum_gs.FPU):
                 if not fpu_in_set(fpu_id, fpuset):
