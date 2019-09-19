@@ -50,7 +50,6 @@ from ethercanif import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  Ethe
                         MCE_ERR_CAN_OVERFLOW_HW, MCE_ERR_CAN_OVERFLOW_SW, MCE_NO_CONFIRMATION_EXPECTED, MCE_COMMAND_TIMEDOUT)
 
 
-import fpu_commands as cmds
 
 
 MOCK_GATEWAY_ADDRESS_LIST = [ GatewayAddress("127.0.0.1", p)

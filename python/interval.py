@@ -38,7 +38,7 @@ class Interval:
         else:
             raise RuntimeError("Passed: value %r, type %s - "
                                "unsupported data type for interval" % (source, type(source)))
-        
+
         self.iv = iv
 
     def copy(self):
@@ -56,25 +56,23 @@ class Interval:
         else:
             f = self.strformat
             return ("[" + f + ", " + f + "]") % (self.iv[0], self.iv[1])
-        
+
     def __repr__(self):
         return repr(list(self.iv))
 
-    def copy(self):
-        return Interval(self.iv)
 
     def min(self):
         return self.iv[0]
 
     def max(self):
         return self.iv[1]
-    
+
     def __add__(self, b):
         if not isinstance(b, Interval):
             b = Interval(b)
         iv = b.iv + self.iv
         return Interval(iv)
-        
+
     def __sub__(self, b):
         if not isinstance(b, Interval):
             b = Interval(b)
@@ -87,24 +85,24 @@ class Interval:
             b = Interval(b)
         iv = b.iv + self.iv
         return Interval(iv)
-        
+
     def __rsub__(self, b):
         if not isinstance(b, Interval):
             b = Interval(b)
-        iv = b.iv - self.iv 
+        iv = b.iv - self.iv
         return Interval(iv)
-    
+
     def __addi__(self, b):
         if not isinstance(b, Interval):
             b = Interval(b)
         iv = b.iv
         self.iv = self.iv + iv
-        
+
     def __subi__(self, b):
         if not isinstance(b, Interval):
             b = Interval(b)
         iv = b.iv
-        
+
         self.iv = self.iv - iv
 
     def assignCombine(self, b):
@@ -117,29 +115,29 @@ class Interval:
         self.iv[1] = max(self.iv[1], iv[1])
 
         return self
-        
+
     def combine(self,b):
         """immutable combining interval, returning result and
         not changing object."""
         iv = self.copy()
         return iv.assignCombine(b)
-    
+
     def assignExtend(self, x):
         """mutating extend interval with scalar, and return result."""
         if x < self.iv[0]:
             self.iv[0] = x
         elif x> self.iv[1]:
             self.iv[1] = x
-            
+
         return self
-            
+
 
     def extend(self, x):
-        """immutable extend interval, returning result 
+        """immutable extend interval, returning result
         but not changing object."""
         iv = self.copy()
         return iv.assignExtend(x)
-    
+
     def contains(self, b, tolerance=0):
         assert(tolerance >= 0)
         if not isinstance(b, Interval):
@@ -149,7 +147,7 @@ class Interval:
             return True
         else:
             return False
-        
+
 
     def intersects(self, b):
         """returns interval which contains all points
@@ -165,4 +163,3 @@ class Interval:
             mi = nan
             ma = nan
         return Interval(mi,ma)
-    
