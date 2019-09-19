@@ -110,6 +110,7 @@ BUILDING THE DRIVER
 Build the driver as follows:
 
 # cd fpu_driver
+# git checkout master
 # make driver
 
 This places the static library libfpudriver.a into
@@ -120,7 +121,7 @@ BUILDING THE PYTHON MODULE
 
 Run
 
-# make pyext
+# make wrapper
 
 This builds the binary extension module fpu_driver.so
 and places it into the subdirectory /python.
@@ -166,11 +167,3 @@ In another terminal window, you can run the tests:
 cd python
 python2 -i test_mock/test_findDatum.py
 and so on.
-
-
-
-
-
-
-
-

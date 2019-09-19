@@ -26,7 +26,7 @@ PREREQUISITES
 
    git clone jnix@dalriada/MOONS/fpu_driver
    cd fpu_driver
-   git checkout can1
+   git checkout master
 
 
 4) for the C++ driver and static library
@@ -211,6 +211,8 @@ as a normal user --
 
 
 cd $HOME/fpu_driver
+
+git checkout master
 
 Run
 
