@@ -198,6 +198,7 @@ class UnprotectedGridDriver (object):
                  motor_maximum_frequency=MOTOR_MAX_STEP_FREQUENCY,
                  motor_max_start_frequency=MOTOR_MAX_START_FREQUENCY,
                  motor_max_rel_increase=MAX_ACCELERATION_FACTOR,
+                 motor_max_step_difference=MAX_STEP_DIFFERENCE,
                  firmware_version_address_offset=0x61,
                  protection_logfile="_{start_timestamp}-fpu_protection.log",
                  control_logfile="_{start_timestamp}-fpu_control.log",

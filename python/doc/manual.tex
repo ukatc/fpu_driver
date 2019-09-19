@@ -2206,9 +2206,10 @@ with two exceptions:
 \label{sec:wfrulesetv4}
 
 This rule set matches the capabilities of firmware version 1.5.0, and
-is the default. It is almost identical to ruleset version 1, with the
-sole difference that direction changes between adjacent segments are
-allowed if the absolute speeds before and after are not too large.
+firmware for the hardware prtocol 2, and is the default. It is almost
+identical to ruleset version 1, with the sole difference that
+direction changes between adjacent segments are allowed if the
+absolute speeds before and after are not too large.
 
 
 \begin{enumerate}
@@ -2264,6 +2265,40 @@ allowed if the absolute speeds before and after are not too large.
 
 
 \end{enumerate}
+
+\paragraph{Waveform validity rule set version 5}
+\index{step frequency!minimum and maximum}
+\index{waveforms!constant acceleration}
+\index{waveforms!rule set 5}
+\index{waveforms!rules for protocol version 2}
+\index{protocol version 2!waveform rules}
+
+This most recent rule set, which is now the default variant,
+matches firmware version 2.
+
+It tries to match the physical limits of the FPUs better than earlier
+rule sets, while maximising the range of movement for the path
+analysis algorithms. The path analysis algorithms are severely
+inhibited by low acceleration limits, and profit from the capability
+to do high accelerations at low speeds.
+
+The minimum step count is 62, and the maximum step count is 250.  The
+maximum change in step numbers per segment is 100 steps. This allows
+for a total acceleration of 400 steps / second.
+
+At the same time, the maximum supported speed change for the FPU
+arms is probably relatively constant, with the limit that
+the torque of the motor gets smaller and smaller with
+high rotational frequencies. This suggested to use a constant
+acceleration limit.
+
+The rules are otherwise the same as for rule set version 4, with the
+difference that rather than a relative increase, an absolute
+difference in step counts per segments is the limit. Note that this
+allows for larger accelerations if the temporal length of waveform
+segments is decreased.
+
+
 
 
 \paragraph{Handling of validation failures}
@@ -5430,6 +5465,18 @@ older firmware versions:
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
+
+\subsection*{Changes in version 2.1.1}
+\begin{itemize}
+\item Corrected a regression from merging changes to the protocol 1
+  version, which caused an error in the \texttt{findDatum()} command.
+\item Corrected segment length and number of waveform segments
+  to match protocol 2 firmware.
+\item Added a new waveform rule set, rule set number 5, and made it
+  the default. This rule set allows a constant acceleration, which
+  allows for quicker movement changes a slow speeds.
+\end{itemize}
+
 
 \subsection*{Changes in version 2.1.0}
 \begin{itemize}

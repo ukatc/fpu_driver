@@ -628,7 +628,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
 	    all_fpus_locked = false;
 	}
     }
-    
+
     if(all_fpus_locked)
     {
 	LOG_CONTROL(LOG_INFO, "%18.6f : findDAtum(): All addressed FPUs are locked, datum command ignored.\n",
@@ -974,7 +974,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
     const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
 
-    
+
 
     if (MIN_STEPS > MAX_STEPS)
     {
@@ -1672,6 +1672,187 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
     return DE_OK;
 }
 
+E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
+        const int MIN_STEPS,
+        const int MAX_STEPS,
+        const int MAX_START_STEPS,
+        const unsigned int MAX_NUM_SECTIONS,
+        const int MAX_STEP_DIFFERENCE) const
+{
+
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V5, using an absolute maximum step difference)\n",
+                ethercanif::get_realtime());
+
+    const int MAX_DCHANGE_STEPS = 120;
+    const int num_loading =  waveforms.size();
+    const unsigned int num_steps = waveforms[0].steps.size();
+
+    if (MIN_STEPS > MAX_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_CONFIG:"
+                    "  minimum step number limit is larger than maximum limit\n",
+                    ethercanif::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_START_STEPS > MAX_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_CONFIG:"
+                    " upper limit of step count during start exceeds maximum step count\n",
+                    ethercanif::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_START_STEPS <= MIN_STEPS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_CONFIG:"
+                    " upper limit of step count during start is smaller than minimum value\n",
+                    ethercanif::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+    if (MAX_STEP_DIFFERENCE < 1)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_CONFIG:"
+                    " step difference is smaller than 1.\n",
+                    ethercanif::get_realtime());
+        return DE_INVALID_CONFIG;
+    }
+
+
+    if (num_steps > MAX_NUM_SECTIONS)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:"
+                    "  waveform has too many steps (%i)\n",
+                    ethercanif::get_realtime(), num_steps);
+        return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
+    }
+
+    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    {
+        const int fpu_id = waveforms[fpu_index].fpu_id;
+        if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
+                        " FPU ID %i in waveform table is out of range\n",
+                        ethercanif::get_realtime(), fpu_id);
+            return DE_INVALID_FPU_ID;
+        }
+
+        // require same number of steps for all FPUs
+        if (waveforms[fpu_index].steps.size() != num_steps)
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_RAGGED:"
+                        " waveforms for FPU %i have unequal length\n",
+                        ethercanif::get_realtime(), fpu_id);
+            return DE_INVALID_WAVEFORM_RAGGED;
+        }
+
+
+        const t_waveform& wform = waveforms[fpu_index];
+
+        for(int chan_idx=0; chan_idx < 2; chan_idx++)
+        {
+            int xa_last = 0;
+            int x_last_sign = 0;
+
+            for (unsigned int sidx=0; sidx<num_steps; sidx++)
+            {
+
+                const t_step_pair& step = wform.steps[sidx];
+
+                const int xs = (chan_idx == 0) ?
+                               step.alpha_steps : step.beta_steps;
+
+                const int x_sign = (xs > 0) ? 1 : ((xs < 0) ? -1: 0);
+                const int xa = abs(xs);
+
+                // absolute value of step count of next segment, or zero if at end
+                const int xa_next = ( (sidx == (num_steps -1))
+                                      ? 0
+                                      :  abs(((chan_idx == 0)
+                                              ? wform.steps[sidx+1].alpha_steps
+                                              : wform.steps[sidx+1].beta_steps)));
+
+                //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i", fpu_id, chan_idx, sidx, xs, xa);
+
+                if (xa > MAX_STEPS)
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:"
+                                "fpu %i, %s arm, movement interval %i: step count exceeds maximum\n\n",
+                                ethercanif::get_realtime(),
+                                fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
+                }
+
+
+
+                const int xa_small = std::min(xa_last, xa);
+                const int xa_large = std::max(xa_last, xa);
+                const int increase_limit = int(ceil(xa_small + MAX_STEP_DIFFERENCE));
+
+                const bool valid_acc = (
+                                           // 1) movement into the same direction
+
+                                           ((x_sign == x_last_sign)
+                                            //   1a) and currently *stopping* to move
+                                            && (( (xa < MIN_STEPS)
+                                                  && (xa_last <= MAX_START_STEPS))
+                                                // or, 1b) at least  MIN_STEPS and the larger
+                                                // of both values not larger than the allowed
+                                                // relative increase
+                                                || ( (xa_small >= MIN_STEPS)
+                                                     && (xa_large <= increase_limit))))
+                                           // or, has stopped to move (and only in this case,
+                                           // the step count can be smaller than MIN_STEPS)
+                                           || ( (xa == 0)
+                                                && (xa_last < MAX_START_STEPS))
+                                           // or, both current and last absolute step count
+                                           // are below MAX_DCHANGE_STEPS, and can have
+                                           // different sign (this would work for firmware 1.5.0)
+                                           || ( (xa <= MAX_DCHANGE_STEPS)
+                                                && (xa_last <= MAX_DCHANGE_STEPS))
+                                           // or, a single segment with a small number of steps,
+                                           // followed by a pause or end of the table
+                                           || ( (xa <= MAX_START_STEPS)
+                                                && (xa_last == 0)
+                                                && (xa_next == 0))
+                                           // or, with or without a change of direction,
+                                           // one step number zero and the other below or at
+                                           // MAX_START_STEPS - at start or end of a movement
+                                           || ((xa_small == 0)
+                                               && (xa_large <= MAX_START_STEPS))
+                                           // or, a pause in movement
+                                           || ((xa_small == 0)
+                                               && (xa_large == 0)));
+
+                if (!valid_acc)
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: DE_INVALID_WAVEFORM_CHANGE: "
+                                "fpu %i, %s arm, movement interval %i: invalid step count change\n",
+                                ethercanif::get_realtime(),
+                                fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    return DE_INVALID_WAVEFORM_CHANGE;
+                }
+
+                xa_last = xa;
+                x_last_sign = x_sign;
+            }
+            if (xa_last > MAX_START_STEPS)
+            {
+                // last step count must be minimum or smaller
+                LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: DE_INVALID_WAVEFORM_TAIL: "
+                            "fpu %i, %s arm, movement interval %i: last step count too large\n",
+                            ethercanif::get_realtime(),
+                            fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
+                return DE_INVALID_WAVEFORM_TAIL;
+            }
+        }
+    }
+    LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface::validateWaveforms() waveform OK\n",
+                ethercanif::get_realtime());
+
+    return DE_OK;
+}
+
+
 #pragma GCC diagnostic pop
 
 
@@ -1740,7 +1921,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
     bool some_fpus_locked=false;
     const int num_loading =  waveforms.size();
-    
+
     for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
     {
 
@@ -1776,8 +1957,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     {
 	return DE_FPUS_LOCKED;
     }
-    
-	    
+
+
 
     {
 
@@ -1787,6 +1968,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                             * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
 
         const double max_rel_increase = config.motor_max_rel_increase;
+        const int max_step_difference = config.motor_max_step_difference;
 
         E_EtherCANErrCode vwecode = DE_OK;
 
@@ -1829,6 +2011,15 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                           max_start_stepcount,
                                           ConfigureMotionCommand::MAX_NUM_SECTIONS,
                                           max_rel_increase);
+
+            break;
+        case 5:
+            vwecode = validateWaveformsV5(waveforms,
+                                          min_stepcount,
+                                          max_stepcount,
+                                          max_start_stepcount,
+                                          ConfigureMotionCommand::MAX_NUM_SECTIONS,
+                                          max_step_difference);
 
             break;
         default:
@@ -2006,10 +2197,10 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 				    ethercanif::get_realtime(),
 				    fpu_id,
 				    resend_downcount);
-			
+
 			max_retries_exceeded = true;
 			continue;
-			
+
                     }
                     do_retry = true;
                     LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
@@ -2018,7 +2209,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                 ethercanif::get_realtime(),
                                 fpu_id,
                                 resend_downcount);
-		    
+
                     LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): warning: "
                                 "loading/ready state or number of waveform segments not confirmed for FPU #%i,"
                                 " retry from start! (%i retries left)\n",
@@ -4627,7 +4818,7 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long 
 	||(alpha_steps < (- (1l << 24)))
 	||(beta_steps >= (1l << 24))
 	||(beta_steps < (- (1l << 24))))
-	    
+
     {
 	LOG_CONTROL(LOG_ERROR, "%18.6f : resetStepCounter():  error DE_INVALID_PAR_VALUE,"
 		    "new step counters need to be valid signed 24 bit values, passed values are"

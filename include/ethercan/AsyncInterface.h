@@ -251,6 +251,13 @@ public:
                                           const unsigned int MAX_NUM_SECTIONS,
                                           const double MAX_INCREASE) const;
 
+    E_EtherCANErrCode validateWaveformsV5(const t_wtable& waveforms,
+                                          const int MIN_STEPS,
+                                          const int MAX_STEPS,
+                                          const int MAX_START_STEPS,
+                                          const unsigned int MAX_NUM_SECTIONS,
+                                          const int MAX_STEP_CHANGE) const;
+
     void logGridState(const E_LogLevel logLevel, t_grid_state& grid_state) const;
 
 protected:
@@ -300,7 +307,7 @@ private:
 // some helper functions for logging
 
 bool p_repeat_log(unsigned int &log_repeat_count);
-    
+
 const char * str_interface_state(const E_InterfaceState interface_state);
 
 const char * str_fpu_state(const E_FPU_STATE state);

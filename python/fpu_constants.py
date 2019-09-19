@@ -45,17 +45,27 @@ FREE_BETA_STEPCOUNT=10
 DEFAULT_FREE_ALPHA_RETRIES=3
 FREE_ALPHA_STEPCOUNT=10
 
-MAX_ACCELERATION_FACTOR=1.4
-MOTOR_MIN_STEP_FREQUENCY=500
-MOTOR_MAX_STEP_FREQUENCY=2000
-MOTOR_MAX_START_FREQUENCY=550
-MOTOR_MAX_ACCELERATION=35
-MOTOR_MAX_DECELERATION=35
+MAX_ACCELERATION_FACTOR=1.4 # this constant factor is obsolete for
+                            # newer waveform rulesets. For details,
+                            # see driver manual sections 6.5.8, 6.9.2
+                            # and 17.1.
 
-MAXNUM_WAVEFORM_SEGMENTS = 128
-WAVEFORM_SEGMENT_LENGTH_MS=250
+# this should match the values in include/EtherCANInterfaceConfig.h
+MOTOR_MIN_STEP_FREQUENCY=500  # minimum stepper motor frequency
+MOTOR_MAX_STEP_FREQUENCY=2000 # maximum stepper motor frequency
+MOTOR_MAX_START_FREQUENCY=550 # minimum start frequency
+MAX_STEP_DIFFERENCE=100       # maximum change in steps per segment between segments
 
-# overflow / underflow representations in step counter
+# used for waveform generation, can be
+# changed for testing motor limits
+MOTOR_MAX_ACCELERATION=MAX_STEP_DIFFERENCE
+MOTOR_MAX_DECELERATION=MAX_STEP_DIFFERENCE
+
+MAXNUM_WAVEFORM_SEGMENTS = 255
+WAVEFORM_SEGMENT_LENGTH_MS=125
+
+# overflow / underflow representations in binary FPU step counters
+# this is intentionally asymmetric for the alpha arm counter
 ALPHA_UNDERFLOW_COUNT = - 10000
 ALPHA_OVERFLOW_COUNT = ALPHA_UNDERFLOW_COUNT + (1 << 16) -1
 

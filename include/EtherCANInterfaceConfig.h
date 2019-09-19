@@ -62,7 +62,10 @@ public:
     double motor_minimum_frequency;   // lower bound of stepper motor frequency
     double motor_maximum_frequency;   // upper bound of stepper motor frequency
     double motor_max_start_frequency; // maximum start frequency
-    double motor_max_rel_increase;    // maximum frequency growth factor
+    double motor_max_rel_increase;    // maximum frequency growth factor. Used in ruleset v1-v4.
+    int motor_max_step_difference;    /* maximum difference in number of steps between segments
+                                         (which allows for a constant acceleration).
+					 Used in ruleset V5. */
 
     // waveform upload parameters
     long waveform_upload_pause_us; // wait time before a new waveform step is sent to the same FPU
@@ -76,10 +79,10 @@ public:
     int can_command_priority; // maximum priority of CAN commands; this is a four-bit value
     int configmotion_max_retry_count; // number of times time-outs
 				      // will be reported and missing
-				      // data is send again
+				      // data is send again.
     int configmotion_max_resend_count; // number of times all data
 				       // will be resent silently on a
-				       // low level
+				       // low level.
 
     EtherCANInterfaceConfig()
         : logLevel(LOG_TRACE_CAN_MESSAGES)
@@ -97,7 +100,7 @@ public:
         configmotion_confirmation_period = 25;
         can_command_priority = 3;
 
-	min_bus_repeat_delay_ms = 2; 
+	min_bus_repeat_delay_ms = 2;
 	min_fpu_repeat_delay_ms = 4;
 	configmotion_max_retry_count = 10;
 	configmotion_max_resend_count = 5;
@@ -114,6 +117,7 @@ public:
         motor_maximum_frequency = 2000.0;
         motor_max_start_frequency=550.0;
         motor_max_rel_increase = 1.4;
+	motor_max_step_difference = 100;
     };
 
 };
