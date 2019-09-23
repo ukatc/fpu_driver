@@ -159,6 +159,7 @@ public:
     bool waveform_ready;
     bool waveform_reversed;
     int num_waveform_segments;
+    int waveform_status;
     int num_active_timeouts;
     int sequence_number;
     int movement_complete;
@@ -195,6 +196,7 @@ public:
         direction_alpha           = fpu_state.direction_alpha;
         direction_beta            = fpu_state.direction_beta;
         num_waveform_segments     = fpu_state.num_waveform_segments;
+        waveform_status           = fpu_state.waveform_status;
         sequence_number           = fpu_state.sequence_number;
         alpha_was_referenced      = fpu_state.alpha_was_referenced;
         beta_was_referenced       = fpu_state.beta_was_referenced;
@@ -257,6 +259,7 @@ public:
           << " 'direction_alpha' : " << fpu.direction_alpha << ", "
           << " 'direction_beta' : " << fpu.direction_beta << ", "
           << " 'num_waveform_segments' : " << fpu.num_waveform_segments << ", "
+          << " 'waveform_status' : " << fpu.waveform_status << ", "
           << " 'num_active_timeouts' : " << fpu.num_active_timeouts << ", "
           << " 'sequence_number' : " << fpu.sequence_number << ", "
           << " 'ping_ok' : " << fpu.ping_ok << ", "
@@ -1485,6 +1488,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("WAVEFORM_TOO_BIG", WAVEFORM_TOO_BIG   )
     .value("WAVEFORM_SEQUENCE", WAVEFORM_SEQUENCE  )
     .value("WAVEFORM_BADVALUE", WAVEFORM_BADVALUE  )
+    .value("WAVEFORM_UNDEFINED", WAVEFORM_UNDEFINED  )
     .export_values();
 
     enum_<E_CAN_COMMAND>("E_CAN_COMMAND")
@@ -1667,6 +1671,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def_readonly("beta_collision", &WrapFPUState::beta_collision)
     .def_readonly("direction_alpha", &WrapFPUState::direction_alpha)
     .def_readonly("num_waveform_segments", &WrapFPUState::num_waveform_segments)
+    .def_readonly("waveform_status", &WrapFPUState::waveform_status)
     .def_readonly("direction_beta", &WrapFPUState::direction_beta)
     .def_readonly("waveform_valid", &WrapFPUState::waveform_valid)
     .def_readonly("waveform_ready", &WrapFPUState::waveform_ready)
