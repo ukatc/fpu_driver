@@ -26,18 +26,18 @@ def parse_args():
 
     parser.add_argument('--gateway_address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
-    
+
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=NUM_FPUS,
                         help='Number of adressed FPUs (default: %(default)s).')
-    
-    
+
+
     args = parser.parse_args()
     return args
 
 
 def initialize_FPU(args):
-    
-    gd = FpuGridDriver.GridDriver(args.N)
+
+    gd = FpuGridDriver.GridDriver(args.N, mockup=args.mockup)
 
     if args.mockup:
         gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
@@ -87,9 +87,9 @@ if __name__ == '__main__':
     gd.findDatum(grid_state)
 
     to move the FPUs to datum and initialise the grid.""")
-          
 
-    
+
+
 
 
 
@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     gd.executeMotion(gs)
     gd.trackedAngles(gs, show_offsets=True)
-    
+
     w = gen_wf(-20,0)
     gd.configMotion(w, gs, allow_uninitialized=True)
 
@@ -128,5 +128,5 @@ if __name__ == '__main__':
 
     gd.executeMotion(gs)
     gd.trackedAngles(gs, show_offsets=True)
-    
+
     gd.findDatum(gs, timeout=DATUM_TIMEOUT_DISABLE)

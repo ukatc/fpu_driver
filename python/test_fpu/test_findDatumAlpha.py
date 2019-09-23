@@ -19,22 +19,16 @@ gs = gd.getGridState()
 
 
 print("getting positions:")
-gd.getPositions(gs)
+gd.pingFPUs(gs)
 
 print("positions before:", list_positions(gs))
 
 print("finding Datum")
 gd.findDatum(gs, DASEL_ALPHA)
- 
+
 print("set positions after:", list_positions(gs))
 
 print("getting positions:")
-gd.getPositions(gs)
+gd.pingFPUs(gs)
 
 print("reported positions after:", list_positions(gs))
-
-
-
-
-
-

@@ -12,8 +12,8 @@ gateway_adr_list = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 
 
-    
-gd = FpuGridDriver.GridDriver(NUM_FPUS)
+
+gd = FpuGridDriver.GridDriver(NUM_FPUS, mockup=True)
 
 print("connecting grid:", gd.connect(gateway_adr_list))
 
@@ -37,12 +37,3 @@ gd.configMotion(wave_table, gs)
 t1 = time.time()
 
 print("elapsed time: %f" % (t1 - t0))
-
-
-                       
-
-
-
-
-
-

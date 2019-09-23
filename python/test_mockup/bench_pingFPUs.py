@@ -6,11 +6,11 @@ import FpuGridDriver
 from fpu_commands import *
 
 NUM_FPUS = 1000
-gateway_adr_list = [ fpu_driver.GatewayAddress("127.0.0.1", p)
+gateway_adr_list = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
                      for p in [4700, 4701, 4702] ]
 
 
-gd = FpuGridDriver.GridDriver(NUM_FPUS)
+gd = FpuGridDriver.GridDriver(NUM_FPUS, mockup=True)
 
 
 print("connecting grid:", gd.connect(gateway_adr_list))
@@ -36,7 +36,3 @@ print("\npositions:", list_positions(gs))
 
 msgs_per_sec = (NUM_FPUS * N * 2.0) / (t1 - t0)
 print("bench result: %f messages/sec" % msgs_per_sec)
-
-
-
-

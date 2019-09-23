@@ -9,7 +9,7 @@ from fpu_commands import *
 NUM_FPUS = 10
 USTEP_LEVEL = 8
 
-gd = GridDriver(NUM_FPUS)
+gd = GridDriver(NUM_FPUS, mockup=True)
 
 print("connecting grid:", gd.connect())
 
@@ -49,7 +49,7 @@ wt = { 0: [ ( 125, 125),
             ( 139, 125),
             ( 125, 125),
             (  50, 19) ],
-      
+
        1: [ ( 125, 125),
             ( 125, 135),
             ( 130, 135),
@@ -73,7 +73,7 @@ wt = { 0: [ ( 125, 125),
             ( 129, 125),
             ( 125, 125),
             (  50, 19) ],
-      
+
        2: [ ( 125, 125),
             ( 125, 135),
             ( 130, 135),
@@ -97,17 +97,9 @@ wt = { 0: [ ( 125, 125),
             ( 139, 125),
             ( 125, 125),
             (  50, 19) ],
-      
+
 }
 
 gd.configMotion(wt, gs)
 
 gd.executeMotion(gs)
-
-
-
-
-
-
-
-

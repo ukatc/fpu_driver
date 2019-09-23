@@ -19,7 +19,7 @@ gs = gd.getGridState()
 
 
 print("getting positions:")
-gd.getPositions(gs)
+gd.pingFPUs(gs)
 
 print("positions before:", list_positions(gs))
 
@@ -32,12 +32,6 @@ gd.findDatum(gs, soft_protection=False)
 print("set positions after:", list_positions(gs))
 
 print("getting positions:")
-gd.getPositions(gs)
+gd.pingFPUs(gs)
 
 print("reported positions after:", list_positions(gs))
-
-
-
-
-
-

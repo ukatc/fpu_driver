@@ -12,7 +12,7 @@ gateway_adr_list = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
 
 print("module version is:", FpuGridDriver.__version__, ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
 
-gd = FpuGridDriver.GridDriver(NUM_FPUS)
+gd = FpuGridDriver.GridDriver(NUM_FPUS, mockup=True)
 
 print("connecting grid:", gd.connect(gateway_adr_list))
 
@@ -29,4 +29,3 @@ print("positions:", list_positions(gs))
 
 print("Serial numbers:")
 gd.printSerialNumbers(gs)
-
