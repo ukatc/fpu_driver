@@ -685,6 +685,10 @@ class UnprotectedGridDriver (object):
                     fpu.fw_date_year, fpu.fw_date_month, fpu.fw_date_day))
 
     def minFirmwareVersion(self, fpuset=[]):
+        """Note: This command does not retrieve the firmware version via
+        the bus, in order to reduce unnecessary bus communication
+        (it is intended to be suitable for very frequent use).
+        """
         fpuset = self.check_fpuset(fpuset)
         gs = self._gd.getGridState()
         return self._gd.getMinFirmwareVersion(gs, fpuset)
@@ -1244,7 +1248,7 @@ class UnprotectedGridDriver (object):
         if verbose:
             for fpu_id, fpu in enumerate(gs.FPU):
                 if fpu_in_set(fpu_id, fpuset):
-                    print("FPU %i firmware checksum: %s" % (
+                    print("FPU %i firmware checksum: 0x%0x" % (
                         fpu_id,
                         fpu.crc32))
 
