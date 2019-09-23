@@ -1902,6 +1902,25 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                             ethercanif::get_realtime(), i);
                 return DE_IN_ABORTED_STATE;
             }
+
+
+	    switch (fpu_status){
+	    case FPST_AT_DATUM:
+	    case FPST_LOADING:
+	    case FPST_READY_FORWARD:
+	    case FPST_READY_REVERSE:
+	    case FPST_RESTING:
+		break;
+
+	    default:
+		{
+		    LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_INVALID_FPU_STATE"
+				" - FPU %i is in state %s, no movement configuration allowed. "
+				"Use enableMove() command to bypass check.\n",
+				ethercanif::get_realtime(), i, str_fpu_state(fpu_status));
+		    return DE_INVALID_FPU_STATE;
+		}
+	    }
         }
 
         if (!allow_uninitialized)
@@ -2175,6 +2194,15 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 const t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
                 // we retry if an FPU which we tried to configure and is
                 // not locked did not change to FPST_LOADING state.
+
+		if (fpu_state.waveform_status !=  WAVEFORM_OK){
+
+			LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
+				    "waveform configuration rejected for for FPU #%i\n",
+				    ethercanif::get_realtime(),
+				    fpu_id);
+			return DE_INVALID_WAVEFORM;
+		}
 
                 if ((fpu_state.state != FPST_LOCKED)
                         && ( ((first_segment && (! last_segment))

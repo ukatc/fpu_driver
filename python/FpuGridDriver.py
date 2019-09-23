@@ -840,6 +840,9 @@ class UnprotectedGridDriver (object):
                             e, wtable))
                         raise
 
+                    except InvalidStateException:
+                        raise
+
                     update_config = True
 
                 except (SocketFailure, CommandTimeout) as e:
