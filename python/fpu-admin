@@ -23,7 +23,6 @@ GATEWAY0_ADDRESS = os.environ.get("ETHERCAN_GATEWAY0", "192.168.0.10")
 
 
 
-
 if os.environ.get("MOCKUP","") != "":
     is_mockup = True
 else:
@@ -59,15 +58,20 @@ if __name__ == '__main__' :
         help
             - print this message
 
-        flash <serial_number> <fpu_id>
+        flash [--reuse_sn] <serial_number> <fpu_id>
             - flash serial number to FPU with ID <fpu_id>. FPU must be connected.
+              If the --reuse_sn flag is set, it is allowed to
+              use a serial number which was used before.
 
-        init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]
+        init [--reinitialize] <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]
             - initialize protection database for FPU, passing the initial alpha
               and beta arm positions in degree.
               The optional last parameter is the alpha datum offset.
 
-        init <serial_number> "[<apos_min>, <apos_max>]" "[<bpos_min>, <bpos_max>]" [<adatum_offset>]
+              If the --reinitialize flag is set, it is allowed to redefine
+              FPU positions which already have been stored before.
+
+        init [--reinitialize] <serial_number> "[<apos_min>, <apos_max>]" "[<bpos_min>, <bpos_max>]" [<adatum_offset>]
             - as above, but defining position intervals instead.
 
         list
@@ -178,21 +182,21 @@ if __name__ == '__main__' :
                 init_counters.update(counters)
 
 
-            protdb.putInterval(txn, sn, pdb.alpha_positions, aint, alpha_offset)
-            protdb.putInterval(txn, sn, pdb.beta_positions, bint, BETA_DATUM_OFFSET)
-            protdb.putField(txn, sn, pdb.waveform_table, [])
-            protdb.putField(txn, sn, pdb.waveform_reversed, waveform_reversed)
-            protdb.putInterval(txn, sn, pdb.alpha_limits, Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE), alpha_offset)
-            protdb.putInterval(txn, sn, pdb.beta_limits, Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE), BETA_DATUM_OFFSET)
+            protdb.putInterval(txn, sn, protdb.alpha_positions, aint, alpha_offset)
+            protdb.putInterval(txn, sn, protdb.beta_positions, bint, BETA_DATUM_OFFSET)
+            protdb.putField(txn, sn, protdb.waveform_table, [])
+            protdb.putField(txn, sn, protdb.waveform_reversed, waveform_reversed)
+            protdb.putInterval(txn, sn, protdb.alpha_limits, Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE), alpha_offset)
+            protdb.putInterval(txn, sn, protdb.beta_limits, Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE), BETA_DATUM_OFFSET)
 
-            protdb.putField(txn, sn, pdb.free_beta_retries, DEFAULT_FREE_BETA_RETRIES)
-            protdb.putField(txn, sn, pdb.beta_retry_count_cw, 0)
-            protdb.putField(txn, sn, pdb.beta_retry_count_acw, 0)
+            protdb.putField(txn, sn, protdb.free_beta_retries, DEFAULT_FREE_BETA_RETRIES)
+            protdb.putField(txn, sn, protdb.beta_retry_count_cw, 0)
+            protdb.putField(txn, sn, protdb.beta_retry_count_acw, 0)
 
-            protdb.putField(txn, sn, pdb.free_alpha_retries, DEFAULT_FREE_ALPHA_RETRIES)
-            protdb.putField(txn, sn, pdb.alpha_retry_count_cw, 0)
-            protdb.putField(txn, sn, pdb.alpha_retry_count_acw, 0)
-            protdb.putField(txn, sn, pdb.counters, init_counters)
+            protdb.putField(txn, sn, protdb.free_alpha_retries, DEFAULT_FREE_ALPHA_RETRIES)
+            protdb.putField(txn, sn, protdb.alpha_retry_count_cw, 0)
+            protdb.putField(txn, sn, protdb.alpha_retry_count_acw, 0)
+            protdb.putField(txn, sn, protdb.counters, init_counters)
 
     if command == "flash":
         if len(argv) != 4:

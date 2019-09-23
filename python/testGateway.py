@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
     args = parse_args()
 
-    gd, grid_state = initialize_FPUs(args)
+    gd, grid_state = initialize_FPUs(args, mockup=args.mockup)
 
     print("retrieving firmware versions...")
     gd.printFirmwareVersion(grid_state)

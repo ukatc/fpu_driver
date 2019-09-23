@@ -26,18 +26,18 @@ def parse_args():
 
     parser.add_argument('--gateway_address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
-    
+
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=NUM_FPUS,
                         help='Number of adressed FPUs (default: %(default)s).')
-    
-    
+
+
     args = parser.parse_args()
     return args
 
 
 def initialize_FPU(args):
-    
-    gd = FpuGridDriver.GridDriver(args.N)
+
+    gd = FpuGridDriver.GridDriver(args.N, mockup=args.mockup)
 
     if args.mockup:
         gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
@@ -82,15 +82,14 @@ if __name__ == '__main__':
     import wflib
     from numpy import ones
     gd.findDatum(gs, timeout=DATUM_TIMEOUT_DISABLE)
-    
+
     wf = gen_wf(ones(7) * 180.0, 0)
     gd.configMotion(wf, gs)
     gd.executeMotion(gs)
-    
+
     gd.trackedAngles(gs)
     list_positions(gs)
-    
+
     p = wflib.load_paths("pgtest/targets_7fp_case_2_1_PATHS.txt")
-    
+
     gd.configPaths(p, gs)
-    

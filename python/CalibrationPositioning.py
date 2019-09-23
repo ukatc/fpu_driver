@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from __future__ import print_function, division
-"""This module drives one FPU to a fine-grained sequence of 
+"""This module drives one FPU to a fine-grained sequence of
 positions and calls a measurement function at each position.
 """
 
@@ -31,15 +31,15 @@ def dummy_metrology_func(alpha_steps, beta_steps):
 
 def printtime():
     print(time.strftime("%a, %d %b %Y %H:%M:%S +0000 (%Z)", time.gmtime()))
-    
+
 def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
 
     # generate waveform
     waveform = gen_wf(alpha_move, beta_move)
-    
+
     # configure waveform, by uploading it to the FPU
     print("%s : waveform=%r" %(label, waveform))
-            
+
     gd.configMotion(waveform, grid_state)
     printtime()
     cur_angles = list_angles(grid_state)
@@ -58,7 +58,7 @@ def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
 
     print("timeout count of grid:", grid_state.count_timeout)
 
-    
+
 def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
                      return_to_datum=True, deviation_list=[], args=None):
 
@@ -68,12 +68,12 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
     beta0 = positions[:,1]
     for i in range(len(alpha0)):
         print("starting pos: ({:6.2f}, {:6.2f})".format(alpha0[i], beta0[i]))
-        
+
     alpha_move = alpha - alpha0
     beta_move = beta - beta0
 
     move_fpu(gd, grid_state, alpha_move, beta_move, "out" )
- 
+
 
     alpha_steps = grid_state.FPU[0].alpha_steps
     beta_steps = grid_state.FPU[0].beta_steps
@@ -102,12 +102,12 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
               "(dev_alpha, dev_beta) = ({}, {}) steps".format(
                   fpu_state.alpha_deviation,
                   fpu_state.beta_deviation))
-        
+
         deviation_list.append( (alpha, beta,
                                 fpu_state.alpha_deviation,
                                 fpu_state.beta_deviation))
 
-      
+
 
 
 def parse_args():
@@ -124,16 +124,16 @@ def parse_args():
 
     parser.add_argument('--gateway_address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
-    
+
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=1,
                         help='Number of adressed FPUs. For the deterministic patterns, the FPUs will be steered in unison. For the raodnom patterns, each FPU will receive a random value. WARNING: No conflict checking is done.  (default: %(default)s)')
-    
+
     parser.add_argument('--alpha_datum_pos', metavar='ALPHA_DATUM_POS', type=float, default=-180.0,
                         help='alpha datum position  (default: %(default)s)')
 
     parser.add_argument('--beta_datum_pos', metavar='beta_DATUM_POS', type=float, default=0.0,
                         help='beta datum position  (default: %(default)s)')
-    
+
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=-180.0,
                         help='minimum alpha value  (default: %(default)s)')
     parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=172.0,
@@ -150,37 +150,37 @@ def parse_args():
                         help='number of alpha steps  (default: %(default)s)')
     parser.add_argument('bsteps', metavar='BSTEPS', type=int, default=10,
                         help='number of beta steps  (default: %(default)s)')
-    
+
     parser.add_argument('--pattern', metavar='PATTERN', type=str, default="abcircle",
                         choices=['abcircle', 'abc', 'whitenoise', 'wn', 'bluenoise', 'bn', 'polargrid', 'grid'],
                         help="""Pattern of movement. Available patterns are:
 
-                        'abcircle', 'abc' : Calibration pattern as described in VLT-TRE-MON-14620-3007, 
+                        'abcircle', 'abc' : Calibration pattern as described in VLT-TRE-MON-14620-3007,
                                      section 5.1.6.
-                        'polargrid', 'grid': alpha and beta coordinates are stepped through in a grid 
+                        'polargrid', 'grid': alpha and beta coordinates are stepped through in a grid
                                      pattern, with the alpha angle moving after each beta angle
                                      was reached for one alpha position.
 
-                        'whitenoise', 'wn' : In this pattern, a new (alpha, beta) pair of angles 
+                        'whitenoise', 'wn' : In this pattern, a new (alpha, beta) pair of angles
                                      between the minimum and maximum values is drawn
                                      independently for each step.
                         'bluenoise', 'bn' : In this pattern, new angles are drawn for each step so
                                       that the distribution of distance follows a triangular PDF.
 
                         default: %(default)r)""")
-    
+
     parser.add_argument('--datum_at', metavar='DATUM_AT', type=str, default="start",
                         choices=['alpha_change', 'beta_change', 'start'],
                         help="go to datum at change of alpha / beta coordinate ('alpha_change', 'beta_change', 'start' default: %(default)r)")
-    
+
     args = parser.parse_args()
     return args
 
 
 
 def initialize_FPU(args):
-    
-    gd = FpuGridDriver.GridDriver(args.N)
+
+    gd = FpuGridDriver.GridDriver(args.N, mockup=args.mockup)
 
     if args.mockup:
         gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
@@ -196,9 +196,9 @@ def initialize_FPU(args):
     # all FPUs.
 
     grid_state = gd.getGridState()
-    
+
     gd.pingFPUs(grid_state)
-    
+
 
     if args.resetFPU:
         print("resetting FPU")
@@ -207,7 +207,7 @@ def initialize_FPU(args):
 
     # Now, we issue a findDatum method. In order to know when and how
     # this command finished, we pass the grid_state variable.
-        
+
     print("issuing findDatum:")
     gd.findDatum(grid_state)
     print("findDatum finished")
@@ -226,12 +226,12 @@ def grid_positions(args):
             go_datum = True
         else:
             go_datum = False
-            
+
         for beta in numpy.linspace(args.beta_min, args.beta_max, args.bsteps):
             if args.datum_at == 'beta_change':
                 go_datum = True
 
-            yield (alpha * ones_vect, beta * ones_vect, go_datum)        
+            yield (alpha * ones_vect, beta * ones_vect, go_datum)
             go_datum = False
 
 def abcircle_positions(args):
@@ -243,9 +243,9 @@ def abcircle_positions(args):
         go_datum = True
     else:
         go_datum = False
-        
+
     for alpha in numpy.linspace(args.alpha_min, args.alpha_max, args.asteps):
-        yield (alpha, beta, go_datum)        
+        yield (alpha, beta, go_datum)
 
     # track beta circle
     alpha = max(min(0.0, args.alpha_max), args.alpha_min)
@@ -253,10 +253,10 @@ def abcircle_positions(args):
         go_datum = True
     else:
         go_datum = False
-        
+
     for beta in numpy.linspace(args.beta_min, args.beta_max, args.bsteps):
-        yield (alpha * ones_vect, beta * ones_vect, go_datum)        
-            
+        yield (alpha * ones_vect, beta * ones_vect, go_datum)
+
 def whitenoise_positions(args):
     N = args.N
     for j in range(args.asteps):
@@ -273,7 +273,7 @@ def whitenoise_positions(args):
 
             yield (alpha, beta, go_datum)
             go_datum = False
-            
+
 
 def triangular_distributed(minval, maxval, mode):
     """Computes triangular-distributed values with a vector
@@ -282,7 +282,7 @@ def triangular_distributed(minval, maxval, mode):
     # note that the signature of random.triangular and numpy.random.triangular
     # differs in the position of the mode parameter
     return asarray([random.triangular(minval, m, maxval) for m in mode])
-            
+
 def bluenoise_positions(args):
     N = args.N
     last_alpha = zeros(N)
@@ -306,23 +306,23 @@ def bluenoise_positions(args):
 
             go_datum = False
 
-            
+
 def iterate_positions(args, seq, gd, grid_state, metrology_func=None, deviation_list=[]):
-                   
+
     for alpha, beta, go_datum in seq:
         print("measuring at ({},{}), datum={}".format(alpha, beta, go_datum))
         measure_position(gd, grid_state, alpha, beta, return_to_datum=go_datum,
                          metrology_func=metrology_func, deviation_list=deviation_list,
                          args=args)
-        
+
         if args.chill_time > 10:
             print("waiting %f seconds for fpu to cool off" % args.chill_time)
         time.sleep(args.chill_time)
-            
+
     # last call at (0,0), and always return to datum
     measure_position(gd, grid_state, 0, 0, return_to_datum=True,
                      metrology_func=metrology_func, deviation_list=deviation_list)
-    
+
 
 def rungrid(args):
     # initialize FPU accordingly
@@ -355,23 +355,14 @@ def rungrid(args):
         print("FPU state:", grid_state.FPU[0])
         print("positions:", list_angles(grid_state))
         raise
-    
+
     print("counter deviations:", deviations)
 
     printtime()
     print("ready.")
-    
-    
+
+
 if __name__ == '__main__':
     # parse arguments
     args = parse_args()
     rungrid(args)
-    
-                    
-
-              
-
-
-
-
-

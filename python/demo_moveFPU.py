@@ -10,10 +10,14 @@ from fpu_commands import *
 
 NUM_FPUS = 1
 
+if os.environ.get("MOCKUP","") != "":
+    mockup = True
+else:
+    mockup = False
 
 
 
-gd = FpuGridDriver.GridDriver(NUM_FPUS)
+gd = FpuGridDriver.GridDriver(NUM_FPUS, mockup=mockup)
 
 print("connecting grid:", gd.connect(address_list=TEST_GATEWAY_ADRESS_LIST))
 
@@ -121,14 +125,3 @@ print("the counter deviation for FPU 0 is "
       "(dev_alpha, dev_beta) = ({}, {}) steps".format(
           fpu_state.alpha_deviation,
           fpu_state.beta_deviation))
-
-      
-
-
-
-
-
-
-
-
-
