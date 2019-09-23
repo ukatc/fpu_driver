@@ -842,7 +842,7 @@ class FPU:
             self.wave_valid = False
             self.state = FPST_ABORTED
             errcode = MCE_FPU_OK
-        elif self.state in [ FPST_LOADING, READY_FORWARD, READY_REVERSE ]:
+        elif self.state in [ FPST_LOADING, FPST_READY_FORWARD, FPST_READY_REVERSE ]:
             self.wave_ready = False
             self.wave_valid = False
             errcode = MCE_FPU_OK
@@ -1190,7 +1190,7 @@ class FPU:
 
     def checkIntegrity(self):
         if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH,
-                           FPST_READY_FORWARD, FPST_READY_REVERSED]:
+                           FPST_READY_FORWARD, FPST_READY_REVERSE]:
             return MCE_ERR_INVALID_COMMAND
         # returns CRC32 checksum of 'firmware' (here, the class source code)
         source_string = "".join(inspect.getsourcelines(FPU)[0])

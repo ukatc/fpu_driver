@@ -3689,14 +3689,18 @@ listed in the parameter.
 
 \section{minFirmwareVersion()}
 \label{sec:minfirmwareversion}
-\index{commands!minFirmwareVersion()}
-\index{checking the firmware version}
-\index{firmware!checking version}
-\index{version information!checking minimum firmware versions}
-The method retrieves the firmware version from the attached FPUs and
-returns a three-element tuple with the smallest firmware version.  The
-elements of the tuple are major version, minor version, and patch
-level.
+\index{commands!minFirmwareVersion()} \index{checking the firmware
+  version} \index{firmware!checking version} \index{version
+  information!checking minimum firmware versions} The method retrieves
+the firmware version from the attached FPUs and returns a
+three-element tuple with the smallest firmware version.  The elements
+of the tuple are major version, minor version, and patch level. Note
+that this method, in difference to almost all other driver methods,
+does \emph{not} query the current state of FPUs via the bus. Instead,
+it uses cached information, to reduce latency and avoid unnecessary
+CAN bus communication. This means that the command can be used
+frequently with very low overhead.
+
 
 The method is designed to be used in scripts in combination with
 Python's \texttt{assert()} statement, and the property that Python
@@ -5503,6 +5507,8 @@ commands, or alter otherwise visible behaviour of the driver.
   checks were missing in the \texttt{configMotion()} method, and where
   the hardware simulation returned invalid codes when configuring
   invalid movements.
+\item A bug in the firmware simulation for handling the
+  \texttt{checkIntegrity} command was fixed.
 \end{itemize}
 
 \subsection*{Changes in version 2.1.1}
