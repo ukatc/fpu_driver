@@ -328,7 +328,7 @@ class UnprotectedGridDriver (object):
         ADRESS_SWITCH=0x0060
 
 
-        fv = self.minFirmwareVersion(gs, fpuset=fpuset)
+        fv = self.minFirmwareVersion(fpuset=fpuset)
         if fv < (1,3,2):
             raise  EtherCANException("Not all addressed FPU's firmware implements reading the switch states")
 

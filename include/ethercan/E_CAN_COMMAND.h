@@ -38,15 +38,8 @@ enum E_CAN_COMMAND : uint8_t
     CCMD_CONFIG_MOTION                    = 1, // configure waveform
     CCMD_EXECUTE_MOTION                   = 2, // execute loaded waveform
     CCMD_ABORT_MOTION                     = 3, // abort any ongoing movement
-#if (CAN_PROTOCOL_VERSION == 1)
-    // In version 2, two are covered by the ping command, which also
-    // reports the current positions.
-    CCMD_GET_STEPS_ALPHA                  = 4, // get alpha counts
-    CCMD_GET_STEPS_BETA                   = 5, // get beta counts
-#else
     CCMD_LOCK_UNIT                        = 4, // ignore any command except reset and unlock
     CCMD_UNLOCK_UNIT                      = 5, // listen to commands again
-#endif
     CCMD_READ_REGISTER                    = 6, // read register - unused
     CCMD_PING_FPU                         = 7, // check connectivity
     CCMD_RESET_FPU                        = 8, // reset MCU
@@ -57,17 +50,6 @@ enum E_CAN_COMMAND : uint8_t
     CCMD_ENABLE_BETA_COLLISION_PROTECTION = 13, // "ENABLE_COLLIDE"
     CCMD_FREE_BETA_COLLISION              = 14, // "FREE_COLLIDE"
     CCMD_SET_USTEP_LEVEL                  = 15, // set stepper motor micro-stepping level (1,2,4,8 supported)
-
-#if (CAN_PROTOCOL_VERSION == 1)
-    // the next two are combined in version 2
-    CCMD_GET_ERROR_ALPHA                  = 16, // get residue alpha count at last datum hit
-    CCMD_GET_ERROR_BETA                   = 17, // get residue beta count at last datum hit
-    CCMD_READ_SERIAL_NUMBER               = 18, // read serial number from NVRAM
-    CCMD_WRITE_SERIAL_NUMBER              = 19, // write serial number to NVRAM
-
-    NUM_CAN_COMMANDS = 20,
-#else
-
     CCMD_GET_FIRMWARE_VERSION             = 16, // get firmware version
     CCMD_CHECK_INTEGRITY                  = 17, // report firmware CRC
     CCMD_FREE_ALPHA_LIMIT_BREACH          = 18, // untangle alpha arm
@@ -80,60 +62,21 @@ enum E_CAN_COMMAND : uint8_t
 
     NUM_CAN_COMMANDS = 25,
 
-#endif
 
 
     /***************************************/
     /* FPU warning messages */
-#if  (CAN_PROTOCOL_VERSION == 1)
-    /* code 101 unused */
-    /* code 102 unused */
-    CMSG_FINISHED_MOTION     = 103, // executeMotion finished
-    CMSG_FINISHED_DATUM      = 104, // findDatum finished
-    CMSG_WARN_COLLISION_BETA = 105, // collision at beta arm
-    CMSG_WARN_LIMIT_ALPHA    = 106, // limit switch at alpha arm
-    CMSG_WARN_RACE           = 107, // step timing error
-    CMSG_WARN_CANOVERFLOW    = 108, // CAN buffer overflow warning
-#else
     CMSG_FINISHED_MOTION     = 25, // executeMotion finished
     CMSG_FINISHED_DATUM      = 26, // findDatum finished
     CMSG_WARN_COLLISION_BETA = 27, // collision detected at beta arm
     CMSG_WARN_LIMIT_ALPHA    = 28, // limit switch breach detected at alpha arm
     CMSG_WARN_TIMEOUT_DATUM  = 29, // datum search time-out
     CMSG_WARN_CANOVERFLOW    = 30, // CAN buffer overflow warning
-#endif
 
 };
 
 #define COMMAND_CODE_MASK 0x1f
 
-#if CAN_PROTOCOL_VERSION == 1
-/* Error Codes from FPU response messages (note some codes are obsolete
-   or only used internally */
-enum E_MOC_ERRCODE : uint8_t
-{
-    ER_OK             = 0x00,   // no error
-    ER_STALLX         = 0x01,   // x motor stall (obsolete)
-    ER_STALLY         = 0x02,   // y motor stall (obsolete)
-    ER_COLLIDE        = 0x03,   // FPU collision detected
-    ER_INVALID        = 0x04,   // received command not valid
-    ER_WAVENRDY       = 0x05,   // waveform not ready
-    ER_WAVE2BIG       = 0x06,   // waveform exceeds memory allocation
-    ER_TIMING         = 0x07,   // step timing error (interrupt race condition)
-    ER_M1LIMIT        = 0x08,   // M1 Limit switch breached
-    ER_M2LIMIT        = 0x09,   // no longer used
-    ER_CANOVRS        = 0x0A,   // can overflow firmware software buffer
-    ER_CANOVRH        = 0x0B,   // can overflow FPU hardware buffer
-    ER_PARAM          = 0x10,   // parameter out of range
-    ER_AUTO           = 0x11,   // FPU step counters not initialized, cannot datum automatically
-    ER_DATUMTO        = 0x12,   // hardware error: datum search timed out by firmware
-    ER_DATUM_LIMIT    = 0x13,   // datum search denied, limit switch is active
-    ER_OK_UNCONFIRMED = 0x14,   // command will not be confirmed if OK
-    ER_TIMEDOUT       = 0x15,   // command hit driver time-out
-};
-
-
-#else
 enum E_MOC_ERRCODE : uint8_t
 {
     MCE_FPU_OK			     = 0x00,	// no error
@@ -188,9 +131,6 @@ enum E_FPU_STATUS_BITS
 };
 
 
-
-#endif
-
 enum E_DATUM_SKIP_FLAG
 {
     DATUM_SKIP_ALPHA = (1 << 0),
@@ -210,15 +150,10 @@ enum E_DATUM_TIMEOUT_FLAG
 };
 
 
- 
+
 // defines 4-bit priority value of CAN message
 inline uint8_t getMessagePriority(const E_CAN_COMMAND cmd)
 {
-
-#if (CAN_PROTOCOL_VERSION == 1)
-    // protocol version 1 requires a priority of zero.
-    return 0;
-#endif
 
     uint8_t	priority = 0x0f;
     switch (cmd)
