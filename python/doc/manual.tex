@@ -846,12 +846,14 @@ There are three ways to handle such a situation:
 \item The easiest approach is to move the FPU so that its range of
   possible location does not prevent the \texttt{findDatum()} command
   any more to move in a unambiguous direction. For example, if in the
-  case given above, the FPU is moved by 15\degree\ degrees anti-clockwise, its
-  new position will still be ambiguous, but it will be in the range
-  from +5.0\degree\ to +25.0\degree\ degrees. (When the FPU is not in initialized
-  state, it will be necessary to pass the keyword parameter
+  case given above, the FPU is moved by 15\degree\ degrees
+  anti-clockwise, its new position will still be ambiguous, but it
+  will be in the range from +5.0\degree\ to
+  +25.0\degree\ degrees. (When the FPU is not in initialized state, it
+  will be necessary to pass the keyword parameter
   \texttt{allow\_uninitialized=True} to the corresponding
-  \texttt{configMotion()} command. However, it is not at all necessary
+  \texttt{configMotion()} command, and also to issue an
+  \texttt{enableMove() command}. However, it is not at all necessary
   to disable the software protection.)
 
   Now, the findDatum command will simply perform an clock-wise datum
@@ -1465,11 +1467,13 @@ To test the datum switches, perform the following steps:
 
   As a normal movement configuration requires
   that a datum search has been performed before,
-  it is necessary to pass the \texttt{allow\_uninitialized=True}
+  it is necessary send an \texttt{anableMove() command first}, and
+  also to pass the \texttt{allow\_uninitialized=True}
   flag to the configMotion command:
 
   \begin{minted}{python}
     w = gen_wf(5,5)
+    gd.enableMove(0, gs)
     gd.configMotion(w, gs, allow_uninitialized=True)
     gd.executeMotion(gs)
   \end{minted}
@@ -1490,6 +1494,7 @@ To test the datum switches, perform the following steps:
 
     \begin{minted}{python}
       w = gen_wf(-5.2,-5.2)
+      gd.enableMove(0, gs)
       gd.configMotion(w, gs, allow_uninitialized=True,
                       soft_protection=False)
       gd.executeMotion(gs)
@@ -1506,6 +1511,7 @@ To test the datum switches, perform the following steps:
     Finally, the FPU arms can be moved back into the safe zone, using
     the command
     \begin{minted}{python}
+      gd.enableMove(0, gs)
       w = gen_wf(5.2,5.2)
       gd.configMotion(w, gs, allow_uninitialized=True,
                       soft_protection=False)
@@ -1896,10 +1902,17 @@ using the \texttt{gen\_wf()} utility function.  By default, this
 function generates the quickest valid movement by the angles
 requested.
 
+\index{configuring waveforms}
+\index{enableMove()}
+\index{allow\_uninitialized flag}
 In line 8, the \texttt{configMotion()} method is used to send the
 waveform to the FPU. As usual, the \texttt{grid\_state} variable is
 passed, updated by the command, and the resulting state of the FPU is
-returned in this variable.
+returned in this variable. (In certain situations, it is necessary to
+pass additional flags, if an FPU is not in a state which normally
+allows movements. The details for this are explained in section
+\ref{sec:moving_uninitialized_fpus} on page
+\pageref{sec:moving_uninitialized_fpus} ff.).
 
 Finally, in line 12, the method \texttt{executeMotion()} is called,
 which starts the movement of the FPU (or, if we have more than one
@@ -2311,6 +2324,11 @@ enough to determine the reason of the validation failure.  A complete
 list of waveform error messages and codes is given in
 section~\ref{sec:errorcodes} on page~\pageref{sec:errorcodes} ff.
 \end{sloppypar}
+
+It is also possible that an error is generated because an FPU
+is in an invalid state, even if the waveform which is sent is
+generally OK. Details of this are discussed in section \ref{sec:moving_uninitialized_fpus}
+on page~\pageref{sec:moving_uninitialized_fpus}.
 
 \subsection{Errors during movements}
 Movement operations can result in errors caused by collisions, limit
@@ -4206,17 +4224,24 @@ page~\pageref{sec:genwf}.)
 
 
 \paragraph{Moving uninitialised FPUs}
-\index{datum search!alpha arm at negative position}
-\index{alpha limit breach}
-\index{limit switch!breach}
-\index{configMotion()!moving uninitialised FPUs}
-\index{movements!of uninitialised FPUs}
+\label{sec:moving_uninitialized_fpus}
+\index{datum search!alpha arm at negative position} \index{alpha limit
+  breach} \index{limit switch!breach} \index{configMotion()!moving
+  uninitialised FPUs} \index{movements!of uninitialised FPUs}
+\index{enableMove()!when to use} In a number of situations, it can be
+necessary to move the FPU even if it was not initialised before, for
+example when the alpha arm is in a limit breach position, which
+prevents the datum operation. To do this, \emph{two} safety controls
+need to be overridden.
 
-In a number of situations, it can be necessary to move the FPU even if
-it was not initialised before, for example when the alpha arm is in a
-limit breach position, which prevents the datum operation. To do this,
-the keyword argument \texttt{allow\_uninitiallized=True} needs to be passed,
-which skips the state check.
+To skip the state check in the FPU driver, the keyword argument
+\texttt{allow\_uninitialized=True} needs to be
+passed. \textbf{Furthermore, in hardware protocol 2, the FPU firmware
+  checks for a valid state, too, and this hardware check in the FPU
+  needs to be temporarily disabled for the next configuration command
+  to succeed.} This is done by sending each FPU which is to be moved
+an explicit \texttt{enableMove()} command, which sets the state to
+\texttt{FPT\_RESTING}.
 
 \paragraph{Software protection}
 \index{configMotion()!software protection}
@@ -4480,9 +4505,9 @@ confirmation, and returns.
 
 After an \texttt{abortMotion()} command, FPUs which are in the state
 \texttt{ABORTED} will not be able to move again before this state is
-resolved. In protocol version 2, this can be done using the
-\texttt{enableMove} command, so that it is not necessary to reset or
-power-cycle the FPU.
+resolved. In protocol version 2, this can be done more safely using
+the \texttt{enableMove} command, so that it is not necessary to reset
+or power-cycle the FPU.
 
 
 \chapter{Special methods for managing FPU state}
@@ -4536,6 +4561,7 @@ while it was locked, it changes into the state
 \index{FPU!enabling Movements!reference}
 \index{leaving the ABORTED state}
 \index{ABORTED state!leaving}
+\index{moving uninitialized FPUs!using enableMove()}
 
 The command
 \begin{minted}{python}
@@ -4545,13 +4571,15 @@ allows an FPU to get out of an \texttt{ABORTED} or
 \texttt{UNINITIALISED} state without resetting the FPU. It addresses
 one specific FPU whose number is passed as a parameter.
 
-The purpose of this command is to provide the ability to bypass the
-FPU state machine in specific situations, without circumventing the
-protection which the state machine provides.
+The purpose of this command is to provide the ability to bypass
+firmware checks of th the FPU state machine in specific situations,
+without circumventing the firmware protection entirely.
 
 If an FPU is in \texttt{ABORTED} or in \texttt{UNINITIALISED} state,
 the state is changed to \texttt{RESTING}. Otherwise, the command is
-rejected.
+rejected. This can be used to move an FPU which is uninitialized.  For
+details on this, see section~\ref{sec:moving_uninitialized_fpus} on
+page~\pageref{sec:moving_uninitialized_fpus}.
 
 
 \section{freeBetaCollision()}
@@ -5465,6 +5493,17 @@ older firmware versions:
 The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
+
+\subsection*{Changes in version 2.1.2}
+\begin{itemize}
+\item Added documentation how to properly move uninitialized FPUs
+  using the \texttt{enableMove()} command, skipping the state check
+  added in the FPU firmware.
+\item Bugfix: Fix some edge cases in the driver where some state
+  checks were missing in the \texttt{configMotion()} method, and where
+  the hardware simulation returned invalid codes when configuring
+  invalid movements.
+\end{itemize}
 
 \subsection*{Changes in version 2.1.1}
 \begin{itemize}
