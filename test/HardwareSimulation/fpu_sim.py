@@ -399,12 +399,12 @@ class FPU:
         if ovflag:                     # this might having been set
             self.can_overflow = False  # by a Unix signal handler
             if ovflag == 'HW':
-                return MCE_ERR_CAN_OVERFLOW_HW, None
+                return MCE_ERR_CAN_OVERFLOW_HW, WAVEFORM_UNDEFINED
             else:
-                return MCE_ERR_CAN_OVERFLOW_SW, None
+                return MCE_ERR_CAN_OVERFLOW_SW, WAVEFORM_UNDEFINED
 
         if self.state == FPST_LOCKED :
-            return MCE_NOTIFY_COMMAND_IGNORED
+            return MCE_NOTIFY_COMMAND_IGNORED, WAVEFORM_UNDEFINED
 
         if self.state not in [ FPST_AT_DATUM,
                                FPST_LOADING,
@@ -412,11 +412,11 @@ class FPU:
                                FPST_READY_REVERSE,
                                FPST_RESTING]:
 
-            return MCE_ERR_INVALID_COMMAND
+            return MCE_ERR_INVALID_COMMAND, WAVEFORM_UNDEFINED
 
 
         if self.running_wave:
-            return MCE_ERR_INVALID_COMMAND, None
+            return MCE_ERR_INVALID_COMMAND, WAVEFORM_UNDEFINED
 
         if (self.nwave_entries == 0) and (not first):
             return WAVEFORM_REJECTED, WAVEFORM_SEQUENCE

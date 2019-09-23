@@ -226,7 +226,7 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbosity=0):
 
         if command_id == CCMD_CONFIG_MOTION:
             TX[4] = FPUGrid[fpu_id].nwave_entries
-            TX[5] = wf_errcode
+            TX[5] = (wf_errcode if (wf_errcode is not None) else WAVEFORM_BADVALUE)
 
         confirmation = TH + TX[:6]
         return confirmation

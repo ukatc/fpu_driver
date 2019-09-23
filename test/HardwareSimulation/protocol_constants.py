@@ -39,8 +39,8 @@ CCMD_NO_COMMAND                       = 0  # reserved
 CCMD_CONFIG_MOTION                    = 1  # configure waveform
 CCMD_EXECUTE_MOTION                   = 2  # execute loaded waveform
 CCMD_ABORT_MOTION                     = 3  # abort any ongoing movement
-                                           
-                                           
+
+
 CCMD_READ_REGISTER                    = 6  # read register
 CCMD_PING_FPU                         = 7  # check connectivity
 CCMD_RESET_FPU                        = 8  # reset MCU
@@ -64,9 +64,9 @@ if CAN_PROTOCOL_VERSION == 1:
     CCMD_READ_SERIAL_NUMBER               = 18 # read serial number from NVRAM
     CCMD_WRITE_SERIAL_NUMBER              = 19 # write serial number to NVRAM
     NUM_CAN_COMMANDS = 20
-    
-    # code 101 unused 
-    # code 102 unused 
+
+    # code 101 unused
+    # code 102 unused
     CMSG_FINISHED_MOTION               = 103 #  executeMotion finished
     CMSG_FINISHED_DATUM                = 104 #  findDatum finished
     CMSG_WARN_COLLISION_BETA           = 105 #  collision at beta arm
@@ -86,14 +86,14 @@ else:
     CCMD_ENABLE_MOVE                      = 22 # set minimum step frequency
     CCMD_READ_SERIAL_NUMBER               = 23 # read serial number from NVRAM
     CCMD_WRITE_SERIAL_NUMBER              = 24 # write serial number to NVRAM
-                                          
+
     CMSG_FINISHED_MOTION                  = 25 # executeMotion finished
     CMSG_FINISHED_DATUM                   = 26 # findDatum finished
     CMSG_WARN_COLLISION_BETA              = 27 # collision at beta arm
     CMSG_WARN_LIMIT_ALPHA                 = 28 # limit switch at alpha arm
     CMSG_WARN_TIMEOUT_DATUM               = 29 # datum search time out
     CMSG_WARN_CANOVERFLOW                 = 30 # CAN buffer overflow warning
-    
+
     NUM_CAN_COMMANDS = 30
 
 
@@ -103,7 +103,7 @@ if CAN_PROTOCOL_VERSION == 1:
     ER_STALLY           = 0x02        #  y motor stall (obsolete)
     ER_COLLIDE          = 0x03        #  FPU collision detected
     ER_INVALID          = 0x04        #  received command not valid
-    ER_WAVENRDY         = 0x05        #  waveform not ready 
+    ER_WAVENRDY         = 0x05        #  waveform not ready
     ER_WAVE2BIG         = 0x06        #  waveform exceeds memory allocation
     ER_TIMING           = 0x07        #  step timing error (interrupt race condition)
     ER_M1LIMIT          = 0x08        #  M1 Limit switch breached
@@ -138,7 +138,7 @@ WAVEFORM_OK                  = 0x00
 WAVEFORM_TOO_BIG	     = 0x01	##  too many waveform entries
 WAVEFORM_SEQUENCE	     = 0x02	##  transmitted waveform sequence not consistent in respect to use of first and last flags
 WAVEFORM_BADVALUE	     = 0x03	##  the transmitted waveform value did not pass bounds checking
-
+WAVEFORM_UNDEFINED           = 0x04     ## no waveform data defined because of other error
 
 if CAN_PROTOCOL_VERSION == 1:
     # status flags
@@ -147,7 +147,7 @@ if CAN_PROTOCOL_VERSION == 1:
     STBT_EXECUTE_WAVE    = 1 << 2   #  internal start flag to start executing waveform
     STBT_RUNNING_WAVE    = 1 << 3   #  FPU is running the waveform
     STBT_ABORT_WAVE      = 1 << 4   #  abort waveform
-    STBT_M1LIMIT         = 1 << 5   #  M1 Limit breached 
+    STBT_M1LIMIT         = 1 << 5   #  M1 Limit breached
     STBT_M2LIMIT         = 1 << 6   #  no longer used
     STBT_REVERSE_WAVE    = 1 << 7   #  waveform to be run in reverse
 else:
