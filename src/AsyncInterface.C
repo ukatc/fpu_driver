@@ -5417,13 +5417,14 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
+    // use bitmask for test of set membership
     constexpr int allowed_states =       ( ( 1 << FPST_UNKNOWN                 )
-					   & ( 1 << FPST_UNINITIALIZED           )
-					   & ( 1 << FPST_LOCKED                  )
-					   & ( 1 << FPST_AT_DATUM                )
-					   & ( 1 << FPST_RESTING                 )
-					   & ( 1 << FPST_ABORTED                 )
-					   & ( 1 << FPST_OBSTACLE_ERROR          ));
+					   | ( 1 << FPST_UNINITIALIZED           )
+					   | ( 1 << FPST_LOCKED                  )
+					   | ( 1 << FPST_AT_DATUM                )
+					   | ( 1 << FPST_RESTING                 )
+					   | ( 1 << FPST_ABORTED                 )
+					   | ( 1 << FPST_OBSTACLE_ERROR          ));
 
     for (int i=0; i < config.num_fpus; i++)
     {
