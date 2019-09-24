@@ -831,8 +831,19 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
                 return DE_NEW_LIMIT_BREACH;
             }
         }
-        if (fpu_status == FPST_ABORTED)
+        else if (fpu_status == FPST_ABORTED)
         {
+
+	    LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU movement was aborted for FPU %i\n",
+			ethercanif::get_realtime(), i);
+	    logGridState(config.logLevel, grid_state);
+	    fsync(config.fd_controllog);
+
+	    return DE_MOVEMENT_ABORTED;
+        }
+        else if (fpu_status == FPST_UNINITIALIZED)
+        {
+	    // this fpu_status can also result if only one arm is datumed, which is no error
 
             if (fpu.last_status == MCE_ERR_DATUM_TIME_OUT)
             {
@@ -842,15 +853,6 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
                 fsync(config.fd_controllog);
 
                 return DE_DATUM_COMMAND_HW_TIMEOUT;
-            }
-            else
-            {
-                LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU movement was aborted for FPU %i\n",
-                            ethercanif::get_realtime(), i);
-                logGridState(config.logLevel, grid_state);
-                fsync(config.fd_controllog);
-
-                return DE_MOVEMENT_ABORTED;
             }
         }
 

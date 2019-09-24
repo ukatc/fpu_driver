@@ -605,8 +605,8 @@ class FPU:
 
         printtime()
         wait_interval_sec = 0.1
-        alpha_speed = -50.0 # steps per time interval
-        beta_speed = -50.0 # steps per interval
+        alpha_speed = -25.0 # steps per time interval
+        beta_speed = -25.0 # steps per interval
 
         if auto_datum:
             if self.beta_steps < 0:
@@ -741,7 +741,6 @@ class FPU:
 
             if alpha_timeout:
                 print("FPU %i: step number exceeds alpha time-out step count of %i, aborting" % (self.fpu_id, alpha_timeout_limit))
-                self.abort_wave = True
                 self.datum_timeout = True
                 alpha_datumed = alpha_ready and (not skip_alpha) and (not simulate_failure_alpha)
                 beta_datumed = beta_ready and (not skip_beta) and (not simulate_failure_beta)
@@ -1179,6 +1178,7 @@ class FPU:
             return MCE_NOTIFY_COMMAND_IGNORED
         print("FPU # %i: setting state to FPST_RESTING" % self.fpu_id)
         self.state = FPST_RESTING
+        self.abort_wave = True
 
         return MCE_FPU_OK
 

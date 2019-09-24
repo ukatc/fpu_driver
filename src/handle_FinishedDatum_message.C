@@ -95,6 +95,7 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         fpu.alpha_was_referenced = false;
         fpu.beta_was_referenced = false;
 	fpu.state = FPST_UNINITIALIZED;
+	fpu.ping_ok = false;
 
         // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
@@ -123,7 +124,7 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         if (fpu.state == FPST_DATUM_SEARCH)
         {
             fpu.alpha_was_referenced = false;
-	    fpu.state = FPST_UNINITIALIZED;	    
+	    fpu.state = FPST_UNINITIALIZED;
         }
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "datum request rejected for FPU %i, because alpha limit switch active\n",

@@ -680,7 +680,8 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
         throw EtherCANException("DE_DATUM_COMMAND_HW_TIMEOUT: The FPU firmware has timed-out"
                                 " a datum operation because it took too long to complete. Potentially,"
                                 " the datum switch is not working, or the FPU hardware is otherwise"
-                                " damaged.",
+                                " damaged. It can also be that the datum command was just issued when"
+				" the FPU was too far away from the datum switch.",
                                 DE_DATUM_COMMAND_HW_TIMEOUT);
         break;
 
