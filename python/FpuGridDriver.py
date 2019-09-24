@@ -2488,11 +2488,6 @@ class GridDriver(UnprotectedGridDriver):
             cnt = self.aretries_acw[fpu_id]
 
         with self.env.begin(db=self.fpudb, write=True) as txn:
-            ProtectionDB.store_bretry_count(txn, fpu, clockwise, cnt)
-            self._update_bpos(txn, fpu, fpu_id,  bpos.combine(new_bpos))
-
-
-        with env.begin(db=self.fpudb, write=True) as txn:
             ProtectionDB.store_aretry_count(txn, fpu, clockwise, cnt)
 
         fpuset = [fpu_id]
