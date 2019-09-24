@@ -5509,6 +5509,12 @@ commands, or alter otherwise visible behaviour of the driver.
   invalid movements.
 \item A bug in the firmware simulation for handling the
   \texttt{checkIntegrity} command was fixed.
+\item A bug in the fpu\_driver, which affected the correct handling of
+  firmware datum time-out messages was fixed.
+\item A bug in handling the \texcttt{freeAlphaLimitBreach()} was
+  fixed, which caused exceptions in the Python wrapper.
+\item Several bugs in the fpu firmware simulation were fixed, and the
+  range limits were made similar to actually measured limits.
 \end{itemize}
 
 \subsection*{Changes in version 2.1.1}
