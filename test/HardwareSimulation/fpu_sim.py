@@ -39,31 +39,21 @@ FPUGrid = []
 ALPHA_DATUM_OFFSET=-180.0
 BETA_DATUM_OFFSET=0.0
 
-# range allowed by software protection (copied from fpu_constants.py)
-ALPHA_MIN_DEGREE = -180.2
-ALPHA_MAX_DEGREE = +159.0
-
-ALPHA_MIN_HARDSTOP_DEGREE = -183.2
-ALPHA_MAX_HARDSTOP_DEGREE = +181.8
-
-BETA_MIN_DEGREE = -179.3
-BETA_MAX_DEGREE = 140.0
-
-BETA_MIN_HWPROT_DEGREE = -181.0
-BETA_MAX_HWPROT_DEGREE = 145.0
-
-
-
-
 # The alpha RDEGREE values below are relative from the datum switch
 # (datum=zero).  (For displayed alpha angles, the conventional angle
 # at datum is added.)
-ALPHA_MIN_DEGREE = 0
-ALPHA_MAX_DEGREE = -(-180.0) + 170.0
-BETA_MIN_DEGREE = -179.3
-BETA_MAX_DEGREE = 150.3
-BETA_DATUM_SWITCH_MAX_DEGREE = -0.2
-BETA_DATUM_SWITCH_MIN_DEGREE = -5
+ALPHA_MIN_DEGREE = -180.2
+ALPHA_MAX_DEGREE = +165.0
+
+ALPHA_MIN_HARDSTOP_DEGREE = -183.2
+ALPHA_MAX_HARDSTOP_DEGREE = +168.8
+
+BETA_MIN_DEGREE = -185.2
+BETA_MAX_DEGREE = 142.0
+
+BETA_MIN_HWPROT_DEGREE = -184.0
+BETA_MAX_HWPROT_DEGREE = 143.0
+
 
 
 ALPHA_BUFFER = 0.2
@@ -505,18 +495,19 @@ class FPU:
         # 3. direction is the same as during the last switch reak
 
 
-        if ((not new_switch)
-            and old_switch
-            and (cur_direction != 0)
-            and (cur_direction == alpha_last_direction)) or (
-                self.alpha_limit_breach and self.wave_valid):
+        if (((not new_switch)
+             and old_switch
+             and (cur_direction != 0)
+             and (cur_direction == alpha_last_direction))
+            or (self.alpha_limit_breach and self.wave_valid)):
+
             self.alpha_limit_breach = True
             self.was_initialized = False
             self.wave_ready = False
             self.wave_valid = False
-            print("LIMIT BREACH detected: last pos = %f, new pos =%f"
-                  "alpha move: old switch = %r, new switch=%r"
-                  "last_dirction = %i, cur_direction=%i"
+            print("LIMIT BREACH detected: last pos = %i, new pos =%i, "
+                  "alpha move: old switch = %r, new switch=%r, "
+                  "last_direction = %i, cur_direction=%i"
                   % (old_alpha, new_alpha,
                      old_switch, new_switch,
                      alpha_last_direction, cur_direction))
