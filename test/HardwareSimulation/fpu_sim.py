@@ -508,7 +508,8 @@ class FPU:
         if ((not new_switch)
             and old_switch
             and (cur_direction != 0)
-            and (cur_direction == alpha_last_direction)):
+            and (cur_direction == alpha_last_direction)) or (
+                self.alpha_limit_breach and self.wave_valid):
             self.alpha_limit_breach = True
             self.was_initialized = False
             self.wave_ready = False
@@ -522,6 +523,8 @@ class FPU:
 
             if limit_callback is not None:
                 limit_callback(self)
+            else:
+                print("skipping alpha limit brach callback (no callback defined)")
 
             if (new_alpha + alpha_offset) < MIN_ALPHA_OFF:
                 self.alpha_steps = MIN_ALPHA_OFF
@@ -1234,6 +1237,10 @@ def collision_handler(signum, frame):
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.is_collided = True
 
+def limitbreach_handler(signum, frame):
+    print("generating a limit breach")
+    for fpu_id, fpu in enumerate(FPUGrid):
+        fpu.alpha_limit_breach = True
 
 def overflow_handler(signum, frame):
     print("generating a CAN overflow")
@@ -1252,5 +1259,6 @@ def init_FPUGrid(options, num_fpus):
     FPUGrid[:] = [FPU(i, options) for i in range(num_fpus) ]
     signal.signal(signal.SIGHUP, reset_handler)
     signal.signal(signal.SIGUSR1, collision_handler)
-    signal.signal(signal.SIGUSR2, overflow_handler)
+    signal.signal(signal.SIGUSR2, limitbreach_handler)
+    signal.signal(signal.SIGURG, overflow_handler)
     signal.signal(signal.SIGRTMIN, colltest_handler)
