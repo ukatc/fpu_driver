@@ -18,7 +18,7 @@ from numpy import (array, random, asarray, zeros, ones, sqrt, ceil,
 import FpuGridDriver
 from FpuGridDriver import (TEST_GATEWAY_ADRESS_LIST, GatewayAddress,
                            SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE,
-                           DEFAULT_WAVEFORM_RULSET_VERSION, DATUM_TIMEOUT_DISABLE)
+                           DEFAULT_WAVEFORM_RULESET_VERSION, DATUM_TIMEOUT_DISABLE)
 from fpu_commands import *
 from fpu_constants import *
 
@@ -58,7 +58,7 @@ def filter_slow_tail(step_list, min_steps):
 
 
 
-def wf_append(wf1, wf2, min_steps=125, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION):
+def wf_append(wf1, wf2, min_steps=125, ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION):
     wf = wf_copy(wf1)
 
     for k in wf.keys():
@@ -208,7 +208,7 @@ def gen_jump(current_alpha, current_beta, alpha_target, beta_target, opts=None):
 
     return wf
 
-def check_wf(wf, channel, opts=None, verbose=False, rulset_version=None):
+def check_wf(wf, channel, opts=None, verbose=False, ruleset_version=None):
     for ws in wf.values():
         y = array([ seg[channel] for seg in ws ])
         y = append(y, 0)
@@ -239,20 +239,22 @@ def check_wf(wf, channel, opts=None, verbose=False, rulset_version=None):
             assert(sign(yk) * sign(y_prev) >= 0)
             assert(sign(yk) * sign(y_post) >= 0)
 
-            if (small_y != 0) and (y_prev != 0) and (y_post != 0):
-                assert ( (large_y /  small_y) <= opts.max_acceleration), "step too large for step %i, small=%i, large = %i" % (
-                    k, small_y, large_y)
+            if ruleset_version == 4:
+                if (small_y != 0) and (y_prev != 0) and (y_post != 0):
+                    assert ( (large_y /  small_y) <= opts.max_acceleration), "step too large for step %i, small=%i, large = %i" % (
+                        k, small_y, large_y)
 
 
 
 """generates a waveform according to the given command line parameters."""
-def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
-                   ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION,
+def gen_duty_cycle(current_alpha, current_beta, cycle_length=30.0,
+                   ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION,
                    opts=None):
 
     rest_segments = int(round((1000 * cycle_length) / opts.segment_length_ms))
     if rest_segments > opts.maxnum_waveform_segments:
-        raise ValueError("the time requires more segments than the the number of allowed segments")
+        raise ValueError("the time requires more segments (%i) than the the number of allowed segments (%i)" % (
+            rest_segments, opts.maxnum_waveform_segments))
 
     min_steps = opts.min_steps
 
@@ -417,7 +419,7 @@ def parse_args():
                                  WARNING: No conflict checking is done.  (default: %(default)s)""")
 
     parser.add_argument('-r', '--ruleset_version',  metavar='RULESET_VERSION', type=int,
-                        default=DEFAULT_WAVEFORM_RULSET_VERSION,
+                        default=DEFAULT_WAVEFORM_RULESET_VERSION,
                         help="""Version number of rule set which is used for waveform validity checking.
                         Currently available options: 0 - no checking, 1 - strict checking with
                         small speeds allowed (not fully supported by current firmware)
@@ -440,7 +442,7 @@ def parse_args():
     parser.add_argument('--chill_time', metavar='CHILL_TIME', type=float, default=30,
                         help='chill time between movements  (default: %(default)s)')
 
-    parser.add_argument('--cycle_length', metavar='CYCLE_LENGTH', type=float, default=32,
+    parser.add_argument('--cycle_length', metavar='CYCLE_LENGTH', type=float, default=28,
                         help='cycle duration  (default: %(default)s)')
 
 
