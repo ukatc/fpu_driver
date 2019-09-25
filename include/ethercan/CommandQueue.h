@@ -20,15 +20,17 @@
 #ifndef  COMMAND_QUEUE_H
 #define COMMAND_QUEUE_H
 
+#include <memory>
+#include <deque>
+
 #include "../InterfaceConstants.h"
 #include "CAN_Command.h"
 
 #include "../EtherCANInterfaceConfig.h"
 #include "time_utils.h"
 #include "CommandPool.h"
+#include "RingBuffer.h"
 
-#include <memory>
-#include <deque>
 
 using std::unique_ptr;
 
@@ -50,7 +52,6 @@ public:
         QS_MISSING_INSTANCE = 3,
     };
 
-    const int MAX_MESSAGE_CAPACITY = MAX_NUM_POSITIONERS * MAX_SUB_COMMANDS;
 
 
     typedef int t_command_mask;
@@ -103,9 +104,6 @@ public:
     // should be discarded.
     void flushToPool(CommandPool& memory_pool);
 
-#if 0
-    int getNumQueuedCommands();
-#endif
 
     void setEventDescriptor(int fd);
 
@@ -118,7 +116,7 @@ private:
 
     int EventDescriptorNewCommand;
 
-    std::deque<unique_ptr<CAN_Command>> fifos[MAX_NUM_GATEWAYS];
+    RingBuffer fifos[MAX_NUM_GATEWAYS];
 
 };
 

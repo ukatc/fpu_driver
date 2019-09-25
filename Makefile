@@ -31,7 +31,7 @@ _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h		      \
 	ethercan/CommandQueue.h InterfaceConstants.h ethercan/FPUArray.h	      \
 	ethercan/GatewayInterface.h ethercan/CAN_Command.h		              \
 	ethercan/I_ResponseHandler.h ethercan/SBuffer.h			              \
-	ethercan/TimeOutList.h                                                        \
+	ethercan/TimeOutList.h ethercan/RingBuffer.h                                  \
 	ethercan/cancommandsv2/AbortMotionCommand.h                                   \
 	ethercan/cancommandsv2/CheckIntegrityCommand.h				      \
 	ethercan/cancommandsv2/ConfigureMotionCommand.h				      \

@@ -152,12 +152,7 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
         // throw a bad_alloc exception if the system is low on memory.
         // Best fix is possibly to replace std::dequeue with a
         // fixed-size ringbuffer. Should be done for version 2.
-#ifdef SHOW_FIXMES
-#if CAN_PROTOCOL_VERSION > 1
-#pragma message "FIXME: make CommandQueue::enqueue() exception-safe"
-#endif
-#endif
-        fifos[gateway_id].push_back(std::move(new_command));
+        fifos[gateway_id].push_back(new_command);
 
         // if we changed from an empty queue to a non-empty one,
         // signal an event to notify any waiting poll.
@@ -172,9 +167,11 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 		int rv = write(EventDescriptorNewCommand, &val, sizeof(val));
 		if (rv != sizeof(val))
 		{
-		    LOG_CONTROL(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error: command queue event notification failed, errno=%i\n",
+		    LOG_CONTROL(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error:"
+				" command queue event notification failed, errno=%i\n",
 				ethercanif::get_realtime(), errno);
-		    LOG_CONSOLE(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error: command queue event notification failed, errno =%i\n",
+		    LOG_CONSOLE(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error:"
+				" command queue event notification failed, errno =%i\n",
 				ethercanif::get_realtime(), errno);
 		}
 	    }
@@ -186,7 +183,7 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 
 	return QS_OK;
 }
-    
+
 
 unique_ptr<CAN_Command> CommandQueue::dequeue(int gateway_id)
 {
@@ -198,8 +195,7 @@ unique_ptr<CAN_Command> CommandQueue::dequeue(int gateway_id)
     {
         pthread_mutex_lock(&queue_mutex);
 
-        rval = std::move(fifos[gateway_id].front());
-        fifos[gateway_id].pop_front();
+        rval = std::move(fifos[gateway_id].pop_front());
 
         pthread_mutex_unlock(&queue_mutex);
     }
@@ -227,7 +223,7 @@ CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
     {
         pthread_mutex_lock(&queue_mutex);
 
-        fifos[gateway_id].push_front(std::move(new_command));
+        fifos[gateway_id].push_front(new_command);
 
         pthread_mutex_unlock(&queue_mutex);
     }
@@ -236,14 +232,14 @@ CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
 }
 
 
-// IMPORTANT NOTE: This should only be called from
-// the control thread. Specifically, the memory pool
-// also has a protective lock
-// (it is accessed from control thread and
-// TX thread),
-// and flushing the CommandQueue content
-// to the pool acquires that lock -
-// *MAKE SURE TO NOT TRIGGER DEADLOCK*.
+// Get command instances back from the command queue to the message
+// pool.
+//
+// IMPORTANT NOTE: This should ONLY be called from the control
+// thread. Specifically, the memory pool also has a protective lock
+// (it is accessed from control thread and TX thread), and flushing
+// the CommandQueue content to the pool acquires that lock - *MAKE
+// SURE TO NOT TRIGGER DEADLOCK*.
 
 void CommandQueue::flushToPool(CommandPool& memory_pool)
 {
@@ -255,28 +251,14 @@ void CommandQueue::flushToPool(CommandPool& memory_pool)
     {
         while (! fifos[i].empty())
         {
-            cmd = std::move(fifos[i].front());
+            cmd = std::move(fifos[i].pop_front());
             memory_pool.recycleInstance(cmd);
-            fifos[i].pop_front();
         }
     }
 
     pthread_mutex_unlock(&queue_mutex);
 }
 
-#if 0
-int CommandQueue::getNumQueuedCommands()
-{
-    int numQueued = 0;
-    pthread_mutex_lock(&queue_mutex);
-    for(int i=0; i < ngateways; i++)
-    {
-        numQueued += fifos[i].size();
-    }
-    pthread_mutex_unlock(&queue_mutex);
-    return numQueued;
-}
-#endif
 
 
 }
