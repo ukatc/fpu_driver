@@ -61,8 +61,8 @@ MAX_STEP_DIFFERENCE=100       # maximum change in steps per segment between segm
 MOTOR_MAX_ACCELERATION=MAX_STEP_DIFFERENCE
 MOTOR_MAX_DECELERATION=MAX_STEP_DIFFERENCE
 
-MAXNUM_WAVEFORM_SEGMENTS = 255
-WAVEFORM_SEGMENT_LENGTH_MS=115
+MAXNUM_WAVEFORM_SEGMENTS = 256
+WAVEFORM_SEGMENT_LENGTH_MS=125
 
 # overflow / underflow representations in binary FPU step counters
 # this is intentionally asymmetric for the alpha arm counter

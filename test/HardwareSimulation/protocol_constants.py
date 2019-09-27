@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from numpy import round
 
 # constants of the CAN protocol to control fibre positioner units
 
@@ -13,7 +14,9 @@ CAN_PROTOCOL_VERSION = 2
 
 MAX_WAVE_ENTRIES = 256
 LEN_SERIAL_NUMBER = 6
-
+DEFAULT_SEGMENT_LENGTH_MS = 125
+SEGMENT_LENGTH_BASE_UNIT = 100e-9 # = 100 nanoseconds
+DEFAULT_TICKS_PER_SEGMENT = round(DEFAULT_SEGMENT_LENGTH_MS * 1e-3 / SEGMENT_LENGTH_BASE_UNIT)
 
 # FPU states
 

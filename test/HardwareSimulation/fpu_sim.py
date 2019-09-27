@@ -184,6 +184,7 @@ class FPU:
         self.beta_last_direction = 0
         self.fpu_locked = False
         self.state = FPST_UNINITIALIZED
+        self.ticks_per_segment = DEFAULT_TICKS_PER_SEGMENT
 
 
 
@@ -356,7 +357,6 @@ class FPU:
 
         print("setting ticks per segment for fpu # %i to %i" % (self.fpu_id, nticks))
 
-        # for now, this is without consequences and not used
         self.ticks_per_segment = nticks
 
         return MCE_FPU_OK
@@ -1012,6 +1012,8 @@ class FPU:
         latency_secs = random.uniform(0, 10) / 1000.
         sleep(latency_secs)
 
+        frame_time = SEGMENT_LENGTH_BASE_UNIT * self.ticks_per_segment
+        print("using a frame time of %5.1f milliseconds" % (frame_time * 1000))
         alpha_limit_breach = False
         section = -1
         for k in range(self.nwave_entries):
@@ -1050,7 +1052,6 @@ class FPU:
                     n, self.fpu_id, delta_alpha, delta_beta, new_alpha, new_beta,
                     alpha_real_deg, beta_real_deg, alpha_swon))
 
-            frame_time = 0.25
             sleep(frame_time)
             if self.abort_wave:
                 self.state = FPST_ABORTED
