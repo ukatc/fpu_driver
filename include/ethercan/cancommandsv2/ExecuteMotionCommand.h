@@ -61,10 +61,12 @@ public:
     {
         timespec const toval =
         {
-            /* currently, the time-out is for the whole
-               movement, not only the confirmation.  That's a
-               bit simple but will work mostly. */
-            /* .tv_sec = */ 45,
+            /* currently, the time-out is for the whole movement, not
+               only the confirmation.  That's a bit simple but will
+               work mostly.  You'll need to increase this time value
+               if you want to configure a longer waveform segment
+               duration.*/
+            /* .tv_sec = */ 60,
             /* .tv_nsec = */ 0
         };
 
