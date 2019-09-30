@@ -164,6 +164,9 @@ enum E_EtherCANErrCode
 
     // Configuration parameters invalid, see log message.
     DE_INVALID_CONFIG = 202,
+    
+    // Sending SYNC configuration failed
+    DE_SYNC_CONFIG_FAILED = 203,
 
     /***************************************/
     /* invalid command parameters*/

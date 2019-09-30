@@ -75,6 +75,8 @@ public:
 
     E_EtherCANErrCode deInitialize();
 
+    E_EtherCANErrCode configSyncCommands(const int ngateways);
+    
     E_EtherCANErrCode connect(const int ngateways, const t_gateway_address gateway_addresses[]);
 
     // disconnect socket, and re-add any pending commands to

@@ -21,6 +21,8 @@
 #ifndef CAN_CONSTANTS_H
 #define CAN_CONSTANTS_H
 
+#include <inttypes.h>
+
 namespace mpifps
 {
 
@@ -57,6 +59,19 @@ const int DIGITS_SERIAL_NUMBER=6;
 
 // pseudo bus address for gateway delay message
 const int MSG_TYPE_DELY = 6;
+
+
+
+
+const uint8_t MSG_TYPE_SYNC = 0x07;   /// Send Sync Message 0 or 1
+			    
+const uint8_t MSG_TYPE_COB0 = 0x08;   /// Sync Message 0 : CAN-OBJECT
+			    
+const uint8_t MSG_TYPE_COB1 = 0x09;   /// Sync Message 1 : CAN-OBJECT
+			    
+const uint8_t MSG_TYPE_MSK0 = 0x0A;   /// Sync Message 0 : CHANNEL MASK
+			    
+const uint8_t MSG_TYPE_MSK1 = 0x0B;   /// Sync Message 1 : CHANNEL MASK
 
 }
 

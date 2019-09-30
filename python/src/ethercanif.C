@@ -449,6 +449,7 @@ void translate_interface_error(EtherCANException const& e)
     case DE_FIRMWARE_UNIMPLEMENTED:
     case DE_INSUFFICENT_NUM_GATEWAYS :
     case DE_INVALID_CONFIG :
+    case DE_SYNC_CONFIG_FAILED:
         PyErr_SetString(SetupErrorExceptionTypeObj, e.what());
         break;
 
@@ -774,6 +775,11 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
     case DE_INVALID_CONFIG:
         throw EtherCANException("DE_INVALID_CONFIG: The EtherCAN interface configuration is not valid",
                                 DE_INVALID_CONFIG);
+        break;
+
+    case DE_SYNC_CONFIG_FAILED:
+        throw EtherCANException("DE_SYNC_CONFIG_FAILED: Sending the SYNC configuration to the gateways failed",
+                                DE_SYNC_CONFIG_FAILED);
         break;
 
     case DE_ASSERTION_FAILED:
@@ -1586,6 +1592,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("DE_INVALID_PAR_VALUE", DE_INVALID_PAR_VALUE)
     .value("DE_DUPLICATE_SERIAL_NUMBER", DE_DUPLICATE_SERIAL_NUMBER)
     .value("DE_INVALID_CONFIG", DE_INVALID_CONFIG)
+    .value("DE_SYNC_CONFIG_FAILED", DE_SYNC_CONFIG_FAILED)
     .value("DE_INVALID_INTERFACE_STATE", DE_INVALID_INTERFACE_STATE)
     .value("DE_OUT_OF_MEMORY", DE_OUT_OF_MEMORY)
     .value("DE_RESOURCE_ERROR", DE_RESOURCE_ERROR)

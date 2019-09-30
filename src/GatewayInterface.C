@@ -38,6 +38,8 @@
 #include "ethercan/time_utils.h"
 #include "ethercan/GatewayInterface.h"
 #include "ethercan/cancommandsv2/AbortMotionCommand.h"
+#include "ethercan/cancommandsv2/ExecuteMotionCommand.h"
+#include "ethercan/SBuffer.h"
 
 
 namespace mpifps
@@ -408,6 +410,100 @@ void unset_rt_priority()
     }
 }
 
+E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
+
+    bool const broadcast = true;
+
+    t_CAN_buffer can_buffer;
+    int buf_len = 0;
+    memset((void*) &can_buffer, 0, sizeof(can_buffer));
+    
+    uint8_t const can_identifier = 1;
+    uint8_t const sequence_number = 0;
+
+
+    SBuffer::E_SocketStatus status = SBuffer::E_SocketStatus::ST_OK;
+
+
+    // Config Sync. Note that this configuration is sent to the gateways,
+    // not the fibre positioners, and that, in difference to commands to the FPUs,
+    // it is *not* acknowledged.
+    // If this fails, it can only be detected by using special
+    // diagnostic additions which query the gateways. Because
+    // mis-configurations would be very hard to detect, this is hard-coded
+    // and fairly static - the SYNC configuration is set up with
+    // each successful connect(), so it cannot be forgotten.
+    //
+    // For more information, see the EtherCAN gateway documentation.
+
+    {
+	AbortMotionCommand abort_motion_command;
+	abort_motion_command.parametrize(0, broadcast);
+	abort_motion_command.SerializeToBuffer(MSG_TYPE_COB0,
+					       can_identifier,
+					       buf_len,
+					       can_buffer,
+					       sequence_number);
+    }
+
+    // set mask to activate 5 channels
+    const uint8_t channel_mask = (uint8_t) ((1 << BUSES_PER_GATEWAY) - 1);
+    
+    for (int gateway_id=0; gateway_id < ngateways; gateway_id++)
+    {   
+	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
+						      buf_len, can_buffer.bytes, MSG_TYPE_COB0,
+						      can_identifier);
+
+	if (status != SBuffer::E_SocketStatus::ST_OK){
+	    return DE_SYNC_CONFIG_FAILED; 
+	}
+	
+	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
+						      sizeof(channel_mask), &channel_mask, MSG_TYPE_MSK0,
+						      0);
+	
+	if (status != SBuffer::E_SocketStatus::ST_OK){
+	    return DE_SYNC_CONFIG_FAILED; 
+	}
+    }
+
+    buf_len = 0;
+    {
+	ExecuteMotionCommand execute_motion_command;
+	execute_motion_command.parametrize(0, broadcast);
+	execute_motion_command.SerializeToBuffer(MSG_TYPE_COB1,
+						 can_identifier,
+						 buf_len,
+						 can_buffer,
+						 sequence_number);
+    }
+
+    for (int gateway_id=0; gateway_id < ngateways; gateway_id++)
+    {   
+	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
+						      buf_len, can_buffer.bytes, MSG_TYPE_COB0,
+						      can_identifier);
+	if (status != SBuffer::E_SocketStatus::ST_OK){
+	    return DE_SYNC_CONFIG_FAILED; 
+	}
+	
+	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
+						      sizeof(channel_mask), &channel_mask, MSG_TYPE_MSK1,
+						      0);
+	if (status != SBuffer::E_SocketStatus::ST_OK){
+	    return DE_SYNC_CONFIG_FAILED; 
+	}
+    }
+
+    return DE_OK;
+}
+
+
+// connect to the gateways, and also set the SYNC configuration.
+// if the SYNC configuration fails, the error code
+// DE_SYNC_CONFIG_FAILED is returned.
+
 E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
         const t_gateway_address gateway_addresses[])
 {
@@ -502,6 +598,20 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
         }
         SocketID[i] = sock_fd;
         num_initialized_sockets++;
+    }
+
+    ecode = configSyncCommands(ngateways);
+
+    if (ecode != DE_OK){
+	LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+		    "GatewayInterface::connect() - could not configure SYNC commands",
+		    ethercanif::get_realtime());
+	
+	LOG_CONSOLE(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+		    "GatewayInterface::connect() - could not configure SYNC commands",
+		    ethercanif::get_realtime());
+	
+	goto close_sockets;
     }
 
     // If configured, try to set real-time process scheduling policy
