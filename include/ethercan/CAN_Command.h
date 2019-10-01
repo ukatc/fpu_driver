@@ -171,10 +171,6 @@ public:
         // CAN command code
         can_buffer.message.data[1] = cmd_code & CMD_CODE_MASK;
 
-#if 0
-	fprintf(stderr, "setting header: busid = %i, canid = %i, priority = %i, bcast=%i, command code = %i, seqno =%i\n",
-		busid, fpu_canid, getMessagePriority(cmd_code), bcast ? 1 : 0, cmd_code, sequence_number);
-#endif
 	
         buflen = 5; // 3 bytes header, 2 bytes payload
     }
