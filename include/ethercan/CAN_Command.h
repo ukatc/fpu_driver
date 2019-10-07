@@ -68,6 +68,8 @@ public:
 
     static const int CMD_CODE_MASK = 0x1F;
 
+    static const E_SYNC_TYPE sync_code = SYNC_NOSYNC;
+
 
 
     CAN_Command(E_CAN_COMMAND _command_code) : command_code(_command_code), fpu_id(-1), bcast(false), sequence_number(0) {};
@@ -76,7 +78,13 @@ public:
 
 
 
-    E_CAN_COMMAND getInstanceCommandCode()
+    virtual E_CAN_COMMAND getCANCommandCode()
+    {
+        assert(command_code != CCMD_NO_COMMAND);
+        return command_code;
+    };
+
+    E_CAN_COMMAND getPoolCommandCode()
     {
         assert(command_code != CCMD_NO_COMMAND);
         return command_code;
@@ -120,6 +128,12 @@ public:
         return bcast;
     }
 
+    // returns whether this is a gateway SYNC command
+    virtual bool doSync()
+    {
+        return false;
+    }
+
     uint8_t getSequenceNumber()
     {
         return sequence_number;
@@ -151,7 +165,7 @@ public:
         // the CAN identifier is either all zeros (for a broadcast
         // message) or bits 7 - 10 are the proiority and bits 0 -
         // 6 the CAN id of the FPU.
-        const E_CAN_COMMAND cmd_code = getInstanceCommandCode();
+        const E_CAN_COMMAND cmd_code = getCANCommandCode();
 
         uint16_t can_identifier = 0;
 
@@ -171,7 +185,7 @@ public:
         // CAN command code
         can_buffer.message.data[1] = cmd_code & CMD_CODE_MASK;
 
-	
+
         buflen = 5; // 3 bytes header, 2 bytes payload
     }
 

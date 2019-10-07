@@ -47,24 +47,27 @@ def gateway(socket, address, args):
 
     socket.setsockopt(IPPROTO_TCP, TCP_NODELAY, 1)
 
+    # append to list of sockets, for handling SYNC commands
+    mock_controller.gateway_socket_list.append(socket)
+
     while True:
         command = socket.recv(msg_len)
         if not command:
             print("client disconnected")
             break
         prot.decode(command, command_handler, socket)
-        
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Start EtherCAN gateway simulation')
     parser.add_argument('ports', metavar='p', type=int, nargs='*',
                         default = DEFAULT_PORTS,
                         help='ports which will listen to a connection')
-    
+
     parser.add_argument('-d', '--debug', dest='debug',  action='store_true',
                         default=DEBUG,
                         help='print received binary commands and responses')
-    
+
     parser.add_argument('-v', '--verbosity', dest='verbosity',  type=int,
                         default=1,
                         help='verbosity: 0 - no extra output ... 5 - print extensive debug output')
@@ -76,7 +79,7 @@ def parse_args():
     parser.add_argument('-t', '--datum_alpha_timeout_steps',  dest='datum_alpha_timeout_steps',
                         default=500,
                         help='timeout limit for alpha arm, in steps')
-    
+
     parser.add_argument('-b', '--datum_beta_timeout_steps',  dest='datum_beta_timeout_steps',
                         default=125 * 20,
                         help='timeout limit for beta arm, in steps')
@@ -84,7 +87,7 @@ def parse_args():
     parser.add_argument('-D', '--firmware_date',  dest='firmware_date',
                         default="18-01-01",
                         help='ISO timestamp with firmware date (format yy-mm-dd as "18-12-31")')
-    
+
     parser.add_argument('-N', '--NUM_FPUS',  type=int, dest='NUM_FPUS',
                         default=int(DEFAULT_NUM_FPUS),
                         help='number of simulated FPUs')
@@ -92,59 +95,59 @@ def parse_args():
     parser.add_argument('-O', '--alpha-datum-offset',  type=float, dest='alpha_datum_offset',
                         default=-180.0,
                         help=("""Conventional angle of datum position."""))
-    
+
     parser.add_argument('-A', '--alpha-start',  type=float, dest='alpha_start',
                         default=0.0,
-                        help=("""simulated offset of alpha arm at start, 
+                        help=("""simulated offset of alpha arm at start,
                         when the step count is 0.
                         This can be used to simulate conditions like a power failure"""))
-    
+
     parser.add_argument('-B', '--beta-start',  type=float, dest='beta_start',
                         default=0.0,
                         help='simulated offset of beta arm at start')
 
     parser.add_argument('-fda', '--fail-datum-alpha', type=int, action='append', default=[],
                         help="list of units which simulate a failure of the alpha datum operation, sending a time-out response")
-    
+
     parser.add_argument('-fdb', '--fail-datum-beta', type=int, action='append', default=[],
                         help="list of units which simulate a failure of the beta datum operation, sending a time-out response")
-    
+
     args = parser.parse_args()
-    
+
     version_tuple = map(int, args.protocol_version.split("."))
-    
+
     while len(version_tuple) < 3:
         version_tuple = version_tuple + [0]
         print("firmware version=", version_tuple)
     args.fw_version = tuple(version_tuple)
     print("firmware version :", args.fw_version)
-    
+
     del args.protocol_version # delete for safety
 
     args.fw_date = map(int, args.firmware_date.split("-"))
 
     return args
-     
 
-        
+
+
 if __name__ == '__main__':
     ip = '127.0.0.1'
-    
+
     args = parse_args()
-    
-    
+
+
     print("protocol_version:", args.fw_version)
     print("listening to ports:", args.ports)
     print("listening to ports:", args.ports)
     print("number of FPUs    :", args.NUM_FPUS)
-    
+
     fpu_sim.init_FPUGrid(args, args.NUM_FPUS)
     mock_controller.gateway_map = { (ip, args.ports[i]) : i for i in range(len(args.ports))  }
     print("gateway map:", mock_controller.gateway_map)
     pool = Pool(10000)
 
     start_gateway = lambda socket, address: gateway(socket, address, args)
-    
+
     servers = [ StreamServer((ip, p), start_gateway, spawn=pool) for p in args.ports]
     # to start the servers asynchronously, we use its start() method;
     # we use blocking serve_forever() for the third and last connection.

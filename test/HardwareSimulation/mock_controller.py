@@ -8,6 +8,7 @@ synthesizes a response.
 
 from __future__ import print_function
 import os
+import numpy as np
 
 import codec
 from fpu_sim import FPU, FPUGrid
@@ -904,6 +905,16 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
 
 gCountTotalCommands = 0
 
+SYNC_CMD = { 0 : [0, 0, 0, 0, 0, 0, 0, 0],
+             1 : [0, 0, 0, 0, 0, 0, 0, 0],
+}
+
+all_active = (1 << BUSES_PER_GATEWAY) - 1
+
+SYNC_MASK = { 0: all_active, 1 : all_active}
+
+gateway_socket_list = []
+
 def command_handler(cmd, socket, args):
     verbose = args.verbosity > 0
     global gCountTotalCommands
@@ -912,6 +923,43 @@ def command_handler(cmd, socket, args):
         print("command decoded bytes are:", cmd)
     gateway_id = gateway_map[socket.getsockname()]
     bus_adr = cmd[0]
+    print("bus_adr = %i" % bus_adr)
+    if bus_adr == MSG_TYPE_COB0:
+        SYNC_CMD[0] = np.array([0, 0, 0] + cmd[3:].tolist())
+        print("SYNC_CMD[0] set to %r" % SYNC_CMD[0])
+        return
+    elif bus_adr == MSG_TYPE_COB1:
+        SYNC_CMD[1] = np.array([0, 0, 0] + cmd[3:].tolist())
+        print("SYNC_CMD[1] set to %r" % SYNC_CMD[1])
+        return
+    elif bus_adr == MSG_TYPE_MSK0:
+        SYNC_MASK[0] = cmd[3]
+        print("SYNC_MASK[0] set to %s" % bin(SYNC_MASK[0]))
+        return
+    elif bus_adr == MSG_TYPE_MSK1:
+        SYNC_MASK[1] = cmd[3]
+        print("SYNC_MASK[1] set to %s" % bin(SYNC_MASK[0]))
+        return
+    elif bus_adr == MSG_TYPE_SYNC:
+        # execute sync command, by calling
+        # command_handler recursively for all sockets,
+        # and for all activated buses
+        sync_id = cmd[3]
+
+        sync_cmd = list(SYNC_CMD[sync_id])
+        print ("SENDING SYNC COMMAND %i" % sync_id)
+        for k,s in enumerate(gateway_socket_list):
+            for bus_addr in range(buses_per_gateway):
+                if ((1 << bus_addr) & SYNC_MASK[sync_id]):
+
+                    sync_cmd[0] = bus_addr
+
+                    print("sending to gateway %i, bus %i: SYNC%i cmd = %r" % (
+                        k, bus_addr, sync_id, sync_cmd))
+                    command_handler(sync_cmd, s, args)
+
+        return
+
     rx_canid = cmd[1] + (cmd[2] << 8)
 
 

@@ -200,12 +200,19 @@ void FPUArray::decSending()
 
 }
 
-uint8_t FPUArray::countSequenceNumber(const int fpu_id, const bool increment, const bool broadcast)
+uint8_t FPUArray::countSequenceNumber(const int fpu_id, const bool increment,
+				      const bool broadcast,
+				      const bool do_sync)
 {
     uint8_t result;
 
     pthread_mutex_lock(&grid_state_mutex);
-    if (broadcast)
+    if (do_sync)
+    {
+	// SYNC commands always use a sequence number of 1
+	result = SYNC_SEQUENCE_NUMBER;
+    }
+    else if (broadcast)
     {
         if (increment)
         {

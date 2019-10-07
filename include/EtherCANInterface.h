@@ -128,9 +128,9 @@ public:
                                    bool allow_uninitialized=false,
                                    int ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION);
 
-    E_EtherCANErrCode executeMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
+    E_EtherCANErrCode executeMotion(t_grid_state& grid_state, t_fpuset const &fpuset, bool sync_command=false);
 
-    E_EtherCANErrCode startExecuteMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
+    E_EtherCANErrCode startExecuteMotion(t_grid_state& grid_state, t_fpuset const &fpuset, bool sync_message=false);
 
     E_EtherCANErrCode waitExecuteMotion(t_grid_state& grid_state,
                                         double &max_wait_time,
@@ -141,7 +141,7 @@ public:
 
     E_EtherCANErrCode reverseMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
 
-    E_EtherCANErrCode abortMotion(t_grid_state& grid_state, t_fpuset const &fpuset);
+    E_EtherCANErrCode abortMotion(t_grid_state& grid_state, t_fpuset const &fpuset, bool sync_message=true);
 
     E_EtherCANErrCode freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_dir,
                                         t_grid_state& grid_state);

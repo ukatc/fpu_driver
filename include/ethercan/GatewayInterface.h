@@ -36,6 +36,7 @@
 #include "TimeOutList.h"
 #include "CommandQueue.h"
 #include "CommandPool.h"
+#include "ethercan/cancommandsv2/SyncCommand.h"
 
 namespace mpifps
 {
@@ -75,8 +76,11 @@ public:
 
     E_EtherCANErrCode deInitialize();
 
+    static void set_sync_mask_message(t_CAN_buffer& can_buffer, int& buflen,
+				      const uint8_t msgid, uint8_t sync_mask);
+
     E_EtherCANErrCode configSyncCommands(const int ngateways);
-    
+
     E_EtherCANErrCode connect(const int ngateways, const t_gateway_address gateway_addresses[]);
 
     // disconnect socket, and re-add any pending commands to
@@ -137,43 +141,66 @@ public:
     // the Rx thread to be able to trigger an automatic abort if too
     // many collisions happen in a short time span.).
     E_EtherCANErrCode abortMotion(t_grid_state& grid_state,
-                                  E_GridState& state_summary);
+                                  E_GridState& state_summary,
+				  bool sync_message=true);
 
 
 
-#ifdef SHOW_FIXMES
-#if (CAN_PROTOCOL_VERSION > 1 )
-#pragma message "FIXME: In protocol version 2, this needs to be changed to use the gateway SYNC message."
-#endif
-#endif
-
-    template<typename T> E_EtherCANErrCode broadcastMessage()
+    template<typename T> E_EtherCANErrCode broadcastMessage(bool sync_message=false)
     {
-        unique_ptr<T> can_command;
 
-        for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
-        {
-            for(int busid=0; busid < BUSES_PER_GATEWAY; busid++)
-            {
-                const int broadcast_id = getBroadcastID(gateway_id, busid);
-                if (broadcast_id >= config.num_fpus)
-                {
-                    goto Exit;
-                }
-                can_command = provideInstance<T>();
+	if (sync_message || (T::sync_code == SYNC_NOSYNC)){
+	    // a SYNC message is only sent once to a single gateway,
+	    // the 'master' gateway. This gateway will sent the
+	    // message as broadcast messages to all buses, and forward
+	    // it to the other gateways.
+	    //
+	    // Electronics will ensure that all gateways broadcast the
+	    // message in a synchronized way (thus the name).
+	    unique_ptr<SyncCommand> sync_command;
 
-                if (can_command == nullptr)
-                {
-                    return DE_ASSERTION_FAILED;
-                }
-                const bool do_broadcast = true;
-                // broadcast_id is an fpu id which makes sure
-                // the message goes to the requested bus.
-                can_command->parametrize(broadcast_id, do_broadcast);
-                unique_ptr<CAN_Command> cmd(can_command.release());
-                sendCommand(broadcast_id, cmd);
-            }
-        }
+	    sync_command = provideInstance<SyncCommand>();
+
+	    if (sync_command == nullptr)
+	    {
+		return DE_ASSERTION_FAILED;
+	    }
+	    const int broadcast_id = 0; // gateway which is SYNC master
+
+	    // broadcast_id is an fpu id which makes sure
+	    // the message goes to the requested bus.
+	    sync_command->parametrize(T::sync_code);
+	    unique_ptr<CAN_Command> cmd(sync_command.release());
+	    sendCommand(broadcast_id, cmd);
+	}
+	else
+	{
+	    unique_ptr<T> can_command;
+
+	    for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
+	    {
+		for(int busid=0; busid < BUSES_PER_GATEWAY; busid++)
+		{
+		    const int broadcast_id = getBroadcastID(gateway_id, busid);
+		    if (broadcast_id >= config.num_fpus)
+		    {
+			goto Exit;
+		    }
+ 		    can_command = provideInstance<T>();
+
+		    if (can_command == nullptr)
+		    {
+			return DE_ASSERTION_FAILED;
+		    }
+		    const bool do_broadcast = true;
+		    // broadcast_id is an fpu id which makes sure
+		    // the message goes to the requested bus.
+		    can_command->parametrize(broadcast_id, do_broadcast);
+		    unique_ptr<CAN_Command> cmd(can_command.release());
+		    sendCommand(broadcast_id, cmd);
+		}
+	    }
+	}
 Exit:
         return DE_OK;
     }

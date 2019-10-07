@@ -530,7 +530,7 @@ class UnprotectedGridDriver (object):
                         rv = self._gd.waitFindDatum(gs, time_interval, fpuset)
                         if sh.interrupted:
                             print("STOPPING FPUs.")
-                            self.abortMotion(gs)
+                            self.abortMotion(gs, fpuset=fpuset)
                             was_aborted = True
                             break
                         is_ready = (rv != ethercanif.E_EtherCANErrCode.DE_WAIT_TIMEOUT)
@@ -915,7 +915,7 @@ class UnprotectedGridDriver (object):
         pass
 
 
-    def executeMotionB(self, gs, fpuset=[]):
+    def executeMotionB(self, gs, fpuset=[], sync_command=False):
         fpuset = self.check_fpuset(fpuset)
 
         if len(fpuset) == 0:
@@ -927,7 +927,7 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState() # get last FPU states and timeout counters
             try:
                 try:
-                    rv = self._gd.executeMotion(gs, fpuset)
+                    rv = self._gd.executeMotion(gs, fpuset, sync_command)
                 except InvalidState as e:
                     self_cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
                     raise
@@ -943,7 +943,7 @@ class UnprotectedGridDriver (object):
 
         return rv
 
-    def executeMotion(self, gs, fpuset=[]):
+    def executeMotion(self, gs, fpuset=[], sync_command=False):
         fpuset = self.check_fpuset(fpuset)
 
         if len(fpuset) == 0:
@@ -957,7 +957,7 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState() # get last FPU states and timeout counters
             try:
                 time.sleep(0.1)
-                rv = self._gd.startExecuteMotion(gs, fpuset)
+                rv = self._gd.startExecuteMotion(gs, fpuset, sync_command)
             except InvalidStateException as e:
                 self._cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
                 raise
@@ -976,7 +976,7 @@ class UnprotectedGridDriver (object):
                             rv = self._gd.waitExecuteMotion(gs, time_interval, fpuset)
                             if sh.interrupted:
                                 print("STOPPING FPUs.")
-                                self.abortMotion(gs, fpuset)
+                                self.abortMotion(gs, fpuset, sync_command)
                                 was_aborted = True
                                 refresh_state = True
                                 break
@@ -1010,13 +1010,13 @@ class UnprotectedGridDriver (object):
 
         return rv
 
-    def abortMotion(self, gs, fpuset=[]):
+    def abortMotion(self, gs, fpuset=[], sync_command=True):
         fpuset = self.check_fpuset(fpuset)
 
         # this must not use locking - it can be sent from any thread by design
         try:
             prev_gs = self._gd.getGridState()
-            rval = self._gd.abortMotion(gs, fpuset)
+            rval = self._gd.abortMotion(gs, fpuset, sync_command)
         finally:
             if self.__dict__.has_key("counters"):
                 for fpu_id, fpu in enumerate(gs.FPU):

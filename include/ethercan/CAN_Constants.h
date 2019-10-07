@@ -57,22 +57,24 @@ const int MAX_UNENCODED_GATEWAY_MESSAGE_BYTES = 11;
 // length of serial number stored in FPU NVRAM
 const int DIGITS_SERIAL_NUMBER=6;
 
-// pseudo bus address for gateway delay message
-const int MSG_TYPE_DELY = 6;
+
+// pseudo bus addresses for messages to EtherCAN gateway
+
+const uint8_t GW_MSG_TYPE_DELY = 0x06;   /// gateway delay message
+
+const uint8_t GW_MSG_TYPE_SYNC = 0x07;   /// Send Sync Message 0 or 1
+
+const uint8_t GW_MSG_TYPE_COB0 = 0x08;   /// Sync Message 0 : CAN-OBJECT
+
+const uint8_t GW_MSG_TYPE_COB1 = 0x09;   /// Sync Message 1 : CAN-OBJECT
+
+const uint8_t GW_MSG_TYPE_MSK0 = 0x0A;   /// Sync Message 0 : CHANNEL MASK
+
+const uint8_t GW_MSG_TYPE_MSK1 = 0x0B;   /// Sync Message 1 : CHANNEL MASK
 
 
-
-
-const uint8_t MSG_TYPE_SYNC = 0x07;   /// Send Sync Message 0 or 1
-			    
-const uint8_t MSG_TYPE_COB0 = 0x08;   /// Sync Message 0 : CAN-OBJECT
-			    
-const uint8_t MSG_TYPE_COB1 = 0x09;   /// Sync Message 1 : CAN-OBJECT
-			    
-const uint8_t MSG_TYPE_MSK0 = 0x0A;   /// Sync Message 0 : CHANNEL MASK
-			    
-const uint8_t MSG_TYPE_MSK1 = 0x0B;   /// Sync Message 1 : CHANNEL MASK
-
+// SYNC commands always use a sequence number of 1
+const uint8_t SYNC_SEQUENCE_NUMBER = 1;
 }
 
 }

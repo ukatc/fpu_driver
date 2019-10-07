@@ -8,6 +8,17 @@ BUSES_PER_GATEWAY =  5
 # number of FPUs on one CAN bus
 FPUS_PER_BUS = 76
 
+MSG_TYPE_SYNC = 0x07 # Send Sync Message 0 or 1
+                     #
+MSG_TYPE_COB0 = 0x08 # Sync Message 0 : CAN-OBJECT
+                     #
+MSG_TYPE_COB1 = 0x09 # Sync Message 1 : CAN-OBJECT
+                     #
+MSG_TYPE_MSK0 = 0x0A # Sync Message 0 : CHANNEL MASK
+                     #
+MSG_TYPE_MSK1 = 0x0B # Sync Message 1 : CHANNEL MASK
+
+
 MSG_TYPE_DELY = 6
 
 CAN_PROTOCOL_VERSION = 2

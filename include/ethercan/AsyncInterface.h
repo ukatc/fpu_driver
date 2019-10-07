@@ -139,7 +139,8 @@ public:
                                         bool allow_uninitialized=false,
                                         int ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION);
 
-    E_EtherCANErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary, t_fpuset const &fpuset);
+    E_EtherCANErrCode startExecuteMotionAsync(t_grid_state& grid_state, E_GridState& state_summary,
+					      t_fpuset const &fpuset, bool sync_message=false);
 
     E_EtherCANErrCode waitExecuteMotionAsync(t_grid_state& grid_state,
             E_GridState& state_summary,
@@ -154,7 +155,8 @@ public:
     E_EtherCANErrCode abortMotionAsync(pthread_mutex_t & command_mutex,
                                        t_grid_state& grid_state,
                                        E_GridState& state_summary,
-                                       t_fpuset const &fpuset);
+                                       t_fpuset const &fpuset,
+				       bool sync_message=true);
 
     E_EtherCANErrCode enableMoveAsync(int fpu_id,
                                       t_grid_state& grid_state,

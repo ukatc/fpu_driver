@@ -39,6 +39,8 @@ public:
 
     static const E_CAN_COMMAND command_code = CCMD_EXECUTE_MOTION;
 
+    static const E_SYNC_TYPE sync_code = SYNC_EXECUTE_MOTION;
+
     static E_CAN_COMMAND getCommandCode()
     {
         return command_code;

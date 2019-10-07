@@ -59,8 +59,9 @@ enum E_CAN_COMMAND : uint8_t
     CCMD_ENABLE_MOVE                      = 22, // leave aborted state
     CCMD_READ_SERIAL_NUMBER               = 23, // read serial number from NVRAM
     CCMD_WRITE_SERIAL_NUMBER              = 24, // write serial number to NVRAM
+    CCMD_SYNC_COMMAND                     = 25, // send SYNC command to gateway
 
-    NUM_CAN_COMMANDS = 25,
+    NUM_CAN_COMMANDS = 26,
 
 
 
@@ -147,6 +148,13 @@ enum E_DATUM_TIMEOUT_FLAG
 {
     DATUM_TIMEOUT_ENABLE  = 0,
     DATUM_TIMEOUT_DISABLE = (1 << 4),
+};
+
+enum E_SYNC_TYPE : uint8_t
+{
+    SYNC_ABORT_MOTION	     = 0x00,	// SYNC 0: abortMotion
+    SYNC_EXECUTE_MOTION	     = 0x01,	// SYNC 1: ExecuteMotion
+    SYNC_NOSYNC              = 0xff,    // No SYNC code available
 };
 
 

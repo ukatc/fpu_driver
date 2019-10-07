@@ -224,7 +224,7 @@ SBuffer::E_SocketStatus SBuffer::encode_and_send(int sockfd,
         {
             t_CAN_buffer delay_msg;
             memset(delay_msg.bytes, 0, sizeof(delay_msg.bytes));
-            delay_msg.message.busid = MSG_TYPE_DELY; // that's the pseudo bus number which receives a delay message
+            delay_msg.message.busid = GW_MSG_TYPE_DELY; // that's the pseudo bus number which receives a delay message
             delay_msg.message.identifier = 0x777; // that's from Pablo's sample code but probably irrelevant
             delay_msg.message.data[0] = gw_delay & 0xff;
             const int msg_len = 4;

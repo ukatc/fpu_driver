@@ -1158,22 +1158,22 @@ public:
     }
 
 
-    E_EtherCANErrCode wrap_executeMotion(WrapGridState& grid_state, list& fpu_list)
+    E_EtherCANErrCode wrap_executeMotion(WrapGridState& grid_state, list& fpu_list, bool sync_command=false)
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
-        E_EtherCANErrCode ecode =executeMotion(grid_state, fpuset);
+        E_EtherCANErrCode ecode =executeMotion(grid_state, fpuset, sync_command);
         checkInterfaceError(ecode);
         return ecode;
     }
 
-    E_EtherCANErrCode wrap_startExecuteMotion(WrapGridState& grid_state, list& fpu_list)
+    E_EtherCANErrCode wrap_startExecuteMotion(WrapGridState& grid_state, list& fpu_list, bool sync_command=false)
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
-        E_EtherCANErrCode ecode =startExecuteMotion(grid_state, fpuset);
+        E_EtherCANErrCode ecode =startExecuteMotion(grid_state, fpuset, sync_command);
         checkInterfaceError(ecode);
         return ecode;
     }
@@ -1220,12 +1220,12 @@ public:
         return ecode;
     }
 
-    E_EtherCANErrCode wrap_abortMotion(WrapGridState& grid_state, list& fpu_list)
+    E_EtherCANErrCode wrap_abortMotion(WrapGridState& grid_state, list& fpu_list, bool sync_command=true)
     {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
-        E_EtherCANErrCode ecode = abortMotion(grid_state, fpuset);
+        E_EtherCANErrCode ecode = abortMotion(grid_state, fpuset, sync_command);
         checkInterfaceError(ecode);
         return ecode;
     }

@@ -2350,7 +2350,8 @@ E_EtherCANErrCode AsyncInterface::configPathsAsync(t_grid_state& grid_state,
 
 E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
-        t_fpuset const &fpuset)
+        t_fpuset const &fpuset,
+	bool sync_message)
 {
 
     LOG_CONTROL(LOG_VERBOSE, "%18.6f : AsyncInterface: starting executeMotion()\n",
@@ -2405,6 +2406,21 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
         {
             // we need to send the command individually
             use_broadcast = false;
+	    if (sync_message)
+	    {
+		sync_message = false;
+		LOG_CONTROL(LOG_INFO, "%18.6f : executeMotion(): WARNING: ignoring SYNC flag, "
+			    "FPU %i is not included in addresed set\n",
+			    ethercanif::get_realtime(), i);
+		LOG_CONSOLE(LOG_INFO, "%18.6f : executeMotion(): WARNING: ignoring SYNC flag, "
+			    "FPU %i is not included in addresed set\n",
+			    ethercanif::get_realtime(), i);
+		// In the final ICS software, this should probably be
+		// reported as a fatal error, because not using the
+		// SYNC message can cause collisions due to lack of
+		// exact synchronisation.
+
+	    }
             continue;
         }
 
@@ -2469,7 +2485,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
     {
         // send broadcast command to each gateway to start movement of all
         // FPUs. Locked FPUs of course need to ignore this command!
-        ecode = gateway.broadcastMessage<ExecuteMotionCommand>();
+        ecode = gateway.broadcastMessage<ExecuteMotionCommand>(sync_message);
     }
     else
     {
@@ -3052,7 +3068,8 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
 E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mutex,
         t_grid_state& grid_state,
         E_GridState& state_summary,
-        t_fpuset const &fpuset)
+        t_fpuset const &fpuset,
+	bool sync_message)
 {
 
     // NOTE: This command runs its first part without keeping
@@ -3097,6 +3114,16 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
         if (!fpuset[i])
         {
             use_broadcast = false;
+	    if (sync_message)
+	    {
+		sync_message = false;
+		LOG_CONTROL(LOG_INFO, "%18.6f : abortMotion(): WARNING: ignoring SYNC flag, "
+			    "FPU %i is not included in addressed set\n",
+			    ethercanif::get_realtime(), i);
+		LOG_CONSOLE(LOG_INFO, "%18.6f : abortMotion(): WARNING: ignoring SYNC flag, "
+			    "FPU %i is not included in addresset set\n",
+			    ethercanif::get_realtime(), i);
+	    }
             break;
         }
     }
@@ -3104,7 +3131,7 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
     if (use_broadcast)
     {
         // send broadcast command
-        gateway.abortMotion(grid_state, state_summary);
+        gateway.abortMotion(grid_state, state_summary, sync_message);
     }
     else
     {

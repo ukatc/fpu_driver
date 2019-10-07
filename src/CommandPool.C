@@ -50,6 +50,7 @@
 #include "ethercan/cancommandsv2/SetUStepLevelCommand.h"
 #include "ethercan/cancommandsv2/UnlockUnitCommand.h"
 #include "ethercan/cancommandsv2/WriteSerialNumberCommand.h"
+#include "ethercan/cancommandsv2/SyncCommand.h"
 
 
 #ifdef DEBUG
@@ -78,6 +79,7 @@ E_EtherCANErrCode CommandPool::initialize()
             int capacity=0;
             const int cap_individual = config.num_fpus * 10;
             const int cap_wform = config.num_fpus * MAX_SUB_COMMANDS;
+	    const int cap_sync = 10;
 
             switch (i)
             {
@@ -87,6 +89,10 @@ E_EtherCANErrCode CommandPool::initialize()
                 capacity = cap_wform;
                 break;
 
+            case CCMD_SYNC_COMMAND   :
+                capacity = cap_sync;
+                break;
+
             // these are broadcast commands. They require less
             // instances in normal use, but when using FPU
             // subsets, more instances are needed.
@@ -94,18 +100,10 @@ E_EtherCANErrCode CommandPool::initialize()
             case CCMD_EXECUTE_MOTION    :
             case CCMD_REPEAT_MOTION     :
             case CCMD_REVERSE_MOTION    :
-#if CAN_PROTOCOL_VERSION > 1
             case CCMD_CHECK_INTEGRITY   :
-#endif
             case CCMD_ABORT_MOTION      :
 
                 // individual commands
-#if CAN_PROTOCOL_VERSION == 1
-            case CCMD_GET_ERROR_ALPHA   :
-            case CCMD_GET_ERROR_BETA    :
-            case CCMD_GET_STEPS_ALPHA   :
-            case CCMD_GET_STEPS_BETA    :
-#else
             case CCMD_LOCK_UNIT         :
             case CCMD_UNLOCK_UNIT       :
             case CCMD_GET_FIRMWARE_VERSION          :
@@ -114,7 +112,6 @@ E_EtherCANErrCode CommandPool::initialize()
             case CCMD_FREE_ALPHA_LIMIT_BREACH       :
             case CCMD_ENABLE_ALPHA_LIMIT_PROTECTION :
             case CCMD_ENABLE_MOVE       :
-#endif
             case CCMD_RESET_FPU         :
             case CCMD_PING_FPU          :
             case CCMD_ENABLE_BETA_COLLISION_PROTECTION :
@@ -263,6 +260,11 @@ E_EtherCANErrCode CommandPool::initialize()
                     pool[i].push_back(std::move(ptr));
                     break;
 
+                case CCMD_SYNC_COMMAND        :
+                    ptr.reset(new SyncCommand());
+                    pool[i].push_back(std::move(ptr));
+                    break;
+
                 default:
                     assert(0);
 
@@ -332,12 +334,21 @@ E_EtherCANErrCode CommandPool::deInitialize()
 void CommandPool::recycleInstance(unique_ptr<CAN_Command>& cmd_ptr)
 {
     pthread_mutex_lock(&pool_mutex);
-    E_CAN_COMMAND cmd_type = cmd_ptr->getInstanceCommandCode();
+
+    // To store the recycled instance in the pool of unused instances,
+    // get the command code by which the message instance is
+    // identified. Normally, this is just the CAN command code which
+    // is sent to the FPUs; this code also identifies the instance. In
+    // the case of a SYNC message instance, it is the SYNC command
+    // code.
+
+    E_CAN_COMMAND cmd_type = cmd_ptr->getPoolCommandCode();
     bool was_empty = pool[cmd_type].empty();
     pool[cmd_type].push_back(std::move(cmd_ptr));
     cmd_ptr = nullptr;
-    // if we just added to an empty pool, notify one waiting thread
-    // that it can make progress.
+    // If we just added to an empty pool, it is possible that the tx
+    // thread is waiting for messages. If this is the case, notify one
+    // waiting thread that it can make progress.
     if (was_empty)
     {
         pthread_cond_signal(&cond_pool_add);

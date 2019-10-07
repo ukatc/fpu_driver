@@ -165,7 +165,8 @@ public:
 
     // increments and fetches the next message sequence number
     // for this FPU
-    uint8_t countSequenceNumber(const int fpu_id, const bool increment, const bool broadcast);
+    uint8_t countSequenceNumber(const int fpu_id, const bool increment, const bool broadcast,
+				const bool do_sync);
 
     // get number of commands which are being sent.
     int  countSending() const;

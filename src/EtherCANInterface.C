@@ -172,7 +172,7 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
         }
 
         num_avaliable_retries--;
-	
+
 
         // we have most probably a time-out and need to load some
         // waveforms again. To do that we strip FPUs from
@@ -189,7 +189,7 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
 	    LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
 			"re-loading missing waveforms\n",
 			ethercanif::get_realtime(), num_avaliable_retries);
-	
+
 	    LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
 			"re-loading missing waveforms\n",
 			ethercanif::get_realtime(), num_avaliable_retries);
@@ -199,7 +199,7 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
 	    LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
 			"giving up\n",
 			ethercanif::get_realtime(), num_avaliable_retries);
-	
+
 	    LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
 			"giving up\n",
 			ethercanif::get_realtime(), num_avaliable_retries);
@@ -249,7 +249,7 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
 
 E_EtherCANErrCode EtherCANInterface::initializeGrid(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
-    
+
 
     E_EtherCANErrCode rv = pingFPUs(grid_state, fpuset);
 
@@ -296,14 +296,15 @@ E_EtherCANErrCode EtherCANInterface::pingFPUs(t_grid_state& grid_state, t_fpuset
 }
 
 
-E_EtherCANErrCode EtherCANInterface::startExecuteMotion(t_grid_state& grid_state, t_fpuset const &fpuset)
+E_EtherCANErrCode EtherCANInterface::startExecuteMotion(t_grid_state& grid_state,
+							t_fpuset const &fpuset, bool sync_message)
 {
     E_EtherCANErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     pthread_mutex_lock(&command_creation_mutex);
 
-    estatus = startExecuteMotionAsync(grid_state, state_summary, fpuset);
+    estatus = startExecuteMotionAsync(grid_state, state_summary, fpuset, sync_message);
 
     pthread_mutex_unlock(&command_creation_mutex);
 
@@ -324,14 +325,14 @@ E_EtherCANErrCode EtherCANInterface::waitExecuteMotion(t_grid_state& grid_state,
     return estatus;
 }
 
-E_EtherCANErrCode EtherCANInterface::executeMotion(t_grid_state& grid_state, t_fpuset const &fpuset)
+E_EtherCANErrCode EtherCANInterface::executeMotion(t_grid_state& grid_state, t_fpuset const &fpuset, bool sync_command)
 {
     E_EtherCANErrCode estatus = DE_OK;
     E_GridState state_summary;
 
     pthread_mutex_lock(&command_creation_mutex);
 
-    estatus = startExecuteMotionAsync(grid_state, state_summary, fpuset);
+    estatus = startExecuteMotionAsync(grid_state, state_summary, fpuset, sync_command);
 
     pthread_mutex_unlock(&command_creation_mutex);
 
@@ -382,13 +383,17 @@ E_EtherCANErrCode EtherCANInterface::reverseMotion(t_grid_state& grid_state, t_f
     return estatus;
 }
 
-E_EtherCANErrCode EtherCANInterface::abortMotion(t_grid_state& grid_state, t_fpuset const &fpuset)
+E_EtherCANErrCode EtherCANInterface::abortMotion(t_grid_state& grid_state, t_fpuset const &fpuset, bool sync_message)
 {
     E_GridState state_summary;
     E_EtherCANErrCode estatus = DE_OK;
 
-    // the implementation locks the command creation mutex in the waiting time.
-    estatus =  abortMotionAsync(command_creation_mutex, grid_state, state_summary, fpuset);
+    // Different to all other commands, the implementation first sends
+    // the command, and locks the command creation mutex in the
+    // waiting time. This makes it possible that the abortMotion
+    // command pre-empts already queued commands, while blocking sending
+    // of any new commands.
+    estatus =  abortMotionAsync(command_creation_mutex, grid_state, state_summary, fpuset, sync_message);
 
     return estatus;
 }

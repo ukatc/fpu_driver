@@ -410,16 +410,44 @@ void unset_rt_priority()
     }
 }
 
+void GatewayInterface::set_sync_mask_message(t_CAN_buffer& can_buffer, int& buflen,
+			   const uint8_t msgid, uint8_t sync_mask)
+{
+    // zero buffer to make sure no spurious DLEs are sent
+    bzero(&can_buffer.message, sizeof(can_buffer.message));
+    // CAN bus id for that gateway to which message should go
+    can_buffer.message.busid = msgid;
+
+    // the CAN identifier is all zeros (because it is a broadcast
+    // message).
+
+    uint16_t can_identifier = 0;
+
+    // The protocol uses little-endian encoding here
+    // (the byte order used in the CANOpen protocol).
+    //can_buffer.message.identifier = htole64(can_identifier);
+    can_buffer.message.identifier = htole16(can_identifier);
+
+    can_buffer.message.data[0] = sync_mask;
+
+    buflen = 4; // 3 bytes header, 1 byte payload
+}
+
+
 E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
 
     bool const broadcast = true;
 
-    t_CAN_buffer can_buffer;
-    int buf_len = 0;
-    memset((void*) &can_buffer, 0, sizeof(can_buffer));
-    
-    uint8_t const can_identifier = 1;
-    uint8_t const sequence_number = 0;
+    t_CAN_buffer can_buffer1;
+    int buf_len1 = 0;
+    memset((void*) &can_buffer1, 0, sizeof(can_buffer1));
+
+    t_CAN_buffer can_buffer2;
+    int buf_len2 = 0;
+    memset((void*) &can_buffer2, 0, sizeof(can_buffer2));
+
+
+    uint8_t const can_identifier = 0;
 
 
     SBuffer::E_SocketStatus status = SBuffer::E_SocketStatus::ST_OK;
@@ -439,60 +467,69 @@ E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
     {
 	AbortMotionCommand abort_motion_command;
 	abort_motion_command.parametrize(0, broadcast);
-	abort_motion_command.SerializeToBuffer(MSG_TYPE_COB0,
+	abort_motion_command.SerializeToBuffer(GW_MSG_TYPE_COB0,
 					       can_identifier,
-					       buf_len,
-					       can_buffer,
-					       sequence_number);
+					       buf_len1,
+					       can_buffer1,
+					       SYNC_SEQUENCE_NUMBER);
     }
 
-    // set mask to activate 5 channels
+    // set mask to activate all channels
     const uint8_t channel_mask = (uint8_t) ((1 << BUSES_PER_GATEWAY) - 1);
-    
+
+    set_sync_mask_message(can_buffer2, buf_len2,
+			  GW_MSG_TYPE_MSK0, channel_mask);
+
+
     for (int gateway_id=0; gateway_id < ngateways; gateway_id++)
-    {   
+    {
 	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-						      buf_len, can_buffer.bytes, MSG_TYPE_COB0,
+						      buf_len1, can_buffer1.bytes, GW_MSG_TYPE_COB0,
 						      can_identifier);
 
 	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED; 
+	    return DE_SYNC_CONFIG_FAILED;
 	}
-	
+
+
 	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-						      sizeof(channel_mask), &channel_mask, MSG_TYPE_MSK0,
-						      0);
-	
+						      buf_len2, can_buffer2.bytes, GW_MSG_TYPE_MSK0,
+						      can_identifier);
+
 	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED; 
+	    return DE_SYNC_CONFIG_FAILED;
 	}
     }
 
-    buf_len = 0;
+    buf_len1 = 0;
     {
 	ExecuteMotionCommand execute_motion_command;
 	execute_motion_command.parametrize(0, broadcast);
-	execute_motion_command.SerializeToBuffer(MSG_TYPE_COB1,
+	execute_motion_command.SerializeToBuffer(GW_MSG_TYPE_COB1,
 						 can_identifier,
-						 buf_len,
-						 can_buffer,
-						 sequence_number);
+						 buf_len1,
+						 can_buffer1,
+						 SYNC_SEQUENCE_NUMBER);
     }
 
+    set_sync_mask_message(can_buffer2, buf_len2,
+			  GW_MSG_TYPE_MSK1, channel_mask);
+
     for (int gateway_id=0; gateway_id < ngateways; gateway_id++)
-    {   
+    {
 	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-						      buf_len, can_buffer.bytes, MSG_TYPE_COB0,
+						      buf_len1, can_buffer1.bytes, GW_MSG_TYPE_COB1,
 						      can_identifier);
 	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED; 
+	    return DE_SYNC_CONFIG_FAILED;
 	}
-	
+
 	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-						      sizeof(channel_mask), &channel_mask, MSG_TYPE_MSK1,
-						      0);
+						      buf_len2, can_buffer2.bytes, GW_MSG_TYPE_MSK1,
+						      can_identifier);
+
 	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED; 
+	    return DE_SYNC_CONFIG_FAILED;
 	}
     }
 
@@ -606,11 +643,11 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
 	LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
 		    "GatewayInterface::connect() - could not configure SYNC commands",
 		    ethercanif::get_realtime());
-	
+
 	LOG_CONSOLE(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
 		    "GatewayInterface::connect() - could not configure SYNC commands",
 		    ethercanif::get_realtime());
-	
+
 	goto close_sockets;
     }
 
@@ -683,7 +720,7 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
 				ethercanif::get_realtime(), errno);
 		    LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface - System error: disconnect event notification failed, errno=%i\n",
 				ethercanif::get_realtime(), errno);
-		    
+
 		    ecode = DE_ASSERTION_FAILED;
 		}
 
@@ -861,7 +898,7 @@ void GatewayInterface::updatePendingCommand(int fpu_id,
         timespec deadline = time_add(send_time, wait_period);
 
         fpuArray.setPendingCommand(fpu_id,
-                                   can_command->getInstanceCommandCode(),
+                                   can_command->getCANCommandCode(),
                                    deadline,
                                    can_command->getSequenceNumber(),
                                    timeOutList);
@@ -869,7 +906,7 @@ void GatewayInterface::updatePendingCommand(int fpu_id,
     else
     {
         fpuArray.setLastCommand(fpu_id,
-                                can_command->getInstanceCommandCode());
+                                can_command->getCANCommandCode());
     }
 }
 
@@ -877,7 +914,7 @@ void GatewayInterface::updatePendingCommand(int fpu_id,
 // update the pending sets either of one FPU or of all FPUs
 // to which a broadcast command is sent.
 //
-// Note: Getting timing issues is tricky but it is probably best to
+// Note: Getting timing issues right is tricky. It is probably best to
 // set the pending flags before the command is actually sent.
 // Otherwise, it is possible and happens that the response is
 // processed before the pending bit is set which is confusing.
@@ -885,12 +922,19 @@ void GatewayInterface::updatePendingCommand(int fpu_id,
 void GatewayInterface::updatePendingSets(unique_ptr<CAN_Command> &active_can_command,
         int gateway_id, int busid)
 {
-    if (! active_can_command->doBroadcast())
+    // send SYNC command, broadcast, or individual command,
+    // and update the pending set structure for the
+    // addressed FPUs
+    if (active_can_command->doSync())
     {
-        updatePendingCommand(active_can_command->getFPU_ID(),
-                             active_can_command);
+        // set pending command for all FPUs
+        // (will ignore if state is locked).
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        {
+	    updatePendingCommand(fpu_id, active_can_command);
+        }
     }
-    else
+    else if (active_can_command->doBroadcast())
     {
         // set pending command for all FPUs on the same
         // (gateway, busid) address (will ignore if state is locked).
@@ -902,6 +946,11 @@ void GatewayInterface::updatePendingSets(unique_ptr<CAN_Command> &active_can_com
                 updatePendingCommand(fpu_id, active_can_command);
             }
         }
+    }
+    else
+    {
+        updatePendingCommand(active_can_command->getFPU_ID(),
+                             active_can_command);
     }
 }
 
@@ -946,10 +995,12 @@ SBuffer::E_SocketStatus GatewayInterface::send_buffer(unique_ptr<CAN_Command> &a
             const uint16_t busid = address_map[fpu_id].bus_id;
             const uint8_t fpu_canid = address_map[fpu_id].can_id;
             const bool broadcast = active_can_command->doBroadcast();
+	    const bool do_sync = active_can_command->doSync();
             // serialize data
             const uint8_t sequence_number = fpuArray.countSequenceNumber(fpu_id,
-                                            active_can_command->expectsResponse(),
-                                            broadcast);
+									 active_can_command->expectsResponse(),
+									 broadcast,
+									 do_sync);
 
             active_can_command->SerializeToBuffer(busid,
                                                   fpu_canid,
@@ -1122,7 +1173,7 @@ void* GatewayInterface::threadTxFun()
 		LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface::ThreadTXfun(): clearing event notification failed, errno=%i\n",
 			    ethercanif::get_realtime(), errno);
 	    }
-	    
+
         }
 
         // check all writable file descriptors for readiness
@@ -1428,7 +1479,9 @@ CommandQueue::E_QueueState GatewayInterface::sendCommand(const int fpu_id, uniqu
 {
 
     assert(fpu_id < config.num_fpus);
-    const int gateway_id = address_map[fpu_id].gateway_id;
+    // get corresponding gateway id. If it is a SYNC command, the
+    // id is gateway zero, which is defined as the SYNC master.
+    const int gateway_id = new_command->doSync() ? 0 : address_map[fpu_id].gateway_id;
     assert(gateway_id < MAX_NUM_GATEWAYS);
 
     if (! new_command)
@@ -1466,7 +1519,8 @@ int GatewayInterface::getBroadcastID(const int gateway_id, const int busid)
 // gateway messages low.
 
 E_EtherCANErrCode GatewayInterface::abortMotion(t_grid_state& grid_state,
-        E_GridState& state_summary)
+						E_GridState& state_summary,
+						bool sync_message)
 {
     // first, get current state of the grid
     state_summary = getGridState(grid_state);
@@ -1488,7 +1542,7 @@ E_EtherCANErrCode GatewayInterface::abortMotion(t_grid_state& grid_state,
     // Send broadcast command to each gateway to abort movement of all
     // FPUs.
 
-    E_EtherCANErrCode ecode =  broadcastMessage<AbortMotionCommand>();
+    E_EtherCANErrCode ecode =  broadcastMessage<AbortMotionCommand>(sync_message);
 
     return ecode;
 
