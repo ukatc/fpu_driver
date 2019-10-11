@@ -1,7 +1,7 @@
 IDIR = ./include
 CC = "g++"
 
-VERSION := v2.1.2
+VERSION := v2.2.0
 
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
 -DDEBUG -g -O3 -finline-functions -Wstrict-aliasing -march=native	\
@@ -55,6 +55,7 @@ _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h		      \
 	ethercan/cancommandsv2/SetStepsPerSegmentCommand.h			      \
 	ethercan/cancommandsv2/SetTicksPerSegmentCommand.h			      \
 	ethercan/cancommandsv2/SetUStepLevelCommand.h				      \
+	ethercan/cancommandsv2/SyncCommand.h				              \
 	ethercan/cancommandsv2/UnlockUnitCommand.h				      \
 	ethercan/cancommandsv2/WriteSerialNumberCommand.h			      \
 	ethercan/response_handlers/handle_AbortMotion_response.h		      \
