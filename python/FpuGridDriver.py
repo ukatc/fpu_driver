@@ -209,13 +209,13 @@ class UnprotectedGridDriver (object):
 
         self.lock = threading.RLock()
 
-        if not confirm_each_step:
-            warn("confirm_each_steps set to False, which reduces"
-                 " confirmation requests of waveform step upload")
+        if confirm_each_step:
+            warn("confirm_each_steps set to True, which requires extra"
+                 " confirmation requests of waveform step upload, and reduces performance")
 
-        if min_bus_repeat_delay_ms < 2:
-            warn("min_bus_repeat_delay_ms is set to value below 2."
-                 " Increase if CAN time-outs are triggered")
+        if min_bus_repeat_delay_ms > 0:
+            warn("min_bus_repeat_delay_ms is set to value above 0."
+                 " Decrease if message rate is too low.")
 
         config = EtherCANInterfaceConfig()
         config.num_fpus = nfpus
