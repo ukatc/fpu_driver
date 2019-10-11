@@ -94,10 +94,11 @@ public:
 
     };
 
-    virtual E_CAN_COMMAND getCANCommandCode()
+
+    E_CAN_COMMAND getCANCommandCode()
     {
         assert(command_code != CCMD_NO_COMMAND);
-        return command_code;
+
 	switch (sync_type){
 
 	case SYNC_ABORT_MOTION:
