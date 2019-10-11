@@ -165,7 +165,7 @@ public:
 	    {
 		return DE_ASSERTION_FAILED;
 	    }
-	    const int broadcast_id = 0; // gateway which is SYNC master
+	    const int broadcast_id = 0; // gateway number zero is SYNC master
 
 	    // broadcast_id is an fpu id which makes sure
 	    // the message goes to the requested bus.
