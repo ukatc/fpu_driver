@@ -40,6 +40,11 @@ public:
 
     static const E_CAN_COMMAND command_code = CCMD_SYNC_COMMAND;
 
+    static E_CAN_COMMAND getCommandCode()
+    {
+        return command_code;
+    };
+
     SyncCommand() : CAN_Command(command_code),
 		    sync_type(SYNC_ABORT_MOTION),
 		    can_command_code(CCMD_ABORT_MOTION)
@@ -113,6 +118,12 @@ public:
 	}
     };
 
+    bool expectsResponse()
+    {
+        return true;
+    };
+
+
     // allows to test whether this CAN_Command instance is a SYNC command
     bool doSync()
     {
@@ -125,23 +136,33 @@ public:
     // is because the SYNC command causes the gateway to sent one of
     // two different CAN command to the FPUs. The time-out detection
     // mechanism has to account for those latter commands.
-    static E_CAN_COMMAND getCommandCode()
-    {
-        return command_code;
-    };
 
 
 
     // time-out period for a response to the message
     timespec getTimeOut()
     {
-        timespec const toval =
-        {
-            /* .tv_sec = */ 5,
-            /* .tv_nsec = */ 0
-        };
 
-        return toval;
+	if (sync_type == SYNC_EXECUTE_MOTION)
+	{
+	    timespec const toval =
+		{
+		    /* .tv_sec = */ 60,
+		    /* .tv_nsec = */ 0
+		};
+
+	    return toval;
+	}
+	else
+	{
+	    timespec const toval =
+		{
+		    /* .tv_sec = */ 5,
+		    /* .tv_nsec = */ 0
+		};
+
+	    return toval;
+	}
     };
 
 
