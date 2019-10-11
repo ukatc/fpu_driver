@@ -149,7 +149,7 @@ public:
     template<typename T> E_EtherCANErrCode broadcastMessage(bool sync_message=false)
     {
 
-	if (sync_message || (T::sync_code == SYNC_NOSYNC)){
+	if (sync_message && (T::sync_code != SYNC_NOSYNC)){
 	    // a SYNC message is only sent once to a single gateway,
 	    // the 'master' gateway. This gateway will sent the
 	    // message as broadcast messages to all buses, and forward
