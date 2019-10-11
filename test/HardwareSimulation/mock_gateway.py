@@ -48,7 +48,10 @@ def gateway(socket, address, args):
     socket.setsockopt(IPPROTO_TCP, TCP_NODELAY, 1)
 
     # append to list of sockets, for handling SYNC commands
-    mock_controller.gateway_socket_list.append(socket)
+    sockname = socket.getsockname()
+    if sockname not in mock_controller.gateway_socket_map:
+        print("appending socket '%r' for server address %s to socket list" % (socket, sockname))
+        mock_controller.gateway_socket_map[sockname] = socket
 
     while True:
         command = socket.recv(msg_len)
@@ -155,4 +158,4 @@ if __name__ == '__main__':
     ##server.serve_forever()
     for s in servers[:-1]:
         s.start()
-    servers[2].serve_forever()
+    servers[-1].serve_forever()

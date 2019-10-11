@@ -913,14 +913,16 @@ all_active = (1 << BUSES_PER_GATEWAY) - 1
 
 SYNC_MASK = { 0: all_active, 1 : all_active}
 
-gateway_socket_list = []
+gateway_socket_map = {}
 
 def command_handler(cmd, socket, args):
     verbose = args.verbosity > 0
     global gCountTotalCommands
     gCountTotalCommands += 1
     if verbose:
-        print("command decoded bytes are:", cmd)
+        print("\ncommand decoded bytes are:", cmd)
+    print("socket = %r" % socket)
+
     gateway_id = gateway_map[socket.getsockname()]
     bus_adr = cmd[0]
     print("bus_adr = %i" % bus_adr)
@@ -946,17 +948,20 @@ def command_handler(cmd, socket, args):
         # and for all activated buses
         sync_id = cmd[3]
 
-        sync_cmd = list(SYNC_CMD[sync_id])
         print ("SENDING SYNC COMMAND %i" % sync_id)
-        for k,s in enumerate(gateway_socket_list):
-            for bus_addr in range(buses_per_gateway):
+        for address, sock in gateway_socket_map.items():
+            for bus_addr in range(BUSES_PER_GATEWAY):
                 if ((1 << bus_addr) & SYNC_MASK[sync_id]):
 
+                    sync_cmd = list(SYNC_CMD[sync_id])
                     sync_cmd[0] = bus_addr
 
-                    print("sending to gateway %i, bus %i: SYNC%i cmd = %r" % (
-                        k, bus_addr, sync_id, sync_cmd))
-                    command_handler(sync_cmd, s, args)
+                    print("sending to gateway %s, bus %i: SYNC%i cmd = %r" % (
+                        address, bus_addr, sync_id, sync_cmd))
+                    if False:
+                        command_handler(sync_cmd, sock, args)
+                    else:
+                        spawn(command_handler, sync_cmd, sock, args)
 
         return
 
