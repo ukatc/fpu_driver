@@ -1096,6 +1096,7 @@ section~\ref{sec:firmware_compatibility} for details which
 functionality is missing for older versions.
 
 \section{Hardware configuration and addressing}
+\subsection{Addressing of FPUs}
 \label{sec:hardwareaddressing}
 \index{addressing!FPUs}
 \index{indexing FPUs}
@@ -1146,6 +1147,40 @@ elements: gateway number, bus number, and CAN ID.
 logical numbers and the (gateway number, bus number, CAN ID) tuple
 will be made more flexible in future versions of the EtherCAN
 interface. The current mapping will remain the default value.
+
+
+\subsection{Configuring gateways to start and stop FPUs synchronously}
+\label{sec:synccommand:explanation}
+\index{SYNC command!explanation}
+\index{SYNC command!hardware set-up}
+\index{troubleshooting!FPUs do not start or stop at the same time}
+\index{troubleshooting!only FPUs from one gateway start}
+\index{troubleshooting!gateways incorrectly connected}
+
+The EtherCAN gateway hardware provides a feature to start or stop FPUs
+which are attached to different buses, and to different gateways, at
+exactly the same time. This is achieved by sending a SYNC message to
+one gateway, which will trigger sending of a pre-configured message to
+all buses.
+
+For this to work, if using different gateways, \textbf{the gateways
+  need to be connected accordingly.} If this connection were omitted,
+SYNC commands would not work, and collisions would be the
+consequence. The Python \texttt{fpu\_driver} wrapper supports sending
+of SYNC commands for the \texttt{executeMotion()}, and the
+\texttt{abortMotion()} method. For the former, a SYNC command is uses
+if a specific keyword argument flag is set -- see
+section~\ref{sec:synccommand} on page~\pageref{sec:synccommand} for
+details. For the \texttt{abortMotion()} method, which is used to
+instantaneously and safely stop movements, a SYNC command is used by
+default (see section~\ref{sec:abortMotion} for more information).
+
+\begin{warning}
+  \textbf{WARNING: If you connect FPUs to several gateways to operate
+    together, make sure that the EtherCAN gateways are connected
+    properly to ensure transmission of SYNC commands.}
+\end{warning}
+
 
 \section{Configuring serial numbers and setting initial positions}
 \label{sec:setinitialposition}
@@ -2063,6 +2098,9 @@ clockwise,'' and so on.
 \index{waveforms!validity rules}
 \index{validity rules for waveforms!explanation}
 \index{ruleset\_version!explanation}
+\index{troubleshooting!motors losing control due to incorrect waveforms}
+\index{troubleshooting!waveforms not accepted}
+\index{troubleshooting!too large or too small accelerations}
 
 When you define waveforms, they have to conform to a fairly large
 number of rules and conditions to make sure that the FPU firmware can
@@ -4356,7 +4394,7 @@ position.
 \begin{sloppypar}
   The method
   \begin{minted}{python}
-    FpuGridDriver.executeMotion(grid_state)}
+    FpuGridDriver.executeMotion(grid_state, sync_command=False)}
   \end{minted}
   starts the movement of all FPUs for which a valid wavetable was
   configured, and which are in either the state
@@ -4371,6 +4409,42 @@ As the \texttt{findDatum()} command, the \texttt{executeMotion()}
 command accepts an \texttt{fpuset} parameter, a list which will
 restrict the movement to only those FPUs whose IDs are elements of the
 list.
+
+\paragraph{SYNC Command}
+\label{sec:synccommand}
+\index{commands!executeMotion()!SYNC command}%
+\index{SYNC command!for executeMotion()}%
+\index{SYNC command!how to use}%
+\index{starting FPU movements at the same time}%
+\index{meeting real-time requirements}%
+\index{real-time requirements, when starting FPUs}%
+
+If the keyword argument \texttt{sync\_command} is set to true, the
+driver will use an EtherCAN gateway SYNC command to start the
+FPUs. This will ensure that FPUs on different buses, and also FPUs on
+different gateways, are started ``at the same time'', within bounds
+guaranteed by the EtherCAN gateway firmware and
+electronics\footnote{The exact latency differences for this messages
+  will differ depending on the EtherCAN hardware and firmware
+  implementation, and will usually reach worst-case latencies in the
+  millisecond or even microsecond range.}. This guarantee is required
+to avoid collisions when FPUs are moving closely to each other during
+a waveform execution, and are attached to different gateways or
+buses. Because the MOONS workstation, including the FPU driver, the
+driver cannot give a guarantee about maximum latency at which start
+commands arrive at FPUs, but the EtherCAN gateway does give such a
+guarantee.
+
+\begin{warning}
+  \textbf{WARNING: Using the SYNC command to start FPUs which are
+    attached to different gateways requires that the EtherCAN gateways
+    are electrically wired to support the synchronised start. Omitting
+    this wiring would have the effect that FPUs attached to one
+    gateway are started, but not FPUs attached to another gateway,
+    which would result in collisions.}
+\end{warning}
+
+
 
 \paragraph{Software protection}
 \index{software protection!executeMotion command}
@@ -4480,6 +4554,7 @@ restore the calibrated state.
 
 
 \section{abortMotion()}
+\label{sec:abortMotion}
 \index{commands!abortMotion()!reference}
 \index{abortMotion()!reference}
 \index{aborting!movements!reference}
@@ -4488,30 +4563,58 @@ restore the calibrated state.
 
 
 \begin{sloppypar}
-The method \texttt{FpuGridDriver.abortMotion(fpu\_state)} terminates
-any movement and datum search operation, and puts any moving FPUs into
-\texttt{ABORTED} state. FPUs which are in state \texttt{READY\_FORWARD}
-or \texttt{READY\_REVERSED}, are put into state \texttt{RESTING}.  On
-other FPUs which are not moving it has no effect.  The
-\texttt{abortMotion()} method is also automatically called if the key
-combination \verb+<Control>-<c>+ is called during a movement operation
-or a datum search, or if the Python process receives a \texttt{SIGINT}
-Unix signal.
+  The method
+
+  \begin{minted}{python}
+    FpuGridDriver.abortMotion(fpu_state, sync_command=True)
+  \end{minted}
+terminates any movement and datum search operation, and puts any
+moving FPUs into \texttt{ABORTED} state. FPUs which are in state
+\texttt{READY\_FORWARD} or \texttt{READY\_REVERSED}, are put into
+state \texttt{RESTING}.  On other FPUs which are not moving, the
+command has no effect.  The \texttt{abortMotion()} method is also
+automatically called if the key combination \verb+<Control>-<c>+ is
+called during a movement operation or a datum search, or if the Python
+process receives a \texttt{SIGINT} Unix signal.
 \end{sloppypar}
 
+\index{SYNC command!when using abortMotion()}%
+\index{abortMotion()!SYNC command}%
+\index{stopping FPUs at the same time}%
+\index{synchronised messages}%
+\index{gateway SYNC commands}%
+%
+By default, the \texttt{abortMotion()} method uses EtherCAN gateway
+SYNC messages (described section~\ref{sec:synccommand:explanation} on
+page~\pageref{sec:synccommand:explanation}), which ensure that all
+FPUs are stopped at the same time (or, in other words,
+synchronously)\footnote{More precisely, with latencies not more than
+  in the millisecond range.}.  If the keyword parameter
+\texttt{sync\_command=False} is passed, a CAN broadcast message is
+used instead, which would also stop FPUs in the case that the
+different gateways are \emph{not} interconnected. A broadcast is also
+used by default if the command is sent only to a sub-set of FPUs.
+
+As explained in section~\ref{sec:synccommand:explanation}, sending
+SYNC commands with more than one gateway requires that the gateways
+are correctly connected with a specific electrical signal line -- see
+this section for information on hardware configuration.
+
+
 Similar to other commands, the method is thread-safe, but it has a
-slightly different behaviour in that it pre-empts other commands: If
-other driver methods are called while another operation is ongoing,
-they wait until the previous operation is completed. In contrary, the
-\texttt{abortMotion()} method cancels all ongoing operations,
-including unsent commands, waits until all FPUs have send a
-confirmation, and returns.
+slightly different behaviour compared to other commands, in that it
+pre-empts other commands: If other driver methods are called while
+another operation is ongoing, they always wait until the previous
+operation is completed. In contrary, the \texttt{abortMotion()} method
+cancels all ongoing operations, including unsent commands, and only
+then waits until all FPUs have send a confirmation for the abort
+command, and finally returns.
 
 After an \texttt{abortMotion()} command, FPUs which are in the state
 \texttt{ABORTED} will not be able to move again before this state is
-resolved. In protocol version 2, this can be done more safely using
-the \texttt{enableMove} command, so that it is not necessary to reset
-or power-cycle the FPU.
+resolved. In protocol version 2, this is done using the
+\texttt{enableMove} command, so that it is not necessary to reset or
+power-cycle the FPU (as was necessary in protocol 1).
 
 
 \chapter{Special methods for managing FPU state}
@@ -4583,8 +4686,11 @@ If an FPU is in \texttt{ABORTED} or in \texttt{UNINITIALISED} state,
 the state is changed to \texttt{RESTING}. Otherwise, the command is
 rejected. This can be used to move an FPU which is uninitialized.  For
 details on this, see section~\ref{sec:moving_uninitialized_fpus} on
-page~\pageref{sec:moving_uninitialized_fpus}.
-
+page~\pageref{sec:moving_uninitialized_fpus}\footnote{Note: Currently, after an abortMotion() command, apart from
+  the \texttt{enableMove()} it is also still required to do a
+  \texttt{resetFPUs()} before a \texttt{findDatum()} command is
+  possible again. This is an imperfection in the state tracking and
+  should be changed.}.
 
 \section{freeBetaCollision()}
 \index{commands!freeBetaCollision()!reference}
@@ -5501,6 +5607,13 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
+\subsection*{Changes in version 2.2.0}
+\begin{itemize}
+\item Added support for EtherCAN gateway SYNC commands, see
+  sections~\ref{sec:synccommand:explanation} and~\ref{sec:synccommand}.
+\end{itemize}
+
+
 \subsection*{Changes in version 2.1.2}
 \begin{itemize}
 \item Added documentation how to properly move uninitialized FPUs
@@ -5514,7 +5627,7 @@ commands, or alter otherwise visible behaviour of the driver.
   \texttt{checkIntegrity} command was fixed.
 \item A bug in the fpu\_driver, which affected the correct handling of
   firmware datum time-out messages was fixed.
-\item A bug in handling the \texcttt{freeAlphaLimitBreach()} was
+\item A bug in handling the \texttt{freeAlphaLimitBreach()} was
   fixed, which caused exceptions in the Python wrapper.
 \item Several bugs in the fpu firmware simulation were fixed, and the
   range limits were made similar to actually measured limits.
@@ -6265,6 +6378,10 @@ as needed. Here is an overview what each script does:
   value
 \item[test\_abortMotion.py]  configures a movement which can be aborted
   manually using the \verb+<Ctrl>-<c>+ key combination.
+\item[testSync.py] configures and executes two movements of groups of
+  FPUs -- one started by a CAN broadcast command, and one started by
+  an EtherCAN SUNC command, as described in
+  section~\ref{sec:synccommand} on page~\pageref{sec:synccommand}.
 \end{description}
 
 \chapter{Dependency requirements and installation}
