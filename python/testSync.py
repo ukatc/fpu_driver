@@ -92,4 +92,5 @@ if __name__ == '__main__':
 
     print("with sync...")
     gd.configMotion(w, gs)
+    gd.reverseMotion(gs)
     gd.executeMotion(gs, sync_command=True)
