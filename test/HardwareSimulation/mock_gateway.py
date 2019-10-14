@@ -49,9 +49,8 @@ def gateway(socket, address, args):
 
     # append to list of sockets, for handling SYNC commands
     sockname = socket.getsockname()
-    if sockname not in mock_controller.gateway_socket_map:
-        print("appending socket '%r' for server address %s to socket list" % (socket, sockname))
-        mock_controller.gateway_socket_map[sockname] = socket
+    print("appending socket '%r' for server address %s to socket list" % (socket, sockname))
+    mock_controller.gateway_socket_map[sockname] = socket
 
     while True:
         command = socket.recv(msg_len)
@@ -155,7 +154,7 @@ if __name__ == '__main__':
     # to start the servers asynchronously, we use its start() method;
     # we use blocking serve_forever() for the third and last connection.
     print('Starting mock gateway on ports %s' % args.ports)
-    ##server.serve_forever()
+
     for s in servers[:-1]:
         s.start()
     servers[-1].serve_forever()
