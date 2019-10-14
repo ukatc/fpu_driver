@@ -206,7 +206,10 @@ if __name__ == '__main__' :
                 print("usage: flash <serial_number> <fpu_id>")
                 exit(1)
             serial_number = argv[2]
-            assert(len(serial_number) <= 5)
+            if len(serial_number) > 6:
+                print("serial number is too long!!")
+                exit(1)
+
             fpu_id = int(argv[3])
 
             with env.begin(db=fpudb) as txn:
@@ -338,9 +341,11 @@ if __name__ == '__main__' :
                     if not val is None:
                         print(key,":", val)
 
-    except FpuGridDriver.EtherCANException:
+    except FpuGridDriver.EtherCANException as err:
         exit_status = 10
-    except Exception:
+        print("CAN error : %s" % err)
+    except Exception as err:
         exit_status = 11
+        print("error : %s" % err)
 
     exit(exit_status)
