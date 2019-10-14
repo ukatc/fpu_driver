@@ -30,6 +30,11 @@ def parse_args():
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=NUM_FPUS,
                         help='Number of adressed FPUs (default: %(default)s).')
 
+    parser.add_argument('-a', '--alpha_sweep',  metavar='alpha_sweep', type=float, default=15.0,
+                        help='Range of alpha arm movement (default: %(default)s).')
+
+    parser.add_argument('-b', '--beta_sweep',  metavar='beta_sweep',  type=float, default=7.0,
+                        help='Range of beta arm movement (default: %(default)s).')
 
     args = parser.parse_args()
     return args
@@ -84,13 +89,15 @@ if __name__ == '__main__':
 
     gd.findDatum(gs)
 
-    w = gen_wf([5,] * args.N, 3)
+    w = gen_wf([args.alpha_sweep,] * args.N, args.beta_sweep)
 
     print("without sync...")
     gd.configMotion(w, gs)
     gd.executeMotion(gs)
+    print("reached angles: ")
+    gd.trackedAngles(gs)
 
     print("with sync...")
+    w = gen_wf([- args.alpha_sweep,] * args.N, - args.beta_sweep)
     gd.configMotion(w, gs)
-    gd.reverseMotion(gs)
     gd.executeMotion(gs, sync_command=True)
