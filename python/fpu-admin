@@ -46,292 +46,301 @@ def flash_FPU(fpu_id, serial_number,mockup=True, gateway_address=None):
     gd.readSerialNumbers(grid_state)
     print("flashing FPU #%i with serial number %r" % (fpu_id, serial_number))
     rval = gd.writeSerialNumber(fpu_id, serial_number, grid_state)
+    del gd
     print(rval)
 
 
-
+exit_status = 0
 
 if __name__ == '__main__' :
-    print(repr(argv))
-    if (len(argv) < 2) or (len(argv) == 2) and argv[1] in ["-h", "-?", "--help", "help"]:
-        print("""usage:
-        help
-            - print this message
 
-        flash [--reuse_sn] <serial_number> <fpu_id>
-            - flash serial number to FPU with ID <fpu_id>. FPU must be connected.
-              If the --reuse_sn flag is set, it is allowed to
-              use a serial number which was used before.
+    try:
+        print(repr(argv))
+        if (len(argv) < 2) or (len(argv) == 2) and argv[1] in ["-h", "-?", "--help", "help"]:
+            print("""usage:
+            help
+                - print this message
 
-        init [--reinitialize] <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]
-            - initialize protection database for FPU, passing the initial alpha
-              and beta arm positions in degree.
-              The optional last parameter is the alpha datum offset.
+            flash [--reuse_sn] <serial_number> <fpu_id>
+                - flash serial number to FPU with ID <fpu_id>. FPU must be connected.
+                  If the --reuse_sn flag is set, it is allowed to
+                  use a serial number which was used before.
 
-              If the --reinitialize flag is set, it is allowed to redefine
-              FPU positions which already have been stored before.
+            init [--reinitialize] <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]
+                - initialize protection database for FPU, passing the initial alpha
+                  and beta arm positions in degree.
+                  The optional last parameter is the alpha datum offset.
 
-        init [--reinitialize] <serial_number> "[<apos_min>, <apos_max>]" "[<bpos_min>, <bpos_max>]" [<adatum_offset>]
-            - as above, but defining position intervals instead.
+                  If the --reinitialize flag is set, it is allowed to redefine
+                  FPU positions which already have been stored before.
 
-        list
-            - list whole database.
+            init [--reinitialize] <serial_number> "[<apos_min>, <apos_max>]" "[<bpos_min>, <bpos_max>]" [<adatum_offset>]
+                - as above, but defining position intervals instead.
 
-        list1 <serial_number>
-            - list  data for one FPU
+            list
+                - list whole database.
 
-        alimits <serial_number> <alpha_limit__min> <alpha_limit_max> [<adatum_offset>]
-            - set individual safe limits for alpha arm of this FPU.
+            list1 <serial_number>
+                - list  data for one FPU
 
-        blimits <serial_number> <beta_limit_min> <beta_limit_max>
-            - set safe limits for beta arm of this FPU
+            alimits <serial_number> <alpha_limit__min> <alpha_limit_max> [<adatum_offset>]
+                - set individual safe limits for alpha arm of this FPU.
 
-        bretries <serial_number> <freebetatries>
-            - set allowed number of freeBetaCollision command in the same
-              direction before the software protection kicks in.
-              The retry count is reset to zero upon a successfully finished
-              datum search.
+            blimits <serial_number> <beta_limit_min> <beta_limit_max>
+                - set safe limits for beta arm of this FPU
 
-        healthlog <serial_number>
-            - print the content of the health log database for an FPU
-              to the screen. The index number is the count of finished
-              datum searches. Each row also contains the UNIX time stamp
-              which can be used to plot against time, or to identify
-              events in the driver logs.
+            bretries <serial_number> <freebetatries>
+                - set allowed number of freeBetaCollision command in the same
+                  direction before the software protection kicks in.
+                  The retry count is reset to zero upon a successfully finished
+                  datum search.
 
-        Default alpha datum offset: %f
-        """ % ALPHA_DATUM_OFFSET)
-        exit(1)
+            healthlog <serial_number>
+                - print the content of the health log database for an FPU
+                  to the screen. The index number is the count of finished
+                  datum searches. Each row also contains the UNIX time stamp
+                  which can be used to plot against time, or to identify
+                  events in the driver logs.
 
-    if "--mockup" in argv:
-        is_mockup = True
-        n = argv.index("--mockup")
-        del argv[n]
-
-    re_initialize = False
-    if "--reinitialize" in argv:
-        re_initialize = True
-        n = argv.index("--reinitialize")
-        del argv[n]
-
-    if ("--reuse_sn" in argv) or ("--reuse-sn" in argv):
-        reuse_sn = True
-        try:
-            n = argv.index("--reuse_sn")
-        except ValueError:
-            n = argv.index("--reuse-sn")
-
-        del argv[n]
-    else:
-        reuse_sn = False
-
-    gateway_address=None
-    if "--gateway_address" in argv:
-        k = argv.index("--gateway_address")
-        hostname = argv[k+1]
-        del argv[k+1]
-        del argv[k]
-        gateway_address = [ FpuGridDriver.GatewayAddress(hostname, 4700) ]
-
-    env = open_database_env(mockup=is_mockup)
-
-    if env is None:
-        raise ValueError("The environment variable FPU_DATABASE needs to"
-                     " be set to the directory path of the LMDB position database!")
-
-    fpudb = env.open_db("fpu")
-
-    command = argv[1]
-
-    if command == "init":
-        if not (len(argv) in [5,6]):
-            print("usage: init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]")
+            Default alpha datum offset: %f
+            """ % ALPHA_DATUM_OFFSET)
             exit(1)
 
-        sn = serial_number = argv[2]
-        try:
-            alpha_pos = float(argv[3])
-            aint = Interval(alpha_pos,alpha_pos)
-        except ValueError:
-            aint = Interval(literal_eval(argv[3]))
+        if "--mockup" in argv:
+            is_mockup = True
+            n = argv.index("--mockup")
+            del argv[n]
 
-        try:
-            beta_pos = float(argv[4])
-            bint = Interval(beta_pos,beta_pos)
-        except ValueError:
-            bint = Interval(literal_eval(argv[4]))
+        re_initialize = False
+        if "--reinitialize" in argv:
+            re_initialize = True
+            n = argv.index("--reinitialize")
+            del argv[n]
 
-        if len(argv) == 6:
-            alpha_offset = float(argv[5])
+        if ("--reuse_sn" in argv) or ("--reuse-sn" in argv):
+            reuse_sn = True
+            try:
+                n = argv.index("--reuse_sn")
+            except ValueError:
+                n = argv.index("--reuse-sn")
+
+            del argv[n]
         else:
-            alpha_offset = ALPHA_DATUM_OFFSET
+            reuse_sn = False
 
-        max_waveform = 0
-        min_waveform = 0
-        waveform_reversed = False
+        gateway_address=None
+        if "--gateway_address" in argv:
+            k = argv.index("--gateway_address")
+            hostname = argv[k+1]
+            del argv[k+1]
+            del argv[k]
+            gateway_address = [ FpuGridDriver.GatewayAddress(hostname, 4700) ]
 
-        init_counters = INIT_COUNTERS.copy()
+        env = open_database_env(mockup=is_mockup)
 
-        with env.begin(write=True,db=fpudb) as txn:
-            if re_initialize:
-                counters = None
-            else:
-                counters =  protdb.getRawField(txn,serial_number,protdb.counters)
+        if env is None:
+            raise ValueError("The environment variable FPU_DATABASE needs to"
+                         " be set to the directory path of the LMDB position database!")
 
-            if counters != None:
-                init_counters.update(counters)
+        fpudb = env.open_db("fpu")
 
+        command = argv[1]
 
-            protdb.putInterval(txn, sn, protdb.alpha_positions, aint, alpha_offset)
-            protdb.putInterval(txn, sn, protdb.beta_positions, bint, BETA_DATUM_OFFSET)
-            protdb.putField(txn, sn, protdb.waveform_table, [])
-            protdb.putField(txn, sn, protdb.waveform_reversed, waveform_reversed)
-            protdb.putInterval(txn, sn, protdb.alpha_limits, Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE), alpha_offset)
-            protdb.putInterval(txn, sn, protdb.beta_limits, Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE), BETA_DATUM_OFFSET)
-
-            protdb.putField(txn, sn, protdb.free_beta_retries, DEFAULT_FREE_BETA_RETRIES)
-            protdb.putField(txn, sn, protdb.beta_retry_count_cw, 0)
-            protdb.putField(txn, sn, protdb.beta_retry_count_acw, 0)
-
-            protdb.putField(txn, sn, protdb.free_alpha_retries, DEFAULT_FREE_ALPHA_RETRIES)
-            protdb.putField(txn, sn, protdb.alpha_retry_count_cw, 0)
-            protdb.putField(txn, sn, protdb.alpha_retry_count_acw, 0)
-            protdb.putField(txn, sn, protdb.counters, init_counters)
-
-    if command == "flash":
-        if len(argv) != 4:
-            print("usage: flash <serial_number> <fpu_id>")
-            exit(1)
-        serial_number = argv[2]
-        assert(len(serial_number) <= 5)
-        fpu_id = int(argv[3])
-
-        with env.begin(db=fpudb) as txn:
-            val = protdb.getField(txn,serial_number, protdb.serialnumber_used)
-
-        print("val=", repr(val))
-        if val != None:
-            if not reuse_sn:
-                print("Command rejected: Serial number is already in use."
-                      " Call with '--reuse_sn' to use it again.")
+        if command == "init":
+            if not (len(argv) in [5,6]):
+                print("usage: init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]")
                 exit(1)
-        else:
-            with env.begin(write=True, db=fpudb) as txn:
-                val = protdb.putField(txn,serial_number, protdb.serialnumber_used, True)
 
-        flash_FPU(fpu_id, serial_number, mockup=is_mockup, gateway_address=gateway_address)
+            sn = serial_number = argv[2]
+            try:
+                alpha_pos = float(argv[3])
+                aint = Interval(alpha_pos,alpha_pos)
+            except ValueError:
+                aint = Interval(literal_eval(argv[3]))
 
+            try:
+                beta_pos = float(argv[4])
+                bint = Interval(beta_pos,beta_pos)
+            except ValueError:
+                bint = Interval(literal_eval(argv[4]))
 
+            if len(argv) == 6:
+                alpha_offset = float(argv[5])
+            else:
+                alpha_offset = ALPHA_DATUM_OFFSET
 
-    if command == "alimits":
-        if not (len(argv) in [5,6]) :
-            print("usage: alimits <serial_number> <amin> <amax> [<alpha_datum_offset>]")
-            exit(1)
+            max_waveform = 0
+            min_waveform = 0
+            waveform_reversed = False
 
-        serial_number = argv[2]
-        alpha_min = float(argv[3])
-        alpha_max = float(argv[4])
-        if len(argv) == 6:
-            alpha_offset = float(argv[5])
-        else:
-            alpha_offset = ALPHA_DATUM_OFFSET
+            init_counters = INIT_COUNTERS.copy()
 
-        with env.begin(write=True,db=fpudb) as txn:
-            val = Interval(alpha_min, alpha_max)
-            protdb.putInterval(txn, serial_number, protdb.alpha_limits, val, alpha_offset)
+            with env.begin(write=True,db=fpudb) as txn:
+                if re_initialize:
+                    counters = None
+                else:
+                    counters =  protdb.getRawField(txn,serial_number,protdb.counters)
 
-    elif command == "blimits":
-        if len(argv) != 5:
-            print("usage: blimits <serial_number> <bmin> <bmax>")
-            exit(1)
-
-        serial_number = argv[2]
-        beta_min = float(argv[3])
-        beta_max = float(argv[4])
-
-
-        with env.begin(write=True,db=fpudb) as txn:
-            val = Interval(beta_min, beta_max)
-            protdb.putInterval(txn, serial_number, protdb.beta_limits, val, BETA_DATUM_OFFSET)
+                if counters != None:
+                    init_counters.update(counters)
 
 
-    elif command == "bretries":
-        if len(argv) != 4:
-            print("usage: bretries <serial_number> <nretries>")
-            exit(1)
+                protdb.putInterval(txn, sn, protdb.alpha_positions, aint, alpha_offset)
+                protdb.putInterval(txn, sn, protdb.beta_positions, bint, BETA_DATUM_OFFSET)
+                protdb.putField(txn, sn, protdb.waveform_table, [])
+                protdb.putField(txn, sn, protdb.waveform_reversed, waveform_reversed)
+                protdb.putInterval(txn, sn, protdb.alpha_limits, Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE), alpha_offset)
+                protdb.putInterval(txn, sn, protdb.beta_limits, Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE), BETA_DATUM_OFFSET)
 
-        serial_number = argv[2]
-        bretries = int(argv[3])
+                protdb.putField(txn, sn, protdb.free_beta_retries, DEFAULT_FREE_BETA_RETRIES)
+                protdb.putField(txn, sn, protdb.beta_retry_count_cw, 0)
+                protdb.putField(txn, sn, protdb.beta_retry_count_acw, 0)
 
+                protdb.putField(txn, sn, protdb.free_alpha_retries, DEFAULT_FREE_ALPHA_RETRIES)
+                protdb.putField(txn, sn, protdb.alpha_retry_count_cw, 0)
+                protdb.putField(txn, sn, protdb.alpha_retry_count_acw, 0)
+                protdb.putField(txn, sn, protdb.counters, init_counters)
 
-        with env.begin(write=True,db=fpudb) as txn:
-            val = str(bretries)
-            protdb.putField(txn, serial_number, protdb.free_beta_retries, val)
+        if command == "flash":
+            if len(argv) != 4:
+                print("usage: flash <serial_number> <fpu_id>")
+                exit(1)
+            serial_number = argv[2]
+            assert(len(serial_number) <= 5)
+            fpu_id = int(argv[3])
 
-    elif command == "aretries":
-        if len(argv) != 4:
-            print("usage: aretries <serial_number> <nretries>")
-            exit(1)
+            with env.begin(db=fpudb) as txn:
+                val = protdb.getField(txn,serial_number, protdb.serialnumber_used)
 
-        serial_number = argv[2]
-        aretries = int(argv[3])
+            if val != None:
+                if not reuse_sn:
+                    print("Command rejected: Serial number is already in use."
+                          " Call with '--reuse_sn' to use it again.")
+                    exit(1)
+            else:
+                with env.begin(write=True, db=fpudb) as txn:
+                    val = protdb.putField(txn,serial_number, protdb.serialnumber_used, True)
 
-
-        with env.begin(write=True,db=fpudb) as txn:
-            val = str(aretries)
-            protdb.putField(txn, serial_number, protdb.free_alpha_retries, val)
-
-
-    elif command == "list":
-        with env.begin(db=fpudb) as txn:
-            for key, val in txn.cursor():
-                print(key, val)
-
-    elif command == "list1":
-        if len(argv) != 3:
-            print("usage: list1 <serial_number>")
-            exit(1)
-        serial_number = argv[2]
-        with env.begin(db=fpudb) as txn:
-
-            for subkey in [ protdb.alpha_positions,
-                            protdb.beta_positions ,
-                            # protdb.waveform_table ,
-                            protdb.waveform_reversed,
-                            protdb.alpha_limits ,
-                            protdb.beta_limits ,
-                            protdb.free_beta_retries,
-                            protdb.beta_retry_count_cw,
-                            protdb.beta_retry_count_acw,
-                            protdb.free_alpha_retries,
-                            protdb.alpha_retry_count_cw,
-                            protdb.alpha_retry_count_acw,
-                            protdb.counters,
-                            protdb.serialnumber_used]:
-
-                key = str((serial_number, subkey))
-                val = protdb.getRawField(txn,serial_number,subkey)
-
-                print(key,":", val)
+            flash_FPU(fpu_id, serial_number, mockup=is_mockup, gateway_address=gateway_address)
 
 
-    elif command == "healthlog":
-        if len(argv) != 3:
-            print("usage: healthlog <serial_number>")
-            exit(1)
 
-        serial_number = argv[2]
+        if command == "alimits":
+            if not (len(argv) in [5,6]) :
+                print("usage: alimits <serial_number> <amin> <amax> [<alpha_datum_offset>]")
+                exit(1)
 
-        with env.begin(db=fpudb) as txn:
-            counters = protdb.getField(txn,serial_number, protdb.counters)
-            num_datum_ops = counters[HealthLogDB.datum_count]
+            serial_number = argv[2]
+            alpha_min = float(argv[3])
+            alpha_max = float(argv[4])
+            if len(argv) == 6:
+                alpha_offset = float(argv[5])
+            else:
+                alpha_offset = ALPHA_DATUM_OFFSET
 
-        if num_datum_ops == 0:
-            sys.exit(1)
+            with env.begin(write=True,db=fpudb) as txn:
+                val = Interval(alpha_min, alpha_max)
+                protdb.putInterval(txn, serial_number, protdb.alpha_limits, val, alpha_offset)
 
-        healthlog = env.open_db("healthlog")
-        with env.begin(db=healthlog) as txn:
-            for cnt in range(1, num_datum_ops+1):
-                key, val = HealthLogDB.getEntry(txn,serial_number, cnt)
-                if not val is None:
+        elif command == "blimits":
+            if len(argv) != 5:
+                print("usage: blimits <serial_number> <bmin> <bmax>")
+                exit(1)
+
+            serial_number = argv[2]
+            beta_min = float(argv[3])
+            beta_max = float(argv[4])
+
+
+            with env.begin(write=True,db=fpudb) as txn:
+                val = Interval(beta_min, beta_max)
+                protdb.putInterval(txn, serial_number, protdb.beta_limits, val, BETA_DATUM_OFFSET)
+
+
+        elif command == "bretries":
+            if len(argv) != 4:
+                print("usage: bretries <serial_number> <nretries>")
+                exit(1)
+
+            serial_number = argv[2]
+            bretries = int(argv[3])
+
+
+            with env.begin(write=True,db=fpudb) as txn:
+                val = str(bretries)
+                protdb.putField(txn, serial_number, protdb.free_beta_retries, val)
+
+        elif command == "aretries":
+            if len(argv) != 4:
+                print("usage: aretries <serial_number> <nretries>")
+                exit(1)
+
+            serial_number = argv[2]
+            aretries = int(argv[3])
+
+
+            with env.begin(write=True,db=fpudb) as txn:
+                val = str(aretries)
+                protdb.putField(txn, serial_number, protdb.free_alpha_retries, val)
+
+
+        elif command == "list":
+            with env.begin(db=fpudb) as txn:
+                for key, val in txn.cursor():
+                    print(key, val)
+
+        elif command == "list1":
+            if len(argv) != 3:
+                print("usage: list1 <serial_number>")
+                exit(1)
+            serial_number = argv[2]
+            with env.begin(db=fpudb) as txn:
+
+                for subkey in [ protdb.alpha_positions,
+                                protdb.beta_positions ,
+                                # protdb.waveform_table ,
+                                protdb.waveform_reversed,
+                                protdb.alpha_limits ,
+                                protdb.beta_limits ,
+                                protdb.free_beta_retries,
+                                protdb.beta_retry_count_cw,
+                                protdb.beta_retry_count_acw,
+                                protdb.free_alpha_retries,
+                                protdb.alpha_retry_count_cw,
+                                protdb.alpha_retry_count_acw,
+                                protdb.counters,
+                                protdb.serialnumber_used]:
+
+                    key = str((serial_number, subkey))
+                    val = protdb.getRawField(txn,serial_number,subkey)
+
                     print(key,":", val)
+
+
+        elif command == "healthlog":
+            if len(argv) != 3:
+                print("usage: healthlog <serial_number>")
+                exit(1)
+
+            serial_number = argv[2]
+
+            with env.begin(db=fpudb) as txn:
+                counters = protdb.getField(txn,serial_number, protdb.counters)
+                num_datum_ops = counters[HealthLogDB.datum_count]
+
+            if num_datum_ops == 0:
+                sys.exit(1)
+
+            healthlog = env.open_db("healthlog")
+            with env.begin(db=healthlog) as txn:
+                for cnt in range(1, num_datum_ops+1):
+                    key, val = HealthLogDB.getEntry(txn,serial_number, cnt)
+                    if not val is None:
+                        print(key,":", val)
+
+    except FpuGridDriver.EtherCANException:
+        exit_status = 10
+    except Exception:
+        exit_status = 11
+
+    exit(exit_status)
