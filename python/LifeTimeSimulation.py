@@ -18,7 +18,7 @@ from numpy import (array, random, asarray, zeros, ones, sqrt, ceil,
 import FpuGridDriver
 from FpuGridDriver import (TEST_GATEWAY_ADRESS_LIST, GatewayAddress,
                            SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE,
-                           DEFAULT_WAVEFORM_RULSET_VERSION, DATUM_TIMEOUT_DISABLE)
+                           DEFAULT_WAVEFORM_RULESET_VERSION, DATUM_TIMEOUT_DISABLE)
 from fpu_commands import *
 from fpu_constants import *
 
@@ -51,22 +51,22 @@ def filter_slow_tail(step_list, min_steps):
     while len(bsteps) < len(asteps):
         bsteps.append(0)
 
-    sl = zip(asteps, bsteps)            
-    
+    sl = zip(asteps, bsteps)
+
     #print("after:", sl)
     return sl
-    
-    
 
-def wf_append(wf1, wf2, min_steps=125, ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION):
+
+
+def wf_append(wf1, wf2, min_steps=125, ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION):
     wf = wf_copy(wf1)
-    
+
     for k in wf.keys():
         if ruleset_version == 2:
             # delete entries which have step numbers
             # smaller than min_steps
             wf[k] = filter_slow_tail(wf[k], min_steps)
-                
+
         if wf2.has_key(k):
             ws = wf2[k]
         else:
@@ -409,54 +409,54 @@ def parse_args():
                         help='EtherCAN gateway port number (default: %(default)s)')
 
     parser.add_argument('--gateway_addresses', metavar='GATEWAY_ADDRESSES', type=str, default="192.168.0.10",
-                        help="""EtherCAN gateway IP addresses or hostnames, 
+                        help="""EtherCAN gateway IP addresses or hostnames,
                                 separated by ',' (default: %(default)r)""")
-    
+
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=7,
                         help="""Number of adressed FPUs. The FPUs will be steered in unison.
                                  WARNING: No conflict checking is done.  (default: %(default)s)""")
-    
+
     parser.add_argument('-r', '--ruleset_version',  metavar='RULESET_VERSION', type=int,
-                        default=DEFAULT_WAVEFORM_RULSET_VERSION,
+                        default=DEFAULT_WAVEFORM_RULESET_VERSION,
                         help="""Version number of rule set which is used for waveform validity checking.
-                        Currently available options: 0 - no checking, 1 - strict checking with 
+                        Currently available options: 0 - no checking, 1 - strict checking with
                         small speeds allowed (not fully supported by current firmware)
                         2 - loose checking with small speeds disallowed, as in RFE to Software ICD issue 2.1,
                         and supported by firmware >= 1.4.4,
                         4 - supported by firmware 1.5 (default: %(default)s)""")
-    
+
     parser.add_argument('--alpha_min', metavar='ALPHA_MIN', type=float, default=ALPHA_MIN_DEGREE,
                         help='minimum alpha value  (default: %(default)s)')
-    
+
     parser.add_argument('--alpha_max', metavar='ALPHA_MAX', type=float, default=ALPHA_MAX_DEGREE,
                         help='maximum alpha value  (default: %(default)s)')
-    
+
     parser.add_argument('--beta_min', metavar='BETA_MIN', type=float, default=BETA_MIN_DEGREE,
                         help='minimum beta value  (default: %(default)s)')
-    
+
     parser.add_argument('--beta_max', metavar='BETA_MAX', type=float, default=BETA_MAX_DEGREE,
                         help='maximum beta value  (default: %(default)s)')
 
     parser.add_argument('--chill_time', metavar='CHILL_TIME', type=float, default=30,
                         help='chill time between movements  (default: %(default)s)')
-        
+
     parser.add_argument('--cycle_length', metavar='CYCLE_LENGTH', type=float, default=32,
                         help='cycle duration  (default: %(default)s)')
-        
+
 
     parser.add_argument('--min_step_frequency', metavar='min_step_frequency', type=float,
                        default=MOTOR_MIN_STEP_FREQUENCY,
                         help='minimum motor step frequency  (default: %(default)s)')
-        
+
     parser.add_argument('--max_step_frequency', metavar='max_step_frequency', type=float,
                        default=MOTOR_MAX_STEP_FREQUENCY,
                         help='maximum motor step frequency  (default: %(default)s)')
-        
+
     parser.add_argument('--max_start_frequency', metavar='max_start_frequency', type=float,
                         default=MOTOR_MAX_START_FREQUENCY,
                         help='maximum motor start frequency  (default: %(default)s)')
-        
-        
+
+
     parser.add_argument('--max_acceleration', metavar='MAX_ACCELERATION', type=float,
                         default=MAX_ACCELERATION_FACTOR,
                         help='maximum motor acceleration  (default: %(default)s)')
