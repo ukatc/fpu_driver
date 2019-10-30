@@ -490,14 +490,14 @@ def parse_args():
     parser.add_argument('--countermove_degrees', metavar='COUNTERMOVE_DEGREES', type=float,
                         default=0.0,
                         help='positive angle to move away from the datum position before datum op (default: %(default)s)')
-    
+
     parser.add_argument('-v', '--verbosity', metavar='VERBOSITY', type=int,
                         default=1,
                         help='verbosity level of progress messages (default: %(default)s)')
 
-     
+
     args = parser.parse_args()
-    args.stop_time = time.strptime(args.end_time, )
+    args.stop_time = time.strptime(args.end_time,"%Y-%m-%dT%H:%M:%S%Z")
 
     args.min_steps=int(args.min_step_frequency * args.segment_length_ms / 1000)
     args.max_steps=int(ceil(args.max_step_frequency * args.segment_length_ms / 1000))
