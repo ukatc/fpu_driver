@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from __future__ import print_function, division
-"""This module drives one FPU to a fine-grained sequence of 
+"""This module drives one FPU to a fine-grained sequence of
 positions and calls a measurement function at each position.
 """
 
@@ -82,11 +82,11 @@ def sum_steps(wf, coord):
         idx = 1
     else:
         raise ValueError("coord must be 'alpha' or 'beta'")
-    
+
     result = zeros(len(wf), dtype=int)
     for k, val in wf.items():
         result[int(k)] = sum([v[idx] for v in val])
-        
+
     return result
 
 # returns true if any step indexed with
@@ -100,7 +100,7 @@ def any_seg_nonzero(wf, idx):
         if  (s[0] != 0) or  (s[1] != 0):
             return True
     return False
-        
+
 
 
 def gen_fastmove(current_alpha, current_beta, alpha_target, beta_target, fraction=0.6, opts=None):
@@ -138,13 +138,13 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
     oscillation_maxsteps = random.randint(0, 1 + opts.start_steps)
     oscillation_max_segments = int(float(opts.max_oscillation_time)/ (opts.segment_length_ms / 1000.0))
     oscillation_segments = random.randint(4, oscillation_max_segments +1)
-    oscillation_period_len = 4 * random.randint(1, 1 + oscillation_segments // 4) 
+    oscillation_period_len = 4 * random.randint(1, 1 + oscillation_segments // 4)
 
     oscillation_num_periods = oscillation_segments //  oscillation_period_len
     samples = []
     stepped_segs = oscillation_period_len // 4
-    steps_per_seg = oscillation_maxsteps // stepped_segs 
-    
+    steps_per_seg = oscillation_maxsteps // stepped_segs
+
     for p in range(oscillation_num_periods):
         for sign in (-1,1):
             for k in range(stepped_segs):
@@ -152,16 +152,16 @@ def gen_oscillation(current_alpha, current_beta, opts=None):
                                                    steps_per_seg +1)
                 samples.append(sign * oscillation_steps)
                 samples.append(0)
-            
-            
+
+
 
     ws = [ (s, s) for s in samples]
     wf = { j : ws for j in range(len(current_alpha)) }
 
     return wf
 
-    
-    
+
+
 def gen_creep(current_alpha, current_beta, alpha_target, beta_target,
               opts=None, fraction=0.6, max_change=1.05, speed_factor=0.2):
     dist_alpha = alpha_target - current_alpha
@@ -183,10 +183,10 @@ def gen_creep(current_alpha, current_beta, alpha_target, beta_target,
                     if segment[c] <= opts.start_steps:
                         segment[c] = random.randint(opts.min_steps, opts.start_steps+1)
                 ws[k]=tuple(segment)
-                        
-        
+
+
     return wf
-             
+
 
 def gen_wait(current_alpha, current_beta, opts=None, nsegments=None, max_segments=None):
     clen = opts.cycle_length
@@ -224,8 +224,8 @@ def check_wf(wf, channel, opts=None, verbose=False, rulset_version=None):
                 y_post = 0
             else:
                 y_post = y[k+1]
-            
-                
+
+
             yk_abs = abs(yk)
             y_prev_abs = abs(y_prev)
             y_post_abs = abs(y_post)
@@ -238,42 +238,42 @@ def check_wf(wf, channel, opts=None, verbose=False, rulset_version=None):
 
             assert(sign(yk) * sign(y_prev) >= 0)
             assert(sign(yk) * sign(y_post) >= 0)
-                   
+
             if (small_y != 0) and (y_prev != 0) and (y_post != 0):
                 assert ( (large_y /  small_y) <= opts.max_acceleration), "step too large for step %i, small=%i, large = %i" % (
                     k, small_y, large_y)
-                        
+
 
 
 """generates a waveform according to the given command line parameters."""
 def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
-                   ruleset_version=DEFAULT_WAVEFORM_RULSET_VERSION,
+                   ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION,
                    opts=None):
 
-    rest_segments = int(round((1000 * cycle_length) / opts.segment_length_ms))    
+    rest_segments = int(round((1000 * cycle_length) / opts.segment_length_ms))
     if rest_segments > opts.maxnum_waveform_segments:
         raise ValueError("the time requires more segments than the the number of allowed segments")
 
     min_steps = opts.min_steps
-    
+
     verbosity = opts.verbosity
-    
+
     wf = wf_create(opts.N)
 
     if verbosity > 1:
         print("current angles:", current_alpha, current_beta)
-    
+
     smrsix = 0 # that's the state machine rotating state index,
     #            aka SMRSIX
     while True:
-        
+
         if smrsix == 0:
             sname = "fastmove"
             # chose a random final destination for both arms
             alpha_target = random.uniform(opts.alpha_min, opts.alpha_max)
             beta_target = random.uniform(opts.beta_min, opts.beta_max)
 
-            # a fast acceleration 
+            # a fast acceleration
             wf2 = gen_fastmove(current_alpha, current_beta, alpha_target, beta_target,
                                fraction=0.7, opts=opts)
 
@@ -293,12 +293,12 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
                 jerk_direction = (jerk_direction + 1) % 2
                 wf2 = wf_append(wf_append(wf2, wf_jerk, min_steps=min_steps, ruleset_version=ruleset_version),
                                 wf_z, min_steps=min_steps, ruleset_version=ruleset_version)
-                
+
         elif smrsix == 2:
             if ruleset_version < 4:
                 smrsix += 1
                 continue
-            sname = "oscillations"            
+            sname = "oscillations"
             # a period of small oscillations
             wf_z = wf_zero()
             wf2a = gen_creep(current_alpha, current_beta, alpha_target, beta_target,
@@ -308,7 +308,7 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
                             wf2b, min_steps=min_steps, ruleset_version=ruleset_version)
         elif smrsix == 3:
             sname = "slow creep"
-                        
+
             # a slow creeping movement towards the target
             wf2 = gen_creep(current_alpha, current_beta, alpha_target, beta_target,
                             fraction=0.95, opts=opts)
@@ -330,13 +330,13 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
 
         if verbosity > 2:
             print("smrsix", smrsix, "segment:", sname, "wf=", wf2, end="")
-            
+
         wf2_len = len(wf2[0])
 
         new_alpha = current_alpha + (sum_steps(wf2, "alpha") / StepsPerDegreeAlpha)
-        
+
         new_beta = current_beta + (sum_steps(wf2, "beta") / StepsPerDegreeBeta)
-        
+
         if wf2_len > rest_segments:
             if verbosity > 0:
                 print("(discarded, bc length)")
@@ -352,39 +352,39 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=32.0,
         else:
             if verbosity  > 1:
                 print(".. ok")
-        
+
         if (wf2_len > 0) and (wf2_len < rest_segments):
             if any_seg_nonzero(wf2, -1):
                 wf2 = wf_append(wf2, wf_zero(), min_steps=min_steps, ruleset_version=ruleset_version)
                 wf2_len = len(wf2[0])
-                
+
         for channel in [0, 1]:
             check_wf(wf2, channel, opts=opts)
-        
+
         wf = wf_append(wf, wf2, min_steps=min_steps, ruleset_version=ruleset_version)
-            
-        
+
+
         rest_segments -= wf2_len
-        
-        current_alpha = new_alpha        
+
+        current_alpha = new_alpha
         current_beta = new_beta
-            
+
         smrsix = (smrsix + 1) % 6
         if smrsix == 0:
             break
-        
+
     if verbosity > 2:
         print("new angles:", current_alpha, current_beta)
-    
+
     return wf
 
 
 
 def printtime():
     print(time.strftime("%a, %d %b %Y %H:%M:%S +0000 (%Z)", time.gmtime()))
-    
 
-      
+
+
 
 
 def parse_args():
@@ -395,7 +395,7 @@ def parse_args():
                         help="""command word:
                         drive - run waveform against grid until time expires
                         plot - plot one waveform""")
-    
+
     parser.add_argument('--mockup',   default=False, action='store_true',
                         help='set gateway address to use mock-up gateway and FPU')
 
@@ -474,7 +474,7 @@ def parse_args():
                         help='time for small oscillation, in seconds (default: %(default)s)')
 
     parser.set_defaults(simulate_quantization=False)
-    
+
     parser.add_argument('-Q', '--simulate_quantization', dest="simulate_quantization",  action='store_true',
                         help='simulate quantization of step counts by introducing '
                         'mocked rounding errrors  (default: %(default)s)')
@@ -482,7 +482,7 @@ def parse_args():
     parser.add_argument('-q', '--no_quantization', dest="simulate_quantization", action='store_false',
                         help='do not simulate quantization of step counts')
 
-            
+
     parser.add_argument('--end_time', metavar='END_TIME', type=str,
                         default="2025-12-31T12:59:59UTC",
                         help='ISO8601 time stamp of when test ends (default: %(default)s)')
@@ -506,7 +506,7 @@ def parse_args():
     print("""min_steps   = %i
 start_steps = %i
 max_steps   = %i""" % (args.min_steps, args.start_steps, args.max_steps))
-          
+
     return args
 
 
@@ -519,10 +519,10 @@ def stop_handler(signum, frame):
 
 
 def initialize_FPU(args):
-    
+
     gd = FpuGridDriver.GridDriver(args.N,
-                                  motor_minimum_frequency=args.min_step_frequency,  
-                                  motor_maximum_frequency=args.max_step_frequency, 
+                                  motor_minimum_frequency=args.min_step_frequency,
+                                  motor_maximum_frequency=args.max_step_frequency,
                                   motor_max_start_frequency=args.max_start_frequency,
                                   motor_max_rel_increase=args.max_acceleration)
 
@@ -541,9 +541,9 @@ def initialize_FPU(args):
     # all FPUs.
 
     grid_state = gd.getGridState()
-    
+
     gd.pingFPUs(grid_state)
-    
+
 
     if args.resetFPUs:
         print("resetting FPUs")
@@ -558,15 +558,15 @@ def initialize_FPU(args):
         current_alpha = array([x.as_scalar() for x, y in current_angles ])
         current_beta = array([y.as_scalar() for x, y in current_angles ])
         print("current positions:\nalpha=%r,\nbeta=%r" % (current_alpha, current_beta))
-              
+
         if False :
-              
+
             print("moving close to datum switch")
             wf = gen_wf(- current_alpha + 0.5, - current_beta + 0.5)
             gd.configMotion(wf, grid_state, allow_uninitialized=True)
             gd.executeMotion(grid_state)
-    
-    
+
+
     print("issuing findDatum:")
     gd.findDatum(grid_state, timeout=DATUM_TIMEOUT_DISABLE)
     print("findDatum finished")
@@ -574,7 +574,7 @@ def initialize_FPU(args):
     # We can use grid_state to display the starting position
     print("the starting position (in degrees) is:", list_angles(grid_state)[0])
 
-        
+
     signal.signal(signal.SIGQUIT, stop_handler)
     print("press <Ctrl>-'\\' to terminate test orderly, <Ctrl>-c only for emergency abort")
 
@@ -593,17 +593,17 @@ def chatty_sleep(sleep_time, time_slice=0.2, opts=None):
         time.sleep(slice_len)
         sleep_time -= slice_len
         n += 1
-        
+
     if opts.verbosity > 0:
         print("waiting 0 sec    .... OK")
 
 def out_of_range(ws, channel, current_angle, scale, minval, maxval):
     positions = current_angle  + cumsum([ s[channel] for s in ws]) / scale
-    
+
     if (min(positions) < minval) or (max(positions) > maxval):
         return True
     return False
-        
+
 
 def rungrid(args):
     # initialize FPU accordingly
@@ -621,11 +621,11 @@ def rungrid(args):
                 print("end_time = %r, time: %r" % (args.stop_time, t))
                 print("Time limit reached: finished.")
                 sys.exit(0)
-                
-            if stop_all_fpus:                
+
+            if stop_all_fpus:
                 print("Stop signal received: terminating.")
                 sys.exit(0)
-                
+
             # get current angles
             current_angles = gd.countedAngles(grid_state)
 
@@ -640,13 +640,13 @@ def rungrid(args):
                 for id, ws in wf.items():
                     if ( out_of_range(ws, 0, current_alpha[id], StepsPerDegreeAlpha, args.alpha_min, args.alpha_max)
                          or out_of_range(ws, 1, current_beta[id], StepsPerDegreeBeta, args.beta_min, args.beta_max)):
-                        
+
                         print("waveform out of range, retry..")
                         invalid=True
                         break
-                    
-                
-                    
+
+
+
             if verbosity > 2:
                 for k, ws in enumerate(wf[0]):
                     print("wf[%i] = %r" % (k, ws))
@@ -671,7 +671,7 @@ def rungrid(args):
                     print("reversing waveform")
                 gd.reverseMotion(grid_state)
                 gd.executeMotion(grid_state)
-                
+
             if not stop_all_fpus:
                 chatty_sleep(args.chill_time, opts=args)
 
@@ -684,7 +684,7 @@ def rungrid(args):
             if verbosity > 0:
                 print("findDatum")
             gd.findDatum(grid_state)
-    
+
     except SystemExit:
         pass
     except:
@@ -697,71 +697,60 @@ def rungrid(args):
                 print("FPU %i state:" % fpu_id, fpu)
         print("positions:", gd.countedAngles(grid_state))
         raise
-    
+
     printtime()
     print("ready.")
-    
+
 def plot_waveform(wf, idx):
     steps = array(wf[0]).T
-    
+
     t_sec = arange(steps.shape[1]) * args.segment_length_ms * 0.001
-        
+
     alpha_degree = cumsum(steps[0]) / StepsPerDegreeAlpha
     beta_degree = cumsum(steps[1]) / StepsPerDegreeBeta
-        
+
     h1, = pl.plot(t_sec, alpha_degree, '-', label='alpha over time')
-                    
+
     h2, = pl.plot(t_sec, beta_degree, '-', label='beta over time')
-        
+
     pl.legend(handles=[h1, h2])
     pl.xlabel("time  [sec]")
     pl.ylabel("angle [degree]")
-    
+
     pl.show()
 
-    
+
 def plot_steps(wf, idx):
     steps = array(wf[0]).T
-    
+
     t_sec = arange(steps.shape[1]) * args.segment_length_ms * 0.001
-        
+
     alpha_steps = steps[0]
     beta_steps =  steps[1]
-        
+
     h1, = pl.plot(t_sec, alpha_steps, '.', label='alpha over time')
-                   
+
     h2, = pl.plot(t_sec, beta_steps, '.', label='beta over time')
-        
+
     pl.legend(handles=[h1, h2])
     pl.xlabel("time  [sec]")
     pl.ylabel("steps [1]")
-    
+
     pl.show()
 
-    
+
 if __name__ == '__main__':
     # parse arguments
     args = parse_args()
     print("command=",args.command)
-    
+
     if args.command == "drive":
         rungrid(args)
     elif args.command == "plot":
-        
+
         current_alpha=0
         current_beta=0
         wf = gen_duty_cycle(current_alpha, current_beta, args.cycle_length,
                             ruleset_version=args.ruleset_version, opts=args)
         plot_waveform(wf, 0)
         plot_steps(wf, 0)
-
-
-    
-                    
-
-              
-
-
-
-
-
