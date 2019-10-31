@@ -1,0 +1,229 @@
+INSTALLATION INSTRUCTIONS FOR VERIFICATION SOFTWARE
+---------------------------------------------------
+
+This recipe describes a complete new install
+of the EtherCAN interface and  Python wrapper software.
+
+PREREQUISITES
+=============
+
+
+1) A 64-bit Linux system with kernel 2.6 or newer.  (Debian >= 9,
+   Ubuntu >= 17.10, Ubuntu 18.04.2 LTS, Scientific Linux >= 2017,
+   Arch Linux are all supported).
+
+
+2) To retrieve packages, both git and python-pip are needed:
+
+   sudo apt-get install git-core
+   sudo apt-get install python-pip
+
+3) The EtherCAN FPU driver and python interface
+
+   * fpu_driver
+
+   On the ATC Unix network, just clone the git archive:
+
+   git clone jnix@dalriada/MOONS/fpu_driver
+   cd fpu_driver
+   git checkout master
+
+
+4) for the C++ driver and static library
+
+ * gcc-4.9 (essentially, with support for C++11)
+ * Linux-2.6 or newer (requiring support for eventfd)
+ * glibc-2.3.2 (epoll support)
+ * liblmdb0 (Lightning Memory database, aka LMDB)
+ * lmdb-utils (contains backup utility for LMDB)
+
+5) for the test code and Python bindings
+
+ * Python-2.7
+ * boost-1-66 , which can be downloaded from http://www.boost.org/users/download/
+ * python-lmdb (Python bindings)
+ * pip install lmdb
+ * apt install lmdb-utils
+
+
+
+
+INSTALLATION
+============
+
+-- The following needs to be done as the system user,
+because it changes system-wide configuration.  --
+
+
+SYSTEM SETUP
+------------
+
+sudo apt-get install python-dev python-scipy python-numpy
+sudo apt-get install python-matplotlib python-lmdb python-pip
+sudo apt-get install python-pygments
+
+sudo apt-get install libusb-dev libusb-1.0.0-dev liblmdb0
+
+# some git client software. "gitg" is recommended for
+# beginners.
+
+sudo apt-get install git git-gui gitg gitk git-man
+
+# Anly for running path planning algorithms written in racket Lisp,
+# one also needs the racket compiler and run-time environment:
+
+sudo apt-get install racket
+
+
+INSTALLING BOOST LIBRARIES
+--------------------------
+
+Recent Boost libraries are required to build the Python module, which
+is needed in the verification system (but not in the final ICS
+software).
+
+Newer versions might work but they are not tested because
+of time constraints.
+
+Please keep in mind that any installed different version of boost
+libraries is very likely an essential part of your Linux system, so DO
+NOT UNINSTALL OLDER VERSIONS FROM YOUR SYSTEM!
+
+* Do the configuration/build from a normal user account,
+  and change to the root account for the install.
+  This should have the result that the library is
+  installed system-wide under /usr/local, where it
+  will be found.
+
+
+* unpack boost package:
+
+$ tar xzf boost_1_66_0.tar.gz
+
+  (this is big and takes a minute)
+
+* build package:
+
+$ cd boost_1_66_0/
+$ ./bootstrap.sh
+$ ./b2
+
+This step is lengthy (depending how fast the machine is, it can take
+more than one hour) and one can continue with other stuff in the
+meantime, until the section "building the driver and python module".
+
+* install package into /usr/local directory:
+
+$ sudo ./b2 install
+
+To make the boost libraries accessible when the
+final program is run, you need to add the
+two commands
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/lib
+
+to either /etc/profile , or $HOME/.profile, or $HOME/.bashrc
+
+Also, you should add the directory with the boost header files (by
+default /usr/local/include) to the path configured in the environment
+variable CPLUS_INCLUDE_PATH:
+
+CPLUS_INCLUDE_PATH=/usr/local/include
+
+Logging out and logging in again activates these changes.
+
+
+
+NETWORKING
+==========
+
+EtherCAN gateways should be connected to an internal network
+interface. You need to configure this interface with IP number and
+netmask like this:
+
+vfrig@moons-pc01:/home/moonsadmin$ ip route
+169.254.0.0/16 dev enp4s0 proto kernel scope link src 169.254.0.0 metric 101
+192.168.0.0/24 via 192.168.0.2 dev enp4s0 proto static metric 30
+192.168.0.0/24 dev enp4s0 proto kernel scope link src 192.168.0.2 metric 101
+195.194.120.0/22 dev enp0s31f6 proto kernel scope link src 195.194.120.169 metric 100
+
+In Ubuntu, this can be done via the "wired internet connection"
+widget near the login and audio settings button.
+This is very system-dependent. Some hepful links:
+
+Adding static routes can be done via configuration file:
+
+https://askubuntu.com/questions/168033/how-to-set-static-routes-in-ubuntu-server
+
+https://www.2daygeek.com/how-to-add-additional-ip-secondary-ip-in-ubuntu-debian-system/
+
+Here is how to do it via the Desktop configuration tool:
+
+https://help.gnome.org/users/gnome-help/stable/net-fixed-ip-address.html.en
+
+If in doubt, ask an expert.
+
+
+USER ADMINISTRATION AND SYSTEMWIDE FILES
+========================================
+
+This is important for systems where
+multiple users use the FPU driver software,
+because this requires shared access
+to the FPU posiiton and hardware protection database.
+
+As root user, create a user group moons.
+Assign this group to all users which are
+going to run the verification software,
+or the FPU driver.
+
+sudo addgroup moons
+sudo adduser $USERNAME moons
+
+
+As root, create the folder:
+
+/moonsdata/fpudb
+
+sudo mkdir -p /moonsdata/fpudb
+
+Assign these directories to belong to the group moons:
+
+chgrp moons -R /moonsdata/fpudb
+
+Set the "set group id" flag:
+
+chmod g+s /moonsdata/fpudb
+
+
+
+
+BUILDING THE DRIVER AND PYTHON MODULE
+------------------------------------
+
+With this step, you need to wait until the boost library compilation
+is done, and you have installed the library.
+
+-- ONLY the following commands and installations should be done
+as a normal user --
+
+
+cd $HOME/fpu_driver
+
+git checkout master
+
+Run
+
+# make wrapper
+
+This builds the binary extension module fpu_driver.so
+and places it into the subdirectory /python.
+In the same subdirectory, there are some test
+scripts which can be used to test the module.
+
+The paths with the driver library
+need to be added to $HOME/.profile or $HOME/.bashrc like this:
+
+export PYTHONPATH=$PYTHONPATH:${HOME}/fpu_driver/python

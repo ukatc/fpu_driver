@@ -1,11 +1,11 @@
 Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
-Creation-Date: 2019-10-31T14:20:08+00:00
+Creation-Date: 2019-10-31T15:57:07+00:00
 
-====== Setting up the work environment ======
+====== SettingUpTheWorkEnvironment ======
 Created Thursday 31 October 2019
 
-The work environment for developing the fpu\_driver
+The work environment for developing the fpu_driver
 package is a normal Linux environment. Most of
 the work was done on a Debian 9 System
 (the developer laptop), and tested on Ubuntu 18.04.2 LTS
@@ -14,7 +14,8 @@ tested on Linux virtual  machines. The target system
 is the ESO VLT Linux image which is a derivative of
 Scientific Linux, which in turn is a variant of CentOS.
 
+Detailed installation procedures are contained in the file [[./INSTALL_LONG]] 
+
+For a description of the main dependencies, see +[[Dependencies]] 
 
 
-Detailed installation procedures are contained in the file [[python/doc/INSTALL_LONG.txt]].
-For a description of the main dependencies, see [[../Dependencies.txt]].

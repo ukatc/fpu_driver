@@ -2,7 +2,7 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2019-10-31T14:21:04+00:00
 
-====== How to run the driver ======
+====== HowToRunTheDriver ======
 
 The python module does not need to be specifically  installed. If the directory in which it resides is 
 included in the PYTHONPATH environment

@@ -18,5 +18,4 @@ The Python wrapper and test environment depends mainly on:
 * boost::python, to generate interface
 * LMDB and its corresponding Python wrapper module
 
-How to install and configure the dependencies is described in detail in 
-[[python/doc/INSTALL_LONG.txt]] .
+How to install and configure the dependencies is described in detail in [[../../INSTALL_LONG]].
