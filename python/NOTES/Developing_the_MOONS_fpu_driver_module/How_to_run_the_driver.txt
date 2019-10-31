@@ -1,0 +1,23 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T14:21:04+00:00
+
+====== How to run the driver ======
+
+The python module does not need to be specifically  installed. If the directory in which it resides is 
+included in the PYTHONPATH environment
+variable, it can be imported and run from the build
+directory.
+
+
+In the folder python there is a script with the name
+[[initialiseGrid.py]]. Using this script as a template is 
+perhaps the easiest way to start an FPU control script 
+and test commands. The script is described in
+section 20.1 of the [[../Manual.txt|manual]].
+
+The manual has, in part I, section 2, a detailed introduction on how to write scripts and
+control the FPUs.
+
+There is also a list of examples and test scripts in Appendix A of the [[manual]].
+

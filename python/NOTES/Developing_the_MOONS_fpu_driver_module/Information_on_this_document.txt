@@ -1,0 +1,25 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T14:19:52+00:00
+
+====== Information on this document ======
+
+This document describes procedures and information which
+is useful to develop the MOONS fpu driver. It is addressed
+to developers which need to change, debug, or integrate the driver.
+
+It does not cover the concurrency architecture, which is decribed
+in a seperate document.
+
+Generally, this document strives hard to reduce redundancy,
+by linking to original descriptions and instructions where
+available.
+
+This document is maintained using the [[https://zim-wiki.org/|Zim Desktop wiki software]],
+which is available for Linux, Mac, and Windows, and can easily be 
+edited using this software. 
+
+An exported PDF copy of it is stored in the LiveLink system. The
+source text for the exported document is maintained along
+with the source code in the FPU driver git repository, and
+underlies the same version control.

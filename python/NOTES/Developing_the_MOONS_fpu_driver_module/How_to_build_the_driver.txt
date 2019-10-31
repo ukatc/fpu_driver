@@ -1,0 +1,20 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T14:20:52+00:00
+
+====== How to build the driver ======
+
+How to build the library module is explained in the [[manual]] in section 4.4.
+
+The basic commands are:
+
+'''
+cd fpu\_drive
+make clean
+make wrapper
+'''
+
+
+
+Note that is is neecssary to install and build the boost::python library before, see [[../Dependencies.txt|dependencies]].
+

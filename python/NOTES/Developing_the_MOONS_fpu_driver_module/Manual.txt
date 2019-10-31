@@ -1,0 +1,10 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T14:27:07+00:00
+
+====== Manual ======
+
+The user manual and API reference for the FPU driver 
+
+is located at [[../../manual.pdf]] , and also [[https://livelink.roe.ac.uk/Livelink/livelink.exe?func=ll&objId=9569616&objAction=Open&nexturl=%2FLivelink%2Flivelink%2Eexe%3Ffunc%3Dll%26objId%3D9211790%26objAction%3Dbrowse|available in LiveLink]].
+

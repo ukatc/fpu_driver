@@ -1,0 +1,22 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T14:20:21+00:00
+
+====== Dependencies ======
+
+The fpu_driver code can be grouped into two parts:
+
+
+1. The core driver, which is a C++ library
+2. The python wrapper and test environment.
+
+The first part has only minimum dependencies. Required are a standard Linux kernel, and gcc 
+as compiler. Future versions will depend on the [[https://en.wikipedia.org/wiki/Lightning_Memory-Mapped_Database|LMDB memory database]]} (because LMDB will become part of the core driver).
+
+The Python wrapper and test environment depends mainly on:
+* Python 2
+* boost::python, to generate interface
+* LMDB and its corresponding Python wrapper module
+
+How to install and configure the dependencies is described in detail in 
+[[python/doc/INSTALL_LONG.txt]] .

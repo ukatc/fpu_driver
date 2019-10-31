@@ -1,0 +1,34 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T14:20:32+00:00
+
+====== Getting the Code ======
+
+
+
+===== Archive location =====
+
+
+The central archive for the code is on the dalriada server., in the folder 
+[[/home/jnix/MOONS/fpu_driver]]. 
+
+The URL is ssh://dalriada.roe.ac.uk/home/jnix/MOONS/fpu_driver[[.]]
+To access it, a user account is required.
+
+
+How to get the source code is described in the [[../Manual.txt]], section 4.2. 
+
+\subsection{Protocol 1 and protocol 2}
+
+
+
+One important thing to observe is that the git prepository for the driver is organized inn two main branches, the
+CAN protocol 1 branch, and the CAN protocol 2 branch.
+
+The protocol 1 branch was developed primarily for the MOONS FPU verification system. It has limited
+protocol support and is missing some features which are required in the instrument. This branch has
+the name "can1". At an earlier stage, the master branch of the git repositiry pointed to this branch,
+but this is no longer the case.
+
+The CAN protocol 2 branch is the current main version of the FPU driver software. The master branch
+of the git repository is the protocol 2 branch.
