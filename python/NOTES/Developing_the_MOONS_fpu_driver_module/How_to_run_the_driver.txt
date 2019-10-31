@@ -11,7 +11,7 @@ directory.
 
 
 In the folder python there is a script with the name
-[[initialiseGrid.py]]. Using this script as a template is 
+initialiseGrid.py. Using this script as a template is 
 perhaps the easiest way to start an FPU control script 
 and test commands. The script is described in
 section 20.1 of the [[../Manual.txt|manual]].

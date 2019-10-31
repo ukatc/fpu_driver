@@ -2,9 +2,9 @@
 version=0.4
 name=Information on fpu driver development
 interwiki=
-home=Home
+home=Developing the MOONS fpu driver module
 icon=
-document_root=
+document_root=~/MOONS/fpu_driver/python/NOTES
 shared=True
 endofline=unix
 disable_trash=False

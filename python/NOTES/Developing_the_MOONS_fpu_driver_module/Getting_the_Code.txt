@@ -12,14 +12,13 @@ Creation-Date: 2019-10-31T14:20:32+00:00
 The central archive for the code is on the dalriada server., in the folder 
 [[/home/jnix/MOONS/fpu_driver]]. 
 
-The URL is ssh://dalriada.roe.ac.uk/home/jnix/MOONS/fpu_driver[[.]]
+The URL is ssh://dalriada.roe.ac.uk/home/jnix/MOONS/fpu_driver
 To access it, a user account is required.
 
 
-How to get the source code is described in the [[../Manual.txt]], section 4.2. 
+How to get the source code is described in the [[../Manual.txt|manual]], section 4.2. 
 
-\subsection{Protocol 1 and protocol 2}
-
+==== Protocol 1 and protocol 2 ====
 
 
 One important thing to observe is that the git prepository for the driver is organized inn two main branches, the

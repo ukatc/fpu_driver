@@ -11,7 +11,7 @@ The fpu_driver code can be grouped into two parts:
 2. The python wrapper and test environment.
 
 The first part has only minimum dependencies. Required are a standard Linux kernel, and gcc 
-as compiler. Future versions will depend on the [[https://en.wikipedia.org/wiki/Lightning_Memory-Mapped_Database|LMDB memory database]]} (because LMDB will become part of the core driver).
+as compiler. Future versions will depend on the [[https://en.wikipedia.org/wiki/Lightning_Memory-Mapped_Database|LMDB memory database]] (because LMDB will become part of the core driver).
 
 The Python wrapper and test environment depends mainly on:
 * Python 2

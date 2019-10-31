@@ -9,7 +9,7 @@ How to build the library module is explained in the [[manual]] in section 4.4.
 The basic commands are:
 
 '''
-cd fpu\_drive
+cd fpu_driver
 make clean
 make wrapper
 '''
