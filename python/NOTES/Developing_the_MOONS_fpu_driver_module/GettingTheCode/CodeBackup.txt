@@ -1,0 +1,54 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T17:28:58+00:00
+
+====== CodeBackup ======
+Created Thursday 31 October 2019
+---------------------------------------------------------------------------------
+
+Ticket ID:       46945
+User Name:       johannesnix
+E-Mail:  johannes.nix@stfc.ac.uk
+Phone:   0131 6688-269
+Location:        R.G/11
+Start Date:      4/10/2019 12:23:56
+Close Date:      23/10/2019 10:12:41
+Organisation:    UKATC
+Category:        IT Support
+Assigned To:     Horst Meyerdierks
+Status:  CLOSED
+Ticket Information:
+Title:
+
+Priority/Urgency:
+Very important, and has time until the first week of November.
+
+Description:
+I will be leaving the MOONS project on November 22.
+
+Currently, most of the code is on the nippes laptop, including user and API documentation and protocol definitions. Documentation is already included in the LiveLink system. Code is stored in several git repositories on nippes in the subfolder
+
+/home/jnix/MOONS
+
+Exact copies (clones) of these git repositories are on the dalriada server,
+in the directory ~jnix/MOONS aka /sw/sw4/jnix/MOONS, and on the MOONS lab pc moons-pc01.roe.ac.uk in /home/jnix and /moonsdata. Further copies of some of the code are in the ESO subversion repository, but these do not contain the complete version history. and do not include the internal projects which are not deliverables to ESO.
+
+
+Where should the code be finally moved to?
+
+Notes:
+[4/10/2019 12:45:31 - pgs]
+There is a Moons folder on the Projects server. This is backed up.
+\\roe.ac.uk\shares\projects.
+for those with a windows PC it should be mapped as H:
+
+ 
+[4/10/2019 13:54:11 - johannesnix]
+Does this have an NFS mount, too? This might be a bit easier to use in this case because development was done in Linux.
+
+ 
+[7/10/2019 09:35:11 - hme]
+dalriada:/sw/sw4 is in the daily bacula backups. These are retained for a year; but until the original gets removed on dalriada, the full backups will always include what sw4 contains at that time.
+As for final storage, that is kinda up to SEG to figure out a scheme, or perhaps sw4 is already being kept an eye on to make sure its content survives somewhere forever. Perhaps sw4 is just that.
+
+ 

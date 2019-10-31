@@ -16,7 +16,7 @@ Creation-Date: 2019-10-31T14:19:07+00:00
 
 [[+Testing]]
 
-[[+ImportantIssues]]
+[[+Important Issues]]
 
 [[+Manual]]
 

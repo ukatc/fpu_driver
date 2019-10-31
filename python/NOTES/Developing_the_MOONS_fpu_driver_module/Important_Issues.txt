@@ -1,0 +1,73 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T14:21:49+00:00
+
+====== Important Issues ======
+Created Thursday 31 October 2019
+
+This sections points out some important and perhaps 
+non-obvious aspects which need to be considered when developing the FPU driver:
+
+==== Concurrency issues ====
+
+The FPU driver is multi-threaded. __Any code which accesses__
+__the same data structures from different threads needs__
+__to be very carefully synchronized__, using pthreads locks or atomic data types. 
+Otherwise, [[https://blog.regehr.org/archives/213|undefined behaviour]] can be triggered, which is
+usually [[https://www2.eecs.berkeley.edu/Pubs/TechRpts/2006/EECS-2006-1.pdf|extremely hard to debug]]. 
+
+The document fpu_driver_concurrency_architecture.pdf explains
+how concurrent operations are managed.
+
+==== Interaction between locking and caching ====
+
+When large data structures are accessed in multiple threads, using
+locking, interactions between locking and caching
+are possible. This is caused by the fact that a modification of
+data which is accessed by one FPU, causes the cache of the
+other FPU become stale if it refers to this data, too. This can
+cause performance problems if large data structures are
+accessed concurrently and with high frequency. 
+It is therefore advisable to keep data structures which are accessed 
+concurrently to a minimal size, and reduce such accesses.
+
+==== Integer Overflow ====
+
+Signed integer overflow causes [[http://blog.llvm.org/2011/05/what-every-c-programmer-should-know.html|undefined behavior in C/C++]]. __Consequently,__
+__counters that can overflow need to be unsigned.__ This affects, among others,
+the counters for CAN errors, time-outs, and so on. These are implemented
+as unsigned integers. As a further consequence, these counters must never
+be compared by a signed comparison - they can only be compared for
+equality.
+
+==== Memory allocation ====
+
+Certain standard C++11 data structures, for example [[https://thispointer.com/what-is-stddeque-and-how-deque-works-internally/|std::deque,]]
+allocate memory even in situations where one would not expect that,
+for example when simply appending an element to a deque.
+This has two consequences:
+
+1. The operation can fail in low-memory conditions, which needs to be handled
+2. The operation is possibly much more costly than it appears, because of the need to manage memory.
+
+It is therefor advisable to completely avoid such operations in the driver,
+and use data structures which do not allocate memory.
+In the case of the CAN message queue, the std::deque was replaced by
+a ring buffer.
+
+==== Non-continous time ====
+
+The standard system time on a Unix system is [[https://www.softwariness.com/articles/monotonic-clocks-windows-and-posix/|not continous,]] for example
+[[https://en.wikipedia.org/wiki/Unix_time#Leap_seconds|leap seconds]] can happen, or it can change time according to the NTP service. 
+As  a consequence, it is not reliable to use it to check for time-outs. 
+In specific conditions, time-out errors can be triggered as a 
+result of NTP time adjustments. Instead, it is advisable to use a monotonic clock, 
+which always has  increasing time.
+
+
+
+
+
+
+
+

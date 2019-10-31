@@ -1,0 +1,33 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T17:08:38+00:00
+
+====== EtherCAN simulation ======
+Created Thursday 31 October 2019
+
+==== EtherCAN gateway and FPU firmware simulation ====
+
+In the folder "test/HardwareSimulation", there is test code that is
+capable to simulate the operation of both FPUs, and the [[EtherCAN]] gateway
+to such a degree that the driver, the verification software, and also scripts 
+which move FPUs can be tested. Section C of the [[./manual.pdf]] explains
+how to run the simulator. The simulation of individual FPU firmware
+is implemented in file fpu_sim.py . 
+
+The simulation is based on [[http://www.gevent.org/contents.html|gevent]] as asynchronous message
+processing library. This makes the code for the simulation
+both simple and fast, and also allows to use python because 
+no parallel execution is required.
+
+The simulation also covers events such as collisions or limit switch breaches.
+These can be triggered by sending Unix signals to the simulation process.
+Partly, they require the name of the FPU which should simulate the event to be
+written to a text file.
+
+The handled interrupts are defined in the last part of fpu_sim.py:
+
+* SIGHUP : trigger an FPU reset for all FPUs
+* SIGUSR1 : trigger a collision for all FPUs
+* SIGUSR2 : trigger a limit switch breach for all FPUs
+* SIGURG: cause a CAN message overflow for all FPUs
+* SIGRTMIN : start a collision test, where the id of the tested FPU is read from the file "/var/tmp/colltest.fpuid"

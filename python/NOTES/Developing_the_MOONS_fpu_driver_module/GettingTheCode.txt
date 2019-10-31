@@ -13,15 +13,16 @@ The central archive for the code is on the dalriada server., in the folder
 [[/home/jnix/MOONS/fpu_driver]]. 
 
 The URL is ssh://dalriada.roe.ac.uk/home/jnix/MOONS/fpu_driver
-To access it, a user account is required.
+To access it, a user account to the ROE Unix network is required.
 
 
 How to get the source code is described in the [[../Manual.txt|manual]], section 4.2. 
+The backup plan is outlined in [[+CodeBackup|this help desk ticket]].
 
 ==== Protocol 1 and protocol 2 ====
 
 
-One important thing to observe is that the git prepository for the driver is organized inn two main branches, the
+One important thing to observe is that the git prepository for the driver is organized in two main branches, the
 CAN protocol 1 branch, and the CAN protocol 2 branch.
 
 The protocol 1 branch was developed primarily for the MOONS FPU verification system. It has limited

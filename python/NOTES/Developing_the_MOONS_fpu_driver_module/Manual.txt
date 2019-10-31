@@ -7,9 +7,15 @@ Creation-Date: 2019-10-31T14:27:07+00:00
 The user manual and API reference for the FPU driver 
 is  [[./manual.pdf]]  or [[https://livelink.roe.ac.uk/Livelink/livelink.exe?func=ll&objId=9569616&objAction=Open&nexturl=%2FLivelink%2Flivelink%2Eexe%3Ffunc%3Dll%26objId%3D9211790%26objAction%3Dbrowse|via LiveLink]].
 
-When building from sources, it is generated with the command
+When building from sources, the manual is generated with the make command
 
 ''make manual''
 
 and the build product is placed into the file "python/doc/manual.pdf".
+
+The dependencies for generating the decomentation are described
+in the manual in section B.3.5. They include pygments, minted, 
+inkscape,  tex-live, and possibly a few additional fonts.
+
+
 

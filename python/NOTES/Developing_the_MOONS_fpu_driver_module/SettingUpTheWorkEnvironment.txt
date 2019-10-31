@@ -14,8 +14,9 @@ tested on Linux virtual  machines. The target system
 is the ESO VLT Linux image which is a derivative of
 Scientific Linux, which in turn is a variant of CentOS.
 
-Detailed installation procedures are contained in the file [[./INSTALL_LONG]] 
+Detailed installation procedures are contained in the file [[./INSTALL_LONG]] .
+A short version exists as well, in [[./INSTALL]] .
 
-For a description of the main dependencies, see +[[Dependencies]] 
+For a description of the main dependencies, see +[[Dependencies]] .
 
 

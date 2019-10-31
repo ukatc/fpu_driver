@@ -1,0 +1,17 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T17:08:04+00:00
+
+====== GatewayCommands ======
+Created Thursday 31 October 2019
+
+==== Special EtherCAN gateway commands ====
+
+
+These are :
+
+* delay messages, which might avoid overload of specific FPUs
+* messages that configure SYNC commands, which are sent synchronously to all FPUs
+* retrieval of diagnostic counters
+
+Examples for these messages are contained in the folder "python/doc/sample-code".

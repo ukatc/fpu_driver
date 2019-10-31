@@ -6,8 +6,7 @@ Creation-Date: 2019-10-31T14:20:21+00:00
 
 The fpu_driver code can be grouped into two parts:
 
-
-1. The core driver, which is a C++ library
+1. The core driver, which is a pure C++11 library, written for Linux and gcc.
 2. The python wrapper and test environment.
 
 The first part has only minimum dependencies. Required are a standard Linux kernel, and gcc 
@@ -15,7 +14,9 @@ as compiler. Future versions will depend on the [[https://en.wikipedia.org/wiki/
 
 The Python wrapper and test environment depends mainly on:
 * Python 2
-* boost::python, to generate interface
-* LMDB and its corresponding Python wrapper module
+* [[https://www.boost.org/doc/libs/1_65_0/libs/python/doc/html/index.html|boost::python]] (version 65), to generate Python interfaces. There are [[./Talk_TranslatingNumericalPythonToC++_JohannesNix.pdf|some slides which explain the principle how it works]] .
+* LMDB and its corresponding [[https://lmdb.readthedocs.io/en/release/|Python wrapper module]]
 
 How to install and configure the dependencies is described in detail in [[../../INSTALL_LONG]].
+
+[[+Python3_compatibility]]

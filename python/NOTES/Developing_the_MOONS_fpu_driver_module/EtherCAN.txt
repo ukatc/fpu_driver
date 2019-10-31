@@ -3,5 +3,15 @@ Wiki-Format: zim 0.4
 Creation-Date: 2019-10-31T14:21:13+00:00
 
 ====== EtherCAN ======
-Created Thursday 31 October 2019
+
+
+The [[EtherCAN]] gateway is a networking element that
+works as a socket server to the fpu driver software, and
+forwards messages to the CAN bus. It is to a large
+degree transparent, but it supports a few commands.
+
+[[+GatewayCommands]]
+
+[[+EtherCAN_Simulation]] 
+
 

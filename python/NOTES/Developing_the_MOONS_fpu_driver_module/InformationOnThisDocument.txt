@@ -22,4 +22,11 @@ edited using this software.
 An exported PDF copy of it is stored in the LiveLink system. The
 source text for the exported document is maintained along
 with the source code in the FPU driver git repository, and
-underlies the same version control.
+underlies the same version control. 
+**Note:**  the export function can currently not resolve links in
+the exported document correctly, which is a deficiency of the
+wiki software. If quick access to the links is wanted, it is
+preferable to use the wiki software instead of the exported
+document.
+
+

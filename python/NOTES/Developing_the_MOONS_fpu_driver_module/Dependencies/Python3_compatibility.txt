@@ -1,0 +1,14 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-10-31T17:19:45+00:00
+
+====== Python3 compatibility ======
+Created Thursday 31 October 2019
+
+The Python wrapper and the [[+EtherCAN_simulation]] are
+implemented in Python2. They were not yet ported 
+in order to save time. However, no extraordinary difficulties
+are expected if the code is ported to Python3. Especially,
+gevent (on which the [[+EtherCAN_simulation]] is based)
+supports both Python2 and Python3, and boost::python
+supports both Python versions.
