@@ -20,3 +20,4 @@ A short version exists as well, in [[./INSTALL]] .
 For a description of the main dependencies, see +[[Dependencies]] .
 
 
+See also +[[HelpfulTools:HowToUse git-svn]] 

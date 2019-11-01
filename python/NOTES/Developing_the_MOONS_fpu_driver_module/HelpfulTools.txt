@@ -1,0 +1,23 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-11-01T12:03:44+00:00
+
+====== HelpfulTools ======
+Created Friday 01 November 2019
+
+The following tools have turned out to be helpful
+for driver development:
+
+* [[http://cppcheck.net/manual.pdf|cppcheck]] is a static code checking tool which can detect issues 
+   like missing class member initializations and similar. 
+
+* [[http://astyle.sourceforge.net/|astyle]] is an automatic source code formatter which can help 
+  to adapt the whitespace and bracing style of the code
+  to the used conding standard.
+
+
+* [[https://git-scm.com/docs/git-svn|git-svn]] was used to keep local code changes in
+  sync with the ESO SVN repository. [[+HowToUse_git-svn]] 
+
+
+

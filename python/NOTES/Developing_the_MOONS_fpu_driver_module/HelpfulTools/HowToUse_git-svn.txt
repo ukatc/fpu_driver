@@ -1,0 +1,27 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-11-01T12:13:04+00:00
+
+====== HowToUse git-svn ======
+Created Friday 01 November 2019
+
+   The following  command was used to initialize the mpifs git-svn repository:
+
+''git svn clone -r 244403:HEAD  http://jnix@svnhq1.hq.eso.org/p1/ \''
+	   ''--trunk=trunk/Instruments/Paranal/MOONS/ --branches=branches/MOONS/ \''
+	   ''--tags=tags/Release/MOONS/'' 
+
+
+This command runs for a long time, because it has to check out every SVN
+version since the MOONS project was started, to store it locally.
+After this, local development can use the standard git commands.
+The command "git svn rebase" refreshes the master branch with
+the state of the SVN repository. The command "git svn dcommit"
+sends the local changes to the SVN repository.
+
+Note that, because rebase is used, the local changes in the
+git repository must be kept private, and cannot be synced
+to other local repositories, using git pull. However, it is
+possible to copy the local repositiry in order to use
+it on a different computer - this is much faster than the
+initial checkout.

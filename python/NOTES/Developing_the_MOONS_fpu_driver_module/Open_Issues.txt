@@ -1,0 +1,30 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2019-11-01T12:36:55+00:00
+
+====== Open Issues ======
+Created Friday 01 November 2019
+
+The JIRA link [[https://ukatcfaultlog.atlassian.net/browse/MOONS-373?jql=project%20%3D%20MOONS%20AND%20status%20%3D%20Open%20AND%20component%20%3D%20FPU_Driver%20ORDER%20BY%20priority%20DESC|Issues for the MOONS FPU driver software]] contains
+a list of remaining open issues for the driver development.
+
+Here is how some of these issues relate to other tasks in the
+MOONS development:
+
+* MOONS-181 convert FPU driver into an ESO special device for the ICS
+  This is necessary to fit the driver into the final control system.
+   Most of the testing and debugging has already been done at this point,
+  as it is much easier and quicker to test using the Python wrapper.
+
+* MOONS-178 Convert software protection layer to C++
+  this is required by MOONS-181
+
+* MOONS-310  Dynamical measurement of FPU movements
+ This is an integration test for path planning, FPU hardware, and driver
+
+* MOONS-95 Adapt configuration of FPU driver to allow flexible mapping of FPU addresses
+This is needed to test the driver in a large grid which uses several gateways
+
+
+
+

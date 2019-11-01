@@ -14,4 +14,5 @@ degree transparent, but it supports a few commands.
 
 [[+EtherCAN_Simulation]] 
 
+[[+HardwareProtocol]]
 

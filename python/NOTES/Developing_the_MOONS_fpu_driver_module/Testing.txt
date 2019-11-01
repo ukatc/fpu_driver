@@ -5,3 +5,46 @@ Creation-Date: 2019-10-31T14:21:22+00:00
 ====== Testing ======
 Created Thursday 31 October 2019
 
+==== Testing individual commands ====
+
+The folders ''python/test_mockup'' and ''python/test_fpu contain''
+a number of test scripts which use the python wrapper.
+The scripts in the first folder test against the [[../EtherCAN/EtherCAN_simulation.txt|EtherCAN simulation]],
+and the ones in the second folder test against the actual FPU.
+
+It is helpful to test against the simulation first, because
+it is much easier to see which message bytes arrive
+at the simulated FPU. In the case that the simulation
+does not match the specification, this should be fixed
+first. 
+
+The simulation was also used to test the sequencing code
+in the FPU verification software.
+
+
+==== Testing movement sequences and soak-testing the driver ====
+
+For running soak tests, there are three test scripts in the python folder 
+which do long-running tests with complex functions. In order of complexity:
+
+* **testGateway.py** loads configMotion messages to FPUs connected
+  via the [[EtherCAN]] gateway, and prints statistics about the upload 
+  speed. It was used to stress-test the gateway firmware.
+  it can also be run in mock-up mode (flag --mockup).
+* **CalibrationPositioning.py** is a script which simulates the
+  movements performed during calibration measurements.
+  it can be used as an integration test which includes moving the FPU.
+  As the preceding test, it can be run with the "--mockup" option,
+  to test the driver against the [[EtherCAN]] simulation.
+* **LifeTimeSimulation.py** is a script which generates random 
+  complex movements as can be expected as the DNF path planning 
+  output, and moves the FPUs with them. It was used to
+  simulate the instrument operation and assess the mechanical
+ wear in the FPU caused by a huge number of movements.
+* Another way to test the driver is the mockup mode of the
+ FPU verification software. Ina ddition to the preceeding script,
+  this mode als tests for collision detection and detection of limit
+  switch breaches, and automatic recovery. It is the most
+  complex automated test of the driver software.
+
+
