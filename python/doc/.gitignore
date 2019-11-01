@@ -29,4 +29,4 @@ manual-tmp.tex
 manual.fdb_latexmk
 manual.maf
 manual.mtc*
-
+fpu-driver-concurrency-architecture.png
