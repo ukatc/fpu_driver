@@ -256,9 +256,6 @@ private:
 
 
 
-    // this mutex ensures that only one command is sent at the same time
-    pthread_mutex_t command_creation_mutex;
-
     // buffer class for encoded reads and writes to sockets
     SBuffer sbuffer[MAX_NUM_GATEWAYS];
 
