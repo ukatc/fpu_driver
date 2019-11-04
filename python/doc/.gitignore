@@ -9,6 +9,8 @@
 *.idx
 *.ilg
 *.ind
+*.bbl
+*.blg
 /_minted-tutorial-tmp/
 /_minted-manual-tmp/
 tutorial-tmp.aux

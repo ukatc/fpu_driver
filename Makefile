@@ -176,10 +176,18 @@ version: force
 python/doc/FPU-state2.pdf : python/doc/FPU-state2.svg
 	inkscape python/doc/FPU-state2.svg --export-pdf=python/doc/FPU-state2.pdf
 
+python/doc/fpu-driver-concurrency-architecture.png: python/doc/fpu-driver-concurrency-architecture.svg
+	inkscape python/doc/fpu-driver-concurrency-architecture.svg --export-png=python/doc/fpu-driver-concurrency-architecture.png
+
 # This builds the documentation. Some extra LaTeX packages, fonts, the minted package,
 # and inkscape are required for this.
 manual:	python/doc/manual.tex python/doc/FPU-state2.pdf version
 	cd python/doc; pdflatex --shell-escape manual.tex; makeindex manual ; pdflatex --shell-escape manual.tex;
+
+concurrency-doc:	python/doc/fpu_driver-concurrency_architecture.tex python/doc/fpu-driver-concurrency-architecture.png version
+	cd python/doc; pdflatex fpu_driver-concurrency_architecture.tex; bibtex fpu_driver-concurrency_architecture; pdflatex fpu_driver-concurrency_architecture.tex;
+
+doc: manual concurrency-doc
 
 cppcheck: force
 	cppcheck src/*.C python/src/*.C  -I include -I include/ethercan -I include/ethercan/response_handlers \
