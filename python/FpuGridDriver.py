@@ -402,16 +402,18 @@ class UnprotectedGridDriver (object):
             was_cancelled = False
             try:
                 try:
+                    rv = ethercanif.E_EtherCANErrCode.DE_OK
                     rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, timeout, count_protection)
                 except (RuntimeError,
-                        InvalidParameterException,
-                        SetupErrorException,
+                        InvalidParameterError,
+                        SetupError,
                         InvalidStateException,
-                        ProtectionErrorException) as e:
+                        ProtectionError) as e:
                     # we cancel the datum search altogether, so we can reset
                     # positions to old value
                     self._cancel_find_datum_hook(gs, fpuset, initial_positions=initial_positions)
                     was_cancelled = True
+                    print("operation canceled, error = ", str(e))
             finally:
                 datum_gs = self.getGridState()
                 if was_cancelled or (rv != ethercanif.E_EtherCANErrCode.DE_OK):
