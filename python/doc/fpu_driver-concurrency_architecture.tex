@@ -62,51 +62,71 @@
 
 \section{Scope of this document}
 
-The goal of this document is to explain the main points of the
+\paragraph{Assumed knowledge} This technical description
+assumes that the reader is familiar with multi-threaded programs and
+especially the POSIX pthreads interface. It is assumed that the reader
+is somewhat familiar with concepts like condition variables or atomic
+operations.  A few references are provided for further reading.
+
+
+\paragraph{Scope of this text} The goal of this document is to explain the main points of the
 concurrency architecture of the \texttt{fpu\_driver}.  This is
 necessary because, unlike many other aspects, in C/C++ source code,
-the concurrency behaviour is not explicitly defined.  One would need
-to scrutinize the entire source code to understand it.
+the concurrency behaviour is not explicitly defined and visible.  One
+would often need to scrutinize the entire source code to understand it
+and check whether invariants are being kept.
 
-At the same time, failure to ensure synchronized access
-in concurrent code can be the cause for hard-to-debug
-undefined behaviour \cite{Regehr:AGtUBPt3}\cite{MeyersAlexandrescu:2004:DCL}.
+At the same time, failure to ensure synchronized access in concurrent
+code can be the cause for hard-to-debug undefined behaviour
+\cite{Regehr:AGtUBPt3}\cite{MeyersAlexandrescu:2004:DCL}\cite[p
+  218-225]{Love:2013:LSP}.
 
 \section{Overview}
 
 \subsection{Basic operation: Gateways, sockets and queues}
 
 At the most fundamental level, the driver module generates CAN
-messages which are sent to three different gateways, via several
-socket connections. The gateways forward the messages to FPUs via 15
-CAN buses, and the FPUs usually send responses. The responses are
+messages which are sent to three different gateways, via three socket
+connections\cite[chapters 56-61]{Kerrisk:TLPI}. The gateways forward
+the messages to FPUs via 15 CAN buses, and the FPUs usually send
+responses, which the gateways passes to the sockets. The responses are
 received by the driver, which tracks the state of each FPU.
 
-The driver tries to send messages as fast as possible. Because the
-bandwidth of the socket connection and, more importantly, the CAN
-buses, is limited, the driver does this in such a way so that it does
-not lose waiting time: If it cannot write to one socket, it looks
-whether there is a message which can be sent to another socket, and if
-this is the case, it proceeds with this message.
+The driver needs to process up to 250,000 messages in a few seconds.
+Therefore, it tries to send messages as fast as possible. The sockets
+provide in principle a kind of networked FIFO: commands messages are
+put in on one end, and read at the other end. If the associated
+buffers are full, writing to a socket needs to wait until the reading
+end has advanced its processing.
+
+In practice, the bottleneck or limiting factor for speed is the speed
+of the CAN buses, which are much slower than the TCP network
+connections to the gateways. Because the bandwidth of the CAN buses,
+is limited, the driver does its writing to the sockets in such a way
+so that it does not lose waiting time: If it cannot write to one
+socket, it looks whether there is a message which can be sent to
+another socket, and if this is the case, it proceeds with this
+message.
 
 To do that, messages are stored in three queues, one for each
-gateway.That means that when sending messages, it has to match sockets
-which can transmit new messages with queues that have messages that
-should be delivered.
+gateway. That means that when sending messages, it has to match
+sockets which can transmit new messages with queues that have messages
+that should be delivered.
 
 The basic architecture is somewhat shaped like modern server
 architectures which solve the so-called C10k problem, that is, being
-able to maintain tens of thousands of connections in a single server
-process\cite{Kegel:C10kProblem}\cite{WP:C10kProblem}.
+able to maintain tens of thousands of connections in a single web
+server process\cite{Kegel:C10kProblem}\cite{WP:C10kProblem}.
 
 In traditional server architectures, which use one thread for every
 connection, this is not possible, because the cost for switching
-between threads is high, if many threads are involved. Applied to the
-task of communicating with 1000 FPUs, it is not efficient to have one
-thread for every FPU. Rather, there is exactly one thread which sends
-messages, and one thread which receives them, and the method for
-sending and receiving data are so-called non-blocking function calls.
-This reduces the amount of locking and synchronization needed.
+between threads is high, especially if many threads are
+involved. Applied to the task of communicating with 1000 FPUs, it is
+not efficient to have one thread for every FPU, or for every
+gateway. Rather, there is exactly one thread which sends messages, and
+one thread which receives them, and the method for sending and
+receiving data are so-called non-blocking function calls.  This
+reduces the amount of locking and synchronization needed.
 
 \subsection{Concurrency architecture}
 \begin{sidewaysfigure}[p]
@@ -143,6 +163,8 @@ Figure~\ref{fig:overview} gives an overview on the concurrency
 structure in the \texttt{fpu\_driver} module.
 
 
+The driver uses POSIX threads, which are explained in-depth in \cite[chapters 29 - 33]{Kerrisk:TLPI}
+and \cite[chapter 7]{Love:2013:LSP}.
 In the top row of the figure we see three rectangles,
 which represent the three threads which are active
 in the running \texttt{fpu\_driver} module. These are:
@@ -204,13 +226,12 @@ The read-only data structures are as follows:
   \texttt{EtherCANInterfaceConfig}, and is passed as a constant
   argument to the driver's constructor. Because it is in no place
   modified, we know that it does not change, and we can pass it
-  everywhere as constant (similar as a string in Python).
-
-  (In the core FPU driver, these parameters are passed as a constant
-  structure. Passing the configuration in memory has the advantage
-  that the core driver does not become dependent on the ESO VLT
-  framework, and this makes it possible to test it within the FPU
-  verification system, which cannot depend on that framework.)
+  everywhere as constant (similar as a string in Python)\footnote{In
+    the core FPU driver, these parameters are passed as a constant
+    structure. Passing the configuration in memory has the advantage
+    that the core driver does not become dependent on the ESO VLT
+    framework, and this makes it possible to test it within the FPU
+    verification system, which cannot depend on that framework.}
 
 \item[FPU address configuration] This structure is a table which maps
   the logical FPU numbers to the address triplet of (gateway number,
@@ -226,19 +247,20 @@ The read-only data structures are as follows:
   Synchronization of the table poses an interesting question: If the
   table is created at program start-up, it is modified in the control
   thread. After this, the tx thread and the rx thread are created. How
-  can we be sure that this modification is not seen in the newly
-  created threads?
+  can we be sure that this modification that happens at start-up is
+  not visible in the newly created threads, making the structures
+  non-constant and our assumptions invalid?
 
   The answer to this is that the creation of threads in pthreads
   causes a so-called memory barrier
-  \cite{WP:MemoryBarrier}\cite{Preshing:2012:MemoryBarriers}.  Any
-  data which was written by the CPU before that thread was created, is
-  written to memory before the new thread can see it. This is
-  important, because normally in a C program with different threads,
-  there is \emph{no} notion of ``before'' or ``after'' for operations
-  in different threads, unless such operations are explicitly
-  synchronized. The thread creation represents such an synchronization
-  point.
+  \cite{WP:MemoryBarrier}\cite{Preshing:2012:MemoryBarriers}\cite[section
+    7.1]{Butenhof:PwPT}.  Any data which was written by the CPU before
+  that thread was created, is written to memory before the new thread
+  can see it. This is important, because normally in a C program with
+  different threads, there is by default \emph{no} notion of
+  ``before'' or ``after'' for operations in different threads, unless
+  such operations are explicitly synchronized. The thread creation
+  represents such an synchronization point.
 
 
 
@@ -246,8 +268,8 @@ The read-only data structures are as follows:
 
 \subsection{Message queues}
 Furthermore, we have three main types of data structures which are not
-only read concurrently, but also modified. We discuss the message
-queues first.
+only read concurrently, but also modified. We discuss the
+\emph{message queues} first.
 
 Message queues are thread-safe data structures which allow the control
 thread to send parametric messages for individual FPUs to the tx
@@ -266,9 +288,10 @@ message.
 
 The tx thread checks whether there are messages in the message queues,
 \emph{and} whether it can send a message to a socket without blocking
-(this is done using the \texttt{ppoll()} syscall). If this is the
-case, the message is serialized into a byte sequence and written to
-the socket; the remaining processing is handled by the OS kernel.
+(this is done using the \texttt{ppoll()} syscall
+\cite[p. 51]{Love:2013:LSP})). If this is the case, the message is
+serialized into a byte sequence and written to the socket; the
+remaining processing is handled by the OS kernel.
 
 
 
@@ -283,11 +306,11 @@ virtual methods, supporting some degree of abstraction by using
 object-oriented programming techniques.
 
 As such objects can have different sizes, they need to be passed by
-pointers, and their memory needs to be managed.  This is done by C++
-smart pointers (more precisely, \texttt{std::shared\_ptr<>}, which are
-supported by C++11 and newer versions of C++). In theory, each message
-object could be allocated, using \texttt{new}, when it is needed, and
-deallocated, using \texttt{delete}, when it is not longer
+pointers, and their memory needs to be managed.  This is done using
+C++ smart pointers (more precisely, \texttt{std::shared\_ptr<>}, which
+are supported by C++11 and newer versions of C++). In theory, each
+message object could be allocated, using \texttt{new}, when it is
+needed, and deallocated, using \texttt{delete}, when it is not longer
 needed. However this is relatively slow. Therefore, when messages
 instances are needed, these are taken from a set of message pools,
 which are created on program start-up, and these instances are
@@ -297,60 +320,64 @@ more at the moment.
 The resulting pattern is that the control thread takes a message
 instance from a message pool, and inserts a reference to it into a
 message queue. Then, the tx thread pops it from the message queue,
-generates and sends its byte representation to the socket it is
-addressed to, and recycles the message memory by adding its reference
-again to the corresponding message pool. With this scheme, no dynamic
-allocation of messages is needed after program start-up, so this is
-much faster.
+generates and sends the message's byte representation to the socket it
+is addressed to, and recycles the message memory by adding its
+reference again to the corresponding message pool. With this scheme,
+no dynamic allocation of messages is needed after program start-up, so
+this is much faster.
 
-As a detail, there is one pool for each type of message, and the pools
-are simpler organized than the message queues, they are basically a
-stack of smart pointers, implemented as a \texttt{std::vector<std::shared\_ptr<\ldots>>>}.
+As a detail, there is one pool for each type of CAN message, and the
+pools are simpler organized than the message queues: They are
+basically a stack of smart pointers, implemented as a
+\texttt{std::vector<std::shared\_ptr<\ldots>>>}.
 
 \subsection{FPU state handling}
 
 After looking at the message queues and message queues, we can now
 look at the remaining data structure, which is more complex, and very
 central to the FPU driver software. It is represented by the larger
-rectangular box in the middle of figure~\ref{fig:overview}, and
+rectangular box in the middle of Figure~\ref{fig:overview}, and
 provides an array of structs which record the FPU's state with each
 response message that was received from the gateway. Because we have
 one such state record for each of the 1001 FPUs, this structure is
 called the \texttt{FPU\_state} array, or \texttt{FPUArray}.
 
 For the moment, we will temporarily ignore the box which is labelled
-``\texttt{TimeOutList}'', which will be explained soon.  The responses
+``\texttt{TimeOutList}'' (it will be explained soon).  The response
 messages are received by the rx thread, of course.  Upon receipt, the
 rx thread writes the state updates into the FPU state array,
 symbolized by the magenta arrow. The control thread reads from the
-state array. To avoid corruption by concurrent modification, it uses a
-lock or Mutex, which ensures that write accesses and read accesses are
-mutually exclusive. The rx thread keeps this lock most of the
-time. Only for short moments, the lock gets released, which gives the
-control thread the opportunity to read back the new state data, and
-return it to the caller of the driver method.
+state array. To avoid corruption by concurrent modification, both
+threads use a lock or Mutex, which ensures that write accesses and
+read accesses are mutually exclusive. The rx thread keeps this lock
+most of the time. Only for short moments, the lock gets released,
+which gives the control thread the opportunity to read back the new
+state data, and return it to the caller of the driver method.
 
 \paragraph{Transfer of state data from rx to control thread}
-As the reader might already guess, the FPU state structure is updated
-by the rx thread, but it is also passed to the control thread, and its
+As already mentioned, the FPU state structure is updated by the rx
+thread, but it is also passed to the control thread, and its
 information is required by the higher levels of application software
 which use the driver methods. In theory, this data could be protected
-by holding more locks. But this would violate the requirement that we
-want the rx thread to accept and store that data as fast as possible.
+by holding more locks. But this would violate the concern that we want
+the rx thread to accept and store that data as fast as possible.
 
 Instead, the FPU state data is \emph{copied} when it is passed from
 the rx thread to the control thread. Only while that copy is
 performed, it needs to be locked for the rx thread. And because the
-copy is a fast memory operation with nothing that can block, the time
-the lock needs to be hold is very short. As a result, the control
-thread methods return a copy of the FPU state data, which can be
-processed conveniently without any locking.
+copy is a fast memory operation (the \texttt{memcpy() function call})
+with nothing that can block, the time which the lock needs to be hold
+by the control thread is very short. As a result, the control thread
+methods return a copy of the FPU state data, which can be processed
+conveniently without any locking. The exists an API method which
+retrieves the current state, which is called \texttt{getGridState()}.
 
 \subsection{The \texttt{TimeOutList} data structure}
 
 Noe, let's have a look at the data structure \texttt{TimeOutList},
-which is written to by both the tx thread, and the rx thread. Its
-function is as follows:
+which is written to by both the tx thread, and the rx thread.  
+
+Its function is as follows:
 
 Normally, most messages to an FPU are promptly followed by a response
 within a few milliseconds. However, it can happen that this runs into
@@ -372,7 +399,8 @@ Each time when the rx threads starts to wait for a new message, it
 looks for the next time-out, and waits at most until this moment.  In
 the normal case, some FPU returns a message before this time expires,
 and the response is processed normally in the rx thread, by updating
-the corresponding FPU's state structure in memory.
+the corresponding FPU's state structure in memory. When doing this,
+the pending time-out entry is simply cleared.
 
 If, however, the waiting time ends without a response, all FPUs whose
 time-out time stamp have expired, are marked as timed out, and the
@@ -386,6 +414,11 @@ thread, which is why it is a special component of the FPU state
 array. Because it can be modified directly, the \texttt{TimeOutList}
 has an own lock, which can be acquired without holding the mutex for
 the FPU state array.
+
+As a detail, time values and clocks are based on the monotonic system
+clock (time-keeping in the Linux kernel is explained in more detail in
+\cite[chapter 11]{Love:2013:LSP}). This ensures that there are no
+``jumps'' in the used time values when detecting time-outs.
 
 \section{Relationship between threads and sockets}
 
@@ -466,7 +499,7 @@ has several disadvantages:
 
 \subsection{Condition variables}
 
-To improve on this, pthreads \textbf{condition variables} are used.
+To improve on this, pthreads \textbf{condition variables} are used \cite[section 3.3, p70]{Butenhof:PwPT} \cite[chapter 4]{Williams:CppConcurrency}.
 Basically, they allow to suspend the control thread until a certain
 condition has been reached. This condition is checked by the rx
 thread. This means that the CPU does not need need to switch
@@ -486,7 +519,7 @@ Condition variables are used in two places in the driver:
   reached the desired final state (or an error).
 \item In the function \texttt{CommandQueue::waitForCommand()}, a
   conditional wait is performed if no new messages are present in the
-  message queue. The wait finished if a new message is added to one of
+  message queue. The wait finishes if a new message is added to one of
   the queues, or the associated time-out expires.
   
 \end{enumerate}
@@ -494,14 +527,12 @@ Condition variables are used in two places in the driver:
 
 \subsection{Counters of pending messages}
 
-As mentioned, the method \texttt{waitForState()} waits
-for specific commands to the FPU grid to complete.
-It would be possible to check the state of the
-whole FPU grid every time after which an FPU has
-received a response message. But this would be inefficient,
-as the FPU state array is relatively large, and
-the check would needs to scan its whole memory
-each time, from a different thread. This is costly,
+As mentioned, the method \texttt{waitForState()} waits for specific
+commands to the FPU grid to complete.  It would be possible to check
+the state of the whole FPU grid every time after which an FPU has
+received a response message. But this would be inefficient, as the FPU
+state array is relatively large, and the check would needs to scan its
+whole memory each time, from a different thread. This would be costly,
 because CPU caches need to be synchronized.
 
 Instead, two counters of pending messages are maintained, which
@@ -526,10 +557,11 @@ decremented after the count of pending messages to the FPUs has be
 incremented. Otherwise, the driver could assume that all messages have
 been sent, in an instant where are no messages in the message queue,
 but some of these messages have not yet been sent to the FPUs.
-Counters are implemented as atomic data types. Counters which are used
-in conditional waits still need to be accessed using a mutex when they
-are modified, because checking condition variables requires to hold an
-associated mutex.
+Counters are implemented as atomic data types \cite[see chapter
+  5]{Williams:CppConcurrency}. Counters which are used in conditional
+waits still need to be accessed using a mutex when they are modified,
+because checking condition variables requires to hold an associated
+mutex.
 
 
 
@@ -537,17 +569,17 @@ associated mutex.
 
 There are two state flags which are shared between the rx thread and
 the tx thread, and are used to signal termination of the threads. Like
-the counters, these are implemented as atomic data types.
+the counters, these are implemented as atomic data types \cite[see chapter 5]{Williams:CppConcurrency}.
 
 \subsection{Event file descriptors for interrupting ppoll()}
 
 The two message loops for outgoing and incoming messages both use the
 \texttt{ppoll()} syscall to check whether a socket becomes writable
 (for sending a new message) or readable (for reading a new response
-message). If the sockets do not allow such an operation, both threads
-wait for a limited time (0.5 seconds for the rx thread, and 10 seconds
-for the tx thread). However there a few situations where this wait
-should be interrupted sooner:
+message) \cite[p. 51, p61]{Love:2013:LSP}. If the sockets do not allow
+such an operation, both threads wait for a limited time (0.5 seconds
+for the rx thread, and 10 seconds for the tx thread). However there a
+few situations where this wait should be interrupted sooner:
 
 \begin{itemize}
 \item If the tx thread is waiting for a socket to become
@@ -558,10 +590,13 @@ should be interrupted sooner:
   and the sockets should be shut down.
 \end{itemize}
 
-For these cases, Linux event file descriptors are used, which are
-special file descriptors that are created by the \texttt{eventfd()}
-syscall.  This are basically file descriptors that can message events,
-which can be detected during an \texttt{ppoll()} call.
+For these cases, Linux \emph{event file descriptors} are used, which
+are special file descriptors that are created by the
+\texttt{eventfd()} syscall \cite{man:eventfd}.  This are basically
+file-like objects that can message events, which then can be detected
+in another part of a process using the \texttt{ppoll()} call.  Because
+\texttt{ppoll()} can wait for any number of file descriptors, it can
+wait for alternative events at the same time.
 
 For the case of new messages for the tx thread, there are two specific
 situations in which the above is helpful:
@@ -572,7 +607,7 @@ situations in which the above is helpful:
   not wait for the normal termination of the \texttt{ppoll()} call.
   
 \item An important special case is if an \texttt{abortMotion()}
-  message was sent. In this case, all previous pending messages are
+  message is sent. In this case, all previous pending messages are
   cleared from the message queue, and a message is sent to all
   sockets. In this case, it would be incorrect to wait even a short
   extra time for sockets to become writable - the CAN message
@@ -637,6 +672,140 @@ the synchronization objects used.
 
 \section{Class methods relevant for concurrency}
 
+\subsection{EtherCANInterface}
+
+This class provides the API which is accessible for
+users of the library. The main actual function it
+performs is that it makes sure that only one
+command is active at the same time (with the exception of
+the \texttt{abortMotion()} command, which has the special
+property that it can preempt other commands).
+
+\begin{description}
+\item[EtherCANInterface()] (the constructor) creates member instances
+  and synchronization objects
+\item[all command methods] acquire the mutex \texttt{command\_creation\_mutex}
+  while sending a new command
+\item[abortMotion()] is a special case as the above lock is only acquired \emph{after} sending the
+  abort messages.
+  \item[waitForState()] waits for a set of CAN messages to complete
+\end{description}
+
+\subsection{AsyncInterface}
+
+This class implements generating, configuring, and
+sending CAN messages to the tx thread, and waiting
+for a response from the rx thread.
+
+\begin{description}
+  \item[connect()] creates the connections to the gateways, by calling \texttt{GatewayInterface::connect()}
+  \item[disconnect()] closes the connections
+\end{description}
+
+
+\subsection{GatewayInterface}
+This class implements creating the sockets, event file descriptors,
+condition variables and locks, and both the tx and the rx thread.
+
+It also manages the registration and handling of time-outs.
+
+\begin{description}
+  \item[connect()] does the actual socket and thread initialization
+  \item[disconnect()] stops the threads, and closes the sockets
+  \item[waitForState()] implements waiting for a specific FPU grid state
+  \item[getGridState()] is a method which copies the FPU array
+    state while holding the associated lock.
+\end{description}
+
+\subsection{CommandQueue}
+This data structure provides a set of thread-safe FIFOs which contain
+messages that were created by the control thread, and need to be send
+by the tx thread.  All operations are protected by a mutex.
+
+\begin{description}
+\item[enqueue()] adds a new command to the queue. It also
+  signals the condition variable
+    \texttt{cond\_queue\_append} and the event file descriptor \texttt{EventDescriptorNewCommand}.
+  \item[checkForCommand()] checks whether there is a new command
+  \item[waitForCommand()] waits a limited time for a new command,
+    if the queue is empty. This wait uses a condition variable
+    \texttt{cond\_queue\_append}, which is signalled when
+    a new command is added to an empty queue.
+  \item[flushToPool()] flushes all existing commands to the
+    message pool. This is needed before an \texttt{abortMotion()}
+    command is sent.
+  \item[setEventDescriptor()] takes the event file descriptor for the
+    event ``new command added to an empty queue'', and registers it
+    for internal use as the member
+    \texttt{EventDescriptorNewCommand}. This use of a resource that is
+    not owned is needed because the file descriptor is shared with
+    other objects, and is created by
+    \texttt{GatewayInterface::connect()}.
+
+\end{description}
+
+\subsection{CommandPool}
+The command pool class template implements a thread-safe container
+that is protected by a mutex while it is changed. The mutex is called
+\texttt{pool\_mutex}. The template parameter is the element type which
+is managed. Each CAN command class has its own pool. Messages are
+usually added in the tx thread, and retrieved in the control thread
+(this can be different if an \texttt{abortMotion()} command is
+executed).
+
+\begin{description}
+  \item[provideInstance()] retrieves an available CAN message object instance.
+  \item[recycleInstance()] takes an instance which is not longer
+    needed, and adds it to the pool. Adding an instance to an empty
+    pool also signals the condition variable \texttt{cond\_pool\_add}.
+\end{description}
+
+\subsection{FPUArray}
+
+This structure holds the state of the FPUs, and the driver.  It is
+accessed by all three threads. It uses the mutex
+\texttt{grid\_state\_mutex} to synchronize changes and data
+retrievals, and the condition variable \texttt{cond\_state\_change} to
+wait for specific states to be reached.
+
+Additionally, it uses the atomic counter \texttt{num\_trace\_clients}
+which determines whether the condition variable should only be
+signalled when a whole set of FPUs has reached a new state, or
+whenever a single FPU's state was changed (tracing mode).  The latter
+can be used, for example, to retrieve data for a graphical real-time
+display which shows the FPU's positions.
+
+\begin{description}
+  \item[getGridState()] return a copy of the data describing the state of the FPUs.
+  \item[getInterfaceState()] return the state of the driver
+  \item[getStateSummary()] return summarized data on the state of the FPU grid
+  \item[waitForState()] waits until a specific target state, or an error condition,
+    has been reached, and return with the new state.
+  \item[setPendingCommand()] Set a command ID and a time-out value for an FPU
+    as the current command for which a response is pending.
+  \item[incSending()] increase counter of commands being sent.
+  \item[decSending()] decrease counter of commands being sent.
+  \item[countSending()] get number of commands which are being sent.
+\end{description}
+
+\subsection{TimeOutList}
+
+This data structure provides a thread-safe sorted list of
+time-outs. It is functionally similar to a min heap, and allows to add
+time-outs, to retrieve the smallest value, and to update the time-out
+for an FPU. All operations on it are protected by a lock, with the
+name \texttt{list\_mutex}.
+
+\begin{description}
+  \item[insertTimeOut()] insert a time-out value for a specific FPU id.
+  \item[clearTineOut()] clears the time-out value for a specific FPU.
+  \item[getNextTimeOut()] get the time of the next time-out event,
+    and the FPU id associated with it, without removing from the queue.
+  \item[pop()] find and remove the time-out and FPU id with the
+    minimum value.
+\end{description}
+
+\newpage
 \bibliography{concurrency}
 
 
