@@ -2146,7 +2146,7 @@ class GridDriver(UnprotectedGridDriver):
 
                 if search_modes[fpu_id] == SEARCH_AUTO :
 
-                    if not fpu.beta_was_referenced :
+                    if (not fpu.beta_was_referenced) or (fpu.state == FPST_UNINITIALIZED) :
                         if not blim.contains(bpos):
                             # arm is completely out of range, probably needs manual move
                             raise ProtectionError("Beta arm of FPU %i is not in safe range"
