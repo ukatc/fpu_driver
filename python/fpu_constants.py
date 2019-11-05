@@ -54,7 +54,7 @@ MAX_ACCELERATION_FACTOR=1.4 # this constant factor is obsolete for
 MOTOR_MIN_STEP_FREQUENCY=500  # minimum stepper motor frequency
 MOTOR_MAX_STEP_FREQUENCY=2000 # maximum stepper motor frequency
 MOTOR_MAX_START_FREQUENCY=550 # minimum start frequency
-MAX_STEP_DIFFERENCE=100       # maximum change in steps per segment between segments
+MAX_STEP_DIFFERENCE=50        # maximum change in steps per segment between segments
 
 # used for waveform generation, can be
 # changed for testing motor limits
