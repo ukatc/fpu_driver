@@ -8,6 +8,9 @@
 *.idx
 *.ilg
 *.ind
+#*.png
+#*.bbl
+#*.blg
 /_minted-tutorial-tmp/
 tutorial-tmp.tex
 /tutorial-tmp.fdb_latexmk

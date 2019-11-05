@@ -83,4 +83,4 @@ style:
 	astyle src/*cpp python/src/*cpp include/{,/*{,*/{,*/}},}/*.h
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ doc/*.{aux,dvi,log,out,toc,pdf} python/*.so lib/*a
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ python/doc/*.{aux,dvi,log,out,toc,pdf,png,bbl,blg} python/*.so lib/*a
