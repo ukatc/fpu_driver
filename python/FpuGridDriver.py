@@ -399,6 +399,7 @@ class UnprotectedGridDriver (object):
             self._start_find_datum_hook(gs, search_modes=search_modes, selected_arm=selected_arm,
                                         fpuset=fpuset, initial_positions=initial_positions, soft_protection=soft_protection)
             prev_gs = self._gd.getGridState()
+            was_cancelled = False
             try:
                 try:
                     rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, timeout, count_protection)
