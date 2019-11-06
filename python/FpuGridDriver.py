@@ -1001,8 +1001,11 @@ class UnprotectedGridDriver (object):
 
         return rv
 
-    def abortMotion(self, gs, fpuset=[], sync_command=True):
+    def abortMotion(self, gs, fpuset=[], sync_command=False):
         fpuset = self.check_fpuset(fpuset)
+
+        if not sync_command:
+            warnings.warn("not using SYNC command")
 
         # this must not use locking - it can be sent from any thread by design
         try:
