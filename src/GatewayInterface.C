@@ -502,6 +502,7 @@ E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
     }
 
     buf_len1 = 0;
+    buf_len2 = 0;
     {
 	ExecuteMotionCommand execute_motion_command;
 	execute_motion_command.parametrize(0, broadcast);
