@@ -357,7 +357,8 @@ class UnprotectedGridDriver (object):
         pass
 
     def _finished_find_datum_hook(self, prev_gs, datum_gs, search_modes=None,
-                               fpuset=[], was_cancelled=False, initial_positions={}):
+                                  fpuset=[], was_cancelled=False, initial_positions={},
+                                  selected_arm=None):
         pass
 
     def findDatumB(self, gs, search_modes={},
@@ -402,7 +403,6 @@ class UnprotectedGridDriver (object):
             was_cancelled = False
             try:
                 try:
-                    rv = ethercanif.E_EtherCANErrCode.DE_OK
                     rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, timeout, count_protection)
                 except (RuntimeError,
                         InvalidParameterError,
@@ -415,7 +415,6 @@ class UnprotectedGridDriver (object):
                     was_cancelled = True
                     print("operation canceled, error = ", str(e))
             finally:
-                datum_gs = self.getGridState()
                 if was_cancelled or (rv != ethercanif.E_EtherCANErrCode.DE_OK):
                     try:
                         pingset = self.need_ping(gs, fpuset)
@@ -424,15 +423,11 @@ class UnprotectedGridDriver (object):
                     except CommandTimeout:
                         pass
 
-                ##  try:
-                ##      self._gd.getCounterDeviation(gs, fpuset)
-                ##      deviation_gs = gs
-                ##  except CommandTimeout:
-                ##      deviation_gs = None
 
-                self._finished_find_datum_hook(prev_gs, datum_gs, search_modes=search_modes, fpuset=fpuset,
+                self._finished_find_datum_hook(prev_gs, gs, search_modes=search_modes, fpuset=fpuset,
                                                was_cancelled=was_cancelled,
-                                               initial_positions=initial_positions)
+                                               initial_positions=initial_positions,
+                                               selected_arm=selected_arm)
 
             return rv
 
@@ -519,7 +514,6 @@ class UnprotectedGridDriver (object):
                 # we cancel the datum search altogether, so we can reset
                 # positions to old value
                 self._cancel_find_datum_hook(gs, fpuset,initial_positions=initial_positions)
-                raise
 
             time_interval = 0.1
             time.sleep(time_interval)
@@ -539,7 +533,6 @@ class UnprotectedGridDriver (object):
                         is_ready = (rv != ethercanif.E_EtherCANErrCode.DE_WAIT_TIMEOUT)
                         finished_ok = (rv == ethercanif.E_EtherCANErrCode.DE_OK)
             finally:
-                datum_gs = self._gd.getGridState()
                 if not finished_ok:
                     time.sleep(time_interval)
                     try:
@@ -549,15 +542,10 @@ class UnprotectedGridDriver (object):
                     except CommandTimeout:
                         pass
 
-                ##  time.sleep(time_interval)
-                ##  try:
-                ##      self._gd.getCounterDeviation(gs, fpuset)
-                ##      deviation_gs = gs
-                ##  except CommandTimeout:
-                ##      deviation_gs = None
-                self._finished_find_datum_hook(prev_gs, datum_gs, search_modes=search_modes,
+                self._finished_find_datum_hook(prev_gs, gs, search_modes=search_modes,
                                                fpuset=fpuset, was_cancelled=(not finished_ok),
-                                               initial_positions=initial_positions)
+                                               initial_positions=initial_positions,
+                                               selected_arm=selected_arm)
 
             if was_aborted:
                 print("findDatumw as aborted by SIGINT, movement stopped")
@@ -2198,17 +2186,17 @@ class GridDriver(UnprotectedGridDriver):
                                           " for datum search (angle=%r, range=%r)" % (fpu_id, apos, alim))
 
     def _finished_find_datum_hook(self, prev_gs, datum_gs, search_modes=None, fpuset=[],
-                                  was_cancelled=False, initial_positions={}):
+                                  was_cancelled=False, initial_positions={}, selected_arm=None):
 
         # FIXME: check if the next block is still needed
         fpuset_refresh = []
         for fpu_id, fpu in enumerate(datum_gs.FPU):
             if fpu.state in [FPST_MOVING, FPST_DATUM_SEARCH] or (not fpu.ping_ok):
                 fpuset_refresh.append(fpu_id)
-                if len(fpuset_refresh) == 0:
-                    break
-                time.sleep(0.1)
-                self._pingFPUs(datum_gs, fpuset=fpuset_refresh)
+
+        if len(fpuset_refresh) > 0:
+            time.sleep(0.1)
+            self._pingFPUs(datum_gs, fpuset=fpuset_refresh)
 
 
         with self.env.begin(db=self.fpudb, write=True) as txn:
@@ -2222,16 +2210,15 @@ class GridDriver(UnprotectedGridDriver):
 
 
                 # set position intervals to zero, and store in DB
-                if datum_fpu.alpha_was_referenced:
+                if (datum_fpu.alpha_was_referenced) and (datum_fpu.alpha_steps == 0):
                     self.a_caloffsets[fpu_id] = Interval(0)
-                    if datum_fpu.alpha_steps == 0:
-                        self._update_apos(txn, datum_fpu, fpu_id, Interval(0.0) + self.config.alpha_datum_offset)
+                    self._update_apos(txn, datum_fpu, fpu_id, Interval(0.0) + self.config.alpha_datum_offset)
                 else:
                     ## If ping_ok is set, we assume that even if the
                     ## datum operation itself did not succeed, the
                     ## step counter was successfully retrieved by a
                     ## subsequent ping, and the offset is unchanged.
-                    if datum_fpu.ping_ok:
+                    if datum_fpu.ping_ok and (selected_arm in [DASEL_ALPHA, DASEL_BOTH]):
                         alpha_angle, a_underflow, a_overflow = self._alpha_angle(datum_fpu)
                         if a_underflow or a_overflow:
                             # we know only we are in the interval between the
@@ -2244,20 +2231,18 @@ class GridDriver(UnprotectedGridDriver):
 
                         self._update_apos(txn, datum_fpu, fpu_id, a_int)
 
-
-                if datum_fpu.beta_was_referenced:
+                if (datum_fpu.beta_was_referenced) and (datum_fpu.beta_steps == 0):
                     self.b_caloffsets[fpu_id] = Interval(0)
-                    if datum_fpu.beta_steps == 0:
-                        self._update_bpos(txn, datum_fpu, fpu_id,  Interval(0.0))
+                    self._update_bpos(txn, datum_fpu, fpu_id,  Interval(0.0))
 
-                        if self.bretries_acw[fpu_id] > 0:
-                            clockwise = False
-                            ProtectionDB.store_bretry_count(txn, datum_fpu, clockwise, 0)
-                        if self.bretries_cw[fpu_id] > 0:
-                            clockwise = True
-                            ProtectionDB.store_bretry_count(txn, datum_fpu, clockwise, 0)
+                    if self.bretries_acw[fpu_id] > 0:
+                        clockwise = False
+                        ProtectionDB.store_bretry_count(txn, datum_fpu, clockwise, 0)
+                    if self.bretries_cw[fpu_id] > 0:
+                        clockwise = True
+                        ProtectionDB.store_bretry_count(txn, datum_fpu, clockwise, 0)
                 else:
-                    if datum_fpu.ping_ok:
+                    if datum_fpu.ping_ok and (selected_arm in [DASEL_BETA, DASEL_BOTH]):
                         beta_angle, b_underflow, b_overflow = self._beta_angle(datum_fpu)
                         if b_underflow or b_overflow:
                             # we know only we are in the interval between the
@@ -2277,6 +2262,7 @@ class GridDriver(UnprotectedGridDriver):
 
                 self._update_counters_find_datum(fpu_id, self.counters[fpu_id], prev_fpu, datum_fpu)
                 ProtectionDB.put_counters(txn, datum_fpu, self.counters[fpu_id])
+
 
 
         with self.env.begin(db=self.healthlog, write=True) as txn:
