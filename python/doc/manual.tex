@@ -5607,6 +5607,22 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
+\subsection*{Changes in version 2.2.1}
+\begin{itemize}
+\item Fixed position tracking for datum operations
+  which select only one arm.
+\item Correct documentation on parameters of \texttt{enableBetaCollisionProtection()}
+  and \texttt{enableAlphaLimitProtection()} (both methods don't take an
+  FPU parameter).
+\item Disable SYNC commands which are not yet working.
+\item Reduce maximum acceleration in waveform generation to
+  a working value of 50 steps (100 steps were too much).
+\item Fix auto-configuration of datum search direction
+  in uninitialized driver.
+\item Fix misspelled exception names in python wrapper.
+\end{itemize}
+
+
 \subsection*{Changes in version 2.2.0}
 \begin{itemize}
 \item Added support for EtherCAN gateway SYNC commands, see
