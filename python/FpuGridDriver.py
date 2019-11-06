@@ -919,7 +919,7 @@ class UnprotectedGridDriver (object):
             try:
                 try:
                     rv = self._gd.executeMotion(gs, fpuset, sync_command)
-                except InvalidState as e:
+                except InvalidStateException as e:
                     self_cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
                     raise
             finally:
