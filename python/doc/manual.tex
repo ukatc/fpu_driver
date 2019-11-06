@@ -4753,8 +4753,8 @@ breaking the FPU.
 \index{enableBetaCollisionProtection()!reference}
 \index{collisions!how to handle!reference}
 
-The command \texttt{FpuGridDriver.enableBetaCollisionProtection(fpuid,
-  grid\_state)} resolves the collision state of one FPU by changing
+The command \texttt{FpuGridDriver.enableBetaCollisionProtection(grid\_state)}
+resolves the collision state of one FPU by changing
 its state from \texttt{OBSTACLE\_ERROR} to \texttt{RESTING}.  This
 re-activates the collision protection, and allows to operate the FPU
 safely. If the collision has not been resolved successfully, another
@@ -4835,8 +4835,8 @@ breaking the FPU.
 \index{enableAlphaLimitProtection()!reference}
 \index{collisions!how to handle!reference}
 
-The command \texttt{FpuGridDriver.enableAlphaLimitProtection(fpuid,
-  grid\_state)} resolves the limit breach state of one FPU by changing
+The command \texttt{FpuGridDriver.enableAlphaLimitProtection(grid\_state)}
+resolves the limit breach state of one FPU by changing
 its state from \texttt{OBSTACLE\_ERROR} to \texttt{RESTING}.  This
 re-activates the limit breach protection, and allows to operate the
 FPU safely. If the collision has not been resolved successfully,
