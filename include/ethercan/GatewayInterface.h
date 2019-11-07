@@ -226,6 +226,15 @@ private:
 					const int buses_per_gateway,
 					uint8_t msgid_sync_data,
 					uint8_t msgid_sync_mask);
+
+    // send a single gateway message for SYNC configuration,
+    // waiting until sending is finished
+    E_EtherCANErrCode send_config(int gatway_id,
+				  int buf_len,
+				  uint8_t bytes[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES],
+				  uint8_t const msgid,
+				  uint8_t const can_identifier);
+
     int num_gateways = 0;
     // socket descriptor
     int SocketID[MAX_NUM_GATEWAYS];

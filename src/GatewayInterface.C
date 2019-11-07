@@ -433,6 +433,74 @@ void GatewayInterface::set_sync_mask_message(t_CAN_buffer& can_buffer, int& bufl
     buflen = 4; // 3 bytes header, 1 byte payload
 }
 
+E_EtherCANErrCode GatewayInterface::send_config(int gateway_id,
+						int buf_len,
+						uint8_t bytes[MAX_UNENCODED_GATEWAY_MESSAGE_BYTES],
+						uint8_t const msgid,
+						uint8_t const can_identifier)
+{
+    // we use the normal function for sending CAN packets
+    // for sending the configuration data.
+
+    SBuffer::E_SocketStatus status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
+									  buf_len, bytes, msgid,
+									  can_identifier);
+
+    if (status != SBuffer::E_SocketStatus::ST_OK){
+	return DE_SYNC_CONFIG_FAILED;
+    }
+
+    // because the socket is configured to be non-blocking, we have to
+    // check and possibly retry to make sure that all bytes are
+    // actually transmitted.
+    const struct timespec MAX_SYNC_TIMEOUT = { /* .tv_sec = */ 10,
+					       /* .tv_nsec = */ 0
+    };
+
+    int const NUM_FDS = 1;
+    struct pollfd pfd[NUM_FDS];
+    pfd[0].fd = SocketID[gateway_id];
+    pfd[0].events = POLLOUT;
+
+    while (true) {
+
+	bool const is_finished = (sbuffer[gateway_id].numUnsentBytes() == 0);
+
+	if (is_finished) {
+	    break;
+	}
+
+	int retval =  ppoll(pfd, NUM_FDS, &MAX_SYNC_TIMEOUT, 0);
+	if (retval == 0){
+	    return DE_SYNC_CONFIG_FAILED; // time-out
+	}
+	if (retval < 0){
+	    int err_code = errno;
+	    if (err_code == EINTR){
+		continue; // an interrupt occurred
+	    } else {
+		LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+			    "GatewayInterface::connect() - error on configuring SYNC messages, "
+			    "ppoll() returned errno=%i when configuring gateway %i\n",
+			    ethercanif::get_realtime(),
+			    err_code,
+			    gateway_id);
+		LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+			    " (check for correct TCP connection and that gateway is actually running)\n",
+			    ethercanif::get_realtime());
+		return DE_SYNC_CONFIG_FAILED; // other error
+	    }
+	}
+	status = sbuffer[gateway_id].send_pending(SocketID[gateway_id]);
+
+	if (status != SBuffer::E_SocketStatus::ST_OK){
+	    return DE_SYNC_CONFIG_FAILED;
+	}
+
+    }
+
+    return DE_OK;
+}
 
 E_EtherCANErrCode GatewayInterface::send_sync_command(CAN_Command &can_command,
 						      const int ngateways,
@@ -442,7 +510,16 @@ E_EtherCANErrCode GatewayInterface::send_sync_command(CAN_Command &can_command,
 {
     uint8_t const can_identifier = 0;
 
-    SBuffer::E_SocketStatus status = SBuffer::E_SocketStatus::ST_OK;
+    // we need to send two buffers:
+    //
+    // one holds the actual content of the SYNC message,
+    // which is stored in the gateway.
+    // This is a normal CAN message which the gateway
+    // will replay to all buses if it is instructed
+    // to send a SYNC command.
+    //
+    // The second message configures a bitmask which
+    // defines which CAN buses are active.
 
     t_CAN_buffer can_buffer1;
     int buf_len1 = 0;
@@ -456,9 +533,6 @@ E_EtherCANErrCode GatewayInterface::send_sync_command(CAN_Command &can_command,
     // set mask to activate all buses for each gateway
     const uint8_t channel_mask = (uint8_t) ((1u << buses_per_gateway) - 1u);
 
-    set_sync_mask_message(can_buffer2, buf_len2,
-			  msgid_sync_mask, channel_mask);
-
 
     can_command.SerializeToBuffer(msgid_sync_data,
 				  can_identifier,
@@ -466,24 +540,24 @@ E_EtherCANErrCode GatewayInterface::send_sync_command(CAN_Command &can_command,
 				  can_buffer1,
 				  SYNC_SEQUENCE_NUMBER);
 
+    set_sync_mask_message(can_buffer2, buf_len2,
+			  msgid_sync_mask, channel_mask);
+
+    // both messages need to be send to each gateway
     for (int gateway_id=0; gateway_id < ngateways; gateway_id++)
     {
-	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-						      buf_len1, can_buffer1.bytes, msgid_sync_data,
-						      can_identifier);
+	E_EtherCANErrCode err_code = send_config(gateway_id, buf_len1, can_buffer1.bytes, msgid_sync_data, can_identifier);
 
-	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED;
+	if (err_code != DE_OK){
+	    return err_code;
 	}
 
+	err_code = send_config(gateway_id, buf_len2, can_buffer2.bytes, msgid_sync_mask, can_identifier);
 
-	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-						      buf_len2, can_buffer2.bytes, msgid_sync_mask,
-						      can_identifier);
-
-	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED;
+	if (err_code != DE_OK){
+	    return err_code;
 	}
+
     }
 
     return DE_OK;
@@ -509,6 +583,10 @@ E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
     //
     // For more information, see the EtherCAN gateway documentation.
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : GatewayInterface::connect()"
+		" - setting up SYNC config for abortMotion command\n",
+		ethercanif::get_realtime());
+
     {
 	AbortMotionCommand abort_motion_command;
 	abort_motion_command.parametrize(0, broadcast);
@@ -526,6 +604,9 @@ E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
 
 
 
+    LOG_CONTROL(LOG_INFO, "%18.6f : GatewayInterface::connect()"
+		" - setting up SYNC config for executeMotion command\n",
+		ethercanif::get_realtime());
     {
 	ExecuteMotionCommand execute_motion_command;
 	execute_motion_command.parametrize(0, broadcast);
@@ -1145,7 +1226,7 @@ void* GatewayInterface::threadTxFun()
                 int errcode = errno;
                 switch (errcode)
                 {
-                case EINTR: // an interrupt occured
+                case EINTR: // an interrupt occurred
                     //         this can happen and is fixed by just trying again
                     retry = true;
                     break;

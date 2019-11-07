@@ -906,7 +906,7 @@ class UnprotectedGridDriver (object):
         pass
 
 
-    def executeMotionB(self, gs, fpuset=[], sync_command=False):
+    def executeMotionB(self, gs, fpuset=[], sync_command=True):
         fpuset = self.check_fpuset(fpuset)
 
         if len(fpuset) == 0:
@@ -934,7 +934,7 @@ class UnprotectedGridDriver (object):
 
         return rv
 
-    def executeMotion(self, gs, fpuset=[], sync_command=False):
+    def executeMotion(self, gs, fpuset=[], sync_command=True):
         fpuset = self.check_fpuset(fpuset)
 
         if len(fpuset) == 0:
@@ -967,8 +967,7 @@ class UnprotectedGridDriver (object):
                             rv = self._gd.waitExecuteMotion(gs, time_interval, fpuset)
                             if sh.interrupted:
                                 print("STOPPING FPUs.")
-                                #self.abortMotion(gs, fpuset, sync_command)
-                                self.abortMotion(gs, fpuset, True)
+                                self.abortMotion(gs, fpuset, sync_command)
                                 was_aborted = True
                                 refresh_state = True
                                 break
