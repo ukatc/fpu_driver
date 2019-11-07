@@ -434,9 +434,15 @@ void GatewayInterface::set_sync_mask_message(t_CAN_buffer& can_buffer, int& bufl
 }
 
 
-E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
+E_EtherCANErrCode GatewayInterface::send_sync_command(CAN_Command &can_command,
+						      const int ngateways,
+						      const int buses_per_gateway,
+						      uint8_t msgid_sync_data,
+						      uint8_t msgid_sync_mask)
+{
+    uint8_t const can_identifier = 0;
 
-    bool const broadcast = true;
+    SBuffer::E_SocketStatus status = SBuffer::E_SocketStatus::ST_OK;
 
     t_CAN_buffer can_buffer1;
     int buf_len1 = 0;
@@ -447,11 +453,50 @@ E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
     memset((void*) &can_buffer2, 0, sizeof(can_buffer2));
 
 
-    uint8_t const can_identifier = 0;
+    // set mask to activate all buses for each gateway
+    const uint8_t channel_mask = (uint8_t) ((1u << buses_per_gateway) - 1u);
+
+    set_sync_mask_message(can_buffer2, buf_len2,
+			  msgid_sync_mask, channel_mask);
 
 
-    SBuffer::E_SocketStatus status = SBuffer::E_SocketStatus::ST_OK;
+    can_command.SerializeToBuffer(msgid_sync_data,
+				  can_identifier,
+				  buf_len1,
+				  can_buffer1,
+				  SYNC_SEQUENCE_NUMBER);
 
+    for (int gateway_id=0; gateway_id < ngateways; gateway_id++)
+    {
+	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
+						      buf_len1, can_buffer1.bytes, msgid_sync_data,
+						      can_identifier);
+
+	if (status != SBuffer::E_SocketStatus::ST_OK){
+	    return DE_SYNC_CONFIG_FAILED;
+	}
+
+
+	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
+						      buf_len2, can_buffer2.bytes, msgid_sync_mask,
+						      can_identifier);
+
+	if (status != SBuffer::E_SocketStatus::ST_OK){
+	    return DE_SYNC_CONFIG_FAILED;
+	}
+    }
+
+    return DE_OK;
+
+}
+
+
+
+E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
+
+    E_EtherCANErrCode rval = DE_OK;
+
+    bool const broadcast = true;
 
     // Config Sync. Note that this configuration is sent to the gateways,
     // not the fibre positioners, and that, in difference to commands to the FPUs,
@@ -467,70 +512,31 @@ E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
     {
 	AbortMotionCommand abort_motion_command;
 	abort_motion_command.parametrize(0, broadcast);
-	abort_motion_command.SerializeToBuffer(GW_MSG_TYPE_COB0,
-					       can_identifier,
-					       buf_len1,
-					       can_buffer1,
-					       SYNC_SEQUENCE_NUMBER);
-    }
-
-    // set mask to activate all channels
-    const uint8_t channel_mask = (uint8_t) ((1 << BUSES_PER_GATEWAY) - 1);
-
-    set_sync_mask_message(can_buffer2, buf_len2,
-			  GW_MSG_TYPE_MSK0, channel_mask);
-
-
-    for (int gateway_id=0; gateway_id < ngateways; gateway_id++)
-    {
-	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-						      buf_len1, can_buffer1.bytes, GW_MSG_TYPE_COB0,
-						      can_identifier);
-
-	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED;
+	rval = send_sync_command(abort_motion_command,
+				 ngateways,
+				 BUSES_PER_GATEWAY,
+				 GW_MSG_TYPE_COB0,
+				 GW_MSG_TYPE_MSK0);
+	if (rval != DE_OK){
+	    return rval;
 	}
 
-
-	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-						      buf_len2, can_buffer2.bytes, GW_MSG_TYPE_MSK0,
-						      can_identifier);
-
-	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED;
-	}
     }
 
-    buf_len1 = 0;
-    buf_len2 = 0;
+
+
+
     {
 	ExecuteMotionCommand execute_motion_command;
 	execute_motion_command.parametrize(0, broadcast);
-	execute_motion_command.SerializeToBuffer(GW_MSG_TYPE_COB1,
-						 can_identifier,
-						 buf_len1,
-						 can_buffer1,
-						 SYNC_SEQUENCE_NUMBER);
-    }
+	rval = send_sync_command(execute_motion_command,
+				 ngateways,
+				 BUSES_PER_GATEWAY,
+				 GW_MSG_TYPE_COB1,
+				 GW_MSG_TYPE_MSK1);
 
-    set_sync_mask_message(can_buffer2, buf_len2,
-			  GW_MSG_TYPE_MSK1, channel_mask);
-
-    for (int gateway_id=0; gateway_id < ngateways; gateway_id++)
-    {
-	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-						      buf_len1, can_buffer1.bytes, GW_MSG_TYPE_COB1,
-						      can_identifier);
-	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED;
-	}
-
-	status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-						      buf_len2, can_buffer2.bytes, GW_MSG_TYPE_MSK1,
-						      can_identifier);
-
-	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED;
+	if (rval != DE_OK){
+	    return rval;
 	}
     }
 

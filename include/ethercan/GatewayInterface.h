@@ -219,7 +219,13 @@ private:
     // get number of unsent commands
     int getNumUnsentCommands() const;
 
-
+    // send a specific CAN command as SYNC configuration
+    // to all gateways.
+    E_EtherCANErrCode send_sync_command(CAN_Command &can_command,
+					const int ngateways,
+					const int buses_per_gateway,
+					uint8_t msgid_sync_data,
+					uint8_t msgid_sync_mask);
     int num_gateways = 0;
     // socket descriptor
     int SocketID[MAX_NUM_GATEWAYS];
