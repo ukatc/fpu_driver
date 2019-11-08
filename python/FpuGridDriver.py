@@ -2205,6 +2205,18 @@ class GridDriver(UnprotectedGridDriver):
                 if (datum_fpu.alpha_was_referenced) and (datum_fpu.alpha_steps == 0):
                     self.a_caloffsets[fpu_id] = Interval(0)
                     self._update_apos(txn, datum_fpu, fpu_id, Interval(0.0) + self.config.alpha_datum_offset)
+
+                    # reset retry count for freeAlphaLimitBreach, because
+                    # we have reached a safe position.
+
+                    if self.aretries_acw[fpu_id] > 0:
+                        clockwise = False
+                        self.aretries_acw[fpu_id] = 0
+                        ProtectionDB.store_aretry_count(txn, datum_fpu, clockwise, 0)
+                    if self.aretries_cw[fpu_id] > 0:
+                        clockwise = True
+                        self.aretries_cw[fpu_id] = 0
+                        ProtectionDB.store_aretry_count(txn, datum_fpu, clockwise, 0)
                 else:
                     ## If ping_ok is set, we assume that even if the
                     ## datum operation itself did not succeed, the
@@ -2229,9 +2241,11 @@ class GridDriver(UnprotectedGridDriver):
 
                     if self.bretries_acw[fpu_id] > 0:
                         clockwise = False
+                        self.bretries_acw[fpu_id] = 0
                         ProtectionDB.store_bretry_count(txn, datum_fpu, clockwise, 0)
                     if self.bretries_cw[fpu_id] > 0:
                         clockwise = True
+                        self.bretries_cw[fpu_id] = 0
                         ProtectionDB.store_bretry_count(txn, datum_fpu, clockwise, 0)
                 else:
                     if datum_fpu.ping_ok and (selected_arm in [DASEL_BETA, DASEL_BOTH]):
