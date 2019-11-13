@@ -72,14 +72,15 @@ operations.  A few references are provided for further reading.
 \paragraph{Scope of this text} The goal of this document is to explain the main points of the
 concurrency architecture of the \texttt{fpu\_driver}.  This is
 necessary because, unlike many other aspects, in C/C++ source code,
-the concurrency behaviour is not explicitly defined and visible.  One
-would often need to scrutinize the entire source code to understand it
-and check whether invariants are being kept.
+the concurrency behaviour is not explicitly defined and locally
+visible.  One would often need to scrutinize the entire source code to
+understand it and check whether invariants are being kept.
 
 At the same time, failure to ensure synchronized access in concurrent
 code can be the cause for hard-to-debug undefined behaviour
 \cite{Regehr:AGtUBPt3}\cite{MeyersAlexandrescu:2004:DCL}\cite[p
-  218-225]{Love:2013:LSP}.
+  218-225]{Love:2013:LSP}. This document aims to explain the most
+important aspects of concurrency in the FPU driver software.
 
 \section{Overview}
 
@@ -101,7 +102,7 @@ end has advanced its processing.
 
 In practice, the bottleneck or limiting factor for speed is the speed
 of the CAN buses, which are much slower than the TCP network
-connections to the gateways. Because the bandwidth of the CAN buses,
+connections to the gateways. Because the bandwidth of the CAN buses
 is limited, the driver does its writing to the sockets in such a way
 so that it does not lose waiting time: If it cannot write to one
 socket, it looks whether there is a message which can be sent to
@@ -331,7 +332,7 @@ pools are simpler organized than the message queues: They are
 basically a stack of smart pointers, implemented as a
 \texttt{std::vector<std::shared\_ptr<\ldots>>>}.
 
-\subsection{FPU state handling}
+\subsection{FPU state array}
 
 After looking at the message queues and message queues, we can now
 look at the remaining data structure, which is more complex, and very
@@ -565,11 +566,12 @@ mutex.
 
 
 
-\subsection{State flags}
+\subsection{Boolean state flags}
 
-There are two state flags which are shared between the rx thread and
-the tx thread, and are used to signal termination of the threads. Like
-the counters, these are implemented as atomic data types \cite[see chapter 5]{Williams:CppConcurrency}.
+There are two Boolean state flags which are shared between the rx
+thread and the tx thread, and are used to signal termination of the
+threads. Like the counters, these are implemented as atomic data types
+\cite[see chapter 5]{Williams:CppConcurrency}.
 
 \subsection{Event file descriptors for interrupting ppoll()}
 
