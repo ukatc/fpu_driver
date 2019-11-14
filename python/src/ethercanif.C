@@ -172,6 +172,7 @@ public:
     int fw_date_month;
     int fw_date_day;
     int checksum_ok;
+    double last_updated_sec;
     std::string serial_number;
 
     WrapFPUState() {}
@@ -179,7 +180,6 @@ public:
     WrapFPUState(const t_fpu_state& fpu_state)
     {
         memcpy(cmd_timeouts,fpu_state.cmd_timeouts, sizeof(cmd_timeouts));
-        last_updated              = fpu_state.last_updated;
         pending_command_set       = fpu_state.pending_command_set;
         state                     = fpu_state.state;
         last_command              = fpu_state.last_command;
@@ -220,6 +220,8 @@ public:
         fw_date_day               = fpu_state.firmware_date[2];
         crc32                     = fpu_state.crc32;
         checksum_ok               = fpu_state.checksum_ok;
+	last_updated_sec          = (1.0 * fpu_state.last_updated.tv_sec)
+	  + (1.0e-9 * fpu_state.last_updated.tv_nsec);
 
         assert(strlen(fpu_state.serial_number) < LEN_SERIAL_NUMBER);
         serial_number = std::string(fpu_state.serial_number);
@@ -242,8 +244,7 @@ public:
            in the streams standard library.
         */
 
-        s << "{ 'last_updated' : " << s.precision(10) << (1.0 * fpu.last_updated.tv_sec
-                + 1.0e-9 * fpu.last_updated.tv_nsec) << ", "
+        s << "{ 'last_updated' : " << std::setprecision(10) << fpu.last_updated_sec << ", "
           << " 'pending_command_set' : " << fpu.pending_command_set << ", "
           << " 'state' : ";
         s << fpu.state << ", "
@@ -1698,6 +1699,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def_readonly("num_active_timeouts", &WrapFPUState::num_active_timeouts)
     .def_readonly("crc32", &WrapFPUState::crc32)
     .def_readonly("checksum_ok", &WrapFPUState::checksum_ok)
+    .def_readonly("last_updated", &WrapFPUState::last_updated_sec)
     .def("__repr__", &WrapFPUState::to_repr)
     ;
 
