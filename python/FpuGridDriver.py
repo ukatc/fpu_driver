@@ -2440,7 +2440,7 @@ class GridDriver(UnprotectedGridDriver):
             ProtectionDB.store_bretry_count(txn, fpu, clockwise, cnt)
 
         fpuset = [fpu_id]
-        self._pingFPUs(grid_state, fpuset=fpuset)
+        #self._pingFPUs(grid_state, fpuset=fpuset)
         self._refresh_positions(grid_state, fpuset=fpuset)
 
 
@@ -2486,7 +2486,7 @@ class GridDriver(UnprotectedGridDriver):
             ProtectionDB.store_aretry_count(txn, fpu, clockwise, cnt)
 
         fpuset = [fpu_id]
-        self._pingFPUs(grid_state, fpuset=fpuset)
+        #self._pingFPUs(grid_state, fpuset=fpuset)
         self._refresh_positions(grid_state, fpuset=fpuset)
 
     def configPaths(self, paths, grid_state, fpuset=[], soft_protection=True, check_protection=None,

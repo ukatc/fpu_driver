@@ -43,7 +43,7 @@ DEFAULT_FREE_BETA_RETRIES=3
 FREE_BETA_STEPCOUNT=10
 
 DEFAULT_FREE_ALPHA_RETRIES=3
-FREE_ALPHA_STEPCOUNT=10
+FREE_ALPHA_STEPCOUNT=11
 
 MAX_ACCELERATION_FACTOR=1.4 # this constant factor is obsolete for
                             # newer waveform rulesets. For details,
