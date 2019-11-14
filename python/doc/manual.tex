@@ -5607,6 +5607,16 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
+\subsection*{Changes in version 2.2.2}
+\begin{itemize}
+\item Fix tracking mismatch in recovery from
+  Alpha limit switch breaches, which led to a
+  warning message / error after resolving the breach,
+  because the position by step counts was outside
+  the position range expected by tracking the
+  movements.
+\end{itemize}
+
 \subsection*{Changes in version 2.2.1}
 \begin{itemize}
 \item Fixed position tracking for datum operations

@@ -1,7 +1,7 @@
 IDIR = ./include
 CC = "g++"
 
-VERSION := v2.2.1
+VERSION := v2.2.2
 
 CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC	\
 -DDEBUG -g -O3 -finline-functions -Wstrict-aliasing -march=native	\
