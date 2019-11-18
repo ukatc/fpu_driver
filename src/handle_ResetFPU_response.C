@@ -61,6 +61,24 @@ void handle_ResetFPU_response(const EtherCANInterfaceConfig&config,
         fpu.direction_alpha = DIRST_UNKNOWN;
         fpu.direction_beta = DIRST_UNKNOWN;
 
+	if (fpu.alpha_steps != 0)
+	{
+	    fpu.alpha_steps = 0;
+	    LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "FPU #%i: WARNING: resetting FPU, setting alpha step counter to zeron\n",
+                   get_realtime(),
+                   fpu_id);
+	}
+	if (fpu.beta_steps != 0)
+	{
+	    fpu.beta_steps = 0;
+	    LOG_RX(LOG_ERROR, "%18.6f : RX : "
+                   "FPU #%i: WARNING: resetting FPU, setting beta step counter to zeron\n",
+                   get_realtime(),
+                   fpu_id);
+	}
+
+
         if (fpu.pending_command_set != 0)
         {
             // remove *all* other pending commands
@@ -75,6 +93,18 @@ void handle_ResetFPU_response(const EtherCANInterfaceConfig&config,
 
             }
         }
+    }
+    else
+    {
+	LOG_RX(LOG_ERROR, "%18.6f : RX : "
+	       "FPU #%i: WARNING: resetFPUs command failed, error code = %i\n",
+	       get_realtime(),
+	       fpu_id, response_errcode);
+
+	LOG_CONSOLE(LOG_ERROR, "%18.6f : RX : "
+		    "FPU #%i: WARNING: resetFPUs command failed, error code = %i\n",
+		    get_realtime(),
+		    fpu_id, response_errcode);
     }
     fpu.ping_ok = true; // we known the current step counter
 
