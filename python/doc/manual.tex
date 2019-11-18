@@ -5607,6 +5607,18 @@ The following list contains a chronological list of all changes which
 might require adaptions in scripts which use the corresponding
 commands, or alter otherwise visible behaviour of the driver.
 
+\subsection*{Changes in version 2.2.4}
+\begin{itemize}
+\item The error handling in the initiation of
+  the \texttt{findDatum()} command was changed
+  to raise an exception of the alpha arm is
+  found to be on the limit switch.
+\item The response handler for the \texttt{resetFPUs()} command sets
+  the FPU step counters explicitly to zero if the command was
+  successful.
+\end{itemize}
+
+
 \subsection*{Changes in version 2.2.3}
 \begin{itemize}
 \item The missing time-stamp member \texttt{last\_updated} was added
