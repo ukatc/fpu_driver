@@ -63,7 +63,6 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
         fpu.alpha_was_referenced = false;
         fpu.beta_was_referenced = false;
 
-        // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "while waiting for finishedMotion: "
                "collision detected message received for FPU %i\n",
@@ -84,7 +83,6 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
         fpu.alpha_was_referenced = false;
         fpu.beta_was_referenced = false;
 
-        // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "while waiting for finishedMotion: "
                "limit switch breach message received for FPU %i\n",
@@ -148,13 +146,11 @@ void handle_FinishedMotion_message(const EtherCANInterfaceConfig&config,
     }
     else if (response_errcode == 0)
     {
-        // FIXME: Update step counter in protocol version 2
-        // update_steps(fpu.alpha_steps, fpu.beta_steps, data);
         if ( (fpu.state != FPST_OBSTACLE_ERROR) && (fpu.state != FPST_ABORTED))
         {
             fpu.movement_complete = true;
         }
-	    
+
     }
 
 }

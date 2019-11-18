@@ -63,7 +63,6 @@ void handle_EnableAlphaLimitProtection_response(const EtherCANInterfaceConfig&co
     {
         fpu.ping_ok = false;
 
-        // FIXME: decrease log level in production system
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "enableAlphaLimitProtection command failed for FPU %i\n",
                get_realtime(),

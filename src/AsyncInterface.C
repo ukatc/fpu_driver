@@ -2267,7 +2267,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         step_index++;
     }
 
-    // FIXME: did not to work reliably with v1 firmware - check
     if (grid_state.count_timeout != old_count_timeout)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN command repeatedly timed out\n",
@@ -2474,10 +2473,6 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
         set_rt_priority(config, CONTROL_PRIORITY);
     }
 
-    // FIXME: This is preliminary for use in the verification
-    // system. In the ICS interface, this needs to be changed to use the
-    // gateway SYNC message to make sure that FPUs move with minimum
-    // lag in respect to each other.
 
     E_EtherCANErrCode ecode = DE_OK;
 
@@ -2822,8 +2817,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
     for (int i=0; i < config.num_fpus; i++)
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[i];
-        // we exclude moving FPUs, but include FPUs which are
-        // searching datum. (FIXME: double-check that).
+        // we exclude moving FPUs.
         if (((fpu_state.state == FPST_READY_FORWARD)
                 || (fpu_state.state == FPST_RESTING))
                 && fpu_state.waveform_valid
@@ -4498,8 +4492,6 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
     }
 
     // We do not expect the locked FPUs to respond.
-    // FIXME: This needs to be documented and checked
-    // with the firmware protocol.
     int num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED] - num_skipped;
 
     // fpus are now responding in parallel.

@@ -1268,7 +1268,8 @@ void* GatewayInterface::threadTxFun()
         SBuffer::E_SocketStatus status = SBuffer::ST_OK;
         for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
         {
-            // FIXME: split long method into smaller ones
+            // FIXME: possibly, split this long method into smaller ones
+	    // for better readability.
 
             if ((retval > 0 ) && (pfd[gateway_id].revents & POLLOUT))
             {

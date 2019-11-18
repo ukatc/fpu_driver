@@ -135,9 +135,6 @@ E_EtherCANErrCode FPUArray::deInitialize()
 //
 // This first implementation simply copies the internal state, which
 // likely returns much more information than needed.
-//
-// FIXME: if relevant, replace internal type with slimmed down
-// information which is actually relevant for callers.
 E_GridState FPUArray::getGridState(t_grid_state& out_state) const
 {
 

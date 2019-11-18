@@ -31,14 +31,11 @@
 #include "ethercan/CAN_Command.h"
 #include "ethercan/time_utils.h"
 
-// FIXME: reading and writing data is technically unrelated, and
-// should probably splitted into two classes.
-
-// An important opportunity for speeding up loading of the waveform
+// An possible opportunity for speeding up loading of the waveform
 // tables is to aggregate data and to send it in bulk commands.  This
 // is more efficient than to send many small packets over the sockets
-// in different syscalls. Needs check whether this is relevant for
-// performance.
+// in different syscalls. However, it looks as if we are currently
+// maxing out the CAN bus, so this is probably not relevant.
 
 namespace mpifps
 {
@@ -387,8 +384,8 @@ SBuffer::E_SocketStatus SBuffer::send_pending(int sockfd)
             case ENOMEM: // no memory available
             case EOPNOTSUPP: // unsupported flag
             default:
-                // we have a logical error,
-                // this should never happen.
+                // we have a logical error, this should never happen
+                // because the code is careful to handle all cases.
                 // FIXME: add extended logging later
                 return ST_ASSERTION_FAILED;
 
@@ -466,9 +463,10 @@ SBuffer::E_SocketStatus SBuffer::decode_and_process(int sockfd, int gateway_id, 
             case EMSGSIZE : // message too large
             case ENOMEM: // no memory available
             default:
-                // we have a logical error,
-                // this should never happen.
-                // FIXME: add extended logging later
+                // we have a logical error, this should never happen
+                // as the code is careful to handle all cases.
+		//
+		// FIXME: add extended logging later
                 return ST_ASSERTION_FAILED;
 
 

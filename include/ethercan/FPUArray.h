@@ -122,7 +122,6 @@ public:
 
 
     // queries whether an FPU is locked.
-    // (FIXME: this is unused - delete it?)
     bool isLocked(int fpu_id) const;
 
     // sets pending command for one FPU.

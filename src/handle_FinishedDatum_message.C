@@ -66,7 +66,6 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         fpu.alpha_was_referenced = false;
         fpu.beta_was_referenced = false;
 
-        // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "while waiting for end of datum command:"
                "limit switch breach message received for FPU %i\n",
@@ -79,7 +78,6 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
         fpu.alpha_was_referenced = false;
         fpu.beta_was_referenced = false;
 
-        // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "while waiting for end of datum command:"
                "collision detection message received for FPU %i\n",
@@ -97,7 +95,6 @@ void handle_FinishedDatum_message(const EtherCANInterfaceConfig&config,
 	fpu.state = FPST_UNINITIALIZED;
 	fpu.ping_ok = false;
 
-        // FIXME: decrease log level in production system to keep responsivity at maximum
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "while waiting for finishing datum command:"
                "hardware datum time-out message received for FPU %i\n",

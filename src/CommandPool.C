@@ -304,8 +304,10 @@ E_EtherCANErrCode CommandPool::deInitialize()
         {
 
             pool[i].clear();
-            // FIXME: std::vector<>::shrink_to_fit can thow bad_alloc if the
-            // system is low on memory. This should be caught.
+            // FIXME: std::vector<>::shrink_to_fit can possibly throw
+            // bad_alloc if the system is low on memory. This is
+            // unlikely but, if possible, should be caught for maximum
+            // robustness.
             pool[i].shrink_to_fit();
 
         }

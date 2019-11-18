@@ -148,13 +148,9 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 
         bool was_empty = fifos[gateway_id].empty();
 
-        // FIXME: According to std::deque documentation, this can
-        // throw a bad_alloc exception if the system is low on memory.
-        // Best fix is possibly to replace std::dequeue with a
-        // fixed-size ringbuffer. Should be done for version 2.
         fifos[gateway_id].push_back(new_command);
 
-        // if we changed from an empty queue to a non-empty one,
+        // If we just changed from an empty queue to a non-empty one,
         // signal an event to notify any waiting poll.
         if (was_empty)
 	{

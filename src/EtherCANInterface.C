@@ -110,9 +110,10 @@ E_EtherCANErrCode EtherCANInterface::startFindDatum(t_grid_state& grid_state,
 
         break;
 
-#ifdef SHOW_FIXMES
-#pragma message "FIXME: insert retry code here"
-#endif
+	// FIXME: If necessary, insert Datum retry code here.  This
+	// might improve robustness if some specific modes of hardware
+	// failure are frequent, but it could also make errors much
+	// harder to diagnose.
 
         num_avaliable_retries--;
     }
@@ -178,11 +179,6 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
         // waveforms again. To do that we strip FPUs from
         // the configuration which have already been configured
         // succcessfully.
-        //
-        // FIXME: This does not yet handle collisions or
-        // complicated states like a large bird nesting
-        // on top of the FPUs. Probably has to be made
-        // more robust for such cases.
 
 	if (num_avaliable_retries > 0)
 	{

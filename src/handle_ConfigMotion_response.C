@@ -51,7 +51,7 @@ void handle_ConfigMotion_response(const EtherCANInterfaceConfig&config,
     // update status fields, but not step counts (they do not fit into the response)
     assert(blen == 6); // this assertion is more to stop the compiler from nagging -
     //                    wrong buffer lengths are checked for upstream
-    
+
     const E_MOC_ERRCODE response_errcode = update_status_flags(fpu, UPDATE_FIELDS_NOSTEPS, data);
 
     LOG_RX(LOG_TRACE_CAN_MESSAGES, "%18.6f : RX : handle_ConfigMotion:"
@@ -68,7 +68,6 @@ void handle_ConfigMotion_response(const EtherCANInterfaceConfig&config,
         fpu.num_waveform_segments = 0;
         fpu.waveform_status = static_cast<E_WAVEFORM_ERRCODE>(data[5]);
 
-        // FIXME: decrease log level in production system
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
                "configMotion command for FPU %i failed with error code %i\n",
                get_realtime(),

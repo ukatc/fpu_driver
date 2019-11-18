@@ -60,7 +60,6 @@ void handle_GetFirmwareVersion_response(const EtherCANInterfaceConfig&config,
     //
     // Because the driver checks the version, an invalid version such
     // as (0,0,0) will be detected safely and trigger an error.
-    // FIXME: Might need to be defined better.
 
     E_MOC_ERRCODE response_errcode = MCE_FPU_OK;
     remove_pending(config, fpu, fpu_id,  cmd_id, response_errcode, timeout_list, count_pending, sequence_number);
