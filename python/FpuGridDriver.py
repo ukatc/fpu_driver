@@ -397,12 +397,14 @@ class UnprotectedGridDriver (object):
                         InvalidParameterError,
                         SetupError,
                         InvalidStateException,
+                        HardwareProtectionError,
                         ProtectionError) as e:
                     # we cancel the datum search altogether, so we can reset
                     # positions to old value
                     self._cancel_find_datum_hook(gs, fpuset, initial_positions=initial_positions)
                     was_cancelled = True
                     print("operation canceled, error = ", str(e))
+                    raise
             finally:
                 if was_cancelled or (rv != ethercanif.E_EtherCANErrCode.DE_OK):
                     try:
@@ -499,10 +501,12 @@ class UnprotectedGridDriver (object):
                     InvalidParameterError,
                     SetupError,
                     InvalidStateException,
+                    HardwareProtectionError,
                     ProtectionError) as e:
                 # we cancel the datum search altogether, so we can reset
                 # positions to old value
                 self._cancel_find_datum_hook(gs, fpuset,initial_positions=initial_positions)
+                raise
 
             time_interval = 0.1
             time.sleep(time_interval)
