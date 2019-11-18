@@ -247,33 +247,6 @@ int make_socket(const EtherCANInterfaceConfig &config, const char *ip, uint16_t 
         return -1;
     }
 
-#if 0
-    if (config.SocketTimeOutSeconds > 0)
-    {
-
-        struct timeval timeout;
-        timeout.tv_sec = int(config.SocketTimeOutSeconds);
-        timeout.tv_usec = int((config.SocketTimeOutSeconds - timeout.tv_sec) * 1e6);
-
-        errstate = setsockopt(sck, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
-                              sizeof(timeout));
-
-        if (errstate < 0)
-        {
-            close(sck);
-            return -1;
-        }
-
-        errstate = setsockopt(sck, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
-                              sizeof(timeout));
-
-        if (errstate < 0)
-        {
-            close(sck);
-            return -1;
-        }
-    }
-#endif
 
     if (config.SocketTimeOutSeconds > 0)
     {
@@ -1357,15 +1330,6 @@ inline void print_time(char* label, struct timespec tm)
 }
 #endif
 
-#if 0
-inline void print_curtime(char* label)
-{
-    struct timespec tm;
-    get_monotonic_time(tm);
-    print_time(label, tm);
-    fflush(stdout);
-}
-#endif
 
 
 void* GatewayInterface::threadRxFun()
@@ -1585,6 +1549,7 @@ CommandQueue::E_QueueState GatewayInterface::sendCommand(const int fpu_id, uniqu
 
 
 #if 0
+// might be needed for flexible mapping of FPU ids
 int GatewayInterface::getGatewayIdByFPUID(const int fpu_id) const
 {
     return address_map[fpu_id].gateway_id;

@@ -24,8 +24,6 @@
 #include "InterfaceConstants.h"
 #include "ethercan/TimeOutList.h"
 
-//#define DEBUGT
-//#define DEBUG_MK
 namespace mpifps
 {
 
@@ -100,11 +98,6 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
     const timespec old_val = TimeOutsByID[id];
     TimeOutsByID[id] = new_val;
 
-#ifdef DEBUGT
-    printf("insertTimeOut(): inserting new timeout for FPU #%i = %li / %li\n",
-           id, TimeOutsByID[id].tv_sec, TimeOutsByID[id].tv_nsec);
-#endif
-
     // update invariants
 
     // true if the old value equalled the cached minimum
@@ -127,9 +120,6 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
 
     if (is_smaller_minimum)
     {
-#ifdef DEBUGT
-	printf("insertTimeOut: is_smaller_minimum\n");
-#endif	
         // cache is invalidated by setting a smaller value,
         // therefore we update the cached value.
         cached_minimum = new_val;
@@ -141,16 +131,10 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
     }
     else if (is_equal_minimum)
     {
-#ifdef DEBUGT
-	printf("insertTimeOut: is_equal_minimum\n");
-#endif
         // the new value equals the existing
         // minimum but didn't before
         if (! was_equal_minimum)
         {
-#ifdef DEBUGT
-	    printf("insertTimeOut: ! was_equal_minimum\n");
-#endif
             // we increment the count, if it was not
             // already included
             cached_minimum_multiplicity += 1;
@@ -163,32 +147,22 @@ void TimeOutList::insertTimeOut(int const id, timespec new_val)
     }
     else if (was_equal_minimum)
     {
-#ifdef DEBUGT
-	printf("insertTimeOut: was_equal_minimum\n");
-#endif	
         // this is the most likely case.  we overwrote a timeout value
         // equal to the current minimum with a larger value, so we
-        // need to decrement the cache multiplicity 
+        // need to decrement the cache multiplicity
         cached_minimum_multiplicity -= 1;
-	
+
 	// decrementing triggers a minimum search in the minKey()
         // method, once the count goes to zero.
         if (cached_minimum_multiplicity == 0)
         {
             // we lost information about the minimum
             // place, thus need to refresh cache
-#ifdef DEBUGT	    
-	    printf("TimeOutList::insertTimeout(): searching min\n");
-#endif
             search_min();
         }
     }
 
-#ifdef DEBUGT
-    printf("TimeOutList::insertTimeout(): on exit: cached min now = %li / %li, multiplicity %i\n",
-	   cached_minimum.tv_sec, cached_minimum.tv_nsec, cached_minimum_multiplicity);
-#endif
-    
+
     pthread_mutex_unlock(&list_mutex);
 
 
@@ -217,11 +191,7 @@ const timespec TimeOutList::minKey()
 
     if (cached_minimum_multiplicity > 0)
     {
-#ifdef DEBUGT
-	printf("TimeOutList::minKey(): found cached min = %li / %li, multiplicity %i\n",
-	       cached_minimum.tv_sec, cached_minimum.tv_nsec, cached_minimum_multiplicity);
-#endif
-	
+
 	return cached_minimum;
 
         // otherwise, max_time is used, which
@@ -229,21 +199,15 @@ const timespec TimeOutList::minKey()
     }
     else
     {
-#ifdef DEBUGT
-	printf("TimeOutList::minKey(): searching min\n");
-#endif
-	return search_min();	
+	return search_min();
     }
 }
 
 const timespec TimeOutList::search_min()
 {
-#ifdef DEBUG_MK
-    clock_t t0 = clock();
-#endif
 	timespec min_val = MAX_TIMESPEC;
 	cached_minimum_multiplicity = 0;
-	
+
         // we need to search for the minimum value and
         // refresh the count how often it occurs.
         for(int i = 0; i < MAX_NUM_POSITIONERS; i++)
@@ -271,24 +235,12 @@ const timespec TimeOutList::search_min()
             }
 
         }
-	
 
-#ifdef DEBUG_MK
-    clock_t t1 = clock();
-    clock_t td = t1 - t0;
-    if (td > 10)
-    {
-        printf("search_min : took %li usec\n", td);
-    }
-#endif
+
 
     cached_minimum = min_val;
 
-#ifdef DEBUGT
-    printf("TimeOutList::search_min() found new min = %li / %li, multiplicity = %i\n",
-	   min_val.tv_sec, min_val.tv_nsec, cached_minimum_multiplicity);
-#endif
-    
+
     return min_val;
 }
 
@@ -330,42 +282,26 @@ TimeOutList::t_toentry TimeOutList::pop()
 
 	if (result.id > -1)
 	{
-#ifdef DEBUGT
-	    printf("TimeOutList::pop() : deleting entry %i, val = %li / %li",
-		   result.id, result.val.tv_sec, result.val.tv_nsec);
-#endif
 	    TimeOutsByID[i] = MAX_TIMESPEC;
-	    
+
 	    cached_minimum_multiplicity -= 1;
-	
+
 	    // decrementing triggers a minimum search in the minKey()
 	    // method, once the count goes to zero.
 	    if (cached_minimum_multiplicity > 0)
 	    {
-#ifdef DEBUGT
-		printf("TimeOutList::pop(): using cached min, multiplicity = %i\n",
-		       cached_minimum_multiplicity);
-#endif
 		minimum_index_lbound = i + 1;
 	    }
 	    else
 	    {
 		// we lost information about the minimum
 		// place, thus need to refresh cache
-#ifdef DEBUGT
-		printf("TimeOutList::pop(): searching min\n");
-#endif
 		search_min();
 	    }
 	}
     }
-    
-#ifdef DEBUGT
-    printf("TimeOutList::pop() found id = %i,  min = %li / %li, multiplicity = %i\n",
-	   result.id,
-	   result.val.tv_sec, result.val.tv_nsec, cached_minimum_multiplicity);
-#endif
-    
+
+
     pthread_mutex_unlock(&list_mutex);
 
     return result;
@@ -384,11 +320,7 @@ const timespec TimeOutList::getNextTimeOut()
 
     pthread_mutex_lock(&list_mutex);
     min_val = minKey();
-    
-#ifdef DEBUGT
-    printf("TimeOutList::getNextTimeOut() found min = %li / %li, multiplicity = %i\n",
-	   min_val.tv_sec, min_val.tv_nsec, cached_minimum_multiplicity);
-#endif
+
     pthread_mutex_unlock(&list_mutex);
 
     return min_val;

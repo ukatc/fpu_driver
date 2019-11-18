@@ -730,14 +730,6 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     }
 
 
-#if (CAN_PROTOCOL_VERSION == 1)
-    if (blen != 8)
-    {
-        LOG_RX(LOG_ERROR, "%18.6f : RX: wrong message length (blen=%i) for version 1 - ignored.\n",
-               ethercanif::get_realtime(), blen);
-        return;
-    }
-#endif
 
     // fpu_busid is a one-based index
     if (fpu_busid == 0)

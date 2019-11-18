@@ -4456,16 +4456,6 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
         return ecode;
     }
 
-#if (CAN_PROTOCOL_VERSION == 1)
-    if ((min_firmware_version[0] < 1)
-            ||(min_firmware_version[1] < 3))
-    {
-        LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error DE_FIRMWARE_UNIMPLEMENTED "
-                    "- FPU firmware does not provide feature\n",
-                    ethercanif::get_realtime());
-        return DE_FIRMWARE_UNIMPLEMENTED;
-    }
-#endif
 
 
 
