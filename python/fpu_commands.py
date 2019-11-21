@@ -417,6 +417,10 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
     FPUs corresponding to the array.
 
     No range checking of movements is done.
+    
+    returns a dictionary where slist[N] contains [alphasteps, betasteps] for
+    FPU index N. alphasteps and betasteps are lists of alpha and beta step
+    counts.
     """
     if mode == 'slow':
         warnings.warn("'slow' mode is obsolete, it does not match the waveform protocol, mapped to 'slowpar'.")
@@ -447,6 +451,279 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
             v.extend([(0, 0)] * shortfall)
             v.reverse()
 
+    return slists
+
+def read_path_file_text(path_file):
+    """
+    
+    Read a file containing the motor paths needed to move the
+    fibre positioners from their starting position to their finishing
+    position.
+    
+    Motor angles are stored in the file in degrees.
+    
+    :Parameters:
+        
+    path_file: str
+        The name of the path file to be read.
+   
+    :Returns:
+
+    fpu_paths: list of (id, motor1_array, motor2_array)
+        List of motor paths read from the file.
+    
+    """
+    fpu_paths = []
+    lastid = -1
+    array1 = []
+    array2 = []
+    # Open the paths file within a Python context.
+    with open(path_file, 'r') as file_in:
+        # Read the ID and alpha and beta paths for each positioner from the file
+        while True:
+            line = file_in.readline()
+            if line != '\n' and not line:
+                # Empty line means end of file
+                break
+            if not line.strip():
+                # Skip a blank line
+                continue
+            if "Positioner" in line:
+                # New positioner
+                if lastid > 0:
+                    #print("Appending path for positioner", lastid)
+                    fpu_paths.append( [lastid, array1, array2] )
+                line = line.replace('\"', '') # Remove quotes
+                words = line.split()
+                lastid = int(words[1])
+                array1 = []
+                array2 = []
+                #print("New positioner:", lastid)
+            elif "[" in line:
+                line = line.replace('[', '')
+                line = line.replace(']', '') # Entire array might be on same line
+                line = line.replace(',', ' ') # Older formats included commas
+                words = line.split()
+                if not array1:
+                    # New array1
+                    for wrd in words:
+                        array1.append( float(wrd) )
+                    #print("[ Starting new alpha array of length", len(array1))
+                elif not array2:
+                    # New array2
+                    for wrd in words:
+                        array2.append( float(wrd) )
+                    #print("[ Starting new beta array of length", len(array2))
+#             elif "]" in line: # ??
+            else:
+                line = line.replace(']', '')
+                line = line.replace(',', ' ')
+                words = line.split()
+                # Add next line to array
+                if not array2:
+                    # Building up array1
+                    for wrd in words:
+                        array1.append( float(wrd) )
+                    #print("Building up array1 to make length",  len(array1))
+                else:
+                    # Building up array2
+                    for wrd in words:
+                        array2.append( float(wrd) )
+                    #print("Building up array2 to make length",  len(array2))
+        # Append the last item.         
+        #print("Appending path for positioner", lastid)
+        fpu_paths.append( [lastid, array1, array2] )
+    file_in.close()
+    return fpu_paths
+
+def read_path_file_paths(path_file):
+    """
+    
+    Read a file containing the motor paths needed to move the
+    fibre positioners from their starting position to their finishing
+    position.
+    
+    Motor angles are stored in the file in degrees.
+
+    This version reads motor paths from a new text file format which is
+    more easily created and parsed in C++
+    
+    :Parameters:
+        
+    path_file: str
+        The name of the path file to be read.
+   
+    :Returns:
+
+    fpu_paths: list of (id, motor1_array, motor2_array)
+        List of motor paths read from the file.
+    
+    """
+    fpu_paths = []
+    openid = -1
+    closeid = -1
+    array1 = []
+    array2 = []
+    # Open the paths file within a Python context.
+    with open(path_file, 'r') as file_in:
+        # Read the ID and alpha and beta paths for each positioner from the file
+        while True:
+            line = file_in.readline()
+            if line != '\n' and not line:
+                # Empty line means end of file
+                break
+            # Remove any comments after a '#' character.
+            cn = line.find('#')
+            if cn >= 0:
+                line = line[:cn]
+            if not line.strip():
+                # Skip a blank line
+                continue
+
+            if "{HDR" in line:
+                # Read the header keywords. (For now just skip them.)
+                # TODO: Parse the header lines
+                while "}HDR" not in line:
+                    #print("Skipping header line:", line)
+                    line = file_in.readline()
+                    if line != '\n' and not line:
+                        # Empty line means end of file.
+                        # TODO: Error message?
+                        break
+                    if "}HDR" in line:
+                        # End of header
+                        break
+                # Header completed. Move to the next line.
+                continue
+
+            if "{POS" in line:
+                # New positioner
+                words = line.split()
+                openid = int(words[1])
+                array1 = []
+                array2 = []
+                #print("New positioner:", openid)
+            elif "alpha=[" in line:
+                line = line.replace('alpha=[', '')
+                line = line.replace(']', '') # Entire array might be on same line
+                words = line.split()
+                # New array1
+                for wrd in words:
+                    array1.append( float(wrd) )
+                #print("New alpha array with starting length", len(array1))
+            elif "beta=[" in line:
+                line = line.replace('beta=[', '')
+                line = line.replace(']', '') # Entire array might be on same line
+                words = line.split()
+                # New array2
+                for wrd in words:
+                    array2.append( float(wrd) )
+                #print("New beta array with starting length", len(array2))
+            elif "}POS" in line:
+                # Closing a positioner section
+                words = line.split()
+                closeid = int(words[1])
+                if openid > 0:
+                    if closeid == openid:
+                        #print("Appending path for positioner", openid)
+                        fpu_paths.append( [openid, array1, array2] )
+                    else:
+                        logger.error("Parse error: Section opened with %d closes with %d." % \
+                                 (openid, closeid))
+                else:
+                    logger.error("Parse error: Closing section for %d found without opening section." % \
+                        closeid)
+            else:
+                # An an-between line containing additional array values.
+                # Erase the ']' of the line contains the last part of an array.
+                line = line.replace(']', '')
+                words = line.split()
+                # Add next line to array
+                if not array2:
+                    # Building up array1
+                    for wrd in words:
+                        array1.append( float(wrd) * params.DEG_TO_RAD )
+                    #print("Building up array1 to make length",  len(array1))
+                else:
+                    # Building up array2
+                    for wrd in words:
+                        array2.append( float(wrd) * params.DEG_TO_RAD )
+                    #print("Building up array2 to make length",  len(array2))
+
+        # If necessary, add the last item.
+        if openid > closeid:
+            logger.warn("Final section of path file not closed")
+            print("Appending path for positioner", lastid)
+            fpu_paths.append( [openid, array1, array2] )
+
+    file_in.close()
+    return fpu_paths
+
+def read_path_file_json(path_file):
+    """
+    
+    Read a file containing the motor paths needed to move the
+    fibre positioners from their starting position to their finishing
+    position.
+    
+    Motor angles are stored in the file in degrees.
+
+    NOTE: New version which reads the paths in JSON format.
+    
+    :Parameters:
+        
+    path_file: str
+        The name of the path file to be read.
+   
+    :Returns:
+
+    fpu_paths: list of (id, motor1_array, motor2_array)
+        List of motor paths read from the file.
+    
+    """
+    import json
+    
+    fpu_paths = []
+    array1 = []
+    array2 = []
+    # Open the paths file within a Python context.
+    with open(path_file, 'r') as json_file_in:
+        pathdata = json.load( json_file_in )
+        for path in pathdata['paths']:
+            ident = path['ident']
+            array1 = np.array( path['alpha'] )
+            array2 = np.array( path['beta'] )
+            fpu_paths.append( [ident, array1, array2] )
+    json_file_in.close()
+    return fpu_paths
+
+def read_wf(filename, max_fpu, asteps_per_deg=StepsPerDegreeAlpha,
+           bsteps_per_deg=StepsPerDegreeBeta, **kwargs):
+    """
+    
+    Read the paths from the given file and convert then to waveforms. 
+    max_fpu can be used to limit the number of waveforms extracted
+    
+    """
+    # The filename must be a non-empty string
+    assert(isinstance(filename, str))
+    assert(len(filename) > 0)
+
+    # The file name extension indicates the type of the path file.
+    if filename.lower().endswith('.json'):
+        logger.debug("Reading JSON file: %s" % filename)
+        fpu_paths = read_path_file_json(filename)
+    elif filename.lower().endswith('.paths'):
+        logger.debug("Reading PATHS file: %s" % filename)
+        fpu_paths = read_path_file_paths(filename)
+    else:
+        logger.debug("Reading TEXT file: %s" % filename)
+        fpu_paths = read_path_file_text(filename)
+
+    # Convert the FPU paths into a steplist
+    slists = {}
+    for (fpu_ident, alphadegrees, betadegrees) in fpu_paths:
+        slists[fpu_ident] = [alphadegrees * asteps_per_deg, betadegrees * bsteps_per_deg]
     return slists
 
 def path_to_steps(p, steps_per_degree, origin=0.0):
