@@ -14,7 +14,7 @@ class Interval:
         elif len(source) == 1:
             source = source[0]
         else:
-            assert(len(source)==2)
+            assert(len(source)==2), "Interval: must be created with scalar or 2-tuple"
             source = list(source)
             source.sort()
         if (type(source) == numpy.float) or (type(source) == numpy.float64):
@@ -22,18 +22,18 @@ class Interval:
         if isinstance(source, Interval):
             iv = array(source.iv)
         elif type(source) == ndarray:
-            assert(len(source) == 2)
+            assert(len(source) == 2), "Interval: must be created with scalar or 2-tuple"
             iv = source.copy()
         elif type(source) == IntType:
             iv = array([source, source],dtype=float)
         elif type(source) == FloatType:
             iv = array([source, source])
         elif type(source) == ListType:
-            assert(len(source) == 2)
+            assert(len(source) == 2), "Interval: must be created with scalar or 2-tuple"
             iv = array(source, dtype=float)
         elif type(source) == StringType:
             l = literal_eval(source)
-            assert(len(source)==2)
+            assert(len(source)==2), "Interval: must be created with scalar or 2-tuple"
             iv = array(source, dtype=float)
         else:
             raise RuntimeError("Passed: value %r, type %s - "
@@ -44,8 +44,12 @@ class Interval:
     def copy(self):
         return Interval(self.iv)
 
-    def as_scalar(self):
-        assert(self.iv[0] == self.iv[1])
+    def as_scalar(self, tolerance=0):
+        assert(tolerance >= 0), "Interval:as_scalar: tolerance must be a positive value"
+        #assert(self.iv[0] == self.iv[1]), "Interval:as_scalar: Values %.3f %.3f not equal" % (self.iv[0], self.iv[1])
+        if abs(self.iv[1] - self.iv[0]) > tolerance:
+            print("\n*** Interval:as_scalar: Values %.3f %.3f not equal. First value will be returned. ***\n" % \
+                  (self.iv[0], self.iv[1]))
         return self.iv[0]
 
     def __str__(self):
@@ -139,7 +143,7 @@ class Interval:
         return iv.assignExtend(x)
 
     def contains(self, b, tolerance=0):
-        assert(tolerance >= 0)
+        assert(tolerance >= 0), "Interval:contains: tolerance must be a positive value"
         if not isinstance(b, Interval):
             b = Interval(b)
         iv = b.iv
@@ -163,3 +167,17 @@ class Interval:
             mi = nan
             ma = nan
         return Interval(mi,ma)
+
+if __name__ == "__main__":
+    fred = Interval(1.0, 2.0)
+    jim = Interval(1.5, 2.5)
+    print("fred:", fred)
+    print("jim:", jim)
+    print("fred+jim", fred+jim)
+    print("fred.combine(jim):", fred.combine(jim))
+    print("fred.intersects(jim):", fred.intersects(jim))
+
+    single = Interval(42.0)
+    print("single:", single, "single.as_scalar:", single.as_scalar())
+    print("jim:", jim, "jim.as_scalar:", jim.as_scalar())
+
