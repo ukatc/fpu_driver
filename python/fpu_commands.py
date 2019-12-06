@@ -387,7 +387,7 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
 
     if len(slist) == 0:
         slist = [ (0, 0) ]
-    assert(len(slist) <= MAXNUM_WAVEFORM_SEGMENTS)
+    assert(len(slist) <= MAXNUM_WAVEFORM_SEGMENTS), "waveform exceeds maximum length (%d)" % MAXNUM_WAVEFORM_SEGMENTS
 
     return slist
 
@@ -706,8 +706,8 @@ def read_wf(filename, max_fpu, asteps_per_deg=StepsPerDegreeAlpha,
     
     """
     # The filename must be a non-empty string
-    assert(isinstance(filename, str))
-    assert(len(filename) > 0)
+    assert(isinstance(filename, str)), "filename must be a string"
+    assert(len(filename) > 0), "empty filename"
 
     # The file name extension indicates the type of the path file.
     if filename.lower().endswith('.json'):

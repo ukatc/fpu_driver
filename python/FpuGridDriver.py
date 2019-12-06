@@ -2560,8 +2560,8 @@ class GridDriver(UnprotectedGridDriver):
 
         waveform = {}
         for fpu_id, (alpha_path, beta_path)  in paths.items():
-            assert(len(alpha_path) == len(beta_path))
-            assert(len(alpha_path) > 0)
+            assert(len(alpha_path) == len(beta_path)), "fpu_id=%d. Alpha and beta paths must be the same length" % fpu_id
+            assert(len(alpha_path) > 0), "fpu_id=%d. Paths must contain at least one element" % fpu_id
 
             if not fpu_in_set(fpu_id, fpuset):
                 continue
