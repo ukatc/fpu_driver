@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 
+
 import os
 import argparse
 
@@ -15,7 +16,11 @@ NUM_FPUS = int(os.environ.get("NUM_FPUS","10"))
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Ping a configured number of FPUs')
+    global help_text
+    parser = argparse.ArgumentParser(description="""
+Configure the MOONS FPU device driver to communicate with a grid of FPUs,
+then ping the FPUs. Use python -i initialiseGrid.py for interactive mode.
+    """)
     parser.add_argument('--mockup',   default=False, action='store_true',
                         help='set gateway address to use mock-up gateway and FPU')
 

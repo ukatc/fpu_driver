@@ -44,12 +44,12 @@ class Interval:
     def copy(self):
         return Interval(self.iv)
 
-    def as_scalar(self, tolerance=0):
+    def as_scalar(self, tolerance=1.0e-6):
         assert(tolerance >= 0), "Interval:as_scalar: tolerance must be a positive value"
-        #assert(self.iv[0] == self.iv[1]), "Interval:as_scalar: Values %.3f %.3f not equal" % (self.iv[0], self.iv[1])
-        if abs(self.iv[1] - self.iv[0]) > tolerance:
-            print("\n*** Interval:as_scalar: Values %.3f %.3f not equal. First value will be returned. ***\n" % \
-                  (self.iv[0], self.iv[1]))
+        assert(self.iv[0] == self.iv[1]), "Interval:as_scalar: Values %.3f %.3f not equal" % (self.iv[0], self.iv[1])
+        #if abs(self.iv[1] - self.iv[0]) > tolerance:
+        #    print("\n*** Interval:as_scalar: Values %.3f %.3f not equal. First value will be returned. ***\n" % \
+        #          (self.iv[0], self.iv[1]))
         return self.iv[0]
 
     def __str__(self):
