@@ -93,6 +93,11 @@ STEPS_UPPER_LIMIT=int(ceil(MOTOR_MAX_STEP_FREQUENCY * WAVEFORM_SEGMENT_LENGTH_MS
 
 
 def step_list_slow(nsteps, min_steps=STEPS_LOWER_LIMIT,):
+
+    """Generate alpha and beta angles in slow mode.
+       This function is almost never used.
+    """
+
     full_segments = int(math.floor(nsteps / min_steps))
     delta = min_steps
 
@@ -108,6 +113,12 @@ def step_list_slow(nsteps, min_steps=STEPS_LOWER_LIMIT,):
 
 def step_list_fast(nsteps, max_change=1.4,
                    min_steps=STEPS_LOWER_LIMIT, max_steps=STEPS_UPPER_LIMIT):
+
+    """Generate alpha and beta angles in fast mode.
+       This function implements an old waveform generation mode. Whether it
+       is faster than linacc mode depends on the values for the max_change
+       and max_acceleration parameters.
+    """
 
     remaining_steps = nsteps
     new_speed = min_steps
@@ -158,6 +169,14 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
                      max_steps=STEPS_UPPER_LIMIT,
                      insert_rest_accelerate=True):
 
+    """Generate alpha and beta angles in limacc (constant acceleration) mode.
+
+       The function constructs an acceleration waveform and a deceleration
+       waveform and joins them back to back to make the complete profile.
+    """
+
+    # Initialise the step lists for the acceleration and deceleration phases
+    # and remaining step count.
     remaining_steps = nsteps
     steps_accelerate = []
     steps_decelerate = []
@@ -165,26 +184,50 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
     if min_stop_steps is None:
         min_stop_steps = min_steps
 
+    # Initialise the available range of speed for the current waveform element.
+    # Note that each variable is a 2-element array where element [0] is
+    # constructed for the acceleration phase and element [1] is constructed
+    # for the deceleration phase.
+    # steps[0] contains the step elements for the acceleration phase and
+    # steps[1] contain the step elements for the deceleration phase.
     new_speed = [min_steps, min_stop_steps]
     max_change = [max_acceleration, max_deceleration]
     max_speed = [min_steps + max_acceleration, min_stop_steps + max_deceleration]
     steps = [[],[]]
+
+    # These constants identify the acceleration [0] and deceleration [1] phases
+    # for the above arrays. Note that the variable W indicates which phase is
+    # being worked on at any moment and the variable X indicates the phase which
+    # isn't being worked on. The function will work alternately on the acceleration
+    # and then the deceleration phase until the maximum speed is reached or
+    # the motor moves close to its target.
     ACC = 0
     DEC = 1
+
+    # Construct the major part of the waveform
     while True:
         if remaining_steps < min(min_steps, min_stop_steps):
+            # The waveform brings the motor within one element of its target.
+            # No further acceleration or deceleration can be added.
             break
 
         if len(steps[ACC]) == 0:
+            # First iteration - start by working on the acceleration phase.
             W = ACC
             X = DEC
         elif len(steps[DEC]) == 0:
+            # Second interation - now start working on the deceleration phase.
             W = DEC
             X = ACC
         elif new_speed[ACC] <= new_speed[DEC]:
+            # The acceleration phase is behind the deceleration phase
+            # (or we have reached a constant speed phase).
+            # Work on the acceleration phase.
             W = ACC
             X = DEC
         else:
+            # The deceleration phase is behind the acceleration phase.
+            # Work on the deceleration phase.
             W = DEC
             X = ACC
 
@@ -195,57 +238,77 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
             break
 
         # compute new speed from acceleration limit
+        # (tent_new_speed means "tentative new speed")
         if len(steps[W]) == 0:
             if W == ACC:
+                # Starting from stationary (working forwards on acceleration phase)
                 tent_new_speed = min_steps
             else:
+                # Stopping (working backwards on deceleration phase)
                 tent_new_speed = min_stop_steps
         else:
+            # Attempt to accelerate or decelerate
             tent_new_speed = new_speed[W] + max_change[W]
-        # check for max speed limit
+
+        # Check for max speed limit
         if tent_new_speed > max_steps:
             tent_new_speed = max_steps
 
-
-        # if speed exhausts available distance, cap speed
-        # to the smaller of rest distance, or counter-acting
-        # change
+        # If the speed exhausts available distance, cap the
+        # speed to the smaller of rest distance, or
+        # counter-acting change.
         if (tent_new_speed + max_speed[X]  > remaining_steps) :
             tent_new_speed = min(tent_new_speed, max_speed[X])
 
         tent_new_speed = min(tent_new_speed, remaining_steps)
 
-        # accept new speed step
+        # After applying the limits, accept the new speed step.
         new_speed[W] = tent_new_speed
         steps[W].append(new_speed[W])
         max_speed[W] = tent_new_speed + max_change[W]
         remaining_steps -= new_speed[W]
 
+    # At this point the acceleration and deceleration phases have
+    # been constructed. What remains is to assemble the waveform
+    # and adjust it so its length corresponds exactly to the
+    # requested number of steps.
 
-    if insert_rest_accelerate:
-        W = ACC
-    else:
-        W = DEC
+    if insert_rest_accelerate is not None:
+        if insert_rest_accelerate:
+            # Adjust the waveform by inserting a rest
+            # into the acceleration phase.
+            W = ACC
+        else:
+            # Adjust the waveform by inserting a rest
+            # into the deceleration phase.
+            W = DEC
 
+        # Set the default maximum speed used for
+        # very small movements.
+        if W == ACC:
+            max_speed = min_steps
+        else:
+            max_speed = min_stop_steps
 
-    if W == ACC:
-        max_speed = min_steps
-    else:
-        max_speed = min_stop_steps
+        # If there are elements within the working array
+        # set the maximum speed the last defined speed.
+        if len(steps[W]) > 0:
+            max_speed = steps[W][-1]
 
-    if len(steps[W]) > 0:
-        max_speed = steps[W][-1]
+        # Find a suitable point within the step list in
+        # which to insert the rest
+        while remaining_steps >= min_steps:
+            ins_steps = min(remaining_steps, max_speed)
+            bisect.insort(steps[W], ins_steps)
+            remaining_steps -= ins_steps
 
-
-    while remaining_steps >= min_steps:
-        ins_steps = min(remaining_steps, max_speed)
-        bisect.insort(steps[W], ins_steps)
-        remaining_steps -= ins_steps
-
+    # Construct the complete waveform by joining the
+    # acceleration and deceleration phases back to back.
+    # Any residual steps are appended to the deceleration
+    # stage.
     steps_accelerate = steps[ACC]
     steps_decelerate = steps[DEC]
     steps_decelerate.reverse()
-
 
     if remaining_steps > 0:
        steps_decelerate.append(remaining_steps)
@@ -288,7 +351,9 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
               min_stop_steps=None,
               max_steps=STEPS_UPPER_LIMIT,
               insert_rest_accelerate=True):
-
+    """Generate alpha and beta angles for one FPU.
+       See the gen_wf() function for a description of the function parameters.
+    """
     if min_steps_alpha is None:
         min_steps_alpha = min_steps
     if min_stop_steps_alpha is None:
@@ -430,6 +495,7 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
     if mode == 'slow':
         warnings.warn("'slow' mode is obsolete, it does not match the waveform protocol, mapped to 'slowpar'.")
 
+    # Ensure the alpha and beta angles are arrays of the correct size and shape
     aangle = asarray(aangle)
     bangle = asarray(bangle)
 
@@ -441,6 +507,7 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
 
     assert(aangle.ndim <= 1)
 
+    # Generate a waveform for each FPU, i.
     slists = dict( (i, gen_slist(aangle[i], bangle[i], asteps_per_deg, bsteps_per_deg,
                                  mode=mode, units=units, max_change=max_change,
                                  min_steps=min_steps, max_steps=max_steps, **kwargs))
@@ -738,7 +805,11 @@ def path_to_steps(p, steps_per_degree, origin=0.0):
 
 
 if __name__ == '__main__':
-    print("""You can now enter
+    print("""Run this script with
+
+   python -i fpu_commands.py
+
+and use
 
    w = gen_wf( alpha_angles, beta_angles )
 
