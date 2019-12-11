@@ -165,7 +165,7 @@ def sign(x):
     elif x > 0:
         return 1
     else:
-        raise AssertionError("a NaN value was probably passed here")
+        raise AssertionError("sign(x): a NaN value was probably passed here")
 
 # ---------------------------------------------------------------------------
 def fpu_in_set(fpu_id, fpuset):
@@ -446,7 +446,7 @@ class UnprotectedGridDriver (object):
         """Moves all FPUs to datum position.
 
         If the program receives a SIGNINT, or Control-C is pressed, an
-        abortMotion command is automatically sended, aborting the search.
+        abortMotion command is automatically sent, aborting the search.
 
         The parameter selected_arm (DASEL_BOTH, DASEL_ALPHA, DASEL_BETA)
         controls which arms are moved.
@@ -559,7 +559,7 @@ class UnprotectedGridDriver (object):
                                                selected_arm=selected_arm)
 
             if was_aborted:
-                print("findDatumw as aborted by SIGINT, movement stopped")
+                print("findDatum was aborted by SIGINT, movement stopped")
                 raise MovementError("findDatum was aborted by SIGINT")
 
 
@@ -573,6 +573,8 @@ class UnprotectedGridDriver (object):
 
     # ........................................................................
     def pingFPUs(self, gs, fpuset=[]):
+        """Communicate with all FPUs and query their status
+        """
         return self._pingFPUs(gs, fpuset=fpuset)
 
 

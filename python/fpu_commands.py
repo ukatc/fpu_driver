@@ -10,8 +10,8 @@ from numpy import array, asarray, ones_like, ceil, floor, round
 """ Utility functions for using the fpu_driver module on the command line.
 """
 
-""" getGridStateSummary takes a gridstate (gs) and returns
-    a summary state defined by the lowest commin denominator of each
+""" getGridStateSummary takes a gridState (gs) and returns
+    a summary state defined by the lowest common denominator of each
     FPUs state."""
 
 
@@ -106,20 +106,20 @@ def step_list_slow(nsteps, min_steps=STEPS_LOWER_LIMIT,):
 
     return slist
 
-def step_list_fast(nsteps, max_change=1.2,
+def step_list_fast(nsteps, max_change=1.4,
                    min_steps=STEPS_LOWER_LIMIT, max_steps=STEPS_UPPER_LIMIT):
 
-    rest_steps = nsteps
+    remaining_steps = nsteps
     new_speed = min_steps
     steps_accelerate = []
     steps_decelerate = []
 
-    while rest_steps > new_speed:
+    while remaining_steps > new_speed:
         steps_accelerate.append(new_speed)
-        rest_steps = rest_steps - new_speed
-        if rest_steps > new_speed:
+        remaining_steps = remaining_steps - new_speed
+        if remaining_steps > new_speed:
             steps_decelerate.append(new_speed)
-            rest_steps = rest_steps - new_speed
+            remaining_steps = remaining_steps - new_speed
 
         old_speed = new_speed
         if int(new_speed * max_change) <= max_steps:
@@ -127,25 +127,25 @@ def step_list_fast(nsteps, max_change=1.2,
         else:
             new_speed = max_steps
 
-        if (new_speed > rest_steps) and (old_speed <= rest_steps):
-            new_speed = rest_steps
+        if (new_speed > remaining_steps) and (old_speed <= remaining_steps):
+            new_speed = remaining_steps
 
 
     # we handle the remaining steps by padding sections
     # with minimum speed to the start and end.
     # (more elegant solutions are possible).
 
-    while rest_steps > (2 * min_steps):
+    while remaining_steps > (2 * min_steps):
         steps_accelerate.insert(0, min_steps)
         steps_decelerate.insert(0, min_steps)
-        rest_steps = rest_steps - 2 * min_steps
+        remaining_steps = remaining_steps - 2 * min_steps
 
-    if rest_steps > min_steps:
+    if remaining_steps > min_steps:
         steps_accelerate.insert(0, min_steps)
-        rest_steps = rest_steps -  min_steps
+        remaining_steps = remaining_steps -  min_steps
 
     steps_decelerate.reverse()
-    steps_decelerate.append(rest_steps)
+    steps_decelerate.append(remaining_steps)
 
     steps_accelerate.extend(steps_decelerate)
     return steps_accelerate
@@ -158,7 +158,7 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
                      max_steps=STEPS_UPPER_LIMIT,
                      insert_rest_accelerate=True):
 
-    rest_steps = nsteps
+    remaining_steps = nsteps
     steps_accelerate = []
     steps_decelerate = []
 
@@ -172,7 +172,7 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
     ACC = 0
     DEC = 1
     while True:
-        if rest_steps < min(min_steps, min_stop_steps):
+        if remaining_steps < min(min_steps, min_stop_steps):
             break
 
         if len(steps[ACC]) == 0:
@@ -190,7 +190,7 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
 
 
 
-        if  new_speed[W] > rest_steps:
+        if  new_speed[W] > remaining_steps:
             # we can't accelerate more
             break
 
@@ -210,16 +210,16 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
         # if speed exhausts available distance, cap speed
         # to the smaller of rest distance, or counter-acting
         # change
-        if (tent_new_speed + max_speed[X]  > rest_steps) :
+        if (tent_new_speed + max_speed[X]  > remaining_steps) :
             tent_new_speed = min(tent_new_speed, max_speed[X])
 
-        tent_new_speed = min(tent_new_speed, rest_steps)
+        tent_new_speed = min(tent_new_speed, remaining_steps)
 
         # accept new speed step
         new_speed[W] = tent_new_speed
         steps[W].append(new_speed[W])
         max_speed[W] = tent_new_speed + max_change[W]
-        rest_steps -= new_speed[W]
+        remaining_steps -= new_speed[W]
 
 
     if insert_rest_accelerate:
@@ -237,18 +237,18 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
         max_speed = steps[W][-1]
 
 
-    while rest_steps >= min_steps:
-        ins_steps = min(rest_steps, max_speed)
+    while remaining_steps >= min_steps:
+        ins_steps = min(remaining_steps, max_speed)
         bisect.insort(steps[W], ins_steps)
-        rest_steps -= ins_steps
+        remaining_steps -= ins_steps
 
     steps_accelerate = steps[ACC]
     steps_decelerate = steps[DEC]
     steps_decelerate.reverse()
 
 
-    if rest_steps > 0:
-       steps_decelerate.append(rest_steps)
+    if remaining_steps > 0:
+       steps_decelerate.append(remaining_steps)
 
     steps_accelerate.extend(steps_decelerate)
 
@@ -281,12 +281,13 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
               min_steps_beta=None,
               min_stop_steps_beta=None,
               max_steps_beta=None,
-              max_change=1.2,
+              max_change=1.4,
               max_acceleration=MOTOR_MAX_ACCELERATION,
               max_deceleration=MOTOR_MAX_DECELERATION,
               min_steps=STEPS_LOWER_LIMIT,
               min_stop_steps=None,
-              max_steps=STEPS_UPPER_LIMIT):
+              max_steps=STEPS_UPPER_LIMIT,
+              insert_rest_accelerate=True):
 
     if min_steps_alpha is None:
         min_steps_alpha = min_steps
@@ -368,14 +369,16 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
                                  max_deceleration=max_deceleration_alpha,
                                  min_steps=min_steps_alpha,
                                  min_stop_steps=min_stop_steps_alpha,
-                                 max_steps=max_steps_alpha)
+                                 max_steps=max_steps_alpha,
+                                 insert_rest_accelerate=insert_rest_accelerate)
 
         blist = step_list_limacc(bsteps,
                                  max_acceleration=max_acceleration_beta,
                                  max_deceleration=max_deceleration_beta,
                                  min_steps=min_steps_beta,
                                  min_stop_steps=min_stop_steps_beta,
-                                 max_steps=max_steps_beta)
+                                 max_steps=max_steps_beta,
+                                 insert_rest_accelerate=insert_rest_accelerate)
 
         max_len = max(len(alist), len(blist))
         alist = step_list_pad(alist, max_len)
@@ -396,7 +399,7 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
            bsteps_per_deg=StepsPerDegreeBeta,
            units='degree',
            mode='limacc',
-           max_change=1.2,
+           max_change=1.4,
            max_acceleration=MOTOR_MAX_ACCELERATION,
            max_deceleration=MOTOR_MAX_DECELERATION,
            min_steps=STEPS_LOWER_LIMIT,
@@ -405,12 +408,14 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
     """
     Generate a waveform which moves the alpha arm by an angle of
     adegree and the beta arm by bdegree. asteps_per_deg and bsteps_er_deg
-    are approximate calibration factors. The mode parameter can be
-    'fast' to generate a movement which is as quick as possible, or
-    'slow' or'slowpar' to generate a slow movement where alpha and beta
-    are moved in parallel. (The former 'slow' mode is obsolete,
-    it does not match the protocol and capabilities of the current
-    firmware).
+    are approximate calibration factors. The mode parameter can be:
+
+    - 'limacc' to generate a movement with constant acceleration/deceleration;
+    - 'fast' to generate a movement with an exponential growth in speed; or
+    - 'slow' or'slowpar' to generate a slow movement where alpha and beta
+       are moved in parallel. (The former 'slow' mode is obsolete,
+       it does not match the protocol and capabilities of the current
+       firmware).
 
     If adegree or bdegree are arrays, extend then if possible to a
     common shape, and return a list of waveforms for a number of
@@ -730,3 +735,13 @@ def path_to_steps(p, steps_per_degree, origin=0.0):
     sum_steps = round((array(p,dtype=float) * RADIAN_TO_DEGREE - origin)
                       * steps_per_degree).astype(int)
     return sum_steps[1:] - sum_steps[:-1], sum_steps
+
+
+if __name__ == '__main__':
+    print("""You can now enter
+
+   w = gen_wf( alpha_angles, beta_angles )
+
+to test the waveform generation functions.
+   """)
+
