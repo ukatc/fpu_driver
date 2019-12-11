@@ -245,7 +245,10 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
                 tent_new_speed = min_steps
             else:
                 # Stopping (working backwards on deceleration phase)
-                tent_new_speed = min_stop_steps
+                if insert_rest_accelerate is not None:
+                    tent_new_speed = min_stop_steps
+                else:
+                    tent_new_speed = min_stop_steps + max_change[W]
         else:
             # Attempt to accelerate or decelerate
             tent_new_speed = new_speed[W] + max_change[W]
@@ -304,14 +307,22 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
 
     # Construct the complete waveform by joining the
     # acceleration and deceleration phases back to back.
-    # Any residual steps are appended to the deceleration
-    # stage.
     steps_accelerate = steps[ACC]
     steps_decelerate = steps[DEC]
     steps_decelerate.reverse()
 
+    # If there are any residual steps remaining,
+    # append them to the end of the deceleration
+    # phase as a constant drift at minimum speed.
+    # The last element is allowed to contain an
+    # element smaller than the minimum speed.
     if remaining_steps > 0:
-       steps_decelerate.append(remaining_steps)
+       while remaining_steps >= min_steps:
+           add_steps = min_stop_steps
+           steps_decelerate.append(add_steps)
+           remaining_steps -= add_steps
+       if remaining_steps > 0:
+           steps_decelerate.append(remaining_steps)
 
     steps_accelerate.extend(steps_decelerate)
 
