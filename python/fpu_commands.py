@@ -94,7 +94,7 @@ STEPS_UPPER_LIMIT=int(ceil(MOTOR_MAX_STEP_FREQUENCY * WAVEFORM_SEGMENT_LENGTH_MS
 
 def step_list_slow(nsteps, min_steps=STEPS_LOWER_LIMIT,):
 
-    """Generate alpha and beta angles in slow mode.
+    """Generate alpha or beta angles in slow mode.
        This function is almost never used.
     """
 
@@ -109,12 +109,20 @@ def step_list_slow(nsteps, min_steps=STEPS_LOWER_LIMIT,):
     if delta_end > 0:
         slist.append(delta_end)
 
+    # Check the step list achieves the target
+    (steptotal, maxchange) = step_list_count(slist)
+    if ( steptotal != nsteps ):
+        strg = "step_list_slow: Failed to achieve target: %d steps planned, %s steps actual." % \
+               (nsteps, steptotal)
+        strg += "\n\tPlease raise a bug ticket."
+        raise ValueError(strg)
+
     return slist
 
 def step_list_fast(nsteps, max_change=1.4,
                    min_steps=STEPS_LOWER_LIMIT, max_steps=STEPS_UPPER_LIMIT):
 
-    """Generate alpha and beta angles in fast mode.
+    """Generate alpha or beta angles in fast mode.
        This function implements an old waveform generation mode. Whether it
        is faster than linacc mode depends on the values for the max_change
        and max_acceleration parameters.
@@ -159,6 +167,15 @@ def step_list_fast(nsteps, max_change=1.4,
     steps_decelerate.append(remaining_steps)
 
     steps_accelerate.extend(steps_decelerate)
+
+    # Check the step list achieves the target
+    (steptotal, maxchange) = step_list_count(steps_accelerate)
+    if ( steptotal != nsteps ):
+        strg = "step_list_fast: Failed to achieve target: %d steps planned, %s steps actual." % \
+               (nsteps, steptotal)
+        strg += "\n\tPlease raise a bug ticket."
+        raise ValueError(strg)
+
     return steps_accelerate
 
 
@@ -169,7 +186,7 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
                      max_steps=STEPS_UPPER_LIMIT,
                      insert_rest_accelerate=True):
 
-    """Generate alpha and beta angles in limacc (constant acceleration) mode.
+    """Generate alpha or beta angles in limacc (constant acceleration) mode.
 
        The function constructs an acceleration waveform and a deceleration
        waveform and joins them back to back to make the complete profile.
@@ -231,13 +248,11 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
             W = DEC
             X = ACC
 
-
-
         if  new_speed[W] > remaining_steps:
-            # we can't accelerate more
+            # We can't accelerate more.
             break
 
-        # compute new speed from acceleration limit
+        # compute new speed from acceleration limit.
         # (tent_new_speed means "tentative new speed")
         if len(steps[W]) == 0:
             if W == ACC:
@@ -250,7 +265,7 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
                 else:
                     tent_new_speed = min_stop_steps + max_change[W]
         else:
-            # Attempt to accelerate or decelerate
+            # Attempt to accelerate or decelerate.
             tent_new_speed = new_speed[W] + max_change[W]
 
         # Check for max speed limit
@@ -276,6 +291,9 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
     # and adjust it so its length corresponds exactly to the
     # requested number of steps.
 
+    # If insert_rest_accelerate=True, insert extra steps into acceleration phase
+    # If insert_rest_accelerate=False, insert extra steps into deceleration phase
+    # If insert_rest_accelerate=None, add extra steps at end of waveform
     if insert_rest_accelerate is not None:
         if insert_rest_accelerate:
             # Adjust the waveform by inserting a rest
@@ -326,8 +344,29 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
 
     steps_accelerate.extend(steps_decelerate)
 
+    # Check the step list achieves the target
+    (steptotal, maxchange) = step_list_count(steps_accelerate)
+    if ( steptotal != nsteps ):
+        strg = "step_list_limacc: Failed to achieve target: %d steps planned, %s steps actual." % \
+               (nsteps, steptotal)
+        strg += "\n\tPlease raise a bug ticket."
+        raise ValueError(strg)
+
     return steps_accelerate
 
+
+def step_list_count(slist):
+    # Count the number of steps moved by a particular step list
+    # and return the count plus the maximum change between elements.
+    nsteps = 0
+    maxchange = 0
+    laststep = 0
+    for step in slist:
+        nsteps += step
+        if abs(step-laststep) > maxchange:
+            maxchange = abs(step-laststep)
+        laststep = step
+    return (nsteps, maxchange)
 
 def step_list_pad(slist, target_len):
     slist = list(slist)
