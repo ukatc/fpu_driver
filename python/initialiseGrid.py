@@ -10,6 +10,7 @@ from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE, REQD_NEGATIVE, REQD_POSITIVE, \
     DATUM_TIMEOUT_DISABLE
 
+import wflib
 from fpu_commands import *
 
 NUM_FPUS = int(os.environ.get("NUM_FPUS","10"))
