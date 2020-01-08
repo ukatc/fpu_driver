@@ -10,7 +10,10 @@ from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE, REQD_NEGATIVE, REQD_POSITIVE, \
     DATUM_TIMEOUT_DISABLE
 
-import wflib
+try:
+   import wflib
+except:
+   wflib = None
 from fpu_commands import *
 
 NUM_FPUS = int(os.environ.get("NUM_FPUS","10"))
@@ -71,6 +74,9 @@ def initialize_FPU(args):
 if __name__ == '__main__':
 
     print("module version is:", FpuGridDriver.__version__, ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
+
+    if wflib is None:
+       print("***wflib.load_paths function is not available until the mocpath module is installed.") 
 
     args = parse_args()
 

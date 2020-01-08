@@ -184,7 +184,7 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
                      min_steps=STEPS_LOWER_LIMIT,
                      min_stop_steps=STEPS_LOWER_LIMIT,
                      max_steps=STEPS_UPPER_LIMIT,
-                     insert_rest_accelerate=True):
+                     insert_rest_accelerate=None):
 
     """Generate alpha or beta angles in limacc (constant acceleration) mode.
 
@@ -223,7 +223,7 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
 
     # Construct the major part of the waveform
     while True:
-        if remaining_steps < min(min_steps, min_stop_steps):
+        if remaining_steps <= min_stop_steps:
             # The waveform brings the motor within one element of its target.
             # No further acceleration or deceleration can be added.
             break
@@ -272,13 +272,12 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
         if tent_new_speed > max_steps:
             tent_new_speed = max_steps
 
-        # If the speed exhausts available distance, cap the
-        # speed to the smaller of rest distance, or
-        # counter-acting change.
-        if (tent_new_speed + max_speed[X]  > remaining_steps) :
+        # If the speed exhausts available distance (to within the minimum step count), cap the
+        # speed to the smaller of remaining the distance, or counter-acting change.
+        if (tent_new_speed + max_speed[X] > remaining_steps - min_steps) :
             tent_new_speed = min(tent_new_speed, max_speed[X])
 
-        tent_new_speed = min(tent_new_speed, remaining_steps)
+        tent_new_speed = min(tent_new_speed, remaining_steps - min_steps)
 
         # After applying the limits, accept the new speed step.
         new_speed[W] = tent_new_speed
@@ -329,11 +328,10 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
     steps_decelerate = steps[DEC]
     steps_decelerate.reverse()
 
-    # If there are any residual steps remaining,
-    # append them to the end of the deceleration
-    # phase as a constant drift at minimum speed.
-    # The last element is allowed to contain an
-    # element smaller than the minimum speed.
+    # If there are any residual steps remaining, append them to the end
+    # of the deceleration phase as a constant drift at minimum speed.
+    # The last element is allowed to contain an element smaller than
+    # the minimum speed.
     if remaining_steps > 0:
        while remaining_steps >= min_steps:
            add_steps = min_stop_steps
@@ -400,7 +398,7 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
               min_steps=STEPS_LOWER_LIMIT,
               min_stop_steps=None,
               max_steps=STEPS_UPPER_LIMIT,
-              insert_rest_accelerate=True):
+              insert_rest_accelerate=None):
     """Generate alpha and beta angles for one FPU.
        See the gen_wf() function for a description of the function parameters.
     """

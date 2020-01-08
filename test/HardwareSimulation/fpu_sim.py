@@ -138,8 +138,10 @@ class CrashException(Exception):
     pass
 
 class FPU:
+    fpu_count = 0 # Class variable which counts the number of FPUs
 
     def __init__(self, fpu_id, opts):
+        FPU.fpu_count += 1
         self.opts = opts
         self.initialize(fpu_id)
         print("FPU %i initial offset: (%f, %f)" % (fpu_id, opts.alpha_start, opts.beta_start))
@@ -150,8 +152,10 @@ class FPU:
             with open(fname,"r") as f:
                 self.serial_number = f.readline().strip("\n")
                 print("FPU %i: serial number set to %r" % (self.fpu_id, self.serial_number))
-        except:
-            self.serial_number = "UNKWN"
+        except Exception as e:
+            self.serial_number = "UNKWN" + str(FPU.fpu_count)
+            print("***Failed to read %s (%s)" % (fname,str(e)))
+            print("***FPU %i: serial number defaults to %r" % (self.fpu_id, self.serial_number))
 
     def initialize(self, fpu_id):
         self.fpu_id = fpu_id
