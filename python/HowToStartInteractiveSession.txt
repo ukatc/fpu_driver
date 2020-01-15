@@ -1,0 +1,5 @@
+# Connecting to the FPU verification rig with 3 FPUs
+python -i initialiseGrid.py -N 3 --gateway_address 192.168.0.10
+
+# Connecting to the FPU simulator with 3 FPUs (simulator must be started first)
+python -i initialiseGrid.py -N 3 --mockup

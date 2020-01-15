@@ -1,0 +1,2 @@
+# Starting the simulator for 3 FPUs [and verbose mode]
+python mock_gateway.py -N 3 [-v 2]

@@ -64,6 +64,7 @@ namespace mpifps
 namespace ethercanif
 {
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::initializeInterface()
 {
     switch (gateway.getInterfaceState())
@@ -89,6 +90,7 @@ E_EtherCANErrCode AsyncInterface::initializeInterface()
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::deInitializeInterface()
 {
     switch (gateway.getInterfaceState())
@@ -118,6 +120,7 @@ E_EtherCANErrCode AsyncInterface::deInitializeInterface()
     return gateway.deInitialize();
 }
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::connect(const int ngateways, const t_gateway_address gateway_addresses[])
 {
     switch (gateway.getInterfaceState())
@@ -163,6 +166,7 @@ E_EtherCANErrCode AsyncInterface::connect(const int ngateways, const t_gateway_a
     return err_code;
 }
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::disconnect()
 {
 
@@ -206,6 +210,7 @@ E_EtherCANErrCode AsyncInterface::disconnect()
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::initializeGridAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         t_fpuset const &fpuset)
@@ -231,6 +236,8 @@ E_EtherCANErrCode AsyncInterface::initializeGridAsync(t_grid_state& grid_state,
 }
 #pragma GCC diagnostic pop
 
+
+/* ---------------------------------------------------------------------------*/
 void AsyncInterface::getStateCount(const t_grid_state& grid_state, t_fpuset const * const pfpuset, t_counts &counts)
 {
 
@@ -253,6 +260,7 @@ void AsyncInterface::getStateCount(const t_grid_state& grid_state, t_fpuset cons
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         t_fpuset const &fpuset,
@@ -368,6 +376,8 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
 
 }
 
+
+/* ---------------------------------------------------------------------------*/
 void AsyncInterface::getFPUsetOpt(t_fpuset const * const fpuset_opt, t_fpuset &fpuset) const
 {
     if (fpuset_opt != nullptr)
@@ -383,6 +393,8 @@ void AsyncInterface::getFPUsetOpt(t_fpuset const * const fpuset_opt, t_fpuset &f
     }
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         E_DATUM_SEARCH_DIRECTION * p_direction_flags,
@@ -411,8 +423,6 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
                         ethercanif::get_realtime());
             return DE_INVALID_PAR_VALUE;
         }
-
-
 
 
         const char * as_string;
@@ -518,7 +528,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
         }
         LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: findDatum(): direction selection for FPU %i =%s\n",
                     ethercanif::get_realtime(), i, as_string);
-    }
+    } // Next FPU
 
 
     E_EtherCANErrCode ecode = assureMinFirmwareVersion(2, 0, 0, "findDatum()", fpuset, grid_state);
@@ -627,7 +637,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
 	{
 	    all_fpus_locked = false;
 	}
-    }
+    } // Next FPU
 
     if(all_fpus_locked)
     {
@@ -678,7 +688,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
                 return DE_PROTECTION_ERROR;
             }
 
-        }
+        } // Next FPU
     }
 
     // All fpus which are allowed to move, are moved automatically
@@ -710,7 +720,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
             gateway.sendCommand(i, cmd);
 
         }
-    }
+    } // Next FPU
 
 
     // It is important to compare for inequality here, because
@@ -740,6 +750,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
 }
 
 
+/* ---------------------------------------------------------------------------*/
 // helper function which limits amount of logging during wait for
 // command termination
 bool p_repeat_log(unsigned int &log_repeat_count)
@@ -769,6 +780,8 @@ bool p_repeat_log(unsigned int &log_repeat_count)
 
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         double &max_wait_time, bool &finished, t_fpuset const * const fpuset_opt)
@@ -856,7 +869,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
             }
         }
 
-    }
+    } // Next FPU
 
     // we do this check in a new loop with the goal to give collision reports precedence
     for (int i=0; i < config.num_fpus; i++)
@@ -928,7 +941,6 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
     }
 
 
-
     if (finished)
     {
         LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: findDatum finished successfully\n",
@@ -962,6 +974,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
 #pragma GCC diagnostic ignored "-Wstrict-overflow"
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
         const int MIN_STEPS,
         const int MAX_STEPS,
@@ -1074,7 +1087,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
                 }
 
 
-
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
                 const int increase_limit = int(ceil(xa_small * MAX_INCREASE_FACTOR));
@@ -1120,7 +1132,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
 
                 xa_last = xa;
                 x_last_sign = x_sign;
-            }
+            } // Next waveform element
+
             if (xa_last > MAX_START_STEPS)
             {
                 // last step count must be minimum or smaller
@@ -1130,14 +1143,16 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
                             fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
                 return DE_INVALID_WAVEFORM_TAIL;
             }
-        }
-    }
+        } // Next channel (alpha, beta)
+    } // Next FPU
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface::validateWaveforms() waveform OK\n",
                 ethercanif::get_realtime());
 
     return DE_OK;
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
         const int MIN_STEPS,
         const int MAX_STEPS,
@@ -1242,7 +1257,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
                 }
 
 
-
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
                 const int increase_limit = int(ceil(xa_small * MAX_INCREASE_FACTOR));
@@ -1295,7 +1309,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
 
                 xa_last = xa;
                 x_last_sign = x_sign;
-            }
+            } // Next waveform element
+
             if (xa_last > MAX_START_STEPS)
             {
                 // last step count must be minimum or smaller
@@ -1305,8 +1320,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
                             fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
                 return DE_INVALID_WAVEFORM_TAIL;
             }
-        }
-    }
+        } // Next channel (alpha, beta)
+    } // Next FPU
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface::validateWaveforms() waveform OK\n",
                 ethercanif::get_realtime());
 
@@ -1314,6 +1329,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
         const int MIN_STEPS,
         const int MAX_STEPS,
@@ -1418,7 +1434,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
                 }
 
 
-
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
                 const int increase_limit = int(ceil(xa_last * MAX_INCREASE_FACTOR));
@@ -1475,7 +1490,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
 
                 xa_last = xa;
                 x_last_sign = x_sign;
-            }
+            } // Next waveform element
+
             if (xa_last > MAX_START_STEPS)
             {
                 // last step count must be minimum or smaller
@@ -1485,8 +1501,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
                             fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
                 return DE_INVALID_WAVEFORM_TAIL;
             }
-        }
-    }
+        } // Next channel (alpha, beta)
+    } // Next FPU
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface::validateWaveforms() waveform OK\n",
                 ethercanif::get_realtime());
 
@@ -1494,6 +1510,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
         const int MIN_STEPS,
         const int MAX_STEPS,
@@ -1605,7 +1622,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
                 }
 
 
-
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
                 const int increase_limit = int(ceil(xa_small * MAX_INCREASE_FACTOR));
@@ -1656,7 +1672,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
 
                 xa_last = xa;
                 x_last_sign = x_sign;
-            }
+            } // Next waveform element
+
             if (xa_last > MAX_START_STEPS)
             {
                 // last step count must be minimum or smaller
@@ -1666,14 +1683,16 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
                             fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
                 return DE_INVALID_WAVEFORM_TAIL;
             }
-        }
-    }
+        } // Next channel (alpha, beta)
+    } // Next FPU
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface::validateWaveforms() waveform OK\n",
                 ethercanif::get_realtime());
 
     return DE_OK;
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
         const int MIN_STEPS,
         const int MAX_STEPS,
@@ -1785,7 +1804,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
                 }
 
 
-
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
                 const int increase_limit = int(ceil(xa_small + MAX_STEP_DIFFERENCE));
@@ -1836,7 +1854,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
 
                 xa_last = xa;
                 x_last_sign = x_sign;
-            }
+            } // Next waveform element
+
             if (xa_last > MAX_START_STEPS)
             {
                 // last step count must be minimum or smaller
@@ -1846,8 +1865,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
                             fpu_id, chan_idx == 0 ? "alpha" : "beta", num_steps -1);
                 return DE_INVALID_WAVEFORM_TAIL;
             }
-        }
-    }
+        } // Next channel (alpha, beta)
+    } // Next FPU
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface::validateWaveforms() waveform OK\n",
                 ethercanif::get_realtime());
 
@@ -1858,6 +1877,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
 #pragma GCC diagnostic pop
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         const t_wtable& waveforms,
@@ -1938,7 +1958,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
         }
 
-    }
+    } // Next FPU
 
     bool some_fpus_locked=false;
     const int num_loading =  waveforms.size();
@@ -1972,13 +1992,12 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
 	    some_fpus_locked = true;
 	}
-    }
+    } // Next FPU
 
     if (some_fpus_locked)
     {
 	return DE_FPUS_LOCKED;
     }
-
 
 
     {
@@ -2158,7 +2177,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
                 gateway.sendCommand(fpu_id, cmd);
             }
-        }
+        } // Next FPU
 
         /* Apparently, at least for some firmware version 1, we cannot
         send more than one configMotion command at a time,
@@ -2247,7 +2266,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                 fpu_id,
                                 resend_downcount);
                 }
-            }
+            } // Next FPU
 	    if (max_retries_exceeded)
 	    {
 		return DE_MAX_RETRIES_EXCEEDED;
@@ -2265,7 +2284,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
         }
         step_index++;
-    }
+    } // Next step index
 
     if (grid_state.count_timeout != old_count_timeout)
     {
@@ -2299,7 +2318,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     }
 
 
-
     for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
     {
         int fpu_id = waveforms[fpu_index].fpu_id;
@@ -2327,6 +2345,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     return DE_OK;
 }
 
+
+/* ---------------------------------------------------------------------------*/
 #if 0
 // TODO: this method is currently implemented in Python, so that input
 // can be passed through the software protection layer.
@@ -2347,6 +2367,8 @@ E_EtherCANErrCode AsyncInterface::configPathsAsync(t_grid_state& grid_state,
 }
 #endif
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         t_fpuset const &fpuset,
@@ -2443,7 +2465,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
 			ethercanif::get_realtime(), i);
 	    num_locked++;
 	}
-    }
+    } // Next FPU
 
 
     if (num_moving == 0)
@@ -2526,6 +2548,8 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
 
 }
 
+
+/* ---------------------------------------------------------------------------*/
 // counts the number of FPUs which are moving or will move with the given fpuset mask
 int AsyncInterface::countMoving(const t_grid_state &grid_state, t_fpuset const &fpuset) const
 {
@@ -2566,6 +2590,8 @@ int AsyncInterface::countMoving(const t_grid_state &grid_state, t_fpuset const &
 }
 
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         double &max_wait_time, bool &finished, t_fpuset const &fpuset)
@@ -2670,7 +2696,7 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
                 return DE_MOVEMENT_ABORTED;
             }
 
-        }
+        } // Next FPU
     }
 
     // It is important to compare for inequality here, because
@@ -2727,8 +2753,7 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
 }
 
 
-
-
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary, t_fpuset const &fpuset)
 {
@@ -2883,7 +2908,6 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
     }
 
 
-
     LOG_CONTROL(LOG_INFO, "%18.6f : repeatMotion(): command successfully sent OK\n",
                 ethercanif::get_realtime());
 
@@ -2894,6 +2918,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary, t_fpuset const &fpuset)
 {
@@ -3004,7 +3029,6 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
     }
 
 
-
     // wait until all generated messages have been responded to
     // or have timed out. Note this does not starts a movement,
     // it only reverses the waveform tables logically.
@@ -3046,7 +3070,6 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
     }
 
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : reverseMotion: command successfully sent OK\n",
@@ -3057,8 +3080,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
 }
 
 
-
-
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mutex,
         t_grid_state& grid_state,
         E_GridState& state_summary,
@@ -3216,6 +3238,7 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_state,
         E_GridState& state_summary)
 {
@@ -3315,11 +3338,10 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-
-
 
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
@@ -3410,6 +3432,7 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary, t_fpuset const &fpuset)
 {
@@ -3509,6 +3532,7 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
@@ -3527,7 +3551,6 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
-
 
     {
         // make sure no FPU is moving or finding datum
@@ -3609,7 +3632,6 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
     }
 
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : enableBetaCollisionProtection(): command successfully sent to grid\n",
@@ -3617,6 +3639,8 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
     return DE_OK;
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id,
         E_REQUEST_DIRECTION request_dir,
         t_grid_state& grid_state,
@@ -3721,7 +3745,6 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id,
     }
 
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : freeBetaCollision(): command successfully sent to FPU %i\n",
@@ -3731,6 +3754,7 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id,
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_GridState AsyncInterface::getGridState(t_grid_state& out_state) const
 {
     E_GridState state_summary = gateway.getGridState(out_state);
@@ -3738,6 +3762,8 @@ E_GridState AsyncInterface::getGridState(t_grid_state& out_state) const
     return state_summary;
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_GridState AsyncInterface::waitForState(E_WaitTarget target,
         t_grid_state& out_detailed_state, double &max_wait_time, bool &cancelled) const
 {
@@ -3745,7 +3771,7 @@ E_GridState AsyncInterface::waitForState(E_WaitTarget target,
 }
 
 
-
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
         t_grid_state& grid_state,
         E_GridState& state_summary,
@@ -3858,7 +3884,6 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
     }
 
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : setUStepLevel(): command successfully sent, ustep_level set to %i\n",
@@ -3868,6 +3893,8 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
 
 }
 
+
+/* ---------------------------------------------------------------------------*/
 const char * str_interface_state(const E_InterfaceState interface_state)
 {
     switch (interface_state)
@@ -3890,6 +3917,8 @@ const char * str_interface_state(const E_InterfaceState interface_state)
     return "undefined";
 }
 
+
+/* ---------------------------------------------------------------------------*/
 const char * str_fpu_state(const E_FPU_STATE state)
 {
 
@@ -3938,6 +3967,8 @@ const char * str_fpu_state(const E_FPU_STATE state)
     return "undefined";
 }
 
+
+/* ---------------------------------------------------------------------------*/
 void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_state) const
 {
     char log_buffer[1024];
@@ -4026,8 +4057,6 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_
                 }
             }
 
-
-
             LOG_CONTROL(LOG_GRIDSTATE, "%18.6f : %s \n",
                         cur_time,
                         log_buffer);
@@ -4050,6 +4079,7 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
         t_grid_state& grid_state,
         E_GridState& state_summary,
@@ -4118,7 +4148,6 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
         // to send all the commands.
         num_pending = (grid_state.count_pending + grid_state.num_queued);
 
-
     }
 
     if (grid_state.interface_state != DS_CONNECTED)
@@ -4143,8 +4172,6 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
     }
 
 
-
-
     // log result if in debug mode
     if (config.logLevel >= LOG_DEBUG)
     {
@@ -4164,6 +4191,8 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
 
 }
 
+
+/* ---------------------------------------------------------------------------*/
 // get minimum firmware version value, using cache when valid
 E_EtherCANErrCode AsyncInterface::assureMinFirmwareVersion(const int req_fw_major,
         const int req_fw_minor,
@@ -4208,6 +4237,8 @@ E_EtherCANErrCode AsyncInterface::assureMinFirmwareVersion(const int req_fw_majo
     return DE_OK;
 }
 
+
+/* ---------------------------------------------------------------------------*/
 // get minimum firmware version value, using cache when valid, otherwise query FPUs
 E_EtherCANErrCode AsyncInterface::getMinFirmwareVersionAsync(t_fpuset const &fpuset,
         uint8_t (&min_firmware_version)[3],
@@ -4253,6 +4284,8 @@ E_EtherCANErrCode AsyncInterface::getMinFirmwareVersionAsync(t_fpuset const &fpu
     return DE_OK;
 }
 
+
+/* ---------------------------------------------------------------------------*/
 void AsyncInterface::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
         bool &was_retrieved,
         uint8_t (&min_firmware_version)[3],
@@ -4289,16 +4322,16 @@ void AsyncInterface::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
             min_firmware_fpu = i;
             was_retrieved = true;
         }
-    }
+    } // Next FPU
 
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         t_fpuset const &fpuset)
 {
-
-
 
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
@@ -4312,7 +4345,6 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
-
 
 
     unique_ptr<GetFirmwareVersionCommand> can_command;
@@ -4385,7 +4417,6 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
     }
 
 
-
     // log result if in debug mode
     if (config.logLevel >= LOG_INFO)
     {
@@ -4402,8 +4433,6 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
 
     LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion(): values were retrieved successfully.\n",
                 ethercanif::get_realtime());
-
-
 
 
     // copy data from grid_state structure to internal cache.  This is
@@ -4429,6 +4458,8 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
 
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_state,
         E_GridState& state_summary, t_fpuset const &fpuset)
 {
@@ -4455,8 +4486,6 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
     {
         return ecode;
     }
-
-
 
 
     int num_skipped = 0;
@@ -4535,7 +4564,6 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
     }
 
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : readSerialNumbers(): retrieved serial numbers\n",
@@ -4554,6 +4582,7 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
 }
 
 
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char serial_number[],
         t_grid_state& grid_state,
         E_GridState& state_summary)
@@ -4711,7 +4740,6 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
     }
 
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : writeSerialNumber(): FPU %i: serial number '%s' successfully written to FPU\n",
@@ -4720,6 +4748,8 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
     return DE_OK;
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
         t_grid_state& grid_state,
         E_GridState& state_summary)
@@ -4833,7 +4863,7 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
 
 
 
-
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long beta_steps,
 							t_grid_state& grid_state,
 							E_GridState& state_summary, t_fpuset const &fpuset)
@@ -4963,7 +4993,7 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long 
 }
 
 
-
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& grid_state,
         E_GridState& state_summary)
 {
@@ -5067,6 +5097,8 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
     return DE_OK;
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
         t_grid_state& grid_state,
         E_GridState& state_summary)
@@ -5175,6 +5207,8 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id, E_REQUES
 }
 
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
         int maxsteps,
         t_grid_state& grid_state,
@@ -5282,7 +5316,6 @@ E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
     }
 
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : setStepsPerSegment(): command successfully sent, steps per segment set to %i .. %i\n",
@@ -5292,6 +5325,8 @@ E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
 
 }
 
+
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
         long ticks,
         t_grid_state& grid_state,
@@ -5399,7 +5434,6 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
     }
 
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : setTicksPerSegment(): command successfully sent, ticks per segment set to %lu",
@@ -5410,7 +5444,7 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
 }
 
 
-
+/* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         t_fpuset const &fpuset)
@@ -5526,7 +5560,6 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
     }
 
 
-
     // log result if in debug mode
     if (config.logLevel >= LOG_DEBUG)
     {
@@ -5553,7 +5586,6 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
     return DE_OK;
 
 }
-
 
 
 }

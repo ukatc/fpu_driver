@@ -75,7 +75,7 @@ using boost::python::dict;
 using boost::python::tuple;
 using boost::python::str;
 
-
+/* ---------------------------------------------------------------------------*/
 std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
 {
     switch(s)
@@ -120,6 +120,8 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
     return out;
 }
 
+
+/* ---------------------------------------------------------------------------*/
 std::ostringstream& operator<<(std::ostringstream &out, const E_InterfaceState &s)
 {
     switch(s)
@@ -142,6 +144,8 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_InterfaceState &
 
 
 
+
+/* ---------------------------------------------------------------------------*/
 class WrapFPUState : public t_fpu_state
 {
 
@@ -294,6 +298,8 @@ public:
 
 };
 
+
+/* ---------------------------------------------------------------------------*/
 class WrapGridState : public t_grid_state
 {
 public:
@@ -380,12 +386,16 @@ public:
 
 };
 
+
+/* ---------------------------------------------------------------------------*/
 E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
 {
     return getGridStateSummary(grid_state);
 }
 
 
+
+/* ---------------------------------------------------------------------------*/
 class EtherCANException : public std::exception
 {
 public:
@@ -413,6 +423,8 @@ private:
     mpifps::E_EtherCANErrCode _errcode;
 };
 
+
+/* ---------------------------------------------------------------------------*/
 void translate_interface_error(EtherCANException const& e)
 {
     // Use the Python 'C' API to set up an exception object
@@ -516,6 +528,8 @@ void translate_interface_error(EtherCANException const& e)
     }
 }
 
+
+/* ---------------------------------------------------------------------------*/
 void checkInterfaceError(E_EtherCANErrCode ecode)
 {
     switch(ecode)
@@ -793,6 +807,8 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
     }
 }
 
+
+/* ---------------------------------------------------------------------------*/
 class WrapGatewayAddress : public t_gateway_address
 {
 public:
@@ -823,6 +839,8 @@ private:
 
 };
 
+
+/* ---------------------------------------------------------------------------*/
 class WrapEtherCANInterface : public EtherCANInterface
 {
 private:
@@ -1375,6 +1393,8 @@ public:
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 
+
+/* ---------------------------------------------------------------------------*/
 PyObject* EtherCANExceptionClass(const char* name, PyObject* baseTypeObj = PyExc_Exception)
 {
     using std::string;
@@ -1629,7 +1649,6 @@ BOOST_PYTHON_MODULE(ethercanif)
     .export_values();
 
 
-
     // direction of the current or last actually recorded movement of each FPU
     enum_<E_MOVEMENT_DIRECTION>("E_MOVEMENT_DIRECTION")
     .value("DIRST_UNKNOWN", DIRST_UNKNOWN         )
@@ -1639,8 +1658,6 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("DIRST_RESTING_LAST_CW", DIRST_RESTING_LAST_CW )
     .value("DIRST_RESTING_LAST_ACW", DIRST_RESTING_LAST_ACW)
     .export_values();
-
-
 
 
     // selection which arms should perform a datum operation
