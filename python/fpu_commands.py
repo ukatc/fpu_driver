@@ -191,7 +191,6 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
        The function constructs an acceleration waveform and a deceleration
        waveform and joins them back to back to make the complete profile.
     """
-
     # Initialise the step lists for the acceleration and deceleration phases
     # and remaining step count.
     remaining_steps = nsteps
@@ -200,6 +199,9 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
 
     if min_stop_steps is None:
         min_stop_steps = min_steps
+
+    print("step_list_limacc: min_steps=%r, min_stop_steps=%r, max_steps=%r, max_acceleration=%r, max_deceleration=%r" % \
+          (min_steps, min_stop_steps, max_steps, max_acceleration, max_deceleration ))
 
     # Initialise the available range of speed for the current waveform element.
     # Note that each variable is a 2-element array where element [0] is
@@ -540,6 +542,8 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
     FPU index N. alphasteps and betasteps are lists of alpha and beta step
     counts.
     """
+    print("gen_wf: min_steps=%d, max_steps=%d, min_acceleration=%d, max_acceleration=%d" % \
+          (min_steps, max_steps, max_acceleration, max_deceleration) )
     if mode == 'slow':
         warnings.warn("'slow' mode is obsolete, it does not match the waveform protocol, mapped to 'slowpar'.")
 
