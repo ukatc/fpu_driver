@@ -190,6 +190,19 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
 
        The function constructs an acceleration waveform and a deceleration
        waveform and joins them back to back to make the complete profile.
+
+       A waveform consists of: (a) an acceleration phase; (b) a drift at
+       constant speed phase; (c) a deceleration phase; (d) a creep phase
+       to move the remaining steps at minimum speed. Only long waveforms
+       will have all 4 phases. There is a critical distance below which
+       the drift phase disappears and the acceleration and deceleration
+       phases join back-to-back. Very short waveforms will only have a
+       creep phase.
+
+       TODO: SMB Can this function be simplified? The lengths of the phases
+       ought to be predictable, rather than having them built in while loops
+       with specific exit conditions.
+
     """
     # Initialise the step lists for the acceleration and deceleration phases
     # and remaining step count.
@@ -200,8 +213,8 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
     if min_stop_steps is None:
         min_stop_steps = min_steps
 
-    print("step_list_limacc: min_steps=%r, min_stop_steps=%r, max_steps=%r, max_acceleration=%r, max_deceleration=%r" % \
-          (min_steps, min_stop_steps, max_steps, max_acceleration, max_deceleration ))
+    print("step_list_limacc nsteps=%d: min_steps=%r, min_stop_steps=%r, max_steps=%r, max_acceleration=%r, max_deceleration=%r" % \
+          (nsteps, min_steps, min_stop_steps, max_steps, max_acceleration, max_deceleration ))
 
     # Initialise the available range of speed for the current waveform element.
     # Note that each variable is a 2-element array where element [0] is
@@ -225,33 +238,41 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
 
     # Construct the major part of the waveform
     while True:
-        if remaining_steps <= min_stop_steps:
-            # The waveform brings the motor within one element of its target.
+        if remaining_steps <= 2*min_stop_steps:
+            # The waveform brings the motor within two elements of its target.
             # No further acceleration or deceleration can be added.
+            print("Within two elements (remaining:%d<=%d) No further acceleration/deceleration possible." % \
+                 (remaining_steps, 2*min_stop_steps))
             break
 
         if len(steps[ACC]) == 0:
             # First iteration - start by working on the acceleration phase.
             W = ACC
             X = DEC
+            print("First iteration. Acceleration phase.")
         elif len(steps[DEC]) == 0:
             # Second interation - now start working on the deceleration phase.
             W = DEC
             X = ACC
+            print("First iteration. Deceleration phase.")
         elif new_speed[ACC] <= new_speed[DEC]:
             # The acceleration phase is behind the deceleration phase
             # (or we have reached a constant speed phase).
             # Work on the acceleration phase.
             W = ACC
             X = DEC
+            print("Working on acceleration phase.")
         else:
             # The deceleration phase is behind the acceleration phase.
             # Work on the deceleration phase.
             W = DEC
             X = ACC
+            print("Working on deceleration phase.")
 
-        if  new_speed[W] > remaining_steps:
+        if  new_speed[W] > remaining_steps - min_steps:
             # We can't accelerate more.
+            print("New speed (%d) > remaining-min (%d). No further acceleration." % \
+                  (new_speed[W], remaining_steps-min_steps))
             break
 
         # compute new speed from acceleration limit.
@@ -262,30 +283,35 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
                 tent_new_speed = min_steps
             else:
                 # Stopping (working backwards on deceleration phase)
-                if insert_rest_accelerate is not None:
-                    tent_new_speed = min_stop_steps
-                else:
-                    tent_new_speed = min_stop_steps + max_change[W]
+                tent_new_speed = min_stop_steps
         else:
             # Attempt to accelerate or decelerate.
             tent_new_speed = new_speed[W] + max_change[W]
 
+        print("Tentative new speed=", tent_new_speed, "while remaining steps=", remaining_steps)
+
         # Check for max speed limit
         if tent_new_speed > max_steps:
+            print("Clip at speed limit:", max_steps)
             tent_new_speed = max_steps
 
         # If the speed exhausts available distance (to within the minimum step count), cap the
         # speed to the smaller of remaining the distance, or counter-acting change.
-        if (tent_new_speed + max_speed[X] > remaining_steps - min_steps) :
+        print("counter-acting change, max_speed[X]=", max_speed[X])
+        if (tent_new_speed + max_change[X] > remaining_steps) :
+            print("Clip by counter-acting change:",  max_speed[X])
             tent_new_speed = min(tent_new_speed, max_speed[X])
 
+        # The new speed must leave at least min_steps remaining.
         tent_new_speed = min(tent_new_speed, remaining_steps - min_steps)
+        print("Clip by steps remaining:", tent_new_speed)
 
         # After applying the limits, accept the new speed step.
         new_speed[W] = tent_new_speed
         steps[W].append(new_speed[W])
         max_speed[W] = tent_new_speed + max_change[W]
         remaining_steps -= new_speed[W]
+        print("Remaining steps becomes:", remaining_steps)
 
     # At this point the acceleration and deceleration phases have
     # been constructed. What remains is to assemble the waveform
@@ -321,6 +347,7 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
         # which to insert the rest
         while remaining_steps >= min_steps:
             ins_steps = min(remaining_steps, max_speed)
+            print("Inserting", ins_steps, "steps into waveform")
             bisect.insort(steps[W], ins_steps)
             remaining_steps -= ins_steps
 
@@ -335,11 +362,14 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
     # The last element is allowed to contain an element smaller than
     # the minimum speed.
     if remaining_steps > 0:
+       print("There are", remaining_steps, "residual steps.")
        while remaining_steps >= min_steps:
-           add_steps = min_stop_steps
+           add_steps = min(remaining_steps, min_stop_steps)
            steps_decelerate.append(add_steps)
+           print("Adding", add_steps, "steps at end of waveform")
            remaining_steps -= add_steps
        if remaining_steps > 0:
+           print("Finishing with", remaining_steps, "steps at end of waveform")
            steps_decelerate.append(remaining_steps)
 
     steps_accelerate.extend(steps_decelerate)
@@ -350,6 +380,7 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
         strg = "step_list_limacc: Failed to achieve target: %d steps planned, %s steps actual." % \
                (nsteps, steptotal)
         strg += "\n\tPlease raise a bug ticket."
+        strg += "\n\t" + str(steps_accelerate)
         raise ValueError(strg)
 
     return steps_accelerate
@@ -603,6 +634,7 @@ if __name__ == '__main__':
 and use
 
    w = gen_wf( alpha_angles, beta_angles )
+   s = step_list_limacc( nsteps )
 
 to test the waveform generation functions.
    """)
