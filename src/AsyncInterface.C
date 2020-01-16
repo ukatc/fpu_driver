@@ -893,7 +893,10 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
 
     if (state_summary == GS_COLLISION)
     {
-        printf("collision detected, aborting datum search.\n");
+        LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): collision detected, aborting datum search.\n",
+                    ethercanif::get_realtime());
+        //printf("collision detected, aborting datum search.\n");
+
         logGridState(config.logLevel, grid_state);
         fsync(config.fd_controllog);
 
@@ -985,8 +988,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V1)\n",
                 ethercanif::get_realtime());
-    printf("validateWaveformsV1: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
-               MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
+    //printf("validateWaveformsV1: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
+    //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
 
     const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
@@ -1076,7 +1079,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
                                               ? wform.steps[sidx+1].alpha_steps
                                               : wform.steps[sidx+1].beta_steps)));
 
-                printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
+                //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
                 if (xa > MAX_STEPS)
                 {
@@ -1164,8 +1167,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V2)\n",
                 ethercanif::get_realtime());
-    printf("validateWaveformsV2: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
-               MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
+    //printf("validateWaveformsV2: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
+    //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
 
     const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
@@ -1249,7 +1252,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
 
                 const bool is_last_step = (sidx == (num_steps -1));
 
-                printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
+                //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
                 if (xa > MAX_STEPS)
                 {
@@ -1344,8 +1347,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V2)\n",
                 ethercanif::get_realtime());
-    printf("validateWaveformsV3: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
-               MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
+    //printf("validateWaveformsV3: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
+    //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
 
     const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
@@ -1429,7 +1432,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
 
                 const bool is_last_step = (sidx == (num_steps -1));
 
-                printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
+                //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
 
                 if (xa > MAX_STEPS)
@@ -1529,8 +1532,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V4)\n",
                 ethercanif::get_realtime());
-    printf("validateWaveformsV4: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
-               MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
+    //printf("validateWaveformsV4: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
+    //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
 
     const int MAX_DCHANGE_STEPS = 120;
     const int num_loading =  waveforms.size();
@@ -1620,7 +1623,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
                                               ? wform.steps[sidx+1].alpha_steps
                                               : wform.steps[sidx+1].beta_steps)));
 
-                printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
+                //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
                 if (xa > MAX_STEPS)
                 {
@@ -1713,8 +1716,8 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
 
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V5, using an absolute maximum step difference)\n",
                 ethercanif::get_realtime());
-    printf("validateWaveformsV5: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_STEP_DIFFERENCE=%i\n",
-               MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_STEP_DIFFERENCE);
+    //printf("validateWaveformsV5: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_STEP_DIFFERENCE=%i\n",
+    //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_STEP_DIFFERENCE);
 
     const int MAX_DCHANGE_STEPS = 120;
     const int num_loading =  waveforms.size();
@@ -1804,7 +1807,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
                                               ? wform.steps[sidx+1].alpha_steps
                                               : wform.steps[sidx+1].beta_steps)));
 
-                printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
+                //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
                 if (xa > MAX_STEPS)
                 {
@@ -1857,16 +1860,16 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
 
                 if (!valid_acc)
                 {
-                    printf("fpu %i: channel=%i, step=%i, x_sign=%i, x_last_sign=%i, xa=%i, xa_last=%i, xa_next=%i, xa_small=%i, xa_large=%i, increase_limit=%i\n",
-                           fpu_id, chan_idx, sidx, x_sign, x_last_sign, xa, xa_last, xa_next, xa_small, xa_large, increase_limit);
+                    //printf("fpu %i: channel=%i, step=%i, x_sign=%i, x_last_sign=%i, xa=%i, xa_last=%i, xa_next=%i, xa_small=%i, xa_large=%i, increase_limit=%i\n",
+                    //       fpu_id, chan_idx, sidx, x_sign, x_last_sign, xa, xa_last, xa_next, xa_small, xa_large, increase_limit);
                     LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: DE_INVALID_WAVEFORM_CHANGE: "
                                 "fpu %i, %s arm, movement interval %i: invalid step count change\n",
                                 ethercanif::get_realtime(),
                                 fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
-                    LOG_CONSOLE(LOG_ERROR, "%18.6f : AsyncInterface: DE_INVALID_WAVEFORM_CHANGE: "
-                                "fpu %i, %s arm, movement interval %i: invalid step count change\n",
-                                ethercanif::get_realtime(),
-                                fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
+                    //LOG_CONSOLE(LOG_ERROR, "%18.6f : AsyncInterface: DE_INVALID_WAVEFORM_CHANGE: "
+                    //            "fpu %i, %s arm, movement interval %i: invalid step count change\n",
+                    //            ethercanif::get_realtime(),
+                    //            fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
                     return DE_INVALID_WAVEFORM_CHANGE;
                 }
 
