@@ -5,6 +5,8 @@ import os
 import argparse
 import random
 
+import numpy as np
+
 import FpuGridDriver
 from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, \
@@ -99,10 +101,47 @@ if __name__ == '__main__':
 #
 #    to move the FPUs to datum and initialise the grid.""")
 
+    print(" ")
+    print(args.N, "FPUs will be taken through some critical small movements.")
+
+    alpha_test = [0.0, 0.001, 0.01, 0.1, 0.9, 1.0]
+    beta_test = [0.0, 0.001, -0.01, 0.1, -0.9, 1.0]
+
+    for (alpha, beta) in zip(alpha_test, beta_test):
+       print("Finding datum...")
+       gd.findDatum(gs)
+
+       print("Status after findDatum")
+       print(gs)
+
+       print("Defining waveforms for all FPUs [alpha %.4f, beta %.4f]" % (alpha, beta))
+       alpha_list = list(np.ones(args.N) * alpha)
+       beta_list = list(np.ones(args.N) * beta)
+       wf = gen_wf( alpha_list, beta_list )
+
+       print("Configuring motion.")
+       gd.configMotion(wf, gs)
+
+       print("Executing motion")
+       gd.executeMotion(gs)
+
+       print("Status after movement")
+       print(gs)
+
+       print("Reversing motion")
+       gd.reverseMotion(gs)
+       gd.executeMotion(gs)
+
+       print("Status after reverse")
+       print(gs)
+       print("")
+
+
     MIN_ALPHA = 0.1
     MAX_ALPHA = 150.0
     MIN_BETA  = -120.0
     MAX_BETA  = 120.0
+    print(" ")
     print(args.N, "FPUs will be moved randomly", args.T, "times.")
 
     for ii in range(0, args.T):
@@ -113,21 +152,20 @@ if __name__ == '__main__':
        print("ITERATION %d/%d. Status after findDatum" % (ii1,args.T))
        print(gs)
 
-       alpha1 = round(random.uniform(MIN_ALPHA, MAX_ALPHA), 3)
-       alpha2 = round(random.uniform(MIN_ALPHA, MAX_ALPHA), 3)
-       alpha3 = round(random.uniform(MIN_ALPHA, MAX_ALPHA), 3)
-       beta1 = round(random.uniform(MIN_BETA, MAX_BETA), 3)
-       beta2 = round(random.uniform(MIN_BETA, MAX_BETA), 3)
-       beta3 = round(random.uniform(MIN_BETA, MAX_BETA), 3)
-       #alpha1 = 1.0
-       #alpha2 = 20.0
-       #alpha3 = 160.0
-       #beta1 = -130.0
-       #beta2 = 1.0
-       #beta3 = 60.0
+       alpha_list = []
+       beta_list = []
+       for jj in range(0, args.N):
+          alpha = round(random.uniform(MIN_ALPHA, MAX_ALPHA), 3)
+          beta  = round(random.uniform(MIN_BETA, MAX_BETA), 3)
+          alpha_list.append( alpha )
+          beta_list.append( beta )
 
-       print("Defining waveforms for (%f,%f) (%f,%f) (%f,%f) " % ( alpha1, beta1, alpha2, beta2, alpha3, beta3))
-       wf = gen_wf([alpha1, alpha2, alpha3], [beta1, beta2, beta3])
+       strg = "Defining waveforms for"
+       for jj in range(0, args.N):
+          strg += " fpu%d:[alpha %.4f, beta %.4f]" % (jj, alpha_list[jj], beta_list[jj])
+       print(strg)
+
+       wf = gen_wf(alpha_list, beta_list)
 
        print("ITERATION %d/%d. Configuring motion." % (ii1,args.T))
        gd.configMotion(wf, gs)
