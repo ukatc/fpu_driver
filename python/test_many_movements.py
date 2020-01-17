@@ -5,8 +5,6 @@ import os
 import argparse
 import random
 
-import numpy as np
-
 import FpuGridDriver
 from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, \
@@ -23,7 +21,7 @@ def parse_args():
     global help_text
     parser = argparse.ArgumentParser(description="""
 Configure the MOONS FPU device driver to communicate with a grid of FPUs,
-then ping the FPUs. Use python -i initialiseGrid.py for interactive mode.
+then ping the FPUs and take them through a series of test moves.
     """)
     parser.add_argument('--mockup',   default=False, action='store_true',
                         help='set gateway address to use mock-up gateway and FPU')
@@ -95,44 +93,43 @@ if __name__ == '__main__':
     clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
     acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(args.N)])
 
-#    print("""If all FPUs are shown with correct positions, you can issue now:
-#
-#    gd.findDatum(grid_state)
-#
-#    to move the FPUs to datum and initialise the grid.""")
 
     print(" ")
-    print(args.N, "FPUs will be taken through some critical small movements.")
+    print(args.N, "All FPUs will be taken through some critical small movements.")
 
-    alpha_test = [0.0, 0.001, 0.01, 0.1, 0.9, 1.0]
-    beta_test = [0.0, 0.001, -0.01, 0.1, -0.9, 1.0]
+    alpha_test = [0.0, 0.001, 0.01, 0.1, 0.9, 1.0, 5.0]
+    beta_test = [0.0, 0.001, -0.01, 0.1, -0.9, 1.0, -5.0]
 
+    count = 0
+    ntests = min(len(alpha_test), len(beta_test))
     for (alpha, beta) in zip(alpha_test, beta_test):
-       print("Finding datum...")
+       count += 1
+       print("TEST %d/%d. Finding datum..." % (count,ntests))
        gd.findDatum(gs)
 
-       print("Status after findDatum")
+       print("TEST %d/%d. Status after findDatum" % (count,ntests))
        print(gs)
 
        print("Defining waveforms for all FPUs [alpha %.4f, beta %.4f]" % (alpha, beta))
-       alpha_list = list(np.ones(args.N) * alpha)
-       beta_list = list(np.ones(args.N) * beta)
+       alpha_list = int(args.N) * [alpha]
+       beta_list = int(args.N) * [beta]
+       print("alpha_list=", alpha_list, "beta_list=", beta_list)
        wf = gen_wf( alpha_list, beta_list )
 
-       print("Configuring motion.")
+       print("TEST %d/%d. Configuring motion." % (count,ntests))
        gd.configMotion(wf, gs)
 
-       print("Executing motion")
+       print("TEST %d/%d. Executing motion" % (count,ntests))
        gd.executeMotion(gs)
 
-       print("Status after movement")
+       print("TEST %d/%d. Status after movement" % (count,ntests))
        print(gs)
 
-       print("Reversing motion")
+       print("TEST %d/%d. Reversing motion" % (count,ntests))
        gd.reverseMotion(gs)
        gd.executeMotion(gs)
 
-       print("Status after reverse")
+       print("TEST %d/%d. Status after reverse" % (count,ntests))
        print(gs)
        print("")
 
