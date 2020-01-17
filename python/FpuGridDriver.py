@@ -656,6 +656,7 @@ class UnprotectedGridDriver (object):
     ##              self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
     ##      return rval
 
+    # ........................................................................
     def readRegister(self, address, gs, fpuset=[]):
         fpuset = self.check_fpuset(fpuset)
 
@@ -668,6 +669,38 @@ class UnprotectedGridDriver (object):
                     self._update_error_counters(self.counters[fpu_id], prev_gs.FPU[fpu_id], fpu)
 
         return rval
+
+    def getDiagnostics(self, gs, fpuset=[]):
+        fpuset = self.check_fpuset(fpuset)
+
+        names     = ["sstatus2", "sstatus3", "sstatus4", "sstatus5", "intflags", "stateflags"]
+        addresses = [0x00001E,   0x00001F,   0x000020,   0x000021,   0x000022,   0x000023]
+        numreg    = min(len(names), len(addresses))
+
+        if fpuset:
+           fpulist = fpuset
+        else:
+           fpulist = range(0, len(gs.FPU))
+        strg = "  RegName \t RegAddress:"
+        for fpu_id in fpulist:
+           strg += "\t FPU[%d]   " % fpu_id
+        strg += "\n"
+
+        strg += "  --------\t -----------"
+        for fpu_id in fpulist:
+           strg += "\t ----------"
+        strg += "\n"
+
+        for ii in range(0, numreg):
+           self.readRegister(addresses[ii], gs, fpuset=fpuset)
+           strg += "%10s\t %.6x:" % (names[ii], addresses[ii])
+           for fpu_id in fpulist:
+              strg += "\t %.8x" % gs.FPU[fpu_id].register_value
+           strg += "\n"
+        return strg
+
+    def logDiagnostics(self, gs, fpuset=[]):
+        print(self.getDiagnostics(gs, fpuset=fpuset))
 
     # ........................................................................
     def getFirmwareVersion(self, gs, fpuset=[]):
@@ -817,6 +850,7 @@ class UnprotectedGridDriver (object):
         the hardware).
 
         """
+        assert isinstance(wavetable,dict), "wavetable must be a dictionary. Was it generated using gen_wf()?"
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
