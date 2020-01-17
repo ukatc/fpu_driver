@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='fpu_driver',
-      version='1.3.0',
+      version='2.2.6',
       description='MOONS FPU EtherCAN interface module',
       author='Johannes Nix',
       author_email='johannes.nix@stfc.ac.uk',
