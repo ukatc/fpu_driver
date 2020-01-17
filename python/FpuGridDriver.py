@@ -681,21 +681,21 @@ class UnprotectedGridDriver (object):
            fpulist = fpuset
         else:
            fpulist = range(0, len(gs.FPU))
-        strg = "  RegName \t RegAddress:"
+        strg = "  RegName    RegAddress:"
         for fpu_id in fpulist:
-           strg += "\t FPU[%d]   " % fpu_id
+           strg += "  FPU[%d] " % fpu_id
         strg += "\n"
 
-        strg += "  --------\t -----------"
+        strg += "  --------   -----------"
         for fpu_id in fpulist:
-           strg += "\t ----------"
+           strg += "  ------ "
         strg += "\n"
 
         for ii in range(0, numreg):
            self.readRegister(addresses[ii], gs, fpuset=fpuset)
-           strg += "%10s\t %.6x:" % (names[ii], addresses[ii])
+           strg += "%10s        %.6x" % (names[ii], addresses[ii])
            for fpu_id in fpulist:
-              strg += "\t %.8x" % gs.FPU[fpu_id].register_value
+              strg += "    %4x " % gs.FPU[fpu_id].register_value
            strg += "\n"
         return strg
 
