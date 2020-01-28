@@ -2635,3 +2635,99 @@ class GridDriver(UnprotectedGridDriver):
                           check_protection=check_protection,
                           allow_uninitialized=allow_uninitialized,
                           ruleset_version=ruleset_version)
+
+    # ........................................................................
+    def configZero(self, grid_state, soft_protection=True, check_protection=None,
+                   allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION):
+        """This methods examines the current location of the FPUs and configures
+        them with a waveform that will move them all to the zero position (where
+        the path planning software assumes they will start from.
+        """
+
+        # All FPUs must be referenced.
+        all_referenced = True
+        for fpu_id, fpu in enumerate(grid_state.FPU):
+            if not fpu.alpha_was_referenced or not fpu.beta_was_referenced:
+                print("ERROR: FPU %d is not referenced." % fpu_id )
+                all_referenced = False
+        if not all_referenced:
+            raise ProtectionError("All FPUs must be referenced before moving. "
+                                  "Please datum the FPUs and try again.")
+
+        current_angles = self.countedAngles( grid_state )
+        alpha_list = []
+        beta_list = []
+        for alpha, beta in current_angles:
+            if abs(alpha) > 0.0:
+                alpha_list.append( alpha * -1.0 )
+            else:
+                alpha_list.append( 0.0 )
+            if abs(beta) > 0.0:
+                beta_list.append( beta * -1.0 )
+            else:
+                beta_list.append( 0.0 )
+
+        waveform = fpu_commands.gen_wf( alpha_list, beta_list )
+        self.configMotion( waveform, grid_state,
+                           soft_protection=soft_protection,
+                           check_protection=check_protection,
+                           allow_uninitialized=allow_uninitialized,
+                           ruleset_version=ruleset_version)
+
+
+    # ........................................................................
+    def configDatum(self, grid_state, alpha_safe=-179.0, beta_safe=1.0,
+                    soft_protection=True, check_protection=None,
+                    allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION):
+        """This methods examines the current location of the FPUs and configures
+        them with a waveform that will move them all to a location close
+        enough to datum that a findDatum command can be executed.
+        """
+
+        # All FPUs must be referenced.
+        all_referenced = True
+        for fpu_id, fpu in enumerate(grid_state.FPU):
+            if not fpu.alpha_was_referenced or not fpu.beta_was_referenced:
+                all_referenced = False
+                if allow_uninitialized:
+                    print("NOTE: FPU %d is not referenced. Enabling movement" % fpu_id )
+                    self.enableMove( fpu_id, grid_state )
+                else:
+                    print("ERROR: FPU %d is not referenced." % fpu_id )
+        if not allow_uninitialized and not all_referenced:
+            raise ProtectionError("All FPUs must be referenced before moving. "
+                                  "Use allow_uninitialized=True to override.")
+
+        # The counted angles function can only be used when all FPUs have been
+        # referenced, otherwise extract a conservative estimate from the
+        # tracked angles.
+        if all_referenced:
+            current_angles = self.countedAngles( grid_state )
+        else:
+            current_angles = []
+            tracked_angles = self.trackedAngles( grid_state, retrieve=True )
+            for alpha_interval, beta_interval in tracked_angles:
+               # The most conservative estimate is the nearer of the two
+               # recorded angles to the datum position.
+               current_angles.append( [alpha_interval.min(), beta_interval.min_abs()] )
+
+        alpha_list = []
+        beta_list = []
+        for alpha, beta in current_angles:
+            alpha_motion = alpha_safe - alpha
+            if abs(alpha_motion) > 0.0:
+                alpha_list.append( alpha_motion )
+            else:
+                alpha_list.append( 0.0 )
+            beta_motion = beta_safe - beta
+            if abs(beta_motion) > 0.0:
+                beta_list.append( beta_motion )
+            else:
+                beta_list.append( 0.0 )
+
+        waveform = fpu_commands.gen_wf( alpha_list, beta_list )
+        self.configMotion( waveform, grid_state,
+                           soft_protection=soft_protection,
+                           check_protection=check_protection,
+                           allow_uninitialized=allow_uninitialized,
+                           ruleset_version=ruleset_version)

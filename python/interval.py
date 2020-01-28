@@ -66,10 +66,26 @@ class Interval:
 
 
     def min(self):
+        # Return minimum (or most negative) value
         return self.iv[0]
 
     def max(self):
+        # Return maxmium (or most positive) value
         return self.iv[1]
+
+    def min_abs(self):
+        # Return value closest to 0.0. Useful when an interval spans zero.
+        if abs(self.iv[0]) < abs(self.iv[1]):
+           return self.iv[0]
+        else:
+           return self.iv[1]
+
+    def max_abs(self):
+        # Return value furthest from 0.0. Useful when an interval spans zero.
+        if abs(self.iv[0]) > abs(self.iv[1]):
+           return self.iv[0]
+        else:
+           return self.iv[1]
 
     def __add__(self, b):
         if not isinstance(b, Interval):
