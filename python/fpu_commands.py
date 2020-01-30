@@ -635,6 +635,7 @@ and use
 
    w = gen_wf( alpha_angles, beta_angles )
    s = step_list_limacc( nsteps )
+   s = path_to_steps( path, steps_per_degree )
 
 to test the waveform generation functions.
    """)

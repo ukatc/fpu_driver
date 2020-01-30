@@ -6,6 +6,8 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // jnix      2017-10-18  Created interface class using Pablo Guiterrez' CAN client sample
+// sbeard    2020-01-30  Give waveform an amnesty if they violate the maximum
+//                       speed by 1 Hz. TODO: Correct the rounding errors causing this.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1081,7 +1083,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
 
                 //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
-                if (xa > MAX_STEPS)
+                if (xa > MAX_STEPS+1) // Only trigger the exception is more than 1Hz different.
                 {
                     LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:"
                                 "fpu %i, %s arm, movement interval %i: step count exceeds maximum\n\n",
@@ -1254,7 +1256,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
 
                 //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
-                if (xa > MAX_STEPS)
+                if (xa > MAX_STEPS+1) // Only trigger the exception is more than 1Hz different.
                 {
                     LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:"
                                 "fpu %i, %s arm, movement interval %i: step count exceeds maximum\n\n",
@@ -1435,7 +1437,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
                 //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
 
-                if (xa > MAX_STEPS)
+                if (xa > MAX_STEPS+1) // Only trigger the exception is more than 1Hz different.
                 {
                     LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:"
                                 "fpu %i, %s arm, movement interval %i: step count exceeds maximum\n\n",
@@ -1625,7 +1627,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
 
                 //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
-                if (xa > MAX_STEPS)
+                if (xa > MAX_STEPS+1) // Only trigger the exception is more than 1Hz different.
                 {
                     LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:"
                                 "fpu %i, %s arm, movement interval %i: step count exceeds maximum\n\n",
@@ -1809,7 +1811,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
 
                 //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
-                if (xa > MAX_STEPS)
+                if (xa > MAX_STEPS+1) // Only trigger the exception is more than 1Hz different.
                 {
                     LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:"
                                 "fpu %i, %s arm, movement interval %i: step count exceeds maximum\n\n",

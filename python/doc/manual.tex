@@ -114,6 +114,11 @@ verification software is being developed. The underlying hardware
 protocol will only be exposed as much as necessary to understand the
 possible states of the hardware.
 
+NOTE: Due to tex issues, this document cannot easily be kept up to date.
+(Attempting to add a new section causes tex to fail to build the manual.)
+New functions and methods added recently may not be described here, or
+may be mentioned in the text but not assigned a section of their own.
+
 \section{Required knowledge}
 \index{Python!introduction}
 \index{Python!further information}
@@ -4337,6 +4342,12 @@ waveform table, and whose IDs are in the fpuset list. If
 \texttt{fpuset} is set to an empty list, all FPUs in the waveform
 table will be configured.
 
+NOTE: Methods configZero() and configDatum() are also available.
+configZero() configures FPUs with waveforms to move them all to the
+zero position (the default location from which paths are plotted).
+configDatum() configures the FPUs with waveforms to send them to
+a location close to datum, from which the findDatum() method can be
+safely run. 
 
 \section{getCurrentWaveTables()}
 \index{commands!getCurrentWaveTables()} The method
