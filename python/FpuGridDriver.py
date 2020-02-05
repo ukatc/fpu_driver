@@ -142,7 +142,7 @@ def make_logdir(log_dir):
             raise
 
     if log_dir != DEFAULT_LOGDIR:
-        print("logging to ", log_path)
+        print("Logging to ", log_path)
 
     return log_path
 
@@ -231,6 +231,7 @@ class UnprotectedGridDriver (object):
             warn("min_bus_repeat_delay_ms is set to value above 0."
                  " Decrease if message rate is too low.")
 
+        # Create an EtherCAN configuration object and load it with parameters.
         config = EtherCANInterfaceConfig()
         config.num_fpus = nfpus
         config.SocketTimeOutSeconds = SocketTimeOutSeconds
@@ -252,8 +253,6 @@ class UnprotectedGridDriver (object):
         flags = os.O_CREAT | os.O_APPEND | os.O_WRONLY
         mode = 0o00644
 
-
-
         config.logLevel = logLevel
 
         log_path = make_logdir(log_dir)
@@ -261,15 +260,38 @@ class UnprotectedGridDriver (object):
         self.protectionlog = open(get_logname(protection_logfile,
                                               log_dir=log_path, timestamp=start_timestamp), "wt")
 
-        print("%f: starting communication interface version %s" % (time.time(), ethercanif.__version__),
+        print("%f: Starting communication interface version %s" % (time.time(), ethercanif.__version__),
               file=self.protectionlog)
 
-        config.fd_controllog = os.open(get_logname(control_logfile,
-                 log_dir=log_path, timestamp=start_timestamp), flags, mode)
-        config.fd_txlog = os.open(get_logname(tx_logfile,
-                 log_dir=log_path, timestamp=start_timestamp), flags, mode)
-        config.fd_rxlog = os.open(get_logname(rx_logfile,
-                 log_dir=log_path, timestamp=start_timestamp), flags, mode)
+        # Open file descriptors to the CONTROL, TX and RX log files.
+        control_filename = get_logname(control_logfile,
+                                  log_dir=log_path,
+                                  timestamp=start_timestamp)
+        tx_filename = get_logname(tx_logfile,
+                                  log_dir=log_path,
+                                  timestamp=start_timestamp)
+        rx_filename = get_logname(rx_logfile,
+                                  log_dir=log_path,
+                                  timestamp=start_timestamp)
+        config.fd_controllog = os.open(control_filename, flags, mode)
+        config.fd_txlog = os.open(tx_filename, flags, mode)
+        config.fd_rxlog = os.open(rx_filename, flags, mode)
+
+        # Check the log files have actually been opened successfully
+        if config.fd_controllog > 0:
+           print("CONTROL log file: %s" % control_filename)
+        else:
+           print("Error: Failed to open CONTROL log file (%s)" % control_filename)
+
+        if config.fd_txlog > 0:
+           print("     TX log file: %s" % tx_filename)
+        else:
+           print("Error: Failed to open TX log file (%s)" % tx_filename)
+
+        if config.fd_controllog > 0:
+           print("     RX log file: %s" % rx_filename)
+        else:
+           print("Error: Failed to open RX log file (%s)" % rx_filename)
 
         self.config = config
         self.last_wavetable = {}
@@ -420,7 +442,7 @@ class UnprotectedGridDriver (object):
                     # positions to old value
                     self._cancel_find_datum_hook(gs, fpuset, initial_positions=initial_positions)
                     was_cancelled = True
-                    print("operation canceled, error = ", str(e))
+                    print("Operation canceled, error = ", str(e))
                     raise
             finally:
                 if was_cancelled or (rv != ethercanif.E_EtherCANErrCode.DE_OK):
@@ -916,7 +938,7 @@ class UnprotectedGridDriver (object):
                         if self.wavetable_was_received(wtable, gs, fpu_id, fpu):
                                 self.last_wavetable[fpu_id] = wtable[fpu_id]
                         else:
-                            print("warning: waveform table for FPU %i was not confirmed" % fpu_id)
+                            print("Warning: waveform table for FPU %i was not confirmed" % fpu_id)
                             del wtable[fpu_id]
 
                         if self.__dict__.has_key("counters"):
@@ -1495,7 +1517,7 @@ class GridDriver(UnprotectedGridDriver):
 
         """
         self.readSerialNumbers(new_state, fpuset=fpuset)
-        print("%f: resetting fpu set %r" % (time.time(), fpuset),  file=self.protectionlog)
+        print("%f: Resetting fpu set %r" % (time.time(), fpuset),  file=self.protectionlog)
 
         for fpu_id, fpu in enumerate(new_state.FPU):
             if not fpu_in_set(fpu_id, fpuset):
@@ -1506,12 +1528,12 @@ class GridDriver(UnprotectedGridDriver):
             # they are set to zero
             alpha_angle, a_underflow, a_overflow = self._alpha_angle(fpu)
             if a_underflow or a_overflow:
-                print("_reset_hook(): warning: alpha step counter is at underflow / overflow value")
+                print("_reset_hook(): Warning: alpha step counter is at underflow / overflow value")
             self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - alpha_angle
 
             beta_angle, b_underflow, b_overflow = self._beta_angle(fpu)
             if b_underflow or b_overflow:
-                print("beta step counter is at underflow / overflow value")
+                print("Beta step counter is at underflow / overflow value")
             self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - beta_angle
 
             if self.configured_ranges.has_key(fpu_id):
@@ -1520,7 +1542,7 @@ class GridDriver(UnprotectedGridDriver):
             if self.last_wavetable.has_key(fpu_id):
                 del self.last_wavetable[fpu_id]
 
-        print("%f: _reset_hook(): new a_caloffsets = %r, b_cal_offsets=%r" % (
+        print("%f: _reset_hook(): New a_caloffsets = %r, b_cal_offsets=%r" % (
             time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
 
 
@@ -1538,14 +1560,14 @@ class GridDriver(UnprotectedGridDriver):
             # they are set to zero
             alpha_angle, a_underflow, a_overflow = self._alpha_angle(fpu)
             if a_underflow or a_overflow:
-                print("_reset_counter_hook(): warning: reported alpha step counter is at underflow / overflow value")
+                print("_reset_counter_hook(): Warning: reported alpha step counter is at underflow / overflow value")
                 self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - alpha_target
             else:
                 self.a_caloffsets[fpu_id] = self.apositions[fpu_id] - alpha_angle
 
             beta_angle, b_underflow, b_overflow = self._beta_angle(fpu)
             if b_underflow or b_overflow:
-                print("_reset_counter_hook(): warning: reported beta step counter is at underflow / overflow value")
+                print("_reset_counter_hook(): Warning: reported beta step counter is at underflow / overflow value")
                 self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - beta_target
             else:
                 self.b_caloffsets[fpu_id] = self.bpositions[fpu_id] - beta_angle
@@ -1555,7 +1577,7 @@ class GridDriver(UnprotectedGridDriver):
             print("reset_counter_hook(): FPU %i: beta counted angle = %f, offset = %r" % (fpu_id, beta_angle,
                                                                                             self.b_caloffsets[fpu_id]))
 
-        print("%f: _reset_counter_hook(): new a_caloffsets = %r, b_cal_offsets=%r" % (
+        print("%f: _reset_counter_hook(): New a_caloffsets = %r, b_cal_offsets=%r" % (
             time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
 
     # ........................................................................
@@ -2108,7 +2130,7 @@ class GridDriver(UnprotectedGridDriver):
                 ProtectionDB.put_counters(txn, fpu, self.counters[fpu_id])
 
         self.env.sync()
-        print("%f: _cancel_execute_motion_hook(): movement cancelled" % time.time(),
+        print("%f: _cancel_execute_motion_hook(): Movement cancelled" % time.time(),
               file=self.protectionlog)
 
 
@@ -2144,7 +2166,7 @@ class GridDriver(UnprotectedGridDriver):
         # Solution for now: wait.
         for k in range(50):
             if (gs.Counts[FPST_MOVING] > 0) or (gs.Counts[FPST_DATUM_SEARCH] > 0):
-                print("_post_execute_motion_hook(): waiting for movement to finish in order to retrieve reached positions..")
+                print("_post_execute_motion_hook(): Waiting for movement to finish in order to retrieve reached positions..")
                 try:
                     fpuset_refresh = []
                     for fpu_id, fpu in enumerate(gs.FPU):
@@ -2173,7 +2195,7 @@ class GridDriver(UnprotectedGridDriver):
         # that FPU is not yet at target.
         for fpu_id in fpuset:
             if gs.FPU[fpu_id].state != FPST_RESTING:
-                # print("_post_execute_motion_hook(): retaining interval positions for FPU id %i" % fpu_id)
+                # print("_post_execute_motion_hook(): Retaining interval positions for FPU id %i" % fpu_id)
                 self.target_positions[fpu_id] = (self.apositions[fpu_id].copy(),
                                                  self.bpositions[fpu_id].copy())
 
@@ -2489,7 +2511,7 @@ class GridDriver(UnprotectedGridDriver):
                 self.target_positions[fpu_id] = (apos, bpos)
 
         self.env.sync()
-        print("%f: _cancel_find_datum_hook(): movement cancelled" % time.time(),
+        print("%f: _cancel_find_datum_hook(): Movement cancelled" % time.time(),
               file=self.protectionlog)
 
 

@@ -64,9 +64,9 @@ void handle_LockUnit_response(const EtherCANInterfaceConfig&config,
         fpu.ping_ok = false;
 
         LOG_RX(LOG_ERROR, "%18.6f : RX : "
-               "lockUnit command failed for FPU %i\n",
+               "lockUnit command failed for FPU %i (errcode=%u)\n",
                get_realtime(),
-               fpu_id);
+               fpu_id, (unsigned int)response_errcode);
     }
 
 

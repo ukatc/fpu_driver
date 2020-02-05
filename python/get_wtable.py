@@ -12,7 +12,7 @@ def gwt(gd, gs, dumpfilename="wavetables-dump-{unixtime}.pck"):
     nbytes = 2
     WT = zeros( (N, len_wt, narms, nbytes) )
     for seg in range(len_wt):
-        print("\rfetching segment %i" % seg, end="")
+        print("\rFetching segment %i" % seg, end="")
         sys.stdout.flush()
         for arm in range(narms):
             bank = [1, 2][arm]

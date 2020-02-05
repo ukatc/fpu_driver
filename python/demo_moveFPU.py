@@ -19,13 +19,13 @@ else:
 
 gd = FpuGridDriver.GridDriver(NUM_FPUS, mockup=mockup)
 
-print("connecting grid:", gd.connect(address_list=TEST_GATEWAY_ADRESS_LIST))
+print("Connecting grid:", gd.connect(address_list=TEST_GATEWAY_ADRESS_LIST))
 
 
 # We monitor the FPU grid by a variable which is
 # called grid_state, and reflects the state of
 # all FPUs.
-print("getting grid state:")
+print("getting Grid state:")
 grid_state = gd.getGridState()
 
 
@@ -36,7 +36,7 @@ gd.findDatum(grid_state)
 print("findDatum finished")
 
 # We can use grid_state to display the starting position
-print("the starting position (in degrees) is:", list_angles(grid_state))
+print("The starting position (in degrees) is:", list_angles(grid_state))
 
 
 

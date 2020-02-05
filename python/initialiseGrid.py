@@ -55,7 +55,7 @@ def initialize_FPU(args):
     else:
         gateway_address = [ FpuGridDriver.GatewayAddress(args.gateway_address, args.gateway_port) ]
 
-    print("connecting grid:", gd.connect(address_list=gateway_address))
+    print("Connecting grid:", gd.connect(address_list=gateway_address))
 
 
     # We monitor the FPU grid by a variable which is
@@ -64,7 +64,7 @@ def initialize_FPU(args):
     grid_state = gd.getGridState()
 
     if args.resetFPU:
-        print("resetting FPU")
+        print("Resetting FPU")
         gd.resetFPUs(grid_state)
         print("OK")
 
@@ -73,7 +73,7 @@ def initialize_FPU(args):
 
 if __name__ == '__main__':
 
-    print("module version is:", FpuGridDriver.__version__, ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
+    print("Module version is:", FpuGridDriver.__version__, ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
 
     if wflib is None:
        print("***wflib.load_paths function is not available until the mocpath module is installed.") 
@@ -83,14 +83,11 @@ if __name__ == '__main__':
     gd, grid_state = initialize_FPU(args)
     gs = grid_state # alias grid_state to short name
 
-    print("issuing pingFPUs and getting positions:")
+    print("Issuing pingFPUs and getting positions:")
     gd.pingFPUs(grid_state)
 
-    print("tracked positions:")
-
+    print("Tracked positions:")
     gd.trackedAngles(grid_state)
-
-
 
     clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
     acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(args.N)])

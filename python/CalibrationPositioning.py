@@ -24,7 +24,7 @@ from fpu_commands import *
 
 
 def dummy_metrology_func(alpha_steps, beta_steps):
-    print("now performing dummy measurement at"
+    print("Now performing dummy measurement at"
           " alpha={}, beta={} steps".format(alpha_steps,beta_steps))
     ## insert actual measurement stuff here
     time.sleep(1)
@@ -56,7 +56,7 @@ def move_fpu(gd, grid_state, alpha_move, beta_move, label=""):
         a, b = pos
         print("{}: FPU #{}: reached position: ({:6.2f}, {:6.2f})".format(label, i, a,b) )
 
-    print("timeout count of grid:", grid_state.count_timeout)
+    print("Timeout count of grid:", grid_state.count_timeout)
 
 
 def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
@@ -67,7 +67,7 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
     alpha0 = positions[:,0]
     beta0 = positions[:,1]
     for i in range(len(alpha0)):
-        print("starting pos: ({:6.2f}, {:6.2f})".format(alpha0[i], beta0[i]))
+        print("Starting pos: ({:6.2f}, {:6.2f})".format(alpha0[i], beta0[i]))
 
     alpha_move = alpha - alpha0
     beta_move = beta - beta0
@@ -84,21 +84,21 @@ def measure_position(gd, grid_state, alpha, beta, metrology_func=None,
     if return_to_datum:
         printtime()
         if (alpha0 == args.alpha_datum_pos).all() and (beta0 == args.beta_datum_pos).all():
-            print("now moving back to ({},{})".format(args.alpha_datum_pos, args.beta_datum_pos))
+            print("Now moving back to ({},{})".format(args.alpha_datum_pos, args.beta_datum_pos))
             gd.reverseMotion(grid_state)
             gd.executeMotion(grid_state)
         else:
             move_fpu(gd, grid_state, -alpha + 0.5, -beta + 0.5, "return to origin" )
 
         printtime()
-        print("position:", list_angles(grid_state), "steps=", list_positions(grid_state, show_zeroed=False))
-        print("issuing findDatum()")
+        print("Position:", list_angles(grid_state), "steps=", list_positions(grid_state, show_zeroed=False))
+        print("Issuing findDatum()")
         gd.findDatum(grid_state)
         gd.getCounterDeviation(grid_state)
 
         # we get the state for FPU 0 (the only one)
         fpu_state = grid_state.FPU[0]
-        print("counter deviation: "
+        print("Counter deviation: "
               "(dev_alpha, dev_beta) = ({}, {}) steps".format(
                   fpu_state.alpha_deviation,
                   fpu_state.beta_deviation))
@@ -188,7 +188,7 @@ def initialize_FPU(args):
     else:
         gateway_address = [ GatewayAddress(args.gateway_address, args.gateway_port) ]
 
-    print("connecting grid:", gd.connect(address_list=gateway_address))
+    print("Connecting grid:", gd.connect(address_list=gateway_address))
 
 
     # We monitor the FPU grid by a variable which is
@@ -201,7 +201,7 @@ def initialize_FPU(args):
 
 
     if args.resetFPU:
-        print("resetting FPU")
+        print("Resetting FPU")
         gd.resetFPUs(grid_state)
         print("OK")
 
@@ -213,7 +213,7 @@ def initialize_FPU(args):
     print("findDatum finished")
 
     # We can use grid_state to display the starting position
-    print("the starting position (in degrees) is:", list_angles(grid_state)[0])
+    print("The starting position (in degrees) is:", list_angles(grid_state)[0])
 
     return gd, grid_state
 
@@ -310,13 +310,13 @@ def bluenoise_positions(args):
 def iterate_positions(args, seq, gd, grid_state, metrology_func=None, deviation_list=[]):
 
     for alpha, beta, go_datum in seq:
-        print("measuring at ({},{}), datum={}".format(alpha, beta, go_datum))
+        print("Measuring at ({},{}), datum={}".format(alpha, beta, go_datum))
         measure_position(gd, grid_state, alpha, beta, return_to_datum=go_datum,
                          metrology_func=metrology_func, deviation_list=deviation_list,
                          args=args)
 
         if args.chill_time > 10:
-            print("waiting %f seconds for fpu to cool off" % args.chill_time)
+            print("Waiting %f seconds for fpu to cool off" % args.chill_time)
         time.sleep(args.chill_time)
 
     # last call at (0,0), and always return to datum
@@ -340,7 +340,7 @@ def rungrid(args):
     elif args.pattern in [ 'bluenoise', 'bn']:
         poslist = bluenoise_positions(args)
     else:
-        raise ValueError("pattern not implemented")
+        raise ValueError("Pattern not implemented")
 
     # loop over configured positions, calling metrology_func for
     # each position
@@ -351,15 +351,15 @@ def rungrid(args):
         print("############# Exception caught ###################")
         printtime()
         gd.pingFPUs(grid_state)
-        print("grid state:", grid_state)
+        print("Grid state:", grid_state)
         print("FPU state:", grid_state.FPU[0])
-        print("positions:", list_angles(grid_state))
+        print("Positions:", list_angles(grid_state))
         raise
 
-    print("counter deviations:", deviations)
+    print("Counter deviations:", deviations)
 
     printtime()
-    print("ready.")
+    print("Ready.")
 
 
 if __name__ == '__main__':

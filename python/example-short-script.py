@@ -18,9 +18,9 @@ print("The FPU driver version is:", FpuGridDriver.__version__,
 NUM_FPUS = 1 # set number of FPUs to 1
 gd = FpuGridDriver.GridDriver(NUM_FPUS, mockup=mockup)
 # connect to gateway with default IP 192.168.0.10
-print("connecting grid:", gd.connect(address_list=gw_address))
+print("Connecting grid:", gd.connect(address_list=gw_address))
 
-print("getting grid state:")
+print("getting Grid state:")
 grid_state = gd.getGridState()
 
 

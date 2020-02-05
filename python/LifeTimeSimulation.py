@@ -253,7 +253,7 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=30.0,
 
     rest_segments = int(round((1000 * cycle_length) / opts.segment_length_ms))
     if rest_segments > opts.maxnum_waveform_segments:
-        raise ValueError("the time requires more segments (%i) than the the number of allowed segments (%i)" % (
+        raise ValueError("The time requires more segments (%i) than the the number of allowed segments (%i)" % (
             rest_segments, opts.maxnum_waveform_segments))
 
     min_steps = opts.min_steps
@@ -263,7 +263,7 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=30.0,
     wf = wf_create(opts.N)
 
     if verbosity > 1:
-        print("current angles:", current_alpha, current_beta)
+        print("Current angles:", current_alpha, current_beta)
 
     smrsix = 0 # that's the state machine rotating state index,
     #            aka SMRSIX
@@ -376,7 +376,7 @@ def gen_duty_cycle(current_alpha, current_beta, cycle_length=30.0,
             break
 
     if verbosity > 2:
-        print("new angles:", current_alpha, current_beta)
+        print("New angles:", current_alpha, current_beta)
 
     return wf
 
@@ -536,7 +536,7 @@ def initialize_FPU(args):
         gateway_address = [ GatewayAddress(adr, args.gateway_port)
                             for adr in args.gateway_addresses.split(",")]
 
-    print("connecting grid:", gd.connect(address_list=gateway_address))
+    print("Connecting grid:", gd.connect(address_list=gateway_address))
 
 
     # We monitor the FPU grid by a variable which is
@@ -549,7 +549,7 @@ def initialize_FPU(args):
 
 
     if args.resetFPUs:
-        print("resetting FPUs")
+        print("Resetting FPUs")
         gd.resetFPUs(grid_state)
         print("OK")
 
@@ -560,27 +560,27 @@ def initialize_FPU(args):
         current_angles = gd.trackedAngles(grid_state, retrieve=True)
         current_alpha = array([x.as_scalar() for x, y in current_angles ])
         current_beta = array([y.as_scalar() for x, y in current_angles ])
-        print("current positions:\nalpha=%r,\nbeta=%r" % (current_alpha, current_beta))
+        print("Current positions:\nalpha=%r,\nbeta=%r" % (current_alpha, current_beta))
 
         if False :
 
-            print("moving close to datum switch")
+            print("Moving close to datum switch")
             wf = gen_wf(- current_alpha + 0.5, - current_beta + 0.5)
             gd.configMotion(wf, grid_state, allow_uninitialized=True)
             gd.executeMotion(grid_state)
 
 
-    print("issuing findDatum:")
+    print("Issuing findDatum:")
     #gd.findDatum(grid_state, timeout=DATUM_TIMEOUT_DISABLE)
     gd.findDatum(grid_state)
     print("findDatum finished")
 
     # We can use grid_state to display the starting position
-    print("the starting position (in degrees) is:", list_angles(grid_state)[0])
+    print("The starting position (in degrees) is:", list_angles(grid_state)[0])
 
 
     signal.signal(signal.SIGQUIT, stop_handler)
-    print("press <Ctrl>-'\\' to terminate test orderly, <Ctrl>-c only for emergency abort")
+    print("Press <Ctrl>-'\\' to terminate test orderly, <Ctrl>-c only for emergency abort")
 
     return gd, grid_state
 
@@ -599,7 +599,7 @@ def chatty_sleep(sleep_time, time_slice=0.2, opts=None):
         n += 1
 
     if opts.verbosity > 0:
-        print("waiting 0 sec    .... OK")
+        print("Waiting 0 sec    .... OK")
 
 def out_of_range(ws, channel, current_angle, scale, minval, maxval):
     positions = current_angle  + cumsum([ s[channel] for s in ws]) / scale
@@ -645,7 +645,7 @@ def rungrid(args):
                     if ( out_of_range(ws, 0, current_alpha[id], StepsPerDegreeAlpha, args.alpha_min, args.alpha_max)
                          or out_of_range(ws, 1, current_beta[id], StepsPerDegreeBeta, args.beta_min, args.beta_max)):
 
-                        print("waveform out of range, retry..")
+                        print("Waveform out of range, retry..")
                         invalid=True
                         break
 
@@ -663,16 +663,16 @@ def rungrid(args):
                                 ruleset_version=args.ruleset_version)
                 finish_time = time.time()
                 if verbosity > 0:
-                    print("waveform upload duration took %5.2f seconds" % (finish_time - start_time))
+                    print("Waveform upload duration took %5.2f seconds" % (finish_time - start_time))
             if not stop_all_fpus:
                 if verbosity > 0:
-                    print("executing waveform")
+                    print("Executing waveform")
                 gd.executeMotion(grid_state)
                 if not stop_all_fpus:
                     chatty_sleep(args.chill_time, opts=args)
 
                 if verbosity > 0:
-                    print("reversing waveform")
+                    print("Reversing waveform")
                 gd.reverseMotion(grid_state)
                 gd.executeMotion(grid_state)
 
@@ -695,15 +695,15 @@ def rungrid(args):
         print("############# Exception caught ###################")
         printtime()
         gd.pingFPUs(grid_state)
-        print("grid state:", grid_state)
+        print("Grid state:", grid_state)
         for fpu_id, fpu in enumerate(grid_state.FPU):
             if fpu.last_status != 0:
                 print("FPU %i state:" % fpu_id, fpu)
-        print("positions:", gd.countedAngles(grid_state))
+        print("Positions:", gd.countedAngles(grid_state))
         raise
 
     printtime()
-    print("ready.")
+    print("Ready.")
 
 def plot_waveform(wf, idx):
     steps = array(wf[0]).T

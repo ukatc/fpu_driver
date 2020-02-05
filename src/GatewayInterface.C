@@ -905,6 +905,7 @@ E_EtherCANErrCode GatewayInterface::disconnect()
     pthread_join(tx_thread, NULL);
     pthread_join(rx_thread, NULL);
 
+    // Flush the file descriptors for the TX and RX logs.
     if (config.fd_txlog >= 0)
     {
         syncfs(config.fd_txlog);

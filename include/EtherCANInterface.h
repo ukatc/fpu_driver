@@ -67,6 +67,7 @@ public:
             disconnect(); // throw away return value
         }
 
+        // Flush the file descriptors for the CONTROL, TX and RX logs
         if (config.fd_controllog >= 0)
         {
             syncfs(config.fd_controllog);

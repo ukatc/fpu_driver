@@ -93,7 +93,7 @@ def initialize_FPUs(args):
     else:
         gateway_address = [ FpuGridDriver.GatewayAddress(args.gateway_address, args.gateway_port) ]
 
-    print("connecting grid:", gd.connect(address_list=gateway_address))
+    print("Connecting grid:", gd.connect(address_list=gateway_address))
 
 
     # We monitor the FPU grid by a variable which is
@@ -102,7 +102,7 @@ def initialize_FPUs(args):
     grid_state = gd.getGridState()
 
     if args.resetFPU:
-        print("resetting FPU controller")
+        print("Resetting FPU controller")
         gd.resetFPUs(grid_state)
         print("OK")
 
@@ -120,7 +120,7 @@ def initialize_FPUs(args):
 
 if __name__ == '__main__':
 
-    print("module version is:", FpuGridDriver.__version__, ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
+    print("Module version is:", FpuGridDriver.__version__, ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
 
     args = parse_args()
 

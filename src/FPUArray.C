@@ -720,12 +720,12 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
 
     if (warn_nbytes_too_large)
     {
-        LOG_RX(LOG_ERROR, "WARNING: RX: %18.6f: blen too long",
+        LOG_RX(LOG_ERROR, "WARNING: RX: %18.6f: blen (nbytes) too long",
                ethercanif::get_realtime());
     }
     if (warn_nbytes_negative)
     {
-        LOG_RX(LOG_ERROR, "WARNING: RX: %18.6f: blen negative",
+        LOG_RX(LOG_ERROR, "WARNING: RX: %18.6f: blen (nbytes) negative",
                ethercanif::get_realtime());
     }
 
@@ -740,16 +740,16 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     }
     if (fpu_busid > FPUS_PER_BUS)
     {
-        LOG_RX(LOG_ERROR, "%18.6f : RX: fpu_busid too large (%i), ignored\n",
+        LOG_RX(LOG_ERROR, "%18.6f : RX: fpu_busid too large (%i > %i), ignored\n",
                ethercanif::get_realtime(),
-               fpu_busid);
+               fpu_busid, FPUS_PER_BUS);
         return;
     }
     if (bus_id >= BUSES_PER_GATEWAY)
     {
-        LOG_RX(LOG_ERROR, "%18.6f : RX: CAN bus id too large (%i), ignored\n",
+        LOG_RX(LOG_ERROR, "%18.6f : RX: CAN bus id too large (%i >= %i), ignored\n",
                ethercanif::get_realtime(),
-               bus_id);
+               bus_id, BUSES_PER_GATEWAY);
         return;
     }
 
@@ -765,7 +765,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
             has_warned = true;
         }
 
-        // log responses from inexistent FPUs, but only once every 10 seconds
+        // log responses from nonexistent FPUs, but only once every 10 seconds
         static double last_warn;
         double cur_wtime = ethercanif::get_realtime();
         if (cur_wtime > last_warn + 10.0)
@@ -935,7 +935,8 @@ void remove_pending(const EtherCANInterfaceConfig &config, t_fpu_state& fpu, int
         if (found_sequence_number != msg_sequence_number)
         {
             LOG_RX(LOG_ERROR, "fpu #%i:  cmd code %i with sequence number %i received"
-                   " - wrong sequence number\n", fpu_id, cmd_code, msg_sequence_number);
+                   " - wrong sequence number (expecting %i)\n", fpu_id, cmd_code,
+                   found_sequence_number, msg_sequence_number);
         }
     }
     // move all/any following entries to previous position

@@ -44,14 +44,16 @@ public:
     // interval with which keep-alive packets are sent
     int TCP_KeepaliveIntervalSeconds;
 
+    // Current logging level (see E_LogLevel.h)
     E_LogLevel logLevel;
-    // file descriptor for log of commands and results in the control context
+
+    // file descriptor for log of commands and results in the control context (CONTROL)
     int fd_controllog;
 
-    // file descriptor for log of all sent CAN commands
+    // file descriptor for log of all transmitted CAN commands (TX)
     int fd_txlog;
 
-    //file descriptor for log of all received CAN responses
+    // file descriptor for log of all received CAN responses (RX)
     int fd_rxlog;
 
     int num_fpus;
