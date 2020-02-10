@@ -681,14 +681,14 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
     case DE_IN_ABORTED_STATE :
         throw EtherCANException("DE_IN_ABORTED_STATE: There are FPUs in aborted state,"
                                 " because of a previous abortMotion command or a step timing error"
-                                "- use the resetFPUs command to reset state.",
+                                "- use the enableMove (or resetFPUs) command to reset state.",
                                 DE_IN_ABORTED_STATE);
         break;
 
     case DE_MOVEMENT_ABORTED :
         throw EtherCANException("DE_MOVEMENT_ABORTED: The FPU has entered the FPST_ABORTED state,"
                                 " because of an abortMotion command or a step timing error "
-                                "- use the resetFPUs command to reset state.",
+                                "- use the enableMove (or resetFPUs) command to reset state.",
                                 DE_MOVEMENT_ABORTED);
         break;
 
