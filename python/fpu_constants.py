@@ -39,10 +39,12 @@ BETA_DATUM_OFFSET=0.0
 ALPHA_DATUM_OFFSET_RAD= deg2rad(ALPHA_DATUM_OFFSET)
 BETA_DATUM_OFFSET_RAD= deg2rad(BETA_DATUM_OFFSET)
 
-DEFAULT_FREE_BETA_RETRIES=3
+# NOTE: Constants DEFAULT_FREE_ALPHA_RETRIES and DEFAULT_FREE_BETA_RETRIES
+# were not originally used anywhere within the Python code.
+DEFAULT_FREE_BETA_RETRIES=6
 FREE_BETA_STEPCOUNT=10
 
-DEFAULT_FREE_ALPHA_RETRIES=3
+DEFAULT_FREE_ALPHA_RETRIES=6
 FREE_ALPHA_STEPCOUNT=11
 
 MAX_ACCELERATION_FACTOR=1.4 # this constant factor is obsolete for
@@ -71,3 +73,44 @@ ALPHA_OVERFLOW_COUNT = ALPHA_UNDERFLOW_COUNT + (1 << 16) -1
 
 BETA_UNDERFLOW_COUNT = - 0x8000
 BETA_OVERFLOW_COUNT = BETA_UNDERFLOW_COUNT + (1 << 16) -1
+
+if __name__ == '__main__':
+    # List some of the main constants when this file is run from the
+    # command line.
+    print("Default parameters defined by this module.")
+    print("------------------------------------------")
+
+    print("Alpha limits: min-hardstop=%.2f, min=%.2f, max=%.2f, max-hardstop=%.2f (deg)." % \
+        (ALPHA_MIN_HARDSTOP_DEGREE, ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE, ALPHA_MAX_HARDSTOP_DEGREE))
+    print("Beta  limits: min-hardprot=%.2f, min=%.2f, max=%.2f, max-hardprot=%.2f (deg)." % \
+        (BETA_MIN_HWPROT_DEGREE, BETA_MIN_DEGREE, BETA_MAX_DEGREE, BETA_MAX_HWPROT_DEGREE))
+    print(" ")
+
+    print("Alpha motor scale is %f steps per deg and %f steps per radian." % \
+        (StepsPerDegreeAlpha, StepsPerRadianAlpha))
+    print("Beta  motor scale is %f steps per deg and %f steps per radian." % \
+        (StepsPerDegreeBeta, StepsPerRadianBeta))
+    print(" ")
+
+    freeAlphaDistance = float(FREE_ALPHA_STEPCOUNT) / StepsPerDegreeAlpha
+    freeBetaDistance = float(FREE_BETA_STEPCOUNT) / StepsPerDegreeBeta
+    print("freeAlphaLimitBreach moves %d steps (%f deg) and can be repeated %d times" \
+          " covering a distance of %f deg." % \
+          (FREE_ALPHA_STEPCOUNT, freeAlphaDistance, DEFAULT_FREE_ALPHA_RETRIES,
+           DEFAULT_FREE_ALPHA_RETRIES*freeAlphaDistance))
+    print("freeBetaCollision    moves %d steps (%f deg) and can be repeated %d times" \
+          " covering a distance of %f deg." % \
+          (FREE_BETA_STEPCOUNT, freeBetaDistance, DEFAULT_FREE_BETA_RETRIES,
+           DEFAULT_FREE_BETA_RETRIES*freeBetaDistance))
+    print(" ")
+
+    print("Motor frequencies: min=%.1f, startstop=%.1f, max=%.1f (Hz)" % \
+       (MOTOR_MIN_STEP_FREQUENCY, MOTOR_MAX_START_FREQUENCY, MOTOR_MAX_STEP_FREQUENCY))
+    print("Max acceleration %.1f steps/s per %.1f ms segment." % \
+       (MAX_STEP_DIFFERENCE, WAVEFORM_SEGMENT_LENGTH_MS))
+    print(" ")
+
+    print("Alpha underflow count=%d, overflow count=%d" % \
+       (ALPHA_UNDERFLOW_COUNT, ALPHA_OVERFLOW_COUNT))
+    print("Beta  underflow count=%d, overflow count=%d" % \
+       (BETA_UNDERFLOW_COUNT, BETA_OVERFLOW_COUNT))

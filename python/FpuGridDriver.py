@@ -2328,10 +2328,12 @@ class GridDriver(UnprotectedGridDriver):
                     # we have reached a safe position.
 
                     if self.aretries_acw[fpu_id] > 0:
+                        #print("Resetting retry count for anti-clockwise freeAlphaLimitBreach movements.")
                         clockwise = False
                         self.aretries_acw[fpu_id] = 0
                         ProtectionDB.store_aretry_count(txn, datum_fpu, clockwise, 0)
                     if self.aretries_cw[fpu_id] > 0:
+                        #print("Resetting retry count for clockwise freeAlphaLimitBreach movements.")
                         clockwise = True
                         self.aretries_cw[fpu_id] = 0
                         ProtectionDB.store_aretry_count(txn, datum_fpu, clockwise, 0)
@@ -2358,10 +2360,12 @@ class GridDriver(UnprotectedGridDriver):
                     self._update_bpos(txn, datum_fpu, fpu_id,  Interval(0.0))
 
                     if self.bretries_acw[fpu_id] > 0:
+                        #print("Resetting retry count for anti-clockwise freeBetaCollision movements.")
                         clockwise = False
                         self.bretries_acw[fpu_id] = 0
                         ProtectionDB.store_bretry_count(txn, datum_fpu, clockwise, 0)
                     if self.bretries_cw[fpu_id] > 0:
+                        #print("Resetting retry count for clockwise freeBetaCollision movements.")
                         clockwise = True
                         self.bretries_cw[fpu_id] = 0
                         ProtectionDB.store_bretry_count(txn, datum_fpu, clockwise, 0)
@@ -2522,7 +2526,10 @@ class GridDriver(UnprotectedGridDriver):
         else:
             brcnt = self.bretries_acw[fpu_id]
 
-        if soft_protection and (brcnt >= self.maxbretries[fpu_id]):
+        # NOTE: Maximum number of beta retries is now taken from the constants rather than from the database.
+        #print("Beta retry count for FPU %i is %i, with limit at %i" % (fpu_id, brcnt, DEFAULT_FREE_BETA_RETRIES))
+        #if soft_protection and (brcnt >= self.maxbretries[fpu_id]): # Old Johannes code.
+        if soft_protection and (brcnt >= DEFAULT_FREE_BETA_RETRIES):
             raise ProtectionError("Retry count for FPU %i is already %i, exceeds safe maximum" % (fpu_id, brcnt))
 
         fpu = grid_state.FPU[fpu_id]
@@ -2549,9 +2556,11 @@ class GridDriver(UnprotectedGridDriver):
         if clockwise:
             self.bretries_cw[fpu_id] += 1
             cnt = self.bretries_cw[fpu_id]
+            #print("Incrementing beta clockwise retry count to make %i" % cnt)
         else:
             self.bretries_acw[fpu_id] += 1
             cnt = self.bretries_acw[fpu_id]
+            #print("Incrementing beta anti-clockwise retry count to make %i" % cnt)
 
 
         with self.env.begin(db=self.fpudb, write=True) as txn:
@@ -2565,11 +2574,14 @@ class GridDriver(UnprotectedGridDriver):
     def _pre_free_alpha_limit_breach_hook(self, fpu_id, direction, grid_state, soft_protection=True):
 
         if direction == REQD_CLOCKWISE:
-            brcnt = self.aretries_cw[fpu_id]
+            print("Clockwise")
         else:
             brcnt = self.aretries_acw[fpu_id]
 
-        if soft_protection and (brcnt >= self.maxaretries[fpu_id]):
+        # NOTE: Maximum retry count is now taken from the constants rather than from the database.
+        # print("Alpha retry count for FPU %i is %i, with limit at %i" % (fpu_id, brcnt, DEFAULT_FREE_ALPHA_RETRIES))
+        #if soft_protection and (brcnt >= self.maxaretries[fpu_id]): # Old Johannes code.
+        if soft_protection and (brcnt >= DEFAULT_FREE_ALPHA_RETRIES):
             raise ProtectionError("Retry count for FPU %i is already %i, exceeds safe maximum" % (fpu_id, brcnt))
 
         fpu = grid_state.FPU[fpu_id]
@@ -2596,9 +2608,11 @@ class GridDriver(UnprotectedGridDriver):
         if clockwise:
             self.aretries_cw[fpu_id] += 1
             cnt = self.aretries_cw[fpu_id]
+            #print("Incrementing alpha clockwise retry count to make %i" % cnt)
         else:
             self.aretries_acw[fpu_id] += 1
             cnt = self.aretries_acw[fpu_id]
+            #print("Incrementing alpha anti-clockwise retry count to make %i" % cnt)
 
         with self.env.begin(db=self.fpudb, write=True) as txn:
             ProtectionDB.store_aretry_count(txn, fpu, clockwise, cnt)
