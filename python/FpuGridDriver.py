@@ -29,7 +29,8 @@ import ethercanif
 assert(ethercanif.CAN_PROTOCOL_VERSION == 2), "requires ethercanif module for CAN protocol version 2!"
 
 from ethercanif import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  EtherCANInterfaceConfig,
-                        REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE,
+                        REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, DIRST_CLOCKWISE, DIRST_RESTING_LAST_CW,
+                        DIRST_ANTI_CLOCKWISE, DIRST_RESTING_LAST_ACW,
                         DEFAULT_WAVEFORM_RULESET_VERSION,
                         EtherCANException, MovementError, CollisionError, LimitBreachError,
                         AbortMotionError, StepTimingError, InvalidStateException, SystemFailure,
@@ -1250,6 +1251,13 @@ class UnprotectedGridDriver (object):
 
     # ........................................................................
     def countedAngles(self, gs, fpuset=[], show_uninitialized=False):
+        """ Return alpha and beta angles (in degrees) for the given set of FPUs
+            based on the motor step count relative to datum. The angles are
+            only valid if the FPU has been referenced. Use show_uninitialized=True
+            to return the step count angles regardless of the state of the
+            referenced flag (it is up to the caller to decide if the counts can
+            still be trusted).
+        """
         fpuset = self.check_fpuset(fpuset)
 
         if len(fpuset) == 0:
@@ -2574,7 +2582,8 @@ class GridDriver(UnprotectedGridDriver):
     def _pre_free_alpha_limit_breach_hook(self, fpu_id, direction, grid_state, soft_protection=True):
 
         if direction == REQD_CLOCKWISE:
-            print("Clockwise")
+            pass
+            #print("Clockwise")
         else:
             brcnt = self.aretries_acw[fpu_id]
 
@@ -2675,7 +2684,7 @@ class GridDriver(UnprotectedGridDriver):
     # ........................................................................
     def configZero(self, grid_state, soft_protection=True, check_protection=None,
                    allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION):
-        """This methods examines the current location of the FPUs and configures
+        """This method examines the current location of the FPUs and configures
         them with a waveform that will move them all to the zero position (where
         the path planning software assumes they will start from.
         """
@@ -2703,6 +2712,7 @@ class GridDriver(UnprotectedGridDriver):
             else:
                 beta_list.append( 0.0 )
 
+        #print("FPUs will be moved by alpha=%s and beta=%s" % (alpha_list, beta_list))
         waveform = fpu_commands.gen_wf( alpha_list, beta_list )
         self.configMotion( waveform, grid_state,
                            soft_protection=soft_protection,
@@ -2714,10 +2724,16 @@ class GridDriver(UnprotectedGridDriver):
     # ........................................................................
     def configDatum(self, grid_state, alpha_safe=-179.0, beta_safe=1.0,
                     soft_protection=True, check_protection=None,
-                    allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION):
-        """This methods examines the current location of the FPUs and configures
+                    allow_uninitialized=False, use_step_counts=False,
+                    ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION):
+        """This method examines the current location of the FPUs and configures
         them with a waveform that will move them all to a location close
         enough to datum that a findDatum command can be executed.
+
+
+        # TODO: Check that all FPUs are in a SAFE state unless collision_protection=False
+
+
         """
 
         # All FPUs must be referenced.
@@ -2739,13 +2755,19 @@ class GridDriver(UnprotectedGridDriver):
         # tracked angles.
         if all_referenced:
             current_angles = self.countedAngles( grid_state )
+        elif use_step_counts:
+            # Assume the step counts are still valid.
+            current_angles = self.countedAngles( grid_state, show_uninitialized=True )
         else:
+            # Assume the step counts are no longer valid.
+            # Use the last known positions recorded in the database.
             current_angles = []
             tracked_angles = self.trackedAngles( grid_state, retrieve=True )
             for alpha_interval, beta_interval in tracked_angles:
-               # The most conservative estimate is the nearer of the two
-               # recorded angles to the datum position.
-               current_angles.append( [alpha_interval.min(), beta_interval.min_abs()] )
+               # The most conservative estimate is the minimum alpha angle
+               # and the middle of the known beta range.
+               beta_estimate = (beta_interval.min() + beta_interval.max())/2.0
+               current_angles.append( [alpha_interval.min(), beta_estimate] )
 
         alpha_list = []
         beta_list = []
@@ -2761,9 +2783,173 @@ class GridDriver(UnprotectedGridDriver):
             else:
                 beta_list.append( 0.0 )
 
+        #print("FPUs will be moved by alpha=%s and beta=%s" % (alpha_list, beta_list))
         waveform = fpu_commands.gen_wf( alpha_list, beta_list )
         self.configMotion( waveform, grid_state,
                            soft_protection=soft_protection,
                            check_protection=check_protection,
                            allow_uninitialized=allow_uninitialized,
                            ruleset_version=ruleset_version)
+
+
+    # ........................................................................
+    def recoverFaults(self, grid_state, fpuset=[]):
+        """This method attempts to automatically recover a set of FPUs from a
+        failure (alpha limit breach, beta limit breach, beta collision or
+        aborted motion).
+
+        NOTE: Sometimes a limit breach is not fully recovered and
+        this method may need to be repeated while moving the FPUs
+        closer to their safe zone.
+
+        """
+        if len(fpuset) == 0:
+            fpuset = range(self.config.num_fpus)
+        fpuset = self.check_fpuset(fpuset)
+
+        nfaults = 0
+        nrecovered = 0
+        for fpu_id in fpuset:
+            #print("\nChecking FPU %i" % fpu_id)
+            #print("\t%s" % str(grid_state.FPU[fpu_id]))
+
+            # Obtain the status of this FPU
+            self.pingFPUs(grid_state, [fpu_id])
+            # Current state
+            fpu_state = grid_state.FPU[fpu_id].state
+            fpu_referenced = grid_state.FPU[fpu_id].alpha_was_referenced and grid_state.FPU[fpu_id].beta_was_referenced
+            # Is there an alpha limit breach or beta collision detection?
+            fpu_alpha_limit = grid_state.FPU[fpu_id].at_alpha_limit
+            fpu_beta_collision = grid_state.FPU[fpu_id].beta_collision
+            # Last known direction of movement
+            fpu_alpha_direction = grid_state.FPU[fpu_id].direction_alpha
+            fpu_beta_direction = grid_state.FPU[fpu_id].direction_beta
+
+            if fpu_alpha_direction == DIRST_CLOCKWISE or fpu_alpha_direction == DIRST_RESTING_LAST_CW:
+               free_alpha_dir = REDQ_ANTI_CLOCKWISE
+            elif fpu_alpha_direction == DIRST_ANTI_CLOCKWISE or fpu_alpha_direction == DIRST_RESTING_LAST_ACW:
+               free_alpha_dir = REQD_CLOCKWISE
+            else:
+               free_alpha_dir = None
+
+            if fpu_beta_direction == DIRST_CLOCKWISE or fpu_beta_direction == DIRST_RESTING_LAST_CW:
+               free_beta_dir = REDQ_ANTI_CLOCKWISE
+            elif fpu_beta_direction == DIRST_ANTI_CLOCKWISE or fpu_beta_direction == DIRST_RESTING_LAST_ACW:
+               free_beta_dir = REQD_CLOCKWISE
+            else:
+               free_beta_dir = None
+
+            # Last known position
+            current_angles = self.countedAngles( grid_state, fpuset=[fpu_id], show_uninitialized=True )
+            alpha_angle = current_angles[0][0]
+            beta_angle = current_angles[0][1]
+            #print("\tLast position: (%.3f, %.3f) (deg)" % (alpha_angle, beta_angle) )
+
+            # Decide if a beta collision is caused by a genuine collision or a beta limit breach.
+            if fpu_beta_collision and (beta_angle < BETA_MIN_DEGREE or beta_angle > BETA_MAX_DEGREE):
+               fpu_beta_limit = True
+            else:
+               fpu_beta_limit = False
+
+            # Free an obstacle error.
+            # NOTE: Functions enableBetaCollisionProtection and enableAlphaLimitProtection
+            # can change the state of the whole grid. Just check the state of the individual flags.
+            #if fpu_state == FPST_OBSTACLE_ERROR:
+            if True:
+               if fpu_beta_collision and not fpu_beta_limit:
+                  # A genuine collision reverse both the alpha and beta motors.
+                  nfaults += 1
+                  strg = "FPU %i: Beta collision." % fpu_id
+                  if free_beta_dir == REQD_CLOCKWISE:
+                     strg += " Clockwise (negative) beta movement needed."
+                  elif free_beta_dir == REQD_ANTI_CLOCKWISE:
+                     strg += " Anti-clockwise (positive) beta movement needed."
+                  else:
+                     print("Last beta direction for FPU %i unknown. Cannot free beta collision!" % fpu_id)
+                     break
+                  if free_alpha_dir == REQD_CLOCKWISE:
+                     strg += " Clockwise (negative) alpha movement needed."
+                  elif free_alpha_dir == REQD_ANTI_CLOCKWISE:
+                     strg += " Anti-clockwise (positive) alpha movement needed."
+                  else:
+                     strg += " No alpha movement needed."
+                  print(strg)
+
+                  self.freeBetaCollision( fpu_id, free_beta_dir, grid_state, soft_protection=False )
+                  for k in range(1, DEFAULT_FREE_BETA_RETRIES):
+                     self.freeBetaCollision( fpu_id, free_beta_dir, grid_state, soft_protection=False )
+                     if free_alpha_dir is not None:
+                        self.freeAlphaLimitBreach( fpu_id, free_alpha_dir, grid_state, soft_protection=False )
+                     self.pingFPUs(grid_state, [fpu_id])
+                     self.enableBetaCollisionProtection( grid_state )
+                     self.pingFPUs(grid_state, [fpu_id])
+                     fpu_beta_collision = grid_state.FPU[fpu_id].beta_collision
+                     if not fpu_beta_collision:
+                        nrecovered += 1
+                        print("FPU %i: Beta collision recovered." % fpu_id)
+                        break
+
+               elif fpu_beta_collision:
+                  # A beta limit breach/
+                  nfaults += 1
+                  strg = "FPU %i: Beta limit breach." % fpu_id
+                  if free_beta_dir == REQD_CLOCKWISE:
+                     strg += " Clockwise (negative) movement needed."
+                  elif free_beta_dir == REQD_ANTI_CLOCKWISE:
+                     strg += " Anti-clockwise (positive) movement needed."
+                  else:
+                     print("Last beta direction for FPU %i unknown. Cannot free beta limit breach!" % fpu_id)
+                     break
+                  print(strg)
+
+                  self.freeBetaCollision( fpu_id, free_beta_dir, grid_state, soft_protection=False )
+                  for k in range(1, DEFAULT_FREE_BETA_RETRIES):
+                     self.freeBetaCollision( fpu_id, free_beta_dir, grid_state, soft_protection=False )
+                     self.pingFPUs(grid_state, [fpu_id])
+                     self.enableBetaCollisionProtection( grid_state )
+                     self.pingFPUs(grid_state, [fpu_id])
+                     fpu_beta_collision = grid_state.FPU[fpu_id].beta_collision
+                     if not fpu_beta_collision:
+                        nrecovered += 1
+                        print("FPU %i: Beta collision recovered." % fpu_id)
+                        break
+
+               if fpu_alpha_limit:
+                  nfaults += 1
+                  strg = "FPU %i: Alpha limit breach." % fpu_id
+                  if free_alpha_dir == REQD_CLOCKWISE:
+                     strg += " Clockwise (negative) movement needed."
+                  elif free_alpha_dir == REQD_ANTI_CLOCKWISE:
+                     strg += " Anti-clockwise (positive) movement needed."
+                  else:
+                     print("Last alpha direction for FPU %i unknown. Cannot free alpha limit breach!" % fpu_id)
+                     break
+                  print(strg)
+
+                  self.freeAlphaLimitBreach( fpu_id, free_alpha_dir, grid_state, soft_protection=False )
+                  for k in range(1, DEFAULT_FREE_ALPHA_RETRIES):
+                     self.freeAlphaLimitBreach( fpu_id, free_alpha_dir, grid_state, soft_protection=False )
+                     self.pingFPUs(grid_state, [fpu_id])
+                     self.enableAlphaLimitProtection( grid_state )
+                     self.pingFPUs(grid_state, [fpu_id])
+                     fpu_alpha_limit = grid_state.FPU[fpu_id].at_alpha_limit
+                     if not fpu_alpha_limit:
+                        nrecovered += 1
+                        print("FPU %i: Alpha limit breach recovered." % fpu_id)
+                        break
+
+            if fpu_state == FPST_ABORTED:
+                    nfaults += 1
+                    print("FPU %i was aborted. Enabling." % fpu_id )
+                    self.enableMove( fpu_id, grid_state )
+                    nrecovered += 1
+
+            # Next FPU
+
+        if nfaults > 0:
+           if (nrecovered >= nfaults):
+              print("All faults recovered. Now move the FPUs to a safe location.")
+           else:
+              print("Not all faults could be recovered. Manual intervention needed.")
+        else:
+           print("No faults detected.")
