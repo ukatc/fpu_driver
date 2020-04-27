@@ -443,20 +443,19 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             was_cancelled = False
             try:
-                try:
-                    rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, timeout, count_protection)
-                except (RuntimeError,
-                        InvalidParameterError,
-                        SetupError,
-                        InvalidStateException,
-                        HardwareProtectionError,
-                        ProtectionError) as e:
-                    # we cancel the datum search altogether, so we can reset
-                    # positions to old value
-                    self._cancel_find_datum_hook(gs, fpuset, initial_positions=initial_positions)
-                    was_cancelled = True
-                    print("Operation canceled, error = ", str(e))
-                    raise
+                rv =  self._gd.findDatum(gs, search_modes, fpuset, selected_arm, timeout, count_protection)
+            except (RuntimeError,
+                    InvalidParameterError,
+                    SetupError,
+                    InvalidStateException,
+                    HardwareProtectionError,
+                    ProtectionError) as e:
+                # we cancel the datum search altogether, so we can reset
+                # positions to old value
+                self._cancel_find_datum_hook(gs, fpuset, initial_positions=initial_positions)
+                was_cancelled = True
+                print("Operation canceled, error = ", str(e))
+                raise
             finally:
                 if was_cancelled or (rv != ethercanif.E_EtherCANErrCode.DE_OK):
                     try:
@@ -959,28 +958,27 @@ class UnprotectedGridDriver (object):
             prev_gs = self._gd.getGridState()
             try:
                 try:
-                    try:
-                        rval = self._gd.configMotion(wtable, gs, fpuset, allow_uninitialized,
-                                                     ruleset_version)
+                    rval = self._gd.configMotion(wtable, gs, fpuset, allow_uninitialized,
+                                                 ruleset_version)
 
-                    except InvalidWaveformException as e:
-                        print("%f: Error %s for wtable=%r" % (
-                            time.time(), e, wtable), file=self.protectionlog)
-                        print("Error %s for wtable=%r" % (
-                            e, wtable))
-                        raise
-
-                    except InvalidStateException:
-                        raise
-
-                    update_config = True
-
-                except (SocketFailure, CommandTimeout) as e:
-                    # Transmission failure. Here, it is possible that some
-                    # FPUs have finished loading valid data, but the
-                    # process was not finished for all FPUs.
-                    update_config = True
+                except InvalidWaveformException as e:
+                    print("%f: Error %s for wtable=%r" % (
+                        time.time(), e, wtable), file=self.protectionlog)
+                    print("Error %s for wtable=%r" % (
+                        e, wtable))
                     raise
+
+                except InvalidStateException:
+                    raise
+
+                update_config = True
+
+            except (SocketFailure, CommandTimeout) as e:
+                # Transmission failure. Here, it is possible that some
+                # FPUs have finished loading valid data, but the
+                # process was not finished for all FPUs.
+                update_config = True
+                raise
 
             finally:
                 if update_config:
@@ -1054,11 +1052,10 @@ class UnprotectedGridDriver (object):
             self._start_execute_motion_hook(gs, fpuset=fpuset, initial_positions=initial_positions)
             prev_gs = self._gd.getGridState() # get last FPU states and timeout counters
             try:
-                try:
-                    rv = self._gd.executeMotion(gs, fpuset, sync_command)
-                except InvalidStateException as e:
-                    self_cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
-                    raise
+                rv = self._gd.executeMotion(gs, fpuset, sync_command)
+            except InvalidStateException as e:
+                self_cancel_execute_motion_hook(gs, fpuset, initial_positions=initial_positions)
+                raise
             finally:
                 move_gs = self._gd.getGridState()
                 try:
@@ -1102,24 +1099,23 @@ class UnprotectedGridDriver (object):
             refresh_state = False
             rv = "UNDONE"
             try:
-                try:
-                    with SignalHandler() as sh:
-                        while not is_ready:
-                            rv = self._gd.waitExecuteMotion(gs, time_interval, fpuset)
-                            if sh.interrupted:
-                                print("STOPPING FPUs.")
-                                self.abortMotion(gs, fpuset, sync_command)
-                                was_aborted = True
-                                refresh_state = True
-                                break
-                            is_ready = (rv != ethercanif.E_EtherCANErrCode.DE_WAIT_TIMEOUT)
+                with SignalHandler() as sh:
+                    while not is_ready:
+                        rv = self._gd.waitExecuteMotion(gs, time_interval, fpuset)
+                        if sh.interrupted:
+                            print("STOPPING FPUs.")
+                            self.abortMotion(gs, fpuset, sync_command)
+                            was_aborted = True
+                            refresh_state = True
+                            break
+                        is_ready = (rv != ethercanif.E_EtherCANErrCode.DE_WAIT_TIMEOUT)
 
-                except MovementError:
-                    refresh_state = True
-                    raise
-                except CommandTimeout:
-                    refresh_state = True
-                    raise
+            except MovementError:
+                refresh_state = True
+                raise
+            except CommandTimeout:
+                refresh_state = True
+                raise
 
             finally:
                 # This is skipped in case of a SocketFailure, for example
