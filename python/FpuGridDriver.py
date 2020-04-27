@@ -348,19 +348,27 @@ class UnprotectedGridDriver (object):
 
 
     # ........................................................................
-    def setUStepLevel(self, ustep_level,  gs, fpuset=[]):
+    def setUStepLevel(self, ustep_level,  gs, fpuset=None):
+        if fpuset is None:
+            fpuset = []
         fpuset = self.check_fpuset(fpuset)
         return self._gd.setUStepLevel(ustep_level, gs, fpuset)
 
-    def setTicksPerSegment(self, nticks,  gs, fpuset=[]):
+    def setTicksPerSegment(self, nticks,  gs, fpuset=None):
+        if fpuset is None:
+            fpuset = []
         fpuset = self.check_fpuset(fpuset)
         return self._gd.setTicksPerSegment(nticks, gs, fpuset)
 
-    def setStepsPerSegment(self, min_steps, max_steps,  gs, fpuset=[]):
+    def setStepsPerSegment(self, min_steps, max_steps,  gs, fpuset=None):
+        if fpuset is None:
+            fpuset = []
         fpuset = self.check_fpuset(fpuset)
         return self._gd.setStepsPerSegment(min_steps, max_steps, gs, fpuset)
 
-    def getSwitchStates(self, gs, fpuset=[]):
+    def getSwitchStates(self, gs, fpuset=None):
+        if fpuset is None:
+            fpuset = []
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
 
@@ -390,18 +398,22 @@ class UnprotectedGridDriver (object):
                                   selected_arm=None):
         pass
 
-    def findDatumB(self, gs, search_modes={},
+    def findDatumB(self, gs, search_modes=None,
                    selected_arm=DASEL_BOTH,
                    soft_protection=True,
                    check_protection=None,
-                   fpuset=[],
+                   fpuset=None,
                    support_uninitialized_auto=True,
                    timeout=DATUM_TIMEOUT_ENABLE):
         """Moves all FPUs to datum position.
 
         This is a blocking variant of the findDatum command,
         it is not interruptible by Control-C."""
-
+        if search_modes is None:
+            search_modes = {}
+        if fpuset is None:
+            fpuset = []
+        
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
 
@@ -463,7 +475,7 @@ class UnprotectedGridDriver (object):
             return rv
 
     # ........................................................................
-    def findDatum(self, gs, search_modes={}, selected_arm=DASEL_BOTH, fpuset=[],
+    def findDatum(self, gs, search_modes=None, selected_arm=DASEL_BOTH, fpuset=None,
                   soft_protection=True, count_protection=True, check_protection=None,
                   support_uninitialized_auto=True, timeout=DATUM_TIMEOUT_ENABLE):
         """Moves all FPUs to datum position.
@@ -498,6 +510,11 @@ class UnprotectedGridDriver (object):
         unless soft_protection is set to False.
 
         """
+        if search_modes is None:
+            search_modes = {}
+        if fpuset is None:
+            fpuset = []
+        
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
 
@@ -588,16 +605,20 @@ class UnprotectedGridDriver (object):
 
         return rv
 
-    def _pingFPUs(self, gs, fpuset=[]):
+    def _pingFPUs(self, gs, fpuset=None):
+        if fpuset is None:
+            fpuset = []
 
         fpuset = self.check_fpuset(fpuset)
 
         return self._gd.pingFPUs(gs, fpuset)
 
     # ........................................................................
-    def pingFPUs(self, gs, fpuset=[]):
+    def pingFPUs(self, gs, fpuset=None):
         """Communicate with all FPUs and query their status
         """
+        if fpuset is None:
+            fpuset = []
         return self._pingFPUs(gs, fpuset=fpuset)
 
 
@@ -609,7 +630,10 @@ class UnprotectedGridDriver (object):
         pass
 
     # ........................................................................
-    def resetFPUs(self, gs, fpuset=[], verbose=True):
+    def resetFPUs(self, gs, fpuset=None, verbose=True):
+        if fpuset is None:
+            fpuset = []
+    
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
@@ -639,7 +663,10 @@ class UnprotectedGridDriver (object):
         pass
 
     # ........................................................................
-    def resetStepCounters(self, new_alpha_steps, new_beta_steps, gs, fpuset=[]):
+    def resetStepCounters(self, new_alpha_steps, new_beta_steps, gs, fpuset=None):
+        if fpuset is None:
+            fpuset =[]
+        
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
@@ -680,7 +707,10 @@ class UnprotectedGridDriver (object):
     ##      return rval
 
     # ........................................................................
-    def readRegister(self, address, gs, fpuset=[]):
+    def readRegister(self, address, gs, fpuset=None):
+        if fpuset is None:
+            fpuset = []
+        
         fpuset = self.check_fpuset(fpuset)
 
         try:
@@ -693,7 +723,10 @@ class UnprotectedGridDriver (object):
 
         return rval
 
-    def getDiagnostics(self, gs, fpuset=[]):
+    def getDiagnostics(self, gs, fpuset=None):
+        if fpuset = None:
+            fpuset = []
+        
         fpuset = self.check_fpuset(fpuset)
 
         names     = ["sstatus2", "sstatus3", "sstatus4", "sstatus5", "intflags", "stateflags"]
@@ -722,11 +755,16 @@ class UnprotectedGridDriver (object):
            strg += "\n"
         return strg
 
-    def logDiagnostics(self, gs, fpuset=[]):
+    def logDiagnostics(self, gs, fpuset=None):
+        if fpuset is None:
+            fpuset = []
+        
         print(self.getDiagnostics(gs, fpuset=fpuset))
 
     # ........................................................................
-    def getFirmwareVersion(self, gs, fpuset=[]):
+    def getFirmwareVersion(self, gs, fpuset=None):
+        if fpuset is None:
+            fpuset = []
         fpuset = self.check_fpuset(fpuset)
 
         try:
@@ -740,7 +778,10 @@ class UnprotectedGridDriver (object):
         return rval
 
     # ........................................................................
-    def printFirmwareVersion(self, gs, fpuset=[]):
+    def printFirmwareVersion(self, gs, fpuset=None):
+        if fpuset is None:
+            fpuset = []
+        
         fpuset = self.check_fpuset(fpuset)
 
         self.getFirmwareVersion(gs, fpuset)
@@ -751,11 +792,14 @@ class UnprotectedGridDriver (object):
                     fpu.fw_version_major, fpu.fw_version_minor, fpu.fw_version_patch,
                     fpu.fw_date_year, fpu.fw_date_month, fpu.fw_date_day))
 
-    def minFirmwareVersion(self, fpuset=[]):
+    def minFirmwareVersion(self, fpuset=None):
         """Note: This command does not retrieve the firmware version via
         the bus, in order to reduce unnecessary bus communication
         (it is intended to be suitable for very frequent use).
         """
+        if fpuset is None:
+            fpuset =[]
+        
         fpuset = self.check_fpuset(fpuset)
         gs = self._gd.getGridState()
         return self._gd.getMinFirmwareVersion(gs, fpuset)
@@ -782,7 +826,10 @@ class UnprotectedGridDriver (object):
     ##     return rval
 
     # ........................................................................
-    def readSerialNumbers(self, gs, fpuset=[]):
+    def readSerialNumbers(self, gs, fpuset=None):
+        if fpuset is None:
+            fpuset =[]
+        
         fpuset = self.check_fpuset(fpuset)
 
         try:
@@ -798,7 +845,10 @@ class UnprotectedGridDriver (object):
         return rval
 
     # ........................................................................
-    def printSerialNumbers(self, gs, fpuset=[]):
+    def printSerialNumbers(self, gs, fpuset=None):
+        if fpuset is None:
+            fpuset =[]
+        
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
@@ -860,7 +910,7 @@ class UnprotectedGridDriver (object):
 
 
     # ........................................................................
-    def configMotion(self, wavetable, gs, fpuset=[], soft_protection=True, check_protection=None,
+    def configMotion(self, wavetable, gs, fpuset=None, soft_protection=True, check_protection=None,
                      allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION,
                      warn_unsafe=True, verbosity=3):
         """
@@ -873,6 +923,9 @@ class UnprotectedGridDriver (object):
         the hardware).
 
         """
+        if fpuset is None:
+            fpuset = []
+        
         assert isinstance(wavetable,dict), "wavetable must be a dictionary. Was it generated using gen_wf()?"
         fpuset = self.check_fpuset(fpuset)
 
@@ -987,7 +1040,10 @@ class UnprotectedGridDriver (object):
         pass
 
 
-    def executeMotionB(self, gs, fpuset=[], sync_command=True):
+    def executeMotionB(self, gs, fpuset=None, sync_command=True):
+        if fpuset is None:
+            fpuset = []
+        
         fpuset = self.check_fpuset(fpuset)
 
         if len(fpuset) == 0:
@@ -1016,7 +1072,10 @@ class UnprotectedGridDriver (object):
         return rv
 
     # ........................................................................
-    def executeMotion(self, gs, fpuset=[], sync_command=True):
+    def executeMotion(self, gs, fpuset=None, sync_command=True):
+        if fpuset is None:
+            fpuset = []
+        
         fpuset = self.check_fpuset(fpuset)
 
         if len(fpuset) == 0:
@@ -1084,7 +1143,10 @@ class UnprotectedGridDriver (object):
         return rv
 
     # ........................................................................
-    def abortMotion(self, gs, fpuset=[], sync_command=True):
+    def abortMotion(self, gs, fpuset=None, sync_command=True):
+        if fpuset is None:
+            fpuset = []
+        
         fpuset = self.check_fpuset(fpuset)
 
         if not sync_command:
@@ -1181,7 +1243,11 @@ class UnprotectedGridDriver (object):
         return rval
 
     # ........................................................................
-    def reverseMotion(self, gs, fpuset=[], soft_protection=True, verbosity=3):
+    def reverseMotion(self, gs, fpuset=None, soft_protection=True, verbosity=3):
+    
+        if fpuset is None:
+            fpuset = []
+        
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
@@ -1215,7 +1281,10 @@ class UnprotectedGridDriver (object):
 
         return rv
 
-    def repeatMotion(self, gs, fpuset=[], soft_protection=True):
+    def repeatMotion(self, gs, fpuset=None, soft_protection=True):
+        if fpuset is None:
+            fpuset = []
+        
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
@@ -1258,6 +1327,10 @@ class UnprotectedGridDriver (object):
             referenced flag (it is up to the caller to decide if the counts can
             still be trusted).
         """
+        
+        if fpuset is None:
+            fpuset = []
+        
         fpuset = self.check_fpuset(fpuset)
 
         if len(fpuset) == 0:
@@ -1329,7 +1402,9 @@ class UnprotectedGridDriver (object):
         return rv, status
 
     # ........................................................................
-    def checkIntegrity(self, gs, fpuset=[], verbose=True):
+    def checkIntegrity(self, gs, fpuset=None, verbose=True):
+        if fpuset is None:
+            fpuset = []
         fpuset = self.check_fpuset(fpuset)
 
         try:
@@ -1507,7 +1582,7 @@ class GridDriver(UnprotectedGridDriver):
                 beta_underflow,
                 beta_overflow)
 
-    def _reset_hook(self, old_state, new_state, fpuset=[]):
+    def _reset_hook(self, old_state, new_state, fpuset=None):
         """This is to be run after a reset or hardware power-on-reset.
         Updates the offset between the stored FPU positions and positions
         reported by ping.
@@ -1524,6 +1599,9 @@ class GridDriver(UnprotectedGridDriver):
         - after every resetFPU command
 
         """
+        if fpuset is None:
+            fpuset = []
+        
         self.readSerialNumbers(new_state, fpuset=fpuset)
         print("%f: Resetting fpu set %r" % (time.time(), fpuset),  file=self.protectionlog)
 
@@ -1554,11 +1632,13 @@ class GridDriver(UnprotectedGridDriver):
             time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
 
 
-    def _reset_counter_hook(self, alpha_target, beta_target, old_state, new_state, fpuset=[]):
+    def _reset_counter_hook(self, alpha_target, beta_target, old_state, new_state, fpuset=None):
         """similar to reset_hook, but run after resetStepCounter and
         only updating the caloffsets.
         """
-
+        if fpuset is None:
+            fpuset =[]
+        
         for fpu_id, fpu in enumerate(new_state.FPU):
             if not fpu_in_set(fpu_id, fpuset):
                 continue
@@ -1589,9 +1669,11 @@ class GridDriver(UnprotectedGridDriver):
             time.time(), self.a_caloffsets, self.b_caloffsets), file=self.protectionlog)
 
     # ........................................................................
-    def trackedAngles(self, gs=None, fpuset=[], show_offsets=False, active=False, retrieve=False, display=True):
+    def trackedAngles(self, gs=None, fpuset=None, show_offsets=False, active=False, retrieve=False, display=True):
         """lists tracked angles, offset, and waveform span
         for configured waveforms, for each FPU"""
+        if fpuset is None:
+            fpuset =[]
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
@@ -1660,7 +1742,7 @@ class GridDriver(UnprotectedGridDriver):
 
 
 
-    def _refresh_positions(self, grid_state, store=True, fpuset=[]):
+    def _refresh_positions(self, grid_state, store=True, fpuset=None):
         """This is to be run after any movement.
 
         Computes new current positions from step count
@@ -1672,6 +1754,8 @@ class GridDriver(UnprotectedGridDriver):
         it, so this might change.
 
         """
+        if fpuset is None:
+            fpuset =[]
         inconsistency_abort = False
         with self.env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id, fpu in enumerate(grid_state.FPU):
@@ -1731,7 +1815,9 @@ class GridDriver(UnprotectedGridDriver):
 
 
     # ........................................................................
-    def pingFPUs(self, grid_state, fpuset=[]):
+    def pingFPUs(self, grid_state, fpuset=None):
+        if fpuset is None:
+            fpuset = []
         fpuset = self.check_fpuset(fpuset)
 
         with self.lock:
@@ -2224,13 +2310,15 @@ class GridDriver(UnprotectedGridDriver):
                 del self.configured_ranges[k]
 
 
-    def _allow_find_datum_hook(self,gs, search_modes, selected_arm=None, fpuset=[],
+    def _allow_find_datum_hook(self,gs, search_modes, selected_arm=None, fpuset=None,
                               support_uninitialized_auto=True):
         """This function checks whether a datum search is safe, and throws an
         exception if not. It does that based on the stored
         position.
 
         """
+        if fpuset is None:
+            fpuset = []
 
         # get fresh ping data
         self._pingFPUs(gs, fpuset=fpuset)
@@ -2303,8 +2391,12 @@ class GridDriver(UnprotectedGridDriver):
                     raise ProtectionError("Alpha arm of FPU %i is not in safe range"
                                           " for datum search (angle=%r, range=%r)" % (fpu_id, apos, alim))
 
-    def _finished_find_datum_hook(self, prev_gs, datum_gs, search_modes=None, fpuset=[],
-                                  was_cancelled=False, initial_positions={}, selected_arm=None):
+    def _finished_find_datum_hook(self, prev_gs, datum_gs, search_modes=None, fpuset=None,
+                                  was_cancelled=False, initial_positions=None, selected_arm=None):
+        if fpuset is None:
+            fpuset = []
+        if initial_positions is None:
+            initial_positions = {}
 
         # FIXME: check if the next block is still needed
         fpuset_refresh = []
@@ -2435,10 +2527,12 @@ class GridDriver(UnprotectedGridDriver):
 
 
 
-    def _start_find_datum_hook(self, gs, search_modes=None,  selected_arm=None, fpuset=[], initial_positions=None, soft_protection=None):
+    def _start_find_datum_hook(self, gs, search_modes=None,  selected_arm=None, fpuset=None, initial_positions=None, soft_protection=None):
         """This is run when an findDatum command is actually started.
         It updates the new range of possible positions to include the zero point of each arm."""
 
+        if fpuset is None:
+            fpuset = []
         # initial_positions needs to be a dict
 
         initial_positions.clear()
@@ -2508,7 +2602,11 @@ class GridDriver(UnprotectedGridDriver):
 
 
     def _cancel_find_datum_hook(self, gs, search_modes,  selected_arm=None,
-                               fpuset=[], initial_positions={}):
+                               fpuset=None, initial_positions=None):
+        if fpuset is None:
+            fpuset =[]
+        if initial_positions is None:
+            initial_positions = {}
 
         with self.env.begin(db=self.fpudb, write=True) as txn:
             for fpu_id in initial_positions.keys():
@@ -2631,14 +2729,15 @@ class GridDriver(UnprotectedGridDriver):
         self._refresh_positions(grid_state, fpuset=fpuset)
 
     # ........................................................................
-    def configPaths(self, paths, grid_state, fpuset=[], soft_protection=True, check_protection=None,
+    def configPaths(self, paths, grid_state, fpuset=None, soft_protection=True, check_protection=None,
                     allow_uninitialized=False, ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION, reverse=False):
         """This methods takes a path which was loaded using wflib.load_path, and
         passes it to the configMotion method. All normal checks apply.
         In addition, the start point of the passed path must match the
         current position of the FPUs exactly.
         """
-
+        if fpuset is None:
+            fpuset = []
         waveform = {}
         for fpu_id, (alpha_path, beta_path)  in paths.items():
             assert(len(alpha_path) == len(beta_path)), "fpu_id=%d. Alpha and beta paths must be the same length" % fpu_id
@@ -2793,7 +2892,7 @@ class GridDriver(UnprotectedGridDriver):
 
 
     # ........................................................................
-    def recoverFaults(self, grid_state, fpuset=[]):
+    def recoverFaults(self, grid_state, fpuset=None):
         """This method attempts to automatically recover a set of FPUs from a
         failure (alpha limit breach, beta limit breach, beta collision or
         aborted motion).
@@ -2803,6 +2902,8 @@ class GridDriver(UnprotectedGridDriver):
         closer to their safe zone.
 
         """
+        if fpuset is None:
+            fpuset = []
         if len(fpuset) == 0:
             fpuset = range(self.config.num_fpus)
         fpuset = self.check_fpuset(fpuset)
