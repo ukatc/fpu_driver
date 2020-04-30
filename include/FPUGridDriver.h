@@ -28,7 +28,12 @@ class UnprotectedGridDriver
 public:
     UnprotectedGridDriver();
 
+    // TODO: Ad-hoc test function only - remove when no longer needed
+    int testFunction();
+
 private:
+    // TODO: Ad-hoc test variable only - remove when no longer needed
+    int dummyCounter = 0;
 
 };
 

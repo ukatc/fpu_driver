@@ -1,4 +1,4 @@
-# BW note: This file is just a quick copy/adaptation of build.sh for now
+# TODO: BW note: This file is just a quick copy/adaptation of build.sh for now
 # (N.B. I don't know if the original comments below are still correct)
 
 # This needs boost-1-65-1 - the version in Debian won't do.
@@ -9,4 +9,8 @@
 # export CPLUS_INCLUDE_PATH=$HOME/include                     
 # export LD_LIBRARY_PATH=$HOME/lib                     
 
-g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o griddriver.so griddriver.C -L/usr/local/lib -lboost_python27
+g++ -shared -std=c++11 -fPIC \
+    -I/usr/local/include -I/usr/include/python2.7 -I../../include \
+     griddriver_wrapper.C ../../src/FPUGridDriver.C \
+     -L/usr/local/lib -lboost_python27 \
+     -o griddriver.so

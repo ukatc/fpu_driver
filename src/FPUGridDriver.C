@@ -39,6 +39,15 @@ UnprotectedGridDriver::UnprotectedGridDriver()
     
 }
 
+// TODO: Ad-hoc test function only - remove when no longer needed
+int UnprotectedGridDriver::testFunction()
+{
+    dummyCounter++;
+
+    return dummyCounter;
+}
+
+
 //==============================================================================
 
 GridDriver::GridDriver()
