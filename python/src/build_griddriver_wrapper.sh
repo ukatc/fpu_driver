@@ -9,6 +9,10 @@
 # export CPLUS_INCLUDE_PATH=$HOME/include                     
 # export LD_LIBRARY_PATH=$HOME/lib                     
 
+
+# TODO: Eventually build and include the C++-side grid driver functionality as
+# a library file, rather than as individual source files?
+
 g++ -shared -std=c++11 -fPIC \
     -I/usr/local/include -I/usr/include/python2.7 -I../../include \
      griddriver_wrapper.C ../../src/FPUGridDriver.C \
