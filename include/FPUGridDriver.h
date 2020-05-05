@@ -53,11 +53,13 @@ public:
         int min_bus_repeat_delay_ms = 0,
         int min_fpu_repeat_delay_ms = 1,
         double alpha_datum_offset = ALPHA_DATUM_OFFSET,
-        enum E_LogLevel logLevel = DEFAULT_LOGLEVEL,
+        //enum E_LogLevel logLevel = DEFAULT_LOGLEVEL,  // TODO: Figure out how to implement enums in Boost.Python
         const string &log_dir = DEFAULT_LOGDIR,
         double motor_minimum_frequency = MOTOR_MIN_STEP_FREQUENCY,
         double motor_maximum_frequency = MOTOR_MAX_STEP_FREQUENCY,
-        double motor_max_start_frequency = MOTOR_MAX_START_FREQUENCY,
+        double motor_max_start_frequency = MOTOR_MAX_START_FREQUENCY
+        // NOTE: Boost.Python only allows up to 14 function params
+#if 0    
         double motor_max_rel_increase = MAX_ACCELERATION_FACTOR,
         int motor_max_step_difference = MAX_STEP_DIFFERENCE,
         int firmware_version_address_offset = 0x61,
@@ -65,9 +67,17 @@ public:
         const string &control_logfile = "_{start_timestamp}-fpu_control.log",
         const string &tx_logfile = "_{start_timestamp}-fpu_tx.log",
         const string &rx_logfile = "_{start_timestamp}-fpu_rx.log",
-        const string &start_timestamp = "ISO8601");
+        const string &start_timestamp = "ISO8601"
+#endif // 0        
+        );
 
+    // TODO: Un-comment the virtual destructor below, and figure out how to
+    // add it to Boost.Python wrapper - would currently result in the following
+    // error:
+    // ImportError: ./griddriver.so: undefined symbol: _ZTIN6mpifps21UnprotectedGridDriverE
+#if 0
     virtual ~UnprotectedGridDriver();
+#endif // 0
 
     // TODO: Ad-hoc test function only - remove when no longer needed
     int testFunction();

@@ -24,8 +24,9 @@
 //   - Open a Bash shell in this directory
 //   - Do: source build_griddriver_wrapper.sh   (produces griddriver.so wrapper library file)
 //   - Open interactive Python shell from Bash shell by typing "python -i"
-//   - Do: import griddriver
-//   - Do: ugd=griddriver.UnprotectedGridDriver()
+//   - Do: from griddriver import *
+//   - Do: ugd=UnprotectedGridDriver(1, 32.0, False, 3, 4, 5, 6, 7, 9.0, "blah", 1.0, 2.0, 3.0)
+//              (***** NOTE: Does not yet have all required parameters *****)
 //   - Do: ugd.testFunction()  repeatedly - on first invocation should display 1,
 //     and then increment with each subsequent invocation
 
@@ -33,8 +34,11 @@
 #include <boost/python.hpp>
 
 #include "FPUGridDriver.h"
+#include "InterfaceConstants.h"
 
 using namespace boost::python;
+namespace bp = boost::python;
+
 using namespace mpifps;
 
 // NOTE: The name in BOOST_PYTHON_MODULE() below should match the griddriver.C
@@ -45,7 +49,68 @@ using namespace mpifps;
  
 BOOST_PYTHON_MODULE(griddriver)   
 {
-    class_<UnprotectedGridDriver>("UnprotectedGridDriver")
+    class_<UnprotectedGridDriver>("UnprotectedGridDriver", init<
+        int,
+        double,
+        bool,
+        int,
+        int,
+        int,
+        int,
+        int,
+        double,  
+        //enum E_LogLevel,  // TODO: Figure out how to implement enums in Boost.Python
+        const string&,
+        double,
+        double,
+        double>())
+
+#if 0
+        // NOTE: Boost.Python only allows up to 14 function params, so the
+        // following can't be added
+        double,
+        int,
+        int,
+        const string&,
+        const string&,
+        const string&,
+        const string&,
+        const string&
+#endif // 0
+
+
+
+        // TODO: If use the following then need to use shared consts for
+        // ALL of the following (so that shared with FPUGridDriver.h
+        // constructor defaults)
+
+#if 0        
+        bp::arg("nfpus") = DEFAULT_NUM_FPUS,
+        bp::arg("socketTimeOutSeconds") = 20.0,
+        bp::arg("confirm_each_step") = false,
+        bp::arg("waveform_upload_pause_us") = 0,
+        bp::arg("configmotion_max_retry_count") = 5,
+        bp::arg("configmotion_max_resend_count") = 10,
+        bp::arg("min_bus_repeat_delay_ms") = 0,
+        bp::arg("min_fpu_repeat_delay_ms") = 1,
+        bp::arg("alpha_datum_offset") = ALPHA_DATUM_OFFSET,
+        bp::arg("E_LogLevel logLevel") = DEFAULT_LOGLEVEL,
+        bp::arg("string &log_dir") = DEFAULT_LOGDIR,
+        bp::arg("motor_minimum_frequency") = MOTOR_MIN_STEP_FREQUENCY,
+        bp::arg("motor_maximum_frequency") = MOTOR_MAX_STEP_FREQUENCY,
+        bp::arg("motor_max_start_frequency") = MOTOR_MAX_START_FREQUENCY
+
+        bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
+        bp::arg("motor_max_step_difference") = MAX_STEP_DIFFERENCE,
+        bp::arg("firmware_version_address_offset") = 0x61,
+        bp::arg("string &protection_logfile") = "_{start_timestamp}-fpu_protection.log",
+        bp::arg("string &control_logfile") = "_{start_timestamp}-fpu_control.log",
+        bp::arg("string &tx_logfile") = "_{start_timestamp}-fpu_tx.log",
+        bp::arg("string &rx_logfile") = "_{start_timestamp}-fpu_rx.log",
+        bp::arg("string &start_timestamp") = "ISO8601"
+#endif // 0        
+
+
         .def("testFunction", &UnprotectedGridDriver::testFunction)
     ;
 }
