@@ -44,23 +44,29 @@ class UnprotectedGridDriver
 {
 public:
     UnprotectedGridDriver(
+        // NOTE: Boost.Python only allows up to 14 function arguments
         int nfpus = DEFAULT_NUM_FPUS,
-        double socketTimeOutSeconds = 20.0,
         bool confirm_each_step = false,
-        int waveform_upload_pause_us = 0,
         int configmotion_max_retry_count = 5,
         int configmotion_max_resend_count = 10,
         int min_bus_repeat_delay_ms = 0,
         int min_fpu_repeat_delay_ms = 1,
-        double alpha_datum_offset = ALPHA_DATUM_OFFSET,
         //enum E_LogLevel logLevel = DEFAULT_LOGLEVEL,  // TODO: Figure out how to implement enums in Boost.Python
         const string &log_dir = DEFAULT_LOGDIR,
         double motor_minimum_frequency = MOTOR_MIN_STEP_FREQUENCY,
         double motor_maximum_frequency = MOTOR_MAX_STEP_FREQUENCY,
-        double motor_max_start_frequency = MOTOR_MAX_START_FREQUENCY
-        // NOTE: Boost.Python only allows up to 14 function params
-#if 0    
-        double motor_max_rel_increase = MAX_ACCELERATION_FACTOR,
+        double motor_max_start_frequency = MOTOR_MAX_START_FREQUENCY,
+        double motor_max_rel_increase = MAX_ACCELERATION_FACTOR
+        );
+
+        // TODO: The following are additional arguments defined in
+        // FPUGridDriver.py -> UnprotectedGridDriver __init__, but are not
+        // used by any higher-level Python scripts so need to be changed to
+        // just being internal class defaults
+#if 0
+        double socketTimeOutSeconds = 20.0,
+        int waveform_upload_pause_us = 0,
+        double alpha_datum_offset = ALPHA_DATUM_OFFSET,
         int motor_max_step_difference = MAX_STEP_DIFFERENCE,
         int firmware_version_address_offset = 0x61,
         const string &protection_logfile = "_{start_timestamp}-fpu_protection.log",
@@ -68,8 +74,7 @@ public:
         const string &tx_logfile = "_{start_timestamp}-fpu_tx.log",
         const string &rx_logfile = "_{start_timestamp}-fpu_rx.log",
         const string &start_timestamp = "ISO8601"
-#endif // 0        
-        );
+#endif // 0
 
     // TODO: Un-comment the virtual destructor below, and figure out how to
     // add it to Boost.Python wrapper - would currently result in the following
