@@ -27,7 +27,7 @@
 //   - Do: from griddriver import *
 //   - Do: ugd=UnprotectedGridDriver(1, False, 1, 2, 3, 4, "blah", 5.5, 6.6, 7.7, 8.8)
 //     (N.B. Dummy values for now)
-//   - Do: ugd.testFunction()  repeatedly - on first invocation should display 1,
+//   - Do: ugd.testIncrement()  repeatedly - on first invocation should display 1,
 //     and then increment with each subsequent invocation
 
 
@@ -85,8 +85,9 @@ BOOST_PYTHON_MODULE(griddriver)
         bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
 #endif // 0        
 
-
-        .def("testFunction", &UnprotectedGridDriver::testFunction)
+        // TODO: Ad-hoc test functions only - remove when no longer needed
+        .def("testIncrement", &UnprotectedGridDriver::testIncrement)
+        .def("testDivide", &UnprotectedGridDriver::testDivide)
     ;
 }
 

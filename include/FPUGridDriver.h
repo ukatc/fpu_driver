@@ -84,8 +84,21 @@ public:
     virtual ~UnprotectedGridDriver();
 #endif // 0
 
-    // TODO: Ad-hoc test function only - remove when no longer needed
-    int testFunction();
+    //..........................................................................
+    // TODO: Ad-hoc test functions only - remove when no longer needed
+    int testIncrement()
+    {
+        dummyCounter++;
+
+        return dummyCounter;
+    }
+
+    double testDivide(double dividend, double divisor)
+    {
+        return dividend / divisor;
+    }
+
+    //..........................................................................
 
 private:
     // TODO: Ad-hoc test variable only - remove when no longer needed
