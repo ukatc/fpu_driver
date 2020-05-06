@@ -22,7 +22,7 @@
 
 // Example of using this Python wrapper:
 //   - Open a Bash shell in this directory
-//   - Do: source build_griddriver_wrapper.sh   (produces griddriver.so wrapper library file)
+//   - Do: source build_griddriver_wrapped.sh   (produces griddriver.so library file)
 //   - Open interactive Python shell from Bash shell by typing "python -i"
 //   - Do: from griddriver import *
 //   - Do: ugd=UnprotectedGridDriver(1, False, 1, 2, 3, 4, "blah", 5.5, 6.6, 7.7, 8.8)
@@ -106,7 +106,7 @@ BOOST_PYTHON_MODULE(griddriver)
 
 // To use this experimental stuff:
 //   - Open a Bash shell in this directory
-//   - Do: source build_griddriver_wrapper.sh   (produces griddriver.so library file)
+//   - Do: source build_griddriver_wrapped.sh   (produces griddriver.so file)
 //   - Open interactive Python shell from Bash shell by typing "python -i"
 //   - Do: import griddriver
 //   - Do: blah=griddriver.MessageStorer()
