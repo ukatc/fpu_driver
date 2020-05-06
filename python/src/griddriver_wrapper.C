@@ -88,6 +88,7 @@ BOOST_PYTHON_MODULE(griddriver)
         // TODO: Ad-hoc test functions only - remove when no longer needed
         .def("testIncrement", &UnprotectedGridDriver::testIncrement)
         .def("testDivide", &UnprotectedGridDriver::testDivide)
+        .def("testGetNumFPUs", &UnprotectedGridDriver::testGetNumFPUs)
     ;
 }
 

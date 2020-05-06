@@ -102,10 +102,10 @@ public:
         configmotion_confirmation_period = 25;
         can_command_priority = 3;
 
-	min_bus_repeat_delay_ms = 2;
-	min_fpu_repeat_delay_ms = 4;
-	configmotion_max_retry_count = 10;
-	configmotion_max_resend_count = 5;
+        min_bus_repeat_delay_ms = 2;
+        min_fpu_repeat_delay_ms = 4;
+        configmotion_max_retry_count = 10;
+        configmotion_max_resend_count = 5;
 
         firmware_version_address_offset = 0x61; // new offset for v1.3.0, matching firmware version 1.4.4
 
@@ -119,7 +119,7 @@ public:
         motor_maximum_frequency = 2000.0;
         motor_max_start_frequency=550.0;
         motor_max_rel_increase = 1.4;
-	motor_max_step_difference = 100;
+	    motor_max_step_difference = 100;
     };
 
 };
