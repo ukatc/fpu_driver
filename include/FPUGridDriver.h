@@ -24,6 +24,7 @@
 #include "E_LogLevel.h"
 #include "InterfaceConstants.h"
 #include "FPUConstants.h"
+#include "EtherCANInterface.h"
 
 using namespace std;
 
