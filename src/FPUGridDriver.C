@@ -29,12 +29,37 @@
 #include <stdio.h>
 #endif
 
-// TODO: Temporary "warn()" placeholder for now - implement something better
-#define warn(warnString)
-
 
 namespace mpifps
 {
+// TODO: Temporary "warn()" placeholder for now - implement something better
+#define warn(warnString)
+
+#define TIMESTAMP_INIT_STRING     "ISO8601"
+
+// -----------------------------------------------------------------------------
+string get_logname(string basename, string log_dir = "", string timestamp = "")
+{
+
+    // TODO: Convert from FpuGridDriver.py -> get_logname()
+
+    if (timestamp == TIMESTAMP_INIT_STRING)
+    {
+
+    }
+
+}
+
+// -----------------------------------------------------------------------------
+string make_logdir(string log_dir)
+{
+
+    // TODO: Convert from FpuGridDriver.py -> make_logdir() - not sure about
+    // equivalent C++ path manipulations for Linux path handling yet
+
+    return string("");
+}
+
 
 //==============================================================================
 
@@ -45,7 +70,7 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     int configmotion_max_resend_count,
     int min_bus_repeat_delay_ms,
     int min_fpu_repeat_delay_ms,
-    //enum E_LogLevel logLevel,  // TODO: Figure out how to implement enums in Boost.Python
+    enum E_LogLevel logLevel,
     const string &log_dir,
     double motor_minimum_frequency,
     double motor_maximum_frequency,
@@ -53,7 +78,15 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     double motor_max_rel_increase
     )
 {
-    // self.lock = threading.RLock()   // TODO: Adapt from Python
+
+    // TODO: Finish filling out this constructor from Python equivalent
+
+
+
+    // self.lock = threading.RLock()   // TODO: Adapt from Python - use e.g. 
+                                       // pthread_mutex_lock()? (see EtherCANInterface.C)
+                                       // AND need to unlock somehwere else, or would it be
+                                       // done automatically due to RAII?
 
     if (confirm_each_step)
     {
@@ -88,28 +121,40 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     int flags = O_CREAT | O_APPEND | O_WRONLY;
     mode_t mode = 0644;  // Octal
 
+    config.logLevel = logLevel;
 
+    string log_path = make_logdir(log_dir);
 
+    //..........................................................................
 
-    // TODO: The following are additional arguments defined in
-    // FPUGridDriver.py -> UnprotectedGridDriver __init__, but are not
-    // used by any higher-level Python scripts so need to be changed to
-    // just being internal class defaults
+    // TODO: Convert log file initialisation code from FpuGridDriver.py
+
 #if 0
-    int motor_max_step_difference = MAX_STEP_DIFFERENCE,
     const string &protection_logfile = "_{start_timestamp}-fpu_protection.log",
     const string &control_logfile = "_{start_timestamp}-fpu_control.log",
     const string &tx_logfile = "_{start_timestamp}-fpu_tx.log",
     const string &rx_logfile = "_{start_timestamp}-fpu_rx.log",
-    const string &start_timestamp = "ISO8601"
+    const string &start_timestamp = TIMESTAMP_INIT_STRING;
 #endif // 0
 
+    //..........................................................................
 
-
-    // TODO: Fill out this constructor from Python equivalent
-
+    // TODO: How to catch / indicate allocation failure? Add try/catch around
+    // the following, OR use std::nothrow?
+    _gd = new EtherCANInterface(config);
 }
 
+UnprotectedGridDriver::~UnprotectedGridDriver()
+{
+    if (_gd != nullptr)
+    {
+        delete _gd;
+    }
+
+    // TODO: Close/delete any other non-RAII objects here - see 
+    // FpuGridDriver.py -> UnprotectedGridDriver -> __del__
+
+}
 
 
 //==============================================================================

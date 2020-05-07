@@ -25,7 +25,7 @@
 //   - Do: source build_griddriver_wrapped.sh   (produces griddriver.so library file)
 //   - Open interactive Python shell from Bash shell by typing "python -i"
 //   - Do: from griddriver import *
-//   - Do: ugd=UnprotectedGridDriver(1, False, 1, 2, 3, 4, "blah", 5.5, 6.6, 7.7, 8.8)
+//   - Do: ugd=UnprotectedGridDriver(1, False, 1, 2, 3, 4, LOG_INFO, "blah", 5.5, 6.6, 7.7, 8.8)
 //     (N.B. Dummy values for now)
 //   - Do: ugd.testIncrement()  repeatedly - on first invocation should display 1,
 //     and then increment with each subsequent invocation
@@ -49,20 +49,33 @@ using namespace mpifps;
  
 BOOST_PYTHON_MODULE(griddriver)   
 {
+    scope().attr("__version__") = (strlen(VERSION) > 1) ?  (((const char *)VERSION) + 1) : "?.?.?";
+
+    // TODO: E_LogLevel enum below is copy-and-pasted from ethercanif.C for
+    // now, but ideally need to use a shared file for this somehow eventually
+    enum_<E_LogLevel>("E_LogLevel")
+    .value("LOG_ERROR",               LOG_ERROR)
+    .value("LOG_INFO",                LOG_INFO)
+    .value("LOG_GRIDSTATE",           LOG_GRIDSTATE)
+    .value("LOG_VERBOSE",             LOG_VERBOSE)
+    .value("LOG_DEBUG",               LOG_DEBUG)
+    .value("LOG_TRACE_CAN_MESSAGES",  LOG_TRACE_CAN_MESSAGES)
+    .export_values();
+
     class_<UnprotectedGridDriver>("UnprotectedGridDriver", init<
         // NOTE: Boost.Python only allows up to 14 function arguments
-        int,            // nfpus
-        bool,           // confirm_each_step
-        int,            // configmotion_max_retry_count
-        int,            // configmotion_max_resend_count
-        int,            // min_bus_repeat_delay_ms
-        int,            // min_fpu_repeat_delay_ms
-        //enum E_LogLevel // logLevel // TODO: Figure out how to implement enums in Boost.Python
-        const string &, // log_dir
-        double,         // motor_minimum_frequency
-        double,         // motor_maximum_frequency
-        double,         // motor_max_start_frequency
-        double          // motor_max_rel_increase
+        int,              // nfpus
+        bool,             // confirm_each_step
+        int,              // configmotion_max_retry_count
+        int,              // configmotion_max_resend_count
+        int,              // min_bus_repeat_delay_ms
+        int,              // min_fpu_repeat_delay_ms
+        enum E_LogLevel,  // logLevel
+        const string &,   // log_dir
+        double,           // motor_minimum_frequency
+        double,           // motor_maximum_frequency
+        double,           // motor_max_start_frequency
+        double            // motor_max_rel_increase
         >())
 
 
