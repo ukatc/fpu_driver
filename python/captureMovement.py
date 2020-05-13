@@ -7,6 +7,7 @@ from os import makedirs
 
 from FpuGridDriver import GridDriver,GatewayAddress
 from fpu_commands import gen_wf
+from wflib import load_waveform
 from GigE.GigECamera import GigECamera, BASLER_DEVICE_CLASS, DEVICE_CLASS, IP_ADDRESS
 from vfr.conf import POS_REP_CAMERA_IP_ADDRESS as CAMERA_IP_ADDRESS
 
@@ -100,16 +101,30 @@ class MeasureGridDriver(GridDriver):
    
 def get_parser():
     parser = argparse.ArgumentParser(description='Move a singe FPU by a specified alpha, beta from datum')
-    parser.add_argument('-a','--alpha',
+    parser.add_argument('-i','--ipath',
+                        help='root image location, files will stored in a datetime stamped folder.')
+                        
+    subparser = parser.add_subparsers(help='Chose the control mode')
+    
+    direct_parser = subparser.add_parser('direct', aliases='d', help='Direct control mode')
+    direct_parser.add_argument('-a','--alpha',
                         type=int,
                         nargs='+',
                         help='angle to move alpha arm')
-    parser.add_argument('-b','--beta',
+    direct_parser.add_argument('-b','--beta',
                         type=int,
                         nargs='+',
                         help='angle to move beta arm')
-    parser.add_argument('-i','--ipath',
-                        help='root image location, files will stored in a datetime stamped folder.')
+    direct_parser.set_defaults(directMode=True))
+                        
+    file_parser = subparser.add_parser('file', aliases='f', help='File control mode')
+    file_parser.add_argument('-f','--file',
+                        nargs='+',
+                        help='file containing waveforms')
+    file_parser.add_argument('-c','--cmap',
+                        nargs='+',
+                        help='canmap.cfg file to configure which waveforms go to which FPU')
+    file_parser.set_defaults(directMode=False))
     return parser
     
 if __name__ == "__main__":
@@ -146,7 +161,10 @@ if __name__ == "__main__":
     gd.findDatum(gs)
     
     #setup movement
-    waveform = gen_wf(args.alpha, args.beta)
+    if args.directMode:
+        waveform = gen_wf(args.alpha, args.beta)
+    else:
+        waveform = load_waveform(args.file,args.cmap, reverse=False)
     
     gd.configMotion(waveform, gs)
     #execute motion
