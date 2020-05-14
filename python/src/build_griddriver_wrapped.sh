@@ -25,6 +25,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
     ../../src/CommandPool.C \
     ../../src/CommandQueue.C \
     ../../src/decode_CAN_response.C \
+    ../../src/DeviceLock.C \
     ../../src/EtherCANInterface.C \
     ../../src/FPUArray.C \
     ../../src/FPUGridDriver.C \

@@ -24,6 +24,7 @@
 
 #include <fcntl.h>
 #include "FPUGridDriver.h"
+#include "DeviceLock.h"
 
 #ifdef DEBUG
 #include <stdio.h>
