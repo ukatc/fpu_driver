@@ -64,6 +64,9 @@ public:
         double motor_max_rel_increase = MAX_ACCELERATION_FACTOR
         );
 
+    E_EtherCANErrCode connect(const int ngateways,
+                              const t_gateway_address gateway_addresses[]);
+
     // TODO: Check if this virtual destructor stuff is correct
     virtual ~UnprotectedGridDriver();
 
@@ -91,7 +94,7 @@ public:
 private:
     EtherCANInterfaceConfig config;
 
-    // TODO: Eevntually merge t_wtable and the "reversed" bool into a single
+    // TODO: Eventually merge t_wtable and the "reversed" bool into a single
     // data structure, and just have one map instead of two ?
     std::map<int, AsyncInterface::t_wtable> last_wavetable; // <fpu_id, wavetable>
     std::map<int, bool> wf_reversed; // <fpu_id, reversed>

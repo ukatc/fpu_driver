@@ -20,21 +20,32 @@
 
 // BW NOTE: This file is initial work in progress for now
 
-// Example of using this Python wrapper:
+// Usage examples
+// --------------
+//
+// Firstly, set things up:
 //   - Open a Bash shell in this directory
 //   - Do: source build_griddriver_wrapped.sh   (produces griddriver.so library file)
 //   - Open interactive Python shell from Bash shell by typing "python -i"
 //   - Do: from griddriver import *
+//
+// Basic UnprotectedGridDriver instantiation and test function:
 //   - Do: ugd=UnprotectedGridDriver(1, False, 1, 2, 3, 4, LOG_INFO, "blah", 5.5, 6.6, 7.7, 8.8)
 //     (N.B. Dummy values for now)
 //   - Do: ugd.testIncrement()  repeatedly - on first invocation should display 1,
 //     and then increment with each subsequent invocation
-
+//
+// Basic GridDriver instantiation and dummy connect() function:
+//    >>> from griddriver import *
+//    >>> gd=GridDriver()
+//    >>> gd.connect([1,2,3])
+//    griddriver.E_EtherCANErrCode.DE_OK
 
 #include <boost/python.hpp>
 
 #include "FPUGridDriver.h"
 #include "InterfaceConstants.h"
+#include "fpuwrapping_shared.h"
 
 using namespace boost::python;
 namespace bp = boost::python;
@@ -46,21 +57,34 @@ using namespace mpifps;
 // Python: // "ImportError: dynamic module does not define init function
 // (initgriddriver)" - see 
 // https://stackoverflow.com/questions/24226001/importerror-dynamic-module-does-not-define-init-function-initfizzbuzz
- 
+
+
+class WrappedGridDriver : public GridDriver
+{
+public:
+    E_EtherCANErrCode wrapped_connect(list& list_gateway_addresses)
+    {
+        // TODO: Implement this - needs to be similar to
+        // WrapEtherCANInterface::connectGateways()
+
+        return DE_OK; 
+    }
+
+};
+
+
+// ************* TODO: Create a WrappedUnprotectedGridDriver here, and specify it
+// in the class_ below (rather than UnprotectedGridDriver)
+
+
 BOOST_PYTHON_MODULE(griddriver)   
 {
     scope().attr("__version__") = (strlen(VERSION) > 1) ?  (((const char *)VERSION) + 1) : "?.?.?";
 
-    // TODO: E_LogLevel enum below is copy-and-pasted from ethercanif.C for
-    // now, but ideally need to use a shared file for this somehow eventually
-    enum_<E_LogLevel>("E_LogLevel")
-    .value("LOG_ERROR",               LOG_ERROR)
-    .value("LOG_INFO",                LOG_INFO)
-    .value("LOG_GRIDSTATE",           LOG_GRIDSTATE)
-    .value("LOG_VERBOSE",             LOG_VERBOSE)
-    .value("LOG_DEBUG",               LOG_DEBUG)
-    .value("LOG_TRACE_CAN_MESSAGES",  LOG_TRACE_CAN_MESSAGES)
-    .export_values();
+    DEFINE_ENUM_E_LogLevel
+
+    DEFINE_ENUM_EtherCANErrCode
+
 
     class_<UnprotectedGridDriver>("UnprotectedGridDriver", init<
         // NOTE: Boost.Python only allows up to 14 function arguments
@@ -102,6 +126,14 @@ BOOST_PYTHON_MODULE(griddriver)
         .def("testIncrement", &UnprotectedGridDriver::testIncrement)
         .def("testDivide", &UnprotectedGridDriver::testDivide)
         .def("testGetNumFPUs", &UnprotectedGridDriver::testGetNumFPUs)
+    ;
+
+    // TODO: Figure out how constructor needs to be specified for this derived
+    // class, because WrappedGridDriver is derived from GridDriver, which is
+    // derived from UnprotectedGridDriver
+    class_<WrappedGridDriver>("GridDriver", init<>())
+        .def("connect", &WrappedGridDriver::wrapped_connect)
+
     ;
 }
 

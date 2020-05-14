@@ -11,10 +11,9 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME T_GridState.h
+// NAME T_GatewayAddress.h
 //
-// This header defines a struct which holds the mirrored state
-// if the whole FPU array
+// This header defines a struct which holds the gateway address
 //
 ////////////////////////////////////////////////////////////////////////////////
 

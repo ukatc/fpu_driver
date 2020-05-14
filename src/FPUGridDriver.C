@@ -144,6 +144,38 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     _gd = new EtherCANInterface(config);
 }
 
+E_EtherCANErrCode UnprotectedGridDriver::connect(const int ngateways,
+                                const t_gateway_address gateway_addresses[])
+{
+    // TODO: Adapt from Python code below
+
+    // TODO: Also implement Python binding for this function - approach can be
+    // seen in ethercanif.C -> connectGateways() - binding function can just
+    // call it? BUT FPUGridDriver Python version does more with locking etc
+    // Adjust the entry parameter format above if necessary
+
+
+    // N.B. AsyncInterface::connect() / _gd->connect() requires:
+    //      (const int ngateways, const t_gateway_address gateway_addresses[])
+
+    E_EtherCANErrCode rv = _gd->connect(ngateways, gateway_addresses);
+
+    return rv;
+
+/*
+    with self.lock:
+        self.locked_gateways = [] # this del's and releases any previously acquired locks
+        for gw in address_list:
+            groupname = os.environ.get("MOONS_GATEWAY_ACCESS_GROUP","moons")
+            # acquire a unique inter-process lock for each gateway IP
+            dl = devicelock.DeviceLock('ethercan-gateway@%s:%i' % (gw.ip, gw.port), groupname)
+            self.locked_gateways.append(dl)
+        rv = self._gd.connect(address_list)
+        self._post_connect_hook(self.config)
+        return rv
+*/        
+}
+
 UnprotectedGridDriver::~UnprotectedGridDriver()
 {
     if (_gd != nullptr)
