@@ -17,6 +17,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+
+  // *********** BW NOTE: See comments near top of DeviceLock.h **************
+
+
 #include <sys/types.h>
 #include <signal.h>
 #include <errno.h>

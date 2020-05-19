@@ -17,6 +17,14 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+
+//  *********** BW NOTE: The work on converting devicelock.py into C++ code
+//  *********** in this module is paused for now, because it's still to be
+//  *********** evaluated whether this device lock functionality is actually
+//  *********** needed, particularly in the final ESO driver, and/or if it's
+//  *********** better to replace it by e.g. using Linux named semaphores instead
+
+
 #ifndef DEVICELOCK_H
 #define DEVICELOCK_H
 
