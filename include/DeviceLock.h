@@ -24,6 +24,8 @@
 #include <sys/types.h>
 #include <grp.h>
 #include <sstream>
+#include <fstream>
+#include <iostream>
 #include <time.h>
 
 #include "Exceptions_INTERIM.h"
@@ -72,7 +74,7 @@ public:
 
         // TODO: The following time code is used because it should be
         // equivalent to Python's time.time() function which was used
-        // in the original Python code from this this C++ code was
+        // in the original Python code from which this C++ code was
         // converted. However, will the C/C++ equivalent have the same time
         // resolution, and will there be any potential problem with duplicate
         // filenames if operations are done within a small time of each other?
@@ -94,33 +96,33 @@ public:
         tmpname << LOCKDIR << "/" << devicename << "_" << mypidstr << "-"
                 << time_secs_double << ".lock";
 
+        std::fstream f;
+        f.open(tmpname.str().c_str(), std::ios::out | std::ios::trunc);
+        f << mypidstr;
+
+        std::ostringstream lockname;
+        lockname << LOCKDIR << "/" << devicename << ".lock";
+
+        // This is atomic and can only succeed if lockname does not exist
+        // Give everyone read permission
+        if (chmod(tmpname.str().c_str(), S_IRUSR | S_IRGRP | S_IROTH) == 0)
+        {
+            // Link to temporary lock file
+            // This is important because we need to keep the lock while we
+            // check whether the last owner of the lock is alive
+            if (link(tmpname.str().c_str(), lockname.str().c_str()) != 0)
+            {
+                // TODO: Add devicename to error message eventually
+                // raise SystemError("Error: can't lock Device %s" % devicename)
+                raiseException("Error: can't lock Device");
+            }
+        }
+        // TODO: The logic of this needs to be part of the code above (was
+        // a try/finally block in Python)    
+        // We don't need the temporary file name any more
+        unlink(tmpname.str().c_str());
 
 /*      
-        TODO: Finish converting the following from Python
-
-        with open(tmpname,"w") as f:
-            f.writelines(mypid)
-            
-        lockname = "%s/%s.lock" % (LOCKDIR,devicename)
-        # this is atomic and can only succeed if lockname
-        # does not exist
-        try:
-            try:
-                # give everyone read permission
-                os.chmod(tmpname, S_IRUSR | S_IRGRP | S_IROTH)
-                # link to temporary lock file
-                # This is important because we need to keep
-                # the lock while we check whether the last owner
-                # of the lock is alive
-                os.link(tmpname, lockname)
-            except:
-                # raise SystemError("Error: can't lock Device %s" % devicename)
-                raise
-            
-        finally:
-            # we don't need the temporary file name any more
-            os.unlink(tmpname)
-            
         pidfile = "%s/%s.pid" % (LOCKDIR,devicename)
 
         try:
