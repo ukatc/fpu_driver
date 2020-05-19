@@ -20,11 +20,11 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <errno.h>
+#include <unistd.h>
+
+#include <string>
 
 #include "DeviceLock.h"
-#include "Exceptions_INTERIM.h"
-
-#define LOCKDIR     "/var/tmp/devicelocks"
 
 
 namespace mpifps
@@ -68,7 +68,17 @@ bool pid_exists(int pid)
 }
 
 // -----------------------------------------------------------------------------
-
-
-
+void cleanup_lock(const std::string &lockname)
+{
+    if (access(lockname.c_str(), F_OK) == 0)
+    {
+         unlink(lockname.c_str());
+    }
 }
+
+// -----------------------------------------------------------------------------
+
+
+
+
+} // namespace mpifps
