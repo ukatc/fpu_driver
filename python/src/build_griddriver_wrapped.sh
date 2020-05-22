@@ -15,11 +15,18 @@
 
 # TODO: Set version number below to what's required eventually
 
+# N.B. Obtained the following LMDB command-line build options by running
+# "make all" in LMDB source directory and looking at the command-line output
+# I then added -fPIC to match the g++ compilation
+gcc -fPIC -I../../lib/liblmdb -pthread -O2 -g -W -Wall -Wno-unused-parameter -Wbad-function-cast -Wuninitialized -c ../../lib/liblmdb/mdb.c
+gcc -fPIC -I../../lib/liblmdb -pthread -O2 -g -W -Wall -Wno-unused-parameter -Wbad-function-cast -Wuninitialized -c ../../lib/liblmdb/midl.c
+
 g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
     -I/usr/local/include \
     -I/usr/include/python2.7 \
     -I../../include \
     -I../../include/ethercan \
+    -I../../lib/liblmdb \
     griddriver_wrapper.C \
     ../../src/AsyncInterface.C \
     ../../src/CommandPool.C \
@@ -63,9 +70,12 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
     ../../src/handle_WarnCollisionBeta_warning.C \
     ../../src/handle_WarnLimitAlpha_warning.C \
     ../../src/handle_WriteSerialNumber_response.C \
+    ../../src/ProtectionDB.C \
     ../../src/SBuffer.C \
     ../../src/sync_utils.C	\
     ../../src/time_utils.C \
     ../../src/TimeOutList.C \
     -L/usr/local/lib -lboost_python27 \
-    -o griddriver.so
+    -o griddriver.so mdb.o midl.o
+# N.B. Linking in the LMDB mdb.o and midl.o object files above works because
+# the mdb.c and midl.c files use "extern C" interally (via lmdb.h file)

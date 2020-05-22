@@ -29,6 +29,9 @@
 #include "EtherCANInterface.h"
 #include "AsyncInterface.h"
 
+// TODO: FOR TESTING ONLY
+#include "ProtectionDB.h"
+
 namespace mpifps
 {
 using namespace std;
@@ -74,9 +77,19 @@ public:
     // TODO: Ad-hoc test functions only - remove when no longer needed
     int testIncrement()
     {
-        dummyCounter++;
+#if 0        
+        //************************
+        ProtectionDB protectiondb;
 
+        int val = protectiondb.doStuff();
+        return val;
+
+        //************************
+#else // NOT 1
+        dummyCounter++;
         return dummyCounter;
+#endif // NOT 1        
+
     }
 
     double testDivide(double dividend, double divisor)
