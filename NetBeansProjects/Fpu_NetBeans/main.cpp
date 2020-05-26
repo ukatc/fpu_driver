@@ -25,6 +25,8 @@ int main(int argc, char** argv)
     
     protectionDB.doStuff();
     
+    MDB_env *env_ptr = open_database_env(true);
+    
     return 0;
 }
 
