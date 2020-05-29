@@ -22,7 +22,6 @@
 #define PROTECTIONDB_H
 
 #include <vector>
-#include <map>
 #include <string>
 #include "FPUState.h"
 #include "AsyncInterface.h"
@@ -30,8 +29,6 @@
 
 using namespace mpifps;
 using namespace mpifps::ethercanif;
-
-// TODO: Decide if use C or C++ bindings for LMDB
 
 
 /*
@@ -53,10 +50,66 @@ Probable data types (TODO: CHECK):
 // TODO: Move elsewhere, and rename to e.g. Waveform?
 using Wentry = std::vector<AsyncInterface::t_step_pair>;
 
-// TODO: The following is just a guess for now, and might not be very efficient - 
-// need to check, and also see if there is already a suitable class or structure
-// type elsewhere
-using CounterVals = std::map<std::string, int64_t>; // Counter name, count value
+// -----------------------------------------------------------------------------
+
+// TODO: Check if there is already another suitable class or structure type
+// defined elsewhere which can be used
+
+class FpuCounters
+{
+public:
+    enum class Id
+    {
+        // NOTE: These indexes must stay the same for backward compatibility -
+        // only add new items to end of list, and do not delete any
+
+        // TODO: Eventually change names to camelcase with a leading capital - 
+        // underscores are only used for now only so that can easily search
+        // for them across this C++ and Python versions
+
+        unixtime = 0,
+
+        // Updated upon executeMotion
+        // Aborted movements are not subtracted
+        total_beta_steps = 1,           // Total step count for beta arm
+        total_alpha_steps = 2,          // Total step count for alpha arm
+        executed_waveforms = 3,         // Number of waveform tables executed
+        alpha_direction_reversals = 4,  // Number of times alpha arm movement was reversed
+        beta_direction_reversals = 5,   // Number of times alpha arm movement was reversed
+        sign_alpha_last_direction = 6,  // Sign of last alpha arm movement
+        sign_beta_last_direction = 7,   // Sign of last alpha arm movement
+        alpha_starts = 8,               // Number of times alpha arm started to move
+        beta_starts = 9,                // Number of times alpha arm started to move
+
+        // Updated upon finish of executeMotion / findDatum
+        collisions = 10,
+        limit_breaches = 11,
+        can_timeout = 12,
+        datum_timeout = 13,
+        movement_timeout = 14,
+
+        // Updated upon finish of findDatum
+        datum_count = 15,
+        alpha_aberration_count = 16,
+        beta_aberration_count = 17,
+        datum_sum_alpha_aberration = 18,   // Sum of residual count on alpha datum
+        datum_sum_beta_aberration = 19,    // Sum of residual count on beta datum
+        datum_sqsum_alpha_aberration = 20, // Square sum of above
+        datum_sqsum_beta_aberration = 21,  // Square sum of above
+       
+        NumCounters     // NOTE: Must be at end
+    };
+
+    FpuCounters()
+    {
+        counters.resize(static_cast<size_t>(Id::NumCounters), 0);
+    }
+  
+private:
+    std::vector<uint32_t> counters;  // TODO: Should this be uint64_t?
+                                     // TODO: Note that also holds unixtime -
+                                     // what size is this?
+};
 
 // -----------------------------------------------------------------------------
 
@@ -65,7 +118,6 @@ class ProtectionDB
 public:
     // TODO: For testing only
     int doStuff();
-
 
     // TODO: Check Python's @staticmethod, @classmethod (cls), other (self) - 
     // AND why does ProtectionDB Python class use these?
@@ -102,7 +154,8 @@ public:
                             int cnt);
 
     // TODO: counter_vals: See end of _update_counters_execute_motion()?
-    void put_counters(MDB_txn &txn, const t_fpu_state &fpu, CounterVals &counter_vals);
+    void put_counters(MDB_txn &txn, const t_fpu_state &fpu, 
+                      FpuCounters &fpu_counters);
 };
 
 // -----------------------------------------------------------------------------
