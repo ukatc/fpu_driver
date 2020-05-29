@@ -55,41 +55,38 @@ MDB_env *open_database_env(bool mockup)
     // TODO: Must only call exactly once for a particular LMDB file in this
     // process (see the LMDB documentation) - enforce this somehow?
     
-    // TODO: If database_file_name and file_name_ptr actually specify directories
-    // rather than filenames, then change their names to _dir
-    
     MDB_env *env_ptr = nullptr;
-    char *file_name_ptr = nullptr;
-    std::string database_file_name;
+    char *dir_c_str = nullptr;
+    std::string dir_str;
     
     if (mockup)
     {
-        file_name_ptr = getenv("FPU_DATABASE_MOCKUP");
-        if (file_name_ptr == nullptr)
+        dir_c_str = getenv("FPU_DATABASE_MOCKUP");
+        if (dir_c_str == nullptr)
         {
-            file_name_ptr = getenv("FPU_DATABASE");
-            if (file_name_ptr != nullptr)
+            dir_c_str = getenv("FPU_DATABASE");
+            if (dir_c_str != nullptr)
             {
-                database_file_name = file_name_ptr;
-                database_file_name += "_mockup";
+                dir_str = dir_c_str;
+                dir_str += "_mockup";
             }
         }
         else
         {
-            database_file_name = file_name_ptr;
+            dir_str = dir_c_str;
         }
     }
     else
     {
         // A good value is "/var/lib/fpudb"
-        file_name_ptr = getenv("FPU_DATABASE");
-        if (file_name_ptr != nullptr)
+        dir_c_str = getenv("FPU_DATABASE");
+        if (dir_c_str != nullptr)
         {
-            database_file_name = file_name_ptr;
+            dir_str = dir_c_str;
         }
     }
 
-    if (database_file_name != "")
+    if (dir_str != "")
     {
         size_t dbsize;
         
@@ -117,11 +114,15 @@ MDB_env *open_database_env(bool mockup)
         // max_spare_txns=1
         // create=True      <== **IMPORTANT** - create directory if doesn't exist?
         
-        int mdb_result;
-	mdb_result = mdb_env_create(&env_ptr);
+        int mdb_result = mdb_env_create(&env_ptr);
         if (mdb_result == 0)
         {
-            mdb_result = mdb_env_set_mapsize(env_ptr, dbsize);
+            mdb_result = mdb_env_set_maxdbs(env_ptr, 10);
+            if (mdb_result == 0)
+            {
+                mdb_result = mdb_env_set_mapsize(env_ptr, dbsize);
+            }
+            
             if (mdb_result == 0)
             {
                 // TODO: The following keeps compatibility with the original
@@ -131,16 +132,10 @@ MDB_env *open_database_env(bool mockup)
             
             if (mdb_result == 0)
             {
-                mdb_result = mdb_env_set_maxdbs(env_ptr, 10);
-            }
-            
-            if (mdb_result == 0)
-            {
                 // N.B. Using default flags for now, so flags value is 0x0
                 // TODO: Check the required state of MDB_NOTLS flag
                 unsigned int flags = 0x0;
-                mdb_result = mdb_env_open(env_ptr,
-                                          database_file_name.c_str(),
+                mdb_result = mdb_env_open(env_ptr, dir_str.c_str(),
                                           flags, 0755);
             }
             
@@ -154,6 +149,8 @@ MDB_env *open_database_env(bool mockup)
 
         //.......................
     }
+
+    // TODO: Return mdb_result somehow as well?
 
     return env_ptr;
 }
