@@ -50,6 +50,7 @@
           <commandLine>-pthread</commandLine>
         </cTool>
         <ccTool>
+          <standard>8</standard>
           <incDir>
             <pElem>../../lib/liblmdb</pElem>
             <pElem>../../include</pElem>

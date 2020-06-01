@@ -102,13 +102,21 @@ public:
 
     FpuCounters()
     {
-        counters.resize(static_cast<size_t>(Id::NumCounters), 0);
+        counters.resize((size_t)Id::NumCounters, 0);
     }
-  
+
+    void *getRawData(size_t &num_bytes_ret) const
+    {
+        num_bytes_ret = sizeof(CountersUintType) * (size_t)Id::NumCounters;
+        return (void *)counters.data();
+    }
+    
 private:
-    std::vector<uint32_t> counters;  // TODO: Should this be uint64_t?
-                                     // TODO: Note that also holds unixtime -
-                                     // what size is this?
+    // TODO: Should this be uint64_t?
+    // TODO: Note that also holds unixtime - what size is this?
+    using CountersUintType = uint32_t;
+  
+    std::vector<CountersUintType> counters;
 };
 
 // -----------------------------------------------------------------------------
@@ -129,7 +137,7 @@ public:
 
     // Static functions
     static void putField(MDB_txn &txn, const char serial_number[],
-                         const char subkey[], MDB_val *valPtr);
+                         const char subkey[], MDB_val *data_val_ptr);
     static void putInterval(MDB_txn &txn, const char serial_number[],
                             const char subkey[], double interval,
                             double offset = 0.0);
@@ -140,22 +148,30 @@ public:
 
     // TODO: Should getRawField() and getField() actually return MDB_val * ?    
 
+    // TODO: Change all of the following "fpu" arguments to serial numbers
+    // instead? (because the Python versions of the functions all just use
+    // fpu.serial_number anyway?)
+    
     MDB_val *getRawField(MDB_txn &txn, const char serial_number[],
                          const char subkey[]);
-    MDB_val *getField(MDB_txn &txn, const t_fpu_state &fpu, const char subkey[]);
-    void put_alpha_position(MDB_txn &txn, const t_fpu_state &fpu, double apos,
-                            double aoffset);
-    void put_beta_position(MDB_txn &txn, const t_fpu_state &fpu, double bpos);
-    void store_reversed(MDB_txn &txn, const t_fpu_state &fpu, bool is_reversed);
-    void storeWaveform(MDB_txn &txn, const t_fpu_state &fpu, const Wentry &wentry);
-    void store_bretry_count(MDB_txn &txn, const t_fpu_state &fpu, bool clockwise,
-                            int cnt);
-    void store_aretry_count(MDB_txn &txn, const t_fpu_state &fpu, bool clockwise,
-                            int cnt);
+    MDB_val *getField(MDB_txn &txn, const char serial_number[],
+                      const char subkey[]);
+    void put_alpha_position(MDB_txn &txn, const char serial_number[],
+                            double apos, double aoffset);
+    void put_beta_position(MDB_txn &txn, const char serial_number[],
+                           double bpos);
+    void store_reversed(MDB_txn &txn, const char serial_number[],
+                        bool is_reversed);
+    void storeWaveform(MDB_txn &txn, const char serial_number[],
+                       const Wentry &wentry);
+    void store_bretry_count(MDB_txn &txn, const char serial_number[],
+                            bool clockwise, int count);
+    void store_aretry_count(MDB_txn &txn, const char serial_number[],
+                            bool clockwise, int count);
 
     // TODO: counter_vals: See end of _update_counters_execute_motion()?
-    void put_counters(MDB_txn &txn, const t_fpu_state &fpu, 
-                      FpuCounters &fpu_counters);
+    void put_counters(MDB_txn &txn, const char serial_number[], 
+                      const FpuCounters &fpu_counters);
 };
 
 // -----------------------------------------------------------------------------

@@ -78,12 +78,12 @@ ${OBJECTDIR}/_ext/4211269a/midl.o: ../../lib/liblmdb/midl.c
 ${OBJECTDIR}/_ext/56252444/ProtectionDB.o: ../../src/ProtectionDB.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I../../lib/liblmdb -I../../include -I../../include/ethercan -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/ProtectionDB.o ../../src/ProtectionDB.C
+	$(COMPILE.cc) -g -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/ProtectionDB.o ../../src/ProtectionDB.C
 
 ${OBJECTDIR}/main.o: main.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -I../../lib/liblmdb -I../../include -I../../include/ethercan -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
+	$(COMPILE.cc) -g -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
 
 # Subprojects
 .build-subprojects:

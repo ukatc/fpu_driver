@@ -18,24 +18,27 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <stdlib.h>
+#include <string>
 #include <cstring>
 #include "ProtectionDB.h"
 
-static const char *dbname = "fpu";
-static const char *alpha_positions = "apos";
-static const char *beta_positions = "bpos";
-static const char *waveform_table = "wtab";
-static const char *waveform_reversed = "wf_reversed";
-static const char *alpha_limits = "alimits";
-static const char *beta_limits = "blimits";
-static const char *free_beta_retries = "bretries";
-static const char *beta_retry_count_cw = "beta_retry_count_cw";
-static const char *beta_retry_count_acw = "beta_retry_count_acw"; 
-static const char *free_alpha_retries = "aretries";
-static const char *alpha_retry_count_cw = "alpha_retry_count_cw";
-static const char *alpha_retry_count_acw = "alpha_retry_count_acw";
-static const char *counters = "counters2";
-static const char *serialnumber_used = "serialnumber_used";
+static const char *dbname_keystr = "fpu";
+static const char *alpha_positions_keystr = "apos";
+static const char *beta_positions_keystr = "bpos";
+static const char *waveform_table_keystr = "wtab";
+static const char *waveform_reversed_keystr = "wf_reversed";
+static const char *alpha_limits_keystr = "alimits";
+static const char *beta_limits_keystr = "blimits";
+static const char *free_beta_retries_keystr = "bretries";
+static const char *beta_retry_count_cw_keystr = "beta_retry_count_cw";
+static const char *beta_retry_count_acw_keystr = "beta_retry_count_acw"; 
+static const char *free_alpha_retries_keystr = "aretries";
+static const char *alpha_retry_count_cw_keystr = "alpha_retry_count_cw";
+static const char *alpha_retry_count_acw_keystr = "alpha_retry_count_acw";
+static const char *counters_keystr = "counters2";
+static const char *serialnumber_used_keystr = "serialnumber_used";
+
+// -----------------------------------------------------------------------------
 
 int ProtectionDB::doStuff()
 {
@@ -47,6 +50,39 @@ int ProtectionDB::doStuff()
     return 456;
 }
 
+
+void ProtectionDB::putField(MDB_txn &txn, const char serial_number[],
+                            const char subkey[], MDB_val *data_val_ptr)
+{
+    // IMPORTANT: serial_number or subkey must not contain any "#" characters
+    // Create ASCII key of form "<serial_number>#<subkey>"
+    std::string key_str = std::string(serial_number) + "#" + std::string(subkey);
+    
+    MDB_val key_val = { key_str.size(), (void *)key_str.c_str() };
+
+    MDB_dbi dbi;  // ********** TODO
+    
+    // TODO: Check if final flags argument is OK
+    int mdb_result = mdb_put(&txn, dbi, &key_val, data_val_ptr, 0x0);
+
+    // TODO: Return a result value
+}
+
+
+void ProtectionDB::put_counters(MDB_txn &txn, const char serial_number[],
+                                const FpuCounters &fpu_counters)
+{
+    MDB_val data_val;
+    
+    data_val.mv_data = fpu_counters.getRawData(data_val.mv_size); 
+
+    putField(txn, serial_number, counters_keystr, &data_val);
+
+    // TODO: Return a result value
+}
+
+
+// -----------------------------------------------------------------------------
 
 MDB_env *open_database_env(bool mockup)
 {
