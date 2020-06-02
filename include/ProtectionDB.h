@@ -107,6 +107,11 @@ public:
 
     void *getRawData(size_t &num_bytes_ret) const
     {
+        // Returns pointer to, and number of bytes of, raw counter values in
+        // memory. N.B. The endianness of the counter values will be platform-
+        // dependent, but this is OK because will only be used on Intel Linux
+        // boxes?
+        // TODO: Is this the case?
         num_bytes_ret = sizeof(CountersUintType) * (size_t)Id::NumCounters;
         return (void *)counters.data();
     }
@@ -135,12 +140,13 @@ public:
     // update as go along, and also add const qualifiers wherever appropriate
 
 
-    // Static functions
-    static void putField(MDB_txn &txn, const char serial_number[],
-                         const char subkey[], MDB_val *data_val_ptr);
-    static void putInterval(MDB_txn &txn, const char serial_number[],
-                            const char subkey[], double interval,
-                            double offset = 0.0);
+    // TODO: These two were static functions in Python, but I've changed them
+    // to instance functions
+    void putField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+                  const char subkey[], MDB_val &data_val);
+    void putInterval(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+                     const char subkey[], double interval,
+                     double offset = 0.0);
 
     // Instance functions
     // TODO: Check if these could just be static functions as well - do they
@@ -152,25 +158,25 @@ public:
     // instead? (because the Python versions of the functions all just use
     // fpu.serial_number anyway?)
     
-    MDB_val *getRawField(MDB_txn &txn, const char serial_number[],
+    MDB_val *getRawField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                          const char subkey[]);
-    MDB_val *getField(MDB_txn &txn, const char serial_number[],
+    MDB_val *getField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                       const char subkey[]);
-    void put_alpha_position(MDB_txn &txn, const char serial_number[],
+    void put_alpha_position(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                             double apos, double aoffset);
-    void put_beta_position(MDB_txn &txn, const char serial_number[],
+    void put_beta_position(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                            double bpos);
-    void store_reversed(MDB_txn &txn, const char serial_number[],
+    void store_reversed(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                         bool is_reversed);
-    void storeWaveform(MDB_txn &txn, const char serial_number[],
+    void storeWaveform(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                        const Wentry &wentry);
-    void store_bretry_count(MDB_txn &txn, const char serial_number[],
+    void store_bretry_count(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                             bool clockwise, int count);
-    void store_aretry_count(MDB_txn &txn, const char serial_number[],
+    void store_aretry_count(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                             bool clockwise, int count);
 
     // TODO: counter_vals: See end of _update_counters_execute_motion()?
-    void put_counters(MDB_txn &txn, const char serial_number[], 
+    void put_counters(MDB_txn &txn, MDB_dbi dbi, const char serial_number[], 
                       const FpuCounters &fpu_counters);
 };
 
@@ -191,6 +197,7 @@ public:
 // -----------------------------------------------------------------------------
 
 MDB_env *open_database_env(bool mockup = false);
+void protectiondb_test();
 
 // -----------------------------------------------------------------------------
 

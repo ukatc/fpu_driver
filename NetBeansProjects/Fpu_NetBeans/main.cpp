@@ -21,21 +21,18 @@ using namespace std;
  */
 int main(int argc, char** argv)
 {
-    
     //..........................................................................
-    // Test FpuCounters
+    // Test FpuCounters class
     FpuCounters fpu_counters;
     
     size_t num_bytes;
     void *raw_data_ptr = fpu_counters.getRawData(num_bytes);
     
     //..........................................................................
+    // Test ProtectionDB class
     
-    ProtectionDB protectionDB;
-    
-    protectionDB.doStuff();
-    
-    MDB_env *env_ptr = open_database_env(true);
+    protectiondb_test();
+   
     
     //..........................................................................
     
