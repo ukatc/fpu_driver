@@ -23,6 +23,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include "FPUState.h"
 #include "AsyncInterface.h"
 #include "lmdb.h"
@@ -49,6 +50,10 @@ Probable data types (TODO: CHECK):
 
 // TODO: Move elsewhere, and rename to e.g. Waveform?
 using Wentry = std::vector<AsyncInterface::t_step_pair>;
+
+// -----------------------------------------------------------------------------
+
+MDB_env *protectiondb_open_env(const std::string &dir_str);
 
 // -----------------------------------------------------------------------------
 
@@ -128,6 +133,70 @@ private:
 };
 
 // -----------------------------------------------------------------------------
+#define PROTECTIONDB_RAII_VERSION
+// -----------------------------------------------------------------------------
+#ifdef PROTECTIONDB_RAII_VERSION
+// -----------------------------------------------------------------------------
+
+class ProtectionDB
+{
+public:
+    bool open(const std::string &dir_str);
+
+    //..........................................................................
+    class FpuDbTxn
+    {
+        // FPU sub-database transaction class
+        // Important notes:
+        //   - Use ProtectionDB::createFpuDbTxn() to create an instance of this
+        //     class so that lifetime is managed by unique_ptr - do not create
+        //     directly
+        //   - Only create a single instance of this class at a time??
+        //     (TODO: See LMDB database rules)
+
+    public:
+        FpuDbTxn(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
+
+        // TODO: Put all FPU-database-specific reading and writing functions here
+        void putCounters(const char serial_number[],
+                         const FpuCounters &fpu_counters);
+
+        ~FpuDbTxn();
+
+    private:
+        MDB_env *mdb_env_ptr = nullptr;
+        MDB_txn *txn_ptr = nullptr;
+        MDB_dbi dbi = 0;
+    };
+
+    //..........................................................................
+    class HealthLogTxn
+    {
+    public:
+
+    private:
+    };
+    
+    //..........................................................................
+    
+    std::unique_ptr<ProtectionDB::FpuDbTxn> createFpuDbTransaction();
+    
+    std::unique_ptr<ProtectionDB::HealthLogTxn> createHealthLogDbTransaction();
+    
+    ~ProtectionDB();
+    
+private:
+    MDB_env *mdb_env_ptr = nullptr;
+};
+
+// -----------------------------------------------------------------------------
+
+void protectiondb_test();
+
+
+// -----------------------------------------------------------------------------
+#else // NOT PROTECTIONDB_RAII_VERSION
+// -----------------------------------------------------------------------------
 
 class ProtectionDB
 {
@@ -200,8 +269,13 @@ public:
 
 // -----------------------------------------------------------------------------
 
-MDB_env *open_database_env(bool mockup = false);
 void protectiondb_test();
+
+// -----------------------------------------------------------------------------
+#endif // NOT PROTECTIONDB_RAII_VERSION
+// -----------------------------------------------------------------------------
+
+MDB_env *open_database_env(bool mockup = false);
 
 // -----------------------------------------------------------------------------
 

@@ -22,6 +22,13 @@
 #include <cstring>
 #include "ProtectionDB.h"
 
+// ProtectionDB sub-database names
+// TODO: Check if "verification" sub-database is needed
+static const char *fpu_subdb_name = "fpu";
+static const char *healthlog_subdb_name = "healthlog";
+static const char *verification_subdb_name = "verification";
+
+// TODO: Put meaningful comment here describing what the strings below are
 static const char *dbname_keystr = "fpu";
 static const char *alpha_positions_keystr = "apos";
 static const char *beta_positions_keystr = "bpos";
@@ -35,18 +42,148 @@ static const char *beta_retry_count_acw_keystr = "beta_retry_count_acw";
 static const char *free_alpha_retries_keystr = "aretries";
 static const char *alpha_retry_count_cw_keystr = "alpha_retry_count_cw";
 static const char *alpha_retry_count_acw_keystr = "alpha_retry_count_acw";
-static const char *counters_keystr = "counters2";
+static const char *counters_keystr = "counters";
 static const char *serialnumber_used_keystr = "serialnumber_used";
 
+// Character to separate the key/subkey parts of the overall key strings
 static const char *keystr_separator_char = "#";
 
 // -----------------------------------------------------------------------------
 
 static std::string protectiondb_get_dir_from_linux_env(bool mockup);
-static MDB_env *protectiondb_open_env(const std::string &dir_str);
+
+// -----------------------------------------------------------------------------
+#ifdef PROTECTIONDB_RAII_VERSION
+// -----------------------------------------------------------------------------
+
+static void protectionDBPutField(MDB_txn *txn_ptr, MDB_dbi dbi,
+                                 const char serial_number[],
+                                 const char subkey[], MDB_val &data_val)
+{
+    // Create ASCII key of form <serial_number><separator><subkey>
+    // IMPORTANT: serial_number and subkey must not contain the
+    // keystr_separator_char character
+    std::string key_str = std::string(serial_number) + keystr_separator_char +
+                          subkey;
+    
+    MDB_val key_val = { key_str.size(), (void *)key_str.c_str() };
+
+    // TODO: Check if final flags argument below is OK
+    // TODO: Check mdb_result value and return OK/error code
+    int mdb_result = mdb_put(txn_ptr, dbi, &key_val, &data_val, 0x0);
+}
 
 // -----------------------------------------------------------------------------
 
+ProtectionDB::FpuDbTxn::FpuDbTxn(MDB_env *protectiondb_mdb_env_ptr,
+                                 bool &created_ok_ret)
+{
+    mdb_env_ptr = protectiondb_mdb_env_ptr;
+
+    created_ok_ret = false;
+    if (mdb_txn_begin(protectiondb_mdb_env_ptr, nullptr, 0x0, &txn_ptr) == 0)
+    {
+        // Set dbi to the "fpu" sub-database within the database file (and
+        // create sub-database if doesn't already exist)
+        if (mdb_dbi_open(txn_ptr, fpu_subdb_name, MDB_CREATE, &dbi) == 0)
+        {
+            created_ok_ret = true;
+        }
+    }
+}
+
+void ProtectionDB::FpuDbTxn::putCounters(const char serial_number[],
+                                         const FpuCounters &fpu_counters)
+{
+    MDB_val data_val;
+    
+    data_val.mv_data = fpu_counters.getRawData(data_val.mv_size); 
+   
+    protectionDBPutField(txn_ptr, dbi, serial_number, counters_keystr,
+                         data_val);
+
+    // TODO: Return a result value?
+}    
+
+ProtectionDB::FpuDbTxn::~FpuDbTxn()
+{
+    mdb_txn_commit(txn_ptr);
+    
+    // TODO: Need to call mdb_dbi_close() here?
+    
+    // TODO: Where to call mdb_env_sync() to flush to disk?
+}
+
+// -----------------------------------------------------------------------------
+
+bool ProtectionDB::open(const std::string &dir_str)
+{
+    // TODO: Move protectiondb_open_env() contents to here
+
+    mdb_env_ptr = protectiondb_open_env(dir_str);
+    if (mdb_env_ptr != nullptr)
+    {
+        return true;
+    }
+    return false;
+}
+
+std::unique_ptr<ProtectionDB::FpuDbTxn> ProtectionDB::createFpuDbTransaction()
+{
+    std::unique_ptr<ProtectionDB::FpuDbTxn> ptr_returned;
+
+    if (mdb_env_ptr != nullptr)
+    {
+        bool created_ok = false;
+        // TODO: C++11 doesn't support make_unique - ask if OK to compile
+        // as C++14 in final ESO driver
+        //ptr_returned = std::make_unique<FpuDbTxn>(*_mdb_env_ptr, created_ok);
+        ptr_returned.reset(new FpuDbTxn(mdb_env_ptr, created_ok));
+        if (!created_ok)
+        {
+            ptr_returned.release();
+        }
+    }
+    return std::move(ptr_returned);
+}
+
+std::unique_ptr<ProtectionDB::HealthLogTxn> ProtectionDB::createHealthLogDbTransaction()
+{
+    // TODO
+}
+ 
+ProtectionDB::~ProtectionDB()
+{
+    // TODO: Release all handles, close ProtectionDB LMDB environment etc
+    mdb_env_close(mdb_env_ptr);
+    
+    // TODO: Call any others? e.g. 
+    // mdb_env_sync()?
+    // mdb_dbi_close()?
+    // Any others?
+    
+}
+
+// -----------------------------------------------------------------------------
+
+void protectiondb_test()
+{
+    ProtectionDB protectiondb;
+    
+    if (protectiondb.open("/moonsdata/fpudb_NEWFORMAT"))
+    {
+        auto fpudb_txn = protectiondb.createFpuDbTransaction();
+        if (fpudb_txn)
+        {
+            FpuCounters fpu_counters;
+            fpudb_txn->putCounters("BWTest0001", fpu_counters);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+#else // NOT PROTECTIONDB_RAII_VERSION
+// -----------------------------------------------------------------------------
 
 int ProtectionDB::doStuff()
 {
@@ -57,7 +194,6 @@ int ProtectionDB::doStuff()
 
     return 456;
 }
-
 
 bool ProtectionDB::getRawField(MDB_txn &txn, MDB_dbi dbi,
                                const char serial_number[],
@@ -75,7 +211,6 @@ bool ProtectionDB::getRawField(MDB_txn &txn, MDB_dbi dbi,
     }
     return false;
 }
-
 
 void ProtectionDB::putField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                             const char subkey[], MDB_val &data_val)
@@ -97,7 +232,6 @@ void ProtectionDB::putField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[
     // TODO: Return a result value
 }
 
-
 void ProtectionDB::put_counters(MDB_txn &txn, MDB_dbi dbi, 
                                 const char serial_number[],
                                 const FpuCounters &fpu_counters)
@@ -111,7 +245,76 @@ void ProtectionDB::put_counters(MDB_txn &txn, MDB_dbi dbi,
     // TODO: Return a result value
 }
 
+// -----------------------------------------------------------------------------
 
+void protectiondb_test()
+{
+    // Initial ad-hoc test function - single-step through and look at results
+    // N.B. An LMDB database (consisting of data.mdb + lock.mdb files) must
+    // already exist in the protectiondb_dir directory location specified below 
+    
+    int mdb_result;
+    ProtectionDB protectionDB;
+    
+    protectionDB.doStuff();
+    
+    std::string protectiondb_dir = "/moonsdata/fpudb_NEWFORMAT";
+    MDB_env *env_ptr = protectiondb_open_env(protectiondb_dir);
+
+    MDB_txn *txn_ptr;
+    MDB_dbi dbi;
+
+    const char *test_serialnumber_str = "BWTest0001";
+    const char *test_subkey_str = "BWTestSubkey";
+
+    //..........................................................................
+
+    mdb_result = mdb_txn_begin(env_ptr, nullptr, 0x0, &txn_ptr);
+    
+    // Set dbi to the "fpu" sub-database within the database file (and create
+    // sub-database if doesn't already exist)
+    mdb_result = mdb_dbi_open(txn_ptr, "fpu", MDB_CREATE, &dbi);
+    
+    // Write a test record to the fpu sub-database
+    const char *test_str = "abc";
+    MDB_val data_val_write = { strlen(test_str), (void *)test_str };
+    protectionDB.putField(*txn_ptr, dbi, test_serialnumber_str, test_subkey_str,
+                          data_val_write);
+    
+    mdb_result = mdb_txn_commit(txn_ptr);
+    
+    //..........................................................................
+
+    txn_ptr = nullptr;
+
+    mdb_result = mdb_txn_begin(env_ptr, nullptr, 0x0, &txn_ptr);
+    
+    // Set dbi to the "fpu" sub-database within the database file (and create
+    // sub-database if doesn't already exist)
+    mdb_result = mdb_dbi_open(txn_ptr, "fpu", MDB_CREATE, &dbi);
+    
+    MDB_val data_val_read;
+    bool worked_ok = protectionDB.getRawField(*txn_ptr, dbi,
+                                              test_serialnumber_str,
+                                              test_subkey_str, data_val_read);
+
+    // ****** IMPORTANT NOTE: "Values returned from the database are valid only
+    // until a subsequent update operation, or the end of the transaction"
+    
+    mdb_result = mdb_txn_commit(txn_ptr);
+
+    //..........................................................................
+
+    // TODO: Release and close all necessary stuff
+    // mdb_env_sync()?
+    // mdb_dbi_close()?
+    // mdb_env_close()?
+    // Any others?
+
+}
+
+// -----------------------------------------------------------------------------
+#endif // NOT PROTECTIONDB_RAII_VERSION
 // -----------------------------------------------------------------------------
 
 MDB_env *open_database_env(bool mockup)
@@ -129,6 +332,7 @@ MDB_env *open_database_env(bool mockup)
     return env_ptr;
 }            
 
+// -----------------------------------------------------------------------------
 
 std::string protectiondb_get_dir_from_linux_env(bool mockup)
 {
@@ -170,6 +374,7 @@ std::string protectiondb_get_dir_from_linux_env(bool mockup)
     return dir_str_ret;
 }
 
+// -----------------------------------------------------------------------------
     
 MDB_env *protectiondb_open_env(const std::string &dir_str)
 {
@@ -243,70 +448,5 @@ MDB_env *protectiondb_open_env(const std::string &dir_str)
     return env_ptr;
 }
 
-
-void protectiondb_test()
-{
-    // Initial ad-hoc test function - single-step through and look at results
-    // N.B. An LMDB database (consisting of data.mdb + lock.mdb files) must
-    // already exist in the protectiondb_dir directory location specified below 
-    
-    int mdb_result;
-    ProtectionDB protectionDB;
-    
-    protectionDB.doStuff();
-    
-    std::string protectiondb_dir = "/moonsdata/fpudb_NEWFORMAT";
-    MDB_env *env_ptr = protectiondb_open_env(protectiondb_dir);
-
-    MDB_txn *txn_ptr;
-    MDB_dbi dbi;
-
-    const char *test_serialnumber_str = "BWTest0001";
-    const char *test_subkey_str = "BWTestSubkey";
-
-    //..........................................................................
-
-    mdb_result = mdb_txn_begin(env_ptr, nullptr, 0x0, &txn_ptr);
-    
-    // Set dbi to the "fpu" sub-database within the database file (and create
-    // sub-database if doesn't already exist)
-    mdb_result = mdb_dbi_open(txn_ptr, "fpu", MDB_CREATE, &dbi);
-    
-    // Write a test record to the fpu sub-database
-    const char *test_str = "abc";
-    MDB_val data_val_write = { strlen(test_str), (void *)test_str };
-    protectionDB.putField(*txn_ptr, dbi, test_serialnumber_str, test_subkey_str,
-                          data_val_write);
-    
-    mdb_result = mdb_txn_commit(txn_ptr);
-    
-    //..........................................................................
-
-    txn_ptr = nullptr;
-
-    mdb_result = mdb_txn_begin(env_ptr, nullptr, 0x0, &txn_ptr);
-    
-    // Set dbi to the "fpu" sub-database within the database file (and create
-    // sub-database if doesn't already exist)
-    mdb_result = mdb_dbi_open(txn_ptr, "fpu", MDB_CREATE, &dbi);
-    
-    MDB_val data_val_read;
-    bool worked_ok = protectionDB.getRawField(*txn_ptr, dbi,
-                                              test_serialnumber_str,
-                                              test_subkey_str, data_val_read);
-
-    // ****** IMPORTANT NOTE: "Values returned from the database are valid only
-    // until a subsequent update operation, or the end of the transaction"
-    
-    mdb_result = mdb_txn_commit(txn_ptr);
-
-    //..........................................................................
-
-    // TODO: Release and close all necessary stuff
-    // mdb_env_sync()?
-    // mdb_dbi_close()?
-    // mdb_env_close()?
-    // Any others?
-
-}
+// -----------------------------------------------------------------------------
 
