@@ -38,6 +38,8 @@ static const char *alpha_retry_count_acw_keystr = "alpha_retry_count_acw";
 static const char *counters_keystr = "counters2";
 static const char *serialnumber_used_keystr = "serialnumber_used";
 
+static const char *keystr_separator_char = "#";
+
 // -----------------------------------------------------------------------------
 
 static std::string protectiondb_get_dir_from_linux_env(bool mockup);
@@ -57,18 +59,41 @@ int ProtectionDB::doStuff()
 }
 
 
+bool ProtectionDB::getRawField(MDB_txn &txn, MDB_dbi dbi,
+                               const char serial_number[],
+                               const char subkey[], MDB_val &data_val_ret)
+{
+    std::string key_str = std::string(serial_number) + keystr_separator_char +
+                          subkey;
+    MDB_val key_val = { key_str.size(), (void *)key_str.c_str() };
+
+    int mdb_result = mdb_get(&txn, dbi, &key_val, &data_val_ret);
+    
+    if (mdb_result == 0)
+    {
+        return true;
+    }
+    return false;
+}
+
+
 void ProtectionDB::putField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                             const char subkey[], MDB_val &data_val)
 {
-    // IMPORTANT: serial_number or subkey must not contain any "#" characters
-    // Create ASCII key of form "serial_number#subkey"
-    std::string key_str = std::string(serial_number) + "#" + std::string(subkey);
+    // Create ASCII key of form <serial_number><separator><subkey>
+    // IMPORTANT: serial_number and subkey must not contain the
+    // keystr_separator_char character
+    std::string key_str = std::string(serial_number) + keystr_separator_char +
+                          subkey;
     
     MDB_val key_val = { key_str.size(), (void *)key_str.c_str() };
 
     // TODO: Check if final flags argument below is OK
     int mdb_result = mdb_put(&txn, dbi, &key_val, &data_val, 0x0);
 
+    // TODO: Call mdb_txn_commit() here?? Check against the Python version
+    // AND where to call mdb_env_sync() to flush to disk?
+    
     // TODO: Return a result value
 }
 
@@ -234,21 +259,54 @@ void protectiondb_test()
     MDB_env *env_ptr = protectiondb_open_env(protectiondb_dir);
 
     MDB_txn *txn_ptr;
+    MDB_dbi dbi;
+
+    const char *test_serialnumber_str = "BWTest0001";
+    const char *test_subkey_str = "BWTestSubkey";
+
+    //..........................................................................
+
     mdb_result = mdb_txn_begin(env_ptr, nullptr, 0x0, &txn_ptr);
-    
     
     // Set dbi to the "fpu" sub-database within the database file (and create
     // sub-database if doesn't already exist)
-    MDB_dbi dbi;
     mdb_result = mdb_dbi_open(txn_ptr, "fpu", MDB_CREATE, &dbi);
     
     // Write a test record to the fpu sub-database
     const char *test_str = "abc";
-    MDB_val data_val = { strlen(test_str), (void *)test_str };
-    protectionDB.putField(*txn_ptr, dbi, "BWTest0001", "BWTestSubkey", data_val);
+    MDB_val data_val_write = { strlen(test_str), (void *)test_str };
+    protectionDB.putField(*txn_ptr, dbi, test_serialnumber_str, test_subkey_str,
+                          data_val_write);
     
     mdb_result = mdb_txn_commit(txn_ptr);
     
+    //..........................................................................
+
+    txn_ptr = nullptr;
+
+    mdb_result = mdb_txn_begin(env_ptr, nullptr, 0x0, &txn_ptr);
+    
+    // Set dbi to the "fpu" sub-database within the database file (and create
+    // sub-database if doesn't already exist)
+    mdb_result = mdb_dbi_open(txn_ptr, "fpu", MDB_CREATE, &dbi);
+    
+    MDB_val data_val_read;
+    bool worked_ok = protectionDB.getRawField(*txn_ptr, dbi,
+                                              test_serialnumber_str,
+                                              test_subkey_str, data_val_read);
+
+    // ****** IMPORTANT NOTE: "Values returned from the database are valid only
+    // until a subsequent update operation, or the end of the transaction"
+    
+    mdb_result = mdb_txn_commit(txn_ptr);
+
+    //..........................................................................
+
     // TODO: Release and close all necessary stuff
+    // mdb_env_sync()?
+    // mdb_dbi_close()?
+    // mdb_env_close()?
+    // Any others?
+
 }
 

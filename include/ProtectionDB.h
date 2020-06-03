@@ -55,6 +55,9 @@ using Wentry = std::vector<AsyncInterface::t_step_pair>;
 // TODO: Check if there is already another suitable class or structure type
 // defined elsewhere which can be used
 
+// TODO: Cater for handling newer/older-version counter arrays with differing
+// numbers of counters
+
 class FpuCounters
 {
 public:
@@ -158,10 +161,11 @@ public:
     // instead? (because the Python versions of the functions all just use
     // fpu.serial_number anyway?)
     
-    MDB_val *getRawField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                         const char subkey[]);
-    MDB_val *getField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                      const char subkey[]);
+    bool getRawField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+                     const char subkey[], MDB_val &mdb_val_ret);
+    //MDB_val *getField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+    //                  const char subkey[]);
+
     void put_alpha_position(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                             double apos, double aoffset);
     void put_beta_position(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],

@@ -9,9 +9,7 @@
         <group>
             <file>file:/home/bartw/BartsStuff/fpu_driver_github/include/ProtectionDB.h</file>
             <file>file:/home/bartw/BartsStuff/fpu_driver_github/NetBeansProjects/Fpu_NetBeans/main.cpp</file>
-            <file>file:/home/bartw/BartsStuff/fpu_driver_github/lib/liblmdb/lmdb.h</file>
             <file>file:/home/bartw/BartsStuff/fpu_driver_github/src/ProtectionDB.C</file>
-            <file>file:/home/bartw/BartsStuff/fpu_driver_github/lib/liblmdb/mdb.c</file>
         </group>
     </open-files>
 </project-private>
