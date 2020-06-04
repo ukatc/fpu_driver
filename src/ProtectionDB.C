@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string>
 #include <cstring>
+#include <cstdlib>
 #include "ProtectionDB.h"
 
 // ProtectionDB sub-database names
@@ -56,18 +57,27 @@ static std::string protectiondb_get_dir_from_linux_env(bool mockup);
 #ifdef PROTECTIONDB_RAII_VERSION
 // -----------------------------------------------------------------------------
 
+static MDB_val createFpuDbKeyVal(const char serial_number[],
+                                 const char subkey[])
+{
+    // N.B. Need static persistent key_str below because its raw c_str is
+    // pointed to by the returned MDB_val
+    // TODO: This is NOT thread-safe (because single static instance) - will
+    // this be a problem?
+    static std::string key_str;
+
+    // Create ASCII key of form <serial_number><separator><subkey>
+    // IMPORTANT: serial_number and subkey must not contain the
+    // keystr_separator_char character
+    key_str = std::string(serial_number) + keystr_separator_char + subkey;
+    return { key_str.size(), (void *)key_str.c_str() };
+}
+
 static int putFpuDbItem(MDB_txn *txn_ptr, MDB_dbi dbi,
                         const char serial_number[],
                         const char subkey[], const MDB_val &data_val)
 {
-    // Create ASCII key of form <serial_number><separator><subkey>
-    // IMPORTANT: serial_number and subkey must not contain the
-    // keystr_separator_char character
-    std::string key_str = std::string(serial_number) + keystr_separator_char +
-                          subkey;
-    
-    MDB_val key_val = { key_str.size(), (void *)key_str.c_str() };
-
+    MDB_val key_val = createFpuDbKeyVal(serial_number, subkey);
     // TODO: Check if final flags argument below is OK
     return mdb_put(txn_ptr, dbi, &key_val, (MDB_val *)&data_val, 0x0);
 }
@@ -76,14 +86,7 @@ static int getFpuDbItem(MDB_txn *txn_ptr, MDB_dbi dbi,
                         const char serial_number[],
                         const char subkey[], MDB_val &data_val_ret)
 {
-    // Create ASCII key of form <serial_number><separator><subkey>
-    // IMPORTANT: serial_number and subkey must not contain the
-    // keystr_separator_char character
-    std::string key_str = std::string(serial_number) + keystr_separator_char +
-                          subkey;
-    
-    MDB_val key_val = { key_str.size(), (void *)key_str.c_str() };
-
+    MDB_val key_val = createFpuDbKeyVal(serial_number, subkey);
     return mdb_get(txn_ptr, dbi, &key_val, (MDB_val *)&data_val_ret);
 }
 
@@ -213,36 +216,99 @@ ProtectionDB::~ProtectionDB()
 
 // -----------------------------------------------------------------------------
 
+static std::string createRandomFpuTestSerialNumber()
+{
+    int random_number = rand() % 10000;  // 0-9999
+    return "Test" + std::to_string(random_number);
+}
+
 void protectiondb_test()
 {
     ProtectionDB protectiondb;
-    bool ok = false;
+
+    
+    // TODO: Add further tests which close and re-open ProtectionDB in between
+    // each test as well
+    
     
     if (protectiondb.open("/moonsdata/fpudb_NEWFORMAT"))
     {
-        auto fpudb_txn = protectiondb.createFpuDbTransaction();
-        if (fpudb_txn)
+        // Put each transaction into its own scope so that it will be
+        // automatically committed each time when fpudb_txn goes out of scope
+        // and is destroyed
+
+        //......................................................................
+        // Write FPU counters
         {
-            //..................................................................
-            
-            FpuCounters fpu_counters;
-            fpudb_txn->putCounters("BWTest0001", fpu_counters);
-            
-            //..................................................................
-            const char serial_number[] = "Test1234";
-            const char subkey[] = "TestSubkey";
-            const char data_str[] = "0123456789";
-            ok = fpudb_txn->test_WriteRawItem(serial_number, subkey,
-                                              (void *)data_str,
-                                              strlen(data_str));
-            
-            void *data_ptr = nullptr;
-            size_t num_bytes = 0;
-            ok = fpudb_txn->test_ReadRawItem(serial_number, subkey, &data_ptr,
-                                             num_bytes);
-            
-            //..................................................................
+            auto fpudb_txn = protectiondb.createFpuDbTransaction();
+            if (fpudb_txn)
+            {
+                FpuCounters fpu_counters;
+                fpudb_txn->putCounters("BWTest0001", fpu_counters);
+            }
         }
+
+        //......................................................................
+        // Write a single item and read it back, all in one transaction
+        {
+            auto fpudb_txn = protectiondb.createFpuDbTransaction();
+            if (fpudb_txn)
+            {
+                bool result_ok = false;
+                
+                std::string serial_number_str = createRandomFpuTestSerialNumber();
+                const char subkey[] = "TestSubkey";
+                const char data_str[] = "0123456789";
+                result_ok = fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
+                                                         subkey,
+                                                         (void *)data_str,
+                                                         strlen(data_str));
+
+                void *data_ptr = nullptr;
+                size_t num_bytes = 0;
+                result_ok = fpudb_txn->test_ReadRawItem(serial_number_str.c_str(),
+                                                        subkey, &data_ptr,
+                                                        num_bytes);
+            }
+        }
+
+        //......................................................................
+        // Write multiple items in one transaction, and read them back in
+        // another transaction
+        const int num_iterations = 100;
+        std::string serial_number_str = createRandomFpuTestSerialNumber();
+
+        {
+            auto fpudb_txn = protectiondb.createFpuDbTransaction();
+            if (fpudb_txn)
+            {
+                for (int i = 0; i < num_iterations; i++)
+                {
+                    std::string iterator_str = std::to_string(i);
+                    if (!fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
+                                                      iterator_str.c_str(), // Subkey
+                                                      (void *)iterator_str.c_str(),
+                                                      iterator_str.size()))
+                    {
+                        // Error
+                        break;
+                    }
+                }
+            }
+        }
+
+        {
+            auto fpudb_txn = protectiondb.createFpuDbTransaction();
+            if (fpudb_txn)
+            {
+                for (int i = 0; i < num_iterations; i++)
+                {
+
+                }
+            }
+        }
+        
+        //......................................................................
     }
 }
 
