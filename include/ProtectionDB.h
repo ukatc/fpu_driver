@@ -158,8 +158,14 @@ public:
         FpuDbTxn(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
 
         // TODO: Put all FPU-database-specific reading and writing functions here
-        void putCounters(const char serial_number[],
+        bool putCounters(const char serial_number[],
                          const FpuCounters &fpu_counters);
+
+        // Test functions
+        bool test_WriteRawItem(const char serial_number[], const char subkey[],
+                               void *data_ptr, size_t num_bytes);
+        bool test_ReadRawItem(const char serial_number[], const char subkey[],
+                              void **data_ptr_ret, size_t &num_bytes_ret);
 
         ~FpuDbTxn();
 

@@ -56,9 +56,9 @@ static std::string protectiondb_get_dir_from_linux_env(bool mockup);
 #ifdef PROTECTIONDB_RAII_VERSION
 // -----------------------------------------------------------------------------
 
-static void protectionDBPutField(MDB_txn *txn_ptr, MDB_dbi dbi,
-                                 const char serial_number[],
-                                 const char subkey[], MDB_val &data_val)
+static int putFpuDbItem(MDB_txn *txn_ptr, MDB_dbi dbi,
+                        const char serial_number[],
+                        const char subkey[], const MDB_val &data_val)
 {
     // Create ASCII key of form <serial_number><separator><subkey>
     // IMPORTANT: serial_number and subkey must not contain the
@@ -69,8 +69,22 @@ static void protectionDBPutField(MDB_txn *txn_ptr, MDB_dbi dbi,
     MDB_val key_val = { key_str.size(), (void *)key_str.c_str() };
 
     // TODO: Check if final flags argument below is OK
-    // TODO: Check mdb_result value and return OK/error code
-    int mdb_result = mdb_put(txn_ptr, dbi, &key_val, &data_val, 0x0);
+    return mdb_put(txn_ptr, dbi, &key_val, (MDB_val *)&data_val, 0x0);
+}
+
+static int getFpuDbItem(MDB_txn *txn_ptr, MDB_dbi dbi,
+                        const char serial_number[],
+                        const char subkey[], MDB_val &data_val_ret)
+{
+    // Create ASCII key of form <serial_number><separator><subkey>
+    // IMPORTANT: serial_number and subkey must not contain the
+    // keystr_separator_char character
+    std::string key_str = std::string(serial_number) + keystr_separator_char +
+                          subkey;
+    
+    MDB_val key_val = { key_str.size(), (void *)key_str.c_str() };
+
+    return mdb_get(txn_ptr, dbi, &key_val, (MDB_val *)&data_val_ret);
 }
 
 // -----------------------------------------------------------------------------
@@ -81,7 +95,7 @@ ProtectionDB::FpuDbTxn::FpuDbTxn(MDB_env *protectiondb_mdb_env_ptr,
     mdb_env_ptr = protectiondb_mdb_env_ptr;
 
     created_ok_ret = false;
-    if (mdb_txn_begin(protectiondb_mdb_env_ptr, nullptr, 0x0, &txn_ptr) == 0)
+    if (mdb_txn_begin(mdb_env_ptr, nullptr, 0x0, &txn_ptr) == 0)
     {
         // Set dbi to the "fpu" sub-database within the database file (and
         // create sub-database if doesn't already exist)
@@ -92,26 +106,60 @@ ProtectionDB::FpuDbTxn::FpuDbTxn(MDB_env *protectiondb_mdb_env_ptr,
     }
 }
 
-void ProtectionDB::FpuDbTxn::putCounters(const char serial_number[],
+bool ProtectionDB::FpuDbTxn::putCounters(const char serial_number[],
                                          const FpuCounters &fpu_counters)
 {
     MDB_val data_val;
     
     data_val.mv_data = fpu_counters.getRawData(data_val.mv_size); 
    
-    protectionDBPutField(txn_ptr, dbi, serial_number, counters_keystr,
-                         data_val);
+    if (putFpuDbItem(txn_ptr, dbi, serial_number, counters_keystr,
+                     data_val) == 0)
+    {
+        return true;
+    }
+    return false;
+}
 
-    // TODO: Return a result value?
-}    
+bool ProtectionDB::FpuDbTxn::test_WriteRawItem(const char serial_number[],
+                                               const char subkey[],
+                                               void *data_ptr, size_t num_bytes)
+{
+    MDB_val mdb_data_val = { num_bytes, data_ptr };
+
+    if (putFpuDbItem(txn_ptr, dbi, serial_number, subkey, mdb_data_val) == 0)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool ProtectionDB::FpuDbTxn::test_ReadRawItem(const char serial_number[],
+                                              const char subkey[],
+                                              void **data_ptr_ret,
+                                              size_t &num_bytes_ret)
+{
+    MDB_val mdb_data_val;
+
+    if (getFpuDbItem(txn_ptr, dbi, serial_number, subkey, mdb_data_val) == 0)
+    {
+        *data_ptr_ret = mdb_data_val.mv_data;
+        num_bytes_ret = mdb_data_val.mv_size;
+        return true;
+    }
+    return false;
+}
 
 ProtectionDB::FpuDbTxn::~FpuDbTxn()
 {
     mdb_txn_commit(txn_ptr);
     
-    // TODO: Need to call mdb_dbi_close() here?
+    // TODO: mdb_dbi_close() has caveats - see its documentation - but this
+    // should be OK here?
+    mdb_dbi_close(mdb_env_ptr, dbi);
     
-    // TODO: Where to call mdb_env_sync() to flush to disk?
+    // TODO: Where to call mdb_env_sync() to flush to disk? Or is this done
+    // automatically due to the LMDB config macros / settings?
 }
 
 // -----------------------------------------------------------------------------
@@ -159,7 +207,6 @@ ProtectionDB::~ProtectionDB()
     
     // TODO: Call any others? e.g. 
     // mdb_env_sync()?
-    // mdb_dbi_close()?
     // Any others?
     
 }
@@ -169,14 +216,32 @@ ProtectionDB::~ProtectionDB()
 void protectiondb_test()
 {
     ProtectionDB protectiondb;
+    bool ok = false;
     
     if (protectiondb.open("/moonsdata/fpudb_NEWFORMAT"))
     {
         auto fpudb_txn = protectiondb.createFpuDbTransaction();
         if (fpudb_txn)
         {
+            //..................................................................
+            
             FpuCounters fpu_counters;
             fpudb_txn->putCounters("BWTest0001", fpu_counters);
+            
+            //..................................................................
+            const char serial_number[] = "Test1234";
+            const char subkey[] = "TestSubkey";
+            const char data_str[] = "0123456789";
+            ok = fpudb_txn->test_WriteRawItem(serial_number, subkey,
+                                              (void *)data_str,
+                                              strlen(data_str));
+            
+            void *data_ptr = nullptr;
+            size_t num_bytes = 0;
+            ok = fpudb_txn->test_ReadRawItem(serial_number, subkey, &data_ptr,
+                                             num_bytes);
+            
+            //..................................................................
         }
     }
 }
