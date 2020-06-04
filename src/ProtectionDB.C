@@ -215,6 +215,7 @@ ProtectionDB::~ProtectionDB()
 }
 
 // -----------------------------------------------------------------------------
+// Unit test functions
 
 static std::string createRandomFpuTestSerialNumber()
 {
@@ -222,95 +223,235 @@ static std::string createRandomFpuTestSerialNumber()
     return "Test" + std::to_string(random_number);
 }
 
-void protectiondb_test()
+static bool protectiondb_test_fpu_counter_writing(ProtectionDB &protectiondb)
 {
-    ProtectionDB protectiondb;
-
+    // Write FPU counters
     
-    // TODO: Add further tests which close and re-open ProtectionDB in between
-    // each test as well
+    bool result_ok = false;
     
-    
-    if (protectiondb.open("/moonsdata/fpudb_NEWFORMAT"))
+    auto fpudb_txn = protectiondb.createFpuDbTransaction();
+    if (fpudb_txn)
     {
-        // Put each transaction into its own scope so that it will be
-        // automatically committed each time when fpudb_txn goes out of scope
-        // and is destroyed
+        FpuCounters fpu_counters;
+        result_ok = fpudb_txn->putCounters("BWTest0001", fpu_counters);
+    }
+    
+    return result_ok;
+}
 
-        //......................................................................
-        // Write FPU counters
-        {
-            auto fpudb_txn = protectiondb.createFpuDbTransaction();
-            if (fpudb_txn)
-            {
-                FpuCounters fpu_counters;
-                fpudb_txn->putCounters("BWTest0001", fpu_counters);
-            }
-        }
-
-        //......................................................................
-        // Write a single item and read it back, all in one transaction
-        {
-            auto fpudb_txn = protectiondb.createFpuDbTransaction();
-            if (fpudb_txn)
-            {
-                bool result_ok = false;
-                
-                std::string serial_number_str = createRandomFpuTestSerialNumber();
-                const char subkey[] = "TestSubkey";
-                const char data_str[] = "0123456789";
-                result_ok = fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
-                                                         subkey,
-                                                         (void *)data_str,
-                                                         strlen(data_str));
-
-                void *data_ptr = nullptr;
-                size_t num_bytes = 0;
-                result_ok = fpudb_txn->test_ReadRawItem(serial_number_str.c_str(),
-                                                        subkey, &data_ptr,
-                                                        num_bytes);
-            }
-        }
-
-        //......................................................................
-        // Write multiple items in one transaction, and read them back in
-        // another transaction
-        const int num_iterations = 100;
+static bool protectiondb_test_single_item_readwrite(ProtectionDB &protectiondb)
+{
+    // Write a single item and read it back, all in one transaction
+    
+    bool result_ok = false;
+    
+    auto fpudb_txn = protectiondb.createFpuDbTransaction();
+    if (fpudb_txn)
+    {
         std::string serial_number_str = createRandomFpuTestSerialNumber();
+        const char subkey[] = "TestSubkey";
+        const char data_str[] = "0123456789";
+        result_ok = fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
+                                                 subkey,
+                                                 (void *)data_str,
+                                                 strlen(data_str));
 
+        void *data_returned_ptr = nullptr;
+        size_t num_bytes_returned = 0;
+        if (result_ok)
         {
-            auto fpudb_txn = protectiondb.createFpuDbTransaction();
-            if (fpudb_txn)
+            result_ok = fpudb_txn->test_ReadRawItem(serial_number_str.c_str(),
+                                                    subkey, &data_returned_ptr,
+                                                    num_bytes_returned);
+        }
+        
+        if (result_ok)
+        {
+            if ((num_bytes_returned == strlen(data_str)) &&
+                (memcmp(data_str, data_returned_ptr, strlen(data_str)) == 0))
             {
-                for (int i = 0; i < num_iterations; i++)
+                result_ok = true;
+            }
+        }
+    }
+    
+    return result_ok;
+}
+
+static bool protectiondb_test_multiple_item_readwrites(ProtectionDB &protectiondb)
+{
+    bool result_ok = false;
+    
+    // Write multiple items in one transaction, and read them back in
+    // another transaction
+    const int num_iterations = 100;
+    std::string serial_number_str = createRandomFpuTestSerialNumber();
+
+    uint64_t test_multiplier = 0x123456789abcdef0L;
+    
+    // N.B. Each transaction is in its own scope so that writes will be
+    // automatically committed when fpudb_txn goes out of scope and is 
+    // destroyed
+    {
+        auto fpudb_txn = protectiondb.createFpuDbTransaction();
+        if (fpudb_txn)
+        {
+            result_ok = true;
+            for (int i = 0; i < num_iterations; i++)
+            {
+                std::string iterator_str = std::to_string(i);
+                uint64_t test_val = ((uint64_t)i) * test_multiplier;
+                if (!fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
+                                                  iterator_str.c_str(), // Subkey
+                                                  (void *)&test_val,
+                                                  sizeof(test_val)))
                 {
-                    std::string iterator_str = std::to_string(i);
-                    if (!fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
-                                                      iterator_str.c_str(), // Subkey
-                                                      (void *)iterator_str.c_str(),
-                                                      iterator_str.size()))
+                    // Error
+                    result_ok = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (result_ok)
+    {
+        auto fpudb_txn = protectiondb.createFpuDbTransaction();
+        if (fpudb_txn)
+        {
+            result_ok = true;
+            for (int i = 0; i < num_iterations; i++)
+            {
+                uint64_t test_val = ((uint64_t)i) * test_multiplier;
+                void *data_returned_ptr = nullptr;
+                size_t num_bytes_returned = 0;
+                
+                std::string iterator_str = std::to_string(i);
+                if (fpudb_txn->test_ReadRawItem(serial_number_str.c_str(),
+                                                iterator_str.c_str(), // Subkey
+                                                &data_returned_ptr,
+                                                num_bytes_returned))
+                {
+                    if ((num_bytes_returned != sizeof(test_val)) ||
+                        (memcmp(data_returned_ptr, (void *)&test_val,
+                                sizeof(test_val)) != 0))
                     {
-                        // Error
+                        result_ok = false;
                         break;
                     }
                 }
-            }
-        }
-
-        {
-            auto fpudb_txn = protectiondb.createFpuDbTransaction();
-            if (fpudb_txn)
-            {
-                for (int i = 0; i < num_iterations; i++)
+                else
                 {
-
+                    result_ok = false;
+                    break;
                 }
             }
         }
-        
-        //......................................................................
     }
+    
+    return result_ok;
 }
+
+static bool protectiondb_test_staying_open(const std::string &dir_str)
+{
+    // Performs various ProtectionDB tests with the database being kept open
+    // NOTE: An LMDB database must already exist in dir_str
+
+    ProtectionDB protectiondb;
+    bool result_ok = false;
+   
+    if (protectiondb.open(dir_str))
+    {
+        result_ok = protectiondb_test_fpu_counter_writing(protectiondb);
+        
+        if (result_ok)
+        {
+            result_ok = protectiondb_test_single_item_readwrite(protectiondb);
+        }
+
+        if (result_ok)
+        {
+            result_ok = protectiondb_test_multiple_item_readwrites(protectiondb);
+        }
+    }
+    
+    return result_ok;
+}
+
+static bool protectiondb_test_close_reopen(const std::string &dir_str)
+{
+    // Performs various ProtectionDB tests with the database being closed
+    // and re-opened between each test
+    // NOTE: An LMDB database must already exist in dir_str
+    
+    bool result_ok = false;
+
+    // N.B. ProtectionDB is opened (and closed automatically again) inside
+    // each scope
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            result_ok = protectiondb_test_fpu_counter_writing(protectiondb);
+        }
+        else
+        {
+            result_ok = false;
+        }
+    }
+    
+    if (result_ok)
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            result_ok = protectiondb_test_single_item_readwrite(protectiondb);
+        }
+        else
+        {
+            result_ok = false;
+        }
+    }
+
+    if (result_ok)
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+        result_ok = protectiondb_test_multiple_item_readwrites(protectiondb);
+        }
+        else
+        {
+            result_ok = false;
+        }
+    }
+    
+    return result_ok;    
+}
+
+bool protectiondb_test()
+{
+    bool result_ok = false;
+    
+    // NOTE: An LMDB database must already exist in dir_str
+    
+    std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
+    
+    result_ok = protectiondb_test_staying_open(dir_str);
+    
+    if (result_ok)
+    {
+        result_ok = protectiondb_test_close_reopen(dir_str);
+    }
+    
+    return result_ok;
+}
+
+
+
+
+
+
 
 // -----------------------------------------------------------------------------
 #else // NOT PROTECTIONDB_RAII_VERSION

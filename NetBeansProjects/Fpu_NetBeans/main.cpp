@@ -31,7 +31,7 @@ int main(int argc, char** argv)
     //..........................................................................
     // Test ProtectionDB class
     
-    protectiondb_test();
+    bool result_ok = protectiondb_test();
    
     
     //..........................................................................
