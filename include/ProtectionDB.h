@@ -53,7 +53,7 @@ using Wentry = std::vector<AsyncInterface::t_step_pair>;
 
 // -----------------------------------------------------------------------------
 
-MDB_env *protectiondb_open_env(const std::string &dir_str);
+MDB_env *protectionDB_OpenEnv(const std::string &dir_str);
 
 // -----------------------------------------------------------------------------
 
@@ -197,7 +197,7 @@ private:
 
 // -----------------------------------------------------------------------------
 
-bool protectiondb_test();
+bool protectionDB_Test();
 
 
 // -----------------------------------------------------------------------------
@@ -241,21 +241,21 @@ public:
     //MDB_val *getField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
     //                  const char subkey[]);
 
-    void put_alpha_position(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                            double apos, double aoffset);
-    void put_beta_position(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                           double bpos);
-    void store_reversed(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+    void putAlphaPosition(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+                          double apos, double aoffset);
+    void putBetaPosition(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+                         double bpos);
+    void storeReversed(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                         bool is_reversed);
     void storeWaveform(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                        const Wentry &wentry);
-    void store_bretry_count(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                            bool clockwise, int count);
-    void store_aretry_count(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                            bool clockwise, int count);
+    void storeBretryCount(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+                          bool clockwise, int count);
+    void storeAretryCount(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+                          bool clockwise, int count);
 
     // TODO: counter_vals: See end of _update_counters_execute_motion()?
-    void put_counters(MDB_txn &txn, MDB_dbi dbi, const char serial_number[], 
+    void putCcounters(MDB_txn &txn, MDB_dbi dbi, const char serial_number[], 
                       const FpuCounters &fpu_counters);
 };
 
@@ -275,13 +275,13 @@ public:
 
 // -----------------------------------------------------------------------------
 
-void protectiondb_test();
+void protectionDB_Test();
 
 // -----------------------------------------------------------------------------
 #endif // NOT PROTECTIONDB_RAII_VERSION
 // -----------------------------------------------------------------------------
 
-MDB_env *open_database_env(bool mockup = false);
+MDB_env *protectionDB_OpenEnv(bool mockup = false);
 
 // -----------------------------------------------------------------------------
 

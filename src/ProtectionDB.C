@@ -51,7 +51,7 @@ static const char *keystr_separator_char = "#";
 
 // -----------------------------------------------------------------------------
 
-static std::string protectiondb_get_dir_from_linux_env(bool mockup);
+static std::string protectionDB_GetDirFromLinuxEnv(bool mockup);
 
 // -----------------------------------------------------------------------------
 #ifdef PROTECTIONDB_RAII_VERSION
@@ -169,9 +169,9 @@ ProtectionDB::FpuDbTxn::~FpuDbTxn()
 
 bool ProtectionDB::open(const std::string &dir_str)
 {
-    // TODO: Move protectiondb_open_env() contents to here
+    // TODO: Move protectionDB_OpenEnv() contents to here
 
-    mdb_env_ptr = protectiondb_open_env(dir_str);
+    mdb_env_ptr = protectionDB_OpenEnv(dir_str);
     if (mdb_env_ptr != nullptr)
     {
         return true;
@@ -265,9 +265,9 @@ void ProtectionDB::putField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[
     // TODO: Return a result value
 }
 
-void ProtectionDB::put_counters(MDB_txn &txn, MDB_dbi dbi, 
-                                const char serial_number[],
-                                const FpuCounters &fpu_counters)
+void ProtectionDB::putCounters(MDB_txn &txn, MDB_dbi dbi, 
+                               const char serial_number[],
+                               const FpuCounters &fpu_counters)
 {
     MDB_val data_val;
     
@@ -283,16 +283,18 @@ void ProtectionDB::put_counters(MDB_txn &txn, MDB_dbi dbi,
 #endif // NOT PROTECTIONDB_RAII_VERSION
 // -----------------------------------------------------------------------------
 
-MDB_env *open_database_env(bool mockup)
+// N.B. C++ replacement for Python open_database_env()
+// TODO: Remove comment above once complete
+MDB_env *protectionDB_OpenEnv(bool mockup)
 {
     // TODO: Must only call exactly once for a particular LMDB file in this
     // process (see the LMDB documentation) - enforce this somehow?
     MDB_env *env_ptr = nullptr;
     
-    std::string dir_str = protectiondb_get_dir_from_linux_env(mockup);
+    std::string dir_str = protectionDB_GetDirFromLinuxEnv(mockup);
     if (!dir_str.empty())
     {
-        env_ptr = protectiondb_open_env(dir_str);
+        env_ptr = protectionDB_OpenEnv(dir_str);
     }
         
     return env_ptr;
@@ -300,7 +302,7 @@ MDB_env *open_database_env(bool mockup)
 
 // -----------------------------------------------------------------------------
 
-std::string protectiondb_get_dir_from_linux_env(bool mockup)
+std::string protectionDB_GetDirFromLinuxEnv(bool mockup)
 {
     // Provides Linux directory for the protection database based upon the
     // Linux environment variables FPU_DATABASE_MOCKUP and FPU_DATABASE, and
@@ -342,7 +344,7 @@ std::string protectiondb_get_dir_from_linux_env(bool mockup)
 
 // -----------------------------------------------------------------------------
     
-MDB_env *protectiondb_open_env(const std::string &dir_str)
+MDB_env *protectionDB_OpenEnv(const std::string &dir_str)
 {
     // TODO: Must only call exactly once for a particular LMDB file in this
     // process (see the LMDB documentation) - enforce this somehow?
@@ -427,7 +429,7 @@ static std::string createRandomFpuTestSerialNumber()
     return "Test" + std::to_string(random_number);
 }
 
-static bool protectiondb_test_fpu_counter_writing(ProtectionDB &protectiondb)
+static bool protectionDB_TestFpuCounterWriting(ProtectionDB &protectiondb)
 {
     // Write FPU counters
     
@@ -446,7 +448,7 @@ static bool protectiondb_test_fpu_counter_writing(ProtectionDB &protectiondb)
     return result_ok;
 }
 
-static bool protectiondb_test_single_item_readwrite(ProtectionDB &protectiondb)
+static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
 {
     // Write a single item and read it back, all in one transaction
     
@@ -485,7 +487,7 @@ static bool protectiondb_test_single_item_readwrite(ProtectionDB &protectiondb)
     return result_ok;
 }
 
-static bool protectiondb_test_multiple_item_readwrites(ProtectionDB &protectiondb)
+static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb)
 {
     bool result_ok = false;
     
@@ -559,7 +561,7 @@ static bool protectiondb_test_multiple_item_readwrites(ProtectionDB &protectiond
     return result_ok;
 }
 
-static bool protectiondb_test_staying_open(const std::string &dir_str)
+static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
 {
     // Performs various ProtectionDB tests with the database being kept open
     // NOTE: An LMDB database must already exist in dir_str
@@ -569,23 +571,23 @@ static bool protectiondb_test_staying_open(const std::string &dir_str)
    
     if (protectiondb.open(dir_str))
     {
-        result_ok = protectiondb_test_fpu_counter_writing(protectiondb);
+        result_ok = protectionDB_TestFpuCounterWriting(protectiondb);
         
         if (result_ok)
         {
-            result_ok = protectiondb_test_single_item_readwrite(protectiondb);
+            result_ok = protectionDB_TestSingleItemReadWrite(protectiondb);
         }
 
         if (result_ok)
         {
-            result_ok = protectiondb_test_multiple_item_readwrites(protectiondb);
+            result_ok = protectionDB_TestMultipleItemReadWrites(protectiondb);
         }
     }
     
     return result_ok;
 }
 
-static bool protectiondb_test_close_reopen(const std::string &dir_str)
+static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
 {
     // Performs various ProtectionDB tests with the database being closed
     // and re-opened between each test
@@ -599,7 +601,7 @@ static bool protectiondb_test_close_reopen(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectiondb_test_fpu_counter_writing(protectiondb);
+            result_ok = protectionDB_TestFpuCounterWriting(protectiondb);
         }
         else
         {
@@ -615,7 +617,7 @@ static bool protectiondb_test_close_reopen(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectiondb_test_single_item_readwrite(protectiondb);
+            result_ok = protectionDB_TestSingleItemReadWrite(protectiondb);
         }
         else
         {
@@ -631,7 +633,7 @@ static bool protectiondb_test_close_reopen(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-        result_ok = protectiondb_test_multiple_item_readwrites(protectiondb);
+        result_ok = protectionDB_TestMultipleItemReadWrites(protectiondb);
         }
         else
         {
@@ -642,7 +644,7 @@ static bool protectiondb_test_close_reopen(const std::string &dir_str)
     return result_ok;    
 }
 
-bool protectiondb_test()
+bool protectionDB_Test()
 {
     bool result_ok = false;
     
@@ -650,11 +652,11 @@ bool protectiondb_test()
     
     std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
     
-    result_ok = protectiondb_test_staying_open(dir_str);
+    result_ok = protectionDB_TestWithStayingOpen(dir_str);
     
     if (result_ok)
     {
-        result_ok = protectiondb_test_close_reopen(dir_str);
+        result_ok = protectionDB_TestWithClosingReopening(dir_str);
     }
     
     return result_ok;
@@ -665,7 +667,7 @@ bool protectiondb_test()
 #ifndef PROTECTIONDB_RAII_VERSION // NOT PROTECTIONDB_RAII_VERSION
 // -----------------------------------------------------------------------------
 
-void protectiondb_test()
+void protectionDB_Test()
 {
     // Initial ad-hoc test function - single-step through and look at results
     // N.B. An LMDB database (consisting of data.mdb + lock.mdb files) must
@@ -677,7 +679,7 @@ void protectiondb_test()
     protectionDB.doStuff();
     
     std::string protectiondb_dir = "/moonsdata/fpudb_NEWFORMAT";
-    MDB_env *env_ptr = protectiondb_open_env(protectiondb_dir);
+    MDB_env *env_ptr = protectionDB_OpenEnv(protectiondb_dir);
 
     MDB_txn *txn_ptr;
     MDB_dbi dbi;
