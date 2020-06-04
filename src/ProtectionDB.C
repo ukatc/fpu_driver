@@ -429,9 +429,12 @@ static std::string createRandomFpuTestSerialNumber()
     return "Test" + std::to_string(random_number);
 }
 
-static bool protectionDB_TestFpuCounterWriting(ProtectionDB &protectiondb)
+static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb)
 {
-    // Write FPU counters
+    // Tests writing the counters for a single FPU
+    
+    // TODO: Also add reading back of the counters and comparing against what
+    // was written (N.B. Need to populate the counters with some random values)
     
     bool result_ok = false;
     
@@ -439,18 +442,17 @@ static bool protectionDB_TestFpuCounterWriting(ProtectionDB &protectiondb)
     if (fpudb_txn)
     {
         FpuCounters fpu_counters;
-        result_ok = fpudb_txn->putCounters("BWTest0001", fpu_counters);
+        std::string serial_number_str = createRandomFpuTestSerialNumber();
+        result_ok = fpudb_txn->putCounters(serial_number_str.c_str(),
+                                           fpu_counters);
     }
-    
-    // TODO HERE: Also read back the counters and compare against what was
-    // written (N.B. Need to populate the counters with some random values)
     
     return result_ok;
 }
 
 static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
 {
-    // Write a single item and read it back, all in one transaction
+    // Tests writing of a single item and reading it back, all in one transaction
     
     bool result_ok = false;
     
@@ -461,8 +463,7 @@ static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
         const char subkey[] = "TestSubkey";
         const char data_str[] = "0123456789";
         result_ok = fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
-                                                 subkey,
-                                                 (void *)data_str,
+                                                 subkey, (void *)data_str,
                                                  strlen(data_str));
 
         void *data_returned_ptr = nullptr;
@@ -476,10 +477,10 @@ static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
         
         if (result_ok)
         {
-            if ((num_bytes_returned == strlen(data_str)) &&
-                (memcmp(data_str, data_returned_ptr, strlen(data_str)) == 0))
+            if ((num_bytes_returned != strlen(data_str)) ||
+                (memcmp(data_str, data_returned_ptr, strlen(data_str)) != 0))
             {
-                result_ok = true;
+                result_ok = false;
             }
         }
     }
@@ -491,16 +492,17 @@ static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb)
 {
     bool result_ok = false;
     
-    // Write multiple items in one transaction, and read them back in
-    // another transaction
+    // Tests writing of multiple items in a first transaction, and reading them
+    // back in a second transaction
     const int num_iterations = 100;
     std::string serial_number_str = createRandomFpuTestSerialNumber();
 
     uint64_t test_multiplier = 0x123456789abcdef0L;
     
-    // N.B. Each transaction is in its own scope so that writes will be
-    // automatically committed when fpudb_txn goes out of scope and is 
-    // destroyed
+    // N.B. The transactions in the following code are each in their own scope
+    // so that writes should be automatically committed when fpudb_txn goes out
+    // of scope and is destroyed
+    
     {
         auto fpudb_txn = protectiondb.createFpuDbTransaction();
         if (fpudb_txn)
@@ -571,7 +573,7 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
    
     if (protectiondb.open(dir_str))
     {
-        result_ok = protectionDB_TestFpuCounterWriting(protectiondb);
+        result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
         
         if (result_ok)
         {
@@ -595,13 +597,14 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
     
     bool result_ok = false;
 
-    // N.B. ProtectionDB is opened (and closed automatically again) inside
+    // N.B. ProtectionDB is opened (and then closed automatically again) inside
     // each scope
+    
     {
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestFpuCounterWriting(protectiondb);
+            result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
         }
         else
         {
@@ -633,7 +636,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-        result_ok = protectionDB_TestMultipleItemReadWrites(protectiondb);
+            result_ok = protectionDB_TestMultipleItemReadWrites(protectiondb);
         }
         else
         {
@@ -646,6 +649,10 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
 
 bool protectionDB_Test()
 {
+    // Performs a suite of protection database tests - reading and writing
+    // items within individual or multiple transactions, also with some 
+    // database closing/re-opening
+    
     bool result_ok = false;
     
     // NOTE: An LMDB database must already exist in dir_str
