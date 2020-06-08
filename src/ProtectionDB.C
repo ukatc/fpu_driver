@@ -115,7 +115,6 @@ static int putFpuDbItem(MDB_txn *txn_ptr, MDB_dbi dbi,
                         const char subkey[], const MDB_val &data_val)
 {
     MDB_val key_val = createFpuDbKeyVal(serial_number, subkey);
-    // TODO: Check if final flags argument below is OK
     return mdb_put(txn_ptr, dbi, &key_val, (MDB_val *)&data_val, 0x0);
 }
 
@@ -225,11 +224,6 @@ bool ProtectionDB::open(const std::string &dir_str)
         dbsize = 5 * 1024L * 1024L;
     }
 
-    //.......................
-    // TODO: Python to c++ conversion WIP
-    // See https://lmdb.readthedocs.io/en/release/ -> Environment class
-    // env = lmdb.open(database_file_name, max_dbs=10, map_size=dbsize)
-
     // TODO: In the original Python code, the following are defaulted - see
     // https://lmdb.readthedocs.io/en/release/ -> Environment class - 
     // max_spare_txns=1
@@ -256,8 +250,7 @@ bool ProtectionDB::open(const std::string &dir_str)
             // N.B. Using default flags for now, so flags value is 0x0
             // TODO: Check the required state of MDB_NOTLS flag
             unsigned int flags = 0x0;
-            mdb_result = mdb_env_open(mdb_env_ptr, dir_str.c_str(),
-                                      flags, 0755);
+            mdb_result = mdb_env_open(mdb_env_ptr, dir_str.c_str(), flags, 0755);
         }
     }
 
@@ -288,7 +281,7 @@ std::unique_ptr<ProtectionDB::FpuDbTxn> ProtectionDB::createFpuDbTransaction()
         ptr_returned.reset(new FpuDbTxn(mdb_env_ptr, created_ok));
         if (!created_ok)
         {
-            ptr_returned.release();
+            ptr_returned.reset();
         }
     }
     return std::move(ptr_returned);
@@ -320,8 +313,8 @@ ProtectionDB::~ProtectionDB()
 static bool protectionDB_TestWithStayingOpen(const std::string &dir_str);
 static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
 static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb);
-static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb);
-static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb);
+static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb);
+static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb);
 static std::string getNextFpuTestSerialNumber();
 
 
@@ -330,12 +323,10 @@ bool protectionDB_Test()
     // Performs a suite of protection database tests - reading and writing
     // items within individual or multiple transactions, also with some 
     // database closing/re-opening
-    
-    bool result_ok = false;
-    
-    // NOTE: An LMDB database must already exist in dir_str
+    // NOTE: An LMDB database must already exist in dir_str location (see below)
     
     std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
+    bool result_ok = false;
     
     result_ok = protectionDB_TestWithStayingOpen(dir_str);
     
@@ -350,7 +341,7 @@ bool protectionDB_Test()
 static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
 {
     // Performs various ProtectionDB tests with the database being kept open
-    // NOTE: An LMDB database must already exist in dir_str
+    // NOTE: An LMDB database must already exist in dir_str location
 
     ProtectionDB protectiondb;
     bool result_ok = false;
@@ -361,12 +352,12 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestSingleItemReadWrite(protectiondb);
+            result_ok = protectionDB_TestSingleItemWriteRead(protectiondb);
         }
 
         if (result_ok)
         {
-            result_ok = protectionDB_TestMultipleItemReadWrites(protectiondb);
+            result_ok = protectionDB_TestMultipleItemWriteReads(protectiondb);
         }
     }
     
@@ -377,7 +368,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
 {
     // Performs various ProtectionDB tests with the database being closed
     // and re-opened between each test
-    // NOTE: An LMDB database must already exist in dir_str
+    // NOTE: An LMDB database must already exist in dir_str location
     
     bool result_ok = false;
 
@@ -404,7 +395,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestSingleItemReadWrite(protectiondb);
+            result_ok = protectionDB_TestSingleItemWriteRead(protectiondb);
         }
         else
         {
@@ -420,7 +411,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestMultipleItemReadWrites(protectiondb);
+            result_ok = protectionDB_TestMultipleItemWriteReads(protectiondb);
         }
         else
         {
@@ -452,7 +443,7 @@ static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb
     return result_ok;
 }
 
-static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
+static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb)
 {
     // Tests writing of a single item and reading it back, all in one transaction
     
@@ -461,6 +452,7 @@ static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
     auto fpudb_txn = protectiondb.createFpuDbTransaction();
     if (fpudb_txn)
     {
+        // Write item
         std::string serial_number_str = getNextFpuTestSerialNumber();
         const char subkey[] = "TestSubkey";
         const char data_str[] = "0123456789";
@@ -468,6 +460,7 @@ static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
                                                  subkey, (void *)data_str,
                                                  strlen(data_str));
 
+        // Read item back
         void *data_returned_ptr = nullptr;
         size_t num_bytes_returned = 0;
         if (result_ok)
@@ -477,6 +470,7 @@ static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
                                                     num_bytes_returned);
         }
         
+        // Verify that item read back matches item written
         if (result_ok)
         {
             if ((num_bytes_returned != strlen(data_str)) ||
@@ -490,7 +484,7 @@ static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
     return result_ok;
 }
 
-static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb)
+static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb)
 {
     // Tests writing of multiple items in a first transaction, and reading them
     // back in a second transaction
@@ -498,7 +492,6 @@ static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb)
     bool result_ok = false;
     const int num_iterations = 100;
     std::string serial_number_str = getNextFpuTestSerialNumber();
-
     uint64_t test_multiplier = 0x123456789abcdef0L;
     
     // N.B. The transactions in the following code are each in their own scope
@@ -535,12 +528,11 @@ static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb)
             result_ok = true;
             for (int i = 0; i < num_iterations; i++)
             {
+                char subkey_str[10];
+                snprintf(subkey_str, sizeof(subkey_str), "%03d", i);
                 uint64_t test_val = ((uint64_t)i) * test_multiplier;
                 void *data_returned_ptr = nullptr;
                 size_t num_bytes_returned = 0;
-
-                char subkey_str[10];
-                snprintf(subkey_str, sizeof(subkey_str), "%03d", i);
                 if (fpudb_txn->test_ReadRawItem(serial_number_str.c_str(),
                                                 subkey_str, &data_returned_ptr,
                                                 num_bytes_returned))
@@ -567,8 +559,9 @@ static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb)
 
 static std::string getNextFpuTestSerialNumber()
 {
-#if 1
-    // Provide incrementing serial numbers from initial random number
+    // Provides incrementing serial number strings of the form "TestNNNN", with
+    // the NNNN values being incrementing leading-zero values starting from an
+    // initial random number 0-4999
     
     // Initialise random number generator
     time_t t;
@@ -577,15 +570,10 @@ static std::string getNextFpuTestSerialNumber()
     static int number = rand() % 5000; // 0-4999
     number++;
     
-    char number_as_str[20];
-    snprintf(number_as_str, sizeof(number_as_str), "Test%04d", number);
+    char serial_number_c_str[20];
+    snprintf(serial_number_c_str, sizeof(serial_number_c_str), "Test%04d", number);
 
-    return number_as_str;
-#else
-    // Provides random serial numbers - but tricker to check results in database
-    int random_number = rand() % 10000;  // 0-9999
-    return "Test" + std::to_string(random_number);
-#endif    
+    return std::string(serial_number_c_str);
 }
 
 
