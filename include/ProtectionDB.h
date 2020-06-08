@@ -133,10 +133,6 @@ private:
 };
 
 // -----------------------------------------------------------------------------
-#define PROTECTIONDB_RAII_VERSION
-// -----------------------------------------------------------------------------
-#ifdef PROTECTIONDB_RAII_VERSION
-// -----------------------------------------------------------------------------
 
 class ProtectionDB
 {
@@ -197,14 +193,17 @@ private:
 
 // -----------------------------------------------------------------------------
 
+MDB_env *protectionDB_OpenEnv(bool mockup = false);
+
 bool protectionDB_Test();
 
 
 // -----------------------------------------------------------------------------
-#else // NOT PROTECTIONDB_RAII_VERSION
+// TODO: Old experimentation code - delete once happy with new code
+#if 0
 // -----------------------------------------------------------------------------
 
-class ProtectionDB
+class ProtectionDB_OLD
 {
 public:
     // TODO: For testing only
@@ -222,6 +221,8 @@ public:
     // to instance functions
     void putField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                   const char subkey[], MDB_val &data_val);
+    void putCounters(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+                     const FpuCounters &fpu_counters);
     void putInterval(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
                      const char subkey[], double interval,
                      double offset = 0.0);
@@ -259,30 +260,10 @@ public:
                       const FpuCounters &fpu_counters);
 };
 
-// -----------------------------------------------------------------------------
-
-// TODO: Implement the following
-/*
-class HealthLogDB
-{
-public:
-    void putEntry(MDB_txn &txn, const t_fpu_state &fpu, dict_counters);
-    **TODO** getEntry(MDB_txn &txn, const t_fpu_state &fpu, datum_cnt, series=None);
-
-
-};
-*/
+void protectionDB_Test_OLD();
 
 // -----------------------------------------------------------------------------
-
-void protectionDB_Test();
-
-// -----------------------------------------------------------------------------
-#endif // NOT PROTECTIONDB_RAII_VERSION
-// -----------------------------------------------------------------------------
-
-MDB_env *protectionDB_OpenEnv(bool mockup = false);
-
+#endif // 0
 // -----------------------------------------------------------------------------
 
 #endif // PROTECTIONDB_H

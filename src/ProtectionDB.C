@@ -604,10 +604,10 @@ bool protectionDB_Test()
 
 // -----------------------------------------------------------------------------
 // TODO: Old experimentation code - delete once happy with new code above
-#ifndef PROTECTIONDB_RAII_VERSION // NOT PROTECTIONDB_RAII_VERSION
+#if 0
 // -----------------------------------------------------------------------------
 
-int ProtectionDB::doStuff()
+int ProtectionDB_OLD::doStuff()
 {
     int major = 1;
     int minor = 2;
@@ -617,9 +617,9 @@ int ProtectionDB::doStuff()
     return 456;
 }
 
-bool ProtectionDB::getRawField(MDB_txn &txn, MDB_dbi dbi,
-                               const char serial_number[],
-                               const char subkey[], MDB_val &data_val_ret)
+bool ProtectionDB_OLD::getRawField(MDB_txn &txn, MDB_dbi dbi,
+                                   const char serial_number[],
+                                   const char subkey[], MDB_val &data_val_ret)
 {
     std::string key_str = std::string(serial_number) + keystr_separator_char +
                           subkey;
@@ -634,8 +634,8 @@ bool ProtectionDB::getRawField(MDB_txn &txn, MDB_dbi dbi,
     return false;
 }
 
-void ProtectionDB::putField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                            const char subkey[], MDB_val &data_val)
+void ProtectionDB_OLD::putField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
+                                const char subkey[], MDB_val &data_val)
 {
     // Create ASCII key of form <serial_number><separator><subkey>
     // IMPORTANT: serial_number and subkey must not contain the
@@ -654,9 +654,9 @@ void ProtectionDB::putField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[
     // TODO: Return a result value
 }
 
-void ProtectionDB::putCounters(MDB_txn &txn, MDB_dbi dbi, 
-                               const char serial_number[],
-                               const FpuCounters &fpu_counters)
+void ProtectionDB_OLD::putCounters(MDB_txn &txn, MDB_dbi dbi, 
+                                   const char serial_number[],
+                                   const FpuCounters &fpu_counters)
 {
     MDB_val data_val;
     
@@ -667,7 +667,7 @@ void ProtectionDB::putCounters(MDB_txn &txn, MDB_dbi dbi,
     // TODO: Return a result value
 }
 
-MDB_env *protectionDB_OpenEnv(const std::string &dir_str)
+MDB_env *protectionDB_OpenEnv_OLD(const std::string &dir_str)
 {
     // TODO: Must only call exactly once for a particular LMDB file in this
     // process (see the LMDB documentation) - enforce this somehow?
@@ -739,19 +739,19 @@ MDB_env *protectionDB_OpenEnv(const std::string &dir_str)
     return env_ptr;
 }
 
-void protectionDB_Test()
+void protectionDB_Test_OLD()
 {
     // Initial ad-hoc test function - single-step through and look at results
     // N.B. An LMDB database (consisting of data.mdb + lock.mdb files) must
     // already exist in the protectiondb_dir directory location specified below 
     
     int mdb_result;
-    ProtectionDB protectionDB;
+    ProtectionDB_OLD protectionDB;
     
     protectionDB.doStuff();
     
     std::string protectiondb_dir = "/moonsdata/fpudb_NEWFORMAT";
-    MDB_env *env_ptr = protectionDB_OpenEnv(protectiondb_dir);
+    MDB_env *env_ptr = protectionDB_OpenEnv_OLD(protectiondb_dir);
 
     MDB_txn *txn_ptr;
     MDB_dbi dbi;
@@ -805,6 +805,6 @@ void protectionDB_Test()
 }
 
 // -----------------------------------------------------------------------------
-#endif // NOT PROTECTIONDB_RAII_VERSION
+#endif // 0
 // -----------------------------------------------------------------------------
 
