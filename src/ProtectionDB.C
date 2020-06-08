@@ -317,27 +317,118 @@ ProtectionDB::~ProtectionDB()
 // *****************************************************************************
 // *****************************************************************************
 
-static std::string getNextFpuTestSerialNumber()
-{
-#if 1
-    // Provide incrementing serial numbers from initial random number
-    
-    // Initialise random number generator
-    time_t t;
-    srand((unsigned)time(&t));
-   
-    static int number = rand() % 5000; // 0-4999
-    number++;
-    
-    char number_as_str[20];
-    snprintf(number_as_str, sizeof(number_as_str), "Test%04d", number);
+static bool protectionDB_TestWithStayingOpen(const std::string &dir_str);
+static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
+static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb);
+static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb);
+static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb);
+static std::string getNextFpuTestSerialNumber();
 
-    return number_as_str;
-#else
-    // Provides random serial numbers - but tricker to check results in database
-    int random_number = rand() % 10000;  // 0-9999
-    return "Test" + std::to_string(random_number);
-#endif    
+
+bool protectionDB_Test()
+{
+    // Performs a suite of protection database tests - reading and writing
+    // items within individual or multiple transactions, also with some 
+    // database closing/re-opening
+    
+    bool result_ok = false;
+    
+    // NOTE: An LMDB database must already exist in dir_str
+    
+    std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
+    
+    result_ok = protectionDB_TestWithStayingOpen(dir_str);
+    
+    if (result_ok)
+    {
+        result_ok = protectionDB_TestWithClosingReopening(dir_str);
+    }
+    
+    return result_ok;
+}
+
+static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
+{
+    // Performs various ProtectionDB tests with the database being kept open
+    // NOTE: An LMDB database must already exist in dir_str
+
+    ProtectionDB protectiondb;
+    bool result_ok = false;
+   
+    if (protectiondb.open(dir_str))
+    {
+        result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
+        
+        if (result_ok)
+        {
+            result_ok = protectionDB_TestSingleItemReadWrite(protectiondb);
+        }
+
+        if (result_ok)
+        {
+            result_ok = protectionDB_TestMultipleItemReadWrites(protectiondb);
+        }
+    }
+    
+    return result_ok;
+}
+
+static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
+{
+    // Performs various ProtectionDB tests with the database being closed
+    // and re-opened between each test
+    // NOTE: An LMDB database must already exist in dir_str
+    
+    bool result_ok = false;
+
+    // N.B. ProtectionDB is opened (and then closed automatically again) inside
+    // each scope
+    
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
+        }
+        else
+        {
+            result_ok = false;
+        }
+    }
+    
+    // NOTE: If single-stepping through this function, can now do a dump of the
+    // database to check its contents, using e.g.: mdb_dump . -p -s fpu
+
+    if (result_ok)
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            result_ok = protectionDB_TestSingleItemReadWrite(protectiondb);
+        }
+        else
+        {
+            result_ok = false;
+        }
+    }
+
+    // NOTE: If single-stepping through this function, can now do a dump of the
+    // database to check its contents, using e.g.: mdb_dump . -p -s fpu
+
+    if (result_ok)
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            result_ok = protectionDB_TestMultipleItemReadWrites(protectiondb);
+        }
+        else
+        {
+            result_ok = false;
+        }
+    }
+    
+    return result_ok;    
 }
 
 static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb)
@@ -474,110 +565,27 @@ static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb)
     return result_ok;
 }
 
-static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
+static std::string getNextFpuTestSerialNumber()
 {
-    // Performs various ProtectionDB tests with the database being kept open
-    // NOTE: An LMDB database must already exist in dir_str
-
-    ProtectionDB protectiondb;
-    bool result_ok = false;
+#if 1
+    // Provide incrementing serial numbers from initial random number
+    
+    // Initialise random number generator
+    time_t t;
+    srand((unsigned)time(&t));
    
-    if (protectiondb.open(dir_str))
-    {
-        result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
-        
-        if (result_ok)
-        {
-            result_ok = protectionDB_TestSingleItemReadWrite(protectiondb);
-        }
+    static int number = rand() % 5000; // 0-4999
+    number++;
+    
+    char number_as_str[20];
+    snprintf(number_as_str, sizeof(number_as_str), "Test%04d", number);
 
-        if (result_ok)
-        {
-            result_ok = protectionDB_TestMultipleItemReadWrites(protectiondb);
-        }
-    }
-    
-    return result_ok;
-}
-
-static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
-{
-    // Performs various ProtectionDB tests with the database being closed
-    // and re-opened between each test
-    // NOTE: An LMDB database must already exist in dir_str
-    
-    bool result_ok = false;
-
-    // N.B. ProtectionDB is opened (and then closed automatically again) inside
-    // each scope
-    
-    {
-        ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
-        {
-            result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
-        }
-    }
-    
-    // NOTE: If single-stepping through this function, can now do a dump of the
-    // database to check its contents, using e.g.: mdb_dump . -p -s fpu
-
-    if (result_ok)
-    {
-        ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
-        {
-            result_ok = protectionDB_TestSingleItemReadWrite(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
-        }
-    }
-
-    // NOTE: If single-stepping through this function, can now do a dump of the
-    // database to check its contents, using e.g.: mdb_dump . -p -s fpu
-
-    if (result_ok)
-    {
-        ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
-        {
-            result_ok = protectionDB_TestMultipleItemReadWrites(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
-        }
-    }
-    
-    return result_ok;    
-}
-
-bool protectionDB_Test()
-{
-    // Performs a suite of protection database tests - reading and writing
-    // items within individual or multiple transactions, also with some 
-    // database closing/re-opening
-    
-    bool result_ok = false;
-    
-    // NOTE: An LMDB database must already exist in dir_str
-    
-    std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
-    
-    result_ok = protectionDB_TestWithStayingOpen(dir_str);
-    
-    if (result_ok)
-    {
-        result_ok = protectionDB_TestWithClosingReopening(dir_str);
-    }
-    
-    return result_ok;
+    return number_as_str;
+#else
+    // Provides random serial numbers - but tricker to check results in database
+    int random_number = rand() % 10000;  // 0-9999
+    return "Test" + std::to_string(random_number);
+#endif    
 }
 
 
