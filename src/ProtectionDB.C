@@ -18,6 +18,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string>
 #include <cstring>
 #include <cstdlib>
@@ -423,10 +424,27 @@ MDB_env *protectionDB_OpenEnv(const std::string &dir_str)
 // *****************************************************************************
 // *****************************************************************************
 
-static std::string createRandomFpuTestSerialNumber()
+static std::string getNextFpuTestSerialNumber()
 {
+#if 1
+    // Provide incrementing serial numbers from initial random number
+    
+    // Initialise random number generator
+    time_t t;
+    srand((unsigned)time(&t));
+   
+    static int number = rand() % 5000; // 0-4999
+    number++;
+    
+    char number_as_str[20];
+    snprintf(number_as_str, sizeof(number_as_str), "Test%04d", number);
+
+    return number_as_str;
+#else
+    // Provides random serial numbers - but tricker to check results in database
     int random_number = rand() % 10000;  // 0-9999
     return "Test" + std::to_string(random_number);
+#endif    
 }
 
 static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb)
@@ -442,7 +460,7 @@ static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb
     if (fpudb_txn)
     {
         FpuCounters fpu_counters;
-        std::string serial_number_str = createRandomFpuTestSerialNumber();
+        std::string serial_number_str = getNextFpuTestSerialNumber();
         result_ok = fpudb_txn->putCounters(serial_number_str.c_str(),
                                            fpu_counters);
     }
@@ -459,7 +477,7 @@ static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
     auto fpudb_txn = protectiondb.createFpuDbTransaction();
     if (fpudb_txn)
     {
-        std::string serial_number_str = createRandomFpuTestSerialNumber();
+        std::string serial_number_str = getNextFpuTestSerialNumber();
         const char subkey[] = "TestSubkey";
         const char data_str[] = "0123456789";
         result_ok = fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
@@ -490,12 +508,12 @@ static bool protectionDB_TestSingleItemReadWrite(ProtectionDB &protectiondb)
 
 static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb)
 {
-    bool result_ok = false;
-    
     // Tests writing of multiple items in a first transaction, and reading them
     // back in a second transaction
+
+    bool result_ok = false;
     const int num_iterations = 100;
-    std::string serial_number_str = createRandomFpuTestSerialNumber();
+    std::string serial_number_str = getNextFpuTestSerialNumber();
 
     uint64_t test_multiplier = 0x123456789abcdef0L;
     
@@ -510,11 +528,11 @@ static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb)
             result_ok = true;
             for (int i = 0; i < num_iterations; i++)
             {
-                std::string iterator_str = std::to_string(i);
+                char subkey_str[10];
+                snprintf(subkey_str, sizeof(subkey_str), "%03d", i);
                 uint64_t test_val = ((uint64_t)i) * test_multiplier;
                 if (!fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
-                                                  iterator_str.c_str(), // Subkey
-                                                  (void *)&test_val,
+                                                  subkey_str, (void *)&test_val,
                                                   sizeof(test_val)))
                 {
                     // Error
@@ -537,10 +555,10 @@ static bool protectionDB_TestMultipleItemReadWrites(ProtectionDB &protectiondb)
                 void *data_returned_ptr = nullptr;
                 size_t num_bytes_returned = 0;
                 
-                std::string iterator_str = std::to_string(i);
+                char subkey_str[10];
+                snprintf(subkey_str, sizeof(subkey_str), "%03d", i);
                 if (fpudb_txn->test_ReadRawItem(serial_number_str.c_str(),
-                                                iterator_str.c_str(), // Subkey
-                                                &data_returned_ptr,
+                                                subkey_str, &data_returned_ptr,
                                                 num_bytes_returned))
                 {
                     if ((num_bytes_returned != sizeof(test_val)) ||
