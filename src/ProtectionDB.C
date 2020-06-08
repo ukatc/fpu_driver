@@ -52,7 +52,47 @@ static const char *keystr_separator_char = "#";
 
 // -----------------------------------------------------------------------------
 
-static std::string protectionDB_GetDirFromLinuxEnv(bool mockup);
+std::string protectionDB_GetDirFromLinuxEnv(bool mockup)
+{
+    // Provides Linux directory for the protection database based upon the
+    // Linux environment variables FPU_DATABASE_MOCKUP and FPU_DATABASE, and
+    // value of mockup. If unsuccessful then the returned string is empty.
+    // The environment variables need to be of the form e.g. "/var/lib/fpudb",
+    // and must **NOT** have a final "/" character
+
+    char *dir_c_str = nullptr;
+    std::string dir_str_ret;
+    
+    if (mockup)
+    {
+        dir_c_str = getenv("FPU_DATABASE_MOCKUP");
+        if (dir_c_str == nullptr)
+        {
+            dir_c_str = getenv("FPU_DATABASE");
+            if (dir_c_str != nullptr)
+            {
+                dir_str_ret = dir_c_str;
+                dir_str_ret += "_mockup";
+            }
+        }
+        else
+        {
+            dir_str_ret = dir_c_str;
+        }
+    }
+    else
+    {
+        dir_c_str = getenv("FPU_DATABASE");
+        if (dir_c_str != nullptr)
+        {
+            dir_str_ret = dir_c_str;
+        }
+    }
+    
+    return dir_str_ret;
+}
+
+// -----------------------------------------------------------------------------
 
 static MDB_val createFpuDbKeyVal(const char serial_number[],
                                  const char subkey[])
@@ -270,67 +310,6 @@ ProtectionDB::~ProtectionDB()
     
 }
 
-
-// N.B. C++ replacement for Python open_database_env()
-// TODO: Remove comment above once complete
-MDB_env *protectionDB_OpenEnv(bool mockup)
-{
-    // TODO: Must only call exactly once for a particular LMDB file in this
-    // process (see the LMDB documentation) - enforce this somehow?
-    MDB_env *env_ptr = nullptr;
-    
-    std::string dir_str = protectionDB_GetDirFromLinuxEnv(mockup);
-    if (!dir_str.empty())
-    {
-        //************** TODO: Change to use ProtectionDB::open() instead
-        // env_ptr = protectionDB_OpenEnv(dir_str);
-    }
-        
-    return env_ptr;
-}            
-
-// -----------------------------------------------------------------------------
-
-std::string protectionDB_GetDirFromLinuxEnv(bool mockup)
-{
-    // Provides Linux directory for the protection database based upon the
-    // Linux environment variables FPU_DATABASE_MOCKUP and FPU_DATABASE, and
-    // value of mockup. If unsuccessful then the returned string is empty.
-    // The environment variables need to be of the form e.g. "/var/lib/fpudb",
-    // and must **NOT** have a final "/" character
-
-    char *dir_c_str = nullptr;
-    std::string dir_str_ret;
-    
-    if (mockup)
-    {
-        dir_c_str = getenv("FPU_DATABASE_MOCKUP");
-        if (dir_c_str == nullptr)
-        {
-            dir_c_str = getenv("FPU_DATABASE");
-            if (dir_c_str != nullptr)
-            {
-                dir_str_ret = dir_c_str;
-                dir_str_ret += "_mockup";
-            }
-        }
-        else
-        {
-            dir_str_ret = dir_c_str;
-        }
-    }
-    else
-    {
-        dir_c_str = getenv("FPU_DATABASE");
-        if (dir_c_str != nullptr)
-        {
-            dir_str_ret = dir_c_str;
-        }
-    }
-    
-    return dir_str_ret;
-}
-    
 
 // *****************************************************************************
 // *****************************************************************************
@@ -667,7 +646,7 @@ void ProtectionDB_OLD::putCounters(MDB_txn &txn, MDB_dbi dbi,
     // TODO: Return a result value
 }
 
-MDB_env *protectionDB_OpenEnv_OLD(const std::string &dir_str)
+MDB_env *protectionDB_Open_OLD(const std::string &dir_str)
 {
     // TODO: Must only call exactly once for a particular LMDB file in this
     // process (see the LMDB documentation) - enforce this somehow?
@@ -739,6 +718,22 @@ MDB_env *protectionDB_OpenEnv_OLD(const std::string &dir_str)
     return env_ptr;
 }
 
+// N.B. C++ replacement for Python open_database_env()
+MDB_env *protectionDB_OpenEnv_OLD(bool mockup)
+{
+    // TODO: Must only call exactly once for a particular LMDB file in this
+    // process (see the LMDB documentation) - enforce this somehow?
+    MDB_env *env_ptr = nullptr;
+    
+    std::string dir_str = protectionDB_GetDirFromLinuxEnv(mockup);
+    if (!dir_str.empty())
+    {
+        env_ptr = protectionDB_Open_OLD(dir_str);
+    }
+        
+    return env_ptr;
+}            
+
 void protectionDB_Test_OLD()
 {
     // Initial ad-hoc test function - single-step through and look at results
@@ -751,7 +746,7 @@ void protectionDB_Test_OLD()
     protectionDB.doStuff();
     
     std::string protectiondb_dir = "/moonsdata/fpudb_NEWFORMAT";
-    MDB_env *env_ptr = protectionDB_OpenEnv_OLD(protectiondb_dir);
+    MDB_env *env_ptr = protectionDB_OpenEnv_OLD(true);
 
     MDB_txn *txn_ptr;
     MDB_dbi dbi;

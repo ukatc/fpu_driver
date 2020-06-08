@@ -53,7 +53,7 @@ using Wentry = std::vector<AsyncInterface::t_step_pair>;
 
 // -----------------------------------------------------------------------------
 
-MDB_env *protectionDB_OpenEnv(const std::string &dir_str);
+bool protectionDB_Test();
 
 // -----------------------------------------------------------------------------
 
@@ -190,12 +190,6 @@ public:
 private:
     MDB_env *mdb_env_ptr = nullptr;
 };
-
-// -----------------------------------------------------------------------------
-
-MDB_env *protectionDB_OpenEnv(bool mockup = false);
-
-bool protectionDB_Test();
 
 
 // -----------------------------------------------------------------------------
