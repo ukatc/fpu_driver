@@ -198,9 +198,9 @@ bool ProtectionDB::open(const std::string &dir_str)
     return true;
 }
 
-std::unique_ptr<ProtectionDB::Transaction> ProtectionDB::createTransaction()
+std::unique_ptr<ProtectionDbTxn> ProtectionDB::createTransaction()
 {
-    std::unique_ptr<ProtectionDB::Transaction> ptr_returned;
+    std::unique_ptr<ProtectionDbTxn> ptr_returned;
 
     if (mdb_env_ptr != nullptr)
     {
@@ -208,7 +208,7 @@ std::unique_ptr<ProtectionDB::Transaction> ProtectionDB::createTransaction()
         // TODO: C++11 doesn't support make_unique - ask if OK to compile
         // as C++14 in final ESO driver
         //ptr_returned = std::make_unique<FpuDbTxn>(*_mdb_env_ptr, created_ok);
-        ptr_returned.reset(new Transaction(mdb_env_ptr, created_ok));
+        ptr_returned.reset(new ProtectionDbTxn(mdb_env_ptr, created_ok));
         if (!created_ok)
         {
             ptr_returned.reset();
@@ -244,8 +244,8 @@ ProtectionDB::~ProtectionDB()
 
 // -----------------------------------------------------------------------------
 
-ProtectionDB::Transaction::Transaction(MDB_env *protectiondb_mdb_env_ptr,
-                                       bool &created_ok_ret)
+ProtectionDbTxn::ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr,
+                                 bool &created_ok_ret)
 {
     env_ptr = protectiondb_mdb_env_ptr;
 
@@ -256,8 +256,8 @@ ProtectionDB::Transaction::Transaction(MDB_env *protectiondb_mdb_env_ptr,
     }
 }
 
-bool ProtectionDB::Transaction::fpuDbPutCounters(const char serial_number[],
-                                                 const FpuCounters &fpu_counters)
+bool ProtectionDbTxn::fpuDbPutCounters(const char serial_number[],
+                                       const FpuCounters &fpu_counters)
 {
     MDB_val data_val;
     
@@ -270,10 +270,10 @@ bool ProtectionDB::Transaction::fpuDbPutCounters(const char serial_number[],
     return false;
 }
 
-bool ProtectionDB::Transaction::fpuDbWriteRawItem(const char serial_number[],
-                                                  const char subkey[],
-                                                  void *data_ptr,
-                                                  size_t num_bytes)
+bool ProtectionDbTxn::fpuDbWriteRawItem(const char serial_number[],
+                                        const char subkey[],
+                                        void *data_ptr,
+                                        size_t num_bytes)
 {
     MDB_val mdb_data_val = { num_bytes, data_ptr };
 
@@ -284,10 +284,10 @@ bool ProtectionDB::Transaction::fpuDbWriteRawItem(const char serial_number[],
     return false;
 }
 
-bool ProtectionDB::Transaction::fpuDbReadRawItem(const char serial_number[],
-                                                 const char subkey[],
-                                                 void **data_ptr_ret,
-                                                 size_t &num_bytes_ret)
+bool ProtectionDbTxn::fpuDbReadRawItem(const char serial_number[],
+                                       const char subkey[],
+                                       void **data_ptr_ret,
+                                       size_t &num_bytes_ret)
 {
     MDB_val mdb_data_val;
 
@@ -300,24 +300,24 @@ bool ProtectionDB::Transaction::fpuDbReadRawItem(const char serial_number[],
     return false;
 }
 
-int ProtectionDB::Transaction::fpuDbPutItem(const char serial_number[],
-                                            const char subkey[],
-                                            const MDB_val &data_val)
+int ProtectionDbTxn::fpuDbPutItem(const char serial_number[],
+                                  const char subkey[],
+                                  const MDB_val &data_val)
 {
     MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
     return mdb_put(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val, 0x0);
 }
 
- int ProtectionDB::Transaction::fpuDbGetItem(const char serial_number[],
-                                             const char subkey[],
-                                             MDB_val &data_val_ret)
+ int ProtectionDbTxn::fpuDbGetItem(const char serial_number[],
+                                   const char subkey[],
+                                   MDB_val &data_val_ret)
 {
     MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
     return mdb_get(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val_ret);
 }
 
- MDB_val ProtectionDB::Transaction::fpuDbCreateKeyVal(const char serial_number[],
-                                                     const char subkey[])
+ MDB_val ProtectionDbTxn::fpuDbCreateKeyVal(const char serial_number[],
+                                            const char subkey[])
 {
     // N.B. Need static persistent key_str below because its raw c_str is
     // pointed to by the returned MDB_val
@@ -332,7 +332,7 @@ int ProtectionDB::Transaction::fpuDbPutItem(const char serial_number[],
     return { key_str.size(), (void *)key_str.c_str() };
 }
 
-ProtectionDB::Transaction::~Transaction()
+ProtectionDbTxn::~ProtectionDbTxn()
 {
     mdb_txn_commit(txn_ptr);
     

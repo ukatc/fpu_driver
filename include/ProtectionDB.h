@@ -134,52 +134,50 @@ private:
 
 // -----------------------------------------------------------------------------
 
+class ProtectionDbTxn
+{
+    // Important notes:
+    //   - Use ProtectionDB::createTransaction() to create an instance of
+    //     this class so that lifetime is managed by unique_ptr - do not
+    //     create directly
+    //   - Only create a single instance of this class at a time??
+    //     (TODO: See LMDB database rules)
+
+public:
+    ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
+
+    // TODO: Put all FPU-database-specific reading and writing functions here
+    bool fpuDbPutCounters(const char serial_number[],
+                          const FpuCounters &fpu_counters);
+
+    // Test functions
+    bool fpuDbWriteRawItem(const char serial_number[], const char subkey[],
+                           void *data_ptr, size_t num_bytes);
+    bool fpuDbReadRawItem(const char serial_number[], const char subkey[],
+                          void **data_ptr_ret, size_t &num_bytes_ret);
+
+    ~ProtectionDbTxn();
+
+private:
+    int fpuDbPutItem(const char serial_number[], const char subkey[],
+                     const MDB_val &data_val);
+    int fpuDbGetItem(const char serial_number[], const char subkey[],
+                     MDB_val &data_val_ret);
+    MDB_val fpuDbCreateKeyVal(const char serial_number[],
+                              const char subkey[]);
+
+    MDB_env *env_ptr = nullptr;
+    MDB_txn *txn_ptr = nullptr;
+};
+
+//..............................................................................
+
 class ProtectionDB
 {
 public:
     bool open(const std::string &dir_str);
-
-    //..........................................................................
-    class Transaction
-    {
-        // ProtectionDB transaction class
-        // Important notes:
-        //   - Use ProtectionDB::createTransaction() to create an instance of
-        //     this class so that lifetime is managed by unique_ptr - do not
-        //     create directly
-        //   - Only create a single instance of this class at a time??
-        //     (TODO: See LMDB database rules)
-
-    public:
-        Transaction(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
-
-        // TODO: Put all FPU-database-specific reading and writing functions here
-        bool fpuDbPutCounters(const char serial_number[],
-                              const FpuCounters &fpu_counters);
-
-        // Test functions
-        bool fpuDbWriteRawItem(const char serial_number[], const char subkey[],
-                               void *data_ptr, size_t num_bytes);
-        bool fpuDbReadRawItem(const char serial_number[], const char subkey[],
-                              void **data_ptr_ret, size_t &num_bytes_ret);
-
-        ~Transaction();
-
-    private:
-        int fpuDbPutItem(const char serial_number[], const char subkey[],
-                         const MDB_val &data_val);
-        int fpuDbGetItem(const char serial_number[], const char subkey[],
-                         MDB_val &data_val_ret);
-        MDB_val fpuDbCreateKeyVal(const char serial_number[],
-                                  const char subkey[]);
-      
-        MDB_env *env_ptr = nullptr;
-        MDB_txn *txn_ptr = nullptr;
-    };
-
-    //..........................................................................
     
-    std::unique_ptr<ProtectionDB::Transaction> createTransaction();
+    std::unique_ptr<ProtectionDbTxn> createTransaction();
     
     ~ProtectionDB();
     
