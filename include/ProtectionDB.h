@@ -168,7 +168,6 @@ public:
     private:
         MDB_env *mdb_env_ptr = nullptr;
         MDB_txn *txn_ptr = nullptr;
-        MDB_dbi dbi = 0;
     };
 
     //..........................................................................
@@ -178,6 +177,8 @@ public:
     ~ProtectionDB();
     
 private:
+    void close();
+
     MDB_env *mdb_env_ptr = nullptr;
 };
 

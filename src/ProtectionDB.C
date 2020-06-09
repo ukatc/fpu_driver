@@ -49,6 +49,12 @@ static const char *serialnumber_used_keystr = "serialnumber_used";
 // Character to separate the key/subkey parts of the overall key strings
 static const char *keystr_separator_char = "#";
 
+// Sub-database handles - initialised when ProtectionDB.open() is called
+static MDB_dbi fpu_dbi = 0;
+static MDB_dbi healthlog_dbi = 0;
+// TODO: Is "verification" sub-database database needed?
+// static MDB_dbi verificationdb_dbi = 0;
+
 // -----------------------------------------------------------------------------
 
 std::string protectionDB_GetDirFromLinuxEnv(bool mockup)
@@ -109,20 +115,18 @@ static MDB_val createFpuDbKeyVal(const char serial_number[],
     return { key_str.size(), (void *)key_str.c_str() };
 }
 
-static int putFpuDbItem(MDB_txn *txn_ptr, MDB_dbi dbi,
-                        const char serial_number[],
+static int putFpuDbItem(MDB_txn *txn_ptr, const char serial_number[],
                         const char subkey[], const MDB_val &data_val)
 {
     MDB_val key_val = createFpuDbKeyVal(serial_number, subkey);
-    return mdb_put(txn_ptr, dbi, &key_val, (MDB_val *)&data_val, 0x0);
+    return mdb_put(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val, 0x0);
 }
 
-static int getFpuDbItem(MDB_txn *txn_ptr, MDB_dbi dbi,
-                        const char serial_number[],
+static int getFpuDbItem(MDB_txn *txn_ptr, const char serial_number[],
                         const char subkey[], MDB_val &data_val_ret)
 {
     MDB_val key_val = createFpuDbKeyVal(serial_number, subkey);
-    return mdb_get(txn_ptr, dbi, &key_val, (MDB_val *)&data_val_ret);
+    return mdb_get(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val_ret);
 }
 
 // -----------------------------------------------------------------------------
@@ -135,12 +139,7 @@ ProtectionDB::Transaction::Transaction(MDB_env *protectiondb_mdb_env_ptr,
     created_ok_ret = false;
     if (mdb_txn_begin(mdb_env_ptr, nullptr, 0x0, &txn_ptr) == 0)
     {
-        // Set dbi to the "fpu" sub-database within the database file (and
-        // create sub-database if doesn't already exist)
-        if (mdb_dbi_open(txn_ptr, fpu_subdb_name, MDB_CREATE, &dbi) == 0)
-        {
-            created_ok_ret = true;
-        }
+        created_ok_ret = true;
     }
 }
 
@@ -151,8 +150,7 @@ bool ProtectionDB::Transaction::fpuDbPutCounters(const char serial_number[],
     
     data_val.mv_data = fpu_counters.getRawData(data_val.mv_size); 
    
-    if (putFpuDbItem(txn_ptr, dbi, serial_number, counters_keystr,
-                     data_val) == 0)
+    if (putFpuDbItem(txn_ptr, serial_number, counters_keystr, data_val) == 0)
     {
         return true;
     }
@@ -166,7 +164,7 @@ bool ProtectionDB::Transaction::fpuDbWriteRawItem(const char serial_number[],
 {
     MDB_val mdb_data_val = { num_bytes, data_ptr };
 
-    if (putFpuDbItem(txn_ptr, dbi, serial_number, subkey, mdb_data_val) == 0)
+    if (putFpuDbItem(txn_ptr, serial_number, subkey, mdb_data_val) == 0)
     {
         return true;
     }
@@ -180,7 +178,7 @@ bool ProtectionDB::Transaction::fpuDbReadRawItem(const char serial_number[],
 {
     MDB_val mdb_data_val;
 
-    if (getFpuDbItem(txn_ptr, dbi, serial_number, subkey, mdb_data_val) == 0)
+    if (getFpuDbItem(txn_ptr, serial_number, subkey, mdb_data_val) == 0)
     {
         *data_ptr_ret = mdb_data_val.mv_data;
         num_bytes_ret = mdb_data_val.mv_size;
@@ -193,10 +191,7 @@ ProtectionDB::Transaction::~Transaction()
 {
     mdb_txn_commit(txn_ptr);
     
-    // TODO: mdb_dbi_close() has caveats - see its documentation - but this
-    // should be OK here?
-    mdb_dbi_close(mdb_env_ptr, dbi);
-    
+   
     // TODO: Where to call mdb_env_sync() to flush to disk? Or is this done
     // automatically due to the LMDB config macros / settings?
 }
@@ -208,6 +203,7 @@ bool ProtectionDB::open(const std::string &dir_str)
     // TODO: Must only call exactly once for a particular LMDB file in this
     // process (see the LMDB documentation) - enforce this somehow?
     
+    //..........................................................................
     size_t dbsize;
 
     // Needs 64 bit (large file support) for normal database size
@@ -224,6 +220,8 @@ bool ProtectionDB::open(const std::string &dir_str)
         dbsize = 5 * 1024L * 1024L;
     }
 
+    //..........................................................................
+    // Initialise and open database environment
     // TODO: In the original Python code, the following are defaulted - see
     // https://lmdb.readthedocs.io/en/release/ -> Environment class - 
     // max_spare_txns=1
@@ -233,40 +231,70 @@ bool ProtectionDB::open(const std::string &dir_str)
     if (mdb_result == 0)
     {
         mdb_result = mdb_env_set_maxdbs(mdb_env_ptr, 10);
-        if (mdb_result == 0)
-        {
-            mdb_result = mdb_env_set_mapsize(mdb_env_ptr, dbsize);
-        }
-
-        if (mdb_result == 0)
-        {
-            // TODO: The following keeps compatibility with the original
-            // Python code defaults, but are this many readers needed?
-            mdb_result = mdb_env_set_maxreaders(mdb_env_ptr, 126);
-        }
-
-        if (mdb_result == 0)
-        {
-            // N.B. Using default flags for now, so flags value is 0x0
-            // TODO: Check the required state of MDB_NOTLS flag
-            // TODO: Check that following permissions are OK
-            unsigned int flags = 0x0;
-            mdb_result = mdb_env_open(mdb_env_ptr, dir_str.c_str(), flags, 0755);
-        }
+    }
+    
+    if (mdb_result == 0)
+    {
+        mdb_result = mdb_env_set_mapsize(mdb_env_ptr, dbsize);
     }
 
+    if (mdb_result == 0)
+    {
+        // TODO: The following keeps compatibility with the original
+        // Python code defaults, but are this many readers needed?
+        mdb_result = mdb_env_set_maxreaders(mdb_env_ptr, 126);
+    }
+
+    if (mdb_result == 0)
+    {
+        // N.B. Using default flags for now, so flags value is 0x0
+        // TODO: Check the required state of MDB_NOTLS flag
+        // TODO: Check that following permissions are OK
+        unsigned int flags = 0x0;
+        mdb_result = mdb_env_open(mdb_env_ptr, dir_str.c_str(), flags, 0755);
+    }
+
+    //..........................................................................
+    // Create sub-database handles - will use for entire time that ProtectionDB
+    // is open
+    // TODO: Check if these operations create the sub-databases if they don't 
+    // exist yet, and put comment to this effect here
+    MDB_txn *txn_ptr = nullptr;
+    if (mdb_result == 0)
+    {
+        // Create dummy transaction
+        mdb_result = mdb_txn_begin(mdb_env_ptr, nullptr, 0x0, &txn_ptr);
+    }
+    
+    if (mdb_result == 0)
+    {
+        // Create FPU sub-database handle
+        mdb_result = mdb_dbi_open(txn_ptr, fpu_subdb_name, MDB_CREATE,
+                                  &fpu_dbi);
+    }
+    
+    if (mdb_result == 0)
+    {
+        // Create health log sub-database handle
+        mdb_result = mdb_dbi_open(txn_ptr, healthlog_subdb_name, MDB_CREATE,
+                                  &healthlog_dbi);
+    }
+    
+    if (mdb_result == 0)
+    {
+        // Commit dummy transaction to finish with it
+        mdb_result = mdb_txn_commit(txn_ptr);
+    }
+    
+    //..........................................................................
+    
     if (mdb_result != 0)
     {
-        // Failure - call mdb_env_close() to discard the MDB_env handle
-        mdb_env_close(mdb_env_ptr);
-        mdb_env_ptr = nullptr;
+        // Failure - close the database
+        close();
+        return false;
     }
-
-    if (mdb_env_ptr != nullptr)
-    {
-        return true;
-    }
-    return false;
+    return true;
 }
 
 std::unique_ptr<ProtectionDB::Transaction> ProtectionDB::createTransaction()
@@ -288,15 +316,29 @@ std::unique_ptr<ProtectionDB::Transaction> ProtectionDB::createTransaction()
     return std::move(ptr_returned);
 }
 
+void ProtectionDB::close()
+{
+    // Releases all handles, closes ProtectionDB LMDB environment etc
+    if (mdb_env_ptr != nullptr)
+    {
+        // TODO: mdb_dbi_close() has caveats - see its documentation - but this
+        // should be OK here?
+        mdb_dbi_close(mdb_env_ptr, fpu_dbi);
+        mdb_dbi_close(mdb_env_ptr, healthlog_dbi);
+        
+        mdb_env_close(mdb_env_ptr);
+    
+        mdb_env_ptr = nullptr;
+        
+        // TODO: Call any others? e.g. 
+        // mdb_env_sync()?
+        // Any others?
+    }
+}
+    
 ProtectionDB::~ProtectionDB()
 {
-    // TODO: Release all handles, close ProtectionDB LMDB environment etc
-    mdb_env_close(mdb_env_ptr);
-    
-    // TODO: Call any others? e.g. 
-    // mdb_env_sync()?
-    // Any others?
-    
+    close();
 }
 
 
