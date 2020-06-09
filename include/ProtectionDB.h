@@ -166,7 +166,14 @@ public:
         ~Transaction();
 
     private:
-        MDB_env *mdb_env_ptr = nullptr;
+        int fpuDbPutItem(const char serial_number[], const char subkey[],
+                         const MDB_val &data_val);
+        int fpuDbGetItem(const char serial_number[], const char subkey[],
+                         MDB_val &data_val_ret);
+        MDB_val fpuDbCreateKeyVal(const char serial_number[],
+                                  const char subkey[]);
+      
+        MDB_env *env_ptr = nullptr;
         MDB_txn *txn_ptr = nullptr;
     };
 
