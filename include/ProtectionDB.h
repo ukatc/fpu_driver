@@ -146,9 +146,20 @@ class ProtectionDbTxn
 public:
     ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
 
-    // TODO: Put all FPU-database-specific reading and writing functions here
     bool fpuDbPutCounters(const char serial_number[],
                           const FpuCounters &fpu_counters);
+    // TODO: Implement the following functions or similar (adapted from the 
+    // Python code)
+#if 0
+    bool fpuDbPutInterval(const char serial_number[], const char subkey[],
+                          double interval, double offset = 0.0);
+    bool fpuDbPutAlphaPosition(const char serial_number[], double apos, double aoffset);
+    bool fpuDbPutBetaPosition(const char serial_number[], double bpos);
+    bool fpuDbPutWaveformReversed(const char serial_number[], bool is_reversed);
+    bool fpuDbPutWaveform(const char serial_number[], const Wentry &wentry);
+    bool fpuDbPutBetaRetryCount(const char serial_number[], bool clockwise, int count);
+    bool fpuDbPutAlphaRetryCount(const char serial_number[], bool clockwise, int count);
+#endif // 0
 
     // Test functions
     bool fpuDbWriteRawItem(const char serial_number[], const char subkey[],
@@ -187,73 +198,6 @@ private:
     MDB_env *mdb_env_ptr = nullptr;
 };
 
-
-// -----------------------------------------------------------------------------
-// TODO: Old experimentation code - delete once happy with new code
-#if 0
-// -----------------------------------------------------------------------------
-
-class ProtectionDB_OLD
-{
-public:
-    // TODO: For testing only
-    int doStuff();
-
-    // TODO: Check Python's @staticmethod, @classmethod (cls), other (self) - 
-    // AND why does ProtectionDB Python class use these?
-
-    // TODO: Not sure whether the following function prototypes are good 
-    // correspondences to the corresponding Python functions yet - check and
-    // update as go along, and also add const qualifiers wherever appropriate
-
-
-    // TODO: These two were static functions in Python, but I've changed them
-    // to instance functions
-    void putField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                  const char subkey[], MDB_val &data_val);
-    void putCounters(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                     const FpuCounters &fpu_counters);
-    void putInterval(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                     const char subkey[], double interval,
-                     double offset = 0.0);
-
-    // Instance functions
-    // TODO: Check if these could just be static functions as well - do they
-    // use any private class data?
-
-    // TODO: Should getRawField() and getField() actually return MDB_val * ?    
-
-    // TODO: Change all of the following "fpu" arguments to serial numbers
-    // instead? (because the Python versions of the functions all just use
-    // fpu.serial_number anyway?)
-    
-    bool getRawField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                     const char subkey[], MDB_val &mdb_val_ret);
-    //MDB_val *getField(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-    //                  const char subkey[]);
-
-    void putAlphaPosition(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                          double apos, double aoffset);
-    void putBetaPosition(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                         double bpos);
-    void storeReversed(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                        bool is_reversed);
-    void storeWaveform(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                       const Wentry &wentry);
-    void storeBretryCount(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                          bool clockwise, int count);
-    void storeAretryCount(MDB_txn &txn, MDB_dbi dbi, const char serial_number[],
-                          bool clockwise, int count);
-
-    // TODO: counter_vals: See end of _update_counters_execute_motion()?
-    void putCcounters(MDB_txn &txn, MDB_dbi dbi, const char serial_number[], 
-                      const FpuCounters &fpu_counters);
-};
-
-void protectionDB_Test_OLD();
-
-// -----------------------------------------------------------------------------
-#endif // 0
 // -----------------------------------------------------------------------------
 
 #endif // PROTECTIONDB_H
