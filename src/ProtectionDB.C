@@ -99,105 +99,6 @@ std::string protectionDB_GetDirFromLinuxEnv(bool mockup)
 
 // -----------------------------------------------------------------------------
 
-static MDB_val createFpuDbKeyVal(const char serial_number[],
-                                 const char subkey[])
-{
-    // N.B. Need static persistent key_str below because its raw c_str is
-    // pointed to by the returned MDB_val
-    // TODO: This is NOT thread-safe (because single static instance) - will
-    // this be a problem?
-    static std::string key_str;
-
-    // Create ASCII key of form <serial_number><separator><subkey>
-    // IMPORTANT: serial_number and subkey must not contain the
-    // keystr_separator_char character
-    key_str = std::string(serial_number) + keystr_separator_char + subkey;
-    return { key_str.size(), (void *)key_str.c_str() };
-}
-
-static int putFpuDbItem(MDB_txn *txn_ptr, const char serial_number[],
-                        const char subkey[], const MDB_val &data_val)
-{
-    MDB_val key_val = createFpuDbKeyVal(serial_number, subkey);
-    return mdb_put(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val, 0x0);
-}
-
-static int getFpuDbItem(MDB_txn *txn_ptr, const char serial_number[],
-                        const char subkey[], MDB_val &data_val_ret)
-{
-    MDB_val key_val = createFpuDbKeyVal(serial_number, subkey);
-    return mdb_get(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val_ret);
-}
-
-// -----------------------------------------------------------------------------
-
-ProtectionDB::Transaction::Transaction(MDB_env *protectiondb_mdb_env_ptr,
-                                       bool &created_ok_ret)
-{
-    mdb_env_ptr = protectiondb_mdb_env_ptr;
-
-    created_ok_ret = false;
-    if (mdb_txn_begin(mdb_env_ptr, nullptr, 0x0, &txn_ptr) == 0)
-    {
-        created_ok_ret = true;
-    }
-}
-
-bool ProtectionDB::Transaction::fpuDbPutCounters(const char serial_number[],
-                                                 const FpuCounters &fpu_counters)
-{
-    MDB_val data_val;
-    
-    data_val.mv_data = fpu_counters.getRawData(data_val.mv_size); 
-   
-    if (putFpuDbItem(txn_ptr, serial_number, counters_keystr, data_val) == 0)
-    {
-        return true;
-    }
-    return false;
-}
-
-bool ProtectionDB::Transaction::fpuDbWriteRawItem(const char serial_number[],
-                                                  const char subkey[],
-                                                  void *data_ptr,
-                                                  size_t num_bytes)
-{
-    MDB_val mdb_data_val = { num_bytes, data_ptr };
-
-    if (putFpuDbItem(txn_ptr, serial_number, subkey, mdb_data_val) == 0)
-    {
-        return true;
-    }
-    return false;
-}
-
-bool ProtectionDB::Transaction::fpuDbReadRawItem(const char serial_number[],
-                                                 const char subkey[],
-                                                 void **data_ptr_ret,
-                                                 size_t &num_bytes_ret)
-{
-    MDB_val mdb_data_val;
-
-    if (getFpuDbItem(txn_ptr, serial_number, subkey, mdb_data_val) == 0)
-    {
-        *data_ptr_ret = mdb_data_val.mv_data;
-        num_bytes_ret = mdb_data_val.mv_size;
-        return true;
-    }
-    return false;
-}
-
-ProtectionDB::Transaction::~Transaction()
-{
-    mdb_txn_commit(txn_ptr);
-    
-   
-    // TODO: Where to call mdb_env_sync() to flush to disk? Or is this done
-    // automatically due to the LMDB config macros / settings?
-}
-
-// -----------------------------------------------------------------------------
-
 bool ProtectionDB::open(const std::string &dir_str)
 {
     // TODO: Must only call exactly once for a particular LMDB file in this
@@ -339,6 +240,105 @@ void ProtectionDB::close()
 ProtectionDB::~ProtectionDB()
 {
     close();
+}
+
+// -----------------------------------------------------------------------------
+
+static MDB_val createFpuDbKeyVal(const char serial_number[],
+                                 const char subkey[])
+{
+    // N.B. Need static persistent key_str below because its raw c_str is
+    // pointed to by the returned MDB_val
+    // TODO: This is NOT thread-safe (because single static instance) - will
+    // this be a problem?
+    static std::string key_str;
+
+    // Create ASCII key of form <serial_number><separator><subkey>
+    // IMPORTANT: serial_number and subkey must not contain the
+    // keystr_separator_char character
+    key_str = std::string(serial_number) + keystr_separator_char + subkey;
+    return { key_str.size(), (void *)key_str.c_str() };
+}
+
+static int putFpuDbItem(MDB_txn *txn_ptr, const char serial_number[],
+                        const char subkey[], const MDB_val &data_val)
+{
+    MDB_val key_val = createFpuDbKeyVal(serial_number, subkey);
+    return mdb_put(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val, 0x0);
+}
+
+static int getFpuDbItem(MDB_txn *txn_ptr, const char serial_number[],
+                        const char subkey[], MDB_val &data_val_ret)
+{
+    MDB_val key_val = createFpuDbKeyVal(serial_number, subkey);
+    return mdb_get(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val_ret);
+}
+
+// -----------------------------------------------------------------------------
+
+ProtectionDB::Transaction::Transaction(MDB_env *protectiondb_mdb_env_ptr,
+                                       bool &created_ok_ret)
+{
+    mdb_env_ptr = protectiondb_mdb_env_ptr;
+
+    created_ok_ret = false;
+    if (mdb_txn_begin(mdb_env_ptr, nullptr, 0x0, &txn_ptr) == 0)
+    {
+        created_ok_ret = true;
+    }
+}
+
+bool ProtectionDB::Transaction::fpuDbPutCounters(const char serial_number[],
+                                                 const FpuCounters &fpu_counters)
+{
+    MDB_val data_val;
+    
+    data_val.mv_data = fpu_counters.getRawData(data_val.mv_size); 
+   
+    if (putFpuDbItem(txn_ptr, serial_number, counters_keystr, data_val) == 0)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool ProtectionDB::Transaction::fpuDbWriteRawItem(const char serial_number[],
+                                                  const char subkey[],
+                                                  void *data_ptr,
+                                                  size_t num_bytes)
+{
+    MDB_val mdb_data_val = { num_bytes, data_ptr };
+
+    if (putFpuDbItem(txn_ptr, serial_number, subkey, mdb_data_val) == 0)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool ProtectionDB::Transaction::fpuDbReadRawItem(const char serial_number[],
+                                                 const char subkey[],
+                                                 void **data_ptr_ret,
+                                                 size_t &num_bytes_ret)
+{
+    MDB_val mdb_data_val;
+
+    if (getFpuDbItem(txn_ptr, serial_number, subkey, mdb_data_val) == 0)
+    {
+        *data_ptr_ret = mdb_data_val.mv_data;
+        num_bytes_ret = mdb_data_val.mv_size;
+        return true;
+    }
+    return false;
+}
+
+ProtectionDB::Transaction::~Transaction()
+{
+    mdb_txn_commit(txn_ptr);
+    
+   
+    // TODO: Where to call mdb_env_sync() to flush to disk? Or is this done
+    // automatically due to the LMDB config macros / settings?
 }
 
 
