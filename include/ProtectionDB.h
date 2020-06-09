@@ -140,30 +140,30 @@ public:
     bool open(const std::string &dir_str);
 
     //..........................................................................
-    class FpuDbTxn
+    class Transaction
     {
-        // FPU sub-database transaction class
+        // ProtectionDB transaction class
         // Important notes:
-        //   - Use ProtectionDB::createFpuDbTxn() to create an instance of this
-        //     class so that lifetime is managed by unique_ptr - do not create
-        //     directly
+        //   - Use ProtectionDB::createTransaction() to create an instance of
+        //     this class so that lifetime is managed by unique_ptr - do not
+        //     create directly
         //   - Only create a single instance of this class at a time??
         //     (TODO: See LMDB database rules)
 
     public:
-        FpuDbTxn(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
+        Transaction(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
 
         // TODO: Put all FPU-database-specific reading and writing functions here
-        bool putCounters(const char serial_number[],
-                         const FpuCounters &fpu_counters);
+        bool fpuDbPutCounters(const char serial_number[],
+                              const FpuCounters &fpu_counters);
 
         // Test functions
-        bool test_WriteRawItem(const char serial_number[], const char subkey[],
+        bool fpuDbWriteRawItem(const char serial_number[], const char subkey[],
                                void *data_ptr, size_t num_bytes);
-        bool test_ReadRawItem(const char serial_number[], const char subkey[],
+        bool fpuDbReadRawItem(const char serial_number[], const char subkey[],
                               void **data_ptr_ret, size_t &num_bytes_ret);
 
-        ~FpuDbTxn();
+        ~Transaction();
 
     private:
         MDB_env *mdb_env_ptr = nullptr;
@@ -172,18 +172,8 @@ public:
     };
 
     //..........................................................................
-    class HealthLogTxn
-    {
-    public:
-
-    private:
-    };
     
-    //..........................................................................
-    
-    std::unique_ptr<ProtectionDB::FpuDbTxn> createFpuDbTransaction();
-    
-    std::unique_ptr<ProtectionDB::HealthLogTxn> createHealthLogDbTransaction();
+    std::unique_ptr<ProtectionDB::Transaction> createTransaction();
     
     ~ProtectionDB();
     

@@ -25,13 +25,12 @@
 #include "ProtectionDB.h"
 
 // ProtectionDB sub-database names
-// TODO: Check if "verification" sub-database is needed
 static const char *fpu_subdb_name = "fpu";
 static const char *healthlog_subdb_name = "healthlog";
-static const char *verification_subdb_name = "verification";
+// TODO: Is "verification" sub-database needed?
+// static const char *verification_subdb_name = "verification";
 
-// TODO: Put meaningful comment here describing what the strings below are
-static const char *dbname_keystr = "fpu";
+// Database key strings
 static const char *alpha_positions_keystr = "apos";
 static const char *beta_positions_keystr = "bpos";
 static const char *waveform_table_keystr = "wtab";
@@ -128,8 +127,8 @@ static int getFpuDbItem(MDB_txn *txn_ptr, MDB_dbi dbi,
 
 // -----------------------------------------------------------------------------
 
-ProtectionDB::FpuDbTxn::FpuDbTxn(MDB_env *protectiondb_mdb_env_ptr,
-                                 bool &created_ok_ret)
+ProtectionDB::Transaction::Transaction(MDB_env *protectiondb_mdb_env_ptr,
+                                       bool &created_ok_ret)
 {
     mdb_env_ptr = protectiondb_mdb_env_ptr;
 
@@ -145,8 +144,8 @@ ProtectionDB::FpuDbTxn::FpuDbTxn(MDB_env *protectiondb_mdb_env_ptr,
     }
 }
 
-bool ProtectionDB::FpuDbTxn::putCounters(const char serial_number[],
-                                         const FpuCounters &fpu_counters)
+bool ProtectionDB::Transaction::fpuDbPutCounters(const char serial_number[],
+                                                 const FpuCounters &fpu_counters)
 {
     MDB_val data_val;
     
@@ -160,9 +159,10 @@ bool ProtectionDB::FpuDbTxn::putCounters(const char serial_number[],
     return false;
 }
 
-bool ProtectionDB::FpuDbTxn::test_WriteRawItem(const char serial_number[],
-                                               const char subkey[],
-                                               void *data_ptr, size_t num_bytes)
+bool ProtectionDB::Transaction::fpuDbWriteRawItem(const char serial_number[],
+                                                  const char subkey[],
+                                                  void *data_ptr,
+                                                  size_t num_bytes)
 {
     MDB_val mdb_data_val = { num_bytes, data_ptr };
 
@@ -173,10 +173,10 @@ bool ProtectionDB::FpuDbTxn::test_WriteRawItem(const char serial_number[],
     return false;
 }
 
-bool ProtectionDB::FpuDbTxn::test_ReadRawItem(const char serial_number[],
-                                              const char subkey[],
-                                              void **data_ptr_ret,
-                                              size_t &num_bytes_ret)
+bool ProtectionDB::Transaction::fpuDbReadRawItem(const char serial_number[],
+                                                 const char subkey[],
+                                                 void **data_ptr_ret,
+                                                 size_t &num_bytes_ret)
 {
     MDB_val mdb_data_val;
 
@@ -189,7 +189,7 @@ bool ProtectionDB::FpuDbTxn::test_ReadRawItem(const char serial_number[],
     return false;
 }
 
-ProtectionDB::FpuDbTxn::~FpuDbTxn()
+ProtectionDB::Transaction::~Transaction()
 {
     mdb_txn_commit(txn_ptr);
     
@@ -249,6 +249,7 @@ bool ProtectionDB::open(const std::string &dir_str)
         {
             // N.B. Using default flags for now, so flags value is 0x0
             // TODO: Check the required state of MDB_NOTLS flag
+            // TODO: Check that following permissions are OK
             unsigned int flags = 0x0;
             mdb_result = mdb_env_open(mdb_env_ptr, dir_str.c_str(), flags, 0755);
         }
@@ -268,9 +269,9 @@ bool ProtectionDB::open(const std::string &dir_str)
     return false;
 }
 
-std::unique_ptr<ProtectionDB::FpuDbTxn> ProtectionDB::createFpuDbTransaction()
+std::unique_ptr<ProtectionDB::Transaction> ProtectionDB::createTransaction()
 {
-    std::unique_ptr<ProtectionDB::FpuDbTxn> ptr_returned;
+    std::unique_ptr<ProtectionDB::Transaction> ptr_returned;
 
     if (mdb_env_ptr != nullptr)
     {
@@ -278,7 +279,7 @@ std::unique_ptr<ProtectionDB::FpuDbTxn> ProtectionDB::createFpuDbTransaction()
         // TODO: C++11 doesn't support make_unique - ask if OK to compile
         // as C++14 in final ESO driver
         //ptr_returned = std::make_unique<FpuDbTxn>(*_mdb_env_ptr, created_ok);
-        ptr_returned.reset(new FpuDbTxn(mdb_env_ptr, created_ok));
+        ptr_returned.reset(new Transaction(mdb_env_ptr, created_ok));
         if (!created_ok)
         {
             ptr_returned.reset();
@@ -287,11 +288,6 @@ std::unique_ptr<ProtectionDB::FpuDbTxn> ProtectionDB::createFpuDbTransaction()
     return std::move(ptr_returned);
 }
 
-std::unique_ptr<ProtectionDB::HealthLogTxn> ProtectionDB::createHealthLogDbTransaction()
-{
-    // TODO
-}
- 
 ProtectionDB::~ProtectionDB()
 {
     // TODO: Release all handles, close ProtectionDB LMDB environment etc
@@ -431,13 +427,13 @@ static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb
     
     bool result_ok = false;
     
-    auto fpudb_txn = protectiondb.createFpuDbTransaction();
-    if (fpudb_txn)
+    auto transaction = protectiondb.createTransaction();
+    if (transaction)
     {
         FpuCounters fpu_counters;
         std::string serial_number_str = getNextFpuTestSerialNumber();
-        result_ok = fpudb_txn->putCounters(serial_number_str.c_str(),
-                                           fpu_counters);
+        result_ok = transaction->fpuDbPutCounters(serial_number_str.c_str(),
+                                                  fpu_counters);
     }
     
     return result_ok;
@@ -449,25 +445,25 @@ static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb)
     
     bool result_ok = false;
     
-    auto fpudb_txn = protectiondb.createFpuDbTransaction();
-    if (fpudb_txn)
+    auto transaction = protectiondb.createTransaction();
+    if (transaction)
     {
         // Write item
         std::string serial_number_str = getNextFpuTestSerialNumber();
         const char subkey[] = "TestSubkey";
         const char data_str[] = "0123456789";
-        result_ok = fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
-                                                 subkey, (void *)data_str,
-                                                 strlen(data_str));
+        result_ok = transaction->fpuDbWriteRawItem(serial_number_str.c_str(),
+                                                   subkey, (void *)data_str,
+                                                   strlen(data_str));
 
         // Read item back
         void *data_returned_ptr = nullptr;
         size_t num_bytes_returned = 0;
         if (result_ok)
         {
-            result_ok = fpudb_txn->test_ReadRawItem(serial_number_str.c_str(),
-                                                    subkey, &data_returned_ptr,
-                                                    num_bytes_returned);
+            result_ok = transaction->fpuDbReadRawItem(serial_number_str.c_str(),
+                                                      subkey, &data_returned_ptr,
+                                                      num_bytes_returned);
         }
         
         // Verify that item read back matches item written
@@ -495,12 +491,12 @@ static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb)
     uint64_t test_multiplier = 0x123456789abcdef0L;
     
     // N.B. The transactions in the following code are each in their own scope
-    // so that writes should be automatically committed when fpudb_txn goes out
+    // so that writes should be automatically committed when transaction goes out
     // of scope and is destroyed
     
     {
-        auto fpudb_txn = protectiondb.createFpuDbTransaction();
-        if (fpudb_txn)
+        auto transaction = protectiondb.createTransaction();
+        if (transaction)
         {
             result_ok = true;
             for (int i = 0; i < num_iterations; i++)
@@ -508,9 +504,9 @@ static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb)
                 char subkey_str[10];
                 snprintf(subkey_str, sizeof(subkey_str), "%03d", i);
                 uint64_t test_val = ((uint64_t)i) * test_multiplier;
-                if (!fpudb_txn->test_WriteRawItem(serial_number_str.c_str(),
-                                                  subkey_str, (void *)&test_val,
-                                                  sizeof(test_val)))
+                if (!transaction->fpuDbWriteRawItem(serial_number_str.c_str(),
+                                                    subkey_str, (void *)&test_val,
+                                                    sizeof(test_val)))
                 {
                     // Error
                     result_ok = false;
@@ -522,8 +518,8 @@ static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb)
 
     if (result_ok)
     {
-        auto fpudb_txn = protectiondb.createFpuDbTransaction();
-        if (fpudb_txn)
+        auto transaction = protectiondb.createTransaction();
+        if (transaction)
         {
             result_ok = true;
             for (int i = 0; i < num_iterations; i++)
@@ -533,9 +529,9 @@ static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb)
                 uint64_t test_val = ((uint64_t)i) * test_multiplier;
                 void *data_returned_ptr = nullptr;
                 size_t num_bytes_returned = 0;
-                if (fpudb_txn->test_ReadRawItem(serial_number_str.c_str(),
-                                                subkey_str, &data_returned_ptr,
-                                                num_bytes_returned))
+                if (transaction->fpuDbReadRawItem(serial_number_str.c_str(),
+                                                  subkey_str, &data_returned_ptr,
+                                                  num_bytes_returned))
                 {
                     if ((num_bytes_returned != sizeof(test_val)) ||
                         (memcmp(data_returned_ptr, (void *)&test_val,
