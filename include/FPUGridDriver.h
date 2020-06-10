@@ -44,6 +44,15 @@ using namespace mpifps::ethercanif;
 #define DEFAULT_LOGLEVEL    (LOG_ERROR) 
 #define DEFAULT_LOGDIR      ("$HOME")
 
+//*************** TODO: Await Steven's OK for FPU set being a std::vector<>
+// (rather than the t_fpuset array of bools)
+#define FPU_SET_IS_VECTOR
+
+#ifdef FPU_SET_IS_VECTOR
+// TODO: This is named "FpuSelection" to clearly differentiate its type from
+// the EtherCAN layer's t_fpuset type
+using FpuSelection = std::vector<uint16_t>;
+#endif
 
 //..............................................................................
     
@@ -67,42 +76,30 @@ public:
         double motor_max_rel_increase = MAX_ACCELERATION_FACTOR
         );
 
+    // TODO: Ad-hoc test functions only - remove when no longer needed
+    int testIncrement();
+    double testDivide(double dividend, double divisor);
+    int testGetNumFPUs();
+
+    void _post_connect_hook(const EtherCANInterfaceConfig &config);
+
     E_EtherCANErrCode connect(const int ngateways,
                               const t_gateway_address gateway_addresses[]);
 
+    
+#ifdef FPU_SET_IS_VECTOR
+    E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
+#else // NOT FPU_SET_IS_VECTOR
+    E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
+#endif // NOT FPU_SET_IS_VECTOR
+
+    void need_ping(const t_grid_state &grid_state,
+                   const FpuSelection &fpu_selection,
+                   FpuSelection &fpu_ping_selection_ret);
+
     // TODO: Check if this virtual destructor stuff is correct
+    // TODO: Need a real destructor as well?? Or are all member objects RAII ones?
     virtual ~UnprotectedGridDriver();
-
-    //..........................................................................
-    // TODO: Ad-hoc test functions only - remove when no longer needed
-    int testIncrement()
-    {
-#if 0        
-        //************************
-        ProtectionDB protectiondb;
-
-        int val = protectiondb.doStuff();
-        return val;
-
-        //************************
-#else // NOT 1
-        dummyCounter++;
-        return dummyCounter;
-#endif // NOT 1        
-
-    }
-
-    double testDivide(double dividend, double divisor)
-    {
-        return dividend / divisor;
-    }
-
-    int testGetNumFPUs()
-    {
-        return config.num_fpus;
-    }
-
-    //..........................................................................
 
 private:
     EtherCANInterfaceConfig config;

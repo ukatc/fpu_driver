@@ -23,6 +23,7 @@
 // classes and functions in FPUGridDriver.py from Python to C++.
 
 #include <fcntl.h>
+#include <algorithm>
 #include "FPUGridDriver.h"
 #include "DeviceLock.h"
 
@@ -145,6 +146,29 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     _gd = new EtherCANInterface(config);
 }
 
+
+int UnprotectedGridDriver::testIncrement()
+{
+    dummyCounter++;
+    return dummyCounter;
+}
+
+double UnprotectedGridDriver::testDivide(double dividend, double divisor)
+{
+    return dividend / divisor;
+}
+
+int UnprotectedGridDriver::testGetNumFPUs()
+{
+    return config.num_fpus;
+}
+
+
+void UnprotectedGridDriver::_post_connect_hook(const EtherCANInterfaceConfig &config)
+{
+
+}
+
 E_EtherCANErrCode UnprotectedGridDriver::connect(const int ngateways,
                                 const t_gateway_address gateway_addresses[])
 {
@@ -176,6 +200,101 @@ E_EtherCANErrCode UnprotectedGridDriver::connect(const int ngateways,
         return rv
 */        
 }
+
+#ifdef FPU_SET_IS_VECTOR
+
+E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const FpuSelection &fpu_selection)
+{
+    E_EtherCANErrCode status = DE_OK;
+
+    for (uint16_t fpu_id : fpu_selection)
+    {
+        if ((fpu_id >= config.num_fpus) || (fpu_id >= MAX_NUM_POSITIONERS))
+        {
+            status = DE_INVALID_FPU_ID;
+            break;
+        }
+    }
+
+    return status;
+}
+
+void UnprotectedGridDriver::need_ping(const t_grid_state &grid_state,
+                                      const FpuSelection &fpu_selection,
+                                      FpuSelection &fpu_ping_selection_ret)
+{
+    fpu_ping_selection_ret.clear();
+
+    if (fpu_selection.size() == 0)
+    {
+        // Get all FPUs not yet successfully pinged
+        for (int fpu_id = 0;
+             fpu_id < std::min<int>(config.num_fpus, MAX_NUM_POSITIONERS);
+             fpu_id++)
+        {
+            if (!grid_state.FPU_state[fpu_id].ping_ok)
+            {
+                fpu_ping_selection_ret.emplace_back(fpu_id);
+            }
+        }
+    }
+    else
+    {
+        // Get selection of FPUs not yet successfully pinged
+        for (int fpu_id : fpu_selection)
+        {
+            if ((fpu_id < config.num_fpus) &&
+                (fpu_id < MAX_NUM_POSITIONERS))   // Buffer overrun protection
+            {
+                if (!grid_state.FPU_state[fpu_id].ping_ok)
+                {
+                    fpu_ping_selection_ret.emplace_back(fpu_id);
+                }
+            }
+        }
+    }
+}
+
+#else // NOTFPU_SET_IS_VECTOR
+
+E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fpuset &fpuset)
+{
+    E_EtherCANErrCode status = DE_OK;
+
+    // TODO: fpuset is an array of bools whose indexes seem to drectly
+    // correspond to FPU IDs, which isn't efficient - change this
+    // function to eventually receive a std::vector of FPU IDs or similar
+
+    // Count number of FPUs selected
+    int num_fpus_in_fpuset = 0;
+    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    {
+        if (fpuset[i])
+        {
+            num_fpus_in_fpuset++;
+
+            // Check if any selected FPU in fpuset has an index above
+            // config.num_fpus
+            // TODO: Am assuming that FPU ID values currently correspond to
+            // array indexes - is this the case?
+            if (i >= config.num_fpus)
+            {
+                status = DE_INVALID_FPU_ID;
+                break;
+            }
+        }
+    }
+
+    if (num_fpus_in_fpuset > config.num_fpus)
+    {
+        status = DE_INVALID_FPU_ID;
+    }
+
+    return status;
+}
+
+#endif // NOTFPU_SET_IS_VECTOR
+
 
 UnprotectedGridDriver::~UnprotectedGridDriver()
 {
