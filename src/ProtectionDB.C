@@ -317,16 +317,16 @@ int ProtectionDbTxn::fpuDbPutItem(const char serial_number[],
     return mdb_put(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val, 0x0);
 }
 
- int ProtectionDbTxn::fpuDbGetItem(const char serial_number[],
-                                   const char subkey[],
-                                   MDB_val &data_val_ret)
+int ProtectionDbTxn::fpuDbGetItem(const char serial_number[],
+                                  const char subkey[],
+                                  MDB_val &data_val_ret)
 {
     MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
     return mdb_get(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val_ret);
 }
 
- MDB_val ProtectionDbTxn::fpuDbCreateKeyVal(const char serial_number[],
-                                            const char subkey[])
+MDB_val ProtectionDbTxn::fpuDbCreateKeyVal(const char serial_number[],
+                                           const char subkey[])
 {
     // N.B. Need static persistent key_str below because its raw c_str is
     // pointed to by the returned MDB_val

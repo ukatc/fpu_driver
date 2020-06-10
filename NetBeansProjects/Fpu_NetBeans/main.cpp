@@ -35,22 +35,14 @@ int main(int argc, char** argv)
 }
 
 //------------------------------------------------------------------------------
+
 static void testFpuGridDriver()
 {
     UnprotectedGridDriver unprotected_grid_driver;
 
-    // TODO: NOTE: I don't yet know what format of IP address is expected - just
-    // using a dummy format for now
-    // TODO: Also, t_gateway_address::ip is only a pointer - dangerous? Change
-    // this eventually? (e.g. to a std::String?)
-    const char *dummy_ip_str = "192.168.12.34";
-    t_gateway_address gateway_address = { dummy_ip_str, 12345 };
-
-    unprotected_grid_driver.connect(1, &gateway_address);
-    
+    unprotected_grid_driver.doTests();
 }
 
-//------------------------------------------------------------------------------
 static void testFpuCounters()
 {
     FpuCounters fpu_counters;
@@ -59,7 +51,6 @@ static void testFpuCounters()
     void *raw_data_ptr = fpu_counters.getRawData(num_bytes);
 }
 
-//------------------------------------------------------------------------------
 static void testProtectionDB()
 {
     bool result_ok = protectionDB_Test();

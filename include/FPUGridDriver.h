@@ -86,22 +86,22 @@ public:
     E_EtherCANErrCode connect(const int ngateways,
                               const t_gateway_address gateway_addresses[]);
 
+    void doTests();
     
-#ifdef FPU_SET_IS_VECTOR
-    E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
-#else // NOT FPU_SET_IS_VECTOR
-    E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
-#endif // NOT FPU_SET_IS_VECTOR
-
-    void need_ping(const t_grid_state &grid_state,
-                   const FpuSelection &fpu_selection,
-                   FpuSelection &fpu_ping_selection_ret);
-
     // TODO: Check if this virtual destructor stuff is correct
     // TODO: Need a real destructor as well?? Or are all member objects RAII ones?
     virtual ~UnprotectedGridDriver();
 
 private:
+#ifdef FPU_SET_IS_VECTOR
+    E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
+#else // NOT FPU_SET_IS_VECTOR
+    E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
+#endif // NOT FPU_SET_IS_VECTOR
+    void need_ping(const t_grid_state &grid_state,
+                   const FpuSelection &fpu_selection,
+                   FpuSelection &fpu_ping_selection_ret);
+
     EtherCANInterfaceConfig config;
 
     // TODO: Eventually merge t_wtable and the "reversed" bool into a single

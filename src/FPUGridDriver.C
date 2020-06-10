@@ -207,7 +207,7 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const FpuSelection &fpu_se
 {
     E_EtherCANErrCode status = DE_OK;
 
-    for (uint16_t fpu_id : fpu_selection)
+    for (int fpu_id : fpu_selection)
     {
         if ((fpu_id >= config.num_fpus) || (fpu_id >= MAX_NUM_POSITIONERS))
         {
@@ -295,6 +295,68 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fp
 
 #endif // NOTFPU_SET_IS_VECTOR
 
+
+void UnprotectedGridDriver::doTests()
+{
+    // Ad-hoc tests for single-stepping
+ 
+    int original_num_fpus;    
+    E_EtherCANErrCode status;
+    
+    //..........................................................................
+    // Call connect() function
+    // TODO: NOTE: I don't yet know what format of IP address is expected - just
+    // using a dummy format for now
+    // TODO: Also, t_gateway_address::ip is only a pointer - dangerous? Change
+    // this eventually? (e.g. to a std::String?)
+    const char *dummy_ip_str = "192.168.12.34";
+    t_gateway_address gateway_address = { dummy_ip_str, 12345 };
+    connect(1, &gateway_address);
+    
+    //..........................................................................
+    // Test check_fpuset()
+    original_num_fpus = config.num_fpus;
+    config.num_fpus = 5;
+    FpuSelection fpu_selection = { 1, 4, 17 };
+    status = check_fpuset(fpu_selection); // DE_INVALID_FPU_ID
+    fpu_selection = { 1, 2, 3 };
+    status = check_fpuset(fpu_selection);   // DE_OK
+    config.num_fpus = original_num_fpus;
+    
+    //..........................................................................
+    // Test need_ping()
+
+    t_grid_state grid_state;
+    grid_state.FPU_state[0].ping_ok = true;
+    grid_state.FPU_state[1].ping_ok = false;
+    grid_state.FPU_state[2].ping_ok = true;
+    grid_state.FPU_state[3].ping_ok = true;
+    grid_state.FPU_state[4].ping_ok = false;
+    grid_state.FPU_state[5].ping_ok = false;
+    grid_state.FPU_state[6].ping_ok = false;
+    grid_state.FPU_state[7].ping_ok = true;
+    grid_state.FPU_state[8].ping_ok = false;
+    grid_state.FPU_state[9].ping_ok = true;
+    
+    original_num_fpus = config.num_fpus;
+    config.num_fpus = 10;
+
+    FpuSelection fpu_ping_selection;
+    fpu_selection = { 1, 2, 4, 7 };
+    need_ping(grid_state, fpu_selection, fpu_ping_selection);
+    fpu_selection = { };
+    need_ping(grid_state, fpu_selection, fpu_ping_selection);
+    fpu_selection = { 0 };
+    need_ping(grid_state, fpu_selection, fpu_ping_selection);
+    fpu_selection = { 4 };
+    need_ping(grid_state, fpu_selection, fpu_ping_selection);
+    fpu_selection = { 6, 7, 8, 9 };
+    need_ping(grid_state, fpu_selection, fpu_ping_selection);
+    
+    config.num_fpus = original_num_fpus;
+    
+    //..........................................................................
+}
 
 UnprotectedGridDriver::~UnprotectedGridDriver()
 {
