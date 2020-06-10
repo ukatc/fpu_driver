@@ -106,6 +106,39 @@
       </logicalFolder>
     </logicalFolder>
     <logicalFolder name="SourceFiles" displayName="src" projectFiles="true">
+      <logicalFolder name="f1" displayName="response_handlers" projectFiles="true">
+        <itemPath>../../src/handleFPUResponse.C</itemPath>
+        <itemPath>../../src/handleTimeout.C</itemPath>
+        <itemPath>../../src/handle_AbortMotion_response.C</itemPath>
+        <itemPath>../../src/handle_CheckIntegrity_response.C</itemPath>
+        <itemPath>../../src/handle_ConfigMotion_response.C</itemPath>
+        <itemPath>../../src/handle_EnableAlphaLimitProtection_response.C</itemPath>
+        <itemPath>../../src/handle_EnableBetaCollisionProtection_response.C</itemPath>
+        <itemPath>../../src/handle_EnableMove_response.C</itemPath>
+        <itemPath>../../src/handle_ExecuteMotion_response.C</itemPath>
+        <itemPath>../../src/handle_FindDatum_response.C</itemPath>
+        <itemPath>../../src/handle_FinishedDatum_message.C</itemPath>
+        <itemPath>../../src/handle_FinishedMotion_message.C</itemPath>
+        <itemPath>../../src/handle_FreeAlphaLimitBreach_response.C</itemPath>
+        <itemPath>../../src/handle_FreeBetaCollision_response.C</itemPath>
+        <itemPath>../../src/handle_GetFirmwareVersion_response.C</itemPath>
+        <itemPath>../../src/handle_LockUnit_response.C</itemPath>
+        <itemPath>../../src/handle_PingFPU_response.C</itemPath>
+        <itemPath>../../src/handle_ReadRegister_response.C</itemPath>
+        <itemPath>../../src/handle_ReadSerialNumber_response.C</itemPath>
+        <itemPath>../../src/handle_RepeatMotion_response.C</itemPath>
+        <itemPath>../../src/handle_ResetFPU_response.C</itemPath>
+        <itemPath>../../src/handle_ResetStepCounter_response.C</itemPath>
+        <itemPath>../../src/handle_ReverseMotion_response.C</itemPath>
+        <itemPath>../../src/handle_SetStepsPerSegment_response.C</itemPath>
+        <itemPath>../../src/handle_SetTicksPerSegment_response.C</itemPath>
+        <itemPath>../../src/handle_SetUStepLevel_response.C</itemPath>
+        <itemPath>../../src/handle_UnlockUnit_response.C</itemPath>
+        <itemPath>../../src/handle_WarnCANOverflow_warning.C</itemPath>
+        <itemPath>../../src/handle_WarnCollisionBeta_warning.C</itemPath>
+        <itemPath>../../src/handle_WarnLimitAlpha_warning.C</itemPath>
+        <itemPath>../../src/handle_WriteSerialNumber_response.C</itemPath>
+      </logicalFolder>
       <itemPath>../../src/AsyncInterface.C</itemPath>
       <itemPath>../../src/CommandPool.C</itemPath>
       <itemPath>../../src/CommandQueue.C</itemPath>
@@ -120,37 +153,6 @@
       <itemPath>../../src/SBuffer.C</itemPath>
       <itemPath>../../src/TimeOutList.C</itemPath>
       <itemPath>../../src/decode_CAN_response.C</itemPath>
-      <itemPath>../../src/handleFPUResponse.C</itemPath>
-      <itemPath>../../src/handleTimeout.C</itemPath>
-      <itemPath>../../src/handle_AbortMotion_response.C</itemPath>
-      <itemPath>../../src/handle_CheckIntegrity_response.C</itemPath>
-      <itemPath>../../src/handle_ConfigMotion_response.C</itemPath>
-      <itemPath>../../src/handle_EnableAlphaLimitProtection_response.C</itemPath>
-      <itemPath>../../src/handle_EnableBetaCollisionProtection_response.C</itemPath>
-      <itemPath>../../src/handle_EnableMove_response.C</itemPath>
-      <itemPath>../../src/handle_ExecuteMotion_response.C</itemPath>
-      <itemPath>../../src/handle_FindDatum_response.C</itemPath>
-      <itemPath>../../src/handle_FinishedDatum_message.C</itemPath>
-      <itemPath>../../src/handle_FinishedMotion_message.C</itemPath>
-      <itemPath>../../src/handle_FreeAlphaLimitBreach_response.C</itemPath>
-      <itemPath>../../src/handle_FreeBetaCollision_response.C</itemPath>
-      <itemPath>../../src/handle_GetFirmwareVersion_response.C</itemPath>
-      <itemPath>../../src/handle_LockUnit_response.C</itemPath>
-      <itemPath>../../src/handle_PingFPU_response.C</itemPath>
-      <itemPath>../../src/handle_ReadRegister_response.C</itemPath>
-      <itemPath>../../src/handle_ReadSerialNumber_response.C</itemPath>
-      <itemPath>../../src/handle_RepeatMotion_response.C</itemPath>
-      <itemPath>../../src/handle_ResetFPU_response.C</itemPath>
-      <itemPath>../../src/handle_ResetStepCounter_response.C</itemPath>
-      <itemPath>../../src/handle_ReverseMotion_response.C</itemPath>
-      <itemPath>../../src/handle_SetStepsPerSegment_response.C</itemPath>
-      <itemPath>../../src/handle_SetTicksPerSegment_response.C</itemPath>
-      <itemPath>../../src/handle_SetUStepLevel_response.C</itemPath>
-      <itemPath>../../src/handle_UnlockUnit_response.C</itemPath>
-      <itemPath>../../src/handle_WarnCANOverflow_warning.C</itemPath>
-      <itemPath>../../src/handle_WarnCollisionBeta_warning.C</itemPath>
-      <itemPath>../../src/handle_WarnLimitAlpha_warning.C</itemPath>
-      <itemPath>../../src/handle_WriteSerialNumber_response.C</itemPath>
       <itemPath>../../src/sync_utils.C</itemPath>
       <itemPath>../../src/time_utils.C</itemPath>
     </logicalFolder>
