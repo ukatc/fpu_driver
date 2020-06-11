@@ -261,10 +261,6 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fp
 {
     E_EtherCANErrCode status = DE_OK;
 
-    // TODO: fpuset is an array of bools whose indexes seem to drectly
-    // correspond to FPU IDs, which isn't efficient - change this
-    // function to eventually receive a std::vector of FPU IDs or similar
-
     // Count number of FPUs selected
     int num_fpus_in_fpuset = 0;
     for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
@@ -275,8 +271,6 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fp
 
             // Check if any selected FPU in fpuset has an index above
             // config.num_fpus
-            // TODO: Am assuming that FPU ID values currently correspond to
-            // array indexes - is this the case?
             if (i >= config.num_fpus)
             {
                 status = DE_INVALID_FPU_ID;
@@ -292,9 +286,75 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fp
 
     return status;
 }
-
 #endif // NOTFPU_SET_IS_VECTOR
 
+// -----------------------------------------------------------------------------
+
+void UnprotectedGridDriver::_allow_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    enum E_DATUM_SELECTION selected_arm,
+                    bool support_uninitialized_auto)
+{
+    // N.B. Nothing in here for now
+}
+
+E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs, 
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    enum E_DATUM_SELECTION selected_arm, bool soft_protection,
+                    bool count_protection, bool support_uninitialized_auto,
+                    enum E_DATUM_TIMEOUT_FLAG timeout)
+{
+    E_EtherCANErrCode result = DE_OK;
+
+    /*
+    Moves all FPUs to datum position.
+
+    *** TODO: CHECK THESE COMMENTS - copied/adapted from Python version ***
+
+    If the program receives a SIGNINT, or Control-C is pressed, an abortMotion
+    command is automatically sent, aborting the search.
+    *** TODO: WILL THIS BE THE CASE IN THIS C++ VERSION? ***
+
+    search_modes: Each value is one of SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE,
+    SEARCH_AUTO, SKIP_FPU, which controls whether the datum search moves
+    clockwise (decreasing step count), anti-clockwise (increasing step count),
+    automatically, or skips the FPU. The default mode is SEARCH_AUTO.
+
+    selected_arm: (DASEL_BOTH, DASEL_ALPHA, DASEL_BETA) controls which arms
+    are moved.
+
+    It is critical that the search direction for the beta arm is always set
+    correctly, otherwise a beta arm collision will happen which could degrade
+    the FPU (or even destroy the FPU, if the collision detection does not
+    work). If a beta arm was datumed, the FPU will move in the direction
+    corresponding to its internal step count. If an beta arm is not datumed,
+    automatic datum search will use the position database value, unless
+    support_uninitialized_auto is set to false. In addition, manually-set
+    search directions will be checked using the step count value for the beta
+    arm, unless count_protection is set to false.
+
+    If a beta arm position appears not to be safe to be moved into the
+    requested position, the manual datum search will be refused unless
+    soft_protection is set to false.
+    */
+
+    result = check_fpuset(fpuset);
+    if (result == DE_OK)
+    {
+        if (soft_protection)
+        {
+            
+        }
+
+    }
+
+
+
+}
+
+// -----------------------------------------------------------------------------
 
 void UnprotectedGridDriver::doTests()
 {
@@ -313,6 +373,8 @@ void UnprotectedGridDriver::doTests()
     t_gateway_address gateway_address = { dummy_ip_str, 12345 };
     connect(1, &gateway_address);
     
+    //..........................................................................
+#ifdef FPU_SET_IS_VECTOR
     //..........................................................................
     // Test check_fpuset()
     original_num_fpus = config.num_fpus;
@@ -355,6 +417,16 @@ void UnprotectedGridDriver::doTests()
     
     config.num_fpus = original_num_fpus;
     
+    //..........................................................................
+#else // NOT FPU_SET_IS_VECTOR
+    //..........................................................................
+
+
+
+
+
+    //..........................................................................
+#endif // NOT FPU_SET_IS_VECTOR
     //..........................................................................
 }
 

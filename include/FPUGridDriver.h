@@ -28,6 +28,7 @@
 #include "FPUConstants.h"
 #include "EtherCANInterface.h"
 #include "AsyncInterface.h"
+#include "InterfaceState.h"
 
 // TODO: FOR TESTING ONLY
 #include "ProtectionDB.h"
@@ -46,7 +47,8 @@ using namespace mpifps::ethercanif;
 
 //*************** TODO: Await Steven's OK for FPU set being a std::vector<>
 // (rather than the t_fpuset array of bools)
-#define FPU_SET_IS_VECTOR
+// BUT use t_fpuset from EtherCAN after all?
+//#define FPU_SET_IS_VECTOR
 
 #ifdef FPU_SET_IS_VECTOR
 // TODO: This is named "FpuSelection" to clearly differentiate its type from
@@ -82,9 +84,26 @@ public:
     int testGetNumFPUs();
 
     void _post_connect_hook(const EtherCANInterfaceConfig &config);
-
     E_EtherCANErrCode connect(const int ngateways,
                               const t_gateway_address gateway_addresses[]);
+
+#ifndef FPU_SET_IS_VECTOR
+
+    // TODO: In some of the following functions, reversed the 
+    // fpuset/selected_arm arguments relative to the equivalent Python
+    // functions, so that can have argument defaults
+
+    E_EtherCANErrCode findDatum(t_grid_state &gs, 
+                        const AsyncInterface::t_datum_search_flags &search_modes,
+                        const AsyncInterface::t_fpuset &fpuset,
+                        enum E_DATUM_SELECTION selected_arm = DASEL_BOTH,
+                        bool soft_protection = true, bool count_protection = true,
+                        bool support_uninitialized_auto = true,
+                        enum E_DATUM_TIMEOUT_FLAG timeout = DATUM_TIMEOUT_ENABLE);
+
+
+
+#endif // FPU_SET_IS_VECTOR
 
     void doTests();
     
@@ -95,12 +114,19 @@ public:
 private:
 #ifdef FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
-#else // NOT FPU_SET_IS_VECTOR
-    E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
-#endif // NOT FPU_SET_IS_VECTOR
     void need_ping(const t_grid_state &grid_state,
                    const FpuSelection &fpu_selection,
                    FpuSelection &fpu_ping_selection_ret);
+#else // NOT FPU_SET_IS_VECTOR
+    E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
+
+    void _allow_find_datum_hook(t_grid_state &gs,
+                                const AsyncInterface::t_datum_search_flags &search_modes,
+                                const AsyncInterface::t_fpuset &fpuset,
+                                enum E_DATUM_SELECTION selected_arm,
+                                bool support_uninitialized_auto);
+
+#endif // NOT FPU_SET_IS_VECTOR
 
     EtherCANInterfaceConfig config;
 
