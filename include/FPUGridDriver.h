@@ -29,6 +29,7 @@
 #include "EtherCANInterface.h"
 #include "AsyncInterface.h"
 #include "InterfaceState.h"
+#include "Interval.h"
 
 // TODO: FOR TESTING ONLY
 #include "ProtectionDB.h"
@@ -56,8 +57,20 @@ using namespace mpifps::ethercanif;
 using FpuSelection = std::vector<uint16_t>;
 #endif
 
-//..............................................................................
-    
+// -----------------------------------------------------------------------------
+
+// TODO: Not sure about whether these FPU position data structures are fully
+// correct and suitable yet - keep under review
+typedef struct
+{
+    Interval apos;
+    Interval bpos;
+} FpuPosition;
+
+typedef FpuPosition FpuPositions[MAX_NUM_POSITIONERS];
+
+// -----------------------------------------------------------------------------
+
 class UnprotectedGridDriver
 {
 public:
@@ -111,6 +124,7 @@ public:
     // TODO: Need a real destructor as well?? Or are all member objects RAII ones?
     virtual ~UnprotectedGridDriver();
 
+    //..........................................................................
 private:
 #ifdef FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
@@ -120,11 +134,29 @@ private:
 #else // NOT FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
 
+    // TODO: Do the t_grid_state's below need to be const? Or will they
+    // possibly be altered inside the functions?
     void _allow_find_datum_hook(t_grid_state &gs,
-                                const AsyncInterface::t_datum_search_flags &search_modes,
-                                const AsyncInterface::t_fpuset &fpuset,
-                                enum E_DATUM_SELECTION selected_arm,
-                                bool support_uninitialized_auto);
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    bool support_uninitialized_auto);
+    void _start_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    FpuPositions &initial_positions, bool soft_protection);
+    void _cancel_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    FpuPositions &initial_positions);
+    void _finished_find_datum_hook(t_grid_state &prev_gs,
+                    t_grid_state &datum_gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    bool was_cancelled, FpuPositions &initial_positions, 
+                    enum E_DATUM_SELECTION selected_arm);
 
 #endif // NOT FPU_SET_IS_VECTOR
 
@@ -151,6 +183,8 @@ private:
 
 };
 
+// -----------------------------------------------------------------------------
+
 class GridDriver
 {
 public:
@@ -160,6 +194,7 @@ private:
 
 };
 
+// -----------------------------------------------------------------------------
 
 } // namespace mpifps
 

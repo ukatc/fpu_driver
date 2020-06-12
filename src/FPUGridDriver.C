@@ -292,9 +292,37 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fp
 
 void UnprotectedGridDriver::_allow_find_datum_hook(t_grid_state &gs,
                     const AsyncInterface::t_datum_search_flags &search_modes,
-                    const AsyncInterface::t_fpuset &fpuset,
                     enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
                     bool support_uninitialized_auto)
+{
+    // N.B. Nothing in here for now
+}
+
+void UnprotectedGridDriver::_start_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    FpuPositions &initial_positions, bool soft_protection)
+{
+    // N.B. Nothing in here for now
+}
+
+void UnprotectedGridDriver::_cancel_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    FpuPositions &initial_positions)
+{
+    // N.B. Nothing in here for now
+}
+
+void UnprotectedGridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
+                    t_grid_state &datum_gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    bool was_cancelled, FpuPositions &initial_positions,
+                    enum E_DATUM_SELECTION selected_arm)
 {
     // N.B. Nothing in here for now
 }
