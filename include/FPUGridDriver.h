@@ -36,6 +36,7 @@
 
 namespace mpifps
 {
+
 using namespace std;
 using namespace mpifps::ethercanif;
 
@@ -57,8 +58,6 @@ using namespace mpifps::ethercanif;
 using FpuSelection = std::vector<uint16_t>;
 #endif
 
-// -----------------------------------------------------------------------------
-
 // TODO: Not sure about whether these FPU position data structures are fully
 // correct and suitable yet - keep under review
 typedef struct
@@ -69,10 +68,12 @@ typedef struct
 
 typedef FpuPosition FpuPositions[MAX_NUM_POSITIONERS];
 
-// -----------------------------------------------------------------------------
+
+//==============================================================================
 
 class UnprotectedGridDriver
 {
+    //..........................................................................
 public:
     UnprotectedGridDriver(
         // NOTE: Boost.Python only allows up to 14 function arguments in
@@ -96,7 +97,6 @@ public:
     double testDivide(double dividend, double divisor);
     int testGetNumFPUs();
 
-    void _post_connect_hook(const EtherCANInterfaceConfig &config);
     E_EtherCANErrCode connect(const int ngateways,
                               const t_gateway_address gateway_addresses[]);
 
@@ -125,6 +125,36 @@ public:
     virtual ~UnprotectedGridDriver();
 
     //..........................................................................
+protected:
+    // NOTE: The following virtual functions are overriden in GridDriver
+
+    virtual void _post_connect_hook(const EtherCANInterfaceConfig &config) {}
+
+    // TODO: Do the t_grid_state's below need to be const? Or will they
+    // possibly be altered inside the functions?
+    virtual void _allow_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    bool support_uninitialized_auto) {}
+    virtual void _start_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    FpuPositions &initial_positions, bool soft_protection) {}
+    virtual void _cancel_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    FpuPositions &initial_positions) {}
+    virtual void _finished_find_datum_hook(t_grid_state &prev_gs,
+                    t_grid_state &datum_gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    bool was_cancelled, FpuPositions &initial_positions, 
+                    enum E_DATUM_SELECTION selected_arm) {}
+
+    //..........................................................................
 private:
 #ifdef FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
@@ -133,31 +163,6 @@ private:
                    FpuSelection &fpu_ping_selection_ret);
 #else // NOT FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
-
-    // TODO: Do the t_grid_state's below need to be const? Or will they
-    // possibly be altered inside the functions?
-    void _allow_find_datum_hook(t_grid_state &gs,
-                    const AsyncInterface::t_datum_search_flags &search_modes,
-                    enum E_DATUM_SELECTION selected_arm,
-                    const AsyncInterface::t_fpuset &fpuset,
-                    bool support_uninitialized_auto);
-    void _start_find_datum_hook(t_grid_state &gs,
-                    const AsyncInterface::t_datum_search_flags &search_modes,
-                    enum E_DATUM_SELECTION selected_arm,
-                    const AsyncInterface::t_fpuset &fpuset,
-                    FpuPositions &initial_positions, bool soft_protection);
-    void _cancel_find_datum_hook(t_grid_state &gs,
-                    const AsyncInterface::t_datum_search_flags &search_modes,
-                    enum E_DATUM_SELECTION selected_arm,
-                    const AsyncInterface::t_fpuset &fpuset,
-                    FpuPositions &initial_positions);
-    void _finished_find_datum_hook(t_grid_state &prev_gs,
-                    t_grid_state &datum_gs,
-                    const AsyncInterface::t_datum_search_flags &search_modes,
-                    const AsyncInterface::t_fpuset &fpuset,
-                    bool was_cancelled, FpuPositions &initial_positions, 
-                    enum E_DATUM_SELECTION selected_arm);
-
 #endif // NOT FPU_SET_IS_VECTOR
 
     EtherCANInterfaceConfig config;
@@ -181,20 +186,51 @@ private:
     // TODO: Ad-hoc test variable only - remove when no longer needed
     int dummyCounter = 0;
 
+    //..........................................................................
 };
 
-// -----------------------------------------------------------------------------
+//==============================================================================
 
-class GridDriver
+class GridDriver : public UnprotectedGridDriver
 {
+    //..........................................................................
 public:
     GridDriver();
 
+
+    //..........................................................................
 private:    
+    // The following hook functions override those in UnprotectedGridDriver
+
+    void _post_connect_hook(const EtherCANInterfaceConfig &config) override;
+
+    void _allow_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    bool support_uninitialized_auto) override;
+    void _start_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    FpuPositions &initial_positions, bool soft_protection) override;
+    void _cancel_find_datum_hook(t_grid_state &gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    FpuPositions &initial_positions) override;
+    void _finished_find_datum_hook(t_grid_state &prev_gs,
+                    t_grid_state &datum_gs,
+                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    const AsyncInterface::t_fpuset &fpuset,
+                    bool was_cancelled, FpuPositions &initial_positions, 
+                    enum E_DATUM_SELECTION selected_arm) override;
+
+    //..........................................................................
 
 };
 
-// -----------------------------------------------------------------------------
+//==============================================================================
 
 } // namespace mpifps
 
