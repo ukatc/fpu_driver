@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPUGridDriver.C
+// NAME UnprotectedGridDriver.C
 //
 // TODO: Put description here
 //
@@ -24,7 +24,7 @@
 
 #include <fcntl.h>
 #include <algorithm>
-#include "FPUGridDriver.h"
+#include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
 
 #ifdef DEBUG

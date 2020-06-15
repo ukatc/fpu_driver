@@ -43,13 +43,13 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/56252444/DeviceLock.o \
 	${OBJECTDIR}/_ext/56252444/EtherCANInterface.o \
 	${OBJECTDIR}/_ext/56252444/FPUArray.o \
-	${OBJECTDIR}/_ext/56252444/FPUGridDriver.o \
 	${OBJECTDIR}/_ext/56252444/FPUState.o \
 	${OBJECTDIR}/_ext/56252444/GatewayInterface.o \
 	${OBJECTDIR}/_ext/56252444/GridState.o \
 	${OBJECTDIR}/_ext/56252444/ProtectionDB.o \
 	${OBJECTDIR}/_ext/56252444/SBuffer.o \
 	${OBJECTDIR}/_ext/56252444/TimeOutList.o \
+	${OBJECTDIR}/_ext/56252444/UnprotectedGridDriver.o \
 	${OBJECTDIR}/_ext/56252444/decode_CAN_response.o \
 	${OBJECTDIR}/_ext/56252444/handleFPUResponse.o \
 	${OBJECTDIR}/_ext/56252444/handleTimeout.o \
@@ -151,11 +151,6 @@ ${OBJECTDIR}/_ext/56252444/FPUArray.o: ../../src/FPUArray.C
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/FPUArray.o ../../src/FPUArray.C
 
-${OBJECTDIR}/_ext/56252444/FPUGridDriver.o: ../../src/FPUGridDriver.C
-	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/FPUGridDriver.o ../../src/FPUGridDriver.C
-
 ${OBJECTDIR}/_ext/56252444/FPUState.o: ../../src/FPUState.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
@@ -185,6 +180,11 @@ ${OBJECTDIR}/_ext/56252444/TimeOutList.o: ../../src/TimeOutList.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/TimeOutList.o ../../src/TimeOutList.C
+
+${OBJECTDIR}/_ext/56252444/UnprotectedGridDriver.o: ../../src/UnprotectedGridDriver.C
+	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/UnprotectedGridDriver.o ../../src/UnprotectedGridDriver.C
 
 ${OBJECTDIR}/_ext/56252444/decode_CAN_response.o: ../../src/decode_CAN_response.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444

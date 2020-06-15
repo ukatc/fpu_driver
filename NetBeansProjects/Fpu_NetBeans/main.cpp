@@ -13,7 +13,7 @@
 
 #include <cstdlib>
 #include "ProtectionDB.h"
-#include "FPUGridDriver.h"
+#include "UnprotectedGridDriver.h"
 
 using namespace std;
 

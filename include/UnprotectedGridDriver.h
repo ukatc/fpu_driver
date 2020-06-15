@@ -11,14 +11,14 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPUGridDriver.h
+// NAME UnprotectedGridDriver.h
 //
 // TODO: Put description here
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FPUGRIDDRIVER_H
-#define FPUGRIDDRIVER_H
+#ifndef UNPROTECTEDGRIDDRIVER_H
+#define UNPROTECTEDGRIDDRIVER_H
 
 #include <string>
 #include <map>
@@ -234,4 +234,4 @@ private:
 
 } // namespace mpifps
 
-#endif // FPUGRIDDRIVER_H
+#endif // UNPROTECTEDGRIDDRIVER_H

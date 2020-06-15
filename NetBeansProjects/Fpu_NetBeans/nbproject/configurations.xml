@@ -88,7 +88,6 @@
       <itemPath>../../include/EtherCANInterfaceConfig.h</itemPath>
       <itemPath>../../include/Exceptions_INTERIM.h</itemPath>
       <itemPath>../../include/FPUConstants.h</itemPath>
-      <itemPath>../../include/FPUGridDriver.h</itemPath>
       <itemPath>../../include/FPUState.h</itemPath>
       <itemPath>../../include/GridState.h</itemPath>
       <itemPath>../../include/InterfaceConstants.h</itemPath>
@@ -97,6 +96,7 @@
       <itemPath>../../include/ProtectionDB.h</itemPath>
       <itemPath>../../include/T_GatewayAddress.h</itemPath>
       <itemPath>../../include/T_GridState.h</itemPath>
+      <itemPath>../../include/UnprotectedGridDriver.h</itemPath>
     </logicalFolder>
     <logicalFolder name="f1" displayName="lib" projectFiles="true">
       <logicalFolder name="f1" displayName="liblmdb" projectFiles="true">
@@ -146,13 +146,13 @@
       <itemPath>../../src/DeviceLock.C</itemPath>
       <itemPath>../../src/EtherCANInterface.C</itemPath>
       <itemPath>../../src/FPUArray.C</itemPath>
-      <itemPath>../../src/FPUGridDriver.C</itemPath>
       <itemPath>../../src/FPUState.C</itemPath>
       <itemPath>../../src/GatewayInterface.C</itemPath>
       <itemPath>../../src/GridState.C</itemPath>
       <itemPath>../../src/ProtectionDB.C</itemPath>
       <itemPath>../../src/SBuffer.C</itemPath>
       <itemPath>../../src/TimeOutList.C</itemPath>
+      <itemPath>../../src/UnprotectedGridDriver.C</itemPath>
       <itemPath>../../src/decode_CAN_response.C</itemPath>
       <itemPath>../../src/sync_utils.C</itemPath>
       <itemPath>../../src/time_utils.C</itemPath>
@@ -216,8 +216,6 @@
       </item>
       <item path="../../include/FPUConstants.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../../include/FPUGridDriver.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../../include/FPUState.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/GridState.h" ex="false" tool="3" flavor2="0">
@@ -233,6 +231,11 @@
       <item path="../../include/T_GatewayAddress.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/T_GridState.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../include/UnprotectedGridDriver.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
       </item>
       <item path="../../include/ethercan/AsyncInterface.h"
             ex="false"
@@ -610,8 +613,6 @@
       </item>
       <item path="../../src/FPUArray.C" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="../../src/FPUGridDriver.C" ex="false" tool="1" flavor2="0">
-      </item>
       <item path="../../src/FPUState.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/GatewayInterface.C" ex="false" tool="1" flavor2="0">
@@ -623,6 +624,8 @@
       <item path="../../src/SBuffer.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/TimeOutList.C" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../../src/UnprotectedGridDriver.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/decode_CAN_response.C" ex="false" tool="1" flavor2="0">
       </item>
@@ -822,8 +825,6 @@
       </item>
       <item path="../../include/FPUConstants.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="../../include/FPUGridDriver.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../../include/FPUState.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/GridState.h" ex="false" tool="3" flavor2="0">
@@ -839,6 +840,11 @@
       <item path="../../include/T_GatewayAddress.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/T_GridState.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../include/UnprotectedGridDriver.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
       </item>
       <item path="../../include/ethercan/AsyncInterface.h"
             ex="false"
@@ -1216,8 +1222,6 @@
       </item>
       <item path="../../src/FPUArray.C" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="../../src/FPUGridDriver.C" ex="false" tool="1" flavor2="0">
-      </item>
       <item path="../../src/FPUState.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/GatewayInterface.C" ex="false" tool="1" flavor2="0">
@@ -1229,6 +1233,8 @@
       <item path="../../src/SBuffer.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/TimeOutList.C" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../../src/UnprotectedGridDriver.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/decode_CAN_response.C" ex="false" tool="1" flavor2="0">
       </item>
