@@ -43,7 +43,7 @@
 
 #include <boost/python.hpp>
 
-#include "FPUGridDriver.h"
+#include "GridDriver.h"
 #include "InterfaceConstants.h"
 #include "fpuwrapping_shared.h"
 

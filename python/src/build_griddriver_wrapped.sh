@@ -35,7 +35,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
     ../../src/DeviceLock.C \
     ../../src/EtherCANInterface.C \
     ../../src/FPUArray.C \
-    ../../src/FPUGridDriver.C \
+    ../../src/GridDriver.C \
     ../../src/FPUState.C \
     ../../src/GatewayInterface.C \
     ../../src/GridState.C \
@@ -75,6 +75,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
     ../../src/sync_utils.C	\
     ../../src/time_utils.C \
     ../../src/TimeOutList.C \
+    ../../src/UnprotectedGridDriver.C \
     -L/usr/local/lib -lboost_python27 \
     -o griddriver.so mdb.o midl.o
 # N.B. Linking in the LMDB mdb.o and midl.o object files above works because
