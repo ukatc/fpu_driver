@@ -30,20 +30,27 @@ class Interval
 public:
     Interval()
     {
-        // TODO: Default to NAN instead 0.0?
-        lower = 0.0;
-        upper = 0.0;
     }
 
-    Interval(double lower, double upper)
+    Interval(double scalar)
     {
-        this->lower = lower;
-        this->upper = upper;
+        lower = scalar;
+        upper = scalar;
+    }
+    
+    Interval(double lower_in, double upper_in)
+    {
+      // TODO: Check for / enforce lower/upper being assigned actual lower/upper
+      // values?
+      
+        lower = lower_in;
+        upper = upper_in;
     }
 
 private:
-    double lower;
-    double upper;
+    // TODO: Initialise to NAN instead 0.0?
+    double lower = 0.0;
+    double upper = 0.0;
 };
 
 //..............................................................................
