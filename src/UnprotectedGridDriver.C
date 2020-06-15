@@ -279,6 +279,10 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     /*
     Moves all FPUs to datum position.
 
+    TODO: Eventually rename orig_search_modes above to just search_modes (and
+    rename search_modes inside this function to e.g. search_modes_adjusted) -
+    but the current names are being used for now to match the Python version
+
     *** TODO: CHECK THESE COMMENTS - copied/adapted from Python version ***
 
     If the program receives a SIGNINT, or Control-C is pressed, an abortMotion
@@ -311,15 +315,51 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     result = check_fpuset(fpuset);
     if (result == DE_OK)
     {
+        // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+        // here 
+
+        // Make local RAII heap copy of search_modes so can modify locally
+        // (N.B. Do not declare on local stack because it's a large object)
+        std::unique_ptr<AsyncInterface::t_datum_search_flags> search_modes_ptr;
+        AsyncInterface::t_datum_search_flags &search_modes = *search_modes_ptr;
+        for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+        {
+            search_modes[i] = orig_search_modes[i];
+        }
+
         if (soft_protection)
         {
-            
+            // Check whether datum search is safe, adjusting search_modes
+            _allow_find_datum_hook(gs, search_modes, selected_arm,
+                                   fpuset, support_uninitialized_auto);
+            // We might need to disable the stepcount-based check if (and only
+            // if) the step counter does not agree with the database.
+            // Check whether a movement against the step count is needed.
+            for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+            {
+                if ( ((search_modes[fpu_id] == SEARCH_CLOCKWISE) ||
+                      (search_modes[fpu_id] == SEARCH_ANTI_CLOCKWISE)) &&
+                     (orig_search_modes[fpu_id] == SEARCH_AUTO))
+                {
+                    // TODO: Check against equivalent Python, that
+                    // count_protection is only required to be modified
+                    // locally inside this function, and does not alter
+                    // the function argument value
+                    count_protection = false;
+                    break;
+                }
+            }
         }
+        
+
+
+        // TODO: Fill rest of this function by converting from Python
+        
 
     }
 
 
-
+    return result;
 }
 
 UnprotectedGridDriver::~UnprotectedGridDriver()
