@@ -45,6 +45,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/56252444/FPUArray.o \
 	${OBJECTDIR}/_ext/56252444/FPUState.o \
 	${OBJECTDIR}/_ext/56252444/GatewayInterface.o \
+	${OBJECTDIR}/_ext/56252444/GridDriver.o \
 	${OBJECTDIR}/_ext/56252444/GridState.o \
 	${OBJECTDIR}/_ext/56252444/ProtectionDB.o \
 	${OBJECTDIR}/_ext/56252444/SBuffer.o \
@@ -160,6 +161,11 @@ ${OBJECTDIR}/_ext/56252444/GatewayInterface.o: ../../src/GatewayInterface.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/GatewayInterface.o ../../src/GatewayInterface.C
+
+${OBJECTDIR}/_ext/56252444/GridDriver.o: ../../src/GridDriver.C
+	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/GridDriver.o ../../src/GridDriver.C
 
 ${OBJECTDIR}/_ext/56252444/GridState.o: ../../src/GridState.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444

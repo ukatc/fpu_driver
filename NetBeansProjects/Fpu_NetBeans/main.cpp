@@ -13,7 +13,7 @@
 
 #include <cstdlib>
 #include "ProtectionDB.h"
-#include "UnprotectedGridDriver.h"
+#include "GridDriver.h"
 
 using namespace std;
 
