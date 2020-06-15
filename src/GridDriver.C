@@ -45,7 +45,7 @@ void GridDriver::_post_connect_hook(const EtherCANInterfaceConfig &config)
 }
 
 void GridDriver::_allow_find_datum_hook(t_grid_state &gs,
-                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    AsyncInterface::t_datum_search_flags &search_modes,
                     enum E_DATUM_SELECTION selected_arm,
                     const AsyncInterface::t_fpuset &fpuset,
                     bool support_uninitialized_auto)

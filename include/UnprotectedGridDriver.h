@@ -92,48 +92,47 @@ public:
         double motor_max_rel_increase = MAX_ACCELERATION_FACTOR
         );
 
-    // TODO: Ad-hoc test functions only - remove when no longer needed
-    int testIncrement();
-    double testDivide(double dividend, double divisor);
-    int testGetNumFPUs();
-
     E_EtherCANErrCode connect(const int ngateways,
                               const t_gateway_address gateway_addresses[]);
 
 #ifndef FPU_SET_IS_VECTOR
-
     // TODO: In some of the following functions, reversed the 
     // fpuset/selected_arm arguments relative to the equivalent Python
     // functions, so that can have argument defaults
 
     E_EtherCANErrCode findDatum(t_grid_state &gs, 
                         const AsyncInterface::t_datum_search_flags &search_modes,
+                        enum E_DATUM_SELECTION selected_arm,
                         const AsyncInterface::t_fpuset &fpuset,
-                        enum E_DATUM_SELECTION selected_arm = DASEL_BOTH,
-                        bool soft_protection = true, bool count_protection = true,
-                        bool support_uninitialized_auto = true,
-                        enum E_DATUM_TIMEOUT_FLAG timeout = DATUM_TIMEOUT_ENABLE);
-
+                        bool soft_protection, bool count_protection,
+                        bool support_uninitialized_auto,
+                        enum E_DATUM_TIMEOUT_FLAG timeout);
 
 
 #endif // FPU_SET_IS_VECTOR
 
-    void doTests();
-    
     // TODO: Check if this virtual destructor stuff is correct
     // TODO: Need a real destructor as well?? Or are all member objects RAII ones?
     virtual ~UnprotectedGridDriver();
 
+    // Test functions
+    void doTests();
+    // TODO: Ad-hoc functions for Boost.Python wrapper testing only - remove
+    // when no longer needed
+    int boostPythonIncrement();
+    double boostPythonDivide(double dividend, double divisor);
+    int boostPythonGetNumFPUs();
+
     //..........................................................................
 protected:
-    // NOTE: The following virtual functions are overriden in GridDriver
+    // NOTE: The following virtual functions are overridden in GridDriver
 
     virtual void _post_connect_hook(const EtherCANInterfaceConfig &config) {}
 
     // TODO: Do the t_grid_state's below need to be const? Or will they
     // possibly be altered inside the functions?
     virtual void _allow_find_datum_hook(t_grid_state &gs,
-                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    AsyncInterface::t_datum_search_flags &search_modes, // Modifiable
                     enum E_DATUM_SELECTION selected_arm,
                     const AsyncInterface::t_fpuset &fpuset,
                     bool support_uninitialized_auto) {}
@@ -156,6 +155,7 @@ protected:
 
     //..........................................................................
 private:
+
 #ifdef FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
     void need_ping(const t_grid_state &grid_state,
@@ -164,7 +164,13 @@ private:
 #else // NOT FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
 #endif // NOT FPU_SET_IS_VECTOR
-
+    
+    // Test functions
+    void test_check_fpuset();
+    void test_need_ping();
+    void test_connect();
+    void test_FindDatum();
+    
     EtherCANInterfaceConfig config;
 
     // TODO: Eventually merge t_wtable and the "reversed" bool into a single

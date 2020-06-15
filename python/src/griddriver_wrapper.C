@@ -32,7 +32,8 @@
 // Basic UnprotectedGridDriver instantiation and test function:
 //   - Do: ugd=UnprotectedGridDriver(1, False, 1, 2, 3, 4, LOG_INFO, "blah", 5.5, 6.6, 7.7, 8.8)
 //     (N.B. Dummy values for now)
-//   - Do: ugd.testIncrement()  repeatedly - on first invocation should display 1,
+//   - Do: ugd.boostPythonIncrement() repeatedly - on first invocation
+//     should display 1,
 //     and then increment with each subsequent invocation
 //
 // Basic GridDriver instantiation and dummy connect() function:
@@ -123,9 +124,9 @@ BOOST_PYTHON_MODULE(griddriver)
 #endif // 0        
 
         // TODO: Ad-hoc test functions only - remove when no longer needed
-        .def("testIncrement", &UnprotectedGridDriver::testIncrement)
-        .def("testDivide", &UnprotectedGridDriver::testDivide)
-        .def("testGetNumFPUs", &UnprotectedGridDriver::testGetNumFPUs)
+        .def("boostPythonIncrement", &UnprotectedGridDriver::boostPythonIncrement)
+        .def("boostPythonDivide", &UnprotectedGridDriver::boostPythonDivide)
+        .def("boostPythonGetNumFPUs", &UnprotectedGridDriver::boostPythonGetNumFPUs)
     ;
 
     // TODO: Figure out how constructor needs to be specified for this derived

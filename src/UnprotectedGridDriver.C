@@ -147,23 +147,6 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     _gd = new EtherCANInterface(config);
 }
 
-
-int UnprotectedGridDriver::testIncrement()
-{
-    dummyCounter++;
-    return dummyCounter;
-}
-
-double UnprotectedGridDriver::testDivide(double dividend, double divisor)
-{
-    return dividend / divisor;
-}
-
-int UnprotectedGridDriver::testGetNumFPUs()
-{
-    return config.num_fpus;
-}
-
 E_EtherCANErrCode UnprotectedGridDriver::connect(const int ngateways,
                                 const t_gateway_address gateway_addresses[])
 {
@@ -283,13 +266,12 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fp
 }
 #endif // NOTFPU_SET_IS_VECTOR
 
-// -----------------------------------------------------------------------------
-
 E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs, 
-                    const AsyncInterface::t_datum_search_flags &search_modes,
+                    const AsyncInterface::t_datum_search_flags &orig_search_modes,
+                    enum E_DATUM_SELECTION selected_arm,
                     const AsyncInterface::t_fpuset &fpuset,
-                    enum E_DATUM_SELECTION selected_arm, bool soft_protection,
-                    bool count_protection, bool support_uninitialized_auto,
+                    bool soft_protection, bool count_protection,
+                    bool support_uninitialized_auto,
                     enum E_DATUM_TIMEOUT_FLAG timeout)
 {
     E_EtherCANErrCode result = DE_OK;
@@ -340,82 +322,6 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
 
 }
 
-// -----------------------------------------------------------------------------
-
-void UnprotectedGridDriver::doTests()
-{
-    // Ad-hoc tests for single-stepping
- 
-    int original_num_fpus;    
-    E_EtherCANErrCode status;
-    
-    //..........................................................................
-    // Call connect() function
-    // TODO: NOTE: I don't yet know what format of IP address is expected - just
-    // using a dummy format for now
-    // TODO: Also, t_gateway_address::ip is only a pointer - dangerous? Change
-    // this eventually? (e.g. to a std::String?)
-    const char *dummy_ip_str = "192.168.12.34";
-    t_gateway_address gateway_address = { dummy_ip_str, 12345 };
-    connect(1, &gateway_address);
-    
-    //..........................................................................
-#ifdef FPU_SET_IS_VECTOR
-    //..........................................................................
-    // Test check_fpuset()
-    original_num_fpus = config.num_fpus;
-    config.num_fpus = 5;
-    FpuSelection fpu_selection = { 1, 4, 17 };
-    status = check_fpuset(fpu_selection); // DE_INVALID_FPU_ID
-    fpu_selection = { 1, 2, 3 };
-    status = check_fpuset(fpu_selection);   // DE_OK
-    config.num_fpus = original_num_fpus;
-    
-    //..........................................................................
-    // Test need_ping()
-
-    t_grid_state grid_state;
-    grid_state.FPU_state[0].ping_ok = true;
-    grid_state.FPU_state[1].ping_ok = false;
-    grid_state.FPU_state[2].ping_ok = true;
-    grid_state.FPU_state[3].ping_ok = true;
-    grid_state.FPU_state[4].ping_ok = false;
-    grid_state.FPU_state[5].ping_ok = false;
-    grid_state.FPU_state[6].ping_ok = false;
-    grid_state.FPU_state[7].ping_ok = true;
-    grid_state.FPU_state[8].ping_ok = false;
-    grid_state.FPU_state[9].ping_ok = true;
-    
-    original_num_fpus = config.num_fpus;
-    config.num_fpus = 10;
-
-    FpuSelection fpu_ping_selection;
-    fpu_selection = { 1, 2, 4, 7 };
-    need_ping(grid_state, fpu_selection, fpu_ping_selection);
-    fpu_selection = { };
-    need_ping(grid_state, fpu_selection, fpu_ping_selection);
-    fpu_selection = { 0 };
-    need_ping(grid_state, fpu_selection, fpu_ping_selection);
-    fpu_selection = { 4 };
-    need_ping(grid_state, fpu_selection, fpu_ping_selection);
-    fpu_selection = { 6, 7, 8, 9 };
-    need_ping(grid_state, fpu_selection, fpu_ping_selection);
-    
-    config.num_fpus = original_num_fpus;
-    
-    //..........................................................................
-#else // NOT FPU_SET_IS_VECTOR
-    //..........................................................................
-
-
-
-
-
-    //..........................................................................
-#endif // NOT FPU_SET_IS_VECTOR
-    //..........................................................................
-}
-
 UnprotectedGridDriver::~UnprotectedGridDriver()
 {
     if (_gd != nullptr)
@@ -428,6 +334,110 @@ UnprotectedGridDriver::~UnprotectedGridDriver()
 
 }
 
+
+//******************************************************************************
+// Test functions follow
+//******************************************************************************
+
+void UnprotectedGridDriver::doTests()
+{
+    // Ad-hoc tests for single-stepping
+ 
+    //test_check_fpuset();
+    
+    //test_need_ping();
+    
+    //test_connect();
+            
+    test_FindDatum();
+}
+
+void UnprotectedGridDriver::test_check_fpuset()
+{
+    E_EtherCANErrCode status;
+    
+    int original_num_fpus = config.num_fpus;
+    config.num_fpus = 5;
+    
+#ifdef FPU_SET_IS_VECTOR
+    FpuSelection fpu_selection = { 1, 4, 17 };
+    status = check_fpuset(fpu_selection); // DE_INVALID_FPU_ID
+    fpu_selection = { 1, 2, 3 };
+    status = check_fpuset(fpu_selection);   // DE_OK
+#endif // NOT FPU_SET_IS_VECTOR
+    
+    config.num_fpus = original_num_fpus;
+}
+        
+void UnprotectedGridDriver::test_need_ping()
+{
+    t_grid_state grid_state;
+    grid_state.FPU_state[0].ping_ok = true;
+    grid_state.FPU_state[1].ping_ok = false;
+    grid_state.FPU_state[2].ping_ok = true;
+    grid_state.FPU_state[3].ping_ok = true;
+    grid_state.FPU_state[4].ping_ok = false;
+    grid_state.FPU_state[5].ping_ok = false;
+    grid_state.FPU_state[6].ping_ok = false;
+    grid_state.FPU_state[7].ping_ok = true;
+    grid_state.FPU_state[8].ping_ok = false;
+    grid_state.FPU_state[9].ping_ok = true;
+    
+    int original_num_fpus = config.num_fpus;
+    config.num_fpus = 10;
+
+#ifdef FPU_SET_IS_VECTOR
+    FpuSelection fpu_ping_selection;
+    fpu_selection = { 1, 2, 4, 7 };
+    need_ping(grid_state, fpu_selection, fpu_ping_selection);
+    fpu_selection = { };
+    need_ping(grid_state, fpu_selection, fpu_ping_selection);
+    fpu_selection = { 0 };
+    need_ping(grid_state, fpu_selection, fpu_ping_selection);
+    fpu_selection = { 4 };
+    need_ping(grid_state, fpu_selection, fpu_ping_selection);
+    fpu_selection = { 6, 7, 8, 9 };
+    need_ping(grid_state, fpu_selection, fpu_ping_selection);
+#endif // NOT FPU_SET_IS_VECTOR    
+    
+    config.num_fpus = original_num_fpus;
+}
+
+void UnprotectedGridDriver::test_connect()
+{
+    // TODO: NOTE: I don't yet know what format of IP address is expected -
+    // just using a dummy format for now
+    // TODO: Also, t_gateway_address::ip is only a pointer - dangerous? Change
+    // this eventually? (e.g. to a std::String?)
+    const char *dummy_ip_str = "192.168.12.34";
+    t_gateway_address gateway_address = { dummy_ip_str, 12345 };
+    connect(1, &gateway_address);
+}
+
+void UnprotectedGridDriver::test_FindDatum()
+{
+}
+
+
+//******************************************************************************
+// TODO: Boost.Python wrapper test functions - remove eventually
+//******************************************************************************
+
+int UnprotectedGridDriver::boostPythonIncrement()
+{
+    dummyCounter++;
+    return dummyCounter;
+}
+
+double UnprotectedGridDriver::boostPythonDivide(double dividend, double divisor)
+{
+    return dividend / divisor;
+}
+
+int UnprotectedGridDriver::boostPythonGetNumFPUs()
+{
+    return config.num_fpus;
+}
 
 //==============================================================================
 
