@@ -17,7 +17,8 @@
 
 using namespace std;
 
-static void testFpuGridDriver();
+static void testUnprotectedGridDriver();
+static void testGridDriver();
 static void testFpuCounters();
 static void testProtectionDB();
 
@@ -25,8 +26,10 @@ static void testProtectionDB();
 //------------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-    testFpuGridDriver();
-    
+    testUnprotectedGridDriver();
+
+    //testGridDriver();
+
     //testFpuCounters();
     
     //testProtectionDB();
@@ -36,11 +39,18 @@ int main(int argc, char** argv)
 
 //------------------------------------------------------------------------------
 
-static void testFpuGridDriver()
+static void testUnprotectedGridDriver()
 {
-    UnprotectedGridDriver unprotected_grid_driver;
+    UnprotectedGridDriverTester ugd_tester;
+    
+    ugd_tester.doTests();
+}
 
-    unprotected_grid_driver.doTests();
+static void testGridDriver()
+{
+    GridDriver grid_driver;
+    
+    double blah = grid_driver.boostPythonDivide(2.0, 1.0);
 }
 
 static void testFpuCounters()

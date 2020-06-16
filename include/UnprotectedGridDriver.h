@@ -68,11 +68,17 @@ typedef struct
 
 typedef FpuPosition FpuPositions[MAX_NUM_POSITIONERS];
 
+class UnprotectedGridDriverTester;  // Forward reference
+
 
 //==============================================================================
 
 class UnprotectedGridDriver
 {
+    // Declare test class as friend so that it can access protected/private
+    // member variables and functions
+    friend class UnprotectedGridDriverTester;
+  
     //..........................................................................
 public:
     UnprotectedGridDriver(
@@ -115,8 +121,6 @@ public:
     // TODO: Need a real destructor as well?? Or are all member objects RAII ones?
     virtual ~UnprotectedGridDriver();
 
-    // Test functions
-    void doTests();
     // TODO: Ad-hoc functions for Boost.Python wrapper testing only - remove
     // when no longer needed
     int boostPythonIncrement();
@@ -155,7 +159,7 @@ protected:
 
     //..........................................................................
 private:
-
+  
 #ifdef FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
     void need_ping(const t_grid_state &grid_state,
@@ -164,12 +168,6 @@ private:
 #else // NOT FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
 #endif // NOT FPU_SET_IS_VECTOR
-    
-    // Test functions
-    void test_check_fpuset();
-    void test_need_ping();
-    void test_connect();
-    void test_FindDatum();
     
     EtherCANInterfaceConfig config;
 
@@ -194,6 +192,24 @@ private:
 
     //..........................................................................
 };
+
+
+//==============================================================================
+
+class UnprotectedGridDriverTester
+{
+    // N.B. This class is friend-ed from UnprotectedGridDriver, so it can
+    // access its private and protected member variables and functions
+public:
+    void doTests();
+    
+private:
+    void test_check_fpuset();
+    void test_need_ping();
+    void test_connect();
+    void test_FindDatum();
+};
+
 
 //==============================================================================
 
