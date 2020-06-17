@@ -27,6 +27,7 @@
 #include <algorithm>
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
+#include "FPUArray.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -274,7 +275,8 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
                     bool support_uninitialized_auto,
                     enum E_DATUM_TIMEOUT_FLAG timeout)
 {
-    E_EtherCANErrCode result = DE_OK;
+    E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
+    E_EtherCANErrCode result_returned = DE_ERROR_UNKNOWN;
 
     /*
     Moves all FPUs to datum position.
@@ -318,10 +320,8 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
         // here 
 
-        // Make local RAII heap copy of search_modes so can modify locally
-        // (N.B. Do not declare on local stack because it's a large object)
-        std::unique_ptr<AsyncInterface::t_datum_search_flags> search_modes_ptr;
-        AsyncInterface::t_datum_search_flags &search_modes = *search_modes_ptr;
+        // Make temporary local copy of search modes to allow local modification
+        AsyncInterface::t_datum_search_flags search_modes;
         for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
         {
             search_modes[i] = orig_search_modes[i];
@@ -351,15 +351,42 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
             }
         }
         
+        FpuPositions initial_positions;
+        _start_find_datum_hook(gs, search_modes, selected_arm, fpuset,
+                               initial_positions, soft_protection);
+
+        t_grid_state prev_gs;
+        _gd->getGridState(prev_gs);
+
+        result = _gd->startFindDatum(gs, search_modes, selected_arm, timeout,
+                                     count_protection, &fpuset);
+        if (result != DE_OK)
+        {
+            // We cancel the datum search altogether, so we can reset
+            // positions to old value
+            _cancel_find_datum_hook(gs, fpuset, initial_positions);
+
+            // TODO: Is this a good way to handle the error? (the Python
+            // version does a "raise")
+            return result;
+        }
+
+        
+
 
 
         // TODO: Fill rest of this function by converting from Python
         
 
+
+
+
     }
 
 
-    return result;
+    // TODO: Generate good return codes in the code above
+
+    return result_returned;
 }
 
 UnprotectedGridDriver::~UnprotectedGridDriver()
@@ -465,7 +492,27 @@ void UnprotectedGridDriverTester::test_connect()
 
 void UnprotectedGridDriverTester::test_FindDatum()
 {
+    UnprotectedGridDriver ugd;
+    E_EtherCANErrCode result;
+
+    // Create and initialise grid_state
+    EtherCANInterfaceConfig iface_config;
+    FPUArray fpu_array(iface_config);
+    t_grid_state grid_state;
+    fpu_array.getGridState(grid_state);
     
+    // TODO: Initialise these data structures/arrays
+    AsyncInterface::t_datum_search_flags search_modes;
+    AsyncInterface::t_fpuset fpuset;
+    
+    bool soft_protection = true;
+    bool count_protection = true;
+    bool support_uninitialized_auto = false;
+    
+    result = ugd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
+                           soft_protection, count_protection,
+                           support_uninitialized_auto, DATUM_TIMEOUT_DISABLE);
+
 }
 
 

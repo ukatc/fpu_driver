@@ -282,6 +282,10 @@ enum E_EtherCANErrCode
     // position and update the position database.
     DE_INCONSISTENT_STEP_COUNT = 607,
 
+    // Unknown error - use for e.g. initialising return values at the
+    // beginnings of functions to catch if return value is not set
+    // properly
+    DE_ERROR_UNKNOWN = 999,
 };
 
 // this is a one-bit parameter to several commands

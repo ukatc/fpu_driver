@@ -146,8 +146,10 @@ protected:
                     const AsyncInterface::t_fpuset &fpuset,
                     FpuPositions &initial_positions_ret, bool soft_protection) {}
     virtual void _cancel_find_datum_hook(t_grid_state &gs,
-                    const AsyncInterface::t_datum_search_flags &search_modes,
-                    enum E_DATUM_SELECTION selected_arm,
+                    // TODO: These arguments (which are in the Python version)
+                    // are not used so can remove?
+                    //const AsyncInterface::t_datum_search_flags &search_modes,
+                    //enum E_DATUM_SELECTION selected_arm,
                     const AsyncInterface::t_fpuset &fpuset,
                     const FpuPositions &initial_positions) {}
     virtual void _finished_find_datum_hook(t_grid_state &prev_gs,
