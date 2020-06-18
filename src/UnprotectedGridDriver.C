@@ -25,6 +25,7 @@
 
 #include <fcntl.h>
 #include <algorithm>
+#include <unistd.h>
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
 #include "FPUArray.h"
@@ -198,7 +199,7 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const FpuSelection &fpu_se
     return status;
 }
 
-void UnprotectedGridDriver::need_ping(const t_grid_state &grid_state,
+void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
                                       const FpuSelection &fpu_selection,
                                       FpuSelection &fpu_ping_selection_ret)
 {
@@ -211,7 +212,7 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &grid_state,
              fpu_id < std::min<int>(config.num_fpus, MAX_NUM_POSITIONERS);
              fpu_id++)
         {
-            if (!grid_state.FPU_state[fpu_id].ping_ok)
+            if (!gs.FPU_state[fpu_id].ping_ok)
             {
                 fpu_ping_selection_ret.emplace_back(fpu_id);
             }
@@ -225,7 +226,7 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &grid_state,
             if ((fpu_id < config.num_fpus) &&
                 (fpu_id < MAX_NUM_POSITIONERS))   // Buffer overrun protection
             {
-                if (!grid_state.FPU_state[fpu_id].ping_ok)
+                if (!gs.FPU_state[fpu_id].ping_ok)
                 {
                     fpu_ping_selection_ret.emplace_back(fpu_id);
                 }
@@ -242,15 +243,15 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fp
 
     // Count number of FPUs selected
     int num_fpus_in_fpuset = 0;
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
     {
-        if (fpuset[i])
+        if (fpuset[fpu_id])
         {
             num_fpus_in_fpuset++;
 
             // Check if any selected FPU in fpuset has an index above
             // config.num_fpus
-            if (i >= config.num_fpus)
+            if (fpu_id >= config.num_fpus)
             {
                 status = DE_INVALID_FPU_ID;
                 break;
@@ -265,6 +266,16 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fp
 
     return status;
 }
+
+void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
+                                      const AsyncInterface::t_fpuset &fpuset,
+                                      AsyncInterface::t_fpuset &pingset_ret)
+{
+    
+    // TODO: Implement this function
+    
+}
+
 #endif // NOTFPU_SET_IS_VECTOR
 
 E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs, 
@@ -281,11 +292,13 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     /*
     Moves all FPUs to datum position.
 
+    *** TODO: This function conversion from Python version is still WIP ***
+
     TODO: Eventually rename orig_search_modes above to just search_modes (and
     rename search_modes inside this function to e.g. search_modes_adjusted) -
     but the current names are being used for now to match the Python version
 
-    *** TODO: CHECK THESE COMMENTS - copied/adapted from Python version ***
+    *** TODO: CHECK THE COMMENTS BELOW - copied/adapted from Python version ***
 
     If the program receives a SIGNINT, or Control-C is pressed, an abortMotion
     command is automatically sent, aborting the search.
@@ -371,22 +384,96 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
             return result;
         }
 
-        
+        double time_interval = 0.1;
+        usleep((useconds_t)(time_interval * 1000000.0));
+        bool is_ready = false;
+        bool was_aborted = false;
+        bool finished_ok = false;
 
+        // TODO: In the Python equivalent code, has code to allow aborting
+        // from a signal (see was_aborted etc) - but this isn't appropriate
+        // in this C++ version because will be part of ESO driver? Come back
+        // to this / check what kind of ESO driver abort mechanism is required
+        //
+        // TODO: In the Python equivalent code, has try/finally block - but
+        // is this required/useful/appropriate in this C++ code - are there 
+        // any exceptions to be caught?
+        while (!is_ready)
+        {
+            bool wait_find_datum_finished = false;
+            result = _gd->waitFindDatum(gs, time_interval,
+                                        wait_find_datum_finished, &fpuset);
 
+            // TODO: The following is extra from
+            // WrapEtherCANInterface::wrap_waitFindDatum() - check that it's
+            // OK
+            if (((!wait_find_datum_finished) && (result == DE_OK))
+                    || (result == DE_WAIT_TIMEOUT))
+            {
+                result = DE_WAIT_TIMEOUT;
+            }
+            is_ready = (result != DE_WAIT_TIMEOUT);
+            finished_ok = (result == DE_OK);
+        }
 
-        // TODO: Fill rest of this function by converting from Python
-        
+        if (!finished_ok)
+        {
+            usleep((useconds_t)(time_interval * 1000000.0));
 
+            AsyncInterface::t_fpuset pingset;
+            need_ping(gs, fpuset, pingset);
 
+            // Perform FPU pinging if any FPU needs to be pinged
+            bool need_pinging = false;
+            for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+            {
+                if (pingset[fpu_id])
+                {
+                    need_pinging = true;
+                    break;
+                }
+            }
+            if (need_pinging)
+            {
+                result = _pingFPUs(gs, pingset);
+                if (result != DE_OK)
+                {
+                    // TODO: Error
+                }
+            }
+        }
 
+        _finished_find_datum_hook(prev_gs, gs, search_modes, fpuset,
+                                  !finished_ok, initial_positions,
+                                  selected_arm);
 
+        if (was_aborted)
+        {
+
+            // TODO: Not appropriate to abort etc? (see comments further up in
+            // this function)
+
+        }
     }
 
 
     // TODO: Generate good return codes in the code above
 
     return result_returned;
+}
+
+E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
+                                     const AsyncInterface::t_fpuset &fpuset)
+{
+    E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
+
+    result = check_fpuset(fpuset);
+    if (result == DE_OK)
+    {
+        result = _gd->pingFPUs(gs, fpuset);
+    }
+
+    return result;
 }
 
 UnprotectedGridDriver::~UnprotectedGridDriver()

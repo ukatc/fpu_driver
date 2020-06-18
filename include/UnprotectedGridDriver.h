@@ -164,13 +164,19 @@ private:
   
 #ifdef FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
-    void need_ping(const t_grid_state &grid_state,
+    void need_ping(const t_grid_state &gs,
                    const FpuSelection &fpu_selection,
                    FpuSelection &fpu_ping_selection_ret);
 #else // NOT FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
+    void need_ping(const t_grid_state &gs,
+                   const AsyncInterface::t_fpuset &fpuset,
+                   AsyncInterface::t_fpuset &pingset_ret);
 #endif // NOT FPU_SET_IS_VECTOR
-    
+
+    E_EtherCANErrCode _pingFPUs(t_grid_state &gs, 
+                                const AsyncInterface::t_fpuset &fpuset);
+
     EtherCANInterfaceConfig config;
 
     // TODO: Eventually merge t_wtable and the "reversed" bool into a single
