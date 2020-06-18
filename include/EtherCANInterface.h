@@ -38,6 +38,7 @@
 namespace mpifps
 {
 
+using namespace ethercanif;
 using ethercanif::E_DATUM_TIMEOUT_FLAG;
 using ethercanif::DATUM_TIMEOUT_ENABLE;
 using ethercanif::DATUM_TIMEOUT_DISABLE;

@@ -31,28 +31,28 @@ namespace mpifps
 namespace ethercanif
 {
 
+typedef struct
+{
+    int16_t alpha_steps;
+    int16_t beta_steps;
+} t_step_pair;
+
+typedef struct
+{
+    int16_t fpu_id;
+    std::vector<t_step_pair> steps;
+} t_waveform;
+
+typedef std::vector<t_waveform> t_wtable;
+
+typedef bool t_fpuset[MAX_NUM_POSITIONERS];
+
+typedef E_DATUM_SEARCH_DIRECTION t_datum_search_flags[MAX_NUM_POSITIONERS];
+
+
 class AsyncInterface
 {
 public:
-
-    typedef struct
-    {
-        int16_t alpha_steps;
-        int16_t beta_steps;
-    } t_step_pair;
-
-    typedef struct
-    {
-        int16_t fpu_id;
-        std::vector<t_step_pair> steps;
-    } t_waveform;
-
-    typedef  std::vector<t_waveform> t_wtable;
-
-    typedef bool t_fpuset[MAX_NUM_POSITIONERS];
-
-    typedef E_DATUM_SEARCH_DIRECTION t_datum_search_flags[MAX_NUM_POSITIONERS];
-
     /* Maximum number of retries to initialize configure
        motion before the driver will give up. */
     const int MAX_CONFIG_MOTION_RETRIES = 5;

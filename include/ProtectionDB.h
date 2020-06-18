@@ -49,7 +49,7 @@ Probable data types (TODO: CHECK):
 */
 
 // TODO: Move elsewhere, and rename to e.g. Waveform?
-using Wentry = std::vector<AsyncInterface::t_step_pair>;
+using Wentry = std::vector<t_step_pair>;
 
 // -----------------------------------------------------------------------------
 

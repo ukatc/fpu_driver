@@ -107,12 +107,12 @@ public:
     // functions, so that can have argument defaults
 
     E_EtherCANErrCode findDatum(t_grid_state &gs, 
-                        const AsyncInterface::t_datum_search_flags &search_modes,
-                        enum E_DATUM_SELECTION selected_arm,
-                        const AsyncInterface::t_fpuset &fpuset,
-                        bool soft_protection, bool count_protection,
-                        bool support_uninitialized_auto,
-                        enum E_DATUM_TIMEOUT_FLAG timeout);
+                                const t_datum_search_flags &search_modes,
+                                enum E_DATUM_SELECTION selected_arm,
+                                const t_fpuset &fpuset,
+                                bool soft_protection, bool count_protection,
+                                bool support_uninitialized_auto,
+                                enum E_DATUM_TIMEOUT_FLAG timeout);
 
 
 #endif // FPU_SET_IS_VECTOR
@@ -136,28 +136,30 @@ protected:
     // TODO: Do the t_grid_state's below need to be const? Or will they
     // possibly be altered inside the functions?
     virtual void _allow_find_datum_hook(t_grid_state &gs,
-                    AsyncInterface::t_datum_search_flags &search_modes, // Modifiable
-                    enum E_DATUM_SELECTION selected_arm,
-                    const AsyncInterface::t_fpuset &fpuset,
-                    bool support_uninitialized_auto) {}
+                                        t_datum_search_flags &search_modes, // Modifiable
+                                        enum E_DATUM_SELECTION selected_arm,
+                                        const t_fpuset &fpuset,
+                                        bool support_uninitialized_auto) {}
     virtual void _start_find_datum_hook(t_grid_state &gs,
-                    const AsyncInterface::t_datum_search_flags &search_modes,
-                    enum E_DATUM_SELECTION selected_arm,
-                    const AsyncInterface::t_fpuset &fpuset,
-                    FpuPositions &initial_positions_ret, bool soft_protection) {}
+                                        const t_datum_search_flags &search_modes,
+                                        enum E_DATUM_SELECTION selected_arm,
+                                        const t_fpuset &fpuset,
+                                        FpuPositions &initial_positions_ret,
+                                        bool soft_protection) {}
     virtual void _cancel_find_datum_hook(t_grid_state &gs,
-                    // TODO: These arguments (which are in the Python version)
-                    // are not used so can remove?
-                    //const AsyncInterface::t_datum_search_flags &search_modes,
-                    //enum E_DATUM_SELECTION selected_arm,
-                    const AsyncInterface::t_fpuset &fpuset,
-                    const FpuPositions &initial_positions) {}
+                                         // TODO: These arguments (which are in the Python version)
+                                         // are not used so can remove?
+                                         //const t_datum_search_flags &search_modes,
+                                         //enum E_DATUM_SELECTION selected_arm,
+                                         const t_fpuset &fpuset, 
+                                         const FpuPositions &initial_positions) {}
     virtual void _finished_find_datum_hook(t_grid_state &prev_gs,
-                    t_grid_state &datum_gs,
-                    const AsyncInterface::t_datum_search_flags &search_modes,
-                    const AsyncInterface::t_fpuset &fpuset,
-                    bool was_cancelled, const FpuPositions &initial_positions, 
-                    enum E_DATUM_SELECTION selected_arm) {}
+                                           t_grid_state &datum_gs,
+                                           const t_datum_search_flags &search_modes,
+                                           const t_fpuset &fpuset,
+                                           bool was_cancelled,
+                                           const FpuPositions &initial_positions, 
+                                           enum E_DATUM_SELECTION selected_arm) {}
 
     //..........................................................................
 private:
@@ -168,20 +170,18 @@ private:
                    const FpuSelection &fpu_selection,
                    FpuSelection &fpu_ping_selection_ret);
 #else // NOT FPU_SET_IS_VECTOR
-    E_EtherCANErrCode check_fpuset(const AsyncInterface::t_fpuset &fpuset);
-    void need_ping(const t_grid_state &gs,
-                   const AsyncInterface::t_fpuset &fpuset,
-                   AsyncInterface::t_fpuset &pingset_ret);
+    E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
+    void need_ping(const t_grid_state &gs, const t_fpuset &fpuset,
+                   t_fpuset &pingset_ret);
 #endif // NOT FPU_SET_IS_VECTOR
 
-    E_EtherCANErrCode _pingFPUs(t_grid_state &gs, 
-                                const AsyncInterface::t_fpuset &fpuset);
+    E_EtherCANErrCode _pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
 
     EtherCANInterfaceConfig config;
 
     // TODO: Eventually merge t_wtable and the "reversed" bool into a single
     // data structure, and just have one map instead of two ?
-    std::map<int, AsyncInterface::t_wtable> last_wavetable; // <fpu_id, wavetable>
+    std::map<int, t_wtable> last_wavetable; // <fpu_id, wavetable>
     std::map<int, bool> wf_reversed; // <fpu_id, reversed>
 
     bool wavetables_incomplete = false;

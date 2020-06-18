@@ -237,7 +237,7 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 
 #else // NOTFPU_SET_IS_VECTOR
 
-E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fpuset &fpuset)
+E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 {
     E_EtherCANErrCode status = DE_OK;
 
@@ -268,8 +268,8 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const AsyncInterface::t_fp
 }
 
 void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
-                                      const AsyncInterface::t_fpuset &fpuset,
-                                      AsyncInterface::t_fpuset &pingset_ret)
+                                      const t_fpuset &fpuset,
+                                      t_fpuset &pingset_ret)
 {
     
     // TODO: Implement this function
@@ -279,9 +279,9 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 #endif // NOTFPU_SET_IS_VECTOR
 
 E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs, 
-                    const AsyncInterface::t_datum_search_flags &orig_search_modes,
+                    const t_datum_search_flags &orig_search_modes,
                     enum E_DATUM_SELECTION selected_arm,
-                    const AsyncInterface::t_fpuset &fpuset,
+                    const t_fpuset &fpuset,
                     bool soft_protection, bool count_protection,
                     bool support_uninitialized_auto,
                     enum E_DATUM_TIMEOUT_FLAG timeout)
@@ -334,7 +334,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         // here 
 
         // Make temporary local copy of search modes to allow local modification
-        AsyncInterface::t_datum_search_flags search_modes;
+        t_datum_search_flags search_modes;
         for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
         {
             search_modes[i] = orig_search_modes[i];
@@ -420,7 +420,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         {
             usleep((useconds_t)(time_interval * 1000000.0));
 
-            AsyncInterface::t_fpuset pingset;
+            t_fpuset pingset;
             need_ping(gs, fpuset, pingset);
 
             // Perform FPU pinging if any FPU needs to be pinged
@@ -463,7 +463,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
 }
 
 E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
-                                     const AsyncInterface::t_fpuset &fpuset)
+                                                   const t_fpuset &fpuset)
 {
     E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
 
@@ -589,8 +589,8 @@ void UnprotectedGridDriverTester::test_FindDatum()
     fpu_array.getGridState(grid_state);
     
     // TODO: Initialise these data structures/arrays
-    AsyncInterface::t_datum_search_flags search_modes;
-    AsyncInterface::t_fpuset fpuset;
+    t_datum_search_flags search_modes;
+    t_fpuset fpuset;
     
     bool soft_protection = true;
     bool count_protection = true;
