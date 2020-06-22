@@ -486,11 +486,114 @@ E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
                                 t_grid_state &gs, const t_fpuset &fpuset,
-                                bool soft_protection, bool check_protection,
-                                bool allow_uninitialized, int ruleset_version,
-                                bool warn_unsafe, int verbosity)
+                                bool soft_protection, bool allow_uninitialized,
+                                int ruleset_version, bool warn_unsafe,
+                                int verbosity)
 {
+    /*
+    Configures movement by sending a waveform table to a group of FPUs.
 
+    When the 'protected' flag is set to False, bypass all hardware protection
+    checks, which will allow to move a collided or uncalibrated FPU (even if
+    the movement might damage the hardware).
+    */
+
+    // TODO: NOTE: UnprotectedGridDriver::_post_config_motion_hook() DOES also
+    // have a body (see UnprotectedGridDriver.h), in addition to
+    // GridDriver::_post_config_motion_hook() - check it
+
+    // TODO: Sort out return values
+
+    E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
+    result = check_fpuset(fpuset);
+    if (result == DE_OK)
+    {
+        // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+        // here 
+
+        // We make a copy of the wavetable to make sure no side effects are
+        // visible to the caller
+        // TODO: Will the following statement do a deep copy as required?
+        // TODO: This will use lots of local stack - is the stack size big
+        // enough for this?
+        t_wtable wtable = wavetable;
+
+        // Delete all wtable elements not selected in fpuset
+        // TODO: This might be very in efficient because deleting std::vector
+        // elements from middle - but will work OK
+        // TODO: Test this carefully
+        for (auto it = wtable.begin(); it != wtable.end(); )
+        {
+            bool erased = false;
+            if (it->fpu_id < MAX_NUM_POSITIONERS)   // Sanity check
+            {
+                if (!fpuset[it->fpu_id])
+                {
+                    // N.B. erase() returns a new (valid) iterator that points
+                    // to the next element after the deleted one, so it's a
+                    // safe operation
+                    it = wtable.erase(it);
+                    erased = true;
+                }
+            }
+            else
+            {
+                // TODO: Error - flag this somehow?
+                break;
+            }
+
+            if (!erased)
+            {
+                it++;
+            }
+        }
+
+        // Check whether wavetable is safe, and if so, register it
+        Range wmode;
+        if (soft_protection)
+        {
+            wmode = Range::Error;
+        }
+        else
+        {
+            if (warn_unsafe)
+            {
+                wmode = Range::Warn;
+            }
+            else
+            {
+                // TODO: Is this correct?
+                wmode = Range::Error;
+            }
+        }
+
+        _pre_config_motion_hook(wtable, gs, fpuset, wmode);
+        bool update_config = false;
+        t_grid_state prev_gs;
+        _gd->getGridState(prev_gs);
+
+
+    }
+
+
+}
+
+//------------------------------------------------------------------------------
+void UnprotectedGridDriver::set_wtable_reversed(const t_fpuset &fpuset,
+                                                bool is_reversed)
+{
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here 
+
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        if (fpuset[fpu_id])
+        {
+            // TODO: wf_reversed is currently a std::map, but should probably
+            // be a fixed-size array instead - see comments above its definition
+            wf_reversed[fpu_id] = is_reversed;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

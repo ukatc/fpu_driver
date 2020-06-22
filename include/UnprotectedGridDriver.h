@@ -58,6 +58,16 @@ using namespace mpifps::ethercanif;
 using FpuSelection = std::vector<uint16_t>;
 #endif
 
+// Enumeration which defines the strictness of checks
+// TODO: Not sure why just called "Range" - change to something more
+// meaningful eventually
+enum class Range
+{
+    Error,      // Error - path rejected
+    Warn,       // Warning - path unsafe
+    Ignore      // Ignore - path unchecked
+};
+
 // TODO: Not sure about whether these FPU position data structures are fully
 // correct and suitable yet - keep under review
 typedef struct
@@ -116,7 +126,6 @@ public:
 
     E_EtherCANErrCode configMotion(const t_wtable &wavetable, t_grid_state &gs,
                                    const t_fpuset &fpuset, bool soft_protection,
-                                   bool check_protection,
                                    bool allow_uninitialized,
                                    int ruleset_version, bool warn_unsafe,
                                    int verbosity);
@@ -139,6 +148,7 @@ protected:
 
     virtual void _post_connect_hook(const EtherCANInterfaceConfig &config) {}
 
+    // findDatum() hook functions
     // TODO: Do the t_grid_state's below need to be const? Or will they
     // possibly be altered inside the functions?
     virtual void _allow_find_datum_hook(t_grid_state &gs,
@@ -167,11 +177,25 @@ protected:
                                            const FpuPositions &initial_positions, 
                                            enum E_DATUM_SELECTION selected_arm) {}
 
+    // configMotion() hook functions
+    virtual void _pre_config_motion_hook(const t_wtable &wtable,
+                                         t_grid_state &gs,
+                                         const t_fpuset &fpuset, Range wmode) {}
+    virtual void _post_config_motion_hook(const t_wtable &wtable,
+                                          t_grid_state &gs,
+                                          const t_fpuset &fpuset)
+    {
+        // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+        // here
+
+        set_wtable_reversed(fpuset, false);
+    }
+
     //..........................................................................
 private:
   
 #ifdef FPU_SET_IS_VECTOR
-    E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
+    E_EtherCANErrCodde check_fpuset(const FpuSelection &fpu_selection);
     void need_ping(const t_grid_state &gs,
                    const FpuSelection &fpu_selection,
                    FpuSelection &fpu_ping_selection_ret);
@@ -180,13 +204,15 @@ private:
     void need_ping(const t_grid_state &gs, const t_fpuset &fpuset,
                    t_fpuset &pingset_ret);
 #endif // NOT FPU_SET_IS_VECTOR
-
     E_EtherCANErrCode _pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
+    void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed);
 
     EtherCANInterfaceConfig config;
 
     // TODO: Eventually merge t_wtable and the "reversed" bool into a single
-    // data structure, and just have one map instead of two ?
+    // data structure, and just have one map instead of two?
+    // TODO: Use fixed-size list of MAX_NUM_POSITIONERS for both data structures,
+    // like the t_fpuset structures etc do?
     std::map<int, t_wtable> last_wavetable; // <fpu_id, wavetable>
     std::map<int, bool> wf_reversed; // <fpu_id, reversed>
 

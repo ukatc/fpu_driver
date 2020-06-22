@@ -81,6 +81,20 @@ void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
     // TODO
 }
 
+void GridDriver::_pre_config_motion_hook(const t_wtable &wtable,
+                                         t_grid_state &gs,
+                                         const t_fpuset &fpuset, Range wmode)
+{
+    // TODO
+}
+
+void GridDriver::_post_config_motion_hook(const t_wtable &wtable, 
+                                          t_grid_state &gs,
+                                          const t_fpuset &fpuset)
+{
+    // TODO
+}
+
 
 //==============================================================================
 

@@ -41,6 +41,7 @@ private:
 
     void _post_connect_hook(const EtherCANInterfaceConfig &config) override;
 
+    // findDatum() hook functions
     void _allow_find_datum_hook(t_grid_state &gs,
                                 t_datum_search_flags &search_modes,
                                 enum E_DATUM_SELECTION selected_arm,
@@ -59,6 +60,14 @@ private:
                                    const t_fpuset &fpuset, bool was_cancelled,
                                    const FpuPositions &initial_positions, // TODO: Not used (in Python version) - remove?
                                    enum E_DATUM_SELECTION selected_arm) override;
+
+    // configMotion() hook functions
+    virtual void _pre_config_motion_hook(const t_wtable &wtable,
+                                         t_grid_state &gs, const t_fpuset &fpuset,
+                                         Range wmode) override;
+    virtual void _post_config_motion_hook(const t_wtable &wtable,
+                                          t_grid_state &gs,
+                                          const t_fpuset &fpuset) override;
 
     //..........................................................................
 
