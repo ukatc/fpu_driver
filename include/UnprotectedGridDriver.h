@@ -205,6 +205,11 @@ private:
                    t_fpuset &pingset_ret);
 #endif // NOT FPU_SET_IS_VECTOR
     E_EtherCANErrCode _pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
+    // N.B. static function
+    static bool wavetable_was_received(const t_wtable &wtable, int fpu_id,
+                                       const t_fpu_state &fpu_state,  
+                                       bool allow_unconfirmed = false,
+                                       E_FPU_STATE target_state = FPST_READY_FORWARD);
     void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed);
 
     EtherCANInterfaceConfig config;

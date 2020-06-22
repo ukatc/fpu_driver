@@ -484,6 +484,31 @@ E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
+bool UnprotectedGridDriver::wavetable_was_received(const t_wtable &wtable,
+                                                   int fpu_id,
+                                                   const t_fpu_state &fpu_state,  
+                                                   bool allow_unconfirmed,
+                                                   E_FPU_STATE target_state)
+{
+    bool wtable_contains_fpu_id = false;
+    if ((fpu_id >= 0) && (fpu_id < MAX_NUM_POSITIONERS))
+    {
+        for (const auto &it : wtable)
+        {
+            if (it.fpu_id == fpu_id)
+            {
+                wtable_contains_fpu_id = true;
+                break;
+            }
+        }
+    }
+
+    return (wtable_contains_fpu_id && (fpu_state.state == target_state) &&
+            ((fpu_state.last_status == 0) || (allow_unconfirmed &&
+                    (fpu_state.last_status == MCE_NO_CONFIRMATION_EXPECTED))));
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
                                 t_grid_state &gs, const t_fpuset &fpuset,
                                 bool soft_protection, bool allow_uninitialized,
@@ -519,7 +544,7 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         t_wtable wtable = wavetable;
 
         // Delete all wtable elements not selected in fpuset
-        // TODO: This might be very in efficient because deleting std::vector
+        // TODO: This might be very inefficient because deleting std::vector
         // elements from middle - but will work OK
         // TODO: Test this carefully
         for (auto it = wtable.begin(); it != wtable.end(); )
@@ -571,6 +596,47 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         bool update_config = false;
         t_grid_state prev_gs;
         _gd->getGridState(prev_gs);
+
+        // TODO: Carefulyl check the following logic against the 3-deep-nested
+        // "try" blocks in the equivalent Python code
+        result = _gd->configMotion(wtable, gs, fpuset, allow_uninitialized,
+                                   ruleset_version);
+        // TODO: Check for the various expected result values - some non-DE_OK
+        // ones might actually be OK?
+        if (result != DE_OK)
+        {
+            update_config = true;
+
+            // TODO: Catch the more serious errors like the Python code does:
+            // InvalidWaveformException, InvalidStateException, SocketFailure,
+            // CommandTimeout etc
+            // e.g. If SocketFailure or CommandTimeout then would be a
+            // transmission failure. Here, it is possible that some FPUs have
+            // finished loading valid data, but the process was not finished
+            // for all FPUs.
+
+        }
+
+        if (update_config)
+        {
+            // Accept configured wavetable entries
+            for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+            {
+                if (wavetable_was_received(wtable, fpu_id, gs.FPU_state[fpu_id]))
+                {
+                    // ******** TODO: The following statement doesn't build yet
+                    // because type mismatch
+
+                    last_wavetable[fpu_id] = wtable[fpu_id];
+                }
+            }
+
+
+            _post_config_motion_hook(wtable, gs, fpuset);
+        }
+
+
+
 
 
     }
