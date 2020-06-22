@@ -42,7 +42,7 @@ namespace mpifps
 
 #define TIMESTAMP_INIT_STRING     "ISO8601"
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 string get_logname(string basename, string log_dir = "", string timestamp = "")
 {
 
@@ -55,7 +55,7 @@ string get_logname(string basename, string log_dir = "", string timestamp = "")
 
 }
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 string make_logdir(string log_dir)
 {
 
@@ -149,6 +149,7 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     _gd = new EtherCANInterface(config);
 }
 
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::connect(const int ngateways,
                                 const t_gateway_address gateway_addresses[])
 {
@@ -183,6 +184,8 @@ E_EtherCANErrCode UnprotectedGridDriver::connect(const int ngateways,
 
 #ifdef FPU_SET_IS_VECTOR
 
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const FpuSelection &fpu_selection)
 {
     E_EtherCANErrCode status = DE_OK;
@@ -199,6 +202,7 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const FpuSelection &fpu_se
     return status;
 }
 
+//------------------------------------------------------------------------------
 void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
                                       const FpuSelection &fpu_selection,
                                       FpuSelection &fpu_ping_selection_ret)
@@ -237,6 +241,7 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 
 #else // NOTFPU_SET_IS_VECTOR
 
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 {
     E_EtherCANErrCode status = DE_OK;
@@ -267,6 +272,7 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
     return status;
 }
 
+//------------------------------------------------------------------------------
 void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
                                       const t_fpuset &fpuset,
                                       t_fpuset &pingset_ret)
@@ -278,10 +284,10 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 
 #endif // NOTFPU_SET_IS_VECTOR
 
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs, 
                     const t_datum_search_flags &orig_search_modes,
-                    enum E_DATUM_SELECTION selected_arm,
-                    const t_fpuset &fpuset,
+                    enum E_DATUM_SELECTION selected_arm, const t_fpuset &fpuset,
                     bool soft_protection, bool count_protection,
                     bool support_uninitialized_auto,
                     enum E_DATUM_TIMEOUT_FLAG timeout)
@@ -462,6 +468,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     return result_returned;
 }
 
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
                                                    const t_fpuset &fpuset)
 {
@@ -476,6 +483,17 @@ E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
     return result;
 }
 
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
+                                t_grid_state &gs, const t_fpuset &fpuset,
+                                bool soft_protection, bool check_protection,
+                                bool allow_uninitialized, int ruleset_version,
+                                bool warn_unsafe, int verbosity)
+{
+
+}
+
+//------------------------------------------------------------------------------
 UnprotectedGridDriver::~UnprotectedGridDriver()
 {
     if (_gd != nullptr)
@@ -519,7 +537,7 @@ void UnprotectedGridDriverTester::doTests()
     
     //test_connect();
     
-    test_FindDatum();
+    test_findDatum();
 }
 
 void UnprotectedGridDriverTester::test_check_fpuset()
@@ -577,7 +595,7 @@ void UnprotectedGridDriverTester::test_connect()
     
 }
 
-void UnprotectedGridDriverTester::test_FindDatum()
+void UnprotectedGridDriverTester::test_findDatum()
 {
     UnprotectedGridDriver ugd;
     E_EtherCANErrCode result;

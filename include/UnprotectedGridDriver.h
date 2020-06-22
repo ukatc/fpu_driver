@@ -114,6 +114,12 @@ public:
                                 bool support_uninitialized_auto,
                                 enum E_DATUM_TIMEOUT_FLAG timeout);
 
+    E_EtherCANErrCode configMotion(const t_wtable &wavetable, t_grid_state &gs,
+                                   const t_fpuset &fpuset, bool soft_protection,
+                                   bool check_protection,
+                                   bool allow_uninitialized,
+                                   int ruleset_version, bool warn_unsafe,
+                                   int verbosity);
 
 #endif // FPU_SET_IS_VECTOR
 
@@ -215,7 +221,7 @@ private:
     void test_check_fpuset();
     void test_need_ping();
     void test_connect();
-    void test_FindDatum();
+    void test_findDatum();
 };
 
 
