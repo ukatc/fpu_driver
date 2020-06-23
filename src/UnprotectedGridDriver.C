@@ -695,6 +695,78 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
                                                        const t_fpuset &fpuset,
                                                        bool sync_command)
 {
+    E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
+    result = check_fpuset(fpuset);
+    if (result == DE_OK)
+    {
+        // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+        // here 
+        FpuPositions initial_positions;
+        _start_execute_motion_hook(gs, fpuset, initial_positions);
+        usleep((useconds_t)(0.1 * 1000000.0));
+        t_grid_state prev_gs;
+        _gd->getGridState(prev_gs);
+        usleep((useconds_t)(0.1 * 1000000.0));
+        result = _gd->startExecuteMotion(gs, fpuset, sync_command);
+        // TODO: The result logic here might not be the same as the Python
+        // equivalent - check this
+        if (result != DE_OK)
+        {
+            _cancel_execute_motion_hook(gs, fpuset, initial_positions);
+            // TODO: Return with error code here?
+        }
+
+        double time_interval = 0.1;
+        bool is_ready = false;
+        bool was_aborted = false;
+        bool refresh_state = false;
+        // TODO: The result logic here might not be the same as the Python
+        // equivalent - check this
+        while (!is_ready)
+        {
+            bool wait_execute_motion_finished = false;
+            result = _gd->waitExecuteMotion(gs, time_interval,
+                                            wait_execute_motion_finished,
+                                            fpuset);
+
+            // TODO: Python version can be interrupted from Linux signals here,
+            // but this isn't appropriate for C++ version because it wlll be
+            // inside ESO driver?
+
+            is_ready = (result != DE_WAIT_TIMEOUT);
+        }
+
+        if (result != DE_OK)
+        {
+            refresh_state = true;
+        }
+
+        // This is skipped in case of a SocketFailure, for example
+        if ((result == DE_OK) || refresh_state)
+        {
+            // Execute a ping to update positions
+            // (this is only needed for protocol version 1)
+            t_grid_state move_gs;
+            _gd->getGridState(move_gs);
+            usleep((useconds_t)(0.1 * 1000000.0));
+            t_fpuset pingset;
+            need_ping(gs, fpuset, pingset);
+            result = _pingFPUs(gs, pingset);
+            if (result != DE_OK)
+            {
+                // TODO: Error
+            }
+            // The following hook will narrow down the recorded intervals of
+            // positions
+            _post_execute_motion_hook(gs, prev_gs, move_gs, fpuset);
+        }
+
+        // TODO: Original Python code - need to do anything with this here?
+        //if was_aborted:
+        //raise MovementError("executeMotion was aborted by SIGINT")
+    }
+
+    // TODO: Generate the required return values
 
 }
 
