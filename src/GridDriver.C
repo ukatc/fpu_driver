@@ -112,9 +112,31 @@ void GridDriver::_post_config_motion_hook(const t_wtable &wtable,
     // TODO
 }
 
+//------------------------------------------------------------------------------
+
+void GridDriver::_start_execute_motion_hook(t_grid_state &gs,
+                                            const t_fpuset &fpuset,
+                                            const FpuPositions &initial_positions)
+{
+    // TODO
+}
+
+void GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
+                                             const t_fpuset &fpuset,
+                                             const FpuPositions &initial_positions)
+{
+    // TODO
+}
+
+void GridDriver::_post_execute_motion_hook(t_grid_state &gs,
+                                           const t_grid_state &old_gs,
+                                           const t_grid_state &move_gs,
+                                           const t_fpuset &fpuset)
+{
+    // TODO
+}
 
 //==============================================================================
-
 
 } // namespace mpifps
 

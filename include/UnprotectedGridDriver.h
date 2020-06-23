@@ -116,7 +116,7 @@ public:
     // fpuset/selected_arm arguments relative to the equivalent Python
     // functions, so that can have argument defaults
 
-    E_EtherCANErrCode findDatum(t_grid_state &gs, 
+    E_EtherCANErrCode findDatum(t_grid_state &gs,
                                 const t_datum_search_flags &search_modes,
                                 enum E_DATUM_SELECTION selected_arm,
                                 const t_fpuset &fpuset,
@@ -129,6 +129,9 @@ public:
                                    bool allow_uninitialized,
                                    int ruleset_version, bool warn_unsafe,
                                    int verbosity);
+
+    E_EtherCANErrCode executeMotion(t_grid_state &gs, const t_fpuset &fpuset,
+                                    bool sync_command = true);
 
 #endif // FPU_SET_IS_VECTOR
 
@@ -174,7 +177,7 @@ protected:
                                            const t_datum_search_flags &search_modes,
                                            const t_fpuset &fpuset,
                                            bool was_cancelled,
-                                           const FpuPositions &initial_positions, 
+                                           const FpuPositions &initial_positions,
                                            enum E_DATUM_SELECTION selected_arm) {}
 
     // Error counters function
@@ -195,6 +198,18 @@ protected:
 
         set_wtable_reversed(fpuset, false);
     }
+
+    // executeMotion() hook functions
+    virtual void _start_execute_motion_hook(t_grid_state &gs,
+                                            const t_fpuset &fpuset,
+                                            const FpuPositions &initial_positions) {}
+    virtual void _cancel_execute_motion_hook(t_grid_state &gs,
+                                             const t_fpuset &fpuset,
+                                             const FpuPositions &initial_positions) {}
+    virtual void _post_execute_motion_hook(t_grid_state &gs,
+                                           const t_grid_state &old_gs,
+                                           const t_grid_state &move_gs,
+                                           const t_fpuset &fpuset) {}
 
     //..........................................................................
 private:

@@ -78,12 +78,19 @@ private:
                                 bool datum_cmd = false) override;
 
     // configMotion() hook functions
-    virtual void _pre_config_motion_hook(const t_wtable &wtable,
-                                         t_grid_state &gs, const t_fpuset &fpuset,
-                                         Range wmode) override;
-    virtual void _post_config_motion_hook(const t_wtable &wtable,
-                                          t_grid_state &gs,
-                                          const t_fpuset &fpuset) override;
+    void _pre_config_motion_hook(const t_wtable &wtable, t_grid_state &gs,
+                                 const t_fpuset &fpuset, Range wmode) override;
+    void _post_config_motion_hook(const t_wtable &wtable, t_grid_state &gs,
+                                  const t_fpuset &fpuset) override;
+
+    // executeMotion() hook functions
+    void _start_execute_motion_hook(t_grid_state &gs, const t_fpuset &fpuset,
+                                    const FpuPositions &initial_positions) override;
+    void _cancel_execute_motion_hook(t_grid_state &gs, const t_fpuset &fpuset,
+                                     const FpuPositions &initial_positions) override;
+    void _post_execute_motion_hook(t_grid_state &gs, const t_grid_state &old_gs,
+                                   const t_grid_state &move_gs,
+                                   const t_fpuset &fpuset) override;
 
     //..........................................................................
 

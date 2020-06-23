@@ -691,6 +691,14 @@ void UnprotectedGridDriver::set_wtable_reversed(const t_fpuset &fpuset,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
+                                                       const t_fpuset &fpuset,
+                                                       bool sync_command)
+{
+
+}
+
+//------------------------------------------------------------------------------
 UnprotectedGridDriver::~UnprotectedGridDriver()
 {
     if (_gd != nullptr)
