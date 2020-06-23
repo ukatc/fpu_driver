@@ -44,6 +44,8 @@ void GridDriver::_post_connect_hook(const EtherCANInterfaceConfig &config)
     // TODO
 }
 
+//------------------------------------------------------------------------------
+
 void GridDriver::_allow_find_datum_hook(t_grid_state &gs,
                                         t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
@@ -80,6 +82,21 @@ void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
 {
     // TODO
 }
+
+//------------------------------------------------------------------------------
+
+void GridDriver::_update_error_counters(const t_fpu_state &prev_fpu,
+                                        const t_fpu_state &moved_fpu,
+                                        bool datum_cmd)
+{
+
+    // TODO
+    // N.B. Also see the Python GridDriver::_update_error_counters() function,
+    // and my new FpuErrorCounterType enum class in GridDriver.h for this
+
+}
+
+//------------------------------------------------------------------------------
 
 void GridDriver::_pre_config_motion_hook(const t_wtable &wtable,
                                          t_grid_state &gs,

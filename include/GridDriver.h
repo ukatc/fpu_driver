@@ -61,6 +61,22 @@ private:
                                    const FpuPositions &initial_positions, // TODO: Not used (in Python version) - remove?
                                    enum E_DATUM_SELECTION selected_arm) override;
 
+    // Error counters functionality
+    enum class FpuErrorCounterType
+    {
+        Collisions = 0,
+        LimitBreaches,
+        CanTimeouts,
+        DatumTimeouts,
+        MovementTimeouts,
+
+        NumFpuErrorCounterTypes
+    };
+    
+    void _update_error_counters(const t_fpu_state &prev_fpu,
+                                const t_fpu_state &moved_fpu,
+                                bool datum_cmd = false) override;
+
     // configMotion() hook functions
     virtual void _pre_config_motion_hook(const t_wtable &wtable,
                                          t_grid_state &gs, const t_fpuset &fpuset,

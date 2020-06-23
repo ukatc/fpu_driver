@@ -177,6 +177,11 @@ protected:
                                            const FpuPositions &initial_positions, 
                                            enum E_DATUM_SELECTION selected_arm) {}
 
+    // Error counters function
+    virtual void _update_error_counters(const t_fpu_state &prev_fpu,
+                                        const t_fpu_state &moved_fpu,
+                                        bool datum_cmd = false) {}
+
     // configMotion() hook functions
     virtual void _pre_config_motion_hook(const t_wtable &wtable,
                                          t_grid_state &gs,
@@ -195,7 +200,7 @@ protected:
 private:
   
 #ifdef FPU_SET_IS_VECTOR
-    E_EtherCANErrCodde check_fpuset(const FpuSelection &fpu_selection);
+    E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
     void need_ping(const t_grid_state &gs,
                    const FpuSelection &fpu_selection,
                    FpuSelection &fpu_ping_selection_ret);
@@ -214,11 +219,12 @@ private:
 
     EtherCANInterfaceConfig config;
 
-    // TODO: Eventually merge t_wtable and the "reversed" bool into a single
-    // data structure, and just have one map instead of two?
-    // TODO: Use fixed-size list of MAX_NUM_POSITIONERS for both data structures,
-    // like the t_fpuset structures etc do?
-    std::map<int, t_wtable> last_wavetable; // <fpu_id, wavetable>
+    // TODO: Use fixed-size array of MAX_NUM_POSITIONERS like the t_fpuset
+    // structures etc do?
+    t_wtable last_wavetable;
+
+    // TODO: Use fixed-size array of MAX_NUM_POSITIONERS like the t_fpuset
+    // structures etc do?
     std::map<int, bool> wf_reversed; // <fpu_id, reversed>
 
     bool wavetables_incomplete = false;

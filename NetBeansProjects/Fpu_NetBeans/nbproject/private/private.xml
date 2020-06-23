@@ -9,6 +9,7 @@
         <group>
             <file>file:/home/bartw/BartsStuff/fpu_driver_github/src/UnprotectedGridDriver.C</file>
             <file>file:/home/bartw/BartsStuff/fpu_driver_github/include/UnprotectedGridDriver.h</file>
+            <file>file:/home/bartw/BartsStuff/fpu_driver_github/src/GridDriver.C</file>
             <file>file:/home/bartw/BartsStuff/fpu_driver_github/NetBeansProjects/Fpu_NetBeans/main.cpp</file>
         </group>
     </open-files>

@@ -504,7 +504,7 @@ bool UnprotectedGridDriver::wavetable_was_received(const t_wtable &wtable,
     }
 
     return (wtable_contains_fpu_id && (fpu_state.state == target_state) &&
-            ((fpu_state.last_status == 0) || (allow_unconfirmed &&
+            ((fpu_state.last_status == MCE_FPU_OK) || (allow_unconfirmed &&
                     (fpu_state.last_status == MCE_NO_CONFIRMATION_EXPECTED))));
 }
 
@@ -594,10 +594,15 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 
         _pre_config_motion_hook(wtable, gs, fpuset, wmode);
         bool update_config = false;
+        // TODO: The following is a quite large data structure which will
+        // be stored on the local stack - is this OK? (stack overflow?)
+        // Or, better to create it on the heap using a std::unique_ptr?
+        // (N.B. But it's an array, so if use unique_ptr then would need to
+        // encapsulate the array into a structure or class)
         t_grid_state prev_gs;
         _gd->getGridState(prev_gs);
 
-        // TODO: Carefulyl check the following logic against the 3-deep-nested
+        // TODO: Carefully check the following logic against the 3-deep-nested
         // "try" blocks in the equivalent Python code
         result = _gd->configMotion(wtable, gs, fpuset, allow_uninitialized,
                                    ruleset_version);
@@ -620,27 +625,50 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         if (update_config)
         {
             // Accept configured wavetable entries
-            for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+            for (auto it = wtable.begin(); it != wtable.end(); )
             {
-                if (wavetable_was_received(wtable, fpu_id, gs.FPU_state[fpu_id]))
+
+                // TODO: Test that it->fpu_id < MAX_NUM_POSITIONERS here?
+
+                if (wavetable_was_received(wtable, it->fpu_id,
+                                           gs.FPU_state[it->fpu_id]))
                 {
-                    // ******** TODO: The following statement doesn't build yet
-                    // because type mismatch
+                    // ******** TODO: The following code is just a guess for
+                    // now - e.g. not sure if need to add new fpu_id entry to
+                    // last_wavetable if doesn't already exist?
+                    bool fpu_id_found = false;
+                    for (int i = 0; i < last_wavetable.size(); i++)
+                    {
+                        if (last_wavetable[i].fpu_id == it->fpu_id)
+                        {
+                            last_wavetable[i].steps = it->steps;
+                            fpu_id_found = true;
+                            break;
+                        }
+                    }
+                    if (!fpu_id_found)
+                    {
+                        last_wavetable.push_back(*it);
+                    }
 
-                    last_wavetable[fpu_id] = wtable[fpu_id];
+                    it++;
                 }
+                else
+                {
+                    it = wtable.erase(it);
+                }
+                
+                _update_error_counters(prev_gs.FPU_state[it->fpu_id],
+                                       gs.FPU_state[it->fpu_id]);
             }
-
 
             _post_config_motion_hook(wtable, gs, fpuset);
         }
 
-
-
-
-
     }
 
+
+    // TODO: Generate the required return values
 
 }
 
