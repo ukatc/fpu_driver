@@ -32,8 +32,21 @@ class GridDriver : public UnprotectedGridDriver
 {
     //..........................................................................
 public:
-    GridDriver();
+    // TODO: dummy_val is just a placeholder for now - need to implement
+    // properly
+    GridDriver(int dummy_val);
 
+    //............................................
+    // TODO: Ad-hoc functions for Boost.Python wrapper testing only - remove
+    // when no longer needed
+    int boostPythonIncrement();
+    double boostPythonDivide(double dividend, double divisor);
+    int boostPythonGetNumFPUs();
+    // TODO: Ad-hoc test variable only - remove when no longer needed
+    int dummyCounter = 0;
+    //............................................
+
+    // TODO: Is a destructor needed?
 
     //..........................................................................
 private:    

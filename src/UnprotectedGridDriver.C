@@ -745,7 +745,7 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
         if ((result == DE_OK) || refresh_state)
         {
             // Execute a ping to update positions
-            // (this is only needed for protocol version 1)
+            // (this is only needed for protocol version 1)   <== TODO: Follow up on this
             t_grid_state move_gs;
             _gd->getGridState(move_gs);
             usleep((useconds_t)(0.1 * 1000000.0));
@@ -781,26 +781,6 @@ UnprotectedGridDriver::~UnprotectedGridDriver()
     // TODO: Close/delete any other non-RAII objects here - see 
     // FpuGridDriver.py -> UnprotectedGridDriver -> __del__
 
-}
-
-//..............................................................................
-// TODO: Boost.Python wrapper test member functions - remove eventually
-//..............................................................................
-
-int UnprotectedGridDriver::boostPythonIncrement()
-{
-    dummyCounter++;
-    return dummyCounter;
-}
-
-double UnprotectedGridDriver::boostPythonDivide(double dividend, double divisor)
-{
-    return dividend / divisor;
-}
-
-int UnprotectedGridDriver::boostPythonGetNumFPUs()
-{
-    return config.num_fpus;
 }
 
 

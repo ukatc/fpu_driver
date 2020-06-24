@@ -78,7 +78,8 @@ typedef struct
 
 typedef FpuPosition FpuPositions[MAX_NUM_POSITIONERS];
 
-class UnprotectedGridDriverTester;  // Forward reference
+// Forward reference for friend class declaration in UnprotectedGridDriver below
+class UnprotectedGridDriverTester;
 
 
 //==============================================================================
@@ -138,12 +139,6 @@ public:
     // TODO: Check if this virtual destructor stuff is correct
     // TODO: Need a real destructor as well?? Or are all member objects RAII ones?
     virtual ~UnprotectedGridDriver();
-
-    // TODO: Ad-hoc functions for Boost.Python wrapper testing only - remove
-    // when no longer needed
-    int boostPythonIncrement();
-    double boostPythonDivide(double dividend, double divisor);
-    int boostPythonGetNumFPUs();
 
     //..........................................................................
 protected:
@@ -211,6 +206,8 @@ protected:
                                            const t_grid_state &move_gs,
                                            const t_fpuset &fpuset) {}
 
+    EtherCANInterfaceConfig config;
+
     //..........................................................................
 private:
   
@@ -232,8 +229,6 @@ private:
                                        E_FPU_STATE target_state = FPST_READY_FORWARD);
     void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed);
 
-    EtherCANInterfaceConfig config;
-
     // TODO: Use fixed-size array of MAX_NUM_POSITIONERS like the t_fpuset
     // structures etc do?
     t_wtable last_wavetable;
@@ -252,9 +247,6 @@ private:
 
     // TODO: Add locked_gateways here, but need to convert Python devicelock.py
     // to C++ first (and use a Linux named semaphore instead of a lock file for this?)
-
-    // TODO: Ad-hoc test variable only - remove when no longer needed
-    int dummyCounter = 0;
 
     //..........................................................................
 };

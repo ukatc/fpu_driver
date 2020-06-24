@@ -29,18 +29,14 @@
 //   - Open interactive Python shell from Bash shell by typing "python -i"
 //   - Do: from griddriver import *
 //
-// Basic UnprotectedGridDriver instantiation and test function:
-//   - Do: ugd=UnprotectedGridDriver(1, False, 1, 2, 3, 4, LOG_INFO, "blah", 5.5, 6.6, 7.7, 8.8)
-//     (N.B. Dummy values for now)
-//   - Do: ugd.boostPythonIncrement() repeatedly - on first invocation
-//     should display 1,
-//     and then increment with each subsequent invocation
-//
-// Basic GridDriver instantiation and dummy connect() function:
-//    >>> from griddriver import *
-//    >>> gd=GridDriver()
-//    >>> gd.connect([1,2,3])
-//    griddriver.E_EtherCANErrCode.DE_OK
+// Basic GridDriver instantiation and usage:
+//   - Do: gd=GridDriver(123)    (N.B. Dummy values for now)
+//   - Do: gd.boostPythonIncrement() repeatedly - on first invocation should
+//     display 1, and then increment with each subsequent invocation
+//   - Do: gd.boostPythonDivide(23.0, 5.0)
+//             4.6
+//   - Do: gd.connect([1,2,3])
+//             griddriver.E_EtherCANErrCode.DE_OK
 
 #include <boost/python.hpp>
 
@@ -63,6 +59,11 @@ using namespace mpifps;
 class WrappedGridDriver : public GridDriver
 {
 public:
+    WrappedGridDriver(int dummy_val) : GridDriver{ dummy_val }
+    {
+
+    }
+
     E_EtherCANErrCode wrapped_connect(list& list_gateway_addresses)
     {
         // TODO: Implement this - needs to be similar to
@@ -86,6 +87,20 @@ BOOST_PYTHON_MODULE(griddriver)
 
     DEFINE_ENUM_EtherCANErrCode
 
+#if 0
+    // Old UnprotectedGridDriver wrapper stuff - was for initial experimentation only
+
+    // To use:
+    // Firstly, set things up:
+    //   - Open a Bash shell in this directory
+    //   - Do: source build_griddriver_wrapped.sh   (produces griddriver.so library file)
+    //   - Open interactive Python shell from Bash shell by typing "python -i"
+    //   - Do: from griddriver import *
+    // Basic UnprotectedGridDriver instantiation and test function:
+    //   - Do: ugd=UnprotectedGridDriver(1, False, 1, 2, 3, 4, LOG_INFO, "blah", 5.5, 6.6, 7.7, 8.8)
+    //     (N.B. Dummy values for now)
+    //   - Do: ugd.boostPythonIncrement() repeatedly - on first invocation should
+    //     display 1, and then increment with each subsequent invocation
 
     class_<UnprotectedGridDriver>("UnprotectedGridDriver", init<
         // NOTE: Boost.Python only allows up to 14 function arguments
@@ -103,12 +118,31 @@ BOOST_PYTHON_MODULE(griddriver)
         double            // motor_max_rel_increase
         >())
 
+        // TODO: Ad-hoc test functions only - remove when no longer needed
+        .def("boostPythonIncrement", &UnprotectedGridDriver::boostPythonIncrement)
+        .def("boostPythonDivide", &UnprotectedGridDriver::boostPythonDivide)
+        .def("boostPythonGetNumFPUs", &UnprotectedGridDriver::boostPythonGetNumFPUs)
+    ;
+#endif // 0
 
+    // TODO: Figure out how constructor needs to be specified for this derived
+    // class, because WrappedGridDriver is derived from GridDriver, which is
+    // derived from UnprotectedGridDriver
+    class_<WrappedGridDriver>("GridDriver", init<
+        // NOTE: Boost.Python only allows up to 14 function arguments
+        int               // dummy_val
+        >())
+        .def("connect", &WrappedGridDriver::wrapped_connect)
+
+        // TODO: Ad-hoc test functions only - remove when no longer needed
+        .def("boostPythonIncrement", &WrappedGridDriver::boostPythonIncrement)
+        .def("boostPythonDivide", &WrappedGridDriver::boostPythonDivide)
+        .def("boostPythonGetNumFPUs", &WrappedGridDriver::boostPythonGetNumFPUs)
+
+#if 0
         // TODO: If use the following then need to use shared consts for
         // ALL of the following (so that shared with FPUGridDriver.h
         // constructor defaults)
-
-#if 0        
         bp::arg("nfpus") = DEFAULT_NUM_FPUS,
         bp::arg("confirm_each_step") = false,
         bp::arg("configmotion_max_retry_count") = 5,
@@ -121,24 +155,10 @@ BOOST_PYTHON_MODULE(griddriver)
         bp::arg("motor_maximum_frequency") = MOTOR_MAX_STEP_FREQUENCY,
         bp::arg("motor_max_start_frequency") = MOTOR_MAX_START_FREQUENCY
         bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
-#endif // 0        
-
-        // TODO: Ad-hoc test functions only - remove when no longer needed
-        .def("boostPythonIncrement", &UnprotectedGridDriver::boostPythonIncrement)
-        .def("boostPythonDivide", &UnprotectedGridDriver::boostPythonDivide)
-        .def("boostPythonGetNumFPUs", &UnprotectedGridDriver::boostPythonGetNumFPUs)
+#endif // 0
     ;
 
-    // TODO: Figure out how constructor needs to be specified for this derived
-    // class, because WrappedGridDriver is derived from GridDriver, which is
-    // derived from UnprotectedGridDriver
-    class_<WrappedGridDriver>("GridDriver", init<>())
-        .def("connect", &WrappedGridDriver::wrapped_connect)
-
-    ;
 }
-
-
 
 
 //******************************************************************************
