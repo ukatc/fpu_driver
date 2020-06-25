@@ -24,6 +24,7 @@
 #include <map>
 #include <memory>
 #include "E_LogLevel.h"
+#include "E_GridState.h"
 #include "InterfaceConstants.h"
 #include "FPUConstants.h"
 #include "EtherCANInterface.h"
@@ -108,6 +109,8 @@ public:
         double motor_max_start_frequency = MOTOR_MAX_START_FREQUENCY,
         double motor_max_rel_increase = MAX_ACCELERATION_FACTOR
         );
+
+    E_GridState getGridState(t_grid_state &grid_state_ret);
 
     E_EtherCANErrCode connect(const int ngateways,
                               const t_gateway_address gateway_addresses[]);

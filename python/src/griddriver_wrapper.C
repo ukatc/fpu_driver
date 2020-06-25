@@ -64,11 +64,36 @@ public:
 
     }
 
+    WrapGridState wrapped_getGridState()
+    {
+        WrapGridState grid_state;
+        getGridState(grid_state);
+        return grid_state;
+    }
+
     E_EtherCANErrCode wrapped_connect(list& list_gateway_addresses)
     {
         // TODO: Implement this - needs to be similar to
         // WrapEtherCANInterface::connectGateways()
 
+        return DE_OK; 
+    }
+
+    E_EtherCANErrCode wrapped_findDatum(WrapGridState &grid_state)
+    {
+
+        return DE_OK; 
+    }
+
+    E_EtherCANErrCode wrapped_configMotion(void)
+    {
+        
+        return DE_OK; 
+    }
+
+    E_EtherCANErrCode wrapped_executeMotion(void)
+    {
+        
         return DE_OK; 
     }
 
@@ -81,7 +106,7 @@ public:
 
 BOOST_PYTHON_MODULE(griddriver)   
 {
-    scope().attr("__version__") = (strlen(VERSION) > 1) ?  (((const char *)VERSION) + 1) : "?.?.?";
+    scope().attr("__version__") = (strlen(VERSION) > 1) ? (((const char *)VERSION) + 1) : "?.?.?";
 
     DEFINE_ENUM_E_LogLevel
 
@@ -132,7 +157,11 @@ BOOST_PYTHON_MODULE(griddriver)
         // NOTE: Boost.Python only allows up to 14 function arguments
         int               // dummy_val
         >())
+        .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
         .def("connect", &WrappedGridDriver::wrapped_connect)
+        .def("findDatum", &WrappedGridDriver::wrapped_findDatum)
+        .def("configMotion", &WrappedGridDriver::wrapped_configMotion)
+        .def("executeMotion", &WrappedGridDriver::wrapped_executeMotion)
 
         // TODO: Ad-hoc test functions only - remove when no longer needed
         .def("boostPythonIncrement", &WrappedGridDriver::boostPythonIncrement)

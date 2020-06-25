@@ -48,7 +48,8 @@ static void testUnprotectedGridDriver()
 
 static void testGridDriver()
 {
-    GridDriver grid_driver;
+    const int dummy_val = 456;
+    GridDriver grid_driver(dummy_val);
     
     double blah = grid_driver.boostPythonDivide(2.0, 1.0);
 }

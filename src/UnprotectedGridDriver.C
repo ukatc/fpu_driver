@@ -285,6 +285,13 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 #endif // NOTFPU_SET_IS_VECTOR
 
 //------------------------------------------------------------------------------
+E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
+{
+    E_GridState state_summary = _gd->getGridState(grid_state_ret);
+    return state_summary;
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs, 
                     const t_datum_search_flags &orig_search_modes,
                     enum E_DATUM_SELECTION selected_arm, const t_fpuset &fpuset,
