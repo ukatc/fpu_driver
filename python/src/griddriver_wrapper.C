@@ -42,7 +42,7 @@
 
 #include "GridDriver.h"
 #include "InterfaceConstants.h"
-#include "fpuwrapping_shared.h"
+#include "FpuBPShared_General.h"
 
 using namespace boost::python;
 namespace bp = boost::python;

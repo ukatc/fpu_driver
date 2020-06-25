@@ -39,7 +39,7 @@
 #include "../../include/E_GridState.h"
 #include "../../include/EtherCANInterface.h"
 #include "../../include/GridState.h"
-#include "../../python/src/fpuwrapping_shared.h"
+#include "../../python/src/FpuBPShared_General.h"
 
 PyObject* EtherCANExceptionTypeObj = 0;
 PyObject* InvalidWaveformExceptionTypeObj = 0;

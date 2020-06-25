@@ -11,14 +11,14 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME fpuwrapping_shared.h
+// NAME FpuBPShared_General.h
 //
 // TODO: Put description here
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FPUWRAPPING_SHARED_H
-#define FPUWRAPPING_SHARED_H
+#ifndef FPUBPSHARED_GENERAL_H
+#define FPUBPSHARED_GENERAL_H
 
 #include <exception>
 #include <string>
@@ -366,5 +366,5 @@ private:
 
 // -----------------------------------------------------------------------------
 
-#endif // FPUWRAPPING_SHARED_H
+#endif // FPUBPSHARED_GENERAL_H
 
