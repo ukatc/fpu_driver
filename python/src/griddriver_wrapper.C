@@ -108,9 +108,10 @@ BOOST_PYTHON_MODULE(griddriver)
 {
     scope().attr("__version__") = (strlen(VERSION) > 1) ? (((const char *)VERSION) + 1) : "?.?.?";
 
-    DEFINE_ENUM_E_LogLevel
-
-    DEFINE_ENUM_EtherCANErrCode
+    //..........................................................................
+    // Include shared Boost.Python module content
+#include "FpuBPShared_ModuleContent.C"
+    //..........................................................................
 
 #if 0
     // Old UnprotectedGridDriver wrapper stuff - was for initial experimentation only

@@ -1177,6 +1177,10 @@ BOOST_PYTHON_MODULE(ethercanif)
     // include summary function
     def("getGridStateSummary", wrapGetGridStateSummary);
 
+    //..........................................................................
+    // Include shared Boost.Python module content
+#include "FpuBPShared_ModuleContent.C"
+    //..........................................................................
 
     enum_<E_FPU_STATE>("E_FPU_STATE")
     .value("FPST_UNKNOWN", FPST_UNKNOWN)
@@ -1200,8 +1204,6 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("DS_CONNECTED", DS_CONNECTED)
     .value("DS_ASSERTION_FAILED", DS_ASSERTION_FAILED)
     .export_values();
-
-    DEFINE_ENUM_E_LogLevel
 
     /* The following codes are used in the last_status flag.  These
        values depend on the firmware protocol. It is legitimate to use
@@ -1288,8 +1290,6 @@ BOOST_PYTHON_MODULE(ethercanif)
 
     .value("NUM_CAN_COMMANDS", NUM_CAN_COMMANDS)
     .export_values();
-
-    DEFINE_ENUM_EtherCANErrCode
 
     enum_<E_GridState>("E_GridState")
     .value("GS_UNKNOWN", GS_UNKNOWN)
