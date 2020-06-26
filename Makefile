@@ -87,7 +87,8 @@ _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h		      \
 	ethercan/response_handlers/handle_WarnLimitAlpha_warning.h		      \
 	ethercan/response_handlers/handle_WriteSerialNumber_response.h                \
 	ethercan/sync_utils.h ethercan/time_utils.h                                   \
-	ethercan/decode_CAN_response.h
+	ethercan/decode_CAN_response.h \
+	../python/src/FpuBPShared_General.h
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS)) Makefile
 
@@ -118,7 +119,8 @@ _OBJ = EtherCANInterface.o AsyncInterface.o FPUArray.o GridState.o	\
 	handle_UnlockUnit_response.o handle_WarnCANOverflow_warning.o	\
 	handle_WarnCollisionBeta_warning.o				\
 	handle_WarnLimitAlpha_warning.o					\
-	handle_WriteSerialNumber_response.o
+	handle_WriteSerialNumber_response.o \
+	../python/src/FpuBPShared_General.o
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
@@ -149,7 +151,8 @@ _SRC = AsyncInterface.C CommandPool.C CommandQueue.C			\
 	handle_WarnCollisionBeta_warning.C				\
 	handle_WarnLimitAlpha_warning.C					\
 	handle_WriteSerialNumber_response.C SBuffer.C sync_utils.C	\
-	TimeOutList.C time_utils.C
+	TimeOutList.C time_utils.C \
+	../python/src/FpuBPShared_General.C
 
 SRC = $(patsubst %,$(SRCDIR)/%,$(_SRC))
 
@@ -157,17 +160,21 @@ SRC = $(patsubst %,$(SRCDIR)/%,$(_SRC))
 
 # This target builds the default wrapper, without link time optimization.
 
+# ******* TODO: BW changed -lboost_python to -lboost_python27 to make it build
+# on my Ubuntu Linux VM with Boost 1.72
 wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so \
-            python/src/ethercanif.C -L./lib  -lethercan -lboost_python $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
+            python/src/ethercanif.C -L./lib  -lethercan -lboost_python27 $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
 
 # This target variant is using link time optimization, aka LTO,
 # to build the python test module directly.
 # LTO is probably useful because we have many small handler functions which
 # run in performance-critical loops. (With version v2.0.2, now checked to run correctly)
+# ******* TODO: BW changed -lboost_python to -lboost_python27 to make it build
+# on my Ubuntu Linux VM with Boost 1.72
 wrapper-lto:  python/src/ethercanif.C $(SRC) $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so $(CXXFLAGS_LTO)\
-            python/src/ethercanif.C $(SRC)    -lboost_python  -DVERSION=\"$(VERSION)\"
+            python/src/ethercanif.C $(SRC) -lboost_python27 -DVERSION=\"$(VERSION)\"
 
 
 version: force

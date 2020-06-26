@@ -22,14 +22,20 @@
 
 #include <exception>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <sstream>
 #include <iomanip>
 #include "InterfaceState.h"
 #include "T_GridState.h"
+#include "T_GatewayAddress.h"
 #include "FPUState.h"
 
 using namespace mpifps;
+
+std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s);
+std::ostringstream& operator<<(std::ostringstream &out, const E_InterfaceState &s);
+
 
 // -----------------------------------------------------------------------------
 class WrapFPUState : public t_fpu_state
@@ -295,6 +301,39 @@ private:
     std::string _message;
     mpifps::E_EtherCANErrCode _errcode;
 };
+
+
+//------------------------------------------------------------------------------
+class WrapGatewayAddress : public t_gateway_address
+{
+public:
+    WrapGatewayAddress()
+    {
+        ip = DEFAULT_GATEWAY_IP;
+        port = DEFAULT_GATEWAY_PORT;
+    };
+    WrapGatewayAddress(const std::string& new_ip, const int new_port)
+    {
+        _ip = new_ip;
+        ip = _ip.c_str();
+        port = new_port;
+    };
+    WrapGatewayAddress(const std::string& new_ip)
+    {
+        _ip = new_ip;
+        ip = _ip.c_str();
+        port = DEFAULT_GATEWAY_PORT;
+    };
+
+    bool operator==(const  t_gateway_address &a) const
+    {
+        return (*this) == a;
+    };
+private:
+    std::string _ip;
+
+};
+
 
 // -----------------------------------------------------------------------------
 
