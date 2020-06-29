@@ -17,44 +17,6 @@
 
 #include "FpuBPShared_General.h"
 
-//................................................
-#ifdef COMBINED_INCLUSION
-//................................................
-
-
-//................................................
-#else // NOT COMBINED_INCLUSION
-//................................................
-
-#include <string.h>
-#include <iostream>
-#include <iomanip>
-#include <string>
-#include <vector>
-
-#include <boost/python/class.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/enum.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/str.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/exception_translator.hpp>
-
-#include "../../include/ethercan/E_CAN_COMMAND.h"
-#include "../../include/T_GridState.h"
-#include "../../include/E_GridState.h"
-#include "../../include/EtherCANInterface.h"
-#include "../../include/GridState.h"
-
-//................................................
-#endif // NOT COMBINED_INCLUSION
-//................................................
-
 
 PyObject* EtherCANExceptionTypeObj = 0;
 PyObject* InvalidWaveformExceptionTypeObj = 0;
@@ -79,25 +41,6 @@ PyObject* HardwareProtectionErrorExceptionTypeObj = 0;
 
 namespace   // Avoid cluttering the global namespace.
 {
-
-//................................................
-#ifndef COMBINED_INCLUSION // NOT COMBINED_INCLUSION
-//................................................
-
-using namespace mpifps;
-
-using namespace mpifps::ethercanif;
-
-using boost::python::object;
-using boost::python::extract;
-using boost::python::list;
-using boost::python::dict;
-using boost::python::tuple;
-using boost::python::str;
-
-//................................................
-#endif // NOT COMBINED_INCLUSION
-//................................................
 
 /* ---------------------------------------------------------------------------*/
 E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)

@@ -39,39 +39,8 @@
 //             griddriver.E_EtherCANErrCode.DE_OK
 
 #include "FpuBPShared_General.h"
-
-//................................................
-#ifdef COMBINED_INCLUSION
-//................................................
-
 #include "GridDriver.h"
 #include "InterfaceConstants.h"
-
-//................................................
-#else // NOT COMBINED_INCLUSION
-//................................................
-
-#include <boost/python.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-
-#include "GridDriver.h"
-#include "InterfaceConstants.h"
-
-using namespace boost::python;
-namespace bp = boost::python;
-
-using namespace mpifps;
-
-using boost::python::object;
-using boost::python::extract;
-using boost::python::list;
-using boost::python::dict;
-using boost::python::tuple;
-using boost::python::str;
-
-//................................................
-#endif // NOT COMBINED_INCLUSION
-//................................................
 
 
 // NOTE: The name in BOOST_PYTHON_MODULE() below should match the griddriver.C

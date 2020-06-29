@@ -20,14 +20,6 @@
 #ifndef FPUBPSHARED_GENERAL_H
 #define FPUBPSHARED_GENERAL_H
 
-//...............................
-#define COMBINED_INCLUSION
-//...............................
-
-//................................................
-#ifdef COMBINED_INCLUSION
-//................................................
-
 #include <string.h>
 #include <iostream>
 #include <iomanip>
@@ -54,7 +46,6 @@
 #include "../../include/GridState.h"
 
 using namespace mpifps;
-
 using namespace mpifps::ethercanif;
 
 using boost::python::object;
@@ -63,31 +54,6 @@ using boost::python::list;
 using boost::python::dict;
 using boost::python::tuple;
 using boost::python::str;
-
-//................................................
-#else // NOT COMBINED_INCLUSION
-//................................................
-
-#include <exception>
-#include <string>
-#include <cstring>
-#include <vector>
-#include <sstream>
-#include <iomanip>
-#include "InterfaceState.h"
-#include "T_GridState.h"
-#include "T_GatewayAddress.h"
-#include "FPUState.h"
-
-using namespace mpifps;
-
-//#include <boost/python.hpp>
-//namespace bp = boost::python;
-
-//................................................
-#endif // NOT COMBINED_INCLUSION
-//................................................
-
 
 std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s);
 std::ostringstream& operator<<(std::ostringstream &out, const E_InterfaceState &s);
