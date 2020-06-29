@@ -119,8 +119,7 @@ _OBJ = EtherCANInterface.o AsyncInterface.o FPUArray.o GridState.o	\
 	handle_UnlockUnit_response.o handle_WarnCANOverflow_warning.o	\
 	handle_WarnCollisionBeta_warning.o				\
 	handle_WarnLimitAlpha_warning.o					\
-	handle_WriteSerialNumber_response.o \
-	../python/src/FpuBPShared_General.o
+	handle_WriteSerialNumber_response.o
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
@@ -151,8 +150,7 @@ _SRC = AsyncInterface.C CommandPool.C CommandQueue.C			\
 	handle_WarnCollisionBeta_warning.C				\
 	handle_WarnLimitAlpha_warning.C					\
 	handle_WriteSerialNumber_response.C SBuffer.C sync_utils.C	\
-	TimeOutList.C time_utils.C \
-	../python/src/FpuBPShared_General.C
+	TimeOutList.C time_utils.C
 
 SRC = $(patsubst %,$(SRCDIR)/%,$(_SRC))
 
@@ -164,7 +162,7 @@ SRC = $(patsubst %,$(SRCDIR)/%,$(_SRC))
 # on my Ubuntu Linux VM with Boost 1.72
 wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so \
-            python/src/ethercanif.C -L./lib  -lethercan -lboost_python27 $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
+            python/src/ethercanif.C python/src/FpuBPShared_General.C -L./lib  -lethercan -lboost_python27 $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
 
 # This target variant is using link time optimization, aka LTO,
 # to build the python test module directly.
@@ -174,7 +172,7 @@ wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 # on my Ubuntu Linux VM with Boost 1.72
 wrapper-lto:  python/src/ethercanif.C $(SRC) $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so $(CXXFLAGS_LTO)\
-            python/src/ethercanif.C $(SRC) -lboost_python27 -DVERSION=\"$(VERSION)\"
+            python/src/ethercanif.C python/src/FpuBPShared_General.C $(SRC) -lboost_python27 -DVERSION=\"$(VERSION)\"
 
 
 version: force

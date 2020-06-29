@@ -15,6 +15,17 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "FpuBPShared_General.h"
+
+//................................................
+#ifdef COMBINED_INCLUSION
+//................................................
+
+
+//................................................
+#else // NOT COMBINED_INCLUSION
+//................................................
+
 #include <string.h>
 #include <iostream>
 #include <iomanip>
@@ -39,7 +50,11 @@
 #include "../../include/E_GridState.h"
 #include "../../include/EtherCANInterface.h"
 #include "../../include/GridState.h"
-#include "../../python/src/FpuBPShared_General.h"
+
+//................................................
+#endif // NOT COMBINED_INCLUSION
+//................................................
+
 
 PyObject* EtherCANExceptionTypeObj = 0;
 PyObject* InvalidWaveformExceptionTypeObj = 0;
@@ -65,6 +80,10 @@ PyObject* HardwareProtectionErrorExceptionTypeObj = 0;
 namespace   // Avoid cluttering the global namespace.
 {
 
+//................................................
+#ifndef COMBINED_INCLUSION // NOT COMBINED_INCLUSION
+//................................................
+
 using namespace mpifps;
 
 using namespace mpifps::ethercanif;
@@ -76,6 +95,9 @@ using boost::python::dict;
 using boost::python::tuple;
 using boost::python::str;
 
+//................................................
+#endif // NOT COMBINED_INCLUSION
+//................................................
 
 /* ---------------------------------------------------------------------------*/
 E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
