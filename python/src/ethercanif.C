@@ -155,7 +155,8 @@ void translate_interface_error(EtherCANException const& e)
 
 
 /* ---------------------------------------------------------------------------*/
-class WrapEtherCANInterface : public EtherCANInterface
+class WrapEtherCANInterface : public EtherCANInterface,
+                              protected WrapperSharedBase
 {
 private:
     const EtherCANInterfaceConfig config;

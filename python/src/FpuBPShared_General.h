@@ -60,6 +60,10 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_InterfaceState &
 void checkInterfaceError(E_EtherCANErrCode ecode);
 
 
+// -----------------------------------------------------------------------------
+class WrapperSharedBase
+{
+};
 
 // -----------------------------------------------------------------------------
 class WrapFPUState : public t_fpu_state

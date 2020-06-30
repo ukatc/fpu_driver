@@ -50,7 +50,8 @@
 // https://stackoverflow.com/questions/24226001/importerror-dynamic-module-does-not-define-init-function-initfizzbuzz
 
 
-class WrappedGridDriver : public GridDriver
+class WrappedGridDriver : public GridDriver,
+                          protected WrapperSharedBase
 {
 public:
     WrappedGridDriver(int dummy_val) : GridDriver{ dummy_val }
