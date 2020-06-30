@@ -57,6 +57,8 @@ using boost::python::str;
 
 std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s);
 std::ostringstream& operator<<(std::ostringstream &out, const E_InterfaceState &s);
+void checkInterfaceError(E_EtherCANErrCode ecode);
+
 
 
 // -----------------------------------------------------------------------------
