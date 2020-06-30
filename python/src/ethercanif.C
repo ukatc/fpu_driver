@@ -203,36 +203,12 @@ public:
 
     E_EtherCANErrCode connectGateways(list& list_gateway_addresses)
     {
-        const int actual_num_gw = len(list_gateway_addresses);
-
         t_gateway_address address_array[MAX_NUM_GATEWAYS];
-
-        if (actual_num_gw > MAX_NUM_GATEWAYS)
-        {
-            throw EtherCANException("Number of EtherCAN gateways exceed EtherCAN interface limit",
-                                    DE_INVALID_CONFIG);
-        }
-        if (actual_num_gw == 0)
-        {
-            throw EtherCANException("Need to configure at least one EtherCAN gateway",
-                                    DE_INSUFFICENT_NUM_GATEWAYS);
-        }
-
-        for (int i=0; i < actual_num_gw; i++)
-        {
-
-            // extract entry
-            WrapGatewayAddress address_entry =
-                extract<WrapGatewayAddress>(
-                    list_gateway_addresses[i]);
-            // cast (slice) to internal parameter type
-            address_array[i] = static_cast<t_gateway_address>(
-                                   address_entry);
-        }
+        const int actual_num_gw = convertGatewayAddresses(list_gateway_addresses,
+                                                          address_array);
         E_EtherCANErrCode ecode = connect(actual_num_gw, address_array);
         checkInterfaceError(ecode);
         return ecode;
-
     };
 
 #pragma GCC diagnostic push

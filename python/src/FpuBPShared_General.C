@@ -20,7 +20,61 @@
 #include "FpuBPShared_General.h"
 
 
-// -----------------------------------------------------------------------------
+//==============================================================================
+
+// TODO: BW Comment: the following #pragma's (and the "#pragma GCC diagnostic pop"
+// after the end of the function) suppress the following obscure error which
+// happened when building ethercanif using "make wrapper":
+//     "In member function ‘int WrapperSharedBase::convertGatewayAddresses(...)’:
+//      python/src/FpuBPShared_General.C:28:5: error: assuming signed overflow
+//      does not occur when changing X +- C1 cmp C2 to X cmp C2 -+ C1 [-Werror=strict-overflow]"
+// This error is caused because the Makefile has the compiler option
+// "-Wstrict-overflow=4" enabled (see CXXFLAGS), which apparently (see Google)
+// causes the optimiser to flag obscure optimisation risks in highly
+// code-specific conditions.
+// TODO: Do we need the "-Wstrict-overflow=4" option enabled in the Makefile
+// (e.g. has it caught known issues in the past), or does it just create these
+// unneccessarily-pendantic error messages which need to be suppressed with
+// these messy #pragma's?
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-overflow"
+int WrapperSharedBase::convertGatewayAddresses(const bp::list &list_gateway_addresses,
+                                    t_gateway_address *address_array_to_fill)
+{
+    // N.B. Upon entry, address_array_to_fill[] must have been defined as an
+    // array of size MAX_NUM_GATEWAYS, e.g.:
+    //       t_gateway_address address_array[MAX_NUM_GATEWAYS];
+    //
+    // Returns the number of gateway addresses in list_gateway_addresses.
+
+    const int actual_num_gw = bp::len(list_gateway_addresses);
+
+    if (actual_num_gw > MAX_NUM_GATEWAYS)
+    {
+        throw EtherCANException("Number of EtherCAN gateways exceed EtherCAN interface limit",
+                                DE_INVALID_CONFIG);
+    }
+    if (actual_num_gw == 0)
+    {
+        throw EtherCANException("Need to configure at least one EtherCAN gateway",
+                                DE_INSUFFICENT_NUM_GATEWAYS);
+    }
+
+    for (int i = 0; i < actual_num_gw; i++)
+    {
+        // Extract entry
+        WrapGatewayAddress address_entry =
+                        extract<WrapGatewayAddress>(list_gateway_addresses[i]);
+        // Cast (slice) to internal parameter type
+        address_array_to_fill[i] = static_cast<t_gateway_address>(address_entry);
+    }
+
+    return actual_num_gw;
+}
+#pragma GCC diagnostic pop
+
+
+//==============================================================================
 std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
 {
     switch(s)

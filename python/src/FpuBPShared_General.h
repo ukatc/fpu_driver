@@ -55,6 +55,8 @@ using boost::python::dict;
 using boost::python::tuple;
 using boost::python::str;
 
+namespace bp = boost::python;
+
 std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s);
 std::ostringstream& operator<<(std::ostringstream &out, const E_InterfaceState &s);
 void checkInterfaceError(E_EtherCANErrCode ecode);
@@ -63,6 +65,10 @@ void checkInterfaceError(E_EtherCANErrCode ecode);
 // -----------------------------------------------------------------------------
 class WrapperSharedBase
 {
+protected:
+    int convertGatewayAddresses(const bp::list &list_gateway_addresses,
+                                t_gateway_address *address_array_to_fill);
+
 };
 
 // -----------------------------------------------------------------------------
