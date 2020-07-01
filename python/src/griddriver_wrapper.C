@@ -68,10 +68,12 @@ public:
 
     E_EtherCANErrCode wrapped_connect(list& list_gateway_addresses)
     {
-        // TODO: Implement this - needs to be similar to
-        // WrapEtherCANInterface::connectGateways()
-
-        return DE_OK; 
+        t_gateway_address address_array[MAX_NUM_GATEWAYS];
+        const int actual_num_gw = convertGatewayAddresses(list_gateway_addresses,
+                                                          address_array);
+        E_EtherCANErrCode ecode = connect(actual_num_gw, address_array);
+        checkInterfaceError(ecode);
+        return ecode;
     }
 
     E_EtherCANErrCode wrapped_findDatum(WrapGridState &grid_state)

@@ -147,6 +147,16 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     // TODO: How to catch / indicate allocation failure? Add try/catch around
     // the following, OR use std::nothrow?
     _gd = new EtherCANInterface(config);
+    
+    // TODO: Is this the correct place to call initializeInterface()?
+    // (Johannes' Python wrapper code calls it from the WrapEtherCANInterface
+    // constructor)
+    // TODO: The Python wrapper code also has a checkInterfaceError(ecode) call
+    // after it (to flag any initialisation error to Python) - how to allow
+    // mimicking of this in WrappedGridDriver?
+    // TODO: Call deInitialize() from destructor, or elsewhere? BUT is already
+    // done from AsyncInterface destructor?
+    _gd->initializeInterface();
 }
 
 //------------------------------------------------------------------------------
@@ -792,18 +802,18 @@ UnprotectedGridDriver::~UnprotectedGridDriver()
 
 
 //==============================================================================
-
 void UnprotectedGridDriverTester::doTests()
 {
     //test_check_fpuset();
     
     //test_need_ping();
     
-    //test_connect();
+    test_connect();
     
-    test_findDatum();
+    //test_findDatum();
 }
 
+//------------------------------------------------------------------------------
 void UnprotectedGridDriverTester::test_check_fpuset()
 {
     E_EtherCANErrCode status;
@@ -816,6 +826,7 @@ void UnprotectedGridDriverTester::test_check_fpuset()
 #endif // NOT FPU_SET_IS_VECTOR
 }
 
+//------------------------------------------------------------------------------
 void UnprotectedGridDriverTester::test_need_ping()
 {
     t_grid_state grid_state;
@@ -845,20 +856,21 @@ void UnprotectedGridDriverTester::test_need_ping()
 #endif // NOT FPU_SET_IS_VECTOR 
 }
 
+//------------------------------------------------------------------------------
 void UnprotectedGridDriverTester::test_connect()
 {
-    // TODO: NOTE: I don't yet know what format of IP address is expected -
-    // just using a dummy format for now
-    // TODO: Also, t_gateway_address::ip is only a pointer - dangerous? Change
-    // this eventually? (e.g. to a std::String?)
-    const char *dummy_ip_str = "192.168.12.34";
-    t_gateway_address gateway_address = { dummy_ip_str, 12345 };
+    // TODO: t_gateway_address::ip is only a pointer - dangerous? Change this
+    // eventually? (e.g. to a std::string?)
+    const char *ip_address_str = "127.0.0.1";
+    uint16_t port_number = 4700;
+    t_gateway_address gateway_address = { ip_address_str, port_number };
     
     UnprotectedGridDriver ugd;
-    ugd.connect(1, &gateway_address);
+    E_EtherCANErrCode result = ugd.connect(1, &gateway_address);
     
 }
 
+//------------------------------------------------------------------------------
 void UnprotectedGridDriverTester::test_findDatum()
 {
     UnprotectedGridDriver ugd;

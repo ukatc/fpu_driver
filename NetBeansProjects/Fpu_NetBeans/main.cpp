@@ -38,7 +38,6 @@ int main(int argc, char** argv)
 }
 
 //------------------------------------------------------------------------------
-
 static void testUnprotectedGridDriver()
 {
     UnprotectedGridDriverTester ugd_tester;
@@ -46,6 +45,7 @@ static void testUnprotectedGridDriver()
     ugd_tester.doTests();
 }
 
+//------------------------------------------------------------------------------
 static void testGridDriver()
 {
     const int dummy_val = 456;
@@ -54,6 +54,7 @@ static void testGridDriver()
     double blah = grid_driver.boostPythonDivide(2.0, 1.0);
 }
 
+//------------------------------------------------------------------------------
 static void testFpuCounters()
 {
     FpuCounters fpu_counters;
@@ -62,6 +63,7 @@ static void testFpuCounters()
     void *raw_data_ptr = fpu_counters.getRawData(num_bytes);
 }
 
+//------------------------------------------------------------------------------
 static void testProtectionDB()
 {
     bool result_ok = protectionDB_Test();
