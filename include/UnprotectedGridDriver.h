@@ -112,7 +112,7 @@ public:
 
     E_GridState getGridState(t_grid_state &grid_state_ret);
 
-    E_EtherCANErrCode connect(const int ngateways,
+    E_EtherCANErrCode connect(int ngateways,
                               const t_gateway_address gateway_addresses[]);
     E_EtherCANErrCode disconnect();
 

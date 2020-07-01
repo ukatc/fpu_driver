@@ -160,25 +160,22 @@ UnprotectedGridDriver::UnprotectedGridDriver(
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode UnprotectedGridDriver::connect(const int ngateways,
+E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
                                 const t_gateway_address gateway_addresses[])
 {
-    // TODO: Adapt from Python code below
 
-    // TODO: Also implement Python binding for this function - approach can be
-    // seen in ethercanif.C -> connectGateways() - binding function can just
-    // call it? BUT FPUGridDriver Python version does more with locking etc
-    // Adjust the entry parameter format above if necessary
+    // TODO: Also add gateway locking/unlocking code like the Python version
+    // of this function does? (see below). If so then do NOT use my
+    // DeviceLock.C/h WIP conversion from the Python-equivalent module
+    // because too clunky - instead, use Linux named semaphores?
 
-
-    // N.B. AsyncInterface::connect() / _gd->connect() requires:
-    //      (const int ngateways, const t_gateway_address gateway_addresses[])
-
-    E_EtherCANErrCode rv = _gd->connect(ngateways, gateway_addresses);
-
-    return rv;
+    E_EtherCANErrCode result = _gd->connect(ngateways, gateway_addresses);
+    _post_connect_hook(config);
+    return result;
 
 /*
+    Original Python version of function:
+    
     with self.lock:
         self.locked_gateways = [] # this del's and releases any previously acquired locks
         for gw in address_list:
