@@ -114,6 +114,7 @@ public:
 
     E_EtherCANErrCode connect(const int ngateways,
                               const t_gateway_address gateway_addresses[]);
+    E_EtherCANErrCode disconnect();
 
 #ifndef FPU_SET_IS_VECTOR
     // TODO: In some of the following functions, reversed the 

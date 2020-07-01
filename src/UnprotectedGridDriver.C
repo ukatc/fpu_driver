@@ -192,8 +192,14 @@ E_EtherCANErrCode UnprotectedGridDriver::connect(const int ngateways,
 */        
 }
 
-#ifdef FPU_SET_IS_VECTOR
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::disconnect()
+{
+    return _gd->disconnect();
+}
 
+
+#ifdef FPU_SET_IS_VECTOR
 
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const FpuSelection &fpu_selection)
