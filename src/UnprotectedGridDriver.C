@@ -160,6 +160,19 @@ UnprotectedGridDriver::UnprotectedGridDriver(
 }
 
 //------------------------------------------------------------------------------
+UnprotectedGridDriver::~UnprotectedGridDriver()
+{
+    if (_gd != nullptr)
+    {
+        delete _gd;
+    }
+
+    // TODO: Close/delete any other non-RAII objects here - see 
+    // FpuGridDriver.py -> UnprotectedGridDriver -> __del__
+
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
                                 const t_gateway_address gateway_addresses[])
 {
@@ -787,19 +800,6 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     }
 
     // TODO: Generate the required return values
-
-}
-
-//------------------------------------------------------------------------------
-UnprotectedGridDriver::~UnprotectedGridDriver()
-{
-    if (_gd != nullptr)
-    {
-        delete _gd;
-    }
-
-    // TODO: Close/delete any other non-RAII objects here - see 
-    // FpuGridDriver.py -> UnprotectedGridDriver -> __del__
 
 }
 

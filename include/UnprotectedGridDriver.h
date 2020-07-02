@@ -110,6 +110,10 @@ public:
         double motor_max_rel_increase = MAX_ACCELERATION_FACTOR
         );
 
+    // TODO: Check if this virtual destructor stuff is correct
+    // TODO: Need a real destructor as well?? Or are all member objects RAII ones?
+    virtual ~UnprotectedGridDriver();
+
     E_GridState getGridState(t_grid_state &grid_state_ret);
 
     E_EtherCANErrCode connect(int ngateways,
@@ -139,10 +143,6 @@ public:
                                     bool sync_command = true);
 
 #endif // FPU_SET_IS_VECTOR
-
-    // TODO: Check if this virtual destructor stuff is correct
-    // TODO: Need a real destructor as well?? Or are all member objects RAII ones?
-    virtual ~UnprotectedGridDriver();
 
     //..........................................................................
 protected:
