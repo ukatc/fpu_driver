@@ -34,11 +34,6 @@ namespace mpifps
 
 //==============================================================================
 
-GridDriver::GridDriver(int dummy_val)
-{
-    
-}
-
 void GridDriver::_post_connect_hook(const EtherCANInterfaceConfig &config)
 {
     // TODO

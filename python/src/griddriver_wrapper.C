@@ -69,14 +69,14 @@ static int testVal = 99;
 //............................................
 
 
-
 class WrappedGridDriver : public GridDriver,
                           protected WrapperSharedBase
 {
 public:
-    WrappedGridDriver(int dummy_val) : GridDriver{ dummy_val }
+    WrappedGridDriver(int nfpus) : GridDriver(nfpus)
     {
-
+        // TODO: For testing only
+        testVal = nfpus;
     }
 
 #if (CONSTRUCTOR_TYPE == CONSTRUCTOR_NAMED_ARGS_1)
@@ -88,14 +88,18 @@ public:
         return wrapped_grid_driver;
     }
 #elif (CONSTRUCTOR_TYPE == CONSTRUCTOR_NAMED_ARGS_2)
-    // TODO: Check if needs to be static
-    //static boost::shared_ptr<WrappedGridDriver> initWrapper(object const &p)
-    static boost::shared_ptr<WrappedGridDriver> initWrapper(int blah)
+    // NOTE: Static function
+    // TODO: Check if needs to be static - OR move out of this wrapper class
+    // into a standalone function for better clarity?
+    // Original from https://stackoverflow.com/questions/18793952/boost-python-how-do-i-provide-a-custom-constructor-wrapper-function:
+    //static boost::shared_ptr<CppClass> initWrapper( object const & p )
+    //{
+    //    SpecialParameters sp = ... // do complicated extraction here.
+    //    return boost::shared_ptr<CppClass>( new CppClass(sp) );
+    //}
+    static boost::shared_ptr<WrappedGridDriver> initWrapper(int nfpus)
     {
-        testVal = blah;
-        //SpecialParameters sp = ... // do complicated extraction here.
-        int dummy = 3;
-        return boost::shared_ptr<WrappedGridDriver>(new WrappedGridDriver(dummy));
+        return boost::shared_ptr<WrappedGridDriver>(new WrappedGridDriver(nfpus));
     }
 
 #endif
@@ -214,7 +218,7 @@ BOOST_PYTHON_MODULE(griddriver)
         ("GridDriver", no_init)
         .def("__init__", make_constructor(&WrappedGridDriver::initWrapper,
                                           bp::default_call_policies(), 
-                                          (bp::arg("dummy") = 456)))
+                                          (bp::arg("nfpus") = DEFAULT_NUM_FPUS)))
 #else
     class_<WrappedGridDriver>("GridDriver", init<
         // NOTE: Boost.Python only allows up to 14 function arguments

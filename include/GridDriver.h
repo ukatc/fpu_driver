@@ -32,9 +32,12 @@ class GridDriver : public UnprotectedGridDriver
 {
     //..........................................................................
 public:
-    // TODO: dummy_val is just a placeholder for now - need to implement
-    // properly
-    GridDriver(int dummy_val);
+    // TODO: Possible to place body of function in GridDriver.C? (Couldn't do
+    // yet once I added the UnprotectedGridDriver constructor initialisation
+    // below)
+    GridDriver(int nfpus) : UnprotectedGridDriver(nfpus)
+    {
+    }
 
     //............................................
     // TODO: Ad-hoc functions for Boost.Python wrapper testing only - remove
