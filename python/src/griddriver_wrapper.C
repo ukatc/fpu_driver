@@ -43,6 +43,19 @@
 #include "InterfaceConstants.h"
 
 
+
+#define CONSTRUCTOR_NAMED_ARGS_1   (1)
+#define CONSTRUCTOR_NAMED_ARGS_2   (2)
+#define CONSTRUCTOR_ORIGINAL       (3)
+
+#if 0
+// See https://stackoverflow.com/questions/36138533/boost-python-constructor-with-optional-arguments
+#define CONSTRUCTOR_TYPE    (CONSTRUCTOR_NAMED_ARGS_1)
+#else
+// See https://stackoverflow.com/questions/18793952/boost-python-how-do-i-provide-a-custom-constructor-wrapper-function
+#define CONSTRUCTOR_TYPE    (CONSTRUCTOR_NAMED_ARGS_2)
+#endif
+
 // NOTE: The name in BOOST_PYTHON_MODULE() below should match the griddriver.C
 // filename, otherwise get the following error when try to import the module in
 // Python: // "ImportError: dynamic module does not define init function
@@ -58,6 +71,24 @@ public:
     {
 
     }
+
+#if (CONSTRUCTOR_TYPE == CONSTRUCTOR_NAMED_ARGS_1)
+    boost::shared_ptr<WrappedGridDriver> wrapper_init(int dummy)
+    {
+
+        boost::shared_ptr<WrappedGridDriver> wrapped_grid_driver(new WrappedGridDriver(dummy));
+
+        return wrapped_grid_driver;
+    }
+#elif (CONSTRUCTOR_TYPE == CONSTRUCTOR_NAMED_ARGS_2)
+    static boost::shared_ptr<WrappedGridDriver> initWrapper( object const & p )
+    {
+        //SpecialParameters sp = ... // do complicated extraction here.
+        int dummy = 3;
+        return boost::shared_ptr<WrappedGridDriver>( new WrappedGridDriver(dummy) );
+    }
+
+#endif
 
     WrapGridState wrapped_getGridState()
     {
@@ -153,10 +184,23 @@ BOOST_PYTHON_MODULE(griddriver)
     // TODO: Figure out how constructor needs to be specified for this derived
     // class, because WrappedGridDriver is derived from GridDriver, which is
     // derived from UnprotectedGridDriver
+
+#if (CONSTRUCTOR_TYPE == CONSTRUCTOR_NAMED_ARGS_1)
+    class_<WrappedGridDriver, boost::shared_ptr<WrappedGridDriver>, boost::noncopyable>("GridDriver", bp::no_init)
+        // NOTE: Boost.Python only allows up to 14 function arguments
+        .def("__init__", bp::make_constructor(&WrappedGridDriver::wrapper_init, bp::default_call_policies(), 
+        (bp::arg("dummy") = 0)))
+#elif (CONSTRUCTOR_TYPE == CONSTRUCTOR_NAMED_ARGS_2)
+    class_<WrappedGridDriver, boost::shared_ptr<WrappedGridDriver> >
+        ("GridDriver", no_init)
+        .def("__init__", make_constructor(&WrappedGridDriver::initWrapper, bp::default_call_policies(), (bp::arg("dummy") = 0)))
+
+#else
     class_<WrappedGridDriver>("GridDriver", init<
         // NOTE: Boost.Python only allows up to 14 function arguments
         int               // dummy_val
         >())
+#endif
         .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
         .def("connect", &WrappedGridDriver::wrapped_connect)
         .def("disconnect", &WrappedGridDriver::disconnect)
@@ -166,7 +210,11 @@ BOOST_PYTHON_MODULE(griddriver)
 
         // TODO: Ad-hoc test functions only - remove when no longer needed
         .def("boostPythonIncrement", &WrappedGridDriver::boostPythonIncrement)
-        .def("boostPythonDivide", &WrappedGridDriver::boostPythonDivide)
+
+        // TODO: EXPERIMENTAL NAMED ARGUMENTS
+        .def("boostPythonDivide", &WrappedGridDriver::boostPythonDivide,
+             (bp::arg("dividend") = 23.0, bp::arg("divisor") = 4.0))
+
         .def("boostPythonGetNumFPUs", &WrappedGridDriver::boostPythonGetNumFPUs)
 
 #if 0

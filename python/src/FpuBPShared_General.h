@@ -38,6 +38,7 @@
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/exception_translator.hpp>
+#include <boost/python/make_constructor.hpp>
 
 #include "../../include/ethercan/E_CAN_COMMAND.h"
 #include "../../include/T_GridState.h"
@@ -55,6 +56,8 @@ using boost::python::dict;
 using boost::python::tuple;
 using boost::python::str;
 
+using namespace boost::python;
+
 namespace bp = boost::python;
 
 std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s);
@@ -65,6 +68,9 @@ void checkInterfaceError(E_EtherCANErrCode ecode);
 // -----------------------------------------------------------------------------
 class WrapperSharedBase
 {
+    // TODO: Will this class need a constructor and/or (virtual) destructor
+    // eventually?
+
 protected:
     int convertGatewayAddresses(const bp::list &list_gateway_addresses,
                                 t_gateway_address *address_array_to_fill);
