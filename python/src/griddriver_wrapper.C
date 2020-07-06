@@ -150,13 +150,24 @@ public:
 #endif // 0        
     }
 
-    E_EtherCANErrCode wrapped_configMotion(void)
+    E_EtherCANErrCode wrapped_configMotion(bp::dict &dict_waveforms,
+                                           WrapGridState &grid_state,
+                                           bp::list &fpu_list,
+                                           bool soft_protection,
+                                           bool allow_uninitialized,
+					                       int ruleset_version,
+                                           // TODO: The following arguments
+                                           // are from FpuGridDriver.py ->
+                                           // configMotion() - keep?
+                                           bool warn_unsafe, int verbosity)
     {
         
         return DE_OK; 
     }
 
-    E_EtherCANErrCode wrapped_executeMotion(void)
+    E_EtherCANErrCode wrapped_executeMotion(WrapGridState &grid_state,
+                                            bp::list &fpu_list,
+                                            bool sync_command)
     {
         
         return DE_OK; 
@@ -249,10 +260,13 @@ BOOST_PYTHON_MODULE(griddriver)
         >())
 #endif
         .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
+
         .def("connect", &WrappedGridDriver::wrapped_connect)
+
         .def("disconnect", &WrappedGridDriver::disconnect)
+
         .def("findDatum", &WrappedGridDriver::wrapped_findDatum,
-             (bp::arg("grid_state"),    // Compulsory argument, so no default
+             (bp::arg("grid_state"),
               bp::arg("selected_arm") = DASEL_BOTH,
               bp::arg("fpuset") = bp::list(),
               bp::arg("soft_protection") = true,
@@ -260,18 +274,39 @@ BOOST_PYTHON_MODULE(griddriver)
               bp::arg("support_uninitialized_auto") = true,
               bp::arg("timeout") = DATUM_TIMEOUT_ENABLE))
 
-        .def("configMotion", &WrappedGridDriver::wrapped_configMotion)
-        .def("executeMotion", &WrappedGridDriver::wrapped_executeMotion)
+        .def("configMotion", &WrappedGridDriver::wrapped_configMotion,
+             (bp::arg("wavetable"),
+              bp::arg("grid_state"),
+              bp::arg("fpuset") = bp::list(),
+              bp::arg("soft_protection") = true,
+              bp::arg("allow_uninitialized") = false,
+              bp::arg("ruleset_version") = DEFAULT_WAVEFORM_RULESET_VERSION,
+              // TODO: The following arguments are from FpuGridDriver.py ->
+              // configMotion() - keep? (N.B. They aren't documented in the
+              // FPU driver manual of January 22, 2020)
+              bp::arg("warn_unsafe") = true,
+              bp::arg("verbosity") = 3))
+
+        .def("executeMotion", &WrappedGridDriver::wrapped_executeMotion,
+             (bp::arg("grid_state"),
+              bp::arg("fpuset") = bp::list(),
+              // TODO: sync_command default is true here and in FpuGridDriver.py,
+              // but is shown as False in grid driver document
+              bp::arg("sync_command") = true))
 
         //........................................
         // TODO: Ad-hoc test functions only - remove when no longer needed
         .def("boostPythonIncrement", &WrappedGridDriver::boostPythonIncrement)
+
         // TODO: EXPERIMENTAL NAMED ARGUMENTS
         .def("boostPythonDivide", &WrappedGridDriver::boostPythonDivide,
              (bp::arg("dividend") = 23.0,
               bp::arg("divisor") = 4.0))
+
         .def("boostPythonGetNumFPUs", &WrappedGridDriver::boostPythonGetNumFPUs)
+
         .def("getTestVal", &WrappedGridDriver::getTestVal)
+
         //........................................
 
 

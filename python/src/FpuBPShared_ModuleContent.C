@@ -32,6 +32,8 @@
 
 // NOTE: Do not #include anything here
 
+    scope().attr("DEFAULT_WAVEFORM_RULESET_VERSION") = DEFAULT_WAVEFORM_RULESET_VERSION;
+
     enum_<E_FPU_STATE>("E_FPU_STATE")
     .value("FPST_UNKNOWN", FPST_UNKNOWN)
     .value("FPST_UNINITIALIZED", FPST_UNINITIALIZED)
