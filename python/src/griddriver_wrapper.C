@@ -229,10 +229,6 @@ BOOST_PYTHON_MODULE(griddriver)
         double            // motor_max_rel_increase
         >())
 
-        // TODO: Ad-hoc test functions only - remove when no longer needed
-        .def("boostPythonIncrement", &UnprotectedGridDriver::boostPythonIncrement)
-        .def("boostPythonDivide", &UnprotectedGridDriver::boostPythonDivide)
-        .def("boostPythonGetNumFPUs", &UnprotectedGridDriver::boostPythonGetNumFPUs)
     ;
 #endif // 0
 
@@ -259,9 +255,34 @@ BOOST_PYTHON_MODULE(griddriver)
         int               // dummy_val
         >())
 #endif
+
+#if 0
+        // TODO: If use the following then need to use shared consts for
+        // ALL of the following (so that shared with FPUGridDriver.h
+        // constructor defaults)
+        bp::arg("nfpus") = DEFAULT_NUM_FPUS,
+        bp::arg("confirm_each_step") = false,
+        bp::arg("configmotion_max_retry_count") = 5,
+        bp::arg("configmotion_max_resend_count") = 10,
+        bp::arg("min_bus_repeat_delay_ms") = 0,
+        bp::arg("min_fpu_repeat_delay_ms") = 1,
+        bp::arg("E_LogLevel logLevel") = DEFAULT_LOGLEVEL,
+        bp::arg("string &log_dir") = DEFAULT_LOGDIR,
+        bp::arg("motor_minimum_frequency") = MOTOR_MIN_STEP_FREQUENCY,
+        bp::arg("motor_maximum_frequency") = MOTOR_MAX_STEP_FREQUENCY,
+        bp::arg("motor_max_start_frequency") = MOTOR_MAX_START_FREQUENCY
+        bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
+#endif // 0
+
         .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
 
-        .def("connect", &WrappedGridDriver::wrapped_connect)
+        .def("connect", &WrappedGridDriver::wrapped_connect,
+            // TODO: Add defaulting to the following argument - see 
+            // FpuGridDriver.py function equivalent, FPU grid driver
+            // documentation etc – see DEFAULT_GATEWAY_ADDRESS_LIST / 
+            // MOCK_GATEWAY_ADDRESS_LIST stuff – need to use a bp::list
+            // somehow I think
+             (bp::arg("address_list")))
 
         .def("disconnect", &WrappedGridDriver::disconnect)
 
@@ -309,24 +330,6 @@ BOOST_PYTHON_MODULE(griddriver)
 
         //........................................
 
-
-#if 0
-        // TODO: If use the following then need to use shared consts for
-        // ALL of the following (so that shared with FPUGridDriver.h
-        // constructor defaults)
-        bp::arg("nfpus") = DEFAULT_NUM_FPUS,
-        bp::arg("confirm_each_step") = false,
-        bp::arg("configmotion_max_retry_count") = 5,
-        bp::arg("configmotion_max_resend_count") = 10,
-        bp::arg("min_bus_repeat_delay_ms") = 0,
-        bp::arg("min_fpu_repeat_delay_ms") = 1,
-        bp::arg("E_LogLevel logLevel") = DEFAULT_LOGLEVEL,
-        bp::arg("string &log_dir") = DEFAULT_LOGDIR,
-        bp::arg("motor_minimum_frequency") = MOTOR_MIN_STEP_FREQUENCY,
-        bp::arg("motor_maximum_frequency") = MOTOR_MAX_STEP_FREQUENCY,
-        bp::arg("motor_max_start_frequency") = MOTOR_MAX_START_FREQUENCY
-        bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
-#endif // 0
     ;
 
 }
