@@ -111,7 +111,7 @@ public:
         return grid_state;
     }
 
-    E_EtherCANErrCode wrapped_connect(list& list_gateway_addresses)
+    E_EtherCANErrCode wrapped_connect(bp::list &list_gateway_addresses)
     {
         t_gateway_address address_array[MAX_NUM_GATEWAYS];
         const int actual_num_gw = convertGatewayAddresses(list_gateway_addresses,
@@ -121,10 +121,33 @@ public:
         return ecode;
     }
 
-    E_EtherCANErrCode wrapped_findDatum(WrapGridState &grid_state)
+    E_EtherCANErrCode wrapped_findDatum(WrapGridState &grid_state,
+                                        E_DATUM_SELECTION selected_arm,
+                                        bp::list &fpu_list,
+                                        bool soft_protection,
+                                        bool count_protection,
+                                        bool support_uninitialized_auto,
+                                        E_DATUM_TIMEOUT_FLAG timeout)
     {
+        // TODO: "dict &dict_modes" is specified as an argument in
+        // WrapEtherCANInterface.wrap_findDatum() - is it needed here?
 
-        return DE_OK; 
+#if 0
+        // TODO: Adapt the following which was copied from 
+        // WrapEtherCANInterface.wrap_findDatum()
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        t_datum_search_flags direction_flags;
+        getDatumFlags(dict_modes, direction_flags, fpuset);
+
+        E_EtherCANErrCode ecode = findDatum(grid_state, direction_flags,
+                                            arm_selection, timeout_flag,
+                                            count_protection, &fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+#endif // 0        
     }
 
     E_EtherCANErrCode wrapped_configMotion(void)
@@ -228,7 +251,15 @@ BOOST_PYTHON_MODULE(griddriver)
         .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
         .def("connect", &WrappedGridDriver::wrapped_connect)
         .def("disconnect", &WrappedGridDriver::disconnect)
-        .def("findDatum", &WrappedGridDriver::wrapped_findDatum)
+        .def("findDatum", &WrappedGridDriver::wrapped_findDatum,
+             (bp::arg("grid_state"),    // Compulsory argument, so no default
+              bp::arg("selected_arm") = DASEL_BOTH,
+              bp::arg("fpuset") = bp::list(),
+              bp::arg("soft_protection") = true,
+              bp::arg("count_protection") = true,
+              bp::arg("support_uninitialized_auto") = true,
+              bp::arg("timeout") = DATUM_TIMEOUT_ENABLE))
+
         .def("configMotion", &WrappedGridDriver::wrapped_configMotion)
         .def("executeMotion", &WrappedGridDriver::wrapped_executeMotion)
 
@@ -237,7 +268,8 @@ BOOST_PYTHON_MODULE(griddriver)
         .def("boostPythonIncrement", &WrappedGridDriver::boostPythonIncrement)
         // TODO: EXPERIMENTAL NAMED ARGUMENTS
         .def("boostPythonDivide", &WrappedGridDriver::boostPythonDivide,
-             (bp::arg("dividend") = 23.0, bp::arg("divisor") = 4.0))
+             (bp::arg("dividend") = 23.0,
+              bp::arg("divisor") = 4.0))
         .def("boostPythonGetNumFPUs", &WrappedGridDriver::boostPythonGetNumFPUs)
         .def("getTestVal", &WrappedGridDriver::getTestVal)
         //........................................
