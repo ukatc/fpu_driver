@@ -119,8 +119,7 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_FPU_STATE &s)
     return out;
 }
 
-
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 std::ostringstream& operator<<(std::ostringstream &out, const E_InterfaceState &s)
 {
     switch(s)
@@ -141,7 +140,7 @@ std::ostringstream& operator<<(std::ostringstream &out, const E_InterfaceState &
     return out;
 }
 
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 void checkInterfaceError(E_EtherCANErrCode ecode)
 {
     switch(ecode)
@@ -422,5 +421,4 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
     }
 }
 
-
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------

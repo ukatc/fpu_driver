@@ -355,7 +355,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     correctly, otherwise a beta arm collision will happen which could degrade
     the FPU (or even destroy the FPU, if the collision detection does not
     work). If a beta arm was datumed, the FPU will move in the direction
-    corresponding to its internal step count. If an beta arm is not datumed,
+    corresponding to its internal step count. If a beta arm is not datumed,
     automatic datum search will use the position database value, unless
     support_uninitialized_auto is set to false. In addition, manually-set
     search directions will be checked using the step count value for the beta
@@ -813,7 +813,11 @@ void UnprotectedGridDriverTester::doTests()
     
     test_connect();
     
-    //test_findDatum();
+    test_findDatum();
+    
+    //test_configMotion();
+
+    //test_executeMotion();
 }
 
 //------------------------------------------------------------------------------
@@ -897,6 +901,18 @@ void UnprotectedGridDriverTester::test_findDatum()
                            soft_protection, count_protection,
                            support_uninitialized_auto, DATUM_TIMEOUT_DISABLE);
 
+}
+
+//------------------------------------------------------------------------------
+void UnprotectedGridDriverTester::test_configMotion()
+{
+    
+}
+
+//------------------------------------------------------------------------------
+void UnprotectedGridDriverTester::test_executeMotion()
+{
+    
 }
 
 

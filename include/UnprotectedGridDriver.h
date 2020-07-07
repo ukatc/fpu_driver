@@ -121,10 +121,6 @@ public:
     E_EtherCANErrCode disconnect();
 
 #ifndef FPU_SET_IS_VECTOR
-    // TODO: In some of the following functions, reversed the 
-    // fpuset/selected_arm arguments relative to the equivalent Python
-    // functions, so that can have argument defaults
-
     E_EtherCANErrCode findDatum(t_grid_state &gs,
                                 const t_datum_search_flags &search_modes,
                                 enum E_DATUM_SELECTION selected_arm,
@@ -141,7 +137,6 @@ public:
 
     E_EtherCANErrCode executeMotion(t_grid_state &gs, const t_fpuset &fpuset,
                                     bool sync_command = true);
-
 #endif // FPU_SET_IS_VECTOR
 
     //..........................................................................
@@ -270,6 +265,8 @@ private:
     void test_need_ping();
     void test_connect();
     void test_findDatum();
+    void test_configMotion();
+    void test_executeMotion();
 };
 
 
