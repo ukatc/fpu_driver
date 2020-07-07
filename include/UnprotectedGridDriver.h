@@ -97,17 +97,19 @@ public:
         // NOTE: Boost.Python only allows up to 14 function arguments in
         // function wrappers, so need to keep number of arguments within this
         int nfpus = DEFAULT_NUM_FPUS,
+        double SocketTimeOutSeconds = 20.0,
         bool confirm_each_step = false,
+        long waveform_upload_pause_us = 0,
         int configmotion_max_retry_count = 5,
         int configmotion_max_resend_count = 10,
         int min_bus_repeat_delay_ms = 0,
         int min_fpu_repeat_delay_ms = 1,
-        enum E_LogLevel logLevel = DEFAULT_LOGLEVEL,
-        const string &log_dir = DEFAULT_LOGDIR,
+        double alpha_datum_offset = ALPHA_DATUM_OFFSET,
         double motor_minimum_frequency = MOTOR_MIN_STEP_FREQUENCY,
         double motor_maximum_frequency = MOTOR_MAX_STEP_FREQUENCY,
         double motor_max_start_frequency = MOTOR_MAX_START_FREQUENCY,
-        double motor_max_rel_increase = MAX_ACCELERATION_FACTOR
+        double motor_max_rel_increase = MAX_ACCELERATION_FACTOR,
+        double motor_max_step_difference = MAX_STEP_DIFFERENCE
         );
 
     // TODO: Check if this virtual destructor stuff is correct

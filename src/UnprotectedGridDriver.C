@@ -70,18 +70,19 @@ string make_logdir(string log_dir)
 
 UnprotectedGridDriver::UnprotectedGridDriver(
     int nfpus,
+    double SocketTimeOutSeconds,
     bool confirm_each_step,
+    long waveform_upload_pause_us,
     int configmotion_max_retry_count,
     int configmotion_max_resend_count,
     int min_bus_repeat_delay_ms,
     int min_fpu_repeat_delay_ms,
-    enum E_LogLevel logLevel,
-    const string &log_dir,
+    double alpha_datum_offset,
     double motor_minimum_frequency,
     double motor_maximum_frequency,
     double motor_max_start_frequency,
-    double motor_max_rel_increase
-    )
+    double motor_max_rel_increase,
+    double motor_max_step_difference)
 {
 
     // TODO: Finish filling out this constructor from Python equivalent
@@ -93,6 +94,7 @@ UnprotectedGridDriver::UnprotectedGridDriver(
                                        // AND need to unlock somehwere else, or would it be
                                        // done automatically due to RAII?
 
+    // TODO: Move the following check warnings to the Boost.Python wrapper?
     if (confirm_each_step)
     {
         warn("confirm_each_steps set to True, which requires extra\n"
@@ -105,24 +107,27 @@ UnprotectedGridDriver::UnprotectedGridDriver(
              "Decrease if message rate is too low.");
     }
 
-    // Initialise EtherCAN configuration object's parameters
+    // Initialise EtherCAN configuration object's specified parameters
     config.num_fpus = nfpus;
-    config.SocketTimeOutSeconds = 20.0;
-    config.alpha_datum_offset = ALPHA_DATUM_OFFSET;
+    config.SocketTimeOutSeconds = SocketTimeOutSeconds;
+    config.confirm_each_step = confirm_each_step;
+    config.waveform_upload_pause_us = waveform_upload_pause_us;
+    config.configmotion_max_retry_count = configmotion_max_retry_count;
+    config.configmotion_max_resend_count = configmotion_max_resend_count;
+    config.min_bus_repeat_delay_ms = min_bus_repeat_delay_ms;
+    config.min_fpu_repeat_delay_ms = min_fpu_repeat_delay_ms;
+    config.alpha_datum_offset = alpha_datum_offset;
     config.motor_minimum_frequency = motor_minimum_frequency;
     config.motor_maximum_frequency = motor_maximum_frequency;
     config.motor_max_start_frequency = motor_max_start_frequency;
     config.motor_max_rel_increase = motor_max_rel_increase;
-    config.confirm_each_step = confirm_each_step;
-    config.configmotion_max_retry_count = configmotion_max_retry_count;
-    config.configmotion_max_resend_count = configmotion_max_resend_count;
-    config.waveform_upload_pause_us = 0;
-    config.min_bus_repeat_delay_ms = min_bus_repeat_delay_ms;
-    config.min_fpu_repeat_delay_ms = min_fpu_repeat_delay_ms;
-    config.configmotion_max_resend_count = configmotion_max_resend_count;
-    config.configmotion_max_retry_count = configmotion_max_retry_count;
-    config.firmware_version_address_offset = 0x61;
+    config.motor_max_step_difference = motor_max_step_difference;
 
+    //..........................................................................
+
+    // TODO: Convert log file initialisation code from FpuGridDriver.py
+
+#if 0
     int flags = O_CREAT | O_APPEND | O_WRONLY;
     mode_t mode = 0644;  // Octal
 
@@ -130,11 +135,6 @@ UnprotectedGridDriver::UnprotectedGridDriver(
 
     string log_path = make_logdir(log_dir);
 
-    //..........................................................................
-
-    // TODO: Convert log file initialisation code from FpuGridDriver.py
-
-#if 0
     const string &protection_logfile = "_{start_timestamp}-fpu_protection.log",
     const string &control_logfile = "_{start_timestamp}-fpu_control.log",
     const string &tx_logfile = "_{start_timestamp}-fpu_tx.log",
