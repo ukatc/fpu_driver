@@ -38,6 +38,12 @@
 namespace mpifps
 {
 
+// TODO: Enables constructor inheritance from UnprotectedGridDriver to
+// GridDriver to WrappedGridDriver - temporary macro to highlight the relevant
+// code - remove the non-USE_INHERITED_CONSTRUCTOR code eventually
+#define USE_INHERITED_CONSTRUCTOR
+
+
 using namespace std;
 using namespace mpifps::ethercanif;
 
