@@ -122,6 +122,7 @@ public:
     }
 
     E_EtherCANErrCode wrapped_findDatum(WrapGridState &grid_state,
+                                        bp::dict &dict_modes,
                                         E_DATUM_SELECTION selected_arm,
                                         bp::list &fpu_list,
                                         bool soft_protection,
@@ -129,13 +130,7 @@ public:
                                         bool support_uninitialized_auto,
                                         E_DATUM_TIMEOUT_FLAG timeout)
     {
-        // TODO: "dict &dict_modes" is specified as an argument in
-        // WrapEtherCANInterface.wrap_findDatum() - is it needed here?
-
-#if 0
-        // TODO: Adapt the following which was copied from 
-        // WrapEtherCANInterface.wrap_findDatum()
-
+#if 0        
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
@@ -288,6 +283,7 @@ BOOST_PYTHON_MODULE(griddriver)
 
         .def("findDatum", &WrappedGridDriver::wrapped_findDatum,
              (bp::arg("grid_state"),
+              bp::arg("search_modes") = bp::dict(),
               bp::arg("selected_arm") = DASEL_BOTH,
               bp::arg("fpuset") = bp::list(),
               bp::arg("soft_protection") = true,
