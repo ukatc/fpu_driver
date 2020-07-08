@@ -75,15 +75,7 @@ class WrappedGridDriver : public GridDriver,
                           protected WrapperSharedBase
 {
 public:
-#ifdef USE_INHERITED_CONSTRUCTOR
     using GridDriver::GridDriver; // Inherit constructor
-#else // NOT USE_INHERITED_CONSTRUCTOR
-    WrappedGridDriver(int nfpus) : GridDriver(nfpus)
-    {
-        // TODO: For testing only
-        testVal = nfpus;
-    }
-#endif // NOT USE_INHERITED_CONSTRUCTOR
 
 #if (CONSTRUCTOR_TYPE == CONSTRUCTOR_NAMED_ARGS_1)
     boost::shared_ptr<WrappedGridDriver> wrapper_init(int dummy)
@@ -104,7 +96,6 @@ public:
     //    return boost::shared_ptr<CppClass>( new CppClass(sp) );
     //}
 
-#ifdef USE_INHERITED_CONSTRUCTOR
     static boost::shared_ptr<WrappedGridDriver> initWrapper(
         int nfpus,
         double SocketTimeOutSeconds,
@@ -137,12 +128,6 @@ public:
             motor_max_rel_increase,
             motor_max_step_difference));
     }
-#else // NOT USE_INHERITED_CONSTRUCTOR
-    static boost::shared_ptr<WrappedGridDriver> initWrapper(int nfpus)
-    {
-        return boost::shared_ptr<WrappedGridDriver>(new WrappedGridDriver(nfpus));
-    }
-#endif // NOT USE_INHERITED_CONSTRUCTOR
 
 #endif
 
@@ -285,24 +270,20 @@ BOOST_PYTHON_MODULE(griddriver)
         ("GridDriver", no_init)
         .def("__init__", make_constructor(&WrappedGridDriver::initWrapper,
                                           bp::default_call_policies(),
-#ifdef USE_INHERITED_CONSTRUCTOR
-            (bp::arg("nfpus") = DEFAULT_NUM_FPUS,
-             bp::arg("SocketTimeOutSeconds") = 20.0,
-             bp::arg("confirm_each_step") = false,
-             bp::arg("waveform_upload_pause_us") = 0,
-             bp::arg("configmotion_max_retry_count") = 5,
-             bp::arg("configmotion_max_resend_count") = 10,
-             bp::arg("min_bus_repeat_delay_ms") = 0,
-             bp::arg("min_fpu_repeat_delay_ms") = 1,
-             bp::arg("alpha_datum_offset") = ALPHA_DATUM_OFFSET,
-             bp::arg("motor_minimum_frequency") = MOTOR_MIN_STEP_FREQUENCY,
-             bp::arg("motor_maximum_frequency") = MOTOR_MAX_STEP_FREQUENCY,
-             bp::arg("motor_max_start_frequency") = MOTOR_MAX_START_FREQUENCY,
-             bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
-             bp::arg("motor_max_step_difference") = MAX_STEP_DIFFERENCE)))
-#else // NOT USE_INHERITED_CONSTRUCTOR
-                                          (bp::arg("nfpus") = DEFAULT_NUM_FPUS)))
-#endif // NOT USE_INHERITED_CONSTRUCTOR
+             (bp::arg("nfpus") = DEFAULT_NUM_FPUS,
+              bp::arg("SocketTimeOutSeconds") = 20.0,
+              bp::arg("confirm_each_step") = false,
+              bp::arg("waveform_upload_pause_us") = 0,
+              bp::arg("configmotion_max_retry_count") = 5,
+              bp::arg("configmotion_max_resend_count") = 10,
+              bp::arg("min_bus_repeat_delay_ms") = 0,
+              bp::arg("min_fpu_repeat_delay_ms") = 1,
+              bp::arg("alpha_datum_offset") = ALPHA_DATUM_OFFSET,
+              bp::arg("motor_minimum_frequency") = MOTOR_MIN_STEP_FREQUENCY,
+              bp::arg("motor_maximum_frequency") = MOTOR_MAX_STEP_FREQUENCY,
+              bp::arg("motor_max_start_frequency") = MOTOR_MAX_START_FREQUENCY,
+              bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
+              bp::arg("motor_max_step_difference") = MAX_STEP_DIFFERENCE)))
 #else
     class_<WrappedGridDriver>("GridDriver", init<
         // NOTE: Boost.Python only allows up to 14 function arguments

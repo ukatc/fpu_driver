@@ -32,17 +32,7 @@ class GridDriver : public UnprotectedGridDriver
 {
     //..........................................................................
 public:
-
-#ifdef USE_INHERITED_CONSTRUCTOR
     using UnprotectedGridDriver::UnprotectedGridDriver; // Inherit constructor
-#else // NOT USE_INHERITED_CONSTRUCTOR
-    // TODO: Possible to place body of function in GridDriver.C? (Couldn't do
-    // yet once I added the UnprotectedGridDriver constructor initialisation
-    // below)
-    GridDriver(int nfpus) : UnprotectedGridDriver(nfpus)
-    {
-    }
-#endif // NOT USE_INHERITED_CONSTRUCTOR
 
     //............................................
     // TODO: Ad-hoc functions for Boost.Python wrapper testing only - remove
