@@ -328,6 +328,17 @@ BOOST_PYTHON_MODULE(griddriver)
         bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
 #endif // 0
 
+
+        .def("initialize", &WrappedGridDriver::initialize,
+             (bp::arg("logLevel") = DEFAULT_LOGLEVEL,
+              bp::arg("log_dir") = DEFAULT_LOGDIR,
+              bp::arg("firmware_version_address_offset") = 0x61,
+              bp::arg("protection_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_protection.log",
+              bp::arg("control_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_control.log",
+              bp::arg("tx_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_tx.log",
+              bp::arg("rx_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_rx.log",
+              bp::arg("start_timestamp") = DEFAULT_START_TIMESTAMP))
+
         .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
 
         .def("connect", &WrappedGridDriver::wrapped_connect,
