@@ -34,8 +34,6 @@
 //
 // Basic GridDriver instantiation and usage:
 //   - Do: gd=GridDriver(123)    (N.B. Dummy values for now)
-//   - Do: gd.boostPythonIncrement() repeatedly - on first invocation should
-//     display 1, and then increment with each subsequent invocation
 //   - Do: gd.boostPythonDivide(23.0, 5.0)
 //             4.6
 //   - Do: gd.connect([1,2,3])
@@ -70,11 +68,6 @@
 //   - See e.g. the following web reference for more info:
 //     https://stackoverflow.com/questions/18793952/boost-python-how-do-i-provide-a-custom-constructor-wrapper-function
 
-
-//............................................
-// TODO: For testing only
-static int testVal = 99;
-//............................................
 
 //==============================================================================
 
@@ -191,13 +184,6 @@ public:
         return DE_OK; 
     }
 
-    //............................................
-    // TODO: For testing only
-    int getTestVal(void)
-    {
-        return testVal;
-    }
-    //............................................
 };
 
 //==============================================================================
@@ -208,10 +194,8 @@ BOOST_PYTHON_MODULE(griddriver)
 
     scope().attr("__version__") = (strlen(VERSION) > 1) ? (((const char *)VERSION) + 1) : "?.?.?";
 
-    //..........................................................................
     // Include shared Boost.Python module content
 #include "FpuBPShared_ModuleContent.C"
-    //..........................................................................
 
     class_<WrappedGridDriver, boost::shared_ptr<WrappedGridDriver> >
         ("GridDriver", no_init)
@@ -285,17 +269,11 @@ BOOST_PYTHON_MODULE(griddriver)
               bp::arg("sync_command") = true))
 
         //........................................
-        // TODO: Ad-hoc test functions only - remove when no longer needed
-        .def("boostPythonIncrement", &WrappedGridDriver::boostPythonIncrement)
-
-        // TODO: EXPERIMENTAL NAMED ARGUMENTS
+        // TODO: Test function only - remove when no longer needed
+        // Demonstrates named, arbitrarily-ordered arguments with defaulting
         .def("boostPythonDivide", &WrappedGridDriver::boostPythonDivide,
              (bp::arg("dividend") = 23.0,
               bp::arg("divisor") = 4.0))
-
-        .def("boostPythonGetNumFPUs", &WrappedGridDriver::boostPythonGetNumFPUs)
-
-        .def("getTestVal", &WrappedGridDriver::getTestVal)
 
         //........................................
     ;

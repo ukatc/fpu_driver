@@ -677,8 +677,6 @@ public:
 
 };
 
-
-
 }
 
 #pragma GCC diagnostic push
@@ -730,19 +728,13 @@ BOOST_PYTHON_MODULE(ethercanif)
     ProtectionErrorExceptionTypeObj = EtherCANExceptionClass("ProtectionError", InvalidStateExceptionTypeObj);
     HardwareProtectionErrorExceptionTypeObj = EtherCANExceptionClass("HardwareProtectionError", MovementErrorExceptionTypeObj);
 
-
-
-
-
     register_exception_translator<EtherCANException>(&translate_interface_error);
 
     // include summary function
     def("getGridStateSummary", wrapGetGridStateSummary);
 
-    //..........................................................................
     // Include shared Boost.Python module content
 #include "FpuBPShared_ModuleContent.C"
-    //..........................................................................
 
     class_<EtherCANInterfaceConfig>("EtherCANInterfaceConfig", init<>())
     .def_readwrite("num_fpus", &EtherCANInterfaceConfig::num_fpus)
@@ -769,7 +761,6 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def_readwrite("fd_controllog", &EtherCANInterfaceConfig::fd_controllog)
     .def_readwrite("fd_txlog", &EtherCANInterfaceConfig::fd_txlog)
     .def_readwrite("fd_rxlog", &EtherCANInterfaceConfig::fd_rxlog);
-
 
     class_<WrapEtherCANInterface, boost::noncopyable>("EtherCANInterface", init<EtherCANInterfaceConfig>())
     .def("getNumFPUs", &WrapEtherCANInterface::getNumFPUs)
@@ -799,8 +790,6 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def("unlockFPU", &WrapEtherCANInterface::wrap_unlockFPU)
     .def("writeSerialNumber", &WrapEtherCANInterface::wrap_writeSerialNumber)
     .def("readSerialNumbers", &WrapEtherCANInterface::wrap_readSerialNumbers)
-
-    
     .def("getMinFirmwareVersion", &WrapEtherCANInterface::wrap_getMinFirmwareVersion)
     .def("resetStepCounters", &WrapEtherCANInterface::wrap_resetStepCounters)
     .def("enableMove", &WrapEtherCANInterface::wrap_enableMove)

@@ -35,13 +35,9 @@ public:
     using UnprotectedGridDriver::UnprotectedGridDriver; // Inherit constructor
 
     //............................................
-    // TODO: Ad-hoc functions for Boost.Python wrapper testing only - remove
-    // when no longer needed
-    int boostPythonIncrement();
+    // TODO: Test function for Boost.Python wrapper experimentation only -
+    // remove when no longer needed
     double boostPythonDivide(double dividend, double divisor);
-    int boostPythonGetNumFPUs();
-    // TODO: Ad-hoc test variable only - remove when no longer needed
-    int dummyCounter = 0;
     //............................................
 
     // TODO: Is a destructor needed?

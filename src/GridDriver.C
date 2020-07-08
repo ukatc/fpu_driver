@@ -131,26 +131,14 @@ void GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     // TODO
 }
 
-//..............................................................................
-// TODO: Boost.Python wrapper test member functions - remove eventually
-//..............................................................................
-
-int GridDriver::boostPythonIncrement()
-{
-    dummyCounter++;
-    return dummyCounter;
-}
-
+//................................................
+// TODO: Boost.Python wrapper test member function - remove eventually
 double GridDriver::boostPythonDivide(double dividend, double divisor)
 {
     return dividend / divisor;
 }
 
-int GridDriver::boostPythonGetNumFPUs()
-{
-    return config.num_fpus;
-}
-
+//................................................
 
 //==============================================================================
 
