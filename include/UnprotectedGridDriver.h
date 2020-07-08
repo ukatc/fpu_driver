@@ -54,6 +54,8 @@ using namespace mpifps::ethercanif;
 #define DEFAULT_LOGLEVEL    (LOG_ERROR) 
 #define DEFAULT_LOGDIR      ("$HOME")
 
+#define DEFAULT_START_TIMESTAMP     "ISO8601"
+
 //*************** TODO: Await Steven's OK for FPU set being a std::vector<>
 // (rather than the t_fpuset array of bools)
 // BUT use t_fpuset from EtherCAN after all?
@@ -99,9 +101,11 @@ class UnprotectedGridDriver
   
     //..........................................................................
 public:
+    // NOTE: Boost.Python only allows up to 14 function arguments in function
+    // wrappers, so need to keep the public API functions' numbers of arguments
+    // within this
+
     UnprotectedGridDriver(
-        // NOTE: Boost.Python only allows up to 14 function arguments in
-        // function wrappers, so need to keep number of arguments within this
         int nfpus = DEFAULT_NUM_FPUS,
         double SocketTimeOutSeconds = 20.0,
         bool confirm_each_step = false,
@@ -121,6 +125,16 @@ public:
     // TODO: Check if this virtual destructor stuff is correct
     // TODO: Need a real destructor as well?? Or are all member objects RAII ones?
     virtual ~UnprotectedGridDriver();
+
+    E_EtherCANErrCode initialize(
+        E_LogLevel logLevel = DEFAULT_LOGLEVEL,
+        const std::string &log_dir = DEFAULT_LOGDIR,
+        int firmware_version_address_offset = 0x61,
+        const std::string &protection_logfile = "_" DEFAULT_START_TIMESTAMP "-fpu_protection.log",
+        const std::string &control_logfile = "_" DEFAULT_START_TIMESTAMP "-fpu_control.log",
+        const std::string &tx_logfile = "_" DEFAULT_START_TIMESTAMP "-fpu_tx.log",
+        const std::string &rx_logfile = "_" DEFAULT_START_TIMESTAMP "-fpu_rx.log",
+        const std::string &start_timestamp = DEFAULT_START_TIMESTAMP);
 
     E_GridState getGridState(t_grid_state &grid_state_ret);
 
@@ -217,7 +231,7 @@ protected:
 
     //..........................................................................
 private:
-  
+
 #ifdef FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
     void need_ping(const t_grid_state &gs,
@@ -271,6 +285,7 @@ public:
 private:
     void test_check_fpuset();
     void test_need_ping();
+    void test_initialize();
     void test_connect();
     void test_findDatum();
     void test_configMotion();

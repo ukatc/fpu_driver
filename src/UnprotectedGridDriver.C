@@ -69,6 +69,8 @@ string make_logdir(string log_dir)
 //==============================================================================
 
 UnprotectedGridDriver::UnprotectedGridDriver(
+    // NOTE: Boost.Python only allows up to 14 function arguments in
+    // function wrappers, so need to keep number of arguments within this
     int nfpus,
     double SocketTimeOutSeconds,
     bool confirm_each_step,
@@ -97,7 +99,7 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     // TODO: Move the following check warnings to the Boost.Python wrapper?
     if (confirm_each_step)
     {
-        warn("confirm_each_steps set to True, which requires extra\n"
+        warn("confirm_each_step set to True, which requires extra\n"
              "confirmation requests of waveform step upload, and reduces performance");
     }
 
@@ -170,6 +172,29 @@ UnprotectedGridDriver::~UnprotectedGridDriver()
     // TODO: Close/delete any other non-RAII objects here - see 
     // FpuGridDriver.py -> UnprotectedGridDriver -> __del__
 
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::initialize(
+                                E_LogLevel logLevel,
+                                const std::string &log_dir,
+                                int firmware_version_address_offset,
+                                const std::string &protection_logfile,
+                                const std::string &control_logfile,
+                                const std::string &tx_logfile,
+                                const std::string &rx_logfile,
+                                const std::string &start_timestamp)
+{
+
+    // TODO: This function needs to initialise all further params not already
+    // specified by the constructor arguments, due to the Boost.Python 14-argument
+    // limit.
+    //
+    // TODO: If required, this function can fail and return an error code, so
+    // that the calling code (which could be the Python wrapper, or eventual
+    // ESO driver code) can produce an appropriate error indication? Also,
+    // ideally all other functions in this class should check some kind of 
+    // "initialized_ok" bool flag before running?
 }
 
 //------------------------------------------------------------------------------
@@ -811,6 +836,8 @@ void UnprotectedGridDriverTester::doTests()
     
     //test_need_ping();
     
+    test_initialize();
+    
     test_connect();
     
     test_findDatum();
@@ -861,6 +888,15 @@ void UnprotectedGridDriverTester::test_need_ping()
     fpu_selection = { 6, 7, 8, 9 };
     need_ping(grid_state, fpu_selection, fpu_ping_selection);
 #endif // NOT FPU_SET_IS_VECTOR 
+}
+
+//------------------------------------------------------------------------------
+void UnprotectedGridDriverTester::test_initialize()
+{
+    UnprotectedGridDriver ugd;
+    
+    ugd.initialize();
+    
 }
 
 //------------------------------------------------------------------------------
