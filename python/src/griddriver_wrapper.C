@@ -184,6 +184,11 @@ public:
         return DE_OK; 
     }
 
+private:
+    const EtherCANInterfaceConfig &getConfig() const override
+    {
+        return config;
+    }
 };
 
 //==============================================================================

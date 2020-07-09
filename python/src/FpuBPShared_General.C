@@ -71,6 +71,96 @@ int WrapperSharedBase::convertGatewayAddresses(const bp::list &list_gateway_addr
 
     return actual_num_gw;
 }
+
+//------------------------------------------------------------------------------
+void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) const
+{
+    if (len(fpu_list) == 0)
+    {
+        for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+        {
+            fpuset[i] = true;
+        }
+    }
+    else
+    {
+        for(int i = 0; i < MAX_NUM_POSITIONERS; i++)
+        {
+            fpuset[i] = false;
+        }
+        for(int i = 0; i < bp::len(fpu_list); i++)
+        {
+            int fpu_id = bp::extract<int>(fpu_list[i]);
+            if ((fpu_id < 0) ||
+                (fpu_id >= MAX_NUM_POSITIONERS) ||
+                (fpu_id >= getConfig().num_fpus))
+            {
+                throw EtherCANException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                                        DE_INVALID_FPU_ID);
+            }
+            fpuset[fpu_id] = true;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+void WrapperSharedBase::getDatumFlags(bp::dict &dict_modes,
+                                      t_datum_search_flags &direction_flags,
+                                      const t_fpuset &fpuset)
+{
+    bp::list fpu_id_list = dict_modes.keys();
+    const int nkeys = bp::len(fpu_id_list);
+
+    if (nkeys == 0)
+    {
+        // default -- everything is SEARCH_AUTO
+        for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+        {
+            if (fpuset[i])
+            {
+                direction_flags[i] = SEARCH_AUTO;
+            }
+            else
+            {
+                direction_flags[i] = SKIP_FPU;
+            }
+        }
+    }
+    else
+    {
+        for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+        {
+            direction_flags[i] = SKIP_FPU;
+        }
+
+        const int num_fpus = getConfig().num_fpus;
+
+        if (nkeys > num_fpus)
+        {
+            throw EtherCANException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                                    DE_INVALID_FPU_ID);
+        }
+
+        for (int i = 0; i < nkeys; i++)
+        {
+            object fpu_key = fpu_id_list[i];
+            int fpu_id = bp::extract<int>(fpu_key);
+
+            if ((fpu_id >= num_fpus) || (fpu_id < 0))
+            {
+                throw EtherCANException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                                        DE_INVALID_FPU_ID);
+            }
+
+            if (fpuset[fpu_id])
+            {
+                int mode = bp::extract<int>(dict_modes[fpu_key]);
+                direction_flags[fpu_id] = static_cast<E_DATUM_SEARCH_DIRECTION>(mode);
+            }
+        }
+    }
+}
+
 #pragma GCC diagnostic pop
 
 
