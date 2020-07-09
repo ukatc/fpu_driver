@@ -38,6 +38,8 @@
 // these messy #pragma's?
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-overflow"
+
+//------------------------------------------------------------------------------
 int WrapperSharedBase::convertGatewayAddresses(const bp::list &list_gateway_addresses,
                                     t_gateway_address *address_array_to_fill)
 {

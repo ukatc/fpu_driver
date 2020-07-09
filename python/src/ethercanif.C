@@ -232,7 +232,6 @@ public:
 
     }
 
-
     E_EtherCANErrCode wrap_pingFPUs(WrapGridState& grid_state, list& fpu_list)
     {
         t_fpuset fpuset;
@@ -241,7 +240,6 @@ public:
         checkInterfaceError(ecode);
         return ecode;
     }
-
 
     E_EtherCANErrCode wrap_readRegister(int read_address, WrapGridState& grid_state, list& fpu_list)
     {

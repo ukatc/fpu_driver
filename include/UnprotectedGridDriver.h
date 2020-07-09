@@ -141,15 +141,18 @@ public:
                                 const t_datum_search_flags &search_modes,
                                 enum E_DATUM_SELECTION selected_arm,
                                 const t_fpuset &fpuset,
-                                bool soft_protection, bool count_protection,
-                                bool support_uninitialized_auto,
-                                enum E_DATUM_TIMEOUT_FLAG timeout);
+                        bool soft_protection = true,
+                        bool count_protection = true,
+                        bool support_uninitialized_auto = true,
+                        enum E_DATUM_TIMEOUT_FLAG timeout = DATUM_TIMEOUT_ENABLE);
 
     E_EtherCANErrCode configMotion(const t_wtable &wavetable, t_grid_state &gs,
-                                   const t_fpuset &fpuset, bool soft_protection,
-                                   bool allow_uninitialized,
-                                   int ruleset_version, bool warn_unsafe,
-                                   int verbosity);
+                        const t_fpuset &fpuset,
+                        bool soft_protection = true,
+                        bool allow_uninitialized = false,
+                        int ruleset_version = DEFAULT_WAVEFORM_RULESET_VERSION,
+                        bool warn_unsafe = true,
+                        int verbosity = 3);
 
     E_EtherCANErrCode executeMotion(t_grid_state &gs, const t_fpuset &fpuset,
                                     bool sync_command = true);
@@ -225,7 +228,6 @@ protected:
 
     //..........................................................................
 private:
-
 #ifdef FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
     void need_ping(const t_grid_state &gs,
