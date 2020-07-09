@@ -74,6 +74,8 @@ class WrapperSharedBase
 protected:
     int convertGatewayAddresses(const bp::list &list_gateway_addresses,
                                 t_gateway_address *address_array_to_fill);
+    void convertWavetable(const bp::dict &dict_waveforms,
+                          t_wtable &wavetable_to_fill);
     void getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) const;
     void getDatumFlags(bp::dict &dict_search_modes,
                        t_datum_search_flags &direction_flags,

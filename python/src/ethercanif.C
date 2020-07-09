@@ -194,48 +194,9 @@ public:
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
-        list fpu_id_list = dict_waveforms.keys();
-        const int nkeys = len(fpu_id_list);
-
-        if (nkeys == 0)
-        {
-            throw EtherCANException("DE_INVALID_WAVEFORM: Waveform table needs to address at least one FPU.",
-                                    DE_INVALID_WAVEFORM);
-        }
-
         t_wtable wtable;
-        for(int i = 0; i < nkeys; i++)
-        {
-            object fpu_key = fpu_id_list[i];
-            int fpu_id = extract<int>(fpu_key);
-            list step_list = extract<list>(dict_waveforms[fpu_key]);
-            int num_steps = len(step_list);
+        convertWavetable(dict_waveforms, wtable);
 
-            if (num_steps == 0)
-            {
-                throw EtherCANException("DE_INVALID_WAVEFORM: Waveform entry needs to contain at least one step.",
-                                        DE_INVALID_WAVEFORM);
-            }
-
-            std::vector<t_step_pair> steps;
-
-            for(int j = 0; j < num_steps; j++)
-            {
-                tuple tstep_pair = extract<tuple>(step_list[j]);
-                int16_t alpha_steps = extract<int>(tstep_pair[0]);
-                int16_t beta_steps = extract<int>(tstep_pair[1]);
-
-                t_step_pair step_pair;
-                step_pair.alpha_steps = alpha_steps;
-                step_pair.beta_steps = beta_steps;
-                steps.push_back(step_pair);
-            }
-
-            t_waveform wform;
-            wform.fpu_id = fpu_id;
-            wform.steps = steps;
-            wtable.push_back(wform);
-        }
         E_EtherCANErrCode ecode = configMotion(wtable, grid_state, fpuset,
                                                allow_uninitialized, ruleset_version);
         checkInterfaceError(ecode);

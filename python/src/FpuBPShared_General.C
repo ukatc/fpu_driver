@@ -73,6 +73,55 @@ int WrapperSharedBase::convertGatewayAddresses(const bp::list &list_gateway_addr
 }
 
 //------------------------------------------------------------------------------
+void WrapperSharedBase::convertWavetable(const bp::dict &dict_waveforms,
+                                         t_wtable &wavetable_to_fill)
+{
+    wavetable_to_fill.clear();
+
+    bp::list fpu_id_list = dict_waveforms.keys();
+    const int num_keys = bp::len(fpu_id_list);
+
+    if (num_keys == 0)
+    {
+        throw EtherCANException("DE_INVALID_WAVEFORM: Waveform table needs to address at least one FPU.",
+                                DE_INVALID_WAVEFORM);
+    }
+
+    for (int i = 0; i < num_keys; i++)
+    {
+        object fpu_key = fpu_id_list[i];
+        int fpu_id = bp::extract<int>(fpu_key);
+        bp::list step_list = bp::extract<bp::list>(dict_waveforms[fpu_key]);
+        int num_steps = bp::len(step_list);
+
+        if (num_steps == 0)
+        {
+            throw EtherCANException("DE_INVALID_WAVEFORM: Waveform entry needs to contain at least one step.",
+                                    DE_INVALID_WAVEFORM);
+        }
+
+        std::vector<t_step_pair> steps;
+
+        for (int j = 0; j < num_steps; j++)
+        {
+            bp::tuple tstep_pair = bp::extract<bp::tuple>(step_list[j]);
+            int16_t alpha_steps = bp::extract<int>(tstep_pair[0]);
+            int16_t beta_steps = bp::extract<int>(tstep_pair[1]);
+
+            t_step_pair step_pair;
+            step_pair.alpha_steps = alpha_steps;
+            step_pair.beta_steps = beta_steps;
+            steps.push_back(step_pair);
+        }
+
+        t_waveform wform;
+        wform.fpu_id = fpu_id;
+        wform.steps = steps;
+        wavetable_to_fill.push_back(wform);
+    }
+}
+
+//------------------------------------------------------------------------------
 void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) const
 {
     if (bp::len(fpu_list) == 0)
