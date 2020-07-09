@@ -75,7 +75,7 @@ int WrapperSharedBase::convertGatewayAddresses(const bp::list &list_gateway_addr
 //------------------------------------------------------------------------------
 void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) const
 {
-    if (len(fpu_list) == 0)
+    if (bp::len(fpu_list) == 0)
     {
         for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
         {
@@ -84,11 +84,11 @@ void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) co
     }
     else
     {
-        for(int i = 0; i < MAX_NUM_POSITIONERS; i++)
+        for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
         {
             fpuset[i] = false;
         }
-        for(int i = 0; i < bp::len(fpu_list); i++)
+        for (int i = 0; i < bp::len(fpu_list); i++)
         {
             int fpu_id = bp::extract<int>(fpu_list[i]);
             if ((fpu_id < 0) ||
@@ -104,14 +104,14 @@ void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) co
 }
 
 //------------------------------------------------------------------------------
-void WrapperSharedBase::getDatumFlags(bp::dict &dict_modes,
+void WrapperSharedBase::getDatumFlags(bp::dict &dict_search_modes,
                                       t_datum_search_flags &direction_flags,
                                       const t_fpuset &fpuset)
 {
-    bp::list fpu_id_list = dict_modes.keys();
-    const int nkeys = bp::len(fpu_id_list);
+    bp::list fpu_id_list = dict_search_modes.keys();
+    const int num_keys = bp::len(fpu_id_list);
 
-    if (nkeys == 0)
+    if (num_keys == 0)
     {
         // default -- everything is SEARCH_AUTO
         for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
@@ -135,13 +135,13 @@ void WrapperSharedBase::getDatumFlags(bp::dict &dict_modes,
 
         const int num_fpus = getConfig().num_fpus;
 
-        if (nkeys > num_fpus)
+        if (num_keys > num_fpus)
         {
             throw EtherCANException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
                                     DE_INVALID_FPU_ID);
         }
 
-        for (int i = 0; i < nkeys; i++)
+        for (int i = 0; i < num_keys; i++)
         {
             object fpu_key = fpu_id_list[i];
             int fpu_id = bp::extract<int>(fpu_key);
@@ -154,7 +154,7 @@ void WrapperSharedBase::getDatumFlags(bp::dict &dict_modes,
 
             if (fpuset[fpu_id])
             {
-                int mode = bp::extract<int>(dict_modes[fpu_key]);
+                int mode = bp::extract<int>(dict_search_modes[fpu_key]);
                 direction_flags[fpu_id] = static_cast<E_DATUM_SEARCH_DIRECTION>(mode);
             }
         }

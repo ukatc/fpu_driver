@@ -38,7 +38,6 @@ PyObject* ProtectionErrorExceptionTypeObj = 0;
 PyObject* HardwareProtectionErrorExceptionTypeObj = 0;
 
 
-
 namespace   // Avoid cluttering the global namespace.
 {
 
@@ -48,14 +47,12 @@ E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
     return getGridStateSummary(grid_state);
 }
 
-
 /* ---------------------------------------------------------------------------*/
 void translate_interface_error(EtherCANException const& e)
 {
     // Use the Python 'C' API to set up an exception object
     switch (e.getErrCode())
     {
-
     case DE_INTERFACE_NOT_INITIALIZED :
     case DE_INTERFACE_ALREADY_INITIALIZED :
     case DE_STILL_BUSY :
@@ -153,7 +150,6 @@ void translate_interface_error(EtherCANException const& e)
     }
 }
 
-
 /* ---------------------------------------------------------------------------*/
 class WrapEtherCANInterface : public EtherCANInterface,
                               protected WrapperSharedBase
@@ -194,7 +190,7 @@ public:
                                            list &fpu_list,
                                            bool allow_uninitialized=false,
 					   int ruleset_version=DEFAULT_WAVEFORM_RULESET_VERSION)
-  {
+    {
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
@@ -244,7 +240,6 @@ public:
                                                allow_uninitialized, ruleset_version);
         checkInterfaceError(ecode);
         return ecode;
-
     };
 #pragma GCC diagnostic pop
 
@@ -332,7 +327,6 @@ public:
         return ecode;
     }
 
-
     E_EtherCANErrCode wrap_startFindDatum(WrapGridState& grid_state,
                                           dict& dict_modes,
                                           list& fpu_list,
@@ -340,7 +334,6 @@ public:
                                           E_DATUM_TIMEOUT_FLAG timeout_flag=DATUM_TIMEOUT_ENABLE,
                                           bool count_protection=true)
     {
-
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
@@ -364,7 +357,6 @@ public:
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
-
         // FIXME: should return remaining wait time in tuple
         estatus =  waitFindDatum(grid_state, max_wait_time, finished, &fpuset);
 
@@ -378,9 +370,7 @@ public:
 
         checkInterfaceError(estatus);
         return estatus;
-
     }
-
 
     E_EtherCANErrCode wrap_executeMotion(WrapGridState& grid_state, list& fpu_list, bool sync_command=false)
     {
@@ -530,7 +520,6 @@ public:
         E_EtherCANErrCode ecode = resetStepCounters(alpha_steps, beta_steps, grid_state, fpuset);
         checkInterfaceError(ecode);
         return ecode;
-
     }
 
     E_EtherCANErrCode wrap_checkIntegrity(WrapGridState& grid_state, list& fpu_list)
@@ -541,7 +530,6 @@ public:
         E_EtherCANErrCode ecode = checkIntegrity(grid_state, fpuset);
         checkInterfaceError(ecode);
         return ecode;
-
     }
 
     boost::python::tuple wrap_getMinFirmwareVersion(WrapGridState& grid_state, list& fpu_list)
