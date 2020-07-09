@@ -86,30 +86,8 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     double motor_max_rel_increase,
     double motor_max_step_difference)
 {
-
-    // TODO: Finish filling out this constructor from Python equivalent
-
-
-
-    // self.lock = threading.RLock()   // TODO: Adapt from Python - use e.g. 
-                                       // pthread_mutex_lock()? (see EtherCANInterface.C)
-                                       // AND need to unlock somehwere else, or would it be
-                                       // done automatically due to RAII?
-
-    // TODO: Move the following check warnings to the Boost.Python wrapper?
-    if (confirm_each_step)
-    {
-        warn("confirm_each_step set to True, which requires extra\n"
-             "confirmation requests of waveform step upload, and reduces performance");
-    }
-
-    if (min_bus_repeat_delay_ms > 0)
-    {
-        warn("min_bus_repeat_delay_ms is set to value above 0.\n"
-             "Decrease if message rate is too low.");
-    }
-
-    // Initialise EtherCAN configuration object's specified parameters
+    // Temporarily store EtherCANInterfaceConfig values for use by initialize()
+    // when it's called
     config.num_fpus = nfpus;
     config.SocketTimeOutSeconds = SocketTimeOutSeconds;
     config.confirm_each_step = confirm_each_step;
@@ -124,41 +102,6 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     config.motor_max_start_frequency = motor_max_start_frequency;
     config.motor_max_rel_increase = motor_max_rel_increase;
     config.motor_max_step_difference = motor_max_step_difference;
-
-    //..........................................................................
-
-    // TODO: Convert log file initialisation code from FpuGridDriver.py
-
-#if 0
-    int flags = O_CREAT | O_APPEND | O_WRONLY;
-    mode_t mode = 0644;  // Octal
-
-    config.logLevel = logLevel;
-
-    string log_path = make_logdir(log_dir);
-
-    const string &protection_logfile = "_{start_timestamp}-fpu_protection.log",
-    const string &control_logfile = "_{start_timestamp}-fpu_control.log",
-    const string &tx_logfile = "_{start_timestamp}-fpu_tx.log",
-    const string &rx_logfile = "_{start_timestamp}-fpu_rx.log",
-    const string &start_timestamp = TIMESTAMP_INIT_STRING;
-#endif // 0
-
-    //..........................................................................
-
-    // TODO: How to catch / indicate allocation failure? Add try/catch around
-    // the following, OR use std::nothrow?
-    _gd = new EtherCANInterface(config);
-    
-    // TODO: Is this the correct place to call initializeInterface()?
-    // (Johannes' Python wrapper code calls it from the WrapEtherCANInterface
-    // constructor)
-    // TODO: The Python wrapper code also has a checkInterfaceError(ecode) call
-    // after it (to flag any initialisation error to Python) - how to allow
-    // mimicking of this in WrappedGridDriver?
-    // TODO: Call deInitialize() from destructor, or elsewhere? BUT is already
-    // done from AsyncInterface destructor?
-    _gd->initializeInterface();
 }
 
 //------------------------------------------------------------------------------
@@ -195,6 +138,56 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     // ESO driver code) can produce an appropriate error indication? Also,
     // ideally all other functions in this class should check some kind of 
     // "initialized_ok" bool flag before running?
+
+
+
+
+    // TODO: Finish filling out this constructor from Python equivalent
+
+
+
+    // self.lock = threading.RLock()   // TODO: Adapt from Python - use e.g. 
+                                       // pthread_mutex_lock()? (see EtherCANInterface.C)
+                                       // AND need to unlock somehwere else, or would it be
+                                       // done automatically due to RAII?
+
+
+    //..........................................................................
+
+    // TODO: Convert log file initialisation code from FpuGridDriver.py
+
+#if 0
+    int flags = O_CREAT | O_APPEND | O_WRONLY;
+    mode_t mode = 0644;  // Octal
+
+    config.logLevel = logLevel;
+
+    string log_path = make_logdir(log_dir);
+
+    const string &protection_logfile = "_{start_timestamp}-fpu_protection.log",
+    const string &control_logfile = "_{start_timestamp}-fpu_control.log",
+    const string &tx_logfile = "_{start_timestamp}-fpu_tx.log",
+    const string &rx_logfile = "_{start_timestamp}-fpu_rx.log",
+    const string &start_timestamp = TIMESTAMP_INIT_STRING;
+#endif // 0
+
+    //..........................................................................
+
+    // TODO: How to catch / indicate allocation failure? Add try/catch around
+    // the following, OR use std::nothrow?
+    _gd = new EtherCANInterface(config);
+    
+    // TODO: Is this the correct place to call initializeInterface()?
+    // (Johannes' Python wrapper code calls it from the WrapEtherCANInterface
+    // constructor)
+    // TODO: The Python wrapper code also has a checkInterfaceError(ecode) call
+    // after it (to flag any initialisation error to Python) - how to allow
+    // mimicking of this in WrappedGridDriver?
+    // TODO: Call deInitialize() from destructor, or elsewhere? BUT is already
+    // done from AsyncInterface destructor?
+    _gd->initializeInterface();
+
+
 }
 
 //------------------------------------------------------------------------------
@@ -295,6 +288,10 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 {
+
+    // TODO: _gd pointer is used in this function, but need to ensure that
+    // _gd has been initialised before calling this function
+
     E_EtherCANErrCode status = DE_OK;
 
     // Count number of FPUs selected

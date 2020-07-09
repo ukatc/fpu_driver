@@ -39,6 +39,8 @@
 //   - Do: gd.connect([1,2,3])
 //             griddriver.E_EtherCANErrCode.DE_OK
 
+#include <iostream>
+
 #include "FpuBPShared_General.h"
 #include "GridDriver.h"
 #include "InterfaceConstants.h"
@@ -103,6 +105,18 @@ public:
         double motor_max_rel_increase,
         double motor_max_step_difference)
     {
+        if (confirm_each_step)
+        {
+            std::cout << "\nconfirm_each_step set to True, which requires extra confirmation\n";
+            std::cout << "requests of waveform step upload, and reduces performance\n" << std::endl;
+        }
+
+        if (min_bus_repeat_delay_ms > 0)
+        {
+            std::cout << "\nmin_bus_repeat_delay_ms is set to value above 0.\n";
+            std::cout << "Decrease if message rate is too low.\n" << std::endl;
+        }
+
         return boost::shared_ptr<WrappedGridDriver>(new WrappedGridDriver(
             nfpus,
             SocketTimeOutSeconds,

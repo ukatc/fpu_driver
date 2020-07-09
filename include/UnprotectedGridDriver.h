@@ -138,9 +138,9 @@ public:
 
 #ifndef FPU_SET_IS_VECTOR
     E_EtherCANErrCode findDatum(t_grid_state &gs,
-                                const t_datum_search_flags &search_modes,
-                                enum E_DATUM_SELECTION selected_arm,
-                                const t_fpuset &fpuset,
+                        const t_datum_search_flags &search_modes,
+                        enum E_DATUM_SELECTION selected_arm,
+                        const t_fpuset &fpuset,
                         bool soft_protection = true,
                         bool count_protection = true,
                         bool support_uninitialized_auto = true,
@@ -224,6 +224,8 @@ protected:
                                            const t_grid_state &move_gs,
                                            const t_fpuset &fpuset) {}
 
+    // Config: Only the constructor and initialize() must write this - do NOT
+    // write at all after initialize() has been called
     EtherCANInterfaceConfig config;
 
     //..........................................................................
