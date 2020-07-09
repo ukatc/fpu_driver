@@ -138,7 +138,7 @@ public:
     }
 
     E_EtherCANErrCode wrapped_findDatum(WrapGridState &grid_state,
-                                        bp::dict &dict_modes,
+                                        bp::dict &dict_search_modes,
                                         E_DATUM_SELECTION selected_arm,
                                         bp::list &fpu_list,
                                         bool soft_protection,
@@ -146,19 +146,21 @@ public:
                                         bool support_uninitialized_auto,
                                         E_DATUM_TIMEOUT_FLAG timeout)
     {
-#if 0        
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
         t_datum_search_flags direction_flags;
-        getDatumFlags(dict_modes, direction_flags, fpuset);
+        getDatumFlags(dict_search_modes, direction_flags, fpuset);
 
         E_EtherCANErrCode ecode = findDatum(grid_state, direction_flags,
-                                            arm_selection, timeout_flag,
-                                            count_protection, &fpuset);
+                                            selected_arm, fpuset,
+                                            soft_protection,
+                                            count_protection,
+                                            support_uninitialized_auto,
+                                            timeout);
+
         checkInterfaceError(ecode);
         return ecode;
-#endif // 0        
     }
 
     E_EtherCANErrCode wrapped_configMotion(bp::dict &dict_waveforms,
