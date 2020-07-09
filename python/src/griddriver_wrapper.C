@@ -158,7 +158,6 @@ public:
                                             count_protection,
                                             support_uninitialized_auto,
                                             timeout);
-
         checkInterfaceError(ecode);
         return ecode;
     }
@@ -174,16 +173,36 @@ public:
                                            // configMotion() - keep?
                                            bool warn_unsafe, int verbosity)
     {
-        
-        return DE_OK; 
+        // Configures movement by sending a waveform table to a group of FPUs.
+        // Call signature is:
+        // configMotion( { fpuid0 : { (asteps, bsteps), (asteps, bsteps), ...],
+        //                 fpuid1 : { ... }, ...}})
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        t_wtable wtable;
+        convertWavetable(dict_waveforms, wtable);
+
+        E_EtherCANErrCode ecode = configMotion(wtable, grid_state, fpuset,
+                                               soft_protection,
+                                               allow_uninitialized,
+                                               ruleset_version, warn_unsafe,
+                                               verbosity);
+        checkInterfaceError(ecode);
+        return ecode;
     }
 
     E_EtherCANErrCode wrapped_executeMotion(WrapGridState &grid_state,
                                             bp::list &fpu_list,
                                             bool sync_command)
     {
-        
-        return DE_OK; 
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = executeMotion(grid_state, fpuset, sync_command);
+        checkInterfaceError(ecode);
+        return ecode;
     }
 
 private:
