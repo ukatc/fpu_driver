@@ -425,7 +425,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
             }
         }
         
-        FpuPositions initial_positions;
+        t_fpu_positions initial_positions;
         _start_find_datum_hook(gs, search_modes, selected_arm, fpuset,
                                initial_positions, soft_protection);
 
@@ -756,7 +756,7 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     {
         // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
         // here 
-        FpuPositions initial_positions;
+        t_fpu_positions initial_positions;
         _start_execute_motion_hook(gs, fpuset, initial_positions);
         usleep((useconds_t)(0.1 * 1000000.0));
         t_grid_state prev_gs;

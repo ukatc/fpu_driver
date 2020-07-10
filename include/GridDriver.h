@@ -58,14 +58,14 @@ private:
                                 const t_datum_search_flags &search_modes,
                                 enum E_DATUM_SELECTION selected_arm,
                                 const t_fpuset &fpuset,
-                                FpuPositions &initial_positions_ret,
+                                t_fpu_positions &initial_positions_ret,
                                 bool soft_protection) override;
     void _cancel_find_datum_hook(t_grid_state &gs, const t_fpuset &fpuset,
-                                 const FpuPositions &initial_positions) override;
+                                 const t_fpu_positions &initial_positions) override;
     void _finished_find_datum_hook(t_grid_state &prev_gs, t_grid_state &datum_gs,
                                    const t_datum_search_flags &search_modes,
                                    const t_fpuset &fpuset, bool was_cancelled,
-                                   const FpuPositions &initial_positions, // TODO: Not used (in Python version) - remove?
+                                   const t_fpu_positions &initial_positions, // TODO: Not used (in Python version) - remove?
                                    enum E_DATUM_SELECTION selected_arm) override;
 
     // Error counters functionality
@@ -92,9 +92,9 @@ private:
 
     // executeMotion() hook functions
     void _start_execute_motion_hook(t_grid_state &gs, const t_fpuset &fpuset,
-                                    const FpuPositions &initial_positions) override;
+                                    const t_fpu_positions &initial_positions) override;
     void _cancel_execute_motion_hook(t_grid_state &gs, const t_fpuset &fpuset,
-                                     const FpuPositions &initial_positions) override;
+                                     const t_fpu_positions &initial_positions) override;
     void _post_execute_motion_hook(t_grid_state &gs, const t_grid_state &old_gs,
                                    const t_grid_state &move_gs,
                                    const t_fpuset &fpuset) override;

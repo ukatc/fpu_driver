@@ -54,7 +54,7 @@ void GridDriver::_start_find_datum_hook(t_grid_state &gs,
                                         const t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
                                         const t_fpuset &fpuset,
-                                        FpuPositions &initial_positions_ret,
+                                        t_fpu_positions &initial_positions_ret,
                                         bool soft_protection)
 {
     // TODO
@@ -62,7 +62,7 @@ void GridDriver::_start_find_datum_hook(t_grid_state &gs,
 
 void GridDriver::_cancel_find_datum_hook(t_grid_state &gs, 
                                          const t_fpuset &fpuset,
-                                         const FpuPositions &initial_positions)
+                                         const t_fpu_positions &initial_positions)
 {
     // TODO
 }
@@ -72,7 +72,7 @@ void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
                                            const t_datum_search_flags &search_modes,
                                            const t_fpuset &fpuset,
                                            bool was_cancelled,
-                                           const FpuPositions &initial_positions, 
+                                           const t_fpu_positions &initial_positions, 
                                            enum E_DATUM_SELECTION selected_arm)
 {
     // TODO
@@ -111,14 +111,14 @@ void GridDriver::_post_config_motion_hook(const t_wtable &wtable,
 
 void GridDriver::_start_execute_motion_hook(t_grid_state &gs,
                                             const t_fpuset &fpuset,
-                                            const FpuPositions &initial_positions)
+                                            const t_fpu_positions &initial_positions)
 {
     // TODO
 }
 
 void GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
                                              const t_fpuset &fpuset,
-                                             const FpuPositions &initial_positions)
+                                             const t_fpu_positions &initial_positions)
 {
     // TODO
 }

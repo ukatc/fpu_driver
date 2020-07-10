@@ -73,13 +73,13 @@ enum class Range
 
 // TODO: Not sure about whether these FPU position data structures are fully
 // correct and suitable yet - keep under review
-typedef struct
+struct t_fpu_position
 {
     Interval apos;
     Interval bpos;
-} FpuPosition;
+};
 
-typedef FpuPosition FpuPositions[MAX_NUM_POSITIONERS];
+typedef t_fpu_position t_fpu_positions[MAX_NUM_POSITIONERS];
 
 // Forward reference for friend class declaration in UnprotectedGridDriver below
 class UnprotectedGridDriverTester;
@@ -176,7 +176,7 @@ protected:
                                         const t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
                                         const t_fpuset &fpuset,
-                                        FpuPositions &initial_positions_ret,
+                                        t_fpu_positions &initial_positions_ret,
                                         bool soft_protection) {}
     virtual void _cancel_find_datum_hook(t_grid_state &gs,
                                          // TODO: These arguments (which are in the Python version)
@@ -184,13 +184,13 @@ protected:
                                          //const t_datum_search_flags &search_modes,
                                          //enum E_DATUM_SELECTION selected_arm,
                                          const t_fpuset &fpuset, 
-                                         const FpuPositions &initial_positions) {}
+                                         const t_fpu_positions &initial_positions) {}
     virtual void _finished_find_datum_hook(t_grid_state &prev_gs,
                                            t_grid_state &datum_gs,
                                            const t_datum_search_flags &search_modes,
                                            const t_fpuset &fpuset,
                                            bool was_cancelled,
-                                           const FpuPositions &initial_positions,
+                                           const t_fpu_positions &initial_positions,
                                            enum E_DATUM_SELECTION selected_arm) {}
 
     // Error counters function
@@ -215,10 +215,10 @@ protected:
     // executeMotion() hook functions
     virtual void _start_execute_motion_hook(t_grid_state &gs,
                                             const t_fpuset &fpuset,
-                                            const FpuPositions &initial_positions) {}
+                                            const t_fpu_positions &initial_positions) {}
     virtual void _cancel_execute_motion_hook(t_grid_state &gs,
                                              const t_fpuset &fpuset,
-                                             const FpuPositions &initial_positions) {}
+                                             const t_fpu_positions &initial_positions) {}
     virtual void _post_execute_motion_hook(t_grid_state &gs,
                                            const t_grid_state &old_gs,
                                            const t_grid_state &move_gs,
