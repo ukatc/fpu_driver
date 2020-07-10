@@ -247,8 +247,6 @@ class UnprotectedGridDriver (object):
         config.waveform_upload_pause_us = waveform_upload_pause_us
        	config.min_bus_repeat_delay_ms = min_bus_repeat_delay_ms
         config.min_fpu_repeat_delay_ms = min_fpu_repeat_delay_ms
-        config.configmotion_max_resend_count = configmotion_max_resend_count
-        config.configmotion_max_retry_count = configmotion_max_retry_count
         config.firmware_version_address_offset = firmware_version_address_offset
 
         flags = os.O_CREAT | os.O_APPEND | os.O_WRONLY
