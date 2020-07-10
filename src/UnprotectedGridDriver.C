@@ -333,7 +333,6 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
                     enum E_DATUM_TIMEOUT_FLAG timeout)
 {
     E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
-    E_EtherCANErrCode result_returned = DE_ERROR_UNKNOWN;
 
     /*
     Moves all FPUs to datum position.
@@ -374,138 +373,144 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     */
 
     result = check_fpuset(fpuset);
-    if (result == DE_OK)
+    if (result != DE_OK)
     {
-        // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-        // here 
+        return result;
+    }
 
-        // Make temporary local copy of search modes to allow local modification
-        t_datum_search_flags search_modes;
-        for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-        {
-            search_modes[i] = orig_search_modes[i];
-        }
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here 
 
-        if (soft_protection)
+    // Make temporary local copy of search modes to allow local modification
+    t_datum_search_flags search_modes;
+    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    {
+        search_modes[i] = orig_search_modes[i];
+    }
+
+    if (soft_protection)
+    {
+        // Check whether datum search is safe, adjusting search_modes
+        _allow_find_datum_hook(gs, search_modes, selected_arm,
+                               fpuset, support_uninitialized_auto);
+        // We might need to disable the stepcount-based check if (and only
+        // if) the step counter does not agree with the database.
+        // Check whether a movement against the step count is needed.
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
         {
-            // Check whether datum search is safe, adjusting search_modes
-            _allow_find_datum_hook(gs, search_modes, selected_arm,
-                                   fpuset, support_uninitialized_auto);
-            // We might need to disable the stepcount-based check if (and only
-            // if) the step counter does not agree with the database.
-            // Check whether a movement against the step count is needed.
-            for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+            if (fpuset[fpu_id] && 
+                (((search_modes[fpu_id] == SEARCH_CLOCKWISE) ||
+                  (search_modes[fpu_id] == SEARCH_ANTI_CLOCKWISE)) &&
+                 (orig_search_modes[fpu_id] == SEARCH_AUTO)) )
             {
-                if ( ((search_modes[fpu_id] == SEARCH_CLOCKWISE) ||
-                      (search_modes[fpu_id] == SEARCH_ANTI_CLOCKWISE)) &&
-                     (orig_search_modes[fpu_id] == SEARCH_AUTO))
-                {
-                    // TODO: Check against equivalent Python, that
-                    // count_protection is only required to be modified
-                    // locally inside this function, and does not alter
-                    // the function argument value
-                    count_protection = false;
-                    break;
-                }
+                // TODO: Check against equivalent Python, that
+                // count_protection is only required to be modified
+                // locally inside this function, and does not alter
+                // the function argument value
+                count_protection = false;
+                break;
             }
-        }
-        
-        t_fpu_positions initial_positions;
-        _start_find_datum_hook(gs, search_modes, selected_arm, fpuset,
-                               initial_positions, soft_protection);
-
-        t_grid_state prev_gs;
-        _gd->getGridState(prev_gs);
-
-        result = _gd->startFindDatum(gs, search_modes, selected_arm, timeout,
-                                     count_protection, &fpuset);
-        if (result != DE_OK)
-        {
-            // We cancel the datum search altogether, so we can reset
-            // positions to old value
-            _cancel_find_datum_hook(gs, fpuset, initial_positions);
-
-            // TODO: Is this a good way to handle the error? (the Python
-            // version does a "raise")
-            return result;
-        }
-
-        double time_interval = 0.1;
-        usleep((useconds_t)(time_interval * 1000000.0));
-        bool is_ready = false;
-        bool was_aborted = false;
-        bool finished_ok = false;
-
-        // TODO: In the Python equivalent code, has code to allow aborting
-        // from a signal (see was_aborted etc) - but this isn't appropriate
-        // in this C++ version because will be part of ESO driver? Come back
-        // to this / check what kind of ESO driver abort mechanism is required
-        //
-        // TODO: In the Python equivalent code, has try/finally block - but
-        // is this required/useful/appropriate in this C++ code - are there 
-        // any exceptions to be caught?
-        while (!is_ready)
-        {
-            bool wait_find_datum_finished = false;
-            result = _gd->waitFindDatum(gs, time_interval,
-                                        wait_find_datum_finished, &fpuset);
-
-            // TODO: The following is extra from
-            // WrapEtherCANInterface::wrap_waitFindDatum() - check that it's
-            // OK
-            if (((!wait_find_datum_finished) && (result == DE_OK))
-                    || (result == DE_WAIT_TIMEOUT))
-            {
-                result = DE_WAIT_TIMEOUT;
-            }
-            is_ready = (result != DE_WAIT_TIMEOUT);
-            finished_ok = (result == DE_OK);
-        }
-
-        if (!finished_ok)
-        {
-            usleep((useconds_t)(time_interval * 1000000.0));
-
-            t_fpuset pingset;
-            need_ping(gs, fpuset, pingset);
-
-            // Perform FPU pinging if any FPU needs to be pinged
-            bool need_pinging = false;
-            for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-            {
-                if (pingset[fpu_id])
-                {
-                    need_pinging = true;
-                    break;
-                }
-            }
-            if (need_pinging)
-            {
-                result = _pingFPUs(gs, pingset);
-                if (result != DE_OK)
-                {
-                    // TODO: Error
-                }
-            }
-        }
-
-        _finished_find_datum_hook(prev_gs, gs, search_modes, fpuset,
-                                  !finished_ok, initial_positions,
-                                  selected_arm);
-
-        if (was_aborted)
-        {
-
-            // TODO: Not appropriate to abort etc? (see comments further up in
-            // this function)
-
         }
     }
 
+    t_fpu_positions initial_positions;
+    _start_find_datum_hook(gs, search_modes, selected_arm, fpuset,
+                           initial_positions, soft_protection);
 
-    // TODO: Generate good return codes in the code above
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
 
-    return result_returned;
+    result = _gd->startFindDatum(gs, search_modes, selected_arm, timeout,
+                                 count_protection, &fpuset);
+    if (result != DE_OK)
+    {
+        // We cancel the datum search altogether, so we can reset
+        // positions to old value
+        _cancel_find_datum_hook(gs, fpuset, initial_positions);
+
+        // TODO: Is this a good way to handle the error? (the Python
+        // version does a "raise")
+        return result;
+    }
+
+    double time_interval = 0.1;
+    usleep((useconds_t)(time_interval * microsecs_in_1_sec));
+    bool is_ready = false;
+    bool was_aborted = false;
+    bool finished_ok = false;
+
+    // TODO: In the Python equivalent code, has code to allow aborting
+    // from a signal (see was_aborted etc) - but this isn't appropriate
+    // in this C++ version because will be part of ESO driver? Come back
+    // to this / check what kind of ESO driver abort mechanism is required
+    //
+    // TODO: In the Python equivalent code, has try/finally block - but
+    // is this required/useful/appropriate in this C++ code - are there 
+    // any exceptions to be caught?
+    while (!is_ready)
+    {
+        bool wait_find_datum_finished = false;
+        result = _gd->waitFindDatum(gs, time_interval,
+                                    wait_find_datum_finished, &fpuset);
+
+        // TODO: The following is extra from
+        // WrapEtherCANInterface::wrap_waitFindDatum() - check that it's OK
+        // TODO: WrapEtherCANInterface::wrap_waitFindDatum() also contains
+        // a FIXME - check this
+        if (((!wait_find_datum_finished) && (result == DE_OK))
+                || (result == DE_WAIT_TIMEOUT))
+        {
+            result = DE_WAIT_TIMEOUT;
+        }
+
+        is_ready = (result != DE_WAIT_TIMEOUT);
+        finished_ok = (result == DE_OK);
+    }
+
+    if (!finished_ok)
+    {
+        usleep((useconds_t)(time_interval * microsecs_in_1_sec));
+
+        t_fpuset pingset;
+        need_ping(gs, fpuset, pingset);
+
+        // Perform FPU pinging if any FPU needs to be pinged
+        bool need_pinging = false;
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        {
+            if (fpuset[fpu_id] && pingset[fpu_id])
+            {
+                need_pinging = true;
+                break;
+            }
+        }
+        if (need_pinging)
+        {
+            result = _pingFPUs(gs, pingset);
+            if (result != DE_OK)
+            {
+                // TODO: Error? Look at what the _pingFPUs() return codes mean,
+                // and figure out what overall function return value needs to be
+            }
+        }
+    }
+
+    _finished_find_datum_hook(prev_gs, gs, search_modes, fpuset,
+                              !finished_ok, initial_positions,
+                              selected_arm);
+
+    if (was_aborted)
+    {
+
+        // TODO: Not appropriate to abort etc? (see comments further up in
+        // this function)
+
+    }
+
+    // TODO: Figure out what the return code needs to be, in terms of 
+    // finished_ok, _pingFPUs() failing etc
+
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------
@@ -570,143 +575,144 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     // TODO: Sort out return values
 
     E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
+
     result = check_fpuset(fpuset);
-    if (result == DE_OK)
+    if (result != DE_OK)
     {
-        // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-        // here 
+        return result;
+    }
 
-        // We make a copy of the wavetable to make sure no side effects are
-        // visible to the caller
-        // TODO: Will the following statement do a deep copy as required?
-        // TODO: This will use lots of local stack - is the stack size big
-        // enough for this?
-        t_wtable wtable = wavetable;
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here 
 
-        // Delete all wtable elements not selected in fpuset
-        // TODO: This might be very inefficient because deleting std::vector
-        // elements from middle - but will work OK
-        // TODO: Test this carefully
-        for (auto it = wtable.begin(); it != wtable.end(); )
+    // We make a copy of the wavetable to make sure no side effects are
+    // visible to the caller
+    // TODO: Will the following statement do a deep copy as required?
+    // TODO: This will use lots of local stack - is the stack size big
+    // enough for this?
+    t_wtable wtable = wavetable;
+
+    // Delete all wtable elements not selected in fpuset
+    // TODO: This might be very inefficient because deleting std::vector
+    // elements from middle - but will work OK
+    // TODO: Test this carefully
+    for (auto it = wtable.begin(); it != wtable.end(); )
+    {
+        bool erased = false;
+        if (it->fpu_id < MAX_NUM_POSITIONERS)   // Sanity check
         {
-            bool erased = false;
-            if (it->fpu_id < MAX_NUM_POSITIONERS)   // Sanity check
+            if (!fpuset[it->fpu_id])
             {
-                if (!fpuset[it->fpu_id])
-                {
-                    // N.B. erase() returns a new (valid) iterator that points
-                    // to the next element after the deleted one, so it's a
-                    // safe operation
-                    it = wtable.erase(it);
-                    erased = true;
-                }
+                // N.B. erase() returns a new (valid) iterator that points
+                // to the next element after the deleted one, so it's a
+                // safe operation
+                it = wtable.erase(it);
+                erased = true;
             }
-            else
-            {
-                // TODO: Error - flag this somehow?
-                break;
-            }
-
-            if (!erased)
-            {
-                it++;
-            }
-        }
-
-        // Check whether wavetable is safe, and if so, register it
-        Range wmode;
-        if (soft_protection)
-        {
-            wmode = Range::Error;
         }
         else
         {
-            if (warn_unsafe)
-            {
-                wmode = Range::Warn;
-            }
-            else
-            {
-                // TODO: Is this correct?
-                wmode = Range::Error;
-            }
+            // TODO: Error - flag this somehow?
+            break;
         }
 
-        _pre_config_motion_hook(wtable, gs, fpuset, wmode);
-        bool update_config = false;
-        // TODO: The following is a quite large data structure which will
-        // be stored on the local stack - is this OK? (stack overflow?)
-        // Or, better to create it on the heap using a std::unique_ptr?
-        // (N.B. But it's an array, so if use unique_ptr then would need to
-        // encapsulate the array into a structure or class)
-        t_grid_state prev_gs;
-        _gd->getGridState(prev_gs);
-
-        // TODO: Carefully check the following logic against the 3-deep-nested
-        // "try" blocks in the equivalent Python code
-        result = _gd->configMotion(wtable, gs, fpuset, allow_uninitialized,
-                                   ruleset_version);
-        // TODO: Check for the various expected result values - some non-DE_OK
-        // ones might actually be OK?
-        if (result != DE_OK)
+        if (!erased)
         {
-            update_config = true;
-
-            // TODO: Catch the more serious errors like the Python code does:
-            // InvalidWaveformException, InvalidStateException, SocketFailure,
-            // CommandTimeout etc
-            // e.g. If SocketFailure or CommandTimeout then would be a
-            // transmission failure. Here, it is possible that some FPUs have
-            // finished loading valid data, but the process was not finished
-            // for all FPUs.
-
+            it++;
         }
+    }
 
-        if (update_config)
+    // Check whether wavetable is safe, and if so, register it
+    Range wmode;
+    if (soft_protection)
+    {
+        wmode = Range::Error;
+    }
+    else
+    {
+        if (warn_unsafe)
         {
-            // Accept configured wavetable entries
-            for (auto it = wtable.begin(); it != wtable.end(); )
-            {
-
-                // TODO: Test that it->fpu_id < MAX_NUM_POSITIONERS here?
-
-                if (wavetable_was_received(wtable, it->fpu_id,
-                                           gs.FPU_state[it->fpu_id]))
-                {
-                    // ******** TODO: The following code is just a guess for
-                    // now - e.g. not sure if need to add new fpu_id entry to
-                    // last_wavetable if doesn't already exist?
-                    bool fpu_id_found = false;
-                    for (int i = 0; i < last_wavetable.size(); i++)
-                    {
-                        if (last_wavetable[i].fpu_id == it->fpu_id)
-                        {
-                            last_wavetable[i].steps = it->steps;
-                            fpu_id_found = true;
-                            break;
-                        }
-                    }
-                    if (!fpu_id_found)
-                    {
-                        last_wavetable.push_back(*it);
-                    }
-
-                    it++;
-                }
-                else
-                {
-                    it = wtable.erase(it);
-                }
-                
-                _update_error_counters(prev_gs.FPU_state[it->fpu_id],
-                                       gs.FPU_state[it->fpu_id]);
-            }
-
-            _post_config_motion_hook(wtable, gs, fpuset);
+            wmode = Range::Warn;
         }
+        else
+        {
+            // TODO: Is this correct?
+            wmode = Range::Error;
+        }
+    }
+
+    _pre_config_motion_hook(wtable, gs, fpuset, wmode);
+    bool update_config = false;
+    // TODO: The following is a quite large data structure which will
+    // be stored on the local stack - is this OK? (stack overflow?)
+    // Or, better to create it on the heap using a std::unique_ptr?
+    // (N.B. But it's an array, so if use unique_ptr then would need to
+    // encapsulate the array into a structure or class)
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+
+    // TODO: Carefully check the following logic against the 3-deep-nested
+    // "try" blocks in the equivalent Python code
+    result = _gd->configMotion(wtable, gs, fpuset, allow_uninitialized,
+                                ruleset_version);
+    // TODO: Check for the various expected result values - some non-DE_OK
+    // ones might actually be OK?
+    if (result != DE_OK)
+    {
+        update_config = true;
+
+        // TODO: Catch the more serious errors like the Python code does:
+        // InvalidWaveformException, InvalidStateException, SocketFailure,
+        // CommandTimeout etc
+        // e.g. If SocketFailure or CommandTimeout then would be a
+        // transmission failure. Here, it is possible that some FPUs have
+        // finished loading valid data, but the process was not finished
+        // for all FPUs.
 
     }
 
+    if (update_config)
+    {
+        // Accept configured wavetable entries
+        for (auto it = wtable.begin(); it != wtable.end(); )
+        {
+
+            // TODO: Test that it->fpu_id < MAX_NUM_POSITIONERS here?
+
+            if (wavetable_was_received(wtable, it->fpu_id,
+                                        gs.FPU_state[it->fpu_id]))
+            {
+                // ******** TODO: The following code is just a guess for
+                // now - e.g. not sure if need to add new fpu_id entry to
+                // last_wavetable if doesn't already exist?
+                bool fpu_id_found = false;
+                for (int i = 0; i < last_wavetable.size(); i++)
+                {
+                    if (last_wavetable[i].fpu_id == it->fpu_id)
+                    {
+                        last_wavetable[i].steps = it->steps;
+                        fpu_id_found = true;
+                        break;
+                    }
+                }
+                if (!fpu_id_found)
+                {
+                    last_wavetable.push_back(*it);
+                }
+
+                it++;
+            }
+            else
+            {
+                it = wtable.erase(it);
+            }
+            
+            _update_error_counters(prev_gs.FPU_state[it->fpu_id],
+                                    gs.FPU_state[it->fpu_id]);
+        }
+
+        _post_config_motion_hook(wtable, gs, fpuset);
+    }
 
     // TODO: Generate the required return values
 
@@ -736,80 +742,82 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
                                                        bool sync_command)
 {
     E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
+
     result = check_fpuset(fpuset);
-    if (result == DE_OK)
+    if (result != DE_OK)
     {
-        // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-        // here 
-        t_fpu_positions initial_positions;
-        _start_execute_motion_hook(gs, fpuset, initial_positions);
-        usleep((useconds_t)(0.1 * 1000000.0));
-        t_grid_state prev_gs;
-        _gd->getGridState(prev_gs);
-        usleep((useconds_t)(0.1 * 1000000.0));
-        result = _gd->startExecuteMotion(gs, fpuset, sync_command);
-        // TODO: The result logic here might not be the same as the Python
-        // equivalent - check this
-        if (result != DE_OK)
-        {
-            _cancel_execute_motion_hook(gs, fpuset, initial_positions);
-            // TODO: Return with error code here?
-        }
-
-        double time_interval = 0.1;
-        bool is_ready = false;
-        bool was_aborted = false;
-        bool refresh_state = false;
-        // TODO: The result logic here might not be the same as the Python
-        // equivalent - check this
-        while (!is_ready)
-        {
-            bool wait_execute_motion_finished = false;
-            result = _gd->waitExecuteMotion(gs, time_interval,
-                                            wait_execute_motion_finished,
-                                            fpuset);
-
-            // TODO: Python version can be interrupted from Linux signals here,
-            // but this isn't appropriate for C++ version because it wlll be
-            // inside ESO driver?
-
-            is_ready = (result != DE_WAIT_TIMEOUT);
-        }
-
-        if (result != DE_OK)
-        {
-            refresh_state = true;
-        }
-
-        // This is skipped in case of a SocketFailure, for example
-        if ((result == DE_OK) || refresh_state)
-        {
-            // Execute a ping to update positions
-            // (this is only needed for protocol version 1)   <== TODO: Follow up on this
-            t_grid_state move_gs;
-            _gd->getGridState(move_gs);
-            usleep((useconds_t)(0.1 * 1000000.0));
-            t_fpuset pingset;
-            need_ping(gs, fpuset, pingset);
-            result = _pingFPUs(gs, pingset);
-            if (result != DE_OK)
-            {
-                // TODO: Error
-            }
-            // The following hook will narrow down the recorded intervals of
-            // positions
-            _post_execute_motion_hook(gs, prev_gs, move_gs, fpuset);
-        }
-
-        // TODO: Original Python code - need to do anything with this here?
-        //if was_aborted:
-        //raise MovementError("executeMotion was aborted by SIGINT")
+        return result;
     }
+
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here 
+    t_fpu_positions initial_positions;
+    _start_execute_motion_hook(gs, fpuset, initial_positions);
+    usleep((useconds_t)(0.1 * microsecs_in_1_sec));
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+    usleep((useconds_t)(0.1 * microsecs_in_1_sec));
+    result = _gd->startExecuteMotion(gs, fpuset, sync_command);
+    // TODO: The result logic here might not be the same as the Python
+    // equivalent - check this
+    if (result != DE_OK)
+    {
+        _cancel_execute_motion_hook(gs, fpuset, initial_positions);
+        // TODO: Return with error code here?
+    }
+
+    double time_interval = 0.1;
+    bool is_ready = false;
+    bool was_aborted = false;
+    bool refresh_state = false;
+    // TODO: The result logic here might not be the same as the Python
+    // equivalent - check this
+    while (!is_ready)
+    {
+        bool wait_execute_motion_finished = false;
+        result = _gd->waitExecuteMotion(gs, time_interval,
+                                        wait_execute_motion_finished,
+                                        fpuset);
+
+        // TODO: Python version can be interrupted from Linux signals here,
+        // but this isn't appropriate for C++ version because it wlll be
+        // inside ESO driver?
+
+        is_ready = (result != DE_WAIT_TIMEOUT);
+    }
+
+    if (result != DE_OK)
+    {
+        refresh_state = true;
+    }
+
+    // This is skipped in case of a SocketFailure, for example
+    if ((result == DE_OK) || refresh_state)
+    {
+        // Execute a ping to update positions
+        // (this is only needed for protocol version 1)   <== TODO: Follow up on this
+        t_grid_state move_gs;
+        _gd->getGridState(move_gs);
+        usleep((useconds_t)(0.1 * microsecs_in_1_sec));
+        t_fpuset pingset;
+        need_ping(gs, fpuset, pingset);
+        result = _pingFPUs(gs, pingset);
+        if (result != DE_OK)
+        {
+            // TODO: Error
+        }
+        // The following hook will narrow down the recorded intervals of
+        // positions
+        _post_execute_motion_hook(gs, prev_gs, move_gs, fpuset);
+    }
+
+    // TODO: Original Python code - need to do anything with this here?
+    //if was_aborted:
+    //raise MovementError("executeMotion was aborted by SIGINT")
 
     // TODO: Generate the required return values
 
 }
-
 
 //==============================================================================
 void UnprotectedGridDriverTester::doTests()

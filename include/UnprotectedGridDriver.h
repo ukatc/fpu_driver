@@ -264,6 +264,8 @@ private:
     // it's same as in FpuGridDriver.py for now
     EtherCANInterface *_gd = nullptr;
 
+    const double microsecs_in_1_sec = 1000000.0;
+    
     // TODO: Add locked_gateways here, but need to convert Python devicelock.py
     // to C++ first (and use a Linux named semaphore instead of a lock file for this?)
 
