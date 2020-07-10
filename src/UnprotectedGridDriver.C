@@ -40,15 +40,13 @@ namespace mpifps
 // TODO: Temporary "warn()" placeholder for now - implement something better
 #define warn(warnString)
 
-#define TIMESTAMP_INIT_STRING     "ISO8601"
-
 //------------------------------------------------------------------------------
 string get_logname(string basename, string log_dir = "", string timestamp = "")
 {
 
     // TODO: Convert from FpuGridDriver.py -> get_logname()
 
-    if (timestamp == TIMESTAMP_INIT_STRING)
+    if (timestamp == DEFAULT_START_TIMESTAMP)
     {
 
     }
@@ -86,8 +84,6 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     double motor_max_rel_increase,
     double motor_max_step_difference)
 {
-    // Temporarily store EtherCANInterfaceConfig values for use by initialize()
-    // when it's called
     config.num_fpus = nfpus;
     config.SocketTimeOutSeconds = SocketTimeOutSeconds;
     config.confirm_each_step = confirm_each_step;
@@ -128,23 +124,16 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
                                 const std::string &rx_logfile,
                                 const std::string &start_timestamp)
 {
+    config.logLevel = logLevel;
+    config.firmware_version_address_offset = firmware_version_address_offset;
 
-    // TODO: This function needs to initialise all further params not already
-    // specified by the constructor arguments, due to the Boost.Python 14-argument
-    // limit.
-    //
     // TODO: If required, this function can fail and return an error code, so
     // that the calling code (which could be the Python wrapper, or eventual
     // ESO driver code) can produce an appropriate error indication? Also,
     // ideally all other functions in this class should check some kind of 
     // "initialized_ok" bool flag before running?
 
-
-
-
     // TODO: Finish filling out this constructor from Python equivalent
-
-
 
     // self.lock = threading.RLock()   // TODO: Adapt from Python - use e.g. 
                                        // pthread_mutex_lock()? (see EtherCANInterface.C)
@@ -156,20 +145,11 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 
     // TODO: Convert log file initialisation code from FpuGridDriver.py
 
-#if 0
     int flags = O_CREAT | O_APPEND | O_WRONLY;
     mode_t mode = 0644;  // Octal
 
-    config.logLevel = logLevel;
+    std::string log_path = make_logdir(log_dir);
 
-    string log_path = make_logdir(log_dir);
-
-    const string &protection_logfile = "_{start_timestamp}-fpu_protection.log",
-    const string &control_logfile = "_{start_timestamp}-fpu_control.log",
-    const string &tx_logfile = "_{start_timestamp}-fpu_tx.log",
-    const string &rx_logfile = "_{start_timestamp}-fpu_rx.log",
-    const string &start_timestamp = TIMESTAMP_INIT_STRING;
-#endif // 0
 
     //..........................................................................
 
