@@ -268,10 +268,6 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 {
-
-    // TODO: _gd pointer is used in this function, but need to ensure that
-    // _gd has been initialised before calling this function
-
     E_EtherCANErrCode status = DE_OK;
 
     // Count number of FPUs selected
@@ -305,9 +301,18 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
                                       const t_fpuset &fpuset,
                                       t_fpuset &pingset_ret)
 {
+    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    {
+        pingset_ret[i] = false;
+    }
     
-    // TODO: Implement this function
-    
+    for (int i = 0; (i < config.num_fpus) && (i < MAX_NUM_POSITIONERS); i++)
+    {
+        if (fpuset[i] && (!gs.FPU_state[i].ping_ok))
+        {
+            pingset_ret[i] = true;
+        }
+    }    
 }
 
 #endif // NOTFPU_SET_IS_VECTOR
