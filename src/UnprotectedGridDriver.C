@@ -278,32 +278,23 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 {
-    E_EtherCANErrCode status = DE_OK;
+    // Check that config.num_fpus is within range
+    if (config.num_fpus >= MAX_NUM_POSITIONERS)
+    {
+        // TODO: Any better error return code for this?
+        return DE_INVALID_FPU_ID;
+    }
 
-    // Count number of FPUs selected
-    int num_fpus_in_fpuset = 0;
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    // Check if any selected FPU in fpuset has index >= (config.num_fpus - 1)
+    for (int fpu_id = config.num_fpus; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
     {
         if (fpuset[fpu_id])
         {
-            num_fpus_in_fpuset++;
-
-            // Check if any selected FPU in fpuset has an index above
-            // config.num_fpus
-            if (fpu_id >= config.num_fpus)
-            {
-                status = DE_INVALID_FPU_ID;
-                break;
-            }
+            return DE_INVALID_FPU_ID;
         }
     }
 
-    if (num_fpus_in_fpuset > config.num_fpus)
-    {
-        status = DE_INVALID_FPU_ID;
-    }
-
-    return status;
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------
@@ -609,7 +600,8 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     for (auto it = wtable.begin(); it != wtable.end(); )
     {
         bool erased = false;
-        if (it->fpu_id < MAX_NUM_POSITIONERS)   // Sanity check
+        if ((it->fpu_id < config.num_fpus) &&
+            (it->fpu_id < MAX_NUM_POSITIONERS))   // Sanity check
         {
             if (!fpuset[it->fpu_id])
             {
@@ -622,8 +614,8 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         }
         else
         {
-            // TODO: Error - flag this somehow?
-            break;
+            // Error: Bad FPU ID found in wavetable
+            return DE_INVALID_FPU_ID;
         }
 
         if (!erased)
@@ -647,7 +639,7 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         else
         {
             // TODO: Is this correct?
-            wmode = Range::Error;
+            wmode = Range::Ignore;
         }
     }
 
@@ -664,16 +656,20 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     // TODO: Carefully check the following logic against the 3-deep-nested
     // "try" blocks in the equivalent Python code
     result = _gd->configMotion(wtable, gs, fpuset, allow_uninitialized,
-                                ruleset_version);
+                               ruleset_version);
     // TODO: Check for the various expected result values - some non-DE_OK
     // ones might actually be OK?
     if (result != DE_OK)
     {
         update_config = true;
 
-        // TODO: Catch the more serious errors like the Python code does:
+        // TODO: configMotion(), and configMotionAsync() which it calls, can
+        // return a large number of different error codes - see what needs
+        // to be done here relative to the Python implementation, and also
+        // what the equivalent C++ response for the Python version's 
         // InvalidWaveformException, InvalidStateException, SocketFailure,
-        // CommandTimeout etc
+        // CommandTimeout etc would be (if required)
+        //
         // e.g. If SocketFailure or CommandTimeout then would be a
         // transmission failure. Here, it is possible that some FPUs have
         // finished loading valid data, but the process was not finished
@@ -683,24 +679,41 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 
     if (update_config)
     {
+        // TODO: Much of the following code is inefficient because iterates
+        // through arrays/lists many times - but should work OK. This approach
+        // is currently taken in order to conform with the current data
+        // structures.
+
         // Accept configured wavetable entries
-        for (auto it = wtable.begin(); it != wtable.end(); )
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
         {
+            // TODO: Test whether each FPU is selected in fpuset?
 
-            // TODO: Test that it->fpu_id < MAX_NUM_POSITIONERS here?
-
-            if (wavetable_was_received(wtable, it->fpu_id,
-                                        gs.FPU_state[it->fpu_id]))
+            // Check if fpu_id is in wtable
+            bool wtable_contains_fpu_id = false;
+            auto it = wtable.begin();
+            for ( ; it != wtable.end(); it++)
             {
-                // ******** TODO: The following code is just a guess for
-                // now - e.g. not sure if need to add new fpu_id entry to
-                // last_wavetable if doesn't already exist?
-                bool fpu_id_found = false;
-                for (int i = 0; i < last_wavetable.size(); i++)
+                if (it->fpu_id == fpu_id)
                 {
-                    if (last_wavetable[i].fpu_id == it->fpu_id)
+                    wtable_contains_fpu_id = true;
+                    break;
+                }
+            }
+            if (!wtable_contains_fpu_id)
+            {
+                continue;
+            }
+
+            if (wavetable_was_received(wtable, fpu_id, gs.FPU_state[fpu_id]))
+            {
+                // Add to last_wavetable list (or overwrite existing entry)
+                bool fpu_id_found = false;
+                for (size_t i = 0; i < last_wavetable.size(); i++)
+                {
+                    if (last_wavetable[i].fpu_id == fpu_id)
                     {
-                        last_wavetable[i].steps = it->steps;
+                        last_wavetable[i] = *it;
                         fpu_id_found = true;
                         break;
                     }
@@ -709,16 +722,14 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
                 {
                     last_wavetable.push_back(*it);
                 }
-
-                it++;
             }
             else
             {
                 it = wtable.erase(it);
             }
             
-            _update_error_counters(prev_gs.FPU_state[it->fpu_id],
-                                    gs.FPU_state[it->fpu_id]);
+            _update_error_counters(prev_gs.FPU_state[fpu_id],
+                                   gs.FPU_state[fpu_id]);
         }
 
         _post_config_motion_hook(wtable, gs, fpuset);
