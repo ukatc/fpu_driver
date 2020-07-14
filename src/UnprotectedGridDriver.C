@@ -155,19 +155,29 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 
     // TODO: How to catch / indicate allocation failure? Add try/catch around
     // the following, OR use std::nothrow?
+
+    E_EtherCANErrCode result;
     _gd = new EtherCANInterface(config);
-    
-    // TODO: Is this the correct place to call initializeInterface()?
-    // (Johannes' Python wrapper code calls it from the WrapEtherCANInterface
-    // constructor)
-    // TODO: The Python wrapper code also has a checkInterfaceError(ecode) call
-    // after it (to flag any initialisation error to Python) - how to allow
-    // mimicking of this in WrappedGridDriver?
-    // TODO: Call deInitialize() from destructor, or elsewhere? BUT is already
-    // done from AsyncInterface destructor?
-    _gd->initializeInterface();
 
+    if (_gd != nullptr)
+    {
+        // TODO: Is this the correct place to call initializeInterface()?
+        // (Johannes' Python wrapper code calls it from the WrapEtherCANInterface
+        // constructor)
+        // TODO: The Python wrapper code also has a checkInterfaceError(ecode) call
+        // after it (to flag any initialisation error to Python) - how to allow
+        // mimicking of this in WrappedGridDriver?
+        // TODO: Call deInitialize() from destructor, or elsewhere? BUT is already
+        // done from AsyncInterface destructor?
+        result = _gd->initializeInterface();
+    }
+    else
+    {
+        // TODO: Fatal error - is this the right return code?
+        result = DE_OUT_OF_MEMORY;
+    }
 
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -822,19 +832,69 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 //==============================================================================
 void UnprotectedGridDriverTester::doTests()
 {
+    E_EtherCANErrCode result;
+    
     //test_check_fpuset();
     
     //test_need_ping();
-    
-    test_initialize();
-    
-    test_connect();
-    
-    test_findDatum();
-    
-    //test_configMotion();
 
-    //test_executeMotion();
+    const int num_fpus = 3;
+    
+    //..........................................................................
+    
+    UnprotectedGridDriver ugd(num_fpus);
+    
+    //..........................................................................
+    
+    ugd.initialize();    
+    
+    //..........................................................................
+    
+    // TODO: t_gateway_address::ip is only a pointer - dangerous? Change this
+    // eventually? (e.g. to a std::string?)
+    const char *ip_address_str = "127.0.0.1";
+    uint16_t port_number = 4700;
+    t_gateway_address gateway_address = { ip_address_str, port_number };
+    
+    result = ugd.connect(1, &gateway_address);   
+    
+    //..........................................................................
+    
+    // Create and initialise grid_state
+    EtherCANInterfaceConfig iface_config;
+    
+    t_grid_state grid_state;
+//    FPUArray fpu_array(iface_config);
+//    fpu_array.getGridState(grid_state);
+    ugd.getGridState(grid_state);
+    
+    // TODO: Initialise these data structures/arrays
+    t_datum_search_flags search_modes;
+    t_fpuset fpuset;
+    
+    // Initialise fpuset
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        fpuset[fpu_id] = false;
+    }
+    
+    // Select required FPUs in fpuset and search_modes arrays
+    for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
+    {
+        search_modes[fpu_id] = SEARCH_AUTO;
+        fpuset[fpu_id] = true;
+    }
+    
+    bool soft_protection = true;
+    bool count_protection = false;
+    bool support_uninitialized_auto = false;
+    
+    result = ugd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
+                           soft_protection, count_protection,
+                           support_uninitialized_auto, DATUM_TIMEOUT_ENABLE);
+    
+    //..........................................................................
+    
 }
 
 //------------------------------------------------------------------------------
@@ -883,49 +943,21 @@ void UnprotectedGridDriverTester::test_need_ping()
 //------------------------------------------------------------------------------
 void UnprotectedGridDriverTester::test_initialize()
 {
-    UnprotectedGridDriver ugd;
-    
-    ugd.initialize();
+
     
 }
 
 //------------------------------------------------------------------------------
 void UnprotectedGridDriverTester::test_connect()
 {
-    // TODO: t_gateway_address::ip is only a pointer - dangerous? Change this
-    // eventually? (e.g. to a std::string?)
-    const char *ip_address_str = "127.0.0.1";
-    uint16_t port_number = 4700;
-    t_gateway_address gateway_address = { ip_address_str, port_number };
-    
-    UnprotectedGridDriver ugd;
-    E_EtherCANErrCode result = ugd.connect(1, &gateway_address);
+
     
 }
 
 //------------------------------------------------------------------------------
 void UnprotectedGridDriverTester::test_findDatum()
 {
-    UnprotectedGridDriver ugd;
-    E_EtherCANErrCode result;
 
-    // Create and initialise grid_state
-    EtherCANInterfaceConfig iface_config;
-    FPUArray fpu_array(iface_config);
-    t_grid_state grid_state;
-    fpu_array.getGridState(grid_state);
-    
-    // TODO: Initialise these data structures/arrays
-    t_datum_search_flags search_modes;
-    t_fpuset fpuset;
-    
-    bool soft_protection = true;
-    bool count_protection = true;
-    bool support_uninitialized_auto = false;
-    
-    result = ugd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
-                           soft_protection, count_protection,
-                           support_uninitialized_auto, DATUM_TIMEOUT_DISABLE);
 
 }
 
