@@ -25,7 +25,6 @@ namespace mpifps
 EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values)
     : AsyncInterface(config_values)
 {
-
     LOG_CONTROL(LOG_INFO, "%18.6f : starting driver version '%s' for %i FPUs\n",
                 ethercanif::get_realtime(), VERSION, config.num_fpus);
 
@@ -46,16 +45,12 @@ EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values
 
     LOG_CONTROL(LOG_INFO, "%18.6f : confirm_each_step = %s\n",
                 ethercanif::get_realtime(), (config.confirm_each_step ? "True" : "False"));
-
-
 }
-
 
 int EtherCANInterface::getNumFPUs() const
 {
     return config.num_fpus;
 }
-
 
 E_EtherCANErrCode EtherCANInterface::findDatum(t_grid_state& grid_state,
         E_DATUM_SEARCH_DIRECTION * p_direction_flags,
@@ -64,7 +59,6 @@ E_EtherCANErrCode EtherCANInterface::findDatum(t_grid_state& grid_state,
         bool count_protection,
         t_fpuset const * const fpuset)
 {
-
     E_EtherCANErrCode estatus = startFindDatum(grid_state,
                                 p_direction_flags,
                                 arm_selection,
@@ -107,7 +101,6 @@ E_EtherCANErrCode EtherCANInterface::startFindDatum(t_grid_state& grid_state,
                                           timeout_flag,
                                           count_protection,
                                           fpuset);
-
         break;
 
 	// FIXME: If necessary, insert Datum retry code here.  This
@@ -142,13 +135,10 @@ E_EtherCANErrCode EtherCANInterface::waitFindDatum(t_grid_state& grid_state,
     return estatus;
 }
 
-
-
 E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_grid_state& grid_state,
         t_fpuset const &fpuset,
         bool allow_uninitialized,
         int ruleset_version)
-
 {
     E_EtherCANErrCode estatus = DE_OK;
     E_GridState state_summary;
@@ -159,7 +149,6 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
     std::vector<t_waveform> cur_wtable(waveforms);
 
     pthread_mutex_lock(&command_creation_mutex);
-
 
     while (true)
     {
@@ -174,34 +163,32 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
 
         num_avaliable_retries--;
 
-
         // we have most probably a time-out and need to load some
         // waveforms again. To do that we strip FPUs from
         // the configuration which have already been configured
         // succcessfully.
 
-	if (num_avaliable_retries > 0)
-	{
-	    LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
-			"re-loading missing waveforms\n",
-			ethercanif::get_realtime(), num_avaliable_retries);
+        if (num_avaliable_retries > 0)
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
+                "re-loading missing waveforms\n",
+                ethercanif::get_realtime(), num_avaliable_retries);
 
-	    LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
-			"re-loading missing waveforms\n",
-			ethercanif::get_realtime(), num_avaliable_retries);
-	}
-	else
-	{
-	    LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
-			"giving up\n",
-			ethercanif::get_realtime(), num_avaliable_retries);
+            LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
+                "re-loading missing waveforms\n",
+                ethercanif::get_realtime(), num_avaliable_retries);
+        }
+        else
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
+                "giving up\n",
+                ethercanif::get_realtime(), num_avaliable_retries);
 
-	    LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
-			"giving up\n",
-			ethercanif::get_realtime(), num_avaliable_retries);
-	    break;
-	}
-
+            LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): error: CAN timeout (countdown=%i), "
+                "giving up\n",
+                ethercanif::get_realtime(), num_avaliable_retries);
+            break;
+        }
 
         // In this place, a down-counting iterator is used
         // so that erase() will not change the
@@ -234,19 +221,15 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
         {
             break;
         }
-
     }
 
     pthread_mutex_unlock(&command_creation_mutex);
 
     return estatus;
-
 }
 
 E_EtherCANErrCode EtherCANInterface::initializeGrid(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
-
-
     E_EtherCANErrCode rv = pingFPUs(grid_state, fpuset);
 
     if (rv != DE_OK)
@@ -265,7 +248,6 @@ E_EtherCANErrCode EtherCANInterface::initializeGrid(t_grid_state& grid_state, t_
 
     return rv;
 }
-
 
 E_EtherCANErrCode EtherCANInterface::resetFPUs(t_grid_state& grid_state, t_fpuset const &fpuset)
 {
@@ -290,7 +272,6 @@ E_EtherCANErrCode EtherCANInterface::pingFPUs(t_grid_state& grid_state, t_fpuset
 
     return estatus;
 }
-
 
 E_EtherCANErrCode EtherCANInterface::startExecuteMotion(t_grid_state& grid_state,
 							t_fpuset const &fpuset, bool sync_message)
@@ -394,7 +375,6 @@ E_EtherCANErrCode EtherCANInterface::abortMotion(t_grid_state& grid_state, t_fpu
     return estatus;
 }
 
-
 E_EtherCANErrCode EtherCANInterface::freeBetaCollision(int fpu_id, E_REQUEST_DIRECTION request_dir,
         t_grid_state& grid_state)
 {
@@ -424,11 +404,6 @@ E_EtherCANErrCode EtherCANInterface::enableBetaCollisionProtection(t_grid_state&
     return estatus;
 }
 
-
-
-
-
-
 E_EtherCANErrCode EtherCANInterface::readRegister(uint16_t read_address, t_grid_state& grid_state, t_fpuset const &fpuset)
 {
     E_GridState state_summary;
@@ -452,9 +427,6 @@ E_EtherCANErrCode EtherCANInterface::getFirmwareVersion(t_grid_state& grid_state
 
     return status;
 }
-
-
-
 
 E_EtherCANErrCode EtherCANInterface::setUStepLevel(int ustep_level, t_grid_state& grid_state, t_fpuset const &fpuset)
 {
@@ -492,9 +464,6 @@ E_EtherCANErrCode EtherCANInterface::readSerialNumbers(t_grid_state& grid_state,
 
     return status;
 }
-
-
-
 
 E_EtherCANErrCode EtherCANInterface::resetStepCounters(long alpha_steps, long beta_steps,
 						      t_grid_state& grid_state, t_fpuset const &fpuset)
@@ -561,7 +530,6 @@ E_EtherCANErrCode  EtherCANInterface::getMinFirmwareVersion(t_fpuset const &fpus
     int min_firmware_fpu;
 
     pthread_mutex_lock(&command_creation_mutex);
-
 
     estatus = getMinFirmwareVersionAsync(fpuset,
                                          min_firmware_version,
