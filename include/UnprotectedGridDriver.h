@@ -204,13 +204,7 @@ protected:
                                          const t_fpuset &fpuset, Range wmode) {}
     virtual void _post_config_motion_hook(const t_wtable &wtable,
                                           t_grid_state &gs,
-                                          const t_fpuset &fpuset)
-    {
-        // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-        // here
-
-        set_wtable_reversed(fpuset, false);
-    }
+                                          const t_fpuset &fpuset);
 
     // executeMotion() hook functions
     virtual void _start_execute_motion_hook(t_grid_state &gs,

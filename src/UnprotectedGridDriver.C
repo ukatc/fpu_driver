@@ -530,6 +530,17 @@ E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
+void UnprotectedGridDriver::_post_config_motion_hook(const t_wtable &wtable,
+                                                     t_grid_state &gs,
+                                                     const t_fpuset &fpuset)
+{
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here
+
+    set_wtable_reversed(fpuset, false);
+}
+
+//------------------------------------------------------------------------------
 bool UnprotectedGridDriver::wavetable_was_received(const t_wtable &wtable,
                                                    int fpu_id,
                                                    const t_fpu_state &fpu_state,  
@@ -653,27 +664,29 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
-    // TODO: Carefully check the following logic against the 3-deep-nested
-    // "try" blocks in the equivalent Python code
+    // TODO: The equivalent Python code here has 3-deep-nested "try" blocks,
+    // and it is not yet clear what the equivalent C++ code needs to be here.
+    //
+    // TODO: configMotion(), and configMotionAsync() which it calls, can
+    // return a large number of different error codes - see what needs
+    // to be done here relative to the Python implementation, and also
+    // what the equivalent C++ response for the Python version's 
+    // InvalidWaveformException, InvalidStateException, SocketFailure,
+    // CommandTimeout etc would be (if required)
+    //
+    // e.g. If SocketFailure or CommandTimeout then would be a
+    // transmission failure. Here, it is possible that some FPUs have
+    // finished loading valid data, but the process was not finished
+    // for all FPUs.
+
     result = _gd->configMotion(wtable, gs, fpuset, allow_uninitialized,
                                ruleset_version);
-    // TODO: Check for the various expected result values - some non-DE_OK
-    // ones might actually be OK?
+    // TODO: Check for the various expected result values - might some
+    // non-DE_OK ones might actually be OK?
     if (result != DE_OK)
     {
-        update_config = true;
 
-        // TODO: configMotion(), and configMotionAsync() which it calls, can
-        // return a large number of different error codes - see what needs
-        // to be done here relative to the Python implementation, and also
-        // what the equivalent C++ response for the Python version's 
-        // InvalidWaveformException, InvalidStateException, SocketFailure,
-        // CommandTimeout etc would be (if required)
-        //
-        // e.g. If SocketFailure or CommandTimeout then would be a
-        // transmission failure. Here, it is possible that some FPUs have
-        // finished loading valid data, but the process was not finished
-        // for all FPUs.
+        update_config = true;
 
     }
 
@@ -725,7 +738,7 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
             }
             else
             {
-                it = wtable.erase(it);
+                wtable.erase(it);
             }
             
             _update_error_counters(prev_gs.FPU_state[fpu_id],
@@ -735,8 +748,9 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         _post_config_motion_hook(wtable, gs, fpuset);
     }
 
-    // TODO: Generate the required return values
-
+    // TODO: Is this return variable correct? (does correspond to equivalent 
+    // Python code)
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -784,13 +798,15 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     if (result != DE_OK)
     {
         _cancel_execute_motion_hook(gs, fpuset, initial_positions);
-        // TODO: Return with error code here?
+        // TODO: Is the following return equivalent to Python code?
+        return result;
     }
 
     double time_interval = 0.1;
     bool is_ready = false;
     bool was_aborted = false;
     bool refresh_state = false;
+    E_EtherCANErrCode waitExecuteMotion_result = DE_ERROR_UNKNOWN;
     // TODO: The result logic here might not be the same as the Python
     // equivalent - check this
     while (!is_ready)
@@ -799,10 +815,19 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
         result = _gd->waitExecuteMotion(gs, time_interval,
                                         wait_execute_motion_finished,
                                         fpuset);
+        
+        waitExecuteMotion_result = result;
 
         // TODO: Python version can be interrupted from Linux signals here,
         // but this isn't appropriate for C++ version because it wlll be
         // inside ESO driver?
+
+        // TODO: From ethercanif.C -> WrapEtherCANInterface::wrap_waitExecuteMotion() - 
+        // check this
+        if (!wait_execute_motion_finished && (result == DE_OK))
+        {
+            result = DE_WAIT_TIMEOUT;
+        }
 
         is_ready = (result != DE_WAIT_TIMEOUT);
     }
@@ -823,21 +848,26 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
         t_fpuset pingset;
         need_ping(gs, fpuset, pingset);
         result = _pingFPUs(gs, pingset);
-        if (result != DE_OK)
-        {
-            // TODO: Error
-        }
+
         // The following hook will narrow down the recorded intervals of
         // positions
         _post_execute_motion_hook(gs, prev_gs, move_gs, fpuset);
+
+        // TODO: Should this heck be BEFORE _post_execute_motion_hook() above?
+        if (result != DE_OK)
+        {
+            // TODO: Is this OK?
+            return result;
+        }
     }
 
     // TODO: Original Python code - need to do anything with this here?
     //if was_aborted:
     //raise MovementError("executeMotion was aborted by SIGINT")
 
-    // TODO: Generate the required return values
-
+    // TODO: Is the following return variable OK? (attemping to make equivalent
+    // to Python version)
+    return waitExecuteMotion_result;
 }
 
 //==============================================================================
