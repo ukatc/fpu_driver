@@ -126,19 +126,21 @@ void WrapperSharedBase::convertWavetable(const bp::dict &dict_waveforms,
 //------------------------------------------------------------------------------
 void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) const
 {
+    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    {
+        fpuset[i] = false;
+    }
+
     if (bp::len(fpu_list) == 0)
     {
-        for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+        for (int i = 0; ((i < getConfig().num_fpus) && (i < MAX_NUM_POSITIONERS));
+             i++)
         {
             fpuset[i] = true;
         }
     }
     else
     {
-        for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-        {
-            fpuset[i] = false;
-        }
         for (int i = 0; i < bp::len(fpu_list); i++)
         {
             int fpu_id = bp::extract<int>(fpu_list[i]);
@@ -149,7 +151,10 @@ void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) co
                 throw EtherCANException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
                                         DE_INVALID_FPU_ID);
             }
-            fpuset[fpu_id] = true;
+            else
+            {
+                fpuset[fpu_id] = true;
+            }
         }
     }
 }
