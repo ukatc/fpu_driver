@@ -50,17 +50,6 @@ using namespace mpifps::ethercanif;
 
 #define DEFAULT_START_TIMESTAMP     "ISO8601"
 
-//*************** TODO: Await Steven's OK for FPU set being a std::vector<>
-// (rather than the t_fpuset array of bools)
-// BUT use t_fpuset from EtherCAN after all?
-//#define FPU_SET_IS_VECTOR
-
-#ifdef FPU_SET_IS_VECTOR
-// TODO: This is named "FpuSelection" to clearly differentiate its type from
-// the EtherCAN layer's t_fpuset type
-using FpuSelection = std::vector<uint16_t>;
-#endif
-
 // Enumeration which defines the strictness of checks
 // TODO: Not sure why just called "Range" - change to something more
 // meaningful eventually
@@ -138,7 +127,6 @@ public:
                               const t_gateway_address gateway_addresses[]);
     E_EtherCANErrCode disconnect();
 
-#ifndef FPU_SET_IS_VECTOR
     E_EtherCANErrCode findDatum(t_grid_state &gs,
                         const t_datum_search_flags &search_modes,
                         enum E_DATUM_SELECTION selected_arm,
@@ -158,7 +146,6 @@ public:
 
     E_EtherCANErrCode executeMotion(t_grid_state &gs, const t_fpuset &fpuset,
                                     bool sync_command = true);
-#endif // FPU_SET_IS_VECTOR
 
     //..........................................................................
 protected:
@@ -226,18 +213,9 @@ protected:
 
     //..........................................................................
 private:
-    bool initialize_was_called_ok = false;
-
-#ifdef FPU_SET_IS_VECTOR
-    E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
-    void need_ping(const t_grid_state &gs,
-                   const FpuSelection &fpu_selection,
-                   FpuSelection &fpu_ping_selection_ret);
-#else // NOT FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
     void need_ping(const t_grid_state &gs, const t_fpuset &fpuset,
                    t_fpuset &pingset_ret);
-#endif // NOT FPU_SET_IS_VECTOR
     E_EtherCANErrCode _pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
     // N.B. static function
     static bool wavetable_was_received(const t_wtable &wtable, int fpu_id,
@@ -245,6 +223,8 @@ private:
                                        bool allow_unconfirmed = false,
                                        E_FPU_STATE target_state = FPST_READY_FORWARD);
     void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed);
+
+    bool initialize_was_called_ok = false;
 
     // TODO: Use fixed-size array of MAX_NUM_POSITIONERS like the t_fpuset
     // structures etc do?
@@ -281,8 +261,6 @@ public:
     void doTests();
     
 private:
-    void test_check_fpuset();
-    void test_need_ping();
     void test_initialize();
     void test_connect();
     void test_findDatum();

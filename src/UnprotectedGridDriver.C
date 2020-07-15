@@ -237,65 +237,6 @@ E_EtherCANErrCode UnprotectedGridDriver::disconnect()
     return _gd->disconnect();
 }
 
-
-#ifdef FPU_SET_IS_VECTOR
-
-//------------------------------------------------------------------------------
-E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const FpuSelection &fpu_selection)
-{
-    E_EtherCANErrCode status = DE_OK;
-
-    for (int fpu_id : fpu_selection)
-    {
-        if ((fpu_id >= config.num_fpus) || (fpu_id >= MAX_NUM_POSITIONERS))
-        {
-            status = DE_INVALID_FPU_ID;
-            break;
-        }
-    }
-
-    return status;
-}
-
-//------------------------------------------------------------------------------
-void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
-                                      const FpuSelection &fpu_selection,
-                                      FpuSelection &fpu_ping_selection_ret)
-{
-    fpu_ping_selection_ret.clear();
-
-    if (fpu_selection.size() == 0)
-    {
-        // Get all FPUs not yet successfully pinged
-        for (int fpu_id = 0;
-             fpu_id < std::min<int>(config.num_fpus, MAX_NUM_POSITIONERS);
-             fpu_id++)
-        {
-            if (!gs.FPU_state[fpu_id].ping_ok)
-            {
-                fpu_ping_selection_ret.emplace_back(fpu_id);
-            }
-        }
-    }
-    else
-    {
-        // Get selection of FPUs not yet successfully pinged
-        for (int fpu_id : fpu_selection)
-        {
-            if ((fpu_id < config.num_fpus) &&
-                (fpu_id < MAX_NUM_POSITIONERS))   // Buffer overrun protection
-            {
-                if (!gs.FPU_state[fpu_id].ping_ok)
-                {
-                    fpu_ping_selection_ret.emplace_back(fpu_id);
-                }
-            }
-        }
-    }
-}
-
-#else // NOTFPU_SET_IS_VECTOR
-
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 {
@@ -336,8 +277,6 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
         }
     }    
 }
-
-#endif // NOTFPU_SET_IS_VECTOR
 
 //------------------------------------------------------------------------------
 E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
@@ -914,11 +853,6 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 void UnprotectedGridDriverTester::doTests()
 {
     E_EtherCANErrCode result;
-    
-    //test_check_fpuset();
-    
-    //test_need_ping();
-
     const int num_fpus = 3;
     
     //..........................................................................
@@ -962,8 +896,8 @@ void UnprotectedGridDriverTester::doTests()
     // Select required FPUs in fpuset and search_modes arrays
     for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
     {
-        search_modes[fpu_id] = SEARCH_AUTO;
         fpuset[fpu_id] = true;
+        search_modes[fpu_id] = SEARCH_AUTO;
     }
     
     bool soft_protection = true;
@@ -976,49 +910,6 @@ void UnprotectedGridDriverTester::doTests()
     
     //..........................................................................
     
-}
-
-//------------------------------------------------------------------------------
-void UnprotectedGridDriverTester::test_check_fpuset()
-{
-    E_EtherCANErrCode status;
-    
-#ifdef FPU_SET_IS_VECTOR
-    FpuSelection fpu_selection = { 1, 4, 17 };
-    status = check_fpuset(fpu_selection); // DE_INVALID_FPU_ID
-    fpu_selection = { 1, 2, 3 };
-    status = check_fpuset(fpu_selection);   // DE_OK
-#endif // NOT FPU_SET_IS_VECTOR
-}
-
-//------------------------------------------------------------------------------
-void UnprotectedGridDriverTester::test_need_ping()
-{
-    t_grid_state grid_state;
-    grid_state.FPU_state[0].ping_ok = true;
-    grid_state.FPU_state[1].ping_ok = false;
-    grid_state.FPU_state[2].ping_ok = true;
-    grid_state.FPU_state[3].ping_ok = true;
-    grid_state.FPU_state[4].ping_ok = false;
-    grid_state.FPU_state[5].ping_ok = false;
-    grid_state.FPU_state[6].ping_ok = false;
-    grid_state.FPU_state[7].ping_ok = true;
-    grid_state.FPU_state[8].ping_ok = false;
-    grid_state.FPU_state[9].ping_ok = true;
-    
-#ifdef FPU_SET_IS_VECTOR
-    FpuSelection fpu_ping_selection;
-    fpu_selection = { 1, 2, 4, 7 };
-    need_ping(grid_state, fpu_selection, fpu_ping_selection);
-    fpu_selection = { };
-    need_ping(grid_state, fpu_selection, fpu_ping_selection);
-    fpu_selection = { 0 };
-    need_ping(grid_state, fpu_selection, fpu_ping_selection);
-    fpu_selection = { 4 };
-    need_ping(grid_state, fpu_selection, fpu_ping_selection);
-    fpu_selection = { 6, 7, 8, 9 };
-    need_ping(grid_state, fpu_selection, fpu_ping_selection);
-#endif // NOT FPU_SET_IS_VECTOR 
 }
 
 //------------------------------------------------------------------------------
