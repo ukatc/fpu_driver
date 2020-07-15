@@ -130,6 +130,8 @@ public:
         const std::string &rx_logfile = "_" DEFAULT_START_TIMESTAMP "-fpu_rx.log",
         const std::string &start_timestamp = DEFAULT_START_TIMESTAMP);
 
+    bool initializeWasCalledOk();
+
     E_GridState getGridState(t_grid_state &grid_state_ret);
 
     E_EtherCANErrCode connect(int ngateways,
@@ -224,6 +226,8 @@ protected:
 
     //..........................................................................
 private:
+    bool initialize_was_called_ok = false;
+
 #ifdef FPU_SET_IS_VECTOR
     E_EtherCANErrCode check_fpuset(const FpuSelection &fpu_selection);
     void need_ping(const t_grid_state &gs,

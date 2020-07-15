@@ -124,14 +124,18 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
                                 const std::string &rx_logfile,
                                 const std::string &start_timestamp)
 {
+    // This function performs further initialisations. It is required to
+    // be separate from the constructor for supporting Boost.Python wrapping,
+    // because Boost.Python only supports up to 14 function arguments, so
+    // can't supply all of the 20-plus required initialisation arguments via
+    // the constructor alone.
+
     config.logLevel = logLevel;
     config.firmware_version_address_offset = firmware_version_address_offset;
 
     // TODO: If required, this function can fail and return an error code, so
     // that the calling code (which could be the Python wrapper, or eventual
-    // ESO driver code) can produce an appropriate error indication? Also,
-    // ideally all other functions in this class should check some kind of 
-    // "initialized_ok" bool flag before running?
+    // ESO driver code) can produce an appropriate error indication?
 
     // TODO: Finish filling out this constructor from Python equivalent
 
@@ -161,6 +165,8 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 
     if (_gd != nullptr)
     {
+        initialize_was_called_ok = true;
+
         // TODO: Is this the correct place to call initializeInterface()?
         // (Johannes' Python wrapper code calls it from the WrapEtherCANInterface
         // constructor)
@@ -181,9 +187,19 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 }
 
 //------------------------------------------------------------------------------
+bool UnprotectedGridDriver::initializeWasCalledOk()
+{
+    return initialize_was_called_ok;
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
                                 const t_gateway_address gateway_addresses[])
 {
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
 
     // TODO: Also add gateway locking/unlocking code like the Python version
     // of this function does? (see below). If so then do NOT use my
@@ -213,6 +229,11 @@ E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::disconnect()
 {
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     return _gd->disconnect();
 }
 
@@ -321,8 +342,12 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 //------------------------------------------------------------------------------
 E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
 {
-    E_GridState state_summary = _gd->getGridState(grid_state_ret);
-    return state_summary;
+    if (!initialize_was_called_ok)
+    {
+        return GS_UNKNOWN;
+    }
+
+    return _gd->getGridState(grid_state_ret);
 }
 
 //------------------------------------------------------------------------------
@@ -333,6 +358,11 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
                     bool support_uninitialized_auto,
                     enum E_DATUM_TIMEOUT_FLAG timeout)
 {
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
 
     /*
@@ -580,6 +610,11 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     the movement might damage the hardware).
     */
 
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     // TODO: NOTE: UnprotectedGridDriver::_post_config_motion_hook() DOES also
     // have a body (see UnprotectedGridDriver.h), in addition to
     // GridDriver::_post_config_motion_hook() - check it
@@ -776,6 +811,11 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
                                                        const t_fpuset &fpuset,
                                                        bool sync_command)
 {
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
 
     result = check_fpuset(fpuset);

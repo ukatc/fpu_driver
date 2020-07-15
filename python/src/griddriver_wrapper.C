@@ -105,9 +105,11 @@ public:
         double motor_max_rel_increase,
         double motor_max_step_difference)
     {
+        std::cout << "Grid driver object successfully created - now need to call initialize().\n" << std::endl;
+
         if (confirm_each_step)
         {
-            std::cout << "\nconfirm_each_step set to True, which requires extra confirmation\n";
+            std::cout << "\nconfirm_each_step is set to True, which requires extra confirmation\n";
             std::cout << "requests of waveform step upload, and reduces performance\n" << std::endl;
         }
 
@@ -137,12 +139,25 @@ public:
     WrapGridState wrapped_getGridState()
     {
         WrapGridState grid_state;
-        getGridState(grid_state);
+        if (checkAndMessageIfInitializeCalledOk())
+        {
+            E_GridState grid_state_enum = getGridState(grid_state);
+        }
+        else
+        {
+            // TODO: Zero grid_state here, using e.g. memset? BUT WrapGridState
+            // is a class rather than a POD structure, so would this be OK?
+        }
         return grid_state;
     }
 
     E_EtherCANErrCode wrapped_connect(bp::list &list_gateway_addresses)
     {
+        if (!checkAndMessageIfInitializeCalledOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
         t_gateway_address address_array[MAX_NUM_GATEWAYS];
         const int actual_num_gw = convertGatewayAddresses(list_gateway_addresses,
                                                           address_array);
@@ -160,6 +175,11 @@ public:
                                         bool support_uninitialized_auto,
                                         E_DATUM_TIMEOUT_FLAG timeout)
     {
+        if (!checkAndMessageIfInitializeCalledOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
@@ -191,6 +211,10 @@ public:
         // Call signature is:
         // configMotion( { fpuid0 : { (asteps, bsteps), (asteps, bsteps), ...],
         //                 fpuid1 : { ... }, ...}})
+        if (!checkAndMessageIfInitializeCalledOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
 
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
@@ -211,6 +235,11 @@ public:
                                             bp::list &fpu_list,
                                             bool sync_command)
     {
+        if (!checkAndMessageIfInitializeCalledOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
         t_fpuset fpuset;
         getFPUSet(fpu_list, fpuset);
 
@@ -220,6 +249,16 @@ public:
     }
 
 private:
+    bool checkAndMessageIfInitializeCalledOk()
+    {
+        if (initializeWasCalledOk())
+        {
+            return true;
+        }
+        std::cout << "**Error**: initialize() needs to be called first.\n" << std::endl;
+        return false;
+    }
+
     const EtherCANInterfaceConfig &getConfig() const override
     {
         return config;
