@@ -487,15 +487,26 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
 E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
                                                    const t_fpuset &fpuset)
 {
-    E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
 
-    result = check_fpuset(fpuset);
+    E_EtherCANErrCode result = check_fpuset(fpuset);
     if (result == DE_OK)
     {
         result = _gd->pingFPUs(gs, fpuset);
     }
 
     return result;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::pingFPUs(t_grid_state &gs,
+                                                  const t_fpuset &fpuset)
+{
+    // Communicates with all FPUs and queries their status
+    return _pingFPUs(gs, fpuset);
 }
 
 //------------------------------------------------------------------------------

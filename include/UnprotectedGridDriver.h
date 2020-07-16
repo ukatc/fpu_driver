@@ -136,6 +136,8 @@ public:
                         bool support_uninitialized_auto = true,
                         enum E_DATUM_TIMEOUT_FLAG timeout = DATUM_TIMEOUT_ENABLE);
 
+    E_EtherCANErrCode pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
+
     E_EtherCANErrCode configMotion(const t_wtable &wavetable, t_grid_state &gs,
                         const t_fpuset &fpuset,
                         bool soft_protection = true,

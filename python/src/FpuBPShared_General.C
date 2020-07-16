@@ -148,7 +148,7 @@ void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) co
                 (fpu_id >= MAX_NUM_POSITIONERS) ||
                 (fpu_id >= getConfig().num_fpus))
             {
-                throw EtherCANException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                throw EtherCANException("DE_INVALID_FPU_ID: Parameter contains invalid FPU IDs.",
                                         DE_INVALID_FPU_ID);
             }
             else
@@ -193,7 +193,7 @@ void WrapperSharedBase::getDatumFlags(bp::dict &dict_search_modes,
 
         if (num_keys > num_fpus)
         {
-            throw EtherCANException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+            throw EtherCANException("DE_INVALID_FPU_ID: Parameter contains invalid FPU IDs.",
                                     DE_INVALID_FPU_ID);
         }
 
@@ -204,7 +204,7 @@ void WrapperSharedBase::getDatumFlags(bp::dict &dict_search_modes,
 
             if ((fpu_id >= num_fpus) || (fpu_id < 0))
             {
-                throw EtherCANException("DE_INVALID_FPU_ID: Parameter contain invalid FPU IDs.",
+                throw EtherCANException("DE_INVALID_FPU_ID: Parameter contains invalid FPU IDs.",
                                         DE_INVALID_FPU_ID);
             }
 

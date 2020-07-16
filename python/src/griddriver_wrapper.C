@@ -196,6 +196,21 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_pingFPUs(WrapGridState &grid_state, list &fpu_list)
+    {
+        if (!checkAndMessageIfInitializeCalledOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = pingFPUs(grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
     E_EtherCANErrCode wrapped_configMotion(bp::dict &dict_waveforms,
                                            WrapGridState &grid_state,
                                            bp::list &fpu_list,
@@ -326,6 +341,10 @@ BOOST_PYTHON_MODULE(griddriver)
               bp::arg("count_protection") = true,
               bp::arg("support_uninitialized_auto") = true,
               bp::arg("timeout") = DATUM_TIMEOUT_ENABLE))
+
+        .def("pingFPUs", &WrappedGridDriver::wrapped_pingFPUs,
+             (bp::arg("grid_state"),
+              bp::arg("fpuset") = bp::list()))
 
         .def("configMotion", &WrappedGridDriver::wrapped_configMotion,
              (bp::arg("wavetable"),
