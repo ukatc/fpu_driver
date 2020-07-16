@@ -98,6 +98,11 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     config.motor_max_start_frequency = motor_max_start_frequency;
     config.motor_max_rel_increase = motor_max_rel_increase;
     config.motor_max_step_difference = motor_max_step_difference;
+
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        wf_reversed[fpu_id] = false;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -727,12 +732,10 @@ void UnprotectedGridDriver::set_wtable_reversed(const t_fpuset &fpuset,
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
     // here 
 
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
         if (fpuset[fpu_id])
         {
-            // TODO: wf_reversed is currently a std::map, but should probably
-            // be a fixed-size array instead - see comments above its definition
             wf_reversed[fpu_id] = is_reversed;
         }
     }

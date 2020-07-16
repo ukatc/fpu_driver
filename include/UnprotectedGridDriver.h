@@ -229,12 +229,12 @@ private:
     bool initialize_was_called_ok = false;
 
     // TODO: Use fixed-size array of MAX_NUM_POSITIONERS like the t_fpuset
-    // structures etc do?
+    // structures etc do? See comments above t_wtable definition in
+    // AsyncInterface.h as well. If so then need to initialise it from
+    // constructor?
     t_wtable last_wavetable;
 
-    // TODO: Use fixed-size array of MAX_NUM_POSITIONERS like the t_fpuset
-    // structures etc do?
-    std::map<int, bool> wf_reversed; // <fpu_id, reversed>
+    bool wf_reversed[MAX_NUM_POSITIONERS];
 
     bool wavetables_incomplete = false;
 

@@ -105,7 +105,8 @@ public:
         double motor_max_rel_increase,
         double motor_max_step_difference)
     {
-        std::cout << "Grid driver object successfully created - now need to call initialize().\n" << std::endl;
+        std::cout << "Grid driver object successfully created (new C++ version) - now call initialize().\n";
+        std::cout << "*** NOTE: No soft protection is implemented yet ***" << std::endl;
 
         if (confirm_each_step)
         {

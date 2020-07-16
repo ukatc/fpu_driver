@@ -44,8 +44,10 @@ typedef struct
 } t_waveform;
 
 // TODO: Change t_wtable to instead be a fixed-size array of MAX_NUM_POSITIONERS
-// like t_fpuset etc do? But N.B. it's also used as a variable-length array in
-// e.g. UnprotectedGridDriver::configMotion(), so might be better as a std::map<>?
+// like t_fpuset etc do? BUT it's defined here in AsyncInterface.h so might
+// already be used in lots of places and not easily changeable.
+// N.B. it's also used as a variable-length array in e.g.
+// UnprotectedGridDriver::configMotion(), so might be better as a std::map<>?
 typedef std::vector<t_waveform> t_wtable;
 
 typedef bool t_fpuset[MAX_NUM_POSITIONERS];
