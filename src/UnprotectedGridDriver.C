@@ -297,13 +297,6 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
                     bool support_uninitialized_auto,
                     enum E_DATUM_TIMEOUT_FLAG timeout)
 {
-    if (!initialize_was_called_ok)
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
-
     /*
     Moves all FPUs to datum position.
 
@@ -342,7 +335,12 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     soft_protection is set to false.
     */
 
-    result = check_fpuset(fpuset);
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
     if (result != DE_OK)
     {
         return result;
@@ -398,8 +396,6 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         // positions to old value
         _cancel_find_datum_hook(gs, fpuset, initial_positions);
 
-        // TODO: Is this a good way to handle the error? (the Python
-        // version does a "raise")
         return result;
     }
 
@@ -422,17 +418,6 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         bool wait_find_datum_finished = false;
         result = _gd->waitFindDatum(gs, time_interval,
                                     wait_find_datum_finished, &fpuset);
-
-        // TODO: The following is extra from
-        // WrapEtherCANInterface::wrap_waitFindDatum() - check that it's OK
-        // TODO: WrapEtherCANInterface::wrap_waitFindDatum() also contains
-        // a FIXME - check this
-        if (((!wait_find_datum_finished) && (result == DE_OK))
-                || (result == DE_WAIT_TIMEOUT))
-        {
-            result = DE_WAIT_TIMEOUT;
-        }
-
         is_ready = (result != DE_WAIT_TIMEOUT);
         finished_ok = (result == DE_OK);
     }
@@ -456,11 +441,11 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         }
         if (need_pinging)
         {
-            result = _pingFPUs(gs, pingset);
-            if (result != DE_OK)
+
+            E_EtherCANErrCode ping_result = _pingFPUs(gs, pingset);
+            if (ping_result != DE_OK)
             {
-                // TODO: Error? Look at what the _pingFPUs() return codes mean,
-                // and figure out what overall function return value needs to be
+                return ping_result;
             }
         }
     }
@@ -472,15 +457,12 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     if (was_aborted)
     {
 
-        // TODO: Not appropriate to abort etc? (see comments further up in
-        // this function)
+        // TODO: See Python equivalent - not appropriate to abort etc? (also
+        // see comments further up in this function)
 
     }
 
-    // TODO: Figure out what the return code needs to be, in terms of 
-    // finished_ok, _pingFPUs() failing etc
-
-    return DE_OK;
+    return result;
 }
 
 //------------------------------------------------------------------------------
