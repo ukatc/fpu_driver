@@ -435,18 +435,17 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         need_ping(gs, fpuset, pingset);
 
         // Perform FPU pinging if any FPU needs to be pinged
-        bool need_pinging = false;
+        bool any_to_ping = false;
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
         {
             if (fpuset[fpu_id] && pingset[fpu_id])
             {
-                need_pinging = true;
+                any_to_ping = true;
                 break;
             }
         }
-        if (need_pinging)
+        if (any_to_ping)
         {
-
             E_EtherCANErrCode ping_result = _pingFPUs(gs, pingset);
             if (ping_result != DE_OK)
             {
@@ -576,15 +575,15 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     // enough for this?
     t_wtable wtable = wavetable;
 
-    // Delete all wtable elements not selected in fpuset
+    // Delete all wtable elements not specified in fpuset
     // TODO: This might be very inefficient because deleting std::vector
     // elements from middle - but will work OK
     // TODO: Test this carefully
     for (auto it = wtable.begin(); it != wtable.end(); )
     {
-        bool erased = false;
-        if ((it->fpu_id < config.num_fpus) &&
-            (it->fpu_id < MAX_NUM_POSITIONERS))   // Sanity check
+        if ((it->fpu_id >= 0) &&
+            (it->fpu_id < config.num_fpus) &&
+            (it->fpu_id < MAX_NUM_POSITIONERS))   // Sanity checks
         {
             if (!fpuset[it->fpu_id])
             {
@@ -592,18 +591,16 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
                 // to the next element after the deleted one, so it's a
                 // safe operation
                 it = wtable.erase(it);
-                erased = true;
+            }
+            else
+            {
+                it++;
             }
         }
         else
         {
             // Error: Bad FPU ID found in wavetable
             return DE_INVALID_FPU_ID;
-        }
-
-        if (!erased)
-        {
-            it++;
         }
     }
 
@@ -657,24 +654,22 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     // non-DE_OK ones might actually be OK?
     if (result != DE_OK)
     {
-
         update_config = true;
-
     }
 
     if (update_config)
     {
         // TODO: Much of the following code is inefficient because iterates
         // through arrays/lists many times - but should work OK. This approach
-        // is currently taken in order to conform with the current data
-        // structures.
+        // is currently taken in order to conform with the existing C++ data
+        // structures already defined.
 
         // Accept configured wavetable entries
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
         {
             // TODO: Test whether each FPU is selected in fpuset?
 
-            // Check if fpu_id is in wtable
+            // Check if wtable has an fpu_id entry
             bool wtable_contains_fpu_id = false;
             auto it = wtable.begin();
             for ( ; it != wtable.end(); it++)
@@ -751,16 +746,15 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
-
-    result = check_fpuset(fpuset);
+    E_EtherCANErrCode result = check_fpuset(fpuset);
     if (result != DE_OK)
     {
         return result;
     }
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here 
+    // here
+
     t_fpu_positions initial_positions;
     _start_execute_motion_hook(gs, fpuset, initial_positions);
     usleep((useconds_t)(0.1 * microsecs_in_1_sec));
@@ -773,7 +767,6 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     if (result != DE_OK)
     {
         _cancel_execute_motion_hook(gs, fpuset, initial_positions);
-        // TODO: Is the following return equivalent to Python code?
         return result;
     }
 
@@ -791,14 +784,15 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
                                         wait_execute_motion_finished,
                                         fpuset);
         
+        // Capture return value (for Python executeMotion() equivalence)
         waitExecuteMotion_result = result;
 
         // TODO: Python version can be interrupted from Linux signals here,
         // but this isn't appropriate for C++ version because it wlll be
         // inside ESO driver?
 
-        // TODO: From ethercanif.C -> WrapEtherCANInterface::wrap_waitExecuteMotion() - 
-        // check this
+        // (The following check was brought in from 
+        // ethercanif.C -> WrapEtherCANInterface::wrap_waitExecuteMotion())
         if (!wait_execute_motion_finished && (result == DE_OK))
         {
             result = DE_WAIT_TIMEOUT;
@@ -816,32 +810,40 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     if ((result == DE_OK) || refresh_state)
     {
         // Execute a ping to update positions
-        // (this is only needed for protocol version 1)   <== TODO: Follow up on this
+        // (this is only needed for protocol version 1)
         t_grid_state move_gs;
         _gd->getGridState(move_gs);
+
         usleep((useconds_t)(0.1 * microsecs_in_1_sec));
         t_fpuset pingset;
         need_ping(gs, fpuset, pingset);
-        result = _pingFPUs(gs, pingset);
+        bool any_to_ping = false;
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        {
+            if (fpuset[fpu_id] && pingset[fpu_id])
+            {
+                any_to_ping = true;
+                break;
+            }
+        }
+        if (any_to_ping)
+        {
+            E_EtherCANErrCode ping_result = _pingFPUs(gs, pingset);
+            if (ping_result != DE_OK)
+            {
+                return ping_result;
+            }
+        }
 
         // The following hook will narrow down the recorded intervals of
         // positions
         _post_execute_motion_hook(gs, prev_gs, move_gs, fpuset);
-
-        // TODO: Should this heck be BEFORE _post_execute_motion_hook() above?
-        if (result != DE_OK)
-        {
-            // TODO: Is this OK?
-            return result;
-        }
     }
 
     // TODO: Original Python code - need to do anything with this here?
     //if was_aborted:
     //raise MovementError("executeMotion was aborted by SIGINT")
 
-    // TODO: Is the following return variable OK? (attemping to make equivalent
-    // to Python version)
     return waitExecuteMotion_result;
 }
 
