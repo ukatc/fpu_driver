@@ -566,9 +566,7 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 
     // TODO: Sort out return values
 
-    E_EtherCANErrCode result = DE_ERROR_UNKNOWN;
-
-    result = check_fpuset(fpuset);
+    E_EtherCANErrCode result = check_fpuset(fpuset);
     if (result != DE_OK)
     {
         return result;
@@ -579,7 +577,6 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 
     // We make a copy of the wavetable to make sure no side effects are
     // visible to the caller
-    // TODO: Will the following statement do a deep copy as required?
     // TODO: This will use lots of local stack - is the stack size big
     // enough for this?
     t_wtable wtable = wavetable;
@@ -764,6 +761,7 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
     // here
 
+    // Wait a short moment to avoid spurious collision
     t_fpu_positions initial_positions;
     _start_execute_motion_hook(gs, fpuset, initial_positions);
     usleep((useconds_t)(0.1 * microsecs_in_1_sec));
@@ -783,7 +781,6 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     bool is_ready = false;
     bool was_aborted = false;
     bool refresh_state = false;
-    E_EtherCANErrCode waitExecuteMotion_result = DE_ERROR_UNKNOWN;
     // TODO: The result logic here might not be the same as the Python
     // equivalent - check this
     while (!is_ready)
@@ -793,9 +790,6 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
                                         wait_execute_motion_finished,
                                         fpuset);
         
-        // Capture return value (for Python executeMotion() equivalence)
-        waitExecuteMotion_result = result;
-
         // TODO: Python version can be interrupted from Linux signals here,
         // but this isn't appropriate for C++ version because it wlll be
         // inside ESO driver?
@@ -840,7 +834,7 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     //if was_aborted:
     //raise MovementError("executeMotion was aborted by SIGINT")
 
-    return waitExecuteMotion_result;
+    return result;
 }
 
 //==============================================================================

@@ -162,7 +162,7 @@ protected:
                                         t_datum_search_flags &search_modes, // Modifiable
                                         enum E_DATUM_SELECTION selected_arm,
                                         const t_fpuset &fpuset,
-                                        bool support_uninitialized_auto) {}
+                                        bool support_uninitialized_auto = true) {}
     virtual void _start_find_datum_hook(t_grid_state &gs,
                                         const t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
@@ -192,7 +192,8 @@ protected:
     // configMotion() hook functions
     virtual void _pre_config_motion_hook(const t_wtable &wtable,
                                          t_grid_state &gs,
-                                         const t_fpuset &fpuset, Range wmode) {}
+                                         const t_fpuset &fpuset,
+                                         Range wmode = Range::Error) {}
     virtual void _post_config_motion_hook(const t_wtable &wtable,
                                           t_grid_state &gs,
                                           const t_fpuset &fpuset);
@@ -225,7 +226,7 @@ private:
                                        const t_fpu_state &fpu_state,  
                                        bool allow_unconfirmed = false,
                                        E_FPU_STATE target_state = FPST_READY_FORWARD);
-    void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed);
+    void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed = false);
 
     bool initialize_was_called_ok = false;
 
