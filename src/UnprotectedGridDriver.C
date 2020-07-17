@@ -841,63 +841,84 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 void UnprotectedGridDriverTester::doTests()
 {
     E_EtherCANErrCode result;
+    t_grid_state grid_state;
     const int num_fpus = 3;
-    
+    const bool soft_protection = false;
+
     //..........................................................................
-    
+
     UnprotectedGridDriver ugd(num_fpus);
-    
+
     //..........................................................................
-    
+    // Test initialize()
     ugd.initialize();    
-    
+
     //..........................................................................
-    
+    // Test connect()
     // TODO: t_gateway_address::ip is only a pointer - dangerous? Change this
     // eventually? (e.g. to a std::string?)
     const char *ip_address_str = "127.0.0.1";
     uint16_t port_number = 4700;
     t_gateway_address gateway_address = { ip_address_str, port_number };
-    
     result = ugd.connect(1, &gateway_address);   
-    
+
     //..........................................................................
-    
-    // Create and initialise grid_state
-    EtherCANInterfaceConfig iface_config;
-    
-    t_grid_state grid_state;
-//    FPUArray fpu_array(iface_config);
-//    fpu_array.getGridState(grid_state);
-    ugd.getGridState(grid_state);
-    
-    // TODO: Initialise these data structures/arrays
-    t_datum_search_flags search_modes;
+    // Test getGridState()
+    E_GridState grid_state_result = ugd.getGridState(grid_state);
+
+    //..........................................................................
+    // Select required FPUs in fpuset
     t_fpuset fpuset;
-    
-    // Initialise fpuset
     for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
     {
         fpuset[fpu_id] = false;
     }
-    
-    // Select required FPUs in fpuset and search_modes arrays
     for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
     {
         fpuset[fpu_id] = true;
+    }
+
+    //..........................................................................
+    // Test findDatum()
+    t_datum_search_flags search_modes;
+    for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
+    {
         search_modes[fpu_id] = SEARCH_AUTO;
     }
-    
-    bool soft_protection = true;
-    bool count_protection = false;
-    bool support_uninitialized_auto = false;
-    
+
+    const bool count_protection = false;
+    const bool support_uninitialized_auto = false;
+
+    ugd.getGridState(grid_state);
+
     result = ugd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
                            soft_protection, count_protection,
                            support_uninitialized_auto, DATUM_TIMEOUT_ENABLE);
-    
+
     //..........................................................................
+    // Test configMotion()
+    const bool allow_uninitialized = false;
+    const int ruleset_version = DEFAULT_WAVEFORM_RULESET_VERSION;
+    const bool warn_unsafe = true;
+    const int verbosity = 3;
+
+    t_wtable wavetable;
+    t_waveform waveform;
+    waveform = {0, { {1, -2}, {3, -4}, {5, -6} } };
+    wavetable.push_back(waveform);
+    waveform = {1, { {11, -12}, {13, -14}, {15, -16} } };
+    wavetable.push_back(waveform);
+    waveform = {2, { {21, -22}, {23, -24}, {25, -26} } };
+    wavetable.push_back(waveform);
     
+    ugd.getGridState(grid_state);
+
+    result = ugd.configMotion(wavetable, grid_state, fpuset, soft_protection,
+                              allow_uninitialized, ruleset_version, 
+                              warn_unsafe, verbosity);
+
+    //..........................................................................
+
 }
 
 //------------------------------------------------------------------------------
