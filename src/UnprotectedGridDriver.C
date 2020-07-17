@@ -431,26 +431,10 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     {
         usleep((useconds_t)(time_interval * microsecs_in_1_sec));
 
-        t_fpuset pingset;
-        need_ping(gs, fpuset, pingset);
-
-        // Perform FPU pinging if any FPU needs to be pinged
-        bool any_to_ping = false;
-        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        E_EtherCANErrCode ping_if_needed_result = pingIfNeeded(gs, fpuset);
+        if (ping_if_needed_result != DE_OK)
         {
-            if (fpuset[fpu_id] && pingset[fpu_id])
-            {
-                any_to_ping = true;
-                break;
-            }
-        }
-        if (any_to_ping)
-        {
-            E_EtherCANErrCode ping_result = _pingFPUs(gs, pingset);
-            if (ping_result != DE_OK)
-            {
-                return ping_result;
-            }
+            return ping_if_needed_result;
         }
     }
 
@@ -467,6 +451,31 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     }
 
     return result;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::pingIfNeeded(t_grid_state &gs,
+                                                      const t_fpuset &fpuset)
+{
+    // Perform FPU pinging if any FPU needs to be pinged
+
+    t_fpuset pingset;
+    need_ping(gs, fpuset, pingset);
+
+    bool any_to_ping = false;
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (fpuset[fpu_id] && pingset[fpu_id])
+        {
+            any_to_ping = true;
+            break;
+        }
+    }
+    if (any_to_ping)
+    {
+        return _pingFPUs(gs, pingset);
+    }
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------
@@ -810,29 +819,16 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     if ((result == DE_OK) || refresh_state)
     {
         // Execute a ping to update positions
-        // (this is only needed for protocol version 1)
+        // (this is only needed for protocol version 1)  <== TODO: Check this
         t_grid_state move_gs;
         _gd->getGridState(move_gs);
 
         usleep((useconds_t)(0.1 * microsecs_in_1_sec));
-        t_fpuset pingset;
-        need_ping(gs, fpuset, pingset);
-        bool any_to_ping = false;
-        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+
+        E_EtherCANErrCode ping_if_needed_result = pingIfNeeded(gs, fpuset);
+        if (ping_if_needed_result != DE_OK)
         {
-            if (fpuset[fpu_id] && pingset[fpu_id])
-            {
-                any_to_ping = true;
-                break;
-            }
-        }
-        if (any_to_ping)
-        {
-            E_EtherCANErrCode ping_result = _pingFPUs(gs, pingset);
-            if (ping_result != DE_OK)
-            {
-                return ping_result;
-            }
+            return ping_if_needed_result;
         }
 
         // The following hook will narrow down the recorded intervals of
