@@ -218,6 +218,7 @@ private:
     E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
     void need_ping(const t_grid_state &gs, const t_fpuset &fpuset,
                    t_fpuset &pingset_ret);
+    E_EtherCANErrCode pingIfNeeded(t_grid_state &gs, const t_fpuset &fpuset);
     E_EtherCANErrCode _pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
     // N.B. static function
     static bool wavetable_was_received(const t_wtable &wtable, int fpu_id,
