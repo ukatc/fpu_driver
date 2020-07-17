@@ -673,8 +673,6 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         // Accept configured wavetable entries
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
         {
-            // TODO: Test whether each FPU is selected in fpuset?
-
             // Check if wtable has an fpu_id entry
             bool wtable_contains_fpu_id = false;
             auto it = wtable.begin();
@@ -841,9 +839,11 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 void UnprotectedGridDriverTester::doTests()
 {
     E_EtherCANErrCode result;
+    E_GridState grid_state_result;
     t_grid_state grid_state;
     const int num_fpus = 3;
     const bool soft_protection = false;
+    const double microsecs_in_1_sec = 1000000.0;
 
     //..........................................................................
 
@@ -863,11 +863,7 @@ void UnprotectedGridDriverTester::doTests()
     result = ugd.connect(1, &gateway_address);   
 
     //..........................................................................
-    // Test getGridState()
-    E_GridState grid_state_result = ugd.getGridState(grid_state);
-
-    //..........................................................................
-    // Select required FPUs in fpuset
+    // Specify FPUs in fpuset
     t_fpuset fpuset;
     for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
     {
@@ -878,6 +874,22 @@ void UnprotectedGridDriverTester::doTests()
         fpuset[fpu_id] = true;
     }
 
+    //..........................................................................
+    // Test getGridState()
+    grid_state_result = ugd.getGridState(grid_state);
+
+    //..........................................................................
+    // Test pingFPUs()
+    result = ugd.pingFPUs(grid_state, fpuset);
+    
+    //..........................................................................
+    // Test getGridState() again
+    grid_state_result = ugd.getGridState(grid_state);
+
+    //..........................................................................
+    // Test pingFPUs() again
+    result = ugd.pingFPUs(grid_state, fpuset);
+    
     //..........................................................................
     // Test findDatum()
     t_datum_search_flags search_modes;
@@ -918,7 +930,11 @@ void UnprotectedGridDriverTester::doTests()
                               warn_unsafe, verbosity);
 
     //..........................................................................
-
+    // Test executeMotion()
+    bool sync_command = true;
+    result = ugd.executeMotion(grid_state, fpuset, sync_command);
+    
+    //..........................................................................
 }
 
 //------------------------------------------------------------------------------
