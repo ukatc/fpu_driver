@@ -841,7 +841,7 @@ void UnprotectedGridDriverTester::doTests()
     E_EtherCANErrCode result;
     E_GridState grid_state_result;
     t_grid_state grid_state;
-    const int num_fpus = 3;
+    const int num_fpus = 1;
     const bool soft_protection = false;
     const double microsecs_in_1_sec = 1000000.0;
 
@@ -895,9 +895,8 @@ void UnprotectedGridDriverTester::doTests()
     t_datum_search_flags search_modes;
     for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
     {
-        search_modes[fpu_id] = SEARCH_AUTO;
+        search_modes[fpu_id] = SEARCH_CLOCKWISE;
     }
-
     const bool count_protection = false;
     const bool support_uninitialized_auto = false;
 
@@ -907,6 +906,7 @@ void UnprotectedGridDriverTester::doTests()
                            soft_protection, count_protection,
                            support_uninitialized_auto, DATUM_TIMEOUT_ENABLE);
 
+#if 0
     //..........................................................................
     // Test configMotion()
     const bool allow_uninitialized = false;
@@ -934,6 +934,11 @@ void UnprotectedGridDriverTester::doTests()
     bool sync_command = true;
     result = ugd.executeMotion(grid_state, fpuset, sync_command);
     
+    //..........................................................................
+#endif // 0
+
+    result = ugd.disconnect();
+
     //..........................................................................
 }
 
