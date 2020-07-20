@@ -936,10 +936,9 @@ void UnprotectedGridDriverTester::doTests()
                            soft_protection, count_protection,
                            support_uninitialized_auto, DATUM_TIMEOUT_ENABLE);
 
-#if 0
     //..........................................................................
     // Test configMotion()
-    const bool allow_uninitialized = false;
+    const bool allow_uninitialized = true;
     const int ruleset_version = DEFAULT_WAVEFORM_RULESET_VERSION;
     const bool warn_unsafe = true;
     const int verbosity = 3;
@@ -948,14 +947,16 @@ void UnprotectedGridDriverTester::doTests()
     t_waveform waveform;
     waveform = {0, { {1, -2}, {3, -4}, {5, -6} } };
     wavetable.push_back(waveform);
+#if 0    
     waveform = {1, { {11, -12}, {13, -14}, {15, -16} } };
     wavetable.push_back(waveform);
     waveform = {2, { {21, -22}, {23, -24}, {25, -26} } };
     wavetable.push_back(waveform);
+#endif // 0
     
     ugd.getGridState(grid_state);
 
-    TODO: Add enableMove() call here? (documentation implies that required)
+    ugd.enableMove(0, grid_state);
     
     result = ugd.configMotion(wavetable, grid_state, fpuset, soft_protection,
                               allow_uninitialized, ruleset_version, 
@@ -967,7 +968,6 @@ void UnprotectedGridDriverTester::doTests()
     result = ugd.executeMotion(grid_state, fpuset, sync_command);
     
     //..........................................................................
-#endif // 0
 
     result = ugd.disconnect();
 
