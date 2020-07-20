@@ -264,6 +264,18 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_enableMove(int fpu_id, WrapGridState &grid_state)
+    {
+        if (!checkAndMessageIfInitializeCalledOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        E_EtherCANErrCode ecode = enableMove(fpu_id, grid_state);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
 private:
     bool checkAndMessageIfInitializeCalledOk()
     {
@@ -366,6 +378,10 @@ BOOST_PYTHON_MODULE(griddriver)
               // TODO: sync_command default is true here and in FpuGridDriver.py,
               // but is shown as False in grid driver document
               bp::arg("sync_command") = true))
+
+        .def("enableMove", &WrappedGridDriver::wrapped_enableMove,
+             (bp::arg("fpu_id"),
+              bp::arg("grid_state")))
 
         //........................................
         // TODO: Test function only - remove when no longer needed

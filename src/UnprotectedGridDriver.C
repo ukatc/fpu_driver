@@ -835,6 +835,36 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     return result;
 }
 
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs)
+{
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here
+
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+
+    E_EtherCANErrCode result = _gd->enableMove(fpu_id, gs);
+
+    // TODO: The following line was in original Python FpuGridDriver.enableMove(),
+    // but not needed here?
+    // status = gs.FPU[fpu_id].last_status
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    return result;
+}
+
+
 //==============================================================================
 void UnprotectedGridDriverTester::doTests()
 {
@@ -925,6 +955,8 @@ void UnprotectedGridDriverTester::doTests()
     
     ugd.getGridState(grid_state);
 
+    TODO: Add enableMove() call here? (documentation implies that required)
+    
     result = ugd.configMotion(wavetable, grid_state, fpuset, soft_protection,
                               allow_uninitialized, ruleset_version, 
                               warn_unsafe, verbosity);

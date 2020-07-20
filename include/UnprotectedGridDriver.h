@@ -148,6 +148,8 @@ public:
 
     E_EtherCANErrCode executeMotion(t_grid_state &gs, const t_fpuset &fpuset,
                                     bool sync_command = true);
+                                
+    E_EtherCANErrCode enableMove(int fpu_id, t_grid_state &gs);
 
     //..........................................................................
 protected:
