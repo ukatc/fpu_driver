@@ -248,7 +248,7 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
     // Check that config.num_fpus is within range
     if ((config.num_fpus < 0) || (config.num_fpus >= MAX_NUM_POSITIONERS))
     {
-        // TODO: Any better error return code for this?
+        // TODO: Any better error return code for this? DE_INVALID_CONFIG?
         return DE_INVALID_FPU_ID;
     }
 
@@ -550,7 +550,7 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     /*
     Configures movement by sending a waveform table to a group of FPUs.
 
-    When the 'protected' flag is set to False, bypass all hardware protection
+    When the 'protected' flag is set to false, bypass all hardware protection
     checks, which will allow to move a collided or uncalibrated FPU (even if
     the movement might damage the hardware).
     */
@@ -868,20 +868,28 @@ E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs
 //==============================================================================
 void UnprotectedGridDriverTester::doTests()
 {
+#define DOTESTS_MAX_NUM_FPUS    (5)
+
+// NOTE: Can change DOTESTS_NUM_FPUS as required, up to DOTESTS_MAX_NUM_FPUS -
+// and set mock gateway (if used) to the same value when invoking it
+#define DOTESTS_NUM_FPUS        (5)
+#if (DOTESTS_NUM_FPUS > DOTESTS_MAX_NUM_FPUS)
+#error "BUILD ERROR: DOTESTS_NUM_FPUS > DO_TEST_MAX_NUM_FPUS"
+#endif
+    
     E_EtherCANErrCode result;
     E_GridState grid_state_result;
     t_grid_state grid_state;
-    const int num_fpus = 1;
     const bool soft_protection = false;
     const double microsecs_in_1_sec = 1000000.0;
 
     //..........................................................................
 
-    UnprotectedGridDriver ugd(num_fpus);
+    UnprotectedGridDriver ugd(DOTESTS_NUM_FPUS);
 
     //..........................................................................
     // Test initialize()
-    ugd.initialize();    
+    result = ugd.initialize();    
 
     //..........................................................................
     // Test connect()
@@ -899,7 +907,7 @@ void UnprotectedGridDriverTester::doTests()
     {
         fpuset[fpu_id] = false;
     }
-    for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
+    for (int fpu_id = 0; fpu_id < DOTESTS_NUM_FPUS; fpu_id++)
     {
         fpuset[fpu_id] = true;
     }
@@ -923,14 +931,14 @@ void UnprotectedGridDriverTester::doTests()
     //..........................................................................
     // Test findDatum()
     t_datum_search_flags search_modes;
-    for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
+    for (int fpu_id = 0; fpu_id < DOTESTS_NUM_FPUS; fpu_id++)
     {
         search_modes[fpu_id] = SEARCH_CLOCKWISE;
     }
     const bool count_protection = false;
     const bool support_uninitialized_auto = false;
 
-    ugd.getGridState(grid_state);
+    grid_state_result = ugd.getGridState(grid_state);
 
     result = ugd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
                            soft_protection, count_protection,
@@ -944,19 +952,25 @@ void UnprotectedGridDriverTester::doTests()
     const int verbosity = 3;
 
     t_wtable wavetable;
-    t_waveform waveform;
-    waveform = {0, { {1, -2}, {3, -4}, {5, -6} } };
-    wavetable.push_back(waveform);
-#if 0    
-    waveform = {1, { {11, -12}, {13, -14}, {15, -16} } };
-    wavetable.push_back(waveform);
-    waveform = {2, { {21, -22}, {23, -24}, {25, -26} } };
-    wavetable.push_back(waveform);
-#endif // 0
-    
-    ugd.getGridState(grid_state);
+    static const t_waveform test_waveforms[DOTESTS_MAX_NUM_FPUS] =
+    {
+        {0, { { 0,  -1}, { 2,  -3}, { 4,  -5} } },
+        {1, { { 6,  -7}, { 8, -9},  {10, -11} } },
+        {2, { {12, -13}, {14, -15}, {16, -17} } },
+        {3, { {18, -19}, {20, -21}, {22, -23} } },
+        {4, { {24, -25}, {26, -27}, {28, -29} } }
+    };
+    for (int i = 0; i < DOTESTS_NUM_FPUS; i++)
+    {
+        wavetable.push_back(test_waveforms[i]);
+    }
 
-    ugd.enableMove(0, grid_state);
+    grid_state_result = ugd.getGridState(grid_state);
+
+    for (int i = 0; i < DOTESTS_NUM_FPUS; i++)
+    {
+        result = ugd.enableMove(i, grid_state);
+    }
     
     result = ugd.configMotion(wavetable, grid_state, fpuset, soft_protection,
                               allow_uninitialized, ruleset_version, 
