@@ -582,9 +582,8 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     t_wtable wtable = wavetable;
 
     // Delete all wtable elements not specified in fpuset
-    // TODO: This might be very inefficient because deleting std::vector
-    // elements from middle - but will work OK
-    // TODO: Test this carefully
+    // N.B. This isn't very efficient because we might be deleting the
+    // std::vector elements from the middle - but will work OK
     for (auto it = wtable.begin(); it != wtable.end(); )
     {
         if ((it->fpu_id >= 0) &&
@@ -868,6 +867,16 @@ E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs
 //==============================================================================
 void UnprotectedGridDriverTester::doTests()
 {
+    // Allows basic fixed-argument testing of the main UnprotectedGridDriver()
+    // functions, for up to 5 FPUs. Notes:
+    //   - Can be run using the mock gateway simulator - need to first set this
+    //     running in a Bash Python shell in .../test/HardwareSimulation,
+    //     using:
+    //         python mock_gateway.py -N 5    (N.B. Adjust for number of FPUs)
+    //   - In a debugger, can single-step and breakpoint this code and look at
+    //     the return values to see what's going on, and also look at the 
+    //     mock gateway console output
+
 #define DOTESTS_MAX_NUM_FPUS    (5)
 
 // NOTE: Can change DOTESTS_NUM_FPUS as required, up to DOTESTS_MAX_NUM_FPUS -
@@ -945,7 +954,7 @@ void UnprotectedGridDriverTester::doTests()
                            support_uninitialized_auto, DATUM_TIMEOUT_ENABLE);
 
     //..........................................................................
-    // Test configMotion()
+    // Test configMotion() and wavetable_was_received()
     const bool allow_uninitialized = true;
     const int ruleset_version = DEFAULT_WAVEFORM_RULESET_VERSION;
     const bool warn_unsafe = true;
@@ -955,7 +964,7 @@ void UnprotectedGridDriverTester::doTests()
     static const t_waveform test_waveforms[DOTESTS_MAX_NUM_FPUS] =
     {
         {0, { { 0,  -1}, { 2,  -3}, { 4,  -5} } },
-        {1, { { 6,  -7}, { 8, -9},  {10, -11} } },
+        {1, { { 6,  -7}, { 8,  -9}, {10, -11} } },
         {2, { {12, -13}, {14, -15}, {16, -17} } },
         {3, { {18, -19}, {20, -21}, {22, -23} } },
         {4, { {24, -25}, {26, -27}, {28, -29} } }
@@ -965,12 +974,37 @@ void UnprotectedGridDriverTester::doTests()
         wavetable.push_back(test_waveforms[i]);
     }
 
+    // Ad-hoc partial test of wavetable_was_received()
+    t_fpu_state fpu_state;
+    bool allow_unconfirmed = false;
+    E_FPU_STATE target_state = FPST_READY_FORWARD;
+    bool wtable_received_result = ugd.wavetable_was_received(wavetable, 3, 
+                                                             fpu_state,
+                                                             allow_unconfirmed,
+                                                             target_state);
+    
     grid_state_result = ugd.getGridState(grid_state);
 
     for (int i = 0; i < DOTESTS_NUM_FPUS; i++)
     {
         result = ugd.enableMove(i, grid_state);
     }
+    
+    //........................
+    // N.B. If required, can uncomment the
+    // following code to test the wtable
+    // pruning code inside configMotion()
+    /*    
+    if (DOTESTS_NUM_FPUS >= 2)
+    {
+        fpuset[1] = false;
+    }
+    if (DOTESTS_NUM_FPUS >= 4)
+    {
+        fpuset[3] = false;
+    }
+    */ 
+    //........................
     
     result = ugd.configMotion(wavetable, grid_state, fpuset, soft_protection,
                               allow_uninitialized, ruleset_version, 
