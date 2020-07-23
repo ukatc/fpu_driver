@@ -159,7 +159,12 @@ SRC = $(patsubst %,$(SRCDIR)/%,$(_SRC))
 # This target builds the default wrapper, without link time optimization.
 
 # ******* TODO: BW changed -lboost_python to -lboost_python27 to make it build
-# on my Ubuntu Linux VM with Boost 1.72
+# with Boost 1.72 (and also in wrapper-lto further down)
+# This applies to Boost.Python v1.67 and above - see version 1.67 release notes
+# at https://www.boost.org/doc/libs/1_67_0/libs/python/doc/html/rn.html#rn.version_1_67
+# Johannes' FPU grid driver document specifies the older 1.66, and the library
+# filename for this old version was "boost_python" (i.e. without the "27" suffix)
+
 wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so \
             python/src/ethercanif.C python/src/FpuBPShared_General.C -L./lib  -lethercan -lboost_python27 $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
@@ -168,8 +173,7 @@ wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 # to build the python test module directly.
 # LTO is probably useful because we have many small handler functions which
 # run in performance-critical loops. (With version v2.0.2, now checked to run correctly)
-# ******* TODO: BW changed -lboost_python to -lboost_python27 to make it build
-# on my Ubuntu Linux VM with Boost 1.72
+# ******* TODO: BW changed -lboost_python to -lboost_python27  - see comments above
 wrapper-lto:  python/src/ethercanif.C $(SRC) $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so $(CXXFLAGS_LTO)\
             python/src/ethercanif.C python/src/FpuBPShared_General.C $(SRC) -lboost_python27 -DVERSION=\"$(VERSION)\"
