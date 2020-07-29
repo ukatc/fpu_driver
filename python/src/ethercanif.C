@@ -43,13 +43,13 @@ PyObject* HardwareProtectionErrorExceptionTypeObj = 0;
 namespace   // Avoid cluttering the global namespace.
 {
 
-/* ---------------------------------------------------------------------------*/
+//------------------------------------------------------------------------------
 E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
 {
     return getGridStateSummary(grid_state);
 }
 
-/* ---------------------------------------------------------------------------*/
+//------------------------------------------------------------------------------
 void translate_interface_error(EtherCANException const& e)
 {
     // Use the Python 'C' API to set up an exception object
@@ -154,11 +154,9 @@ void translate_interface_error(EtherCANException const& e)
 
 }
 
+//------------------------------------------------------------------------------
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
-
-
-/* ---------------------------------------------------------------------------*/
 PyObject* EtherCANExceptionClass(const char* name, PyObject* baseTypeObj = PyExc_Exception)
 {
     using std::string;
@@ -175,6 +173,10 @@ PyObject* EtherCANExceptionClass(const char* name, PyObject* baseTypeObj = PyExc
 }
 #pragma GCC diagnostic pop
 
+//------------------------------------------------------------------------------
+
+
+//==============================================================================
 BOOST_PYTHON_MODULE(ethercanif)
 {
     using namespace boost::python;
@@ -278,3 +280,5 @@ BOOST_PYTHON_MODULE(ethercanif)
     ;
 
 }
+
+//==============================================================================
