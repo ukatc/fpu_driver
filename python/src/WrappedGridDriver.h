@@ -18,7 +18,7 @@
 
 #include <iostream>
 
-#include "FpuBPShared_General.h"
+#include "WrapperSharedBase.h"
 #include "GridDriver.h"
 #include "InterfaceConstants.h"
 

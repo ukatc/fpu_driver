@@ -88,7 +88,7 @@ _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h \
 	ethercan/response_handlers/handle_WriteSerialNumber_response.h \
 	ethercan/sync_utils.h ethercan/time_utils.h \
 	ethercan/decode_CAN_response.h \
-	../python/src/FpuBPShared_General.h
+	../python/src/WrapperSharedBase.h
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS)) Makefile
 
@@ -167,7 +167,8 @@ SRC = $(patsubst %,$(SRCDIR)/%,$(_SRC))
 
 wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so \
-            python/src/ethercanif.C python/src/FpuBPShared_General.C -L./lib  -lethercan -lboost_python27 $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
+            python/src/ethercanif.C python/src/WrapperSharedBase.C -L./lib  -lethercan -lboost_python27 $(CXXFLAGS) -DVERSION=\"$(VERSION)\"
+
 
 # This target variant is using link time optimization, aka LTO,
 # to build the python test module directly.
@@ -176,7 +177,7 @@ wrapper: lib/libethercan.a python/src/ethercanif.C $(DEPS) version
 # ******* TODO: BW changed -lboost_python to -lboost_python27  - see comments above
 wrapper-lto:  python/src/ethercanif.C $(SRC) $(DEPS) version
 	g++ -shared -std=c++11 -I/usr/local/include -I/usr/include/python2.7 -fPIC -o python/ethercanif.so $(CXXFLAGS_LTO)\
-            python/src/ethercanif.C python/src/FpuBPShared_General.C $(SRC) -lboost_python27 -DVERSION=\"$(VERSION)\"
+            python/src/ethercanif.C python/src/WrapperSharedBase.C $(SRC) -lboost_python27 -DVERSION=\"$(VERSION)\"
 
 
 version: force

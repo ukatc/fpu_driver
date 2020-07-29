@@ -11,13 +11,13 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FpuBPShared_General.C
+// NAME WrapperSharedBase.C
 //
 // TODO: Put description here
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "FpuBPShared_General.h"
+#include "WrapperSharedBase.h"
 
 
 //==============================================================================
@@ -26,7 +26,7 @@
 // after the end of the function) suppress the following obscure error which
 // happened when building ethercanif using "make wrapper":
 //     "In member function ‘int WrapperSharedBase::convertGatewayAddresses(...)’:
-//      python/src/FpuBPShared_General.C:28:5: error: assuming signed overflow
+//      python/src/WrapperSharedBase.C:28:5: error: assuming signed overflow
 //      does not occur when changing X +- C1 cmp C2 to X cmp C2 -+ C1 [-Werror=strict-overflow]"
 // This error is caused because the Makefile has the compiler option
 // "-Wstrict-overflow=4" enabled (see CXXFLAGS), which apparently (see Google)

@@ -11,14 +11,14 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FpuBPShared_General.h
+// NAME WrapperSharedBase.h
 //
 // TODO: Put description here
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FPUBPSHARED_GENERAL_H
-#define FPUBPSHARED_GENERAL_H
+#ifndef WRAPPERSHAREDBASE_H
+#define WRAPPERSHAREDBASE_H
 
 #include <string.h>
 #include <iostream>
@@ -384,5 +384,5 @@ private:
 
 // -----------------------------------------------------------------------------
 
-#endif // FPUBPSHARED_GENERAL_H
+#endif // WRAPPERSHAREDBASE_H
 

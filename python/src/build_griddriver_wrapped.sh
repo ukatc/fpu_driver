@@ -28,7 +28,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
     -I../../include/ethercan \
     -I../../lib/liblmdb \
     griddriver_wrapper.C \
-    FpuBPShared_General.C \
+    WrapperSharedBase.C \
     ../../src/AsyncInterface.C \
     ../../src/CommandPool.C \
     ../../src/CommandQueue.C \
