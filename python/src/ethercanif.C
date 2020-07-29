@@ -18,6 +18,7 @@
 #include "FpuBPShared_General.h"
 
 #include "WrapEtherCANInterface.h"
+#include "WrappedGridDriver.h"
 
 PyObject* EtherCANExceptionTypeObj = 0;
 PyObject* InvalidWaveformExceptionTypeObj = 0;
