@@ -186,6 +186,8 @@ BOOST_PYTHON_MODULE(ethercanif)
 
     scope().attr("CAN_PROTOCOL_VERSION") = CAN_PROTOCOL_VERSION;
 
+    scope().attr("DEFAULT_WAVEFORM_RULESET_VERSION") = DEFAULT_WAVEFORM_RULESET_VERSION;
+
     // define the exception hierarchy
     EtherCANExceptionTypeObj = EtherCANExceptionClass("EtherCANException");
     MovementErrorExceptionTypeObj = EtherCANExceptionClass("MovementError", EtherCANExceptionTypeObj);
@@ -213,7 +215,6 @@ BOOST_PYTHON_MODULE(ethercanif)
 
     //--------------------------------------------------------------------------
     // Data object wrapper definitions - used by both ethercanif and grid driver
-    scope().attr("DEFAULT_WAVEFORM_RULESET_VERSION") = DEFAULT_WAVEFORM_RULESET_VERSION;
 
     enum_<E_FPU_STATE>("E_FPU_STATE")
     .value("FPST_UNKNOWN", FPST_UNKNOWN)

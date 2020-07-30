@@ -28,7 +28,7 @@
 #include <unistd.h>
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
-#include "FPUArray.h"
+#include "ethercan/FPUArray.h"
 
 #ifdef DEBUG
 #include <stdio.h>

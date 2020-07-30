@@ -28,12 +28,9 @@
 #include "InterfaceConstants.h"
 #include "FPUConstants.h"
 #include "EtherCANInterface.h"
-#include "AsyncInterface.h"
+#include "ethercan/AsyncInterface.h"
 #include "InterfaceState.h"
 #include "Interval.h"
-
-// TODO: FOR TESTING ONLY
-#include "ProtectionDB.h"
 
 namespace mpifps
 {
