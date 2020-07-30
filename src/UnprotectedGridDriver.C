@@ -41,27 +41,53 @@ namespace mpifps
 #define warn(warnString)
 
 //------------------------------------------------------------------------------
-string get_logname(string basename, string log_dir = "", string timestamp = "")
-{
+// TODO: Disabled these functions for now because not yet used, to stop build
+// warnings - enable and implement fully if needed
+#if 0
+//------------------------------------------------------------------------------
 
+static std::string get_logname(const std::string &basename,
+                               const std::string &log_dir,
+                               const std::string &timestamp);
+static std::string make_logdir(const std::string &log_dir);
+
+
+//------------------------------------------------------------------------------
+std::string get_logname(const std::string &basename,
+                        const std::string &log_dir,
+                        const std::string &timestamp)
+{
     // TODO: Convert from FpuGridDriver.py -> get_logname()
+
+    // Temporary for now
+    UNUSED_ARG(basename);
+    UNUSED_ARG(log_dir);
+    UNUSED_ARG(timestamp);
 
     if (timestamp == DEFAULT_START_TIMESTAMP)
     {
 
     }
 
+    return std::string("");
 }
 
 //------------------------------------------------------------------------------
-string make_logdir(string log_dir)
+std::string make_logdir(const std::string &log_dir)
 {
 
     // TODO: Convert from FpuGridDriver.py -> make_logdir() - not sure about
     // equivalent C++ path manipulations for Linux path handling yet
 
-    return string("");
+    // Temporary for now
+    UNUSED_ARG(log_dir);
+
+    return std::string("");
 }
+
+//------------------------------------------------------------------------------
+#endif // 0
+//------------------------------------------------------------------------------
 
 
 //==============================================================================
@@ -135,6 +161,16 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     // can't supply all of the 20-plus required initialisation arguments via
     // the constructor alone.
 
+    //................................
+    // TODO: Temporary for now
+    UNUSED_ARG(log_dir);
+    UNUSED_ARG(protection_logfile);
+    UNUSED_ARG(control_logfile);
+    UNUSED_ARG(tx_logfile);
+    UNUSED_ARG(rx_logfile);
+    UNUSED_ARG(start_timestamp);
+    //................................
+
     config.logLevel = logLevel;
     config.firmware_version_address_offset = firmware_version_address_offset;
 
@@ -154,10 +190,10 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 
     // TODO: Convert log file initialisation code from FpuGridDriver.py
 
-    int flags = O_CREAT | O_APPEND | O_WRONLY;
-    mode_t mode = 0644;  // Octal
+    //int flags = O_CREAT | O_APPEND | O_WRONLY;
+    //mode_t mode = 0644;  // Octal
 
-    std::string log_path = make_logdir(log_dir);
+    //std::string log_path = make_logdir(log_dir);
 
 
     //..........................................................................
@@ -212,7 +248,7 @@ E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
     // because too clunky - instead, use Linux named semaphores?
 
     E_EtherCANErrCode result = _gd->connect(ngateways, gateway_addresses);
-    _post_connect_hook(config);
+    _post_connect_hook();
     return result;
 
 /*
@@ -512,6 +548,10 @@ void UnprotectedGridDriver::_post_config_motion_hook(const t_wtable &wtable,
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
     // here
 
+    // TODO: Temporary for now
+    UNUSED_ARG(wtable);
+    UNUSED_ARG(gs);
+
     set_wtable_reversed(fpuset, false);
 }
 
@@ -554,6 +594,10 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     checks, which will allow to move a collided or uncalibrated FPU (even if
     the movement might damage the hardware).
     */
+
+    // TODO
+    UNUSED_ARG(verbosity);
+
 
     if (!initialize_was_called_ok)
     {
@@ -776,7 +820,7 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 
     double time_interval = 0.1;
     bool is_ready = false;
-    bool was_aborted = false;
+    //bool was_aborted = false;
     bool refresh_state = false;
     // TODO: The result logic here might not be the same as the Python
     // equivalent - check this
@@ -854,10 +898,9 @@ E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs
     // but not needed here?
     // status = gs.FPU[fpu_id].last_status
 
-    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    for (int i = 0; i < config.num_fpus; i++)
     {
-        _update_error_counters(prev_gs.FPU_state[fpu_id],
-                               gs.FPU_state[fpu_id]);
+        _update_error_counters(prev_gs.FPU_state[i], gs.FPU_state[i]);
     }
 
     return result;
@@ -890,7 +933,6 @@ void UnprotectedGridDriverTester::doTests()
     E_GridState grid_state_result;
     t_grid_state grid_state;
     const bool soft_protection = false;
-    const double microsecs_in_1_sec = 1000000.0;
 
     //..........................................................................
 
@@ -1020,6 +1062,11 @@ void UnprotectedGridDriverTester::doTests()
     result = ugd.disconnect();
 
     //..........................................................................
+
+    // Suppress warnings of variables not being used
+    UNUSED_ARG(result);
+    UNUSED_ARG(grid_state_result);
+    UNUSED_ARG(wtable_received_result);
 }
 
 //------------------------------------------------------------------------------

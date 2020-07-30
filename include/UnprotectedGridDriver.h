@@ -47,6 +47,10 @@ using namespace mpifps::ethercanif;
 
 #define DEFAULT_START_TIMESTAMP     "ISO8601"
 
+// UNUSED_ARG: Used for specifying that function arguments aren't used, to
+// avoid build warnings
+#define UNUSED_ARG(arg)     (void)arg
+
 // Enumeration which defines the strictness of checks
 // TODO: Not sure why just called "Range" - change to something more
 // meaningful eventually
@@ -152,7 +156,7 @@ public:
 protected:
     // NOTE: The following virtual functions are overridden in GridDriver
 
-    virtual void _post_connect_hook(const EtherCANInterfaceConfig &config) {}
+    virtual void _post_connect_hook() {}
 
     // findDatum() hook functions
     // TODO: Do the t_grid_state's below need to be const? Or will they
@@ -161,38 +165,78 @@ protected:
                                         t_datum_search_flags &search_modes, // Modifiable
                                         enum E_DATUM_SELECTION selected_arm,
                                         const t_fpuset &fpuset,
-                                        bool support_uninitialized_auto = true) {}
+                                        bool support_uninitialized_auto = true)
+    {
+        UNUSED_ARG(gs);
+        UNUSED_ARG(search_modes);
+        UNUSED_ARG(selected_arm);
+        UNUSED_ARG(fpuset);
+        UNUSED_ARG(support_uninitialized_auto);
+    }
     virtual void _start_find_datum_hook(t_grid_state &gs,
                                         const t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
                                         const t_fpuset &fpuset,
                                         t_fpu_positions &initial_positions_ret,
-                                        bool soft_protection) {}
+                                        bool soft_protection)
+    {
+        UNUSED_ARG(gs);
+        UNUSED_ARG(search_modes);
+        UNUSED_ARG(selected_arm);
+        UNUSED_ARG(fpuset);
+        UNUSED_ARG(initial_positions_ret);
+        UNUSED_ARG(soft_protection);
+    }
     virtual void _cancel_find_datum_hook(t_grid_state &gs,
                                          // TODO: These arguments (which are in the Python version)
                                          // are not used so can remove?
                                          //const t_datum_search_flags &search_modes,
                                          //enum E_DATUM_SELECTION selected_arm,
                                          const t_fpuset &fpuset, 
-                                         const t_fpu_positions &initial_positions) {}
+                                         const t_fpu_positions &initial_positions)
+    {
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
+        UNUSED_ARG(initial_positions);
+    }
     virtual void _finished_find_datum_hook(t_grid_state &prev_gs,
                                            t_grid_state &datum_gs,
                                            const t_datum_search_flags &search_modes,
                                            const t_fpuset &fpuset,
                                            bool was_cancelled,
                                            const t_fpu_positions &initial_positions,
-                                           enum E_DATUM_SELECTION selected_arm) {}
+                                           enum E_DATUM_SELECTION selected_arm)
+    {
+        UNUSED_ARG(prev_gs);
+        UNUSED_ARG(datum_gs);
+        UNUSED_ARG(search_modes);
+        UNUSED_ARG(fpuset);
+        UNUSED_ARG(was_cancelled);
+        UNUSED_ARG(initial_positions);
+        UNUSED_ARG(selected_arm);
+    }
 
     // Error counters function
     virtual void _update_error_counters(const t_fpu_state &prev_fpu,
                                         const t_fpu_state &moved_fpu,
-                                        bool datum_cmd = false) {}
+                                        bool datum_cmd = false)
+    {
+        UNUSED_ARG(prev_fpu);
+        UNUSED_ARG(moved_fpu);
+        UNUSED_ARG(datum_cmd);
+    }
 
     // configMotion() hook functions
     virtual void _pre_config_motion_hook(const t_wtable &wtable,
                                          t_grid_state &gs,
                                          const t_fpuset &fpuset,
-                                         Range wmode = Range::Error) {}
+                                         Range wmode = Range::Error)
+    {
+        UNUSED_ARG(wtable);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
+        UNUSED_ARG(wmode);
+    }
     virtual void _post_config_motion_hook(const t_wtable &wtable,
                                           t_grid_state &gs,
                                           const t_fpuset &fpuset);
@@ -200,14 +244,30 @@ protected:
     // executeMotion() hook functions
     virtual void _start_execute_motion_hook(t_grid_state &gs,
                                             const t_fpuset &fpuset,
-                                            const t_fpu_positions &initial_positions) {}
+                                            const t_fpu_positions &initial_positions)
+    {
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
+        UNUSED_ARG(initial_positions);
+    }
     virtual void _cancel_execute_motion_hook(t_grid_state &gs,
                                              const t_fpuset &fpuset,
-                                             const t_fpu_positions &initial_positions) {}
+                                             const t_fpu_positions &initial_positions)
+    {
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
+        UNUSED_ARG(initial_positions);
+    }
     virtual void _post_execute_motion_hook(t_grid_state &gs,
                                            const t_grid_state &old_gs,
                                            const t_grid_state &move_gs,
-                                           const t_fpuset &fpuset) {}
+                                           const t_fpuset &fpuset)
+    {
+        UNUSED_ARG(gs);
+        UNUSED_ARG(old_gs);
+        UNUSED_ARG(move_gs);
+        UNUSED_ARG(fpuset);
+    }
 
     // Config: Only the constructor and initialize() must write this - do NOT
     // write at all after initialize() has been called

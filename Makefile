@@ -6,17 +6,13 @@ CC = "g++"
 
 VERSION := v2.2.6
 
-# TODO: Reinstate -Werror once fixed the build warnings
-#CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC
-CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -fPIC \
+CXXFLAGS = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC \
 -DDEBUG -g -O3 -finline-functions -Wstrict-aliasing -march=native \
 -Wshadow -Wcast-qual -Wmissing-declarations -Wundef -Wlogical-op \
 -Wredundant-decls -Wfloat-equal -Wstrict-overflow=4 -Wunused-result
 
 # flags for link time optimized build of wrapper
-# TODO: Reinstate -Werror once fixed the build warnings
-#CXXFLAGS_LTO = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC
-CXXFLAGS_LTO = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -fPIC \
+CXXFLAGS_LTO = -I$(IDIR) -std=c++11 -Wall -Wextra -pedantic -Werror -fPIC \
 -DDEBUG -g -O3 -finline-functions -Wstrict-aliasing -march=native \
 -Wshadow -Wcast-qual -Wmissing-declarations -Wundef -Wlogical-op \
 -Wredundant-decls -Wfloat-equal -Wunused-result -flto

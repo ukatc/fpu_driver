@@ -94,7 +94,7 @@ public:
         WrapGridState grid_state;
         if (checkAndMessageIfInitializeCalledOk())
         {
-            E_GridState grid_state_enum = getGridState(grid_state);
+            /*E_GridState grid_state_enum = */ getGridState(grid_state);
         }
         else
         {

@@ -46,7 +46,7 @@ public:
 private:    
     // The following hook functions override those in UnprotectedGridDriver
 
-    void _post_connect_hook(const EtherCANInterfaceConfig &config) override;
+    void _post_connect_hook() override;
 
     // findDatum() hook functions
     void _allow_find_datum_hook(t_grid_state &gs,

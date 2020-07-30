@@ -34,7 +34,7 @@ namespace mpifps
 
 //==============================================================================
 
-void GridDriver::_post_connect_hook(const EtherCANInterfaceConfig &config)
+void GridDriver::_post_connect_hook()
 {
     // TODO
 }
@@ -48,6 +48,13 @@ void GridDriver::_allow_find_datum_hook(t_grid_state &gs,
                                         bool support_uninitialized_auto)
 {
     // TODO
+
+    // Temporary for now
+    UNUSED_ARG(gs);
+    UNUSED_ARG(search_modes);
+    UNUSED_ARG(selected_arm);
+    UNUSED_ARG(fpuset);
+    UNUSED_ARG(support_uninitialized_auto);
 }
 
 void GridDriver::_start_find_datum_hook(t_grid_state &gs,
@@ -58,6 +65,14 @@ void GridDriver::_start_find_datum_hook(t_grid_state &gs,
                                         bool soft_protection)
 {
     // TODO
+
+    // Temporary for now
+    UNUSED_ARG(gs);
+    UNUSED_ARG(search_modes);
+    UNUSED_ARG(selected_arm);
+    UNUSED_ARG(fpuset);
+    UNUSED_ARG(initial_positions_ret);
+    UNUSED_ARG(soft_protection);
 }
 
 void GridDriver::_cancel_find_datum_hook(t_grid_state &gs, 
@@ -65,6 +80,11 @@ void GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
                                          const t_fpu_positions &initial_positions)
 {
     // TODO
+
+    // Temporary for now
+    UNUSED_ARG(gs);
+    UNUSED_ARG(fpuset);
+    UNUSED_ARG(initial_positions);
 }
 
 void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
@@ -76,6 +96,15 @@ void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
                                            enum E_DATUM_SELECTION selected_arm)
 {
     // TODO
+
+    // Temporary for now
+    UNUSED_ARG(prev_gs);
+    UNUSED_ARG(datum_gs);
+    UNUSED_ARG(search_modes);
+    UNUSED_ARG(fpuset);
+    UNUSED_ARG(was_cancelled);
+    UNUSED_ARG(initial_positions);
+    UNUSED_ARG(selected_arm);
 }
 
 //------------------------------------------------------------------------------
@@ -89,6 +118,10 @@ void GridDriver::_update_error_counters(const t_fpu_state &prev_fpu,
     // N.B. Also see the Python GridDriver::_update_error_counters() function,
     // and my new FpuErrorCounterType enum class in GridDriver.h for this
 
+    // Temporary for now
+    UNUSED_ARG(prev_fpu);
+    UNUSED_ARG(moved_fpu);
+    UNUSED_ARG(datum_cmd);
 }
 
 //------------------------------------------------------------------------------
@@ -98,6 +131,12 @@ void GridDriver::_pre_config_motion_hook(const t_wtable &wtable,
                                          const t_fpuset &fpuset, Range wmode)
 {
     // TODO
+
+    // Temporary for now
+    UNUSED_ARG(wtable);
+    UNUSED_ARG(gs);
+    UNUSED_ARG(fpuset);
+    UNUSED_ARG(wmode);
 }
 
 void GridDriver::_post_config_motion_hook(const t_wtable &wtable, 
@@ -105,6 +144,11 @@ void GridDriver::_post_config_motion_hook(const t_wtable &wtable,
                                           const t_fpuset &fpuset)
 {
     // TODO
+
+    // Temporary for now
+    UNUSED_ARG(wtable);
+    UNUSED_ARG(gs);
+    UNUSED_ARG(fpuset);
 }
 
 //------------------------------------------------------------------------------
@@ -114,6 +158,11 @@ void GridDriver::_start_execute_motion_hook(t_grid_state &gs,
                                             const t_fpu_positions &initial_positions)
 {
     // TODO
+
+    // Temporary for now
+    UNUSED_ARG(gs);
+    UNUSED_ARG(fpuset);
+    UNUSED_ARG(initial_positions);
 }
 
 void GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
@@ -121,6 +170,11 @@ void GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
                                              const t_fpu_positions &initial_positions)
 {
     // TODO
+
+    // Temporary for now
+    UNUSED_ARG(gs);
+    UNUSED_ARG(fpuset);
+    UNUSED_ARG(initial_positions);
 }
 
 void GridDriver::_post_execute_motion_hook(t_grid_state &gs,
@@ -129,6 +183,12 @@ void GridDriver::_post_execute_motion_hook(t_grid_state &gs,
                                            const t_fpuset &fpuset)
 {
     // TODO
+
+    // Temporary for now
+    UNUSED_ARG(gs);
+    UNUSED_ARG(old_gs);
+    UNUSED_ARG(move_gs);
+    UNUSED_ARG(fpuset);
 }
 
 //................................................
