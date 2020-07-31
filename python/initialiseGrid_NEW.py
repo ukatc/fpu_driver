@@ -1,3 +1,11 @@
+################################################################################
+# initialiseGrid_NEW.py
+#
+# New version of initialiseGrid script, which uses the new C++ / Boost.Python-
+# wrapped version of the grid driver functionality.
+#
+################################################################################
+
 from __future__ import print_function, division
 
 

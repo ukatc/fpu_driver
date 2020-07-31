@@ -441,7 +441,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     }
 
     double time_interval = 0.1;
-    usleep((useconds_t)(time_interval * microsecs_in_1_sec));
+    sleepSecs(time_interval);
     bool is_ready = false;
     bool was_aborted = false;
     bool finished_ok = false;
@@ -465,7 +465,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
 
     if (!finished_ok)
     {
-        usleep((useconds_t)(time_interval * microsecs_in_1_sec));
+        sleepSecs(time_interval);
 
         E_EtherCANErrCode ping_if_needed_result = pingIfNeeded(gs, fpuset);
         if (ping_if_needed_result != DE_OK)
@@ -572,8 +572,9 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
 
     last_wavetable.clear();
 
-    // Wait for FPUs to become active
-    usleep((useconds_t)(0.1 * 24.0 * microsecs_in_1_sec));
+    // Wait for FPUs to become active (N.B. values adapted from original
+    // Python version of this function)
+    sleepSecs(0.1 * 24.0);
 
     _reset_hook(old_state, gs, fpuset);
 
@@ -845,10 +846,10 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     // Wait a short moment to avoid spurious collision
     t_fpu_positions initial_positions;
     _start_execute_motion_hook(gs, fpuset, initial_positions);
-    usleep((useconds_t)(0.1 * microsecs_in_1_sec));
+    sleepSecs(0.1);
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
-    usleep((useconds_t)(0.1 * microsecs_in_1_sec));
+    sleepSecs(0.1);
     result = _gd->startExecuteMotion(gs, fpuset, sync_command);
     // TODO: The result logic here might not be the same as the Python
     // equivalent - check this
@@ -898,7 +899,7 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
         t_grid_state move_gs;
         _gd->getGridState(move_gs);
 
-        usleep((useconds_t)(0.1 * microsecs_in_1_sec));
+        sleepSecs(0.1);
 
         E_EtherCANErrCode ping_if_needed_result = pingIfNeeded(gs, fpuset);
         if (ping_if_needed_result != DE_OK)
@@ -944,6 +945,13 @@ E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs
     }
 
     return result;
+}
+
+//------------------------------------------------------------------------------
+void UnprotectedGridDriver::sleepSecs(double seconds)
+{
+    static const double microsecs_in_1_sec = 1000000.0;
+    usleep((useconds_t)(seconds * microsecs_in_1_sec));
 }
 
 
