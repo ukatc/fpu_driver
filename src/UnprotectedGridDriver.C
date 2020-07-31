@@ -964,7 +964,7 @@ void UnprotectedGridDriverTester::doTests()
 
 // NOTE: Can change DOTESTS_NUM_FPUS as required, up to DOTESTS_MAX_NUM_FPUS -
 // and set mock gateway (if used) to the same value when invoking it
-#define DOTESTS_NUM_FPUS        (5)
+#define DOTESTS_NUM_FPUS        (3)
 #if (DOTESTS_NUM_FPUS > DOTESTS_MAX_NUM_FPUS)
 #error "BUILD ERROR: DOTESTS_NUM_FPUS > DO_TEST_MAX_NUM_FPUS"
 #endif
@@ -1018,6 +1018,10 @@ void UnprotectedGridDriverTester::doTests()
     //..........................................................................
     // Test pingFPUs() again
     result = ugd.pingFPUs(grid_state, fpuset);
+
+    //..........................................................................
+    // Test resetFPUs()
+    result = ugd.resetFPUs(grid_state, fpuset);
     
     //..........................................................................
     // Test findDatum()
