@@ -4,11 +4,13 @@ from __future__ import print_function, division
 import os
 import argparse
 
-import FpuGridDriver
-from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
+import ethercanif
+from ethercanif import DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, \
-    REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE, REQD_NEGATIVE, REQD_POSITIVE, \
-    DATUM_TIMEOUT_DISABLE
+    REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE, DATUM_TIMEOUT_DISABLE
+# TODO: The original initialiseGrid.py also imported REQD_NEGATIVE and
+# REQD_POSITIVE, but these do not seem to be used anywhere, so not needed?
+# (and there aren't Boost.Python definitions for them yet)
 
 try:
    import wflib
@@ -18,7 +20,7 @@ from fpu_commands import *
 
 NUM_FPUS = int(os.environ.get("NUM_FPUS","10"))
 
-
+#-------------------------------------------------------------------------------
 def parse_args():
     global help_text
     parser = argparse.ArgumentParser(description="""
@@ -40,27 +42,30 @@ then ping the FPUs. Use python -i initialiseGrid.py for interactive mode.
     parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=NUM_FPUS,
                         help='Number of adressed FPUs (default: %(default)s).')
 
-
     args = parser.parse_args()
     return args
 
-
+#-------------------------------------------------------------------------------
 def initialize_FPU(args):
 
-    gd = FpuGridDriver.GridDriver(args.N, mockup=args.mockup)
+    # TODO: Re-add the mockup argument once the protection functionality is
+    # implemented
+    #gd = ethercanif.GridDriver(args.N, mockup=args.mockup)
+    gd = ethercanif.GridDriver(nfpus = args.N)
+
+    gd.initialize()
 
     if args.mockup:
-        gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
+        gateway_address = [ ethercanif.GatewayAddress("127.0.0.1", p)
                             for p in [4700, 4701, 4702] ]
     else:
-        gateway_address = [ FpuGridDriver.GatewayAddress(args.gateway_address, args.gateway_port) ]
+        gateway_address = [ ethercanif.GatewayAddress(args.gateway_address,
+                                                      args.gateway_port) ]
 
     print("Connecting grid:", gd.connect(address_list=gateway_address))
 
-
-    # We monitor the FPU grid by a variable which is
-    # called grid_state, and reflects the state of
-    # all FPUs.
+    # We monitor the FPU grid by a variable which is called grid_state, and
+    # reflects the state of all FPUs.
     grid_state = gd.getGridState()
 
     if args.resetFPU:
@@ -70,10 +75,10 @@ def initialize_FPU(args):
 
     return gd, grid_state
 
-
+#-------------------------------------------------------------------------------
 if __name__ == '__main__':
 
-    print("Module version is:", FpuGridDriver.__version__, ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
+    print("Module version is:", ethercanif.__version__, ", CAN PROTOCOL version:", ethercanif.CAN_PROTOCOL_VERSION)
 
     if wflib is None:
        print("***wflib.load_paths function is not available until the mocpath module is installed.") 
@@ -86,8 +91,11 @@ if __name__ == '__main__':
     print("Issuing pingFPUs and getting positions:")
     gd.pingFPUs(grid_state)
 
-    print("Tracked positions:")
-    gd.trackedAngles(grid_state)
+    # BW TODO: trackedAngles() is not yet available because it requires the
+    # protection functionality to first be implemented - add once it's available
+    #print("Tracked positions:")
+    #gd.trackedAngles(grid_state)
+    print("NOTE: The tracked positions are not available because the software protection functionality is not implemented yet.")
 
     clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
     acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(args.N)])
@@ -97,3 +105,6 @@ if __name__ == '__main__':
     gd.findDatum(grid_state)
 
     to move the FPUs to datum and initialise the grid.""")
+
+#-------------------------------------------------------------------------------
+

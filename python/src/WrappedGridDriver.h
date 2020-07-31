@@ -250,7 +250,8 @@ private:
         {
             return true;
         }
-        std::cout << "**Error**: initialize() needs to be called first.\n" << std::endl;
+        std::cout << std::endl;
+        std::cout << "*** ERROR ***: initialize() needs to be called first.\n" << std::endl;
         return false;
     }
 
