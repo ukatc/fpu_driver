@@ -518,11 +518,6 @@ E_EtherCANErrCode UnprotectedGridDriver::pingIfNeeded(t_grid_state &gs,
 E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
                                                    const t_fpuset &fpuset)
 {
-    if (!initialize_was_called_ok)
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
     E_EtherCANErrCode result = check_fpuset(fpuset);
     if (result == DE_OK)
     {
@@ -536,8 +531,53 @@ E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
 E_EtherCANErrCode UnprotectedGridDriver::pingFPUs(t_grid_state &gs,
                                                   const t_fpuset &fpuset)
 {
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     // Communicates with all FPUs and queries their status
     return _pingFPUs(gs, fpuset);
+}
+
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
+                                                   const t_fpuset &fpuset)
+{
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here 
+
+    t_grid_state old_state;
+    _gd->getGridState(old_state);
+    
+    result = _gd->resetFPUs(gs, fpuset);
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(gs.FPU_state[fpu_id],
+                               old_state.FPU_state[fpu_id]);
+    }
+
+    last_wavetable.clear();
+
+    // Wait for FPUs to become active
+    usleep((useconds_t)(0.1 * 24.0 * microsecs_in_1_sec));
+
+    _reset_hook(old_state, gs, fpuset);
+
+    return result;
 }
 
 //------------------------------------------------------------------------------

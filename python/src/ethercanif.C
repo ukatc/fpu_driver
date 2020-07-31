@@ -569,6 +569,10 @@ BOOST_PYTHON_MODULE(ethercanif)
             bp::arg("support_uninitialized_auto") = true,
             bp::arg("timeout") = DATUM_TIMEOUT_ENABLE))
 
+    .def("resetFPUs", &WrappedGridDriver::wrapped_resetFPUs,
+            (bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list()))
+
     .def("pingFPUs", &WrappedGridDriver::wrapped_pingFPUs,
             (bp::arg("grid_state"),
             bp::arg("fpuset") = bp::list()))

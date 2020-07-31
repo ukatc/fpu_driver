@@ -57,8 +57,8 @@ public:
         double motor_max_rel_increase,
         double motor_max_step_difference)
     {
-        std::cout << "Grid driver object successfully created (new C++ version) - now call initialize().\n";
-        std::cout << "*** NOTE: Soft protection is not implemented yet ***" << std::endl;
+        std::cout << "Grid driver object was successfully created (new C++ version).\n";
+        std::cout << "***** NOTE: Soft protection is not implemented yet *****" << std::endl;
 
         if (confirm_each_step)
         {
@@ -145,6 +145,21 @@ public:
                                             count_protection,
                                             support_uninitialized_auto,
                                             timeout);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_resetFPUs(WrapGridState& grid_state, list& fpu_list)
+    {
+        if (!checkAndMessageIfInitializeCalledOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = resetFPUs(grid_state, fpuset);
         checkInterfaceError(ecode);
         return ecode;
     }

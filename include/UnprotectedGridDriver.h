@@ -139,6 +139,8 @@ public:
 
     E_EtherCANErrCode pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
 
+    E_EtherCANErrCode resetFPUs(t_grid_state &gs, const t_fpuset &fpuset);
+
     E_EtherCANErrCode configMotion(const t_wtable &wavetable, t_grid_state &gs,
                         const t_fpuset &fpuset,
                         bool soft_protection = true,
@@ -214,6 +216,15 @@ protected:
         UNUSED_ARG(was_cancelled);
         UNUSED_ARG(initial_positions);
         UNUSED_ARG(selected_arm);
+    }
+
+    // resetFPUs() hook function
+    virtual void _reset_hook(t_grid_state &old_state, t_grid_state &gs,
+                             const t_fpuset &fpuset)
+    {
+        UNUSED_ARG(old_state);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
     }
 
     // Error counters function

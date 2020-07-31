@@ -68,6 +68,10 @@ private:
                                    const t_fpu_positions &initial_positions, // TODO: Not used (in Python version) - remove?
                                    enum E_DATUM_SELECTION selected_arm) override;
 
+    // resetFPUs() hook function
+    void _reset_hook(t_grid_state &old_state, t_grid_state &gs,
+                     const t_fpuset &fpuset) override;
+
     // Error counters functionality
     enum class FpuErrorCounterType
     {

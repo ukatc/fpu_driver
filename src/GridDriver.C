@@ -109,6 +109,19 @@ void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
 
 //------------------------------------------------------------------------------
 
+void GridDriver::_reset_hook(t_grid_state &old_state, t_grid_state &gs,
+                             const t_fpuset &fpuset)
+{
+    // TODO
+
+    // Temporary for now
+    UNUSED_ARG(old_state);
+    UNUSED_ARG(gs);
+    UNUSED_ARG(fpuset);
+}
+
+//------------------------------------------------------------------------------
+
 void GridDriver::_update_error_counters(const t_fpu_state &prev_fpu,
                                         const t_fpu_state &moved_fpu,
                                         bool datum_cmd)
