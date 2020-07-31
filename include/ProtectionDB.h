@@ -25,7 +25,7 @@
 #include <string>
 #include <memory>
 #include "FPUState.h"
-#include "AsyncInterface.h"
+#include "ethercan/AsyncInterface.h"
 #include "lmdb.h"
 
 using namespace mpifps;
@@ -53,6 +53,7 @@ using Wentry = std::vector<t_step_pair>;
 
 // -----------------------------------------------------------------------------
 
+std::string protectionDB_GetDirFromLinuxEnv(bool mockup);
 bool protectionDB_Test();
 
 // -----------------------------------------------------------------------------
@@ -121,7 +122,7 @@ public:
         // boxes?
         // TODO: Is this the case?
         num_bytes_ret = sizeof(CountersUintType) * (size_t)Id::NumCounters;
-        return (void *)counters.data();
+        return const_cast<void *>((const void *)counters.data());
     }
     
 private:

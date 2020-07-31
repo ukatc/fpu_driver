@@ -30,6 +30,8 @@ static const char *healthlog_subdb_name = "healthlog";
 // TODO: Is "verification" sub-database needed?
 // static const char *verification_subdb_name = "verification";
 
+// TODO: Disabled for now to avoid build warnings, because not yet used
+#if 0
 // Database key strings
 static const char *alpha_positions_keystr = "apos";
 static const char *beta_positions_keystr = "bpos";
@@ -43,8 +45,11 @@ static const char *beta_retry_count_acw_keystr = "beta_retry_count_acw";
 static const char *free_alpha_retries_keystr = "aretries";
 static const char *alpha_retry_count_cw_keystr = "alpha_retry_count_cw";
 static const char *alpha_retry_count_acw_keystr = "alpha_retry_count_acw";
+#endif // 0
 static const char *counters_keystr = "counters";
+#if 0
 static const char *serialnumber_used_keystr = "serialnumber_used";
+#endif // 0
 
 // Character to separate the key/subkey parts of the overall key strings
 static const char *keystr_separator_char = "#";
@@ -314,7 +319,8 @@ int ProtectionDbTxn::fpuDbPutItem(const char serial_number[],
                                   const MDB_val &data_val)
 {
     MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
-    return mdb_put(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val, 0x0);
+    return mdb_put(txn_ptr, fpu_dbi, &key_val,
+                   const_cast<MDB_val *>(&data_val), 0x0);
 }
 
 int ProtectionDbTxn::fpuDbGetItem(const char serial_number[],
@@ -338,7 +344,7 @@ MDB_val ProtectionDbTxn::fpuDbCreateKeyVal(const char serial_number[],
     // IMPORTANT: serial_number and subkey must not contain the
     // keystr_separator_char character
     key_str = std::string(serial_number) + keystr_separator_char + subkey;
-    return { key_str.size(), (void *)key_str.c_str() };
+    return { key_str.size(), const_cast<void *>((const void *)key_str.c_str()) };
 }
 
 ProtectionDbTxn::~ProtectionDbTxn()
@@ -501,8 +507,8 @@ static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb)
     {
         // Write item
         std::string serial_number_str = getNextFpuTestSerialNumber();
-        const char subkey[] = "TestSubkey";
-        const char data_str[] = "0123456789";
+        char subkey[] = "TestSubkey";
+        char data_str[] = "0123456789";
         result_ok = transaction->fpuDbWriteRawItem(serial_number_str.c_str(),
                                                    subkey, (void *)data_str,
                                                    strlen(data_str));
