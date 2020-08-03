@@ -537,7 +537,7 @@ BOOST_PYTHON_MODULE(ethercanif)
             bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
             bp::arg("motor_max_step_difference") = MAX_STEP_DIFFERENCE)))
 
-    .def("initialize", &WrappedGridDriver::initialize,
+    .def("initialize", &WrappedGridDriver::wrapped_initialize,
             (bp::arg("logLevel") = DEFAULT_LOGLEVEL,
             bp::arg("log_dir") = DEFAULT_LOGDIR,
             bp::arg("firmware_version_address_offset") = 0x61,
@@ -545,7 +545,8 @@ BOOST_PYTHON_MODULE(ethercanif)
             bp::arg("control_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_control.log",
             bp::arg("tx_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_tx.log",
             bp::arg("rx_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_rx.log",
-            bp::arg("start_timestamp") = DEFAULT_START_TIMESTAMP))
+            bp::arg("start_timestamp") = DEFAULT_START_TIMESTAMP,
+            bp::arg("mockup") = false))
 
     .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
 

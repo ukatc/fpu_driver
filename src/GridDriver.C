@@ -22,6 +22,11 @@
 // work in progress for converting the classes and functions in FPUGridDriver.py
 // from Python to C++.
 
+// ENABLE_PROTECTION_CODE macro: Define it (in a project's global predefined
+// symbols) to enable the protection code work-in-progress, or disable it so
+// that can continue to use the unprotected code for the time being.
+
+
 #include "GridDriver.h"
 
 #ifdef DEBUG
@@ -33,14 +38,48 @@ namespace mpifps
 
 
 //==============================================================================
+E_EtherCANErrCode GridDriver::initDb(bool mockup)
+{
+    // TODO: Temporary only
+    UNUSED_ARG(mockup);
 
+#ifdef ENABLE_PROTECTION_CODE
+    if (initdb_was_called_ok)
+    {
+        return DE_INTERFACE_ALREADY_INITIALIZED;
+    }
+
+    if (!initialize_was_called_ok)
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+
+    // TODO - implement the rest of this function
+
+#endif // ENABLE_PROTECTION_CODE
+
+    initdb_was_called_ok = true;
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
+bool GridDriver::initializedOk()
+{
+    if ((initialize_was_called_ok) && (initdb_was_called_ok))
+    {
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
 void GridDriver::_post_connect_hook()
 {
     // TODO
 }
 
 //------------------------------------------------------------------------------
-
 void GridDriver::_allow_find_datum_hook(t_grid_state &gs,
                                         t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
@@ -57,6 +96,7 @@ void GridDriver::_allow_find_datum_hook(t_grid_state &gs,
     UNUSED_ARG(support_uninitialized_auto);
 }
 
+//------------------------------------------------------------------------------
 void GridDriver::_start_find_datum_hook(t_grid_state &gs,
                                         const t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
@@ -75,6 +115,7 @@ void GridDriver::_start_find_datum_hook(t_grid_state &gs,
     UNUSED_ARG(soft_protection);
 }
 
+//------------------------------------------------------------------------------
 void GridDriver::_cancel_find_datum_hook(t_grid_state &gs, 
                                          const t_fpuset &fpuset,
                                          const t_fpu_positions &initial_positions)
@@ -87,6 +128,7 @@ void GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
     UNUSED_ARG(initial_positions);
 }
 
+//------------------------------------------------------------------------------
 void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
                                            t_grid_state &datum_gs,
                                            const t_datum_search_flags &search_modes,
@@ -108,7 +150,6 @@ void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
 }
 
 //------------------------------------------------------------------------------
-
 void GridDriver::_reset_hook(t_grid_state &old_state, t_grid_state &gs,
                              const t_fpuset &fpuset)
 {
@@ -121,7 +162,6 @@ void GridDriver::_reset_hook(t_grid_state &old_state, t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
-
 void GridDriver::_update_error_counters(const t_fpu_state &prev_fpu,
                                         const t_fpu_state &moved_fpu,
                                         bool datum_cmd)
@@ -138,7 +178,6 @@ void GridDriver::_update_error_counters(const t_fpu_state &prev_fpu,
 }
 
 //------------------------------------------------------------------------------
-
 void GridDriver::_pre_config_motion_hook(const t_wtable &wtable,
                                          t_grid_state &gs,
                                          const t_fpuset &fpuset, Range wmode)
@@ -152,6 +191,7 @@ void GridDriver::_pre_config_motion_hook(const t_wtable &wtable,
     UNUSED_ARG(wmode);
 }
 
+//------------------------------------------------------------------------------
 void GridDriver::_post_config_motion_hook(const t_wtable &wtable, 
                                           t_grid_state &gs,
                                           const t_fpuset &fpuset)
@@ -165,7 +205,6 @@ void GridDriver::_post_config_motion_hook(const t_wtable &wtable,
 }
 
 //------------------------------------------------------------------------------
-
 void GridDriver::_start_execute_motion_hook(t_grid_state &gs,
                                             const t_fpuset &fpuset,
                                             const t_fpu_positions &initial_positions)
@@ -178,6 +217,7 @@ void GridDriver::_start_execute_motion_hook(t_grid_state &gs,
     UNUSED_ARG(initial_positions);
 }
 
+//------------------------------------------------------------------------------
 void GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
                                              const t_fpuset &fpuset,
                                              const t_fpu_positions &initial_positions)
@@ -190,6 +230,7 @@ void GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
     UNUSED_ARG(initial_positions);
 }
 
+//------------------------------------------------------------------------------
 void GridDriver::_post_execute_motion_hook(t_grid_state &gs,
                                            const t_grid_state &old_gs,
                                            const t_grid_state &move_gs,
@@ -204,14 +245,13 @@ void GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     UNUSED_ARG(fpuset);
 }
 
-//................................................
+//------------------------------------------------------------------------------
 // TODO: Boost.Python wrapper test member function - remove eventually
 double GridDriver::boostPythonDivide(double dividend, double divisor)
 {
     return dividend / divisor;
 }
 
-//................................................
 
 //==============================================================================
 

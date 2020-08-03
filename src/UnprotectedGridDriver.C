@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <algorithm>
 #include <unistd.h>
+#include <new>
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
 #include "ethercan/FPUArray.h"
@@ -162,7 +163,7 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     // the constructor alone.
 
     //................................
-    // TODO: Temporary for now
+    // TODO: Temporary for now, to prevent build warnings
     UNUSED_ARG(log_dir);
     UNUSED_ARG(protection_logfile);
     UNUSED_ARG(control_logfile);
@@ -171,14 +172,15 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     UNUSED_ARG(start_timestamp);
     //................................
 
+    if (initialize_was_called_ok)
+    {
+        return DE_INTERFACE_ALREADY_INITIALIZED;
+    }
+
     config.logLevel = logLevel;
     config.firmware_version_address_offset = firmware_version_address_offset;
 
-    // TODO: If required, this function can fail and return an error code, so
-    // that the calling code (which could be the Python wrapper, or eventual
-    // ESO driver code) can produce an appropriate error indication?
-
-    // TODO: Finish filling out this constructor from Python equivalent
+    // TODO: Finish filling out this function from Python equivalent stuff
 
     // self.lock = threading.RLock()   // TODO: Adapt from Python - use e.g. 
                                        // pthread_mutex_lock()? (see EtherCANInterface.C)
@@ -198,29 +200,28 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 
     //..........................................................................
 
-    // TODO: How to catch / indicate allocation failure? Add try/catch around
-    // the following, OR use std::nothrow?
-
     E_EtherCANErrCode result;
-    _gd = new EtherCANInterface(config);
 
+    _gd = new (std::nothrow) EtherCANInterface(config);
     if (_gd != nullptr)
     {
-        initialize_was_called_ok = true;
-
-        // TODO: Is this the correct place to call initializeInterface()?
-        // (Johannes' Python wrapper code calls it from the WrapEtherCANInterface
-        // constructor)
-        // TODO: The Python wrapper code also has a checkInterfaceError(ecode) call
-        // after it (to flag any initialisation error to Python) - how to allow
-        // mimicking of this in WrappedGridDriver?
-        // TODO: Call deInitialize() from destructor, or elsewhere? BUT is already
-        // done from AsyncInterface destructor?
+        // TODO: Call deInitializeInterface() or deInitialize() from destructor,
+        // or elsewhere? BUT is already done from AsyncInterface destructor?
         result = _gd->initializeInterface();
+        if ((result == DE_OK) || (result == DE_INTERFACE_ALREADY_INITIALIZED))
+        {
+            initialize_was_called_ok = true;
+        }
+        else
+        {
+            delete _gd;
+
+            // TODO: Check if also need to call _gd->deinitializeInterface() here
+        }
     }
     else
     {
-        // TODO: Fatal error - is this the right return code?
+        // Fatal error
         result = DE_OUT_OF_MEMORY;
     }
 
@@ -228,7 +229,7 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 }
 
 //------------------------------------------------------------------------------
-bool UnprotectedGridDriver::initializeWasCalledOk()
+bool UnprotectedGridDriver::initializedOk()
 {
     return initialize_was_called_ok;
 }
@@ -237,7 +238,7 @@ bool UnprotectedGridDriver::initializeWasCalledOk()
 E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
                                 const t_gateway_address gateway_addresses[])
 {
-    if (!initialize_was_called_ok)
+    if (!initializedOk())
     {
         return DE_INTERFACE_NOT_INITIALIZED;
     }
@@ -270,7 +271,7 @@ E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::disconnect()
 {
-    if (!initialize_was_called_ok)
+    if (!initializedOk())
     {
         return DE_INTERFACE_NOT_INITIALIZED;
     }
@@ -322,7 +323,7 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 //------------------------------------------------------------------------------
 E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
 {
-    if (!initialize_was_called_ok)
+    if (!initializedOk())
     {
         return GS_UNKNOWN;
     }
@@ -376,7 +377,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     soft_protection is set to false.
     */
 
-    if (!initialize_was_called_ok)
+    if (!initializedOk())
     {
         return DE_INTERFACE_NOT_INITIALIZED;
     }
@@ -531,7 +532,7 @@ E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
 E_EtherCANErrCode UnprotectedGridDriver::pingFPUs(t_grid_state &gs,
                                                   const t_fpuset &fpuset)
 {
-    if (!initialize_was_called_ok)
+    if (!initializedOk())
     {
         return DE_INTERFACE_NOT_INITIALIZED;
     }
@@ -545,7 +546,7 @@ E_EtherCANErrCode UnprotectedGridDriver::pingFPUs(t_grid_state &gs,
 E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
                                                    const t_fpuset &fpuset)
 {
-    if (!initialize_was_called_ok)
+    if (!initializedOk())
     {
         return DE_INTERFACE_NOT_INITIALIZED;
     }
@@ -640,7 +641,7 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     UNUSED_ARG(verbosity);
 
 
-    if (!initialize_was_called_ok)
+    if (!initializedOk())
     {
         return DE_INTERFACE_NOT_INITIALIZED;
     }
@@ -829,7 +830,7 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
                                                        const t_fpuset &fpuset,
                                                        bool sync_command)
 {
-    if (!initialize_was_called_ok)
+    if (!initializedOk())
     {
         return DE_INTERFACE_NOT_INITIALIZED;
     }
@@ -925,7 +926,7 @@ E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
     // here
 
-    if (!initialize_was_called_ok)
+    if (!initializedOk())
     {
         return DE_INTERFACE_NOT_INITIALIZED;
     }

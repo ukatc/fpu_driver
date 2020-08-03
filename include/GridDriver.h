@@ -34,6 +34,10 @@ class GridDriver : public UnprotectedGridDriver
 public:
     using UnprotectedGridDriver::UnprotectedGridDriver; // Inherit constructor
 
+    E_EtherCANErrCode initDb(bool mockup = false);
+
+    bool initializedOk() override;
+
     //............................................
     // TODO: Test function for Boost.Python wrapper experimentation only -
     // remove when no longer needed
@@ -44,6 +48,8 @@ public:
 
     //..........................................................................
 private:    
+    bool initdb_was_called_ok = false;
+
     // The following hook functions override those in UnprotectedGridDriver
 
     void _post_connect_hook() override;

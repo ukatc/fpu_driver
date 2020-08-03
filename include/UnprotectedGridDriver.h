@@ -120,7 +120,7 @@ public:
         const std::string &rx_logfile = "_" DEFAULT_START_TIMESTAMP "-fpu_rx.log",
         const std::string &start_timestamp = DEFAULT_START_TIMESTAMP);
 
-    bool initializeWasCalledOk();
+    virtual bool initializedOk();
 
     E_GridState getGridState(t_grid_state &grid_state_ret);
 
@@ -283,6 +283,7 @@ protected:
     // Config: Only the constructor and initialize() must write this - do NOT
     // write at all after initialize() has been called
     EtherCANInterfaceConfig config;
+    bool initialize_was_called_ok = false;
 
     //..........................................................................
 private:
@@ -298,8 +299,6 @@ private:
                                        E_FPU_STATE target_state = FPST_READY_FORWARD);
     void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed = false);
     void sleepSecs(double seconds);
-
-    bool initialize_was_called_ok = false;
 
     // TODO: Use fixed-size array of MAX_NUM_POSITIONERS like the t_fpuset
     // structures etc do? See comments above t_wtable definition in

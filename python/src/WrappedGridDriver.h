@@ -89,10 +89,43 @@ public:
             motor_max_step_difference));
     }
 
+    E_EtherCANErrCode wrapped_initialize(E_LogLevel logLevel,
+                                         const std::string &log_dir,
+                                         int firmware_version_address_offset,
+                                         const std::string &protection_logfile,
+                                         const std::string &control_logfile,
+                                         const std::string &tx_logfile,
+                                         const std::string &rx_logfile,
+                                         const std::string &start_timestamp,
+                                         bool mockup)
+    {
+        if (initializedOk())
+        {
+            return DE_INTERFACE_ALREADY_INITIALIZED;
+        }
+
+        E_EtherCANErrCode ecode = initialize(logLevel, log_dir,
+                                             firmware_version_address_offset,
+                                             protection_logfile,
+                                             control_logfile,
+                                             tx_logfile, rx_logfile,
+                                             start_timestamp);
+        if ((ecode == DE_OK) || (ecode == DE_INTERFACE_ALREADY_INITIALIZED))
+        {
+            ecode = initDb(mockup);
+            if ((ecode != DE_OK) && (ecode != DE_INTERFACE_ALREADY_INITIALIZED))
+            {
+                std::cout << "*** ERROR ***: Database initialisation failed" << std::endl;
+            }
+        }
+
+        return ecode;
+    }
+
     WrapGridState wrapped_getGridState()
     {
         WrapGridState grid_state;
-        if (checkAndMessageIfInitializeCalledOk())
+        if (checkAndMessageIfInitializedOk())
         {
             /*E_GridState grid_state_enum = */ getGridState(grid_state);
         }
@@ -106,7 +139,7 @@ public:
 
     E_EtherCANErrCode wrapped_connect(bp::list &list_gateway_addresses)
     {
-        if (!checkAndMessageIfInitializeCalledOk())
+        if (!checkAndMessageIfInitializedOk())
         {
             return DE_INTERFACE_NOT_INITIALIZED;
         }
@@ -128,7 +161,7 @@ public:
                                         bool support_uninitialized_auto,
                                         E_DATUM_TIMEOUT_FLAG timeout)
     {
-        if (!checkAndMessageIfInitializeCalledOk())
+        if (!checkAndMessageIfInitializedOk())
         {
             return DE_INTERFACE_NOT_INITIALIZED;
         }
@@ -151,7 +184,7 @@ public:
 
     E_EtherCANErrCode wrapped_resetFPUs(WrapGridState& grid_state, list& fpu_list)
     {
-        if (!checkAndMessageIfInitializeCalledOk())
+        if (!checkAndMessageIfInitializedOk())
         {
             return DE_INTERFACE_NOT_INITIALIZED;
         }
@@ -166,7 +199,7 @@ public:
 
     E_EtherCANErrCode wrapped_pingFPUs(WrapGridState &grid_state, list &fpu_list)
     {
-        if (!checkAndMessageIfInitializeCalledOk())
+        if (!checkAndMessageIfInitializedOk())
         {
             return DE_INTERFACE_NOT_INITIALIZED;
         }
@@ -194,7 +227,7 @@ public:
         // Call signature is:
         // configMotion( { fpuid0 : { (asteps, bsteps), (asteps, bsteps), ...],
         //                 fpuid1 : { ... }, ...}})
-        if (!checkAndMessageIfInitializeCalledOk())
+        if (!checkAndMessageIfInitializedOk())
         {
             return DE_INTERFACE_NOT_INITIALIZED;
         }
@@ -218,7 +251,7 @@ public:
                                             bp::list &fpu_list,
                                             bool sync_command)
     {
-        if (!checkAndMessageIfInitializeCalledOk())
+        if (!checkAndMessageIfInitializedOk())
         {
             return DE_INTERFACE_NOT_INITIALIZED;
         }
@@ -233,7 +266,7 @@ public:
 
     E_EtherCANErrCode wrapped_enableMove(int fpu_id, WrapGridState &grid_state)
     {
-        if (!checkAndMessageIfInitializeCalledOk())
+        if (!checkAndMessageIfInitializedOk())
         {
             return DE_INTERFACE_NOT_INITIALIZED;
         }
@@ -244,14 +277,14 @@ public:
     }
 
 private:
-    bool checkAndMessageIfInitializeCalledOk()
+    bool checkAndMessageIfInitializedOk()
     {
-        if (initializeWasCalledOk())
+        if (initializedOk())
         {
             return true;
         }
         std::cout << std::endl;
-        std::cout << "*** ERROR ***: initialize() needs to be called first.\n" << std::endl;
+        std::cout << "*** ERROR ***: Not yet initialized successfully - initialize() was not yet called, or it failed\n" << std::endl;
         return false;
     }
 
