@@ -83,6 +83,7 @@ void translate_interface_error(EtherCANException const& e)
     case DE_OUT_OF_MEMORY:
     case DE_RESOURCE_ERROR:
     case DE_ASSERTION_FAILED:
+    case DE_ERROR_UNKNOWN:
         PyErr_SetString(SystemFailureExceptionTypeObj, e.what());
         break;
 
@@ -376,6 +377,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("DE_OUT_OF_MEMORY", DE_OUT_OF_MEMORY)
     .value("DE_RESOURCE_ERROR", DE_RESOURCE_ERROR)
     .value("DE_FIRMWARE_UNIMPLEMENTED", DE_FIRMWARE_UNIMPLEMENTED)
+    .value("DE_ERROR_UNKNOWN", DE_ERROR_UNKNOWN)
     .export_values();
 
     enum_<E_GridState>("E_GridState")

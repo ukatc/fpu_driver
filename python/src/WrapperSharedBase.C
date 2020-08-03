@@ -561,8 +561,7 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
         break;
 
     case DE_ERROR_UNKNOWN:
-        throw EtherCANException("DE_ERROR_UNKNOWN: An unknown error occurred, "
-                                "should probably be terminated.",
+        throw EtherCANException("DE_ERROR_UNKNOWN: An unknown error occurred.",
                                 DE_ERROR_UNKNOWN);
     }
 }
