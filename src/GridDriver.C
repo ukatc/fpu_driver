@@ -13,7 +13,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 // NAME GridDriver.C
 //
-// TODO: Put description here
+// This GridDriver class adds a software protection layer on top of the basic
+// UnprotectedGridDriver class.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -21,11 +22,6 @@
 // ********** NOTE: This file (along with UnprotectedGridDriver.C) is Bart's
 // work in progress for converting the classes and functions in FPUGridDriver.py
 // from Python to C++.
-
-// ENABLE_PROTECTION_CODE macro: Define it (in a project's global predefined
-// symbols) to enable the protection code work-in-progress, or disable it so
-// that can continue to use the unprotected code for the time being.
-
 
 #include "GridDriver.h"
 
@@ -36,6 +32,38 @@
 namespace mpifps
 {
 
+#ifdef ENABLE_PROTECTION_CODE
+//==============================================================================
+// Define FPU constants
+// TODO: The following constants are converted from fpu_constants.py - do the
+// following?:
+//  - Standardise their naming styles to lowercase_with_underscores
+//  - Move them into GridDriver.h -> GridDriver class's private scope?
+
+static const double AlphaGearRatio = 2050.175633;   // Actual gear ratio
+static const double BetaGearRatio = 1517.662482;    // actual gear ratio
+
+// There are 20 steps per revolution on the non-geared side, so:
+static const double StepsPerRevolution = 20.0;
+static const double DegreePerRevolution = 360.0;
+
+// Note that these numbers must not be confounded with actual calibrated values!
+// TODO: The Python versions in fpu_constants.py have "float()" functions in
+// them - what is the purpose of this, and is the following C++ version OK?
+static const double StepsPerDegreeAlpha =
+                (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution;
+static const double StepsPerDegreeBeta =
+                (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution;
+
+// Overflow / underflow representations in binary FPU step counters - these are
+// intentionally asymmetric for the alpha arm counter
+static const int ALPHA_UNDERFLOW_COUNT = -10000;
+static const int ALPHA_OVERFLOW_COUNT = ALPHA_UNDERFLOW_COUNT + (1 << 16) - 1;
+
+static const int BETA_UNDERFLOW_COUNT = -0x8000;
+static const int BETA_OVERFLOW_COUNT = BETA_UNDERFLOW_COUNT + (1 << 16) - 1;
+#endif // ENABLE_PROTECTION_CODE
+
 
 //==============================================================================
 E_EtherCANErrCode GridDriver::initDb(bool mockup)
@@ -43,7 +71,6 @@ E_EtherCANErrCode GridDriver::initDb(bool mockup)
     // TODO: Temporary only
     UNUSED_ARG(mockup);
 
-#ifdef ENABLE_PROTECTION_CODE
     if (initdb_was_called_ok)
     {
         return DE_INTERFACE_ALREADY_INITIALIZED;
@@ -54,13 +81,17 @@ E_EtherCANErrCode GridDriver::initDb(bool mockup)
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-
     // TODO - implement the rest of this function
-
-#endif // ENABLE_PROTECTION_CODE
+#ifdef ENABLE_PROTECTION_CODE
 
     initdb_was_called_ok = true;
     return DE_OK;
+
+
+#else // NOT ENABLE_PROTECTION_CODE
+    initdb_was_called_ok = true;
+    return DE_OK;
+#endif // NOT ENABLE_PROTECTION_CODE
 }
 
 //------------------------------------------------------------------------------
@@ -78,6 +109,29 @@ void GridDriver::_post_connect_hook()
 {
     // TODO
 }
+
+#ifdef ENABLE_PROTECTION_CODE
+//------------------------------------------------------------------------------
+double GridDriver::_alpha_angle(const t_fpu_state &fpu_state,
+                                bool &alpha_underflow_ret,
+                                bool &alpha_overflow_ret)
+{
+    alpha_underflow_ret = (fpu_state.alpha_steps == ALPHA_UNDERFLOW_COUNT);
+    alpha_overflow_ret = (fpu_state.alpha_steps == ALPHA_OVERFLOW_COUNT);
+    return ( ((double)fpu_state.alpha_steps) / StepsPerDegreeAlpha) +
+           config.alpha_datum_offset;
+}
+
+//------------------------------------------------------------------------------
+double GridDriver::_beta_angle(const t_fpu_state &fpu_state,
+                               bool &beta_underflow_ret,
+                               bool &beta_overflow_ret)
+{
+    beta_underflow_ret = (fpu_state.beta_steps == BETA_UNDERFLOW_COUNT);
+    beta_overflow_ret = (fpu_state.beta_steps == BETA_OVERFLOW_COUNT);
+    return ((double)fpu_state.beta_steps) / StepsPerDegreeBeta;
+}
+#endif // ENABLE_PROTECTION_CODE
 
 //------------------------------------------------------------------------------
 void GridDriver::_allow_find_datum_hook(t_grid_state &gs,

@@ -22,6 +22,12 @@
 
 #include "UnprotectedGridDriver.h"
 
+// ENABLE_PROTECTION_CODE macro note: Define it (in a project's global
+// predefined symbols) to enable the protection code work-in-progress, or
+// disable it so that can continue to use the unprotected code for the time
+// being.
+
+
 namespace mpifps
 {
 
@@ -53,6 +59,13 @@ private:
     // The following hook functions override those in UnprotectedGridDriver
 
     void _post_connect_hook() override;
+
+#ifdef ENABLE_PROTECTION_CODE
+    double _alpha_angle(const t_fpu_state &fpu_state, bool &alpha_underflow_ret,
+                        bool &alpha_overflow_ret);
+    double _beta_angle(const t_fpu_state &fpu_state, bool &beta_underflow_ret,
+                       bool &beta_overflow_ret);
+#endif // ENABLE_PROTECTION_CODE
 
     // findDatum() hook functions
     void _allow_find_datum_hook(t_grid_state &gs,
