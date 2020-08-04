@@ -31,7 +31,6 @@
 namespace mpifps
 {
 
-
 //==============================================================================
 
 class GridDriver : public UnprotectedGridDriver
@@ -53,7 +52,19 @@ public:
     // TODO: Is a destructor needed?
 
     //..........................................................................
-private:    
+private:
+    // Error counters functionality
+    enum class FpuErrorCounterType
+    {
+        Collisions = 0,
+        LimitBreaches,
+        CanTimeouts,
+        DatumTimeouts,
+        MovementTimeouts,
+
+        NumFpuErrorCounterTypes
+    };
+
     bool initdb_was_called_ok = false;
 
     // The following hook functions override those in UnprotectedGridDriver
@@ -91,18 +102,6 @@ private:
     void _reset_hook(t_grid_state &old_state, t_grid_state &gs,
                      const t_fpuset &fpuset) override;
 
-    // Error counters functionality
-    enum class FpuErrorCounterType
-    {
-        Collisions = 0,
-        LimitBreaches,
-        CanTimeouts,
-        DatumTimeouts,
-        MovementTimeouts,
-
-        NumFpuErrorCounterTypes
-    };
-    
     void _update_error_counters(const t_fpu_state &prev_fpu,
                                 const t_fpu_state &moved_fpu,
                                 bool datum_cmd = false) override;

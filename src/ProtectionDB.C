@@ -60,8 +60,8 @@ static MDB_dbi healthlog_dbi = 0;
 // TODO: Is "verification" sub-database database needed?
 // static MDB_dbi verificationdb_dbi = 0;
 
-// -----------------------------------------------------------------------------
 
+//==============================================================================
 std::string protectionDB_GetDirFromLinuxEnv(bool mockup)
 {
     // Provides Linux directory for the protection database based upon the
@@ -102,8 +102,7 @@ std::string protectionDB_GetDirFromLinuxEnv(bool mockup)
     return dir_str_ret;
 }
 
-// -----------------------------------------------------------------------------
-
+//==============================================================================
 bool ProtectionDB::open(const std::string &dir_str)
 {
     // Opens a protection database (data.mdb and locks.mdb files) in the
@@ -212,6 +211,7 @@ bool ProtectionDB::open(const std::string &dir_str)
     return true;
 }
 
+//------------------------------------------------------------------------------
 std::unique_ptr<ProtectionDbTxn> ProtectionDB::createTransaction()
 {
     std::unique_ptr<ProtectionDbTxn> ptr_returned;
@@ -231,6 +231,7 @@ std::unique_ptr<ProtectionDbTxn> ProtectionDB::createTransaction()
     return std::move(ptr_returned);
 }
 
+//------------------------------------------------------------------------------
 void ProtectionDB::close()
 {
     // Releases all handles, closes ProtectionDB LMDB environment etc
@@ -251,13 +252,13 @@ void ProtectionDB::close()
     }
 }
     
+//------------------------------------------------------------------------------
 ProtectionDB::~ProtectionDB()
 {
     close();
 }
 
-// -----------------------------------------------------------------------------
-
+//==============================================================================
 ProtectionDbTxn::ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr,
                                  bool &created_ok_ret)
 {
@@ -270,6 +271,7 @@ ProtectionDbTxn::ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr,
     }
 }
 
+//------------------------------------------------------------------------------
 bool ProtectionDbTxn::fpuDbPutCounters(const char serial_number[],
                                        const FpuCounters &fpu_counters)
 {
@@ -284,6 +286,7 @@ bool ProtectionDbTxn::fpuDbPutCounters(const char serial_number[],
     return false;
 }
 
+//------------------------------------------------------------------------------
 bool ProtectionDbTxn::fpuDbWriteRawItem(const char serial_number[],
                                         const char subkey[],
                                         void *data_ptr,
@@ -298,6 +301,7 @@ bool ProtectionDbTxn::fpuDbWriteRawItem(const char serial_number[],
     return false;
 }
 
+//------------------------------------------------------------------------------
 bool ProtectionDbTxn::fpuDbReadRawItem(const char serial_number[],
                                        const char subkey[],
                                        void **data_ptr_ret,
@@ -314,6 +318,7 @@ bool ProtectionDbTxn::fpuDbReadRawItem(const char serial_number[],
     return false;
 }
 
+//------------------------------------------------------------------------------
 int ProtectionDbTxn::fpuDbPutItem(const char serial_number[],
                                   const char subkey[],
                                   const MDB_val &data_val)
@@ -323,6 +328,7 @@ int ProtectionDbTxn::fpuDbPutItem(const char serial_number[],
                    const_cast<MDB_val *>(&data_val), 0x0);
 }
 
+//------------------------------------------------------------------------------
 int ProtectionDbTxn::fpuDbGetItem(const char serial_number[],
                                   const char subkey[],
                                   MDB_val &data_val_ret)
@@ -331,6 +337,7 @@ int ProtectionDbTxn::fpuDbGetItem(const char serial_number[],
     return mdb_get(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val_ret);
 }
 
+//------------------------------------------------------------------------------
 MDB_val ProtectionDbTxn::fpuDbCreateKeyVal(const char serial_number[],
                                            const char subkey[])
 {
@@ -347,6 +354,7 @@ MDB_val ProtectionDbTxn::fpuDbCreateKeyVal(const char serial_number[],
     return { key_str.size(), const_cast<void *>((const void *)key_str.c_str()) };
 }
 
+//------------------------------------------------------------------------------
 ProtectionDbTxn::~ProtectionDbTxn()
 {
     mdb_txn_commit(txn_ptr);
@@ -357,11 +365,9 @@ ProtectionDbTxn::~ProtectionDbTxn()
 }
 
 
-// *****************************************************************************
-// *****************************************************************************
+//==============================================================================
 // Unit test functions follow
-// *****************************************************************************
-// *****************************************************************************
+//==============================================================================
 
 static bool protectionDB_TestWithStayingOpen(const std::string &dir_str);
 static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
@@ -371,6 +377,7 @@ static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb);
 static std::string getNextFpuTestSerialNumber();
 
 
+//------------------------------------------------------------------------------
 bool protectionDB_Test()
 {
     // Performs a suite of protection database tests - reading and writing
@@ -391,6 +398,7 @@ bool protectionDB_Test()
     return result_ok;
 }
 
+//------------------------------------------------------------------------------
 static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
 {
     // Performs various ProtectionDB tests with the database being kept open
@@ -417,6 +425,7 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
     return result_ok;
 }
 
+//------------------------------------------------------------------------------
 static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
 {
     // Performs various ProtectionDB tests with the database being closed
@@ -475,6 +484,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
     return result_ok;    
 }
 
+//------------------------------------------------------------------------------
 static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb)
 {
     // Tests writing the counters for a single FPU
@@ -496,6 +506,7 @@ static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb
     return result_ok;
 }
 
+//------------------------------------------------------------------------------
 static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb)
 {
     // Tests writing of a single item and reading it back, all in one transaction
@@ -537,6 +548,7 @@ static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb)
     return result_ok;
 }
 
+//------------------------------------------------------------------------------
 static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb)
 {
     // Tests writing of multiple items in a first transaction, and reading them
@@ -610,6 +622,7 @@ static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb)
     return result_ok;
 }
 
+//------------------------------------------------------------------------------
 static std::string getNextFpuTestSerialNumber()
 {
     // Provides incrementing serial number strings of the form "TestNNNN", with
@@ -629,3 +642,4 @@ static std::string getNextFpuTestSerialNumber()
     return std::string(serial_number_c_str);
 }
 
+//------------------------------------------------------------------------------
