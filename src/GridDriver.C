@@ -81,12 +81,29 @@ E_EtherCANErrCode GridDriver::initDb(bool mockup)
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    // TODO - implement the rest of this function
 #ifdef ENABLE_PROTECTION_CODE
 
-    initdb_was_called_ok = true;
-    return DE_OK;
+    // TODO - implement the rest of this function
 
+    std::string dir_str = protectionDB_GetDirFromLinuxEnv(mockup);
+    if (!dir_str.empty())
+    {
+        if (protection_db.open(dir_str))
+        {
+            initdb_was_called_ok = true;
+            return DE_OK;
+        }
+        else
+        {
+            // TODO: Error
+        }
+    }
+    else
+    {
+        // TODO: Error
+    }
+
+    // TODO: Call protection_db.close() from somewhere?
 
 #else // NOT ENABLE_PROTECTION_CODE
     initdb_was_called_ok = true;

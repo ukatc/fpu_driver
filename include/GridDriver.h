@@ -21,6 +21,9 @@
 #define GRIDDRIVER_H
 
 #include "UnprotectedGridDriver.h"
+#ifdef ENABLE_PROTECTION_CODE
+#include "ProtectionDB.h"
+#endif // ENABLE_PROTECTION_CODE
 
 // ENABLE_PROTECTION_CODE macro note: Define it (in a project's global
 // predefined symbols) to enable the protection code work-in-progress, or
@@ -67,16 +70,18 @@ private:
 
     bool initdb_was_called_ok = false;
 
-    // The following hook functions override those in UnprotectedGridDriver
-
-    void _post_connect_hook() override;
-
 #ifdef ENABLE_PROTECTION_CODE
+    ProtectionDB protection_db;
+
     double _alpha_angle(const t_fpu_state &fpu_state, bool &alpha_underflow_ret,
                         bool &alpha_overflow_ret);
     double _beta_angle(const t_fpu_state &fpu_state, bool &beta_underflow_ret,
                        bool &beta_overflow_ret);
 #endif // ENABLE_PROTECTION_CODE
+
+    // The following hook functions override those in UnprotectedGridDriver
+
+    void _post_connect_hook() override;
 
     // findDatum() hook functions
     void _allow_find_datum_hook(t_grid_state &gs,
