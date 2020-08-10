@@ -71,17 +71,21 @@ struct t_fpu_position
 
 typedef t_fpu_position t_fpu_positions[MAX_NUM_POSITIONERS];
 
+// TODO: No longer required to be a friend class? (for now at least) - N.B.
+// Also see disabled code below
 // Forward reference for friend class declaration in UnprotectedGridDriver below
-class UnprotectedGridDriverTester;
+//class UnprotectedGridDriverTester;
 
 
 //==============================================================================
 
 class UnprotectedGridDriver
 {
+    // TODO: No longer required to be a friend class? (for now at least) - N.B.
+    // Also see disabled code above
     // Declare test class as friend so that it can access protected/private
     // member variables and functions
-    friend class UnprotectedGridDriverTester;
+    //friend class UnprotectedGridDriverTester;
   
     //..........................................................................
 public:
@@ -320,24 +324,6 @@ private:
     // to C++ first (and use a Linux named semaphore instead of a lock file for this?)
 
     //..........................................................................
-};
-
-
-//==============================================================================
-
-class UnprotectedGridDriverTester
-{
-    // N.B. This class is friend-ed from UnprotectedGridDriver, so it can
-    // access its private and protected member variables and functions
-public:
-    void doTests();
-    
-private:
-    void test_initialize();
-    void test_connect();
-    void test_findDatum();
-    void test_configMotion();
-    void test_executeMotion();
 };
 
 

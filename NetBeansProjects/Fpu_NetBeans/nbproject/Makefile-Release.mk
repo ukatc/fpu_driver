@@ -46,6 +46,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/56252444/FPUState.o \
 	${OBJECTDIR}/_ext/56252444/GatewayInterface.o \
 	${OBJECTDIR}/_ext/56252444/GridDriver.o \
+	${OBJECTDIR}/_ext/56252444/GridDriverTester.o \
 	${OBJECTDIR}/_ext/56252444/GridState.o \
 	${OBJECTDIR}/_ext/56252444/ProtectionDB.o \
 	${OBJECTDIR}/_ext/56252444/SBuffer.o \
@@ -166,6 +167,11 @@ ${OBJECTDIR}/_ext/56252444/GridDriver.o: ../../src/GridDriver.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/GridDriver.o ../../src/GridDriver.C
+
+${OBJECTDIR}/_ext/56252444/GridDriverTester.o: ../../src/GridDriverTester.C
+	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/GridDriverTester.o ../../src/GridDriverTester.C
 
 ${OBJECTDIR}/_ext/56252444/GridState.o: ../../src/GridState.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444

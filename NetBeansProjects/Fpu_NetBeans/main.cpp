@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include "ProtectionDB.h"
 #include "GridDriver.h"
+#include "GridDriverTester.h"
 
 using namespace std;
 
