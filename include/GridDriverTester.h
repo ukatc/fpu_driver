@@ -38,13 +38,7 @@ public:
     void testGridDriver();
     
 private:
-    void doTests(UnprotectedGridDriver &grid_driver);
-
-    void test_initialize();
-    void test_connect();
-    void test_findDatum();
-    void test_configMotion();
-    void test_executeMotion();
+    void testInitialisedGridDriver(UnprotectedGridDriver &grid_driver);
 };
 
 //==============================================================================

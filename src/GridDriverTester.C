@@ -22,13 +22,13 @@
 #include "E_GridState.h"
 #include "InterfaceState.h"
 
-#define DOTESTS_MAX_NUM_FPUS    (5)
+#define TESTING_MAX_NUM_FPUS    (5)
 
-// NOTE: Can change DOTESTS_NUM_FPUS as required, up to DOTESTS_MAX_NUM_FPUS -
+// NOTE: Can change TESTING_NUM_FPUS as required, up to TESTING_MAX_NUM_FPUS -
 // and set mock gateway (if used) to the same value when invoking it
-#define DOTESTS_NUM_FPUS        (3)
-#if (DOTESTS_NUM_FPUS > DOTESTS_MAX_NUM_FPUS)
-#error "BUILD ERROR: DOTESTS_NUM_FPUS > DO_TEST_MAX_NUM_FPUS"
+#define TESTING_NUM_FPUS        (3)
+#if (TESTING_NUM_FPUS > TESTING_MAX_NUM_FPUS)
+#error "BUILD ERROR: TESTING_NUM_FPUS > TESTING_MAX_NUM_FPUS"
 #endif
 
 namespace mpifps
@@ -37,28 +37,28 @@ namespace mpifps
 //------------------------------------------------------------------------------
 void GridDriverTester::testUnprotectedGridDriver()
 {
-    UnprotectedGridDriver ugd(DOTESTS_NUM_FPUS);
+    UnprotectedGridDriver ugd(TESTING_NUM_FPUS);
 
     ugd.initialize();
 
-    doTests(ugd);
+    testInitialisedGridDriver(ugd);
 }
 
 //------------------------------------------------------------------------------
 void GridDriverTester::testGridDriver()
 {
-    GridDriver gd(DOTESTS_NUM_FPUS);
+    GridDriver gd(TESTING_NUM_FPUS);
 
     gd.initialize();
 
     const bool mockup = true;
     gd.initDb(mockup);
 
-    doTests(gd);
+    testInitialisedGridDriver(gd);
 }
 
 //------------------------------------------------------------------------------
-void GridDriverTester::doTests(UnprotectedGridDriver &grid_driver)
+void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_driver)
 {
     // Performs basic functional testing of a pre-initialised 
     // UnprotectedGridDriver or GridDriver object, for up to 5 FPUs. Notes:
@@ -94,7 +94,7 @@ void GridDriverTester::doTests(UnprotectedGridDriver &grid_driver)
     {
         fpuset[fpu_id] = false;
     }
-    for (int fpu_id = 0; fpu_id < DOTESTS_NUM_FPUS; fpu_id++)
+    for (int fpu_id = 0; fpu_id < TESTING_NUM_FPUS; fpu_id++)
     {
         fpuset[fpu_id] = true;
     }
@@ -122,7 +122,7 @@ void GridDriverTester::doTests(UnprotectedGridDriver &grid_driver)
     //..........................................................................
     // Test findDatum()
     t_datum_search_flags search_modes;
-    for (int fpu_id = 0; fpu_id < DOTESTS_NUM_FPUS; fpu_id++)
+    for (int fpu_id = 0; fpu_id < TESTING_NUM_FPUS; fpu_id++)
     {
         search_modes[fpu_id] = SEARCH_CLOCKWISE;
     }
@@ -144,7 +144,7 @@ void GridDriverTester::doTests(UnprotectedGridDriver &grid_driver)
     const int verbosity = 3;
 
     t_wtable wavetable;
-    static const t_waveform test_waveforms[DOTESTS_MAX_NUM_FPUS] =
+    static const t_waveform test_waveforms[TESTING_MAX_NUM_FPUS] =
     {
         {0, { { 0,  -1}, { 2,  -3}, { 4,  -5} } },
         {1, { { 6,  -7}, { 8,  -9}, {10, -11} } },
@@ -152,7 +152,7 @@ void GridDriverTester::doTests(UnprotectedGridDriver &grid_driver)
         {3, { {18, -19}, {20, -21}, {22, -23} } },
         {4, { {24, -25}, {26, -27}, {28, -29} } }
     };
-    for (int i = 0; i < DOTESTS_NUM_FPUS; i++)
+    for (int i = 0; i < TESTING_NUM_FPUS; i++)
     {
         wavetable.push_back(test_waveforms[i]);
     }
@@ -174,7 +174,7 @@ void GridDriverTester::doTests(UnprotectedGridDriver &grid_driver)
     
     grid_state_result = grid_driver.getGridState(grid_state);
 
-    for (int i = 0; i < DOTESTS_NUM_FPUS; i++)
+    for (int i = 0; i < TESTING_NUM_FPUS; i++)
     {
         result = grid_driver.enableMove(i, grid_state);
     }
@@ -184,11 +184,11 @@ void GridDriverTester::doTests(UnprotectedGridDriver &grid_driver)
     // following code to test the wtable
     // pruning code inside configMotion()
     /*    
-    if (DOTESTS_NUM_FPUS >= 2)
+    if (TESTING_NUM_FPUS >= 2)
     {
         fpuset[1] = false;
     }
-    if (DOTESTS_NUM_FPUS >= 4)
+    if (TESTING_NUM_FPUS >= 4)
     {
         fpuset[3] = false;
     }
@@ -216,36 +216,5 @@ void GridDriverTester::doTests(UnprotectedGridDriver &grid_driver)
 }
 
 //------------------------------------------------------------------------------
-void GridDriverTester::test_initialize()
-{
-
-    
-}
-
-//------------------------------------------------------------------------------
-void GridDriverTester::test_connect()
-{
-
-    
-}
-
-//------------------------------------------------------------------------------
-void GridDriverTester::test_findDatum()
-{
-
-
-}
-
-//------------------------------------------------------------------------------
-void GridDriverTester::test_configMotion()
-{
-    
-}
-
-//------------------------------------------------------------------------------
-void GridDriverTester::test_executeMotion()
-{
-    
-}
 
 } // namespace mpifps
