@@ -27,7 +27,6 @@ namespace mpifps
 
 class UnprotectedGridDriverTester
 {
-    // TODO: No longer friend-ed? If not then remove this comment
     // N.B. This class is friend-ed from UnprotectedGridDriver, so it can
     // access its private and protected member variables and functions
 public:

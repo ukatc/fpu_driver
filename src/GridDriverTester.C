@@ -145,15 +145,10 @@ void UnprotectedGridDriverTester::doTests()
     bool allow_unconfirmed = false;
     E_FPU_STATE target_state = FPST_READY_FORWARD;
     
-    //*********** TODO: Reinstate? Requires UnprotectedGridDriverTester to be
-    // re-friend-ed by UnprotectedGridDriver (and GridDriver?)
-//#define FRIEND_OF_TESTED_CLASS
-#ifdef FRIEND_OF_TESTED_CLASS
     bool wtable_received_result = ugd.wavetable_was_received(wavetable, 3, 
                                                              fpu_state,
                                                              allow_unconfirmed,
                                                              target_state);
-#endif    
     
     grid_state_result = ugd.getGridState(grid_state);
 
@@ -196,9 +191,7 @@ void UnprotectedGridDriverTester::doTests()
     // Suppress warnings of variables not being used
     UNUSED_ARG(result);
     UNUSED_ARG(grid_state_result);
-#ifdef FRIEND_OF_TESTED_CLASS    
     UNUSED_ARG(wtable_received_result);
-#endif // FRIENDED_CLASS    
 }
 
 //------------------------------------------------------------------------------
