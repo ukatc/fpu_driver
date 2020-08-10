@@ -30,9 +30,9 @@ namespace mpifps
 
 class GridDriverTester
 {
-    // TODO: Will this actually be the case?
-    // N.B. This class is friend-ed from UnprotectedGridDriver, so it can
-    // access its private and protected member variables and functions
+    // N.B. This class is friend-ed from UnprotectedGridDriver and GridDriver,
+    // so it can access their private and protected member variables and
+    // functions for test purposes
 public:
     void testUnprotectedGridDriver();
     void testGridDriver();

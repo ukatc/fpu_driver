@@ -34,12 +34,19 @@
 namespace mpifps
 {
 
+// Forward reference for friend-ing in UnprotectedGridDriver below
+class GridDriverTester;
+
 //==============================================================================
 
 class GridDriver : public UnprotectedGridDriver
 {
     //..........................................................................
 public:
+    // Declare test class as friend so that it can access protected/private
+    // member variables and functions
+    friend class GridDriverTester;
+  
     using UnprotectedGridDriver::UnprotectedGridDriver; // Inherit constructor
 
     E_EtherCANErrCode initDb(bool mockup = false);

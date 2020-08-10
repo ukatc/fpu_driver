@@ -32,8 +32,6 @@
 #include "InterfaceState.h"
 #include "Interval.h"
 
-// TODO: Reinstate
-//#include "GridDriverTester.h"
 
 namespace mpifps
 {
@@ -74,15 +72,17 @@ struct t_fpu_position
 
 typedef t_fpu_position t_fpu_positions[MAX_NUM_POSITIONERS];
 
+// Forward reference for friend-ing in UnprotectedGridDriver below
+class GridDriverTester;
+
 
 //==============================================================================
 
 class UnprotectedGridDriver
 {
-    // TODO: Reinstate
     // Declare test class as friend so that it can access protected/private
     // member variables and functions
-    //friend class GridDriverTester;
+    friend class GridDriverTester;
   
     //..........................................................................
 public:

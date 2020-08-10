@@ -131,6 +131,8 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_dri
 
     grid_state_result = grid_driver.getGridState(grid_state);
 
+    // TODO: Use DATUM_TIMEOUT_DISABLE instead of DATUM_TIMEOUT_ENABLE below?
+    // (sometimes times out if long-duration findDatum())
     result = grid_driver.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
                                    soft_protection, count_protection,
                                    support_uninitialized_auto,
@@ -157,20 +159,16 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_dri
         wavetable.push_back(test_waveforms[i]);
     }
 
-    // TODO: Reinstate
-#if 0
-    // Ad-hoc partial test of wavetable_was_received()
+    // Ad-hoc partial test of wavetable_was_received() (N.B. private function,
+    // accessible because this test class is friend'ed from the grid driver
+    // classes)
     t_fpu_state fpu_state;
     bool allow_unconfirmed = false;
     E_FPU_STATE target_state = FPST_READY_FORWARD;
-    
     bool wtable_received_result = 
             grid_driver.wavetable_was_received(wavetable, 3, fpu_state,
                                                allow_unconfirmed, target_state);
-
-    // Suppress warning of variable not being used
-    UNUSED_ARG(wtable_received_result);
-#endif
+    UNUSED_ARG(wtable_received_result); // Suppress variable-not-used warning
     
     grid_state_result = grid_driver.getGridState(grid_state);
 
