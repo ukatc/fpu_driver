@@ -18,7 +18,6 @@
 
 using namespace std;
 
-static void testUnprotectedGridDriver();
 static void testGridDriver();
 static void testFpuCounters();
 static void testProtectionDB();
@@ -27,7 +26,7 @@ static void testProtectionDB();
 //------------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-    testUnprotectedGridDriver();
+    testGridDriver();
 
     //testGridDriver();
 
@@ -39,20 +38,15 @@ int main(int argc, char** argv)
 }
 
 //------------------------------------------------------------------------------
-static void testUnprotectedGridDriver()
-{
-    UnprotectedGridDriverTester ugd_tester;
-    
-    ugd_tester.doTests();
-}
-
-//------------------------------------------------------------------------------
 static void testGridDriver()
 {
-    const int dummy_val = 456;
-    GridDriver grid_driver(dummy_val);
-    
-    double blah = grid_driver.boostPythonDivide(2.0, 1.0);
+    GridDriverTester grid_driver_tester;
+
+#if 1
+    grid_driver_tester.testUnprotectedGridDriver();
+#else
+    grid_driver_tester.testGridDriver();
+#endif
 }
 
 //------------------------------------------------------------------------------

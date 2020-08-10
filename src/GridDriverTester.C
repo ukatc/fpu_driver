@@ -19,8 +19,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "GridDriverTester.h"
-#include "UnprotectedGridDriver.h"
-#include "GridDriver.h"
 #include "E_GridState.h"
 #include "InterfaceState.h"
 
@@ -35,12 +33,38 @@
 
 namespace mpifps
 {
-    
+
 //------------------------------------------------------------------------------
-void UnprotectedGridDriverTester::doTests()
+void GridDriverTester::testUnprotectedGridDriver()
 {
-    // Allows basic fixed-argument testing of the main UnprotectedGridDriver()
-    // functions, for up to 5 FPUs. Notes:
+    UnprotectedGridDriver ugd(DOTESTS_NUM_FPUS);
+
+    ugd.initialize();
+
+    doTests(ugd);
+}
+
+//------------------------------------------------------------------------------
+void GridDriverTester::testGridDriver()
+{
+    GridDriver gd(DOTESTS_NUM_FPUS);
+
+    gd.initialize();
+
+    const bool mockup = true;
+    gd.initDb(mockup);
+
+    doTests(gd);
+}
+
+//------------------------------------------------------------------------------
+void GridDriverTester::doTests(UnprotectedGridDriver &grid_driver)
+{
+    // Performs basic functional testing of a pre-initialised 
+    // UnprotectedGridDriver or GridDriver object, for up to 5 FPUs. Notes:
+    //   - initialize(), initDb() (for GridDriver) and any other
+    //     initialisations must have been successfully performed for grid_driver
+    //     before calling this function
     //   - Can be run using the mock gateway simulator - need to first set this
     //     running in a Bash Python shell in .../test/HardwareSimulation,
     //     using:
@@ -55,21 +79,13 @@ void UnprotectedGridDriverTester::doTests()
     const bool soft_protection = false;
 
     //..........................................................................
-
-    UnprotectedGridDriver ugd(DOTESTS_NUM_FPUS);
-
-    //..........................................................................
-    // Test initialize()
-    result = ugd.initialize();    
-
-    //..........................................................................
     // Test connect()
     // TODO: t_gateway_address::ip is only a pointer - dangerous? Change this
     // eventually? (e.g. to a std::string?)
     const char *ip_address_str = "127.0.0.1";
     uint16_t port_number = 4700;
     t_gateway_address gateway_address = { ip_address_str, port_number };
-    result = ugd.connect(1, &gateway_address);   
+    result = grid_driver.connect(1, &gateway_address);   
 
     //..........................................................................
     // Specify FPUs in fpuset
@@ -85,23 +101,23 @@ void UnprotectedGridDriverTester::doTests()
 
     //..........................................................................
     // Test getGridState()
-    grid_state_result = ugd.getGridState(grid_state);
+    grid_state_result = grid_driver.getGridState(grid_state);
 
     //..........................................................................
     // Test pingFPUs()
-    result = ugd.pingFPUs(grid_state, fpuset);
+    result = grid_driver.pingFPUs(grid_state, fpuset);
     
     //..........................................................................
     // Test getGridState() again
-    grid_state_result = ugd.getGridState(grid_state);
+    grid_state_result = grid_driver.getGridState(grid_state);
 
     //..........................................................................
     // Test pingFPUs() again
-    result = ugd.pingFPUs(grid_state, fpuset);
+    result = grid_driver.pingFPUs(grid_state, fpuset);
 
     //..........................................................................
     // Test resetFPUs()
-    result = ugd.resetFPUs(grid_state, fpuset);
+    result = grid_driver.resetFPUs(grid_state, fpuset);
     
     //..........................................................................
     // Test findDatum()
@@ -113,11 +129,12 @@ void UnprotectedGridDriverTester::doTests()
     const bool count_protection = false;
     const bool support_uninitialized_auto = false;
 
-    grid_state_result = ugd.getGridState(grid_state);
+    grid_state_result = grid_driver.getGridState(grid_state);
 
-    result = ugd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
-                           soft_protection, count_protection,
-                           support_uninitialized_auto, DATUM_TIMEOUT_ENABLE);
+    result = grid_driver.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
+                                   soft_protection, count_protection,
+                                   support_uninitialized_auto,
+                                   DATUM_TIMEOUT_ENABLE);
 
     //..........................................................................
     // Test configMotion() and wavetable_was_received()
@@ -140,21 +157,26 @@ void UnprotectedGridDriverTester::doTests()
         wavetable.push_back(test_waveforms[i]);
     }
 
+    // TODO: Reinstate
+#if 0
     // Ad-hoc partial test of wavetable_was_received()
     t_fpu_state fpu_state;
     bool allow_unconfirmed = false;
     E_FPU_STATE target_state = FPST_READY_FORWARD;
     
-    bool wtable_received_result = ugd.wavetable_was_received(wavetable, 3, 
-                                                             fpu_state,
-                                                             allow_unconfirmed,
-                                                             target_state);
+    bool wtable_received_result = 
+            grid_driver.wavetable_was_received(wavetable, 3, fpu_state,
+                                               allow_unconfirmed, target_state);
+
+    // Suppress warning of variable not being used
+    UNUSED_ARG(wtable_received_result);
+#endif
     
-    grid_state_result = ugd.getGridState(grid_state);
+    grid_state_result = grid_driver.getGridState(grid_state);
 
     for (int i = 0; i < DOTESTS_NUM_FPUS; i++)
     {
-        result = ugd.enableMove(i, grid_state);
+        result = grid_driver.enableMove(i, grid_state);
     }
     
     //........................
@@ -173,56 +195,55 @@ void UnprotectedGridDriverTester::doTests()
     */ 
     //........................
     
-    result = ugd.configMotion(wavetable, grid_state, fpuset, soft_protection,
-                              allow_uninitialized, ruleset_version, 
-                              warn_unsafe, verbosity);
+    result = grid_driver.configMotion(wavetable, grid_state, fpuset,
+                                      soft_protection, allow_uninitialized,
+                                      ruleset_version, warn_unsafe, verbosity);
 
     //..........................................................................
     // Test executeMotion()
     bool sync_command = true;
-    result = ugd.executeMotion(grid_state, fpuset, sync_command);
+    result = grid_driver.executeMotion(grid_state, fpuset, sync_command);
     
     //..........................................................................
 
-    result = ugd.disconnect();
+    result = grid_driver.disconnect();
 
     //..........................................................................
 
     // Suppress warnings of variables not being used
     UNUSED_ARG(result);
     UNUSED_ARG(grid_state_result);
-    UNUSED_ARG(wtable_received_result);
 }
 
 //------------------------------------------------------------------------------
-void UnprotectedGridDriverTester::test_initialize()
+void GridDriverTester::test_initialize()
 {
 
     
 }
 
 //------------------------------------------------------------------------------
-void UnprotectedGridDriverTester::test_connect()
+void GridDriverTester::test_connect()
 {
 
     
 }
 
 //------------------------------------------------------------------------------
-void UnprotectedGridDriverTester::test_findDatum()
+void GridDriverTester::test_findDatum()
 {
 
 
 }
 
 //------------------------------------------------------------------------------
-void UnprotectedGridDriverTester::test_configMotion()
+void GridDriverTester::test_configMotion()
 {
     
 }
 
 //------------------------------------------------------------------------------
-void UnprotectedGridDriverTester::test_executeMotion()
+void GridDriverTester::test_executeMotion()
 {
     
 }

@@ -31,7 +31,9 @@
 #include "ethercan/AsyncInterface.h"
 #include "InterfaceState.h"
 #include "Interval.h"
-#include "GridDriverTester.h"
+
+// TODO: Reinstate
+//#include "GridDriverTester.h"
 
 namespace mpifps
 {
@@ -77,9 +79,10 @@ typedef t_fpu_position t_fpu_positions[MAX_NUM_POSITIONERS];
 
 class UnprotectedGridDriver
 {
+    // TODO: Reinstate
     // Declare test class as friend so that it can access protected/private
     // member variables and functions
-    friend class UnprotectedGridDriverTester;
+    //friend class GridDriverTester;
   
     //..........................................................................
 public:

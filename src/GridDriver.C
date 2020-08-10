@@ -68,9 +68,6 @@ static const int BETA_OVERFLOW_COUNT = BETA_UNDERFLOW_COUNT + (1 << 16) - 1;
 //==============================================================================
 E_EtherCANErrCode GridDriver::initDb(bool mockup)
 {
-    // TODO: Temporary only
-    UNUSED_ARG(mockup);
-
     if (initdb_was_called_ok)
     {
         return DE_INTERFACE_ALREADY_INITIALIZED;
@@ -83,7 +80,7 @@ E_EtherCANErrCode GridDriver::initDb(bool mockup)
 
 #ifdef ENABLE_PROTECTION_CODE
 
-    // TODO - implement the rest of this function
+    // TODO: Implement the rest of this function
 
     std::string dir_str = protectionDB_GetDirFromLinuxEnv(mockup);
     if (!dir_str.empty())
@@ -106,6 +103,8 @@ E_EtherCANErrCode GridDriver::initDb(bool mockup)
     // TODO: Call protection_db.close() from somewhere?
 
 #else // NOT ENABLE_PROTECTION_CODE
+    UNUSED_ARG(mockup);
+
     initdb_was_called_ok = true;
     return DE_OK;
 #endif // NOT ENABLE_PROTECTION_CODE

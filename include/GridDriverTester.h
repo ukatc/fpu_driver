@@ -20,19 +20,26 @@
 #ifndef GRIDDRIVERTESTER_H
 #define GRIDDRIVERTESTER_H
 
+#include "UnprotectedGridDriver.h"
+#include "GridDriver.h"
+
 namespace mpifps
 {
 
 //==============================================================================
 
-class UnprotectedGridDriverTester
+class GridDriverTester
 {
+    // TODO: Will this actually be the case?
     // N.B. This class is friend-ed from UnprotectedGridDriver, so it can
     // access its private and protected member variables and functions
 public:
-    void doTests();
+    void testUnprotectedGridDriver();
+    void testGridDriver();
     
 private:
+    void doTests(UnprotectedGridDriver &grid_driver);
+
     void test_initialize();
     void test_connect();
     void test_findDatum();
