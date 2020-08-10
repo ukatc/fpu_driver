@@ -38,7 +38,8 @@ public:
     void testGridDriver();
     
 private:
-    void testInitialisedGridDriver(UnprotectedGridDriver &grid_driver);
+    void testInitialisedGridDriver(UnprotectedGridDriver &grid_driver,
+                                   bool soft_protection);
 };
 
 //==============================================================================

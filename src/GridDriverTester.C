@@ -37,28 +37,44 @@ namespace mpifps
 //------------------------------------------------------------------------------
 void GridDriverTester::testUnprotectedGridDriver()
 {
+    E_EtherCANErrCode result;
+    
     UnprotectedGridDriver ugd(TESTING_NUM_FPUS);
 
-    ugd.initialize();
+    result = ugd.initialize();
 
-    testInitialisedGridDriver(ugd);
+    if (result == DE_OK)
+    {
+        const bool soft_protection = false;
+        testInitialisedGridDriver(ugd, soft_protection);
+    }
 }
 
 //------------------------------------------------------------------------------
 void GridDriverTester::testGridDriver()
 {
+    E_EtherCANErrCode result;
+    
     GridDriver gd(TESTING_NUM_FPUS);
 
-    gd.initialize();
+    result = gd.initialize();
 
-    const bool mockup = true;
-    gd.initDb(mockup);
+    if (result == DE_OK)
+    {
+        const bool mockup = true;
+        result = gd.initDb(mockup);
+    }
 
-    testInitialisedGridDriver(gd);
+    if (result == DE_OK)
+    {
+        const bool soft_protection = true;
+        testInitialisedGridDriver(gd, soft_protection);
+    }
 }
 
 //------------------------------------------------------------------------------
-void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_driver)
+void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_driver,
+                                                 bool soft_protection)
 {
     // Performs basic functional testing of a pre-initialised 
     // UnprotectedGridDriver or GridDriver object, for up to 5 FPUs. Notes:
@@ -76,7 +92,6 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_dri
     E_EtherCANErrCode result;
     E_GridState grid_state_result;
     t_grid_state grid_state;
-    const bool soft_protection = false;
 
     //..........................................................................
     // Test connect()
