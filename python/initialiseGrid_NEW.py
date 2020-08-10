@@ -56,12 +56,9 @@ then ping the FPUs. Use python -i initialiseGrid.py for interactive mode.
 #-------------------------------------------------------------------------------
 def initialize_FPU(args):
 
-    # TODO: Re-add the mockup argument once the protection functionality is
-    # implemented
-    #gd = ethercanif.GridDriver(args.N, mockup=args.mockup)
     gd = ethercanif.GridDriver(nfpus = args.N)
 
-    gd.initialize()
+    gd.initialize(mockup = args.mockup)
 
     if args.mockup:
         gateway_address = [ ethercanif.GatewayAddress("127.0.0.1", p)
@@ -77,7 +74,7 @@ def initialize_FPU(args):
     grid_state = gd.getGridState()
 
     if args.resetFPU:
-        print("Resetting FPU")
+        print("Resetting FPUs")
         gd.resetFPUs(grid_state)
         print("OK")
 

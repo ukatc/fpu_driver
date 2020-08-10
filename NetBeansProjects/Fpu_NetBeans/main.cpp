@@ -42,7 +42,7 @@ static void testGridDriver()
 {
     GridDriverTester grid_driver_tester;
 
-#if 1
+#if 0
     grid_driver_tester.testUnprotectedGridDriver();
 #else
     grid_driver_tester.testGridDriver();

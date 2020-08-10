@@ -80,7 +80,7 @@ E_EtherCANErrCode GridDriver::initDb(bool mockup)
 
 #ifdef ENABLE_PROTECTION_CODE
 
-    // TODO: Implement the rest of this function
+    // TODO: Finish this function
 
     std::string dir_str = protectionDB_GetDirFromLinuxEnv(mockup);
     if (!dir_str.empty())
@@ -90,17 +90,10 @@ E_EtherCANErrCode GridDriver::initDb(bool mockup)
             initdb_was_called_ok = true;
             return DE_OK;
         }
-        else
-        {
-            // TODO: Error
-        }
-    }
-    else
-    {
-        // TODO: Error
     }
 
-    // TODO: Call protection_db.close() from somewhere?
+    // TODO: Return more detailed error code eventually?
+    return DE_RESOURCE_ERROR;
 
 #else // NOT ENABLE_PROTECTION_CODE
     UNUSED_ARG(mockup);
