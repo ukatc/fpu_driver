@@ -49,7 +49,7 @@ public:
   
     using UnprotectedGridDriver::UnprotectedGridDriver; // Inherit constructor
 
-    E_EtherCANErrCode initDb(bool mockup = false);
+    E_EtherCANErrCode initProtection(bool mockup = false);
 
     bool initializedOk() override;
 
@@ -75,7 +75,7 @@ private:
         NumFpuErrorCounterTypes
     };
 
-    bool initdb_was_called_ok = false;
+    bool initprotection_was_called_ok = false;
 
 #ifdef ENABLE_PROTECTION_CODE
     ProtectionDB protection_db;

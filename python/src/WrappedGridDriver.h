@@ -112,10 +112,10 @@ public:
                                              start_timestamp);
         if ((ecode == DE_OK) || (ecode == DE_INTERFACE_ALREADY_INITIALIZED))
         {
-            ecode = initDb(mockup);
+            ecode = initProtection(mockup);
             if ((ecode != DE_OK) && (ecode != DE_INTERFACE_ALREADY_INITIALIZED))
             {
-                std::cout << "*** ERROR ***: Database initialisation failed" << std::endl;
+                std::cout << "*** ERROR ***: Protection initialisation failed" << std::endl;
             }
         }
 

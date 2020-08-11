@@ -66,9 +66,9 @@ static const int BETA_OVERFLOW_COUNT = BETA_UNDERFLOW_COUNT + (1 << 16) - 1;
 
 
 //==============================================================================
-E_EtherCANErrCode GridDriver::initDb(bool mockup)
+E_EtherCANErrCode GridDriver::initProtection(bool mockup)
 {
-    if (initdb_was_called_ok)
+    if (initprotection_was_called_ok)
     {
         return DE_INTERFACE_ALREADY_INITIALIZED;
     }
@@ -87,7 +87,7 @@ E_EtherCANErrCode GridDriver::initDb(bool mockup)
     {
         if (protection_db.open(dir_str))
         {
-            initdb_was_called_ok = true;
+            initprotection_was_called_ok = true;
             return DE_OK;
         }
     }
@@ -98,7 +98,7 @@ E_EtherCANErrCode GridDriver::initDb(bool mockup)
 #else // NOT ENABLE_PROTECTION_CODE
     UNUSED_ARG(mockup);
 
-    initdb_was_called_ok = true;
+    initprotection_was_called_ok = true;
     return DE_OK;
 #endif // NOT ENABLE_PROTECTION_CODE
 }
@@ -106,7 +106,7 @@ E_EtherCANErrCode GridDriver::initDb(bool mockup)
 //------------------------------------------------------------------------------
 bool GridDriver::initializedOk()
 {
-    if ((initialize_was_called_ok) && (initdb_was_called_ok))
+    if ((initialize_was_called_ok) && (initprotection_was_called_ok))
     {
         return true;
     }

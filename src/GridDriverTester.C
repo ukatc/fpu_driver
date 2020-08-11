@@ -62,7 +62,7 @@ void GridDriverTester::testGridDriver()
     if (result == DE_OK)
     {
         const bool mockup = true;
-        result = gd.initDb(mockup);
+        result = gd.initProtection(mockup);
     }
 
     if (result == DE_OK)
@@ -78,7 +78,7 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_dri
 {
     // Performs basic functional testing of a pre-initialised 
     // UnprotectedGridDriver or GridDriver object, for up to 5 FPUs. Notes:
-    //   - initialize(), initDb() (for GridDriver) and any other
+    //   - initialize(), initProtection() (for GridDriver) and any other
     //     initialisations must have been successfully performed for grid_driver
     //     before calling this function
     //   - Can be run using the mock gateway simulator - need to first set this
