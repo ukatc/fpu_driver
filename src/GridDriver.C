@@ -80,8 +80,18 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
 
 #ifdef ENABLE_PROTECTION_CODE
 
+    // Initialise the private data which doesn't initialise itself
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        aretries_cw[fpu_id] = 0;
+        aretries_acw[fpu_id] = 0;
+        bretries_cw[fpu_id] = 0;
+        bretries_acw[fpu_id] = 0;
+    }
+
     // TODO: Finish this function
 
+    // Initialise LMDB protection database
     std::string dir_str = protectionDB_GetDirFromLinuxEnv(mockup);
     if (!dir_str.empty())
     {

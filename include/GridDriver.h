@@ -20,10 +20,12 @@
 #ifndef GRIDDRIVER_H
 #define GRIDDRIVER_H
 
+#include <map>
 #include "UnprotectedGridDriver.h"
 #ifdef ENABLE_PROTECTION_CODE
 #include "ProtectionDB.h"
 #endif // ENABLE_PROTECTION_CODE
+#include "Interval.h"
 
 // ENABLE_PROTECTION_CODE macro note: Define it (in a project's global
 // predefined symbols) to enable the protection code work-in-progress, or
@@ -78,6 +80,62 @@ private:
     bool initprotection_was_called_ok = false;
 
 #ifdef ENABLE_PROTECTION_CODE
+
+    //*****************************
+    //*****************************
+    // TODO: The following data structures are my initial WIP best guesses -
+    // look at these further
+
+    struct FpuArmPos
+    {
+        FpuArmPos()
+        {
+            datum_offset = 0.0;
+        }
+
+        Interval position;
+        double datum_offset;
+    };
+
+    FpuArmPos apositions[MAX_NUM_POSITIONERS];
+    FpuArmPos bpositions[MAX_NUM_POSITIONERS];
+
+    // last_wavetable: TODO: ALREADY IN UnprotectedGridDriver - see notes in my doc
+    // wf_reversed: TODO: ALREADY IN UnprotectedGridDriver - see notes in my doc
+
+    FpuArmPos alimits[MAX_NUM_POSITIONERS];
+    FpuArmPos blimits[MAX_NUM_POSITIONERS];
+
+    Interval a_caloffsets[MAX_NUM_POSITIONERS];
+    Interval b_caloffsets[MAX_NUM_POSITIONERS];
+
+    int64_t aretries_cw[MAX_NUM_POSITIONERS];
+    int64_t aretries_acw[MAX_NUM_POSITIONERS];
+    int64_t bretries_cw[MAX_NUM_POSITIONERS];
+    int64_t bretries_acw[MAX_NUM_POSITIONERS];
+
+    FpuCounters counters[MAX_NUM_POSITIONERS];
+    FpuCounters _last_counters[MAX_NUM_POSITIONERS];
+
+    struct
+    {
+        FpuArmPos apos;
+        FpuArmPos bpos;
+    } target_positions[MAX_NUM_POSITIONERS];
+
+    // Variable-sized maps
+    // TODO: Is it correct that these will be variable-sized? Do any of the
+    // arrays above need to be variable-sized maps as well, rather than
+    // fixed-size arrays?
+    // TODO: Figure out configuring_targets and configured_targets - see my doc
+#if 0
+    // TODO: Need data structure like the following (I think)
+    std::map<int, {FpuArmPos, FpuArmPos}> configuring_targets; // <fpu_id, 
+#endif // 0
+
+    //*****************************
+    //*****************************
+
     ProtectionDB protection_db;
 
     double _alpha_angle(const t_fpu_state &fpu_state, bool &alpha_underflow_ret,
