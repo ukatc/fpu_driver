@@ -583,6 +583,35 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::readSerialNumbers(t_grid_state &gs,
+                                                           const t_fpuset &fpuset)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+
+    result = _gd->readSerialNumbers(gs, fpuset);
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(gs.FPU_state[fpu_id],
+                               prev_gs.FPU_state[fpu_id]);
+    }
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
 void UnprotectedGridDriver::_post_config_motion_hook(const t_wtable &wtable,
                                                      t_grid_state &gs,
                                                      const t_fpuset &fpuset)

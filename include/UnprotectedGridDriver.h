@@ -148,6 +148,8 @@ public:
 
     E_EtherCANErrCode resetFPUs(t_grid_state &gs, const t_fpuset &fpuset);
 
+    E_EtherCANErrCode readSerialNumbers(t_grid_state &gs, const t_fpuset &fpuset);
+
     E_EtherCANErrCode configMotion(const t_wtable &wavetable, t_grid_state &gs,
                         const t_fpuset &fpuset,
                         bool soft_protection = true,

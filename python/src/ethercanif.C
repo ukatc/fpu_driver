@@ -580,6 +580,10 @@ BOOST_PYTHON_MODULE(ethercanif)
             (bp::arg("grid_state"),
             bp::arg("fpuset") = bp::list()))
 
+    .def("readSerialNumbers", &WrappedGridDriver::wrapped_readSerialNumbers,
+            (bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list()))
+
     .def("configMotion", &WrappedGridDriver::wrapped_configMotion,
             (bp::arg("wavetable"),
             bp::arg("grid_state"),
