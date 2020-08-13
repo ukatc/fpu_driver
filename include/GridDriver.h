@@ -83,28 +83,20 @@ private:
 
     //*****************************
     //*****************************
-    // TODO: The following data structures are my initial WIP best guesses -
-    // look at these further
+    // TODO: The following data structures are my initial WIP best guesses
+    // converted from their Python equivalents as shown in
+    // _post_connect_hook() - check these further
 
-    struct FpuArmPos
-    {
-        FpuArmPos()
-        {
-            datum_offset = 0.0;
-        }
+    Interval apositions[MAX_NUM_POSITIONERS];
+    Interval bpositions[MAX_NUM_POSITIONERS];
 
-        Interval position;
-        double datum_offset;
-    };
+    // NOTE: last_wavetable and wf_reversed are inherited from
+    // UnprotectedGridDriver, so don't need to define them here
+    // TODO: Remove the comment above once fully converted from
+    // Python
 
-    FpuArmPos apositions[MAX_NUM_POSITIONERS];
-    FpuArmPos bpositions[MAX_NUM_POSITIONERS];
-
-    // last_wavetable: TODO: ALREADY IN UnprotectedGridDriver - see notes in my doc
-    // wf_reversed: TODO: ALREADY IN UnprotectedGridDriver - see notes in my doc
-
-    FpuArmPos alimits[MAX_NUM_POSITIONERS];
-    FpuArmPos blimits[MAX_NUM_POSITIONERS];
+    Interval alimits[MAX_NUM_POSITIONERS];
+    Interval blimits[MAX_NUM_POSITIONERS];
 
     Interval a_caloffsets[MAX_NUM_POSITIONERS];
     Interval b_caloffsets[MAX_NUM_POSITIONERS];
@@ -117,21 +109,12 @@ private:
     FpuCounters counters[MAX_NUM_POSITIONERS];
     FpuCounters _last_counters[MAX_NUM_POSITIONERS];
 
-    struct
-    {
-        FpuArmPos apos;
-        FpuArmPos bpos;
-    } target_positions[MAX_NUM_POSITIONERS];
-
-    // Variable-sized maps
-    // TODO: Is it correct that these will be variable-sized? Do any of the
-    // arrays above need to be variable-sized maps as well, rather than
-    // fixed-size arrays?
-    // TODO: Figure out configuring_targets and configured_targets - see my doc
-#if 0
-    // TODO: Need data structure like the following (I think)
-    std::map<int, {FpuArmPos, FpuArmPos}> configuring_targets; // <fpu_id, 
-#endif // 0
+    // Variable-sized maps (for now)
+    // TODO: See comments above the t_fpu_positions definition in
+    // UnprotectedGridDriver.h
+    t_fpu_positions target_positions;
+    t_fpu_positions configuring_targets;
+    t_fpu_positions configured_targets;
 
     //*****************************
     //*****************************

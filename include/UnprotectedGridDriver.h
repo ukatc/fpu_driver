@@ -62,15 +62,21 @@ enum class Range
     Ignore      // Ignore - path unchecked
 };
 
-// TODO: Not sure about whether these FPU position data structures are fully
-// correct and suitable yet - keep under review
+
+// Define t_fpu_positions - a set of FPU alpha and beta arm positions
+// TODO: t_fpu_positions is std::map<> for now because the original Python code
+// in FpuGridDriver.py seems to use the corresponding data structures (e.g.
+// the "hook" functions' initial_positions and target_positions arguments,
+// configuring_targets, configured_targets etc) as variable-sized sets of FPU
+// positions, e.g. whose sizes are governed by the fpuset flags array. Would
+// these structures eventually be better off as arrays of t_fpu_position's of
+// size MAX_NUM_POSITIONERS?
 struct t_fpu_position
 {
     Interval apos;
     Interval bpos;
 };
-
-typedef t_fpu_position t_fpu_positions[MAX_NUM_POSITIONERS];
+using t_fpu_positions = std::map<int, t_fpu_position>; // Keys are fpu_id's
 
 // Forward reference for friend-ing in UnprotectedGridDriver below
 class GridDriverTester;
@@ -281,25 +287,20 @@ protected:
         UNUSED_ARG(fpuset);
     }
 
-    // Config: Only the constructor and initialize() must write this - do NOT
-    // write at all after initialize() has been called
-    EtherCANInterfaceConfig config;
-    bool initialize_was_called_ok = false;
-
-    //..........................................................................
-private:
     E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
     void need_ping(const t_grid_state &gs, const t_fpuset &fpuset,
                    t_fpuset &pingset_ret);
-    E_EtherCANErrCode pingIfNeeded(t_grid_state &gs, const t_fpuset &fpuset);
-    E_EtherCANErrCode _pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
     // N.B. static function
     static bool wavetable_was_received(const t_wtable &wtable, int fpu_id,
                                        const t_fpu_state &fpu_state,  
                                        bool allow_unconfirmed = false,
                                        E_FPU_STATE target_state = FPST_READY_FORWARD);
-    void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed = false);
     void sleepSecs(double seconds);
+
+    // Config: Only the constructor and initialize() must write this - do NOT
+    // write at all after initialize() has been called
+    EtherCANInterfaceConfig config;
+    bool initialize_was_called_ok = false;
 
     // TODO: Use fixed-size array of MAX_NUM_POSITIONERS like the t_fpuset
     // structures etc do? See comments above t_wtable definition in
@@ -309,16 +310,23 @@ private:
 
     bool wf_reversed[MAX_NUM_POSITIONERS];
 
-    bool wavetables_incomplete = false;
-
     // _gd: N.B. Can't use a unique_ptr for EtherCANInterface, probably
     // because it's explicitly non-movable
-    // TODO: Rename to something like etherCanIfPtr eventually - is  _gd so that
-    // it's same as in FpuGridDriver.py for now
+    // TODO: Rename to something like etherCanIfPtr eventually - it's named as
+    // _gd so that it's the same as in FpuGridDriver.py for now
     EtherCANInterface *_gd = nullptr;
 
+    //..........................................................................
+private:
+    E_EtherCANErrCode pingIfNeeded(t_grid_state &gs, const t_fpuset &fpuset);
+    E_EtherCANErrCode _pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
+    void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed = false);
+
+    bool wavetables_incomplete = false;
+
     // TODO: Add locked_gateways here, but need to convert Python devicelock.py
-    // to C++ first (and use a Linux named semaphore instead of a lock file for this?)
+    // to C++ first (and use a Linux named semaphore instead of a lock file for
+    // this?)
 
     //..........................................................................
 };
