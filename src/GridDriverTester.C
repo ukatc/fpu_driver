@@ -117,7 +117,11 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_dri
     //..........................................................................
     // Test getGridState()
     grid_state_result = grid_driver.getGridState(grid_state);
-
+    
+    //..........................................................................
+    // Test readSerialNumbers()
+    result = grid_driver.readSerialNumbers(grid_state, fpuset);
+    
     //..........................................................................
     // Test pingFPUs()
     result = grid_driver.pingFPUs(grid_state, fpuset);
