@@ -163,7 +163,11 @@ void GridDriver::_post_connect_hook()
 
     // Query positions and compute offsets, if FPUs have been reset.
     // This assumes that the stored positions are correct.
-    _pingFPUs(grid_state, fpuset);
+    
+    // TODO: Check result code of _pingFPUs()
+    result = _pingFPUs(grid_state, fpuset);
+
+
     _reset_hook(grid_state, grid_state, fpuset);
     _refresh_positions(grid_state, false, fpuset);
     
@@ -309,8 +313,9 @@ void GridDriver::_reset_hook(t_grid_state &old_state, t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_refresh_positions(t_grid_state &grid_state, bool store,
-                                    const t_fpuset &fpuset)
+E_EtherCANErrCode GridDriver::_refresh_positions(t_grid_state &grid_state,
+                                                 bool store,
+                                                 const t_fpuset &fpuset)
 {
     // TODO
 
@@ -318,6 +323,43 @@ void GridDriver::_refresh_positions(t_grid_state &grid_state, bool store,
     UNUSED_ARG(grid_state);
     UNUSED_ARG(store);
     UNUSED_ARG(fpuset);
+
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::pingFPUs(t_grid_state &gs, const t_fpuset &fpuset)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here 
+
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+
+    result = _pingFPUs(gs, fpuset);
+    if (result == DE_OK)
+    {
+        result = _refresh_positions(gs, true, fpuset);
+    }
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(gs.FPU_state[fpu_id],
+                               prev_gs.FPU_state[fpu_id]);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------------

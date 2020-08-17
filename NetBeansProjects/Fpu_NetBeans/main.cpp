@@ -40,14 +40,14 @@ int main(int argc, char** argv)
 //------------------------------------------------------------------------------
 static void testGridDriver()
 {
-    GridDriverTester grid_driver_tester;
+    GridDriverTester gd_tester;
 
-    grid_driver_tester.doGridDriverUnitTests();
+    // gd_tester.doGridDriverUnitTests();
     
 #if 0
-    grid_driver_tester.testUnprotectedGridDriver();
+    gd_tester.testUnprotectedGridDriver();
 #else
-    grid_driver_tester.doGridDriverFunctionalTesting();
+    gd_tester.doGridDriverFunctionalTesting();
 #endif
 }
 

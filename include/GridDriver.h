@@ -57,6 +57,8 @@ public:
 
     bool initializedOk() override;
 
+    E_EtherCANErrCode pingFPUs(t_grid_state &gs, const t_fpuset &fpuset) override;
+
     //............................................
     // TODO: Test function for Boost.Python wrapper experimentation only -
     // remove when no longer needed
@@ -162,8 +164,8 @@ private:
     void _reset_hook(t_grid_state &old_state, t_grid_state &gs,
                      const t_fpuset &fpuset) override;
 
-    void _refresh_positions(t_grid_state &grid_state, bool store,
-                            const t_fpuset &fpuset);
+    E_EtherCANErrCode _refresh_positions(t_grid_state &grid_state, bool store,
+                                         const t_fpuset &fpuset);
 
     void _update_error_counters(const t_fpu_state &prev_fpu,
                                 const t_fpu_state &moved_fpu,
