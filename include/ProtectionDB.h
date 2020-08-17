@@ -27,6 +27,7 @@
 #include "FPUState.h"
 #include "ethercan/AsyncInterface.h"
 #include "lmdb.h"
+#include "Interval.h"
 
 using namespace mpifps;
 using namespace mpifps::ethercanif;

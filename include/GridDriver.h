@@ -115,11 +115,16 @@ private:
     // TODO: See comments above the t_fpu_positions definition in
     // UnprotectedGridDriver.h
     t_fpu_positions target_positions;
+
+#endif // ENABLE_PROTECTION_CODE
+    
     t_fpu_positions configuring_targets;
     t_fpu_positions configured_targets;
 
     //*****************************
     //*****************************
+    
+#ifdef ENABLE_PROTECTION_CODE
 
     ProtectionDB protection_db;
 

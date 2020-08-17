@@ -127,7 +127,48 @@ bool GridDriver::initializedOk()
 //------------------------------------------------------------------------------
 void GridDriver::_post_connect_hook()
 {
-    // TODO
+    // TODO: Check that the FPU database has been properly opened at this point
+    // self.fpudb = self.env.open_db(ProtectionDB.dbname)
+
+    // TODO: Implement the following? (from Python version)
+    // self.healthlog = self.env.open_db(HealthLogDB.dbname)
+
+    E_EtherCANErrCode result;
+
+    t_grid_state grid_state;
+    getGridState(grid_state);
+
+    t_fpuset fpuset;
+    getFpuSetForConfigNumFpus(fpuset);
+
+    //*************** TODO: Do something with result value below
+
+    result = readSerialNumbers(grid_state, fpuset);
+
+    // Check for serial number uniqueness
+    std::vector<std::string> duplicate_snumbers;
+    getDuplicateSerialNumbers(grid_state, duplicate_snumbers);
+    if (duplicate_snumbers.size() != 0)
+    {
+        // TODO: Return a suitable error code
+    }
+
+
+
+    // TODO: This function conversion from Python is WIP - finish it
+
+
+    configuring_targets.clear();
+    configured_targets.clear();
+
+    // Query positions and compute offsets, if FPUs have been reset.
+    // This assumes that the stored positions are correct.
+    _pingFPUs(grid_state, fpuset);
+    _reset_hook(grid_state, grid_state, fpuset);
+    _refresh_positions(grid_state, false, fpuset);
+    
+    // TODO: Temporary only - return proper result codes eventually
+    UNUSED_ARG(result);
 }
 
 //------------------------------------------------------------------------------
