@@ -18,6 +18,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <vector>
+#include <string>
+#include <cstring>
 #include "GridDriverTester.h"
 #include "E_GridState.h"
 #include "InterfaceState.h"
@@ -51,10 +54,53 @@ void GridDriverTester::testUnprotectedGridDriver()
 }
 
 //------------------------------------------------------------------------------
-void GridDriverTester::testGridDriver()
+void GridDriverTester::doGridDriverUnitTests()
 {
-    E_EtherCANErrCode result;
+    // Performs ad-hoc unit tests on a GridDriver instance
+    static const int num_fpus = 10;
+    GridDriver gd(num_fpus);
+
+    //..........................................................................
+    // Test GridDriver::getDuplicateSerialNumbers()
+    const char *test_snumbers[num_fpus] =   // NOTE: Must be 6 chars or less
+    {                                       // (LEN_SERIAL_NUMBER - 1)
+        "ab123",
+        "ab12",
+        "ab1234",
+        "ac1234",
+        "ab123",    // Duplicate
+        "xy543",
+        "xy5",
+        "xy543",    // Duplicate
+        "ac1234",   // Duplicate
+        "qwerty"
+    };
+    t_grid_state grid_state;
+    for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
+    {
+        // N.B. Using safer strncpy() (rather than strcpy()))
+        strncpy(grid_state.FPU_state[fpu_id].serial_number,
+                test_snumbers[fpu_id], LEN_SERIAL_NUMBER);
+        // Add guaranteed null-terminator at end of buffer
+        grid_state.FPU_state[fpu_id].serial_number[LEN_SERIAL_NUMBER - 1] = '\0';
+    }
+
+    std::vector<std::string> duplicate_snumbers = 
+                                    gd.getDuplicateSerialNumbers(grid_state);
     
+    //..........................................................................
+    
+    int dummy = 123;
+    
+}
+
+//------------------------------------------------------------------------------
+void GridDriverTester::doGridDriverFunctionalTesting()
+{
+    // Performs a full grid driver functional test sequence
+    
+    E_EtherCANErrCode result;
+
     GridDriver gd(TESTING_NUM_FPUS);
 
     result = gd.initialize();

@@ -42,10 +42,12 @@ static void testGridDriver()
 {
     GridDriverTester grid_driver_tester;
 
+    grid_driver_tester.doGridDriverUnitTests();
+    
 #if 0
     grid_driver_tester.testUnprotectedGridDriver();
 #else
-    grid_driver_tester.testGridDriver();
+    grid_driver_tester.doGridDriverFunctionalTesting();
 #endif
 }
 

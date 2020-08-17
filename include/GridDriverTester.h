@@ -35,8 +35,10 @@ class GridDriverTester
     // functions for test purposes
 public:
     void testUnprotectedGridDriver();
-    void testGridDriver();
-    
+
+    void doGridDriverUnitTests();
+    void doGridDriverFunctionalTesting();
+
 private:
     void testInitialisedGridDriver(UnprotectedGridDriver &grid_driver,
                                    bool soft_protection);

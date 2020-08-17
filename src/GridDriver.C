@@ -22,7 +22,8 @@
 // ********** NOTE: This file (along with UnprotectedGridDriver.C) is Bart's
 // work in progress for converting the classes and functions in FPUGridDriver.py
 // from Python to C++.
-
+#include <set>
+#include <cstring>
 #include "GridDriver.h"
 
 #ifdef DEBUG
@@ -127,6 +128,39 @@ bool GridDriver::initializedOk()
 void GridDriver::_post_connect_hook()
 {
     // TODO
+}
+
+//------------------------------------------------------------------------------
+std::vector<std::string> GridDriver::getDuplicateSerialNumbers(t_grid_state &grid_state)
+{
+    // Gets any duplicate serial numbers by attempting to insert each into a
+    // std::set (which doesn't allow duplicates) and building a list of those
+    // which fail. N.B. The FPU serial numbers are in:
+    //      grid_state.FPU_state[0...config.num_fpus].serial_number 
+
+    std::set<std::string> snumbers_set;
+    std::vector<std::string> duplicate_snumbers;
+
+    for (int fpu_id = 0;
+         ((fpu_id < config.num_fpus) && (fpu_id < MAX_NUM_POSITIONERS));
+         fpu_id++)
+    {
+        // Get FPU serial number C string, add explicit null-terminator for
+        // safety, and convert to std::string
+        char snumber_terminated[LEN_SERIAL_NUMBER];
+        memcpy(snumber_terminated, grid_state.FPU_state[fpu_id].serial_number,
+               LEN_SERIAL_NUMBER - 1);
+        snumber_terminated[LEN_SERIAL_NUMBER - 1] = '\0';
+        std::string snumber = snumber_terminated;
+
+        // If serial number is a duplicate then record it
+        if (!snumbers_set.insert(snumber).second)
+        {
+            duplicate_snumbers.push_back(snumber);
+        }
+    }
+
+    return duplicate_snumbers;
 }
 
 #ifdef ENABLE_PROTECTION_CODE
@@ -316,6 +350,21 @@ void GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     UNUSED_ARG(old_gs);
     UNUSED_ARG(move_gs);
     UNUSED_ARG(fpuset);
+}
+
+//------------------------------------------------------------------------------
+void GridDriver::getFpuSetForConfigNumFpus(t_fpuset &fpuset_ret)
+{
+    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    {
+        fpuset_ret[i] = false;
+    }
+
+    for (int i = 0; ((i < config.num_fpus) && (i < MAX_NUM_POSITIONERS));
+         i++)
+    {
+        fpuset_ret[i] = true;
+    }
 }
 
 //------------------------------------------------------------------------------

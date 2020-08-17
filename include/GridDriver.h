@@ -21,6 +21,8 @@
 #define GRIDDRIVER_H
 
 #include <map>
+#include <vector>
+#include <string>
 #include "UnprotectedGridDriver.h"
 #ifdef ENABLE_PROTECTION_CODE
 #include "ProtectionDB.h"
@@ -173,6 +175,10 @@ private:
     void _post_execute_motion_hook(t_grid_state &gs, const t_grid_state &old_gs,
                                    const t_grid_state &move_gs,
                                    const t_fpuset &fpuset) override;
+
+    void getFpuSetForConfigNumFpus(t_fpuset &fpuset_ret);
+
+    std::vector<std::string> getDuplicateSerialNumbers(t_grid_state &grid_state);
 
     //..........................................................................
 
