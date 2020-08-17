@@ -157,6 +157,9 @@ private:
     void _reset_hook(t_grid_state &old_state, t_grid_state &gs,
                      const t_fpuset &fpuset) override;
 
+    void _refresh_positions(t_grid_state &grid_state, bool store,
+                            const t_fpuset &fpuset);
+
     void _update_error_counters(const t_fpu_state &prev_fpu,
                                 const t_fpu_state &moved_fpu,
                                 bool datum_cmd = false) override;
@@ -178,7 +181,8 @@ private:
 
     void getFpuSetForConfigNumFpus(t_fpuset &fpuset_ret);
 
-    std::vector<std::string> getDuplicateSerialNumbers(t_grid_state &grid_state);
+    void getDuplicateSerialNumbers(t_grid_state &grid_state,
+                        std::vector<std::string> &duplicate_snumbers_ret);
 
     //..........................................................................
 

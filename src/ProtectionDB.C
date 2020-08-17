@@ -362,6 +362,9 @@ ProtectionDbTxn::~ProtectionDbTxn()
    
     // TODO: Where to call mdb_env_sync() to flush to disk? Or is this done
     // automatically due to the LMDB config macros / settings?
+    // NOTE: In FpuGridDriver.py -> GridDriver, is done in a number of places -
+    // search for "self.env.sync()"
+
 }
 
 

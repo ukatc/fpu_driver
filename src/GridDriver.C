@@ -131,7 +131,8 @@ void GridDriver::_post_connect_hook()
 }
 
 //------------------------------------------------------------------------------
-std::vector<std::string> GridDriver::getDuplicateSerialNumbers(t_grid_state &grid_state)
+void GridDriver::getDuplicateSerialNumbers(t_grid_state &grid_state,
+                            std::vector<std::string> &duplicate_snumbers_ret)
 {
     // Gets any duplicate serial numbers by attempting to insert each into a
     // std::set (which doesn't allow duplicates) and building a list of those
@@ -139,8 +140,8 @@ std::vector<std::string> GridDriver::getDuplicateSerialNumbers(t_grid_state &gri
     //      grid_state.FPU_state[0...config.num_fpus].serial_number 
 
     std::set<std::string> snumbers_set;
-    std::vector<std::string> duplicate_snumbers;
 
+    duplicate_snumbers_ret.clear();
     for (int fpu_id = 0;
          ((fpu_id < config.num_fpus) && (fpu_id < MAX_NUM_POSITIONERS));
          fpu_id++)
@@ -156,11 +157,9 @@ std::vector<std::string> GridDriver::getDuplicateSerialNumbers(t_grid_state &gri
         // If serial number is a duplicate then record it
         if (!snumbers_set.insert(snumber).second)
         {
-            duplicate_snumbers.push_back(snumber);
+            duplicate_snumbers_ret.push_back(snumber);
         }
     }
-
-    return duplicate_snumbers;
 }
 
 #ifdef ENABLE_PROTECTION_CODE
@@ -265,6 +264,18 @@ void GridDriver::_reset_hook(t_grid_state &old_state, t_grid_state &gs,
     // Temporary for now
     UNUSED_ARG(old_state);
     UNUSED_ARG(gs);
+    UNUSED_ARG(fpuset);
+}
+
+//------------------------------------------------------------------------------
+void GridDriver::_refresh_positions(t_grid_state &grid_state, bool store,
+                                    const t_fpuset &fpuset)
+{
+    // TODO
+
+    // Temporary for now
+    UNUSED_ARG(grid_state);
+    UNUSED_ARG(store);
     UNUSED_ARG(fpuset);
 }
 

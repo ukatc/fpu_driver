@@ -85,8 +85,8 @@ void GridDriverTester::doGridDriverUnitTests()
         grid_state.FPU_state[fpu_id].serial_number[LEN_SERIAL_NUMBER - 1] = '\0';
     }
 
-    std::vector<std::string> duplicate_snumbers = 
-                                    gd.getDuplicateSerialNumbers(grid_state);
+    std::vector<std::string> duplicate_snumbers; 
+    gd.getDuplicateSerialNumbers(grid_state, duplicate_snumbers);
     
     //..........................................................................
     
