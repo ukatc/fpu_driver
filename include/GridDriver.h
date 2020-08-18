@@ -185,11 +185,19 @@ private:
     void _post_execute_motion_hook(t_grid_state &gs, const t_grid_state &old_gs,
                                    const t_grid_state &move_gs,
                                    const t_fpuset &fpuset) override;
+#ifdef ENABLE_PROTECTION_CODE
+    void _update_counters_execute_motion(int fpu_id, FpuCounters &fpu_counters,
+                                         const t_waveform &waveform,
+                                         bool is_reversed,
+                                         bool cancel = false);
+#endif // ENABLE_PROTECTION_CODE
 
     void getFpuSetForConfigNumFpus(t_fpuset &fpuset_ret);
 
     void getDuplicateSerialNumbers(t_grid_state &grid_state,
                         std::vector<std::string> &duplicate_snumbers_ret);
+
+    int sign(int64_t val);
 
     //..........................................................................
 

@@ -127,6 +127,14 @@ public:
         counters.resize((size_t)FpuCounterId::NumCounters, 0);
     }
 
+    void setCount(FpuCounterId id, FpuCounterInt val)
+    {
+        if ((((int)id) >= 0) && (id < FpuCounterId::NumCounters))
+        {
+            counters[(int)id] = val;
+        }
+    }
+
     void addToCount(FpuCounterId id, FpuCounterInt val)
     {
         if ((((int)id) >= 0) && (id < FpuCounterId::NumCounters))

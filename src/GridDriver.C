@@ -24,6 +24,7 @@
 // from Python to C++.
 #include <set>
 #include <cstring>
+#include <cstdlib>
 #include "GridDriver.h"
 
 #ifdef DEBUG
@@ -405,6 +406,126 @@ void GridDriver::_post_config_motion_hook(const t_wtable &wtable,
     UNUSED_ARG(fpuset);
 }
 
+#ifdef ENABLE_PROTECTION_CODE
+//------------------------------------------------------------------------------
+void GridDriver::_update_counters_execute_motion(int fpu_id,
+                                                 FpuCounters &fpu_counters,
+                                                 const t_waveform &waveform,
+                                                 bool is_reversed,
+                                                 bool cancel)
+{
+    
+    // ********* TODO: Test this function - only visually converted from its
+    // Python equivalent so far, not yet tested at all
+    
+    
+    if ((fpu_id < 0) || (fpu_id >= config.num_fpus) ||
+        (fpu_id >= MAX_NUM_POSITIONERS))
+    {
+        return;
+    }
+
+    FpuCounterInt sum_alpha_steps = 0;
+    FpuCounterInt sum_beta_steps = 0;
+    FpuCounterInt alpha_reversals = 0;
+    FpuCounterInt beta_reversals = 0;
+    FpuCounterInt alpha_starts = 0;
+    FpuCounterInt beta_starts = 0;
+    FpuCounterInt alpha_sign = 0;
+    FpuCounterInt beta_sign = 0;
+    FpuCounterInt last_asteps = 0;
+    FpuCounterInt last_bsteps = 0;
+
+    int rsign;
+    if (is_reversed)
+    {
+         rsign = -1;
+    }
+    else
+    {
+        rsign = 1;
+    }
+
+    if (cancel)
+    {
+        // TODO: Check that this "=" works as expected
+        fpu_counters = _last_counters[fpu_id];
+    }
+
+    FpuCounterInt alpha_lsign =
+        fpu_counters.getCount(FpuCounterId::sign_alpha_last_direction);
+    FpuCounterInt beta_lsign =
+        fpu_counters.getCount(FpuCounterId::sign_beta_last_direction);
+
+    for (const auto &step : waveform.steps)
+    {
+        int asteps = step.alpha_steps * rsign;
+        int bsteps = step.beta_steps * rsign;
+
+        sum_alpha_steps += abs(asteps);
+        sum_beta_steps += abs(bsteps);
+
+        alpha_sign = sign(asteps);
+        if (alpha_sign != 0)
+        {
+            int alpha_nzsign = alpha_sign;
+
+            if (alpha_lsign != alpha_nzsign)
+            {
+                if (alpha_lsign != 0)
+                {
+                    alpha_reversals += 1;
+                }
+                alpha_lsign = alpha_nzsign;
+            }
+        }
+
+        beta_sign = sign(bsteps);
+        if (beta_sign != 0)
+        {
+            int beta_nzsign = beta_sign;
+
+            if (beta_lsign != beta_nzsign)
+            {
+                if (beta_lsign != 0)
+                {
+                    beta_reversals += 1;
+                }
+                beta_lsign = beta_nzsign;
+            }
+        }
+
+        if ((last_asteps == 0) && (asteps != 0))
+        {
+            alpha_starts += 1;
+        }
+
+        if ((last_bsteps == 0) && (bsteps != 0))
+        {
+            beta_starts += 1;
+        }
+
+        last_asteps = asteps;
+        last_bsteps = bsteps;
+    }
+
+    // Store values for case of subsequent cancellation
+    // TODO: Check that this "=" works as expected
+    _last_counters[fpu_id] = fpu_counters;
+
+    // Update sums for FPU
+    fpu_counters.addToCount(FpuCounterId::executed_waveforms, 1);
+    fpu_counters.addToCount(FpuCounterId::total_alpha_steps, sum_alpha_steps);
+    fpu_counters.addToCount(FpuCounterId::total_beta_steps, sum_beta_steps);
+    fpu_counters.addToCount(FpuCounterId::alpha_direction_reversals, alpha_reversals);
+    fpu_counters.addToCount(FpuCounterId::beta_direction_reversals, beta_reversals);
+    fpu_counters.setCount(FpuCounterId::sign_alpha_last_direction, alpha_lsign);
+    fpu_counters.setCount(FpuCounterId::sign_beta_last_direction, beta_lsign);
+    fpu_counters.addToCount(FpuCounterId::alpha_starts, alpha_starts);
+    fpu_counters.addToCount(FpuCounterId::beta_starts, beta_starts);
+}
+#endif // ENABLE_PROTECTION_CODE
+
 //------------------------------------------------------------------------------
 void GridDriver::_start_execute_motion_hook(t_grid_state &gs,
                                             const t_fpuset &fpuset,
@@ -459,6 +580,20 @@ void GridDriver::getFpuSetForConfigNumFpus(t_fpuset &fpuset_ret)
     {
         fpuset_ret[i] = true;
     }
+}
+
+//------------------------------------------------------------------------------
+int GridDriver::sign(int64_t val)
+{
+    if (val > 0)
+    {
+        return 1;
+    }
+    if (val < 0)
+    {
+        return -1;
+    }
+    return 0;
 }
 
 //------------------------------------------------------------------------------
