@@ -379,6 +379,21 @@ static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb);
 static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb);
 static std::string getNextFpuTestSerialNumber();
 
+//------------------------------------------------------------------------------
+void testFpuCounters()
+{
+    FpuCounters fpu_counters;
+    size_t num_bytes;
+    
+    void *raw_data_ptr = fpu_counters.getRawData(num_bytes);
+    
+    fpu_counters.addToCount(FpuCounterId::alpha_starts, 345);
+    FpuCounterInt astarts = fpu_counters.getCount(FpuCounterId::alpha_starts);
+    
+    fpu_counters.addToCount(FpuCounterId::datum_count, 22);
+    fpu_counters.addToCount(FpuCounterId::datum_count, 0x1234567890);
+    FpuCounterInt datums = fpu_counters.getCount(FpuCounterId::datum_count);
+}
 
 //------------------------------------------------------------------------------
 bool protectionDB_Test()

@@ -19,18 +19,15 @@
 using namespace std;
 
 static void testGridDriver();
-static void testFpuCounters();
 static void testProtectionDB();
 
 
 //------------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-    testGridDriver();
-
     //testGridDriver();
 
-    //testFpuCounters();
+    testFpuCounters();
     
     //testProtectionDB();
     
@@ -49,15 +46,6 @@ static void testGridDriver()
 #else
     gd_tester.doGridDriverFunctionalTesting();
 #endif
-}
-
-//------------------------------------------------------------------------------
-static void testFpuCounters()
-{
-    FpuCounters fpu_counters;
-    size_t num_bytes;
-    
-    void *raw_data_ptr = fpu_counters.getRawData(num_bytes);
 }
 
 //------------------------------------------------------------------------------
