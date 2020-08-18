@@ -1993,9 +1993,9 @@ class GridDriver(UnprotectedGridDriver):
             time.time(), self.configured_targets),
               file=self.protectionlog)
 
-    def _update_counters_execute_motion(self, fpu_id, fpu_counters, wtable, is_reversed, cancel=False):
-        sum_beta_steps = 0
+    def _update_counters_execute_motion(self, fpu_id, fpu_counters, waveform, is_reversed, cancel=False):
         sum_alpha_steps = 0
+        sum_beta_steps = 0
         alpha_reversals = 0
         beta_reversals = 0
         alpha_starts = 0
@@ -2016,7 +2016,7 @@ class GridDriver(UnprotectedGridDriver):
         alpha_lsign = fpu_counters["sign_alpha_last_direction"]
         beta_lsign = fpu_counters["sign_beta_last_direction"]
 
-        for asteps, bsteps in wtable:
+        for asteps, bsteps in waveform:
             asteps *= rsign
             bsteps *= rsign
 
@@ -2055,15 +2055,15 @@ class GridDriver(UnprotectedGridDriver):
         # store values for case of subsequent cancellation
         self._last_counters[fpu_id] = fpu_counters
 
-        fpu_counters["executed_waveforms" ] += 1
-        fpu_counters["total_beta_steps" ] += sum_beta_steps
-        fpu_counters["total_alpha_steps" ] += sum_alpha_steps
-        fpu_counters["alpha_direction_reversals" ] += alpha_reversals
-        fpu_counters["beta_direction_reversals" ] += beta_reversals
-        fpu_counters["sign_alpha_last_direction" ] = alpha_lsign
-        fpu_counters["sign_beta_last_direction" ] =  beta_lsign
-        fpu_counters["alpha_starts" ] += alpha_starts
-        fpu_counters["beta_starts" ] += beta_starts
+        fpu_counters["executed_waveforms"] += 1
+        fpu_counters["total_alpha_steps"] += sum_alpha_steps
+        fpu_counters["total_beta_steps"] += sum_beta_steps
+        fpu_counters["alpha_direction_reversals"] += alpha_reversals
+        fpu_counters["beta_direction_reversals"] += beta_reversals
+        fpu_counters["sign_alpha_last_direction"] = alpha_lsign
+        fpu_counters["sign_beta_last_direction"] =  beta_lsign
+        fpu_counters["alpha_starts"] += alpha_starts
+        fpu_counters["beta_starts"] += beta_starts
 
 
 
