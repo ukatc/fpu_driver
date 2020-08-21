@@ -23,6 +23,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <vector>
 #include "E_LogLevel.h"
 #include "E_GridState.h"
 #include "InterfaceConstants.h"
@@ -305,13 +306,10 @@ protected:
     EtherCANInterfaceConfig config;
     bool initialize_was_called_ok = false;
 
-    // TODO: Use fixed-size array of MAX_NUM_POSITIONERS like the t_fpuset
-    // structures etc do? See comments above t_wtable definition in
-    // AsyncInterface.h as well. If so then need to initialise it from
-    // constructor?
+    // TODO: See comments above t_wtable definition in AsyncInterface.h
     t_wtable last_wavetable;
 
-    bool wf_reversed[MAX_NUM_POSITIONERS];
+    std::vector<bool> wf_reversed;  // N.B. Size is set to config.num_fpus
 
     // _gd: N.B. Can't use a unique_ptr for EtherCANInterface, probably
     // because it's explicitly non-movable

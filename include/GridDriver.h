@@ -94,10 +94,6 @@ private:
     // Vectors with sizes all set to number of FPUs
     std::vector<Interval> apositions;
     std::vector<Interval> bpositions;
-    // NOTE: last_wavetable and wf_reversed are inherited from
-    // UnprotectedGridDriver, so don't need to define them here
-    // TODO: Remove the comment above once fully converted from
-    // Python
     std::vector<Interval> alimits;
     std::vector<Interval> blimits;
     std::vector<Interval> a_caloffsets;

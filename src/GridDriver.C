@@ -155,8 +155,8 @@ void GridDriver::_post_connect_hook()
     // local stack space here (unlike std::array)
     std::vector<Interval> apositions_temp(config.num_fpus);
     std::vector<Interval> bpositions_temp(config.num_fpus);
-    // ******** TODO: Do something with wtabs and wf_reversed here? (see
-    // Python version)
+    t_wtable wavetable_temp;
+    std::vector<bool> wf_reversed_temp(config.num_fpus, false);
     std::vector<Interval> alimits_temp(config.num_fpus);
     std::vector<Interval> blimits_temp(config.num_fpus);
     std::vector<int64_t> maxaretries_temp(config.num_fpus, 0);
@@ -186,8 +186,8 @@ void GridDriver::_post_connect_hook()
 
     apositions = apositions_temp;
     bpositions = bpositions_temp;
-    // TODO: last_wavetable = wtabs
-    // TODO: wf_reversed = wf_reversed
+    last_wavetable = wavetable_temp;
+    wf_reversed = wf_reversed_temp;
     alimits = alimits_temp;
     blimits = blimits_temp;
     a_caloffsets = a_caloffsets_temp;

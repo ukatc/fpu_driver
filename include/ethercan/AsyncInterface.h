@@ -43,11 +43,9 @@ typedef struct
     std::vector<t_step_pair> steps;
 } t_waveform;
 
-// TODO: Change t_wtable to instead be a fixed-size array of MAX_NUM_POSITIONERS
-// like t_fpuset etc do? BUT it's defined here in AsyncInterface.h so might
-// already be used in lots of places and not easily changeable.
-// N.B. it's also used as a variable-length array in the Python version of e.g.
-// UnprotectedGridDriver::configMotion(), so might be better as a std::map<>?
+// TODO: t_wtable is used as a variable-length array in the Python version of
+// e.g. UnprotectedGridDriver::configMotion(), so might it be better to be a
+// std::map<>?
 typedef std::vector<t_waveform> t_wtable;
 
 typedef bool t_fpuset[MAX_NUM_POSITIONERS];

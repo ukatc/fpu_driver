@@ -126,10 +126,7 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     config.motor_max_rel_increase = motor_max_rel_increase;
     config.motor_max_step_difference = motor_max_step_difference;
 
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        wf_reversed[fpu_id] = false;
-    }
+    wf_reversed.resize(config.num_fpus, false);
 }
 
 //------------------------------------------------------------------------------
