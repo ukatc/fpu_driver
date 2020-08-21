@@ -169,6 +169,24 @@ private:
 
 // -----------------------------------------------------------------------------
 
+enum class DbTransferType
+{
+    Read,
+    Write
+};
+
+enum class FpuDbPositionType
+{
+    // NOTE: All values below (except for NumTypes) must also have an entry in
+    // ProtectionDbTxn::fpuDbTransferPosition() -> position_subkeys[]
+    AlphaLimit = 0,
+    AlphaPos,
+    BetaLimit,
+    BetaPos,
+
+    NumTypes
+};
+
 class ProtectionDbTxn
 {
     // Important notes:
@@ -180,7 +198,10 @@ class ProtectionDbTxn
 
 public:
     ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
-
+    bool fpuDbTransferPosition(DbTransferType transfer_type,
+                               FpuDbPositionType position_type, 
+                               const char serial_number[], Interval &interval,
+                               double &datum_offset);
     bool fpuDbPutCounters(const char serial_number[],
                           const FpuCounters &fpu_counters);
     // TODO: Implement the following functions or similar (adapted from the 

@@ -47,6 +47,12 @@ public:
         upper = upper_in;
     }
 
+    void getLowerUpper(double &lower_ret, double &upper_ret)
+    {
+        lower_ret = lower;
+        upper_ret = upper;
+    }
+
 private:
     // TODO: Initialise to NAN instead 0.0?
     double lower = 0.0;

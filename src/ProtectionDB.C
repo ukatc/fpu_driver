@@ -30,26 +30,22 @@ static const char *healthlog_subdb_name = "healthlog";
 // TODO: Is "verification" sub-database needed?
 // static const char *verification_subdb_name = "verification";
 
-// TODO: Disabled for now to avoid build warnings, because not yet used
-#if 0
+// TODO: Some disabled for now to avoid build warnings, because not yet used
 // Database key strings
 static const char *alpha_positions_keystr = "apos";
 static const char *beta_positions_keystr = "bpos";
-static const char *waveform_table_keystr = "wtab";
-static const char *waveform_reversed_keystr = "wf_reversed";
+// static const char *waveform_table_keystr = "wtab";
+// static const char *waveform_reversed_keystr = "wf_reversed";
 static const char *alpha_limits_keystr = "alimits";
 static const char *beta_limits_keystr = "blimits";
-static const char *free_beta_retries_keystr = "bretries";
-static const char *beta_retry_count_cw_keystr = "beta_retry_count_cw";
-static const char *beta_retry_count_acw_keystr = "beta_retry_count_acw"; 
-static const char *free_alpha_retries_keystr = "aretries";
-static const char *alpha_retry_count_cw_keystr = "alpha_retry_count_cw";
-static const char *alpha_retry_count_acw_keystr = "alpha_retry_count_acw";
-#endif // 0
+// static const char *free_beta_retries_keystr = "bretries";
+// static const char *beta_retry_count_cw_keystr = "beta_retry_count_cw";
+// static const char *beta_retry_count_acw_keystr = "beta_retry_count_acw"; 
+// static const char *free_alpha_retries_keystr = "aretries";
+// static const char *alpha_retry_count_cw_keystr = "alpha_retry_count_cw";
+// static const char *alpha_retry_count_acw_keystr = "alpha_retry_count_acw";
 static const char *counters_keystr = "counters";
-#if 0
-static const char *serialnumber_used_keystr = "serialnumber_used";
-#endif // 0
+//static const char *serialnumber_used_keystr = "serialnumber_used";
 
 // Character to separate the key/subkey parts of the overall key strings
 static const char *keystr_separator_char = "#";
@@ -269,6 +265,86 @@ ProtectionDbTxn::ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr,
     {
         created_ok_ret = true;
     }
+}
+
+//------------------------------------------------------------------------------
+bool ProtectionDbTxn::fpuDbTransferPosition(DbTransferType transfer_type,
+                                            FpuDbPositionType position_type,
+                                            const char serial_number[],
+                                            Interval &interval,
+                                            double &datum_offset)
+{
+    //************************
+    // TODO: This function is WIP - need to finish and test it
+    //************************
+
+    static const struct
+    {
+        FpuDbPositionType type;
+        const char *subkey;
+    } position_subkeys[(int)FpuDbPositionType::NumTypes] = 
+    {
+        { FpuDbPositionType::AlphaLimit,  alpha_limits_keystr    },
+        { FpuDbPositionType::AlphaPos,    alpha_positions_keystr },
+        { FpuDbPositionType::BetaLimit,   beta_limits_keystr     }, 
+        { FpuDbPositionType::BetaPos,     beta_positions_keystr  }
+    };
+
+    const char *subkey = nullptr;
+    for (int i = 0; i < (int)FpuDbPositionType::NumTypes; i++)
+    {
+        if (position_subkeys[i].type == position_type)
+        {
+            subkey = position_subkeys[i].subkey;
+            break;
+        }
+    }
+
+    if (subkey != nullptr)
+    {
+        double doubles_array[3];
+        if (transfer_type == DbTransferType::Write)
+        {
+            // Write the position item
+            interval.getLowerUpper(doubles_array[0], doubles_array[1]);
+            doubles_array[2] = datum_offset;
+            if (!fpuDbWriteRawItem(serial_number, subkey, doubles_array,
+                                   sizeof(doubles_array)))
+            {
+                // TODO: Error
+            }
+        }
+        else
+        {
+            // Read the position item
+            void *data_read_ptr;
+            size_t num_bytes_read;
+            if (fpuDbReadRawItem(serial_number, subkey, &data_read_ptr,
+                                 num_bytes_read))
+            {
+                if (num_bytes_read == sizeof(doubles_array))
+                {
+                    memcpy(doubles_array, data_read_ptr, sizeof(doubles_array));
+                    interval = Interval(doubles_array[0], doubles_array[1]);
+                    datum_offset = doubles_array[2];
+                }
+                else
+                {
+                    // TODO: Error
+                }
+            }
+            else
+            {
+                // TODO: Error
+            }
+        }
+    }
+    else
+    {
+        // TODO: Error
+    }
+
+    // TODO: Return a value
 }
 
 //------------------------------------------------------------------------------
