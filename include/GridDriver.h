@@ -91,35 +91,31 @@ private:
     // converted from their Python equivalents as shown in
     // _post_connect_hook() - check these further
 
-    Interval apositions[MAX_NUM_POSITIONERS];
-    Interval bpositions[MAX_NUM_POSITIONERS];
-
+    // Vectors with sizes all set to number of FPUs
+    std::vector<Interval> apositions;
+    std::vector<Interval> bpositions;
     // NOTE: last_wavetable and wf_reversed are inherited from
     // UnprotectedGridDriver, so don't need to define them here
     // TODO: Remove the comment above once fully converted from
     // Python
+    std::vector<Interval> alimits;
+    std::vector<Interval> blimits;
+    std::vector<Interval> a_caloffsets;
+    std::vector<Interval> b_caloffsets;
+    std::vector<int64_t> maxaretries;
+    std::vector<int64_t> aretries_cw;
+    std::vector<int64_t> aretries_acw;
+    std::vector<int64_t> maxbretries;
+    std::vector<int64_t> bretries_cw;
+    std::vector<int64_t> bretries_acw;
+    std::vector<FpuCounters> counters;
+    std::vector<FpuCounters> _last_counters;
+    std::vector<t_fpu_position> target_positions;
+#endif // ENABLE_PROTECTION_CODE
 
-    Interval alimits[MAX_NUM_POSITIONERS];
-    Interval blimits[MAX_NUM_POSITIONERS];
-
-    Interval a_caloffsets[MAX_NUM_POSITIONERS];
-    Interval b_caloffsets[MAX_NUM_POSITIONERS];
-
-    int64_t aretries_cw[MAX_NUM_POSITIONERS];
-    int64_t aretries_acw[MAX_NUM_POSITIONERS];
-    int64_t bretries_cw[MAX_NUM_POSITIONERS];
-    int64_t bretries_acw[MAX_NUM_POSITIONERS];
-
-    FpuCounters counters[MAX_NUM_POSITIONERS];
-    FpuCounters _last_counters[MAX_NUM_POSITIONERS];
-
-    // Variable-sized maps (for now)
+    // Variable-sized maps? (for now)
     // TODO: See comments above the t_fpu_positions definition in
     // UnprotectedGridDriver.h
-    t_fpu_positions target_positions;
-
-#endif // ENABLE_PROTECTION_CODE
-    
     t_fpu_positions configuring_targets;
     t_fpu_positions configured_targets;
 

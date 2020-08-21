@@ -66,11 +66,11 @@ enum class Range
 // Define t_fpu_positions - a set of FPU alpha and beta arm positions
 // TODO: t_fpu_positions is std::map<> for now because the original Python code
 // in FpuGridDriver.py seems to use the corresponding data structures (e.g.
-// the "hook" functions' initial_positions and target_positions arguments,
-// configuring_targets, configured_targets etc) as variable-sized sets of FPU
-// positions, e.g. whose sizes are governed by the fpuset flags array. Would
-// these structures eventually be better off as arrays of t_fpu_position's of
-// size MAX_NUM_POSITIONERS?
+// the "hook" functions' initial_positions arguments, configuring_targets,
+// configured_targets etc) as variable-sized sets of FPU positions, e.g. whose
+// sizes are governed by the fpuset flags array. Would these structures
+// eventually be better off as arrays of t_fpu_position's of size
+// MAX_NUM_POSITIONERS?
 struct t_fpu_position
 {
     Interval apos;

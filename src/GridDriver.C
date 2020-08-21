@@ -82,14 +82,6 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
 
 #ifdef ENABLE_PROTECTION_CODE
 
-    // Initialise the private data which doesn't initialise itself
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        aretries_cw[fpu_id] = 0;
-        aretries_acw[fpu_id] = 0;
-        bretries_cw[fpu_id] = 0;
-        bretries_acw[fpu_id] = 0;
-    }
 
     // TODO: Finish this function
 
@@ -128,6 +120,12 @@ bool GridDriver::initializedOk()
 //------------------------------------------------------------------------------
 void GridDriver::_post_connect_hook()
 {
+    //***************************
+    // TODO: This function conversion from Python is WIP - finish it
+    //***************************
+
+#ifdef ENABLE_PROTECTION_CODE
+
     // TODO: Check that the FPU database has been properly opened at this point
     // self.fpudb = self.env.open_db(ProtectionDB.dbname)
 
@@ -143,9 +141,7 @@ void GridDriver::_post_connect_hook()
     getFpuSetForConfigNumFpus(fpuset);
 
     //*************** TODO: Do something with result value below
-
     result = readSerialNumbers(grid_state, fpuset);
-
     // Check for serial number uniqueness
     std::vector<std::string> duplicate_snumbers;
     getDuplicateSerialNumbers(grid_state, duplicate_snumbers);
@@ -154,11 +150,57 @@ void GridDriver::_post_connect_hook()
         // TODO: Return a suitable error code
     }
 
+    // Create temporary vectors, with any required initialisation
+    // N.B. std::vector storage is created on the heap, so no problem with
+    // local stack space here (unlike std::array)
+    std::vector<Interval> apositions_temp(config.num_fpus);
+    std::vector<Interval> bpositions_temp(config.num_fpus);
+    // ******** TODO: Do something with wtabs and wf_reversed here? (see
+    // Python version)
+    std::vector<Interval> alimits_temp(config.num_fpus);
+    std::vector<Interval> blimits_temp(config.num_fpus);
+    std::vector<int64_t> maxaretries_temp(config.num_fpus, 0);
+    std::vector<int64_t> aretries_cw_temp(config.num_fpus, 0);
+    std::vector<int64_t> aretries_acw_temp(config.num_fpus, 0);
+    std::vector<int64_t> maxbretries_temp(config.num_fpus, 0);
+    std::vector<int64_t> bretries_cw_temp(config.num_fpus, 0);
+    std::vector<int64_t> bretries_acw_temp(config.num_fpus, 0);
+    std::vector<FpuCounters> counters_temp(config.num_fpus);
 
+    std::vector<Interval> a_caloffsets_temp(config.num_fpus, Interval(0.0));
+    std::vector<Interval> b_caloffsets_temp(config.num_fpus, Interval(0.0));
 
-    // TODO: This function conversion from Python is WIP - finish it
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        auto txn = protection_db.createTransaction();
 
+        //TODO: txn->
+    }
 
+    std::vector<t_fpu_position> target_positions_temp(config.num_fpus);
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        target_positions_temp[fpu_id] = {apositions_temp[fpu_id], 
+                                         bpositions_temp[fpu_id]};
+    }
+
+    apositions = apositions_temp;
+    bpositions = bpositions_temp;
+    // TODO: last_wavetable = wtabs
+    // TODO: wf_reversed = wf_reversed
+    alimits = alimits_temp;
+    blimits = blimits_temp;
+    a_caloffsets = a_caloffsets_temp;
+    b_caloffsets = b_caloffsets_temp;
+    maxaretries = maxaretries_temp;
+    aretries_cw = aretries_cw_temp;
+    aretries_acw = aretries_acw_temp;
+    maxbretries = maxbretries_temp;
+    bretries_cw = bretries_cw_temp;
+    bretries_acw = bretries_acw_temp;
+    counters = counters_temp;
+    _last_counters = counters_temp;
+    target_positions = target_positions_temp;
     configuring_targets.clear();
     configured_targets.clear();
 
@@ -168,12 +210,14 @@ void GridDriver::_post_connect_hook()
     // TODO: Check result code of _pingFPUs()
     result = _pingFPUs(grid_state, fpuset);
 
-
     _reset_hook(grid_state, grid_state, fpuset);
     _refresh_positions(grid_state, false, fpuset);
     
     // TODO: Temporary only - return proper result codes eventually
     UNUSED_ARG(result);
+
+#endif // ENABLE_PROTECTION_CODE
+
 }
 
 //------------------------------------------------------------------------------
