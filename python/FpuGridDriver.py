@@ -1405,17 +1405,19 @@ class GridDriver(UnprotectedGridDriver):
         wf_reversed = {}
         alimits = {}
         blimits = {}
-        maxbretries = {}
-        bretries_cw = {}
-        bretries_acw = {}
         maxaretries = {}
         aretries_cw = {}
         aretries_acw = {}
+        maxbretries = {}
+        bretries_cw = {}
+        bretries_acw = {}
         counters = {}
         in_dicts = { ProtectionDB.alpha_positions : apositions,
                      ProtectionDB.beta_positions : bpositions,
-                     ProtectionDB.waveform_table : wtabs, ProtectionDB.waveform_reversed : wf_reversed,
-                     ProtectionDB.alpha_limits : alimits, ProtectionDB.beta_limits : blimits,
+                     ProtectionDB.waveform_table : wtabs,
+                     ProtectionDB.waveform_reversed : wf_reversed,
+                     ProtectionDB.alpha_limits : alimits,
+                     ProtectionDB.beta_limits : blimits,
                      ProtectionDB.free_alpha_retries : maxaretries,
                      ProtectionDB.alpha_retry_count_cw : aretries_cw,
                      ProtectionDB.alpha_retry_count_acw : aretries_acw,
