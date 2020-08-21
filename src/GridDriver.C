@@ -232,9 +232,7 @@ void GridDriver::getDuplicateSerialNumbers(t_grid_state &grid_state,
     std::set<std::string> snumbers_set;
 
     duplicate_snumbers_ret.clear();
-    for (int fpu_id = 0;
-         ((fpu_id < config.num_fpus) && (fpu_id < MAX_NUM_POSITIONERS));
-         fpu_id++)
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
         // Get FPU serial number C string, add explicit null-terminator for
         // safety, and convert to std::string
@@ -463,8 +461,7 @@ void GridDriver::_update_counters_execute_motion(int fpu_id,
     // Python equivalent so far, not yet tested at all
     
     
-    if ((fpu_id < 0) || (fpu_id >= config.num_fpus) ||
-        (fpu_id >= MAX_NUM_POSITIONERS))
+    if ((fpu_id < 0) || (fpu_id >= config.num_fpus))
     {
         return;
     }
@@ -619,8 +616,7 @@ void GridDriver::getFpuSetForConfigNumFpus(t_fpuset &fpuset_ret)
         fpuset_ret[i] = false;
     }
 
-    for (int i = 0; ((i < config.num_fpus) && (i < MAX_NUM_POSITIONERS));
-         i++)
+    for (int i = 0; i < config.num_fpus; i++)
     {
         fpuset_ret[i] = true;
     }

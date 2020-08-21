@@ -308,7 +308,7 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
         pingset_ret[i] = false;
     }
     
-    for (int i = 0; (i < config.num_fpus) && (i < MAX_NUM_POSITIONERS); i++)
+    for (int i = 0; i < config.num_fpus; i++)
     {
         if (fpuset[i] && (!gs.FPU_state[i].ping_ok))
         {
