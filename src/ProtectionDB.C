@@ -619,25 +619,26 @@ static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb)
         std::string serial_number_str = getNextFpuTestSerialNumber();
         char subkey[] = "TestSubkey";
         char data_str[] = "0123456789";
-        result_ok = transaction->fpuDbWriteRawItem(serial_number_str.c_str(),
-                                                   subkey, (void *)data_str,
-                                                   strlen(data_str));
+        result_ok = transaction->fpuDbWriteItem(serial_number_str.c_str(),
+                                                subkey, (void *)data_str,
+                                                strlen(data_str));
 
-        // Read item back
-        void *data_returned_ptr = nullptr;
-        size_t num_bytes_returned = 0;
+        // Get item buffer
+        void *item_data_ptr = nullptr;
+        int item_num_bytes = 0;
         if (result_ok)
         {
-            result_ok = transaction->fpuDbReadRawItem(serial_number_str.c_str(),
-                                                      subkey, &data_returned_ptr,
-                                                      num_bytes_returned);
+            result_ok = 
+                transaction->fpuDbGetItemDataPtrAndSize(serial_number_str.c_str(),
+                                                        subkey, &item_data_ptr,
+                                                        item_num_bytes);
         }
         
         // Verify that item read back matches item written
         if (result_ok)
         {
-            if ((num_bytes_returned != strlen(data_str)) ||
-                (memcmp(data_str, data_returned_ptr, strlen(data_str)) != 0))
+            if ((item_num_bytes != strlen(data_str)) ||
+                (memcmp(data_str, item_data_ptr, strlen(data_str)) != 0))
             {
                 result_ok = false;
             }
@@ -672,9 +673,9 @@ static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb)
                 char subkey_str[10];
                 snprintf(subkey_str, sizeof(subkey_str), "%03d", i);
                 uint64_t test_val = ((uint64_t)i) * test_multiplier;
-                if (!transaction->fpuDbWriteRawItem(serial_number_str.c_str(),
-                                                    subkey_str, (void *)&test_val,
-                                                    sizeof(test_val)))
+                if (!transaction->fpuDbWriteItem(serial_number_str.c_str(),
+                                                 subkey_str, (void *)&test_val,
+                                                 sizeof(test_val)))
                 {
                     // Error
                     result_ok = false;
@@ -695,14 +696,15 @@ static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb)
                 char subkey_str[10];
                 snprintf(subkey_str, sizeof(subkey_str), "%03d", i);
                 uint64_t test_val = ((uint64_t)i) * test_multiplier;
-                void *data_returned_ptr = nullptr;
-                size_t num_bytes_returned = 0;
-                if (transaction->fpuDbReadRawItem(serial_number_str.c_str(),
-                                                  subkey_str, &data_returned_ptr,
-                                                  num_bytes_returned))
+                void *item_data_ptr = nullptr;
+                int item_num_bytes = 0;
+                if (transaction->fpuDbGetItemDataPtrAndSize(serial_number_str.c_str(),
+                                                            subkey_str,
+                                                            &item_data_ptr,
+                                                            item_num_bytes))
                 {
-                    if ((num_bytes_returned != sizeof(test_val)) ||
-                        (memcmp(data_returned_ptr, (void *)&test_val,
+                    if ((item_num_bytes != sizeof(test_val)) ||
+                        (memcmp(item_data_ptr, (void *)&test_val,
                                 sizeof(test_val)) != 0))
                     {
                         result_ok = false;
