@@ -27,7 +27,9 @@ int main(int argc, char** argv)
 {
     //testGridDriver();
 
-    testFpuCounters();
+    //testFpuCounters();
+
+    testProtectionDB();
     
     //testProtectionDB();
     

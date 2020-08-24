@@ -348,17 +348,34 @@ bool ProtectionDbTxn::fpuDbTransferPosition(DbTransferType transfer_type,
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbPutCounters(const char serial_number[],
-                                       const FpuCounters &fpu_counters)
+bool ProtectionDbTxn::fpuDbTransferCounters(DbTransferType transfer_type,
+                                            const char serial_number[],
+                                            FpuCounters &fpu_counters)
 {
-    MDB_val data_val;
-    
-    data_val.mv_data = fpu_counters.getRawData(data_val.mv_size); 
-   
-    if (fpuDbPutItem(serial_number, counters_keystr, data_val) == 0)
+    if (transfer_type == DbTransferType::Write)
     {
-        return true;
+        if (fpuDbWriteItem(serial_number, counters_keystr,
+                           fpu_counters.getRawBytesPtr(),
+                           fpu_counters.getNumRawBytes()))
+        {
+            return true;
+        }
     }
+    else
+    {
+        void *item_data_ptr = nullptr;
+        int num_item_bytes = 0;
+        if (fpuDbGetItemDataPtrAndSize(serial_number, counters_keystr,
+                                       &item_data_ptr, num_item_bytes))
+        {
+            if (num_item_bytes == fpu_counters.getNumRawBytes())
+            {
+                fpu_counters.populateFromRawBytes(item_data_ptr);
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 
@@ -435,7 +452,7 @@ ProtectionDbTxn::~ProtectionDbTxn()
 
 static bool protectionDB_TestWithStayingOpen(const std::string &dir_str);
 static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
-static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb);
+static bool protectionDB_TestSingleFpuCountersTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb);
 static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb);
 static std::string getNextFpuTestSerialNumber();
@@ -517,7 +534,7 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
 
         if (result_ok)
         {
-            result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
+            result_ok = protectionDB_TestSingleFpuCountersTransfer(protectiondb);
         }
     }
     
@@ -572,7 +589,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
+            result_ok = protectionDB_TestSingleFpuCountersTransfer(protectiondb);
         }
         else
         {
@@ -584,22 +601,48 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestSingleFpuCountersWriting(ProtectionDB &protectiondb)
+static bool protectionDB_TestSingleFpuCountersTransfer(ProtectionDB &protectiondb)
 {
-    // Tests writing the counters for a single FPU
-    
-    // TODO: Also add reading back of the counters and comparing against what
-    // was written (N.B. Need to populate the counters with some random values)
+    // Tests writing and reading back the counters for a single FPU
     
     bool result_ok = false;
     
     auto transaction = protectiondb.createTransaction();
     if (transaction)
     {
-        FpuCounters fpu_counters;
+        FpuCounters fpu_counters_to_write;
+        for (int i = 0; i < (int)FpuCounterId::NumCounters; i++)
+        {
+            fpu_counters_to_write.setCount((FpuCounterId)i, i * 10);
+        }
+
         std::string serial_number_str = getNextFpuTestSerialNumber();
-        result_ok = transaction->fpuDbPutCounters(serial_number_str.c_str(),
-                                                  fpu_counters);
+
+        // Write counters
+        result_ok = transaction->fpuDbTransferCounters(DbTransferType::Write,
+                                                       serial_number_str.c_str(),
+                                                       fpu_counters_to_write);
+        if (result_ok)
+        {
+            // Read back counters
+            FpuCounters fpu_counters_read;
+            result_ok = transaction->fpuDbTransferCounters(DbTransferType::Read,
+                                                           serial_number_str.c_str(),
+                                                           fpu_counters_read);
+            if (result_ok)
+            {
+                // Compare read and written, and indicate if any difference
+                for (int i = 0; i < (int)FpuCounterId::NumCounters; i++)
+                {
+                    if (fpu_counters_read.getCount((FpuCounterId)i) !=
+                        fpu_counters_to_write.getCount((FpuCounterId)i))
+                    {
+                        result_ok = false;
+                        break;
+                    }
+                }
+            }
+        }
     }
     
     return result_ok;

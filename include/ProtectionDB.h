@@ -222,8 +222,9 @@ public:
                                FpuDbPositionType position_type, 
                                const char serial_number[], Interval &interval,
                                double &datum_offset);
-    bool fpuDbPutCounters(const char serial_number[],
-                          const FpuCounters &fpu_counters);
+    bool fpuDbTransferCounters(DbTransferType transfer_type,
+                               const char serial_number[],
+                               FpuCounters &fpu_counters);
     // TODO: Implement the following functions or similar (adapted from the 
     // Python code)
 #if 0
