@@ -508,16 +508,16 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
    
     if (protectiondb.open(dir_str))
     {
-        result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
+        result_ok = protectionDB_TestSingleItemWriteRead(protectiondb);
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestSingleItemWriteRead(protectiondb);
+            result_ok = protectionDB_TestMultipleItemWriteReads(protectiondb);
         }
 
         if (result_ok)
         {
-            result_ok = protectionDB_TestMultipleItemWriteReads(protectiondb);
+            result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
         }
     }
     
@@ -540,7 +540,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
+            result_ok = protectionDB_TestSingleItemWriteRead(protectiondb);
         }
         else
         {
@@ -556,7 +556,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestSingleItemWriteRead(protectiondb);
+            result_ok = protectionDB_TestMultipleItemWriteReads(protectiondb);
         }
         else
         {
@@ -572,7 +572,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestMultipleItemWriteReads(protectiondb);
+            result_ok = protectionDB_TestSingleFpuCountersWriting(protectiondb);
         }
         else
         {
