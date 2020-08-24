@@ -237,19 +237,15 @@ public:
     bool fpuDbPutAlphaRetryCount(const char serial_number[], bool clockwise, int count);
 #endif // 0
 
-    // Test functions
-    bool fpuDbWriteRawItem(const char serial_number[], const char subkey[],
-                           void *data_ptr, size_t num_bytes);
-    bool fpuDbReadRawItem(const char serial_number[], const char subkey[],
-                          void **data_ptr_ret, size_t &num_bytes_ret);
+    bool fpuDbWriteItem(const char serial_number[], const char subkey[],
+                        void *data_ptr, int num_bytes);
+    bool fpuDbGetItemDataPtrAndSize(const char serial_number[],
+                                    const char subkey[], void **data_ptr_ret,
+                                    int &num_bytes_ret);
 
     ~ProtectionDbTxn();
 
 private:
-    int fpuDbPutItem(const char serial_number[], const char subkey[],
-                     const MDB_val &data_val);
-    int fpuDbGetItem(const char serial_number[], const char subkey[],
-                     MDB_val &data_val_ret);
     MDB_val fpuDbCreateKeyVal(const char serial_number[],
                               const char subkey[]);
 

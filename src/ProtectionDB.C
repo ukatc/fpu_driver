@@ -363,14 +363,14 @@ bool ProtectionDbTxn::fpuDbPutCounters(const char serial_number[],
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbWriteRawItem(const char serial_number[],
-                                        const char subkey[],
-                                        void *data_ptr,
-                                        size_t num_bytes)
+bool ProtectionDbTxn::fpuDbWriteItem(const char serial_number[],
+                                     const char subkey[], void *data_ptr,
+                                     int num_bytes)
 {
-    MDB_val mdb_data_val = { num_bytes, data_ptr };
-
-    if (fpuDbPutItem(serial_number, subkey, mdb_data_val) == 0)
+    // Writes the specified item
+    MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
+    MDB_val data_val = { (size_t)num_bytes, data_ptr };
+    if (mdb_put(txn_ptr, fpu_dbi, &key_val, &data_val, 0x0) == MDB_SUCCESS)
     {
         return true;
     }
@@ -378,39 +378,24 @@ bool ProtectionDbTxn::fpuDbWriteRawItem(const char serial_number[],
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbReadRawItem(const char serial_number[],
-                                       const char subkey[],
-                                       void **data_ptr_ret,
-                                       size_t &num_bytes_ret)
+bool ProtectionDbTxn::fpuDbGetItemDataPtrAndSize(const char serial_number[],
+                                                 const char subkey[],
+                                                 void **data_ptr_ret,
+                                                 int &num_bytes_ret)
 {
-    MDB_val mdb_data_val;
-
-    if (fpuDbGetItem(serial_number, subkey, mdb_data_val) == 0)
+    // For the specified item, gets a pointer to its data and gets its size -
+    // this is possible because this is an in-memory database
+    MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
+    MDB_val data_val = { 0, nullptr };
+    if (mdb_get(txn_ptr, fpu_dbi, &key_val, &data_val) == MDB_SUCCESS)
     {
-        *data_ptr_ret = mdb_data_val.mv_data;
-        num_bytes_ret = mdb_data_val.mv_size;
+        *data_ptr_ret = data_val.mv_data;
+        num_bytes_ret = data_val.mv_size;
         return true;
     }
+    *data_ptr_ret = nullptr;
+    num_bytes_ret = 0;
     return false;
-}
-
-//------------------------------------------------------------------------------
-int ProtectionDbTxn::fpuDbPutItem(const char serial_number[],
-                                  const char subkey[],
-                                  const MDB_val &data_val)
-{
-    MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
-    return mdb_put(txn_ptr, fpu_dbi, &key_val,
-                   const_cast<MDB_val *>(&data_val), 0x0);
-}
-
-//------------------------------------------------------------------------------
-int ProtectionDbTxn::fpuDbGetItem(const char serial_number[],
-                                  const char subkey[],
-                                  MDB_val &data_val_ret)
-{
-    MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
-    return mdb_get(txn_ptr, fpu_dbi, &key_val, (MDB_val *)&data_val_ret);
 }
 
 //------------------------------------------------------------------------------
@@ -425,7 +410,7 @@ MDB_val ProtectionDbTxn::fpuDbCreateKeyVal(const char serial_number[],
 
     // Create ASCII key of form <serial_number><separator><subkey>
     // IMPORTANT: serial_number and subkey must not contain the
-    // keystr_separator_char character
+    // keystr_separator_char character. *** TODO ***: Check for this here?
     key_str = std::string(serial_number) + keystr_separator_char + subkey;
     return { key_str.size(), const_cast<void *>((const void *)key_str.c_str()) };
 }
