@@ -15,6 +15,7 @@
 #include "ProtectionDB.h"
 #include "GridDriver.h"
 #include "GridDriverTester.h"
+#include "Interval.h"
 
 using namespace std;
 
@@ -25,6 +26,36 @@ static void testProtectionDB();
 //------------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
+    //..........................................................................
+    // Ad-hoc testing of Interval class
+    Interval interval_1(1.1, 1.2);
+    Interval interval_2(1.1, 9.9);
+    Interval interval_3(3.5, 3.6);
+    Interval interval_4(1.1, 1.2);
+    int dummy_val = 0;
+    
+    if (interval_1 == interval_2)
+    {
+        dummy_val++;
+    }
+    
+    if (interval_1 != interval_3)
+    {
+        dummy_val++;
+    }
+    
+    if (interval_1 == interval_4)
+    {
+        dummy_val++;
+    }
+    
+    if (interval_1 != interval_4)
+    {
+        dummy_val++;
+    }
+    
+    //..........................................................................
+    
     //testGridDriver();
 
     //testFpuCounters();

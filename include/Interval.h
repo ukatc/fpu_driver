@@ -53,6 +53,16 @@ public:
         upper_ret = upper;
     }
 
+    bool operator==(const Interval &other)
+    {
+        return ((lower == other.lower) && (upper == other.upper));
+    }
+
+    bool operator!=(const Interval &other)
+    {
+        return ((lower != other.lower) || (upper != other.upper));
+    }
+
 private:
     // TODO: Initialise to NAN instead 0.0?
     double lower = 0.0;
