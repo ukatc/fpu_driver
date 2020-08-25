@@ -274,10 +274,9 @@ bool ProtectionDbTxn::fpuDbTransferPosition(DbTransferType transfer_type,
                                             Interval &interval,
                                             double &datum_offset)
 {
-    //************************
-    // TODO: This function is WIP - need to finish and test it
-    //************************
-
+    // Reads or writes an aggregate position type (interval + datum offset)
+    // of type FpuDbPositionType for an FPU
+    
     static const struct
     {
         FpuDbPositionType type;
@@ -308,43 +307,32 @@ bool ProtectionDbTxn::fpuDbTransferPosition(DbTransferType transfer_type,
             // Write the position item
             interval.getLowerUpper(doubles_array[0], doubles_array[1]);
             doubles_array[2] = datum_offset;
-            if (!fpuDbWriteRawItem(serial_number, subkey, doubles_array,
-                                   sizeof(doubles_array)))
+            if (fpuDbWriteItem(serial_number, subkey, doubles_array,
+                               sizeof(doubles_array)))
             {
-                // TODO: Error
+                return true;
             }
         }
         else
         {
             // Read the position item
-            void *data_read_ptr;
-            size_t num_bytes_read;
-            if (fpuDbReadRawItem(serial_number, subkey, &data_read_ptr,
-                                 num_bytes_read))
+            void *item_data_ptr = nullptr;
+            int num_item_data_bytes = 0;
+            if (fpuDbGetItemDataPtrAndSize(serial_number, subkey,
+                                           &item_data_ptr, num_item_data_bytes))
             {
-                if (num_bytes_read == sizeof(doubles_array))
+                if (num_item_data_bytes == sizeof(doubles_array))
                 {
-                    memcpy(doubles_array, data_read_ptr, sizeof(doubles_array));
+                    memcpy(doubles_array, item_data_ptr, sizeof(doubles_array));
                     interval = Interval(doubles_array[0], doubles_array[1]);
                     datum_offset = doubles_array[2];
+                    return true;
                 }
-                else
-                {
-                    // TODO: Error
-                }
-            }
-            else
-            {
-                // TODO: Error
             }
         }
     }
-    else
-    {
-        // TODO: Error
-    }
 
-    // TODO: Return a value
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -352,6 +340,8 @@ bool ProtectionDbTxn::fpuDbTransferCounters(DbTransferType transfer_type,
                                             const char serial_number[],
                                             FpuCounters &fpu_counters)
 {
+    // Reads or writes a set of FPU counters
+    
     if (transfer_type == DbTransferType::Write)
     {
         if (fpuDbWriteItem(serial_number, counters_keystr,
@@ -385,6 +375,7 @@ bool ProtectionDbTxn::fpuDbWriteItem(const char serial_number[],
                                      int num_bytes)
 {
     // Writes the specified item
+    
     MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
     MDB_val data_val = { (size_t)num_bytes, data_ptr };
     if (mdb_put(txn_ptr, fpu_dbi, &key_val, &data_val, 0x0) == MDB_SUCCESS)
@@ -402,6 +393,7 @@ bool ProtectionDbTxn::fpuDbGetItemDataPtrAndSize(const char serial_number[],
 {
     // For the specified item, gets a pointer to its data and gets its size -
     // this is possible because this is an in-memory database
+    
     MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
     MDB_val data_val = { 0, nullptr };
     if (mdb_get(txn_ptr, fpu_dbi, &key_val, &data_val) == MDB_SUCCESS)
@@ -453,6 +445,7 @@ ProtectionDbTxn::~ProtectionDbTxn()
 static bool protectionDB_TestWithStayingOpen(const std::string &dir_str);
 static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
 static bool protectionDB_TestSingleFpuCountersTransfer(ProtectionDB &protectiondb);
+static bool protectionDB_TestSinglePositionTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb);
 static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb);
 static std::string getNextFpuTestSerialNumber();
@@ -536,6 +529,11 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
         {
             result_ok = protectionDB_TestSingleFpuCountersTransfer(protectiondb);
         }
+        
+        if (result_ok)
+        {
+            result_ok = protectionDB_TestSinglePositionTransfer(protectiondb);
+        }
     }
     
     return result_ok;
@@ -545,13 +543,17 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
 static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
 {
     // Performs various ProtectionDB tests with the database being closed
-    // and re-opened between each test
+    // and re-opened between each test,
     // NOTE: An LMDB database must already exist in dir_str location
     
-    bool result_ok = false;
+    // Notes:
+    //   - Inside each scope, the protection database is opened at the
+    //     beginning, and then closed automatically upon exiting the scope
+    //   - If single-stepping through this function, then after each database
+    //     closure, can do a dump of the database to check its contents, using
+    //     e.g.: mdb_dump . -p -s fpu
 
-    // N.B. ProtectionDB is opened (and then closed automatically again) inside
-    // each scope
+    bool result_ok = false;
     
     {
         ProtectionDB protectiondb;
@@ -565,9 +567,6 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         }
     }
     
-    // NOTE: If single-stepping through this function, can now do a dump of the
-    // database to check its contents, using e.g.: mdb_dump . -p -s fpu
-
     if (result_ok)
     {
         ProtectionDB protectiondb;
@@ -581,9 +580,6 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         }
     }
 
-    // NOTE: If single-stepping through this function, can now do a dump of the
-    // database to check its contents, using e.g.: mdb_dump . -p -s fpu
-
     if (result_ok)
     {
         ProtectionDB protectiondb;
@@ -594,6 +590,19 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         else
         {
             result_ok = false;
+        }
+    }
+    
+    if (result_ok)
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            result_ok = protectionDB_TestSinglePositionTransfer(protectiondb);
+        }
+        else
+        {
+            result_ok =  false;
         }
     }
     
@@ -640,6 +649,53 @@ static bool protectionDB_TestSingleFpuCountersTransfer(ProtectionDB &protectiond
                         result_ok = false;
                         break;
                     }
+                }
+            }
+        }
+    }
+    
+    return result_ok;
+}
+
+//------------------------------------------------------------------------------
+static bool protectionDB_TestSinglePositionTransfer(ProtectionDB &protectiondb)
+{
+    // Tests writing and reading back an aggregate position value (interval +
+    // datum offset) of an FPU
+    
+    bool result_ok = false;
+    
+    auto transaction = protectiondb.createTransaction();
+    if (transaction)
+    {
+        FpuDbPositionType position_type = FpuDbPositionType::BetaLimit;
+        Interval interval_to_write(1.2, 3.4);
+        double datum_offset_to_write = 180.0;
+        std::string serial_number_str = getNextFpuTestSerialNumber();
+
+        // Write position value
+        result_ok = transaction->fpuDbTransferPosition(DbTransferType::Write,
+                                                       position_type,
+                                                       serial_number_str.c_str(),
+                                                       interval_to_write,
+                                                       datum_offset_to_write);
+        if (result_ok)
+        {
+            // Read back position value
+            Interval interval_read;
+            double datum_offset_read = -999.0;
+            result_ok = transaction->fpuDbTransferPosition(DbTransferType::Read,
+                                                           position_type,
+                                                           serial_number_str.c_str(),
+                                                           interval_read,
+                                                           datum_offset_read);
+            if (result_ok)
+            {
+                // Compare read and written, and indicate if any difference
+                if ((interval_read != interval_to_write) ||
+                    (datum_offset_read != datum_offset_to_write))
+                {
+                    result_ok = false;
                 }
             }
         }
