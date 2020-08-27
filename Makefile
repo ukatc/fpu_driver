@@ -27,7 +27,7 @@ LIBS = -lm -lpthread
 
 _DEPS = InterfaceState.h E_GridState.h FPUState.h EtherCANInterface.h \
 	EtherCANInterfaceConfig.h E_LogLevel.h GridState.h T_GridState.h \
-	UnprotectedGridDriver.h GridDriver.h \
+	UnprotectedGridDriver.h GridDriver.h FPUCounters.h Interval.h \
 	ethercan/AsyncInterface.h T_GatewayAddress.h \
 	ethercan/handleFPUResponse.h ethercan/handleTimeout.h \
 	ethercan/CANError.h ethercan/CommandPool.h \
@@ -124,7 +124,7 @@ _OBJ = EtherCANInterface.o AsyncInterface.o FPUArray.o GridState.o \
 	handle_WarnCollisionBeta_warning.o \
 	handle_WarnLimitAlpha_warning.o \
 	handle_WriteSerialNumber_response.o \
-	UnprotectedGridDriver.o GridDriver.o
+	UnprotectedGridDriver.o GridDriver.o FPUCounters.o
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
@@ -156,7 +156,7 @@ _SRC = AsyncInterface.C CommandPool.C CommandQueue.C \
 	handle_WarnLimitAlpha_warning.C \
 	handle_WriteSerialNumber_response.C SBuffer.C sync_utils.C \
 	TimeOutList.C time_utils.C \
-	UnprotectedGridDriver.C GridDriver.C
+	UnprotectedGridDriver.C GridDriver.C FPUCounters.C
 
 SRC = $(patsubst %,$(SRCDIR)/%,$(_SRC))
 
