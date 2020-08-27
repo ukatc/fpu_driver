@@ -13,6 +13,7 @@
 
 #include <cstdlib>
 #include "ProtectionDB.h"
+#include "ProtectionDBTester.h"
 #include "GridDriver.h"
 #include "GridDriverTester.h"
 #include "Interval.h"

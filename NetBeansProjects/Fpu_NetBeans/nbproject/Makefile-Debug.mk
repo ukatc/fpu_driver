@@ -49,6 +49,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/56252444/GridDriverTester.o \
 	${OBJECTDIR}/_ext/56252444/GridState.o \
 	${OBJECTDIR}/_ext/56252444/ProtectionDB.o \
+	${OBJECTDIR}/_ext/56252444/ProtectionDBTester.o \
 	${OBJECTDIR}/_ext/56252444/SBuffer.o \
 	${OBJECTDIR}/_ext/56252444/TimeOutList.o \
 	${OBJECTDIR}/_ext/56252444/UnprotectedGridDriver.o \
@@ -182,6 +183,11 @@ ${OBJECTDIR}/_ext/56252444/ProtectionDB.o: ../../src/ProtectionDB.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DENABLE_PROTECTION_CODE -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/ProtectionDB.o ../../src/ProtectionDB.C
+
+${OBJECTDIR}/_ext/56252444/ProtectionDBTester.o: ../../src/ProtectionDBTester.C
+	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DENABLE_PROTECTION_CODE -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/ProtectionDBTester.o ../../src/ProtectionDBTester.C
 
 ${OBJECTDIR}/_ext/56252444/SBuffer.o: ../../src/SBuffer.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444

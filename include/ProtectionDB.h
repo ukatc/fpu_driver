@@ -34,30 +34,12 @@ using namespace mpifps;
 using namespace mpifps::ethercanif;
 
 
-/*
-Probable data types (TODO: CHECK):
-    - txn:           MDB_txn &txn?? See http://www.lmdb.tech/doc/group__internal.html#structMDB__txn
-    - serial_number: const char serial_number[]  (from EtherCANInterface.h)
-    - subkey:        const char subkey[]  (from FPUGridDriver.py)
-    - interval:      double?
-    - apos:          double (see FPU driver manual)
-    - bpos:          double (see FPU driver manual)
-    - offset:        double (see FPU driver manual)
-    - val:           MDB_val *valPtr ?
-    - fpu:           t_fpu_state
-    - wentry:        std::vector<t_step_pair> steps ???? (see AsyncInterface.h -> t_waveform)
-                     I defined as Wentry for now - see below
-
-*/
-
 // TODO: Move elsewhere, and rename to e.g. Waveform?
 using Wentry = std::vector<t_step_pair>;
 
 // -----------------------------------------------------------------------------
 
 std::string protectionDB_GetDirFromLinuxEnv(bool mockup);
-void testFpuCounters();
-bool protectionDB_Test();
 
 // -----------------------------------------------------------------------------
 
