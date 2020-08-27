@@ -492,7 +492,14 @@ bool protectionDB_Test()
     // Performs a suite of protection database tests - reading and writing
     // items within individual or multiple transactions, also with some 
     // database closing/re-opening
-    // NOTE: An LMDB database must already exist in dir_str location (see below)
+    // IMPORTANT NOTES:
+    //   - An LMDB database must already exist in dir_str location (see below)
+    //   - This test functionality currently generates random FPU serial
+    //     numbers (see getNextFpuTestSerialNumber()) which it then uses to
+    //     write to and read from the FPU database - however, if one of these
+    //     FPU serial numbers already exists in the database then a test might
+    //     occasionally fail
+    //     *** TODO: *** Fix this eventually
     
     std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
     bool result_ok = false;
