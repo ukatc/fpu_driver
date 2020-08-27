@@ -20,12 +20,83 @@
 #include <cstring>
 #include "FPUCounters.h"
 
+//==============================================================================
+FpuCounters::FpuCounters()
+{
+    counters.resize((size_t)FpuCounterId::NumCounters, 0);
+}
+
+//------------------------------------------------------------------------------
+void FpuCounters::zeroAll()
+{
+    for (int i = 0; i < (int)FpuCounterId::NumCounters; i++)
+    {
+        counters[i] = 0;
+    }
+}
+
+//------------------------------------------------------------------------------
+void FpuCounters::setCount(FpuCounterId id, FpuCounterInt val)
+{
+    if ((((int)id) >= 0) && (id < FpuCounterId::NumCounters))
+    {
+        counters[(int)id] = val;
+    }
+}
+
+//------------------------------------------------------------------------------
+void FpuCounters::addToCount(FpuCounterId id, FpuCounterInt val)
+{
+    if ((((int)id) >= 0) && (id < FpuCounterId::NumCounters))
+    {
+        counters[(int)id] += val;
+    }
+}
+
+//------------------------------------------------------------------------------
+FpuCounterInt FpuCounters::getCount(FpuCounterId id)
+{
+    if ((((int)id) >= 0) && (id < FpuCounterId::NumCounters))
+    {
+        return counters[(int)id];
+    }
+    return -999;    // TODO: Is this OK to indicate error?
+}
+
+//------------------------------------------------------------------------------
+int FpuCounters::getNumRawBytes()
+{
+    return sizeof(FpuCounterInt) * (int)FpuCounterId::NumCounters;
+}
+
+//------------------------------------------------------------------------------
+void *FpuCounters::getRawBytesPtr() const
+{
+    // Returns pointer to the raw bytes of the counter values in memory.
+    // N.B. The endianness of the counter values will be platform-dependent,
+    // but this is OK because will only be used on Intel Linux boxes?
+    // TODO: Is this the case?
+    return const_cast<void *>((const void *)counters.data());
+}
+
+//------------------------------------------------------------------------------
+void FpuCounters::populateFromRawBytes(void *raw_bytes_ptr)
+{
+    // Populates the counters from raw byte data. Number of bytes provided
+    // must be equal to that returned by getNumRawBytes(). 
+    // Also see endianness comments in getRawBytesPtr() above.
+    memcpy(counters.data(), raw_bytes_ptr, getNumRawBytes());
+}
+
 
 //==============================================================================
 // Unit test function follows
 //==============================================================================
 void testFpuCounters()
 {
+    // Ad-hoc test function - single-step through and observe the counter arrays
+    // and other variables in the debugger to check that works OK
+    
     FpuCounters fpu_counters;
     
     for (int id = 0; id < (int)FpuCounterId::NumCounters; id++)

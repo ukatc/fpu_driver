@@ -24,11 +24,8 @@
 #include <cstring>
 #include <cstdint>
 
-// TODO: Check if there is already another suitable class or structure type
-// defined elsewhere which can be used
-
 // TODO: Cater for handling newer/older-version counter arrays with differing
-// numbers of counters
+// numbers of counters?
 
 // TODO: Figure out what FpuCounterInt needs to be:
 //  - Needs to be SIGNED so that the stuff in e.g.
@@ -91,66 +88,15 @@ enum class FpuCounterId
 class FpuCounters
 {
 public:
-    FpuCounters()
-    {
-        counters.resize((size_t)FpuCounterId::NumCounters, 0);
-    }
+    FpuCounters();
+    void zeroAll();
+    void setCount(FpuCounterId id, FpuCounterInt val);
+    void addToCount(FpuCounterId id, FpuCounterInt val);
+    FpuCounterInt getCount(FpuCounterId id);
+    int getNumRawBytes();
+    void *getRawBytesPtr() const;
+    void populateFromRawBytes(void *raw_bytes_ptr);
 
-    void zeroAll()
-    {
-        for (int i = 0; i < (int)FpuCounterId::NumCounters; i++)
-        {
-            counters[i] = 0;
-        }
-    }
-
-    void setCount(FpuCounterId id, FpuCounterInt val)
-    {
-        if ((((int)id) >= 0) && (id < FpuCounterId::NumCounters))
-        {
-            counters[(int)id] = val;
-        }
-    }
-
-    void addToCount(FpuCounterId id, FpuCounterInt val)
-    {
-        if ((((int)id) >= 0) && (id < FpuCounterId::NumCounters))
-        {
-            counters[(int)id] += val;
-        }
-    }
-
-    FpuCounterInt getCount(FpuCounterId id)
-    {
-        if ((((int)id) >= 0) && (id < FpuCounterId::NumCounters))
-        {
-            return counters[(int)id];
-        }
-        return -999;    // TODO: Is this OK to indicate error?
-    }
-
-    int getNumRawBytes()
-    {
-        return sizeof(FpuCounterInt) * (int)FpuCounterId::NumCounters;
-    }
-    
-    void *getRawBytesPtr() const
-    {
-        // Returns pointer to the raw bytes of the counter values in memory.
-        // N.B. The endianness of the counter values will be platform-dependent,
-        // but this is OK because will only be used on Intel Linux boxes?
-        // TODO: Is this the case?
-        return const_cast<void *>((const void *)counters.data());
-    }
-    
-    void populateFromRawBytes(void *raw_bytes_ptr)
-    {
-        // Populates the counters from raw byte data. Number of bytes provided
-        // must be equal to that returned by getNumRawBytes(). 
-        // Also see endianness comments in getRawBytesPtr() above.
-        memcpy(counters.data(), raw_bytes_ptr, getNumRawBytes());
-    }
-    
 private:
     std::vector<FpuCounterInt> counters;
 };
