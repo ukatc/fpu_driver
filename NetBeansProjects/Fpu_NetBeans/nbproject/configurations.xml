@@ -88,6 +88,7 @@
       <itemPath>../../include/EtherCANInterfaceConfig.h</itemPath>
       <itemPath>../../include/Exceptions_INTERIM.h</itemPath>
       <itemPath>../../include/FPUConstants.h</itemPath>
+      <itemPath>../../include/FPUCounters.h</itemPath>
       <itemPath>../../include/FPUState.h</itemPath>
       <itemPath>../../include/GridDriver.h</itemPath>
       <itemPath>../../include/GridDriverTester.h</itemPath>
@@ -222,6 +223,8 @@
       <item path="../../include/Exceptions_INTERIM.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/FPUConstants.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../include/FPUCounters.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/FPUState.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -843,6 +846,8 @@
       <item path="../../include/Exceptions_INTERIM.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/FPUConstants.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../include/FPUCounters.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/FPUState.h" ex="false" tool="3" flavor2="0">
       </item>

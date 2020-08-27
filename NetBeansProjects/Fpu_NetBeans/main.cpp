@@ -17,6 +17,7 @@
 #include "GridDriver.h"
 #include "GridDriverTester.h"
 #include "Interval.h"
+#include "FPUCounters.h"
 
 using namespace std;
 

@@ -28,6 +28,7 @@
 #include "ProtectionDB.h"
 #endif // ENABLE_PROTECTION_CODE
 #include "Interval.h"
+#include "FPUCounters.h"
 
 // ENABLE_PROTECTION_CODE macro note: Define it (in a project's global
 // predefined symbols) to enable the protection code work-in-progress, or

@@ -22,7 +22,6 @@
 
 #include "ProtectionDB.h"
 
-void testFpuCounters();
 bool protectionDB_Test();
 
 #endif // PROTECTIONDBTESTER_H
