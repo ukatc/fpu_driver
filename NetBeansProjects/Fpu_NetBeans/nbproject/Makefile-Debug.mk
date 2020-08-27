@@ -43,6 +43,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/56252444/DeviceLock.o \
 	${OBJECTDIR}/_ext/56252444/EtherCANInterface.o \
 	${OBJECTDIR}/_ext/56252444/FPUArray.o \
+	${OBJECTDIR}/_ext/56252444/FPUCounters.o \
 	${OBJECTDIR}/_ext/56252444/FPUState.o \
 	${OBJECTDIR}/_ext/56252444/GatewayInterface.o \
 	${OBJECTDIR}/_ext/56252444/GridDriver.o \
@@ -153,6 +154,11 @@ ${OBJECTDIR}/_ext/56252444/FPUArray.o: ../../src/FPUArray.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DENABLE_PROTECTION_CODE -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/FPUArray.o ../../src/FPUArray.C
+
+${OBJECTDIR}/_ext/56252444/FPUCounters.o: ../../src/FPUCounters.C
+	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DENABLE_PROTECTION_CODE -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/FPUCounters.o ../../src/FPUCounters.C
 
 ${OBJECTDIR}/_ext/56252444/FPUState.o: ../../src/FPUState.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444

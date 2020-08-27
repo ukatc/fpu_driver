@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <cstring>
+#include <cstdint>
 
 // TODO: Check if there is already another suitable class or structure type
 // defined elsewhere which can be used
@@ -156,8 +157,9 @@ private:
 
 //==============================================================================
 
-
 void testFpuCounters();
+
+//==============================================================================
 
 
 #endif // FPUCOUNTERS_H

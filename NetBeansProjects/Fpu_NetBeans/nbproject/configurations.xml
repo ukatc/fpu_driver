@@ -150,6 +150,7 @@
       <itemPath>../../src/DeviceLock.C</itemPath>
       <itemPath>../../src/EtherCANInterface.C</itemPath>
       <itemPath>../../src/FPUArray.C</itemPath>
+      <itemPath>../../src/FPUCounters.C</itemPath>
       <itemPath>../../src/FPUState.C</itemPath>
       <itemPath>../../src/GatewayInterface.C</itemPath>
       <itemPath>../../src/GridDriver.C</itemPath>
@@ -628,6 +629,8 @@
       <item path="../../src/EtherCANInterface.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/FPUArray.C" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../../src/FPUCounters.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/FPUState.C" ex="false" tool="1" flavor2="0">
       </item>
@@ -1251,6 +1254,8 @@
       <item path="../../src/EtherCANInterface.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/FPUArray.C" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../../src/FPUCounters.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/FPUState.C" ex="false" tool="1" flavor2="0">
       </item>
