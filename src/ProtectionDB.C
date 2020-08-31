@@ -34,8 +34,8 @@ static const char *healthlog_subdb_name = "healthlog";
 // Database key strings
 static const char *alpha_positions_keystr = "apos";
 static const char *beta_positions_keystr = "bpos";
-// static const char *waveform_table_keystr = "wtab";
-// static const char *waveform_reversed_keystr = "wf_reversed";
+static const char *waveform_table_keystr = "wtab";
+static const char *waveform_reversed_keystr = "wf_reversed";
 static const char *alpha_limits_keystr = "alimits";
 static const char *beta_limits_keystr = "blimits";
 // static const char *free_beta_retries_keystr = "bretries";
@@ -362,6 +362,79 @@ bool ProtectionDbTxn::fpuDbTransferCounters(DbTransferType transfer_type,
             {
                 fpu_counters.populateFromRawBytes(item_data_ptr);
                 return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
+                                            DbWaveformType waveform_type,
+                                            const char serial_number[],
+                                            Wentry &waveform_entry)
+{
+    // Reads or writes a forward or reversed waveform
+
+    const char *keystr;
+    if (waveform_type == DbWaveformType::Forward)
+    {
+        keystr = waveform_table_keystr;
+    }
+    else
+    {
+        keystr = waveform_reversed_keystr;
+    }
+
+    // NOTE: StepsIntType matches the t_step_pair.alpha_steps and
+    // t_step_pair.beta_steps types
+    using StepsIntType = int16_t;
+
+    if (transfer_type == DbTransferType::Write)
+    {
+        // Pack waveform values into a byte buffer to ensure that the data
+        // packing will always be consistent
+        std::vector<uint8_t> bytesBuf(waveform_entry.size() * 
+                                      sizeof(StepsIntType) * 2);
+        StepsIntType *intBufPtr = (StepsIntType *)bytesBuf.data();
+        for (size_t i = 0; i < waveform_entry.size(); i++)
+        {
+            *(intBufPtr + (i * 2)) = waveform_entry[i].alpha_steps;
+            *(intBufPtr + ((i * 2) + 1)) = waveform_entry[i].beta_steps;
+        }
+
+        // Write to database
+        if (fpuDbWriteItem(serial_number, keystr, bytesBuf.data(), 
+                           bytesBuf.size()))
+        {
+            return true;
+        }
+    }
+    else
+    {
+        void *item_data_ptr = nullptr;
+        int num_item_bytes = 0;
+        if (fpuDbGetItemDataPtrAndSize(serial_number, keystr, &item_data_ptr,
+                                       num_item_bytes))
+        {
+            // Check that number of bytes is a multiple of the combined
+            // 2 x StepsIntType sizes of t_step_pair
+            if ((num_item_bytes % (sizeof(StepsIntType) * 2)) == 0)
+            {
+                // Resize waveform_entry and unpack the values into it 
+                waveform_entry.resize(num_item_bytes / (sizeof(StepsIntType) * 2));
+                StepsIntType *intBufPtr = (StepsIntType *)item_data_ptr;
+                for (size_t i = 0; i < waveform_entry.size(); i++)
+                {
+                    waveform_entry[i].alpha_steps = *(intBufPtr + (i * 2));
+                    waveform_entry[i].beta_steps = *(intBufPtr + ((i * 2) + 1));
+                }
+                return true;
+            }
+            else
+            {
+                waveform_entry.resize(0);
             }
         }
     }

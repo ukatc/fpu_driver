@@ -26,6 +26,7 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str);
 static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
 static bool protectionDB_TestSingleFpuCountersTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestSinglePositionTransfer(ProtectionDB &protectiondb);
+static bool protectionDB_TestSingleWaveformTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb);
 static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb);
 static std::string getNextFpuTestSerialNumber();
@@ -84,6 +85,11 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
         if (result_ok)
         {
             result_ok = protectionDB_TestSinglePositionTransfer(protectiondb);
+        }
+        
+        if (result_ok)
+        {
+            result_ok = protectionDB_TestSingleWaveformTransfer(protectiondb);
         }
     }
     
@@ -150,6 +156,19 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         if (protectiondb.open(dir_str))
         {
             result_ok = protectionDB_TestSinglePositionTransfer(protectiondb);
+        }
+        else
+        {
+            result_ok =  false;
+        }
+    }
+    
+    if (result_ok)
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            result_ok = protectionDB_TestSingleWaveformTransfer(protectiondb);
         }
         else
         {
@@ -252,6 +271,59 @@ static bool protectionDB_TestSinglePositionTransfer(ProtectionDB &protectiondb)
         }
     }
     
+    return result_ok;
+}
+
+//------------------------------------------------------------------------------
+static bool protectionDB_TestSingleWaveformTransfer(ProtectionDB &protectiondb)
+{
+    // Tests writing and reading back of an FPU waveform
+    
+    bool result_ok = false;
+    
+    auto transaction = protectiondb.createTransaction();
+    if (transaction)
+    {
+        std::string serial_number_str = getNextFpuTestSerialNumber();
+
+        // Write waveform
+        Wentry waveform_to_write = {{1, -2}, {-3, 4}, {50, 60}, {7, 8}, {9, 10}};
+        result_ok = transaction->fpuDbTransferWaveform(DbTransferType::Write,
+                                                       DbWaveformType::Forward,
+                                                       serial_number_str.c_str(),
+                                                       waveform_to_write);
+        if (result_ok)
+        {
+            // Read back waveform
+            Wentry waveform_read;
+            result_ok = transaction->fpuDbTransferWaveform(DbTransferType::Read,
+                                                           DbWaveformType::Forward,
+                                                           serial_number_str.c_str(),
+                                                           waveform_read);
+            if (result_ok)
+            {
+                if (waveform_read.size() == waveform_to_write.size())
+                {
+                    for (size_t i = 0; i < waveform_read.size(); i++)
+                    {
+                        if ((waveform_read[i].alpha_steps !=
+                             waveform_to_write[i].alpha_steps) ||
+                            (waveform_read[i].beta_steps != 
+                             waveform_to_write[i].beta_steps))
+                        {
+                            result_ok = false;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    result_ok = false;
+                }
+            }
+        }
+    }
+
     return result_ok;
 }
 

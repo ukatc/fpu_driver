@@ -61,6 +61,12 @@ enum class FpuDbPositionType
     NumTypes
 };
 
+enum class DbWaveformType
+{
+    Forward,
+    Reversed
+};
+
 class ProtectionDbTxn
 {
     // Important notes:
@@ -79,6 +85,10 @@ public:
     bool fpuDbTransferCounters(DbTransferType transfer_type,
                                const char serial_number[],
                                FpuCounters &fpu_counters);
+    bool fpuDbTransferWaveform(DbTransferType transfer_type,
+                               DbWaveformType waveform_type,
+                               const char serial_number[],
+                               Wentry &waveform_entry);
     // TODO: Implement the following functions or similar (adapted from the 
     // Python code)
 #if 0
