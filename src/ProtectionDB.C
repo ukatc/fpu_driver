@@ -38,12 +38,12 @@ static const char *waveform_table_keystr = "wtab";
 static const char *waveform_reversed_keystr = "wf_reversed";
 static const char *alpha_limits_keystr = "alimits";
 static const char *beta_limits_keystr = "blimits";
-// static const char *free_beta_retries_keystr = "bretries";
-// static const char *beta_retry_count_cw_keystr = "beta_retry_count_cw";
-// static const char *beta_retry_count_acw_keystr = "beta_retry_count_acw"; 
-// static const char *free_alpha_retries_keystr = "aretries";
-// static const char *alpha_retry_count_cw_keystr = "alpha_retry_count_cw";
-// static const char *alpha_retry_count_acw_keystr = "alpha_retry_count_acw";
+static const char *free_alpha_retries_keystr = "aretries";
+static const char *alpha_retry_count_cw_keystr = "alpha_retry_count_cw";
+static const char *alpha_retry_count_acw_keystr = "alpha_retry_count_acw";
+static const char *free_beta_retries_keystr = "bretries";
+static const char *beta_retry_count_cw_keystr = "beta_retry_count_cw";
+static const char *beta_retry_count_acw_keystr = "beta_retry_count_acw";
 static const char *counters_keystr = "counters";
 //static const char *serialnumber_used_keystr = "serialnumber_used";
 
@@ -435,6 +435,65 @@ bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
             else
             {
                 waveform_entry.resize(0);
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+bool ProtectionDbTxn::fpuDbTransferInt64Val(DbTransferType transfer_type,
+                                            FpuDbIntValType intval_type,
+                                            const char serial_number[],
+                                            int64_t &int64_val)
+{
+    static const struct
+    {
+        FpuDbIntValType type;
+        const char *subkey;
+    } intval_type_subkeys[(int)FpuDbIntValType::NumTypes] =
+    {
+        { FpuDbIntValType::FreeAlphaRetries,    free_alpha_retries_keystr    },
+        { FpuDbIntValType::AlphaRetryCount_CW,  alpha_retry_count_cw_keystr  },
+        { FpuDbIntValType::AlphaRetryCount_ACW, alpha_retry_count_acw_keystr }, 
+        { FpuDbIntValType::FreeBetaRetries,     free_beta_retries_keystr     },
+        { FpuDbIntValType::BetaRetryCount_CW,   beta_retry_count_cw_keystr   },
+        { FpuDbIntValType::BetaRetryCount_ACW,  beta_retry_count_acw_keystr  }
+    };
+
+    const char *subkey = nullptr;
+    for (int i = 0; i < (int)FpuDbIntValType::NumTypes; i++)
+    {
+        if (intval_type_subkeys[i].type == intval_type)
+        {
+            subkey = intval_type_subkeys[i].subkey;
+            break;
+        }
+    }
+
+    if (subkey != nullptr)
+    {
+        if (transfer_type == DbTransferType::Write)
+        {
+            if (fpuDbWriteItem(serial_number, subkey, &int64_val,
+                               sizeof(int64_t)))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            void *item_data_ptr = nullptr;
+            int num_item_bytes = 0;
+            if (fpuDbGetItemDataPtrAndSize(serial_number, subkey,
+                                           &item_data_ptr, num_item_bytes))
+            {
+                if (num_item_bytes == sizeof(int64_t))
+                {
+                    memcpy(&int64_val, item_data_ptr, sizeof(int64_t));
+                    return true;
+                }
             }
         }
     }

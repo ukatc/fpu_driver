@@ -67,6 +67,18 @@ enum class FpuDbWaveformType
     Reversed
 };
 
+enum class FpuDbIntValType
+{
+    FreeAlphaRetries,
+    AlphaRetryCount_CW,
+    AlphaRetryCount_ACW,
+    FreeBetaRetries,
+    BetaRetryCount_CW,
+    BetaRetryCount_ACW,
+
+    NumTypes
+};
+
 //==============================================================================
 
 class ProtectionDbTxn
@@ -91,12 +103,10 @@ public:
                                FpuDbWaveformType waveform_type,
                                const char serial_number[],
                                Wentry &waveform_entry);
-    // TODO: Implement the following functions or similar (adapted from the 
-    // Python code)
-#if 0
-    bool fpuDbPutBetaRetryCount(const char serial_number[], bool clockwise, int count);
-    bool fpuDbPutAlphaRetryCount(const char serial_number[], bool clockwise, int count);
-#endif // 0
+    bool fpuDbTransferInt64Val(DbTransferType transfer_type,
+                               FpuDbIntValType intval_type,
+                               const char serial_number[],
+                               int64_t &int64_val);
 
     bool fpuDbWriteItem(const char serial_number[], const char subkey[],
                         void *data_ptr, int num_bytes);

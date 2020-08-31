@@ -27,6 +27,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
 static bool protectionDB_TestFpuPositionTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb);
+static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuSingleItemWriteRead(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
 static std::string getNextFpuTestSerialNumber();
@@ -90,6 +91,11 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
         if (result_ok)
         {
             result_ok = protectionDB_TestFpuWaveformTransfer(protectiondb);
+        }
+        
+        if (result_ok)
+        {
+            result_ok = protectionDB_TestFpuInt64ValTransfer(protectiondb);
         }
     }
     
@@ -169,6 +175,19 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         if (protectiondb.open(dir_str))
         {
             result_ok = protectionDB_TestFpuWaveformTransfer(protectiondb);
+        }
+        else
+        {
+            result_ok = false;
+        }
+    }
+    
+    if (result_ok)
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            result_ok = protectionDB_TestFpuInt64ValTransfer(protectiondb);
         }
         else
         {
@@ -317,6 +336,42 @@ static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb)
                     }
                 }
                 else
+                {
+                    result_ok = false;
+                }
+            }
+        }
+    }
+
+    return result_ok;
+}
+
+//------------------------------------------------------------------------------
+static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb)
+{
+    bool result_ok = false;
+
+    auto transaction = protectiondb.createTransaction();
+    if (transaction)
+    {
+        std::string serial_number_str = getNextFpuTestSerialNumber();
+
+        // Write int64_t value
+        int64_t int64_val_write = 0x123456789abcdef0;
+        result_ok = transaction->fpuDbTransferInt64Val(DbTransferType::Write,
+                                        FpuDbIntValType::BetaRetryCount_ACW,
+                                        serial_number_str.c_str(),
+                                        int64_val_write);
+        if (result_ok)
+        {
+            int64_t int64_val_read;
+            result_ok = transaction->fpuDbTransferInt64Val(DbTransferType::Read,
+                                        FpuDbIntValType::BetaRetryCount_ACW,
+                                        serial_number_str.c_str(),
+                                        int64_val_read);
+            if (result_ok)
+            {
+                if (int64_val_read != int64_val_write)
                 {
                     result_ok = false;
                 }
