@@ -24,11 +24,11 @@
 
 static bool protectionDB_TestWithStayingOpen(const std::string &dir_str);
 static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
-static bool protectionDB_TestSingleFpuCountersTransfer(ProtectionDB &protectiondb);
-static bool protectionDB_TestSinglePositionTransfer(ProtectionDB &protectiondb);
-static bool protectionDB_TestSingleWaveformTransfer(ProtectionDB &protectiondb);
-static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb);
-static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb);
+static bool protectionDB_TestFpuPositionTransfer(ProtectionDB &protectiondb);
+static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb);
+static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb);
+static bool protectionDB_TestFpuSingleItemWriteRead(ProtectionDB &protectiondb);
+static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
 static std::string getNextFpuTestSerialNumber();
 
 //------------------------------------------------------------------------------
@@ -70,26 +70,26 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
    
     if (protectiondb.open(dir_str))
     {
-        result_ok = protectionDB_TestSingleItemWriteRead(protectiondb);
+        result_ok = protectionDB_TestFpuSingleItemWriteRead(protectiondb);
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestMultipleItemWriteReads(protectiondb);
+            result_ok = protectionDB_TestFpuMultipleItemWriteReads(protectiondb);
         }
 
         if (result_ok)
         {
-            result_ok = protectionDB_TestSingleFpuCountersTransfer(protectiondb);
+            result_ok = protectionDB_TestFpuPositionTransfer(protectiondb);
         }
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestSinglePositionTransfer(protectiondb);
+            result_ok = protectionDB_TestFpuCountersTransfer(protectiondb);
         }
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestSingleWaveformTransfer(protectiondb);
+            result_ok = protectionDB_TestFpuWaveformTransfer(protectiondb);
         }
     }
     
@@ -116,7 +116,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestSingleItemWriteRead(protectiondb);
+            result_ok = protectionDB_TestFpuSingleItemWriteRead(protectiondb);
         }
         else
         {
@@ -129,7 +129,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestMultipleItemWriteReads(protectiondb);
+            result_ok = protectionDB_TestFpuMultipleItemWriteReads(protectiondb);
         }
         else
         {
@@ -142,7 +142,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestSingleFpuCountersTransfer(protectiondb);
+            result_ok = protectionDB_TestFpuPositionTransfer(protectiondb);
         }
         else
         {
@@ -155,11 +155,11 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestSinglePositionTransfer(protectiondb);
+            result_ok = protectionDB_TestFpuCountersTransfer(protectiondb);
         }
         else
         {
-            result_ok =  false;
+            result_ok = false;
         }
     }
     
@@ -168,11 +168,11 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestSingleWaveformTransfer(protectiondb);
+            result_ok = protectionDB_TestFpuWaveformTransfer(protectiondb);
         }
         else
         {
-            result_ok =  false;
+            result_ok = false;
         }
     }
     
@@ -180,7 +180,54 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestSingleFpuCountersTransfer(ProtectionDB &protectiondb)
+static bool protectionDB_TestFpuPositionTransfer(ProtectionDB &protectiondb)
+{
+    // Tests writing and reading back an aggregate position value (interval +
+    // datum offset) of an FPU
+    
+    bool result_ok = false;
+    
+    auto transaction = protectiondb.createTransaction();
+    if (transaction)
+    {
+        FpuDbPositionType position_type = FpuDbPositionType::BetaLimit;
+        Interval interval_to_write(1.2, 3.4);
+        double datum_offset_to_write = 180.0;
+        std::string serial_number_str = getNextFpuTestSerialNumber();
+
+        // Write position value
+        result_ok = transaction->fpuDbTransferPosition(DbTransferType::Write,
+                                                       position_type,
+                                                       serial_number_str.c_str(),
+                                                       interval_to_write,
+                                                       datum_offset_to_write);
+        if (result_ok)
+        {
+            // Read back position value
+            Interval interval_read;
+            double datum_offset_read = -999.0;
+            result_ok = transaction->fpuDbTransferPosition(DbTransferType::Read,
+                                                           position_type,
+                                                           serial_number_str.c_str(),
+                                                           interval_read,
+                                                           datum_offset_read);
+            if (result_ok)
+            {
+                // Compare read and written, and indicate if any difference
+                if ((interval_read != interval_to_write) ||
+                    (datum_offset_read != datum_offset_to_write))
+                {
+                    result_ok = false;
+                }
+            }
+        }
+    }
+    
+    return result_ok;
+}
+
+//------------------------------------------------------------------------------
+static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb)
 {
     // Tests writing and reading back the counters for a single FPU
     
@@ -228,54 +275,7 @@ static bool protectionDB_TestSingleFpuCountersTransfer(ProtectionDB &protectiond
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestSinglePositionTransfer(ProtectionDB &protectiondb)
-{
-    // Tests writing and reading back an aggregate position value (interval +
-    // datum offset) of an FPU
-    
-    bool result_ok = false;
-    
-    auto transaction = protectiondb.createTransaction();
-    if (transaction)
-    {
-        FpuDbPositionType position_type = FpuDbPositionType::BetaLimit;
-        Interval interval_to_write(1.2, 3.4);
-        double datum_offset_to_write = 180.0;
-        std::string serial_number_str = getNextFpuTestSerialNumber();
-
-        // Write position value
-        result_ok = transaction->fpuDbTransferPosition(DbTransferType::Write,
-                                                       position_type,
-                                                       serial_number_str.c_str(),
-                                                       interval_to_write,
-                                                       datum_offset_to_write);
-        if (result_ok)
-        {
-            // Read back position value
-            Interval interval_read;
-            double datum_offset_read = -999.0;
-            result_ok = transaction->fpuDbTransferPosition(DbTransferType::Read,
-                                                           position_type,
-                                                           serial_number_str.c_str(),
-                                                           interval_read,
-                                                           datum_offset_read);
-            if (result_ok)
-            {
-                // Compare read and written, and indicate if any difference
-                if ((interval_read != interval_to_write) ||
-                    (datum_offset_read != datum_offset_to_write))
-                {
-                    result_ok = false;
-                }
-            }
-        }
-    }
-    
-    return result_ok;
-}
-
-//------------------------------------------------------------------------------
-static bool protectionDB_TestSingleWaveformTransfer(ProtectionDB &protectiondb)
+static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb)
 {
     // Tests writing and reading back of an FPU waveform
     
@@ -328,7 +328,7 @@ static bool protectionDB_TestSingleWaveformTransfer(ProtectionDB &protectiondb)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb)
+static bool protectionDB_TestFpuSingleItemWriteRead(ProtectionDB &protectiondb)
 {
     // Tests writing of a single item and reading it back, all in one transaction
     
@@ -371,7 +371,7 @@ static bool protectionDB_TestSingleItemWriteRead(ProtectionDB &protectiondb)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestMultipleItemWriteReads(ProtectionDB &protectiondb)
+static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiondb)
 {
     // Tests writing of multiple items in a first transaction, and reading them
     // back in a second transaction

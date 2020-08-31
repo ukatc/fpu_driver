@@ -92,12 +92,6 @@ public:
     // TODO: Implement the following functions or similar (adapted from the 
     // Python code)
 #if 0
-    bool fpuDbPutInterval(const char serial_number[], const char subkey[],
-                          double interval, double offset = 0.0);
-    bool fpuDbPutAlphaPosition(const char serial_number[], double apos, double aoffset);
-    bool fpuDbPutBetaPosition(const char serial_number[], double bpos);
-    bool fpuDbPutWaveformReversed(const char serial_number[], bool is_reversed);
-    bool fpuDbPutWaveform(const char serial_number[], const Wentry &wentry);
     bool fpuDbPutBetaRetryCount(const char serial_number[], bool clockwise, int count);
     bool fpuDbPutAlphaRetryCount(const char serial_number[], bool clockwise, int count);
 #endif // 0
