@@ -371,20 +371,20 @@ bool ProtectionDbTxn::fpuDbTransferCounters(DbTransferType transfer_type,
 
 //------------------------------------------------------------------------------
 bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
-                                            DbWaveformType waveform_type,
+                                            FpuDbWaveformType waveform_type,
                                             const char serial_number[],
                                             Wentry &waveform_entry)
 {
     // Reads or writes a forward or reversed waveform
 
-    const char *keystr;
-    if (waveform_type == DbWaveformType::Forward)
+    const char *subkey;
+    if (waveform_type == FpuDbWaveformType::Forward)
     {
-        keystr = waveform_table_keystr;
+        subkey = waveform_table_keystr;
     }
     else
     {
-        keystr = waveform_reversed_keystr;
+        subkey = waveform_reversed_keystr;
     }
 
     // NOTE: StepsIntType matches the t_step_pair.alpha_steps and
@@ -405,7 +405,7 @@ bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
         }
 
         // Write to database
-        if (fpuDbWriteItem(serial_number, keystr, bytesBuf.data(), 
+        if (fpuDbWriteItem(serial_number, subkey, bytesBuf.data(), 
                            bytesBuf.size()))
         {
             return true;
@@ -415,7 +415,7 @@ bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
     {
         void *item_data_ptr = nullptr;
         int num_item_bytes = 0;
-        if (fpuDbGetItemDataPtrAndSize(serial_number, keystr, &item_data_ptr,
+        if (fpuDbGetItemDataPtrAndSize(serial_number, subkey, &item_data_ptr,
                                        num_item_bytes))
         {
             // Check that number of bytes is a multiple of the combined

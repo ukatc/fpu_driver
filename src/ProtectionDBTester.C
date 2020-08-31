@@ -191,16 +191,16 @@ static bool protectionDB_TestFpuPositionTransfer(ProtectionDB &protectiondb)
     if (transaction)
     {
         FpuDbPositionType position_type = FpuDbPositionType::BetaLimit;
-        Interval interval_to_write(1.2, 3.4);
-        double datum_offset_to_write = 180.0;
+        Interval interval_write(1.2, 3.4);
+        double datum_offset_write = 180.0;
         std::string serial_number_str = getNextFpuTestSerialNumber();
 
         // Write position value
         result_ok = transaction->fpuDbTransferPosition(DbTransferType::Write,
                                                        position_type,
                                                        serial_number_str.c_str(),
-                                                       interval_to_write,
-                                                       datum_offset_to_write);
+                                                       interval_write,
+                                                       datum_offset_write);
         if (result_ok)
         {
             // Read back position value
@@ -214,8 +214,8 @@ static bool protectionDB_TestFpuPositionTransfer(ProtectionDB &protectiondb)
             if (result_ok)
             {
                 // Compare read and written, and indicate if any difference
-                if ((interval_read != interval_to_write) ||
-                    (datum_offset_read != datum_offset_to_write))
+                if ((interval_read != interval_write) ||
+                    (datum_offset_read != datum_offset_write))
                 {
                     result_ok = false;
                 }
@@ -236,10 +236,10 @@ static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb)
     auto transaction = protectiondb.createTransaction();
     if (transaction)
     {
-        FpuCounters fpu_counters_to_write;
+        FpuCounters fpu_counters_write;
         for (int i = 0; i < (int)FpuCounterId::NumCounters; i++)
         {
-            fpu_counters_to_write.setCount((FpuCounterId)i, i * 10);
+            fpu_counters_write.setCount((FpuCounterId)i, i * 10);
         }
 
         std::string serial_number_str = getNextFpuTestSerialNumber();
@@ -247,7 +247,7 @@ static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb)
         // Write counters
         result_ok = transaction->fpuDbTransferCounters(DbTransferType::Write,
                                                        serial_number_str.c_str(),
-                                                       fpu_counters_to_write);
+                                                       fpu_counters_write);
         if (result_ok)
         {
             // Read back counters
@@ -261,7 +261,7 @@ static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb)
                 for (int i = 0; i < (int)FpuCounterId::NumCounters; i++)
                 {
                     if (fpu_counters_read.getCount((FpuCounterId)i) !=
-                        fpu_counters_to_write.getCount((FpuCounterId)i))
+                        fpu_counters_write.getCount((FpuCounterId)i))
                     {
                         result_ok = false;
                         break;
@@ -287,29 +287,29 @@ static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb)
         std::string serial_number_str = getNextFpuTestSerialNumber();
 
         // Write waveform
-        Wentry waveform_to_write = {{1, -2}, {-3, 4}, {50, 60}, {7, 8}, {9, 10}};
+        Wentry waveform_write = {{1, -2}, {-3, 4}, {50, 60}, {7, 8}, {9, 10}};
         result_ok = transaction->fpuDbTransferWaveform(DbTransferType::Write,
-                                                       DbWaveformType::Forward,
-                                                       serial_number_str.c_str(),
-                                                       waveform_to_write);
+                                                    FpuDbWaveformType::Forward,
+                                                    serial_number_str.c_str(),
+                                                    waveform_write);
         if (result_ok)
         {
             // Read back waveform
             Wentry waveform_read;
             result_ok = transaction->fpuDbTransferWaveform(DbTransferType::Read,
-                                                           DbWaveformType::Forward,
-                                                           serial_number_str.c_str(),
-                                                           waveform_read);
+                                                    FpuDbWaveformType::Forward,
+                                                    serial_number_str.c_str(),
+                                                    waveform_read);
             if (result_ok)
             {
-                if (waveform_read.size() == waveform_to_write.size())
+                if (waveform_read.size() == waveform_write.size())
                 {
                     for (size_t i = 0; i < waveform_read.size(); i++)
                     {
                         if ((waveform_read[i].alpha_steps !=
-                             waveform_to_write[i].alpha_steps) ||
+                             waveform_write[i].alpha_steps) ||
                             (waveform_read[i].beta_steps != 
-                             waveform_to_write[i].beta_steps))
+                             waveform_write[i].beta_steps))
                         {
                             result_ok = false;
                             break;

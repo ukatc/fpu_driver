@@ -61,11 +61,13 @@ enum class FpuDbPositionType
     NumTypes
 };
 
-enum class DbWaveformType
+enum class FpuDbWaveformType
 {
     Forward,
     Reversed
 };
+
+//==============================================================================
 
 class ProtectionDbTxn
 {
@@ -86,7 +88,7 @@ public:
                                const char serial_number[],
                                FpuCounters &fpu_counters);
     bool fpuDbTransferWaveform(DbTransferType transfer_type,
-                               DbWaveformType waveform_type,
+                               FpuDbWaveformType waveform_type,
                                const char serial_number[],
                                Wentry &waveform_entry);
     // TODO: Implement the following functions or similar (adapted from the 
@@ -112,7 +114,7 @@ private:
     MDB_txn *txn_ptr = nullptr;
 };
 
-//..............................................................................
+//==============================================================================
 
 class ProtectionDB
 {
@@ -129,6 +131,6 @@ private:
     MDB_env *mdb_env_ptr = nullptr;
 };
 
-// -----------------------------------------------------------------------------
+//==============================================================================
 
 #endif // PROTECTIONDB_H
