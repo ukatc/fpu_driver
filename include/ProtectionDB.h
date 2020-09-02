@@ -61,12 +61,6 @@ enum class FpuDbPositionType
     NumTypes
 };
 
-enum class FpuDbWaveformType
-{
-    Forward,
-    Reversed
-};
-
 enum class FpuDbIntValType
 {
     FreeAlphaRetries,
@@ -100,7 +94,6 @@ public:
                                const char serial_number[],
                                FpuCounters &fpu_counters);
     bool fpuDbTransferWaveform(DbTransferType transfer_type,
-                               FpuDbWaveformType waveform_type,
                                const char serial_number[],
                                Wentry &waveform_entry);
     bool fpuDbTransferInt64Val(DbTransferType transfer_type,

@@ -308,7 +308,6 @@ static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb)
         // Write waveform
         Wentry waveform_write = {{1, -2}, {-3, 4}, {50, 60}, {7, 8}, {9, 10}};
         result_ok = transaction->fpuDbTransferWaveform(DbTransferType::Write,
-                                                    FpuDbWaveformType::Forward,
                                                     serial_number_str.c_str(),
                                                     waveform_write);
         if (result_ok)
@@ -316,7 +315,6 @@ static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb)
             // Read back waveform
             Wentry waveform_read;
             result_ok = transaction->fpuDbTransferWaveform(DbTransferType::Read,
-                                                    FpuDbWaveformType::Forward,
                                                     serial_number_str.c_str(),
                                                     waveform_read);
             if (result_ok)
