@@ -437,6 +437,8 @@ bool ProtectionDbTxn::fpuDbTransferInt64Val(DbTransferType transfer_type,
                                             const char serial_number[],
                                             int64_t &int64_val)
 {
+    // Reads or writes an int64_t value
+
     static const struct
     {
         FpuDbIntValType type;
@@ -483,6 +485,56 @@ bool ProtectionDbTxn::fpuDbTransferInt64Val(DbTransferType transfer_type,
                     memcpy(&int64_val, item_data_ptr, sizeof(int64_t));
                     return true;
                 }
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+bool ProtectionDbTxn::fpuDbTransferWfReversedFlag(DbTransferType transfer_type,
+                                                  const char serial_number[],
+                                                  bool &wf_reversed)
+{
+    // Reads or writes the waveform-reversed bool flag
+    
+    if (transfer_type == DbTransferType::Write)
+    {
+        uint8_t wf_reversed_byte_val;
+        if (wf_reversed)
+        {
+            wf_reversed_byte_val = 1;
+        }
+        else
+        {
+            wf_reversed_byte_val = 0;
+        }
+        if (fpuDbWriteItem(serial_number, waveform_reversed_keystr,
+                           &wf_reversed_byte_val, sizeof(uint8_t)))
+        {
+            return true;
+        }
+    }
+    else
+    {
+        void *item_data_ptr = nullptr;
+        int num_item_bytes = 0;
+        if (fpuDbGetItemDataPtrAndSize(serial_number, waveform_reversed_keystr,
+                                       &item_data_ptr, num_item_bytes))
+        {
+            if (num_item_bytes == sizeof(uint8_t))
+            {
+                uint8_t wf_reversed_byte_val = *((uint8_t *)item_data_ptr);
+                if (wf_reversed_byte_val != 0)
+                {
+                    wf_reversed = true;
+                }
+                else
+                {
+                    wf_reversed = false;
+                }
+                return true;
             }
         }
     }

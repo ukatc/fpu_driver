@@ -100,6 +100,9 @@ public:
                                FpuDbIntValType intval_type,
                                const char serial_number[],
                                int64_t &int64_val);
+    bool fpuDbTransferWfReversedFlag(DbTransferType transfer_type,
+                                     const char serial_number[],
+                                     bool &wf_reversed);
 
     bool fpuDbWriteItem(const char serial_number[], const char subkey[],
                         void *data_ptr, int num_bytes);

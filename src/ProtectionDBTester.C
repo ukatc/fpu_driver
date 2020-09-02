@@ -28,6 +28,7 @@ static bool protectionDB_TestFpuPositionTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb);
+static bool protectionDB_TestFpuWfReversedFlagTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuSingleItemWriteRead(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
 static std::string getNextFpuTestSerialNumber();
@@ -96,6 +97,11 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
         if (result_ok)
         {
             result_ok = protectionDB_TestFpuInt64ValTransfer(protectiondb);
+        }
+        
+        if (result_ok)
+        {
+            result_ok = protectionDB_TestFpuWfReversedFlagTransfer(protectiondb);
         }
     }
     
@@ -188,6 +194,19 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         if (protectiondb.open(dir_str))
         {
             result_ok = protectionDB_TestFpuInt64ValTransfer(protectiondb);
+        }
+        else
+        {
+            result_ok = false;
+        }
+    }
+    
+    if (result_ok)
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            result_ok = protectionDB_TestFpuWfReversedFlagTransfer(protectiondb);
         }
         else
         {
@@ -377,6 +396,42 @@ static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb)
         }
     }
 
+    return result_ok;
+}
+
+//------------------------------------------------------------------------------
+static bool protectionDB_TestFpuWfReversedFlagTransfer(ProtectionDB &protectiondb)
+{
+    bool result_ok = false;
+
+    auto transaction = protectiondb.createTransaction();
+    if (transaction)
+    {
+        std::string serial_number_str = getNextFpuTestSerialNumber();
+
+        // Write wf_reversed bool value
+        bool wf_reversed_write = true;
+        result_ok = transaction->fpuDbTransferWfReversedFlag(
+                                                    DbTransferType::Write,
+                                                    serial_number_str.c_str(),
+                                                    wf_reversed_write);
+        if (result_ok)
+        {
+            bool wf_reversed_read = false;
+            result_ok = transaction->fpuDbTransferWfReversedFlag(
+                                                    DbTransferType::Read,
+                                                    serial_number_str.c_str(),
+                                                    wf_reversed_read);
+            if (result_ok)
+            {
+                if (wf_reversed_read != wf_reversed_write)
+                {
+                    result_ok = false;
+                }
+            }
+        }
+    }
+    
     return result_ok;
 }
 
