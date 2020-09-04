@@ -196,12 +196,12 @@ void GridDriver::_post_connect_hook()
     {
         // TODO: Check that FreeAlphaRetries and FreeBetaRetries correspond to
         // maxaretries_temp and maxbretries_temp
-        { FpuDbIntValType::FreeAlphaRetries,    maxaretries_temp  },
-        { FpuDbIntValType::AlphaRetryCount_CW,  aretries_cw_temp  },
-        { FpuDbIntValType::AlphaRetryCount_ACW, aretries_acw_temp },
-        { FpuDbIntValType::FreeBetaRetries,     maxbretries_temp  },
-        { FpuDbIntValType::BetaRetryCount_CW,   bretries_cw_temp  },
-        { FpuDbIntValType::BetaRetryCount_ACW,  bretries_acw_temp }
+        { FpuDbIntValType::FreeAlphaRetries, maxaretries_temp  },
+        { FpuDbIntValType::AlphaRetries_CW,  aretries_cw_temp  },
+        { FpuDbIntValType::AlphaRetries_ACW, aretries_acw_temp },
+        { FpuDbIntValType::FreeBetaRetries,  maxbretries_temp  },
+        { FpuDbIntValType::BetaRetries_CW,   bretries_cw_temp  },
+        { FpuDbIntValType::BetaRetries_ACW,  bretries_acw_temp }
     };
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)

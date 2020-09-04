@@ -377,16 +377,16 @@ static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb)
         // Write int64_t value
         int64_t int64_val_write = 0x123456789abcdef0;
         result_ok = transaction->fpuDbTransferInt64Val(DbTransferType::Write,
-                                        FpuDbIntValType::BetaRetryCount_ACW,
-                                        serial_number_str.c_str(),
-                                        int64_val_write);
+                                            FpuDbIntValType::BetaRetries_ACW,
+                                            serial_number_str.c_str(),
+                                            int64_val_write);
         if (result_ok)
         {
             int64_t int64_val_read;
             result_ok = transaction->fpuDbTransferInt64Val(DbTransferType::Read,
-                                        FpuDbIntValType::BetaRetryCount_ACW,
-                                        serial_number_str.c_str(),
-                                        int64_val_read);
+                                            FpuDbIntValType::BetaRetries_ACW,
+                                            serial_number_str.c_str(),
+                                            int64_val_read);
             if (result_ok)
             {
                 if (int64_val_read != int64_val_write)

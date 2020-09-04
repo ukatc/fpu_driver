@@ -30,21 +30,22 @@ static const char *healthlog_subdb_name = "healthlog";
 // TODO: Is "verification" sub-database needed?
 // static const char *verification_subdb_name = "verification";
 
-// TODO: Some disabled for now to avoid build warnings, because not yet used
 // Database key strings
-static const char *alpha_positions_keystr = "apos";
-static const char *beta_positions_keystr = "bpos";
-static const char *waveform_table_keystr = "wtab";
-static const char *waveform_reversed_keystr = "wf_reversed";
-static const char *alpha_limits_keystr = "alimits";
-static const char *beta_limits_keystr = "blimits";
+static const char *alpha_position_keystr = "apos";
+static const char *beta_position_keystr = "bpos";
+static const char *waveform_table_keystr = "wtable";
+static const char *waveform_reversed_keystr = "wfreversed";
+static const char *alpha_limit_keystr = "alimit";
+static const char *beta_limit_keystr = "blimit";
 static const char *free_alpha_retries_keystr = "aretries";
-static const char *alpha_retry_count_cw_keystr = "alpha_retry_count_cw";
-static const char *alpha_retry_count_acw_keystr = "alpha_retry_count_acw";
+static const char *alpha_retries_cw_keystr = "aretries_cw";
+static const char *alpha_retries_acw_keystr = "aretries_acw";
 static const char *free_beta_retries_keystr = "bretries";
-static const char *beta_retry_count_cw_keystr = "beta_retry_count_cw";
-static const char *beta_retry_count_acw_keystr = "beta_retry_count_acw";
+static const char *beta_retries_cw_keystr = "bretries_cw";
+static const char *beta_retries_acw_keystr = "bretries_acw";
 static const char *counters_keystr = "counters";
+// TODO: Will the following string be used - is there a corresponding string
+// used in the Python version?
 //static const char *serialnumber_used_keystr = "serialnumber_used";
 
 // Character to separate the key/subkey parts of the overall key strings
@@ -283,10 +284,10 @@ bool ProtectionDbTxn::fpuDbTransferPosition(DbTransferType transfer_type,
         const char *subkey;
     } position_subkeys[(int)FpuDbPositionType::NumTypes] = 
     {
-        { FpuDbPositionType::AlphaLimit,  alpha_limits_keystr    },
-        { FpuDbPositionType::AlphaPos,    alpha_positions_keystr },
-        { FpuDbPositionType::BetaLimit,   beta_limits_keystr     }, 
-        { FpuDbPositionType::BetaPos,     beta_positions_keystr  }
+        { FpuDbPositionType::AlphaLimit,  alpha_limit_keystr    },
+        { FpuDbPositionType::AlphaPos,    alpha_position_keystr },
+        { FpuDbPositionType::BetaLimit,   beta_limit_keystr     }, 
+        { FpuDbPositionType::BetaPos,     beta_position_keystr  }
     };
 
     const char *subkey = nullptr;
@@ -445,12 +446,12 @@ bool ProtectionDbTxn::fpuDbTransferInt64Val(DbTransferType transfer_type,
         const char *subkey;
     } intval_type_subkeys[(int)FpuDbIntValType::NumTypes] =
     {
-        { FpuDbIntValType::FreeAlphaRetries,    free_alpha_retries_keystr    },
-        { FpuDbIntValType::AlphaRetryCount_CW,  alpha_retry_count_cw_keystr  },
-        { FpuDbIntValType::AlphaRetryCount_ACW, alpha_retry_count_acw_keystr }, 
-        { FpuDbIntValType::FreeBetaRetries,     free_beta_retries_keystr     },
-        { FpuDbIntValType::BetaRetryCount_CW,   beta_retry_count_cw_keystr   },
-        { FpuDbIntValType::BetaRetryCount_ACW,  beta_retry_count_acw_keystr  }
+        { FpuDbIntValType::FreeAlphaRetries, free_alpha_retries_keystr },
+        { FpuDbIntValType::AlphaRetries_CW,  alpha_retries_cw_keystr   },
+        { FpuDbIntValType::AlphaRetries_ACW, alpha_retries_acw_keystr  }, 
+        { FpuDbIntValType::FreeBetaRetries,  free_beta_retries_keystr  },
+        { FpuDbIntValType::BetaRetries_CW,   beta_retries_cw_keystr    },
+        { FpuDbIntValType::BetaRetries_ACW,  beta_retries_acw_keystr   }
     };
 
     const char *subkey = nullptr;
