@@ -33,10 +33,6 @@
 using namespace mpifps;
 using namespace mpifps::ethercanif;
 
-
-// TODO: Move elsewhere, and rename to e.g. Waveform?
-using Wentry = std::vector<t_step_pair>;
-
 // -----------------------------------------------------------------------------
 
 std::string protectionDB_GetDirFromLinuxEnv(bool mockup);
@@ -95,7 +91,7 @@ public:
                                FpuCounters &fpu_counters);
     bool fpuDbTransferWaveform(DbTransferType transfer_type,
                                const char serial_number[],
-                               Wentry &waveform_entry);
+                               t_waveform_steps &waveform);
     bool fpuDbTransferInt64Val(DbTransferType transfer_type,
                                FpuDbIntValType intval_type,
                                const char serial_number[],

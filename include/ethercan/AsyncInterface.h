@@ -37,10 +37,12 @@ typedef struct
     int16_t beta_steps;
 } t_step_pair;
 
+using t_waveform_steps = std::vector<t_step_pair>;
+
 typedef struct
 {
     int16_t fpu_id;
-    std::vector<t_step_pair> steps;
+    t_waveform_steps steps;
 } t_waveform;
 
 // TODO: t_wtable is used as a variable-length array in the Python version of

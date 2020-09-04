@@ -372,7 +372,7 @@ bool ProtectionDbTxn::fpuDbTransferCounters(DbTransferType transfer_type,
 //------------------------------------------------------------------------------
 bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
                                             const char serial_number[],
-                                            Wentry &waveform_entry)
+                                            t_waveform_steps &waveform)
 {
     // Reads or writes a forward or reversed waveform
 
@@ -384,13 +384,13 @@ bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
     {
         // Pack waveform values into a byte buffer to ensure that the data
         // packing will always be consistent
-        std::vector<uint8_t> bytesBuf(waveform_entry.size() * 
+        std::vector<uint8_t> bytesBuf(waveform.size() * 
                                       sizeof(StepsIntType) * 2);
         StepsIntType *intBufPtr = (StepsIntType *)bytesBuf.data();
-        for (size_t i = 0; i < waveform_entry.size(); i++)
+        for (size_t i = 0; i < waveform.size(); i++)
         {
-            *(intBufPtr + (i * 2)) = waveform_entry[i].alpha_steps;
-            *(intBufPtr + ((i * 2) + 1)) = waveform_entry[i].beta_steps;
+            *(intBufPtr + (i * 2)) = waveform[i].alpha_steps;
+            *(intBufPtr + ((i * 2) + 1)) = waveform[i].beta_steps;
         }
 
         // Write to database
@@ -412,18 +412,18 @@ bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
             if ((num_item_bytes % (sizeof(StepsIntType) * 2)) == 0)
             {
                 // Resize waveform_entry and unpack the values into it 
-                waveform_entry.resize(num_item_bytes / (sizeof(StepsIntType) * 2));
+                waveform.resize(num_item_bytes / (sizeof(StepsIntType) * 2));
                 StepsIntType *intBufPtr = (StepsIntType *)item_data_ptr;
-                for (size_t i = 0; i < waveform_entry.size(); i++)
+                for (size_t i = 0; i < waveform.size(); i++)
                 {
-                    waveform_entry[i].alpha_steps = *(intBufPtr + (i * 2));
-                    waveform_entry[i].beta_steps = *(intBufPtr + ((i * 2) + 1));
+                    waveform[i].alpha_steps = *(intBufPtr + (i * 2));
+                    waveform[i].beta_steps = *(intBufPtr + ((i * 2) + 1));
                 }
                 return true;
             }
             else
             {
-                waveform_entry.resize(0);
+                waveform.resize(0);
             }
         }
     }

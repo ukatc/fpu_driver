@@ -180,7 +180,7 @@ private:
                                    const t_fpuset &fpuset) override;
 #ifdef ENABLE_PROTECTION_CODE
     void _update_counters_execute_motion(int fpu_id, FpuCounters &fpu_counters,
-                                         const t_waveform &waveform,
+                                         const t_waveform_steps &waveform,
                                          bool is_reversed,
                                          bool cancel = false);
 #endif // ENABLE_PROTECTION_CODE

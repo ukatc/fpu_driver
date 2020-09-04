@@ -325,14 +325,15 @@ static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb)
         std::string serial_number_str = getNextFpuTestSerialNumber();
 
         // Write waveform
-        Wentry waveform_write = {{1, -2}, {-3, 4}, {50, 60}, {7, 8}, {9, 10}};
+        t_waveform_steps waveform_write = 
+            {{1, -2}, {-3, 4}, {50, 60}, {7, 8}, {9, 10}};
         result_ok = transaction->fpuDbTransferWaveform(DbTransferType::Write,
                                                     serial_number_str.c_str(),
                                                     waveform_write);
         if (result_ok)
         {
             // Read back waveform
-            Wentry waveform_read;
+            t_waveform_steps waveform_read;
             result_ok = transaction->fpuDbTransferWaveform(DbTransferType::Read,
                                                     serial_number_str.c_str(),
                                                     waveform_read);

@@ -452,7 +452,7 @@ void GridDriver::_post_config_motion_hook(const t_wtable &wtable,
 //------------------------------------------------------------------------------
 void GridDriver::_update_counters_execute_motion(int fpu_id,
                                                  FpuCounters &fpu_counters,
-                                                 const t_waveform &waveform,
+                                                 const t_waveform_steps &waveform,
                                                  bool is_reversed,
                                                  bool cancel)
 {
@@ -498,7 +498,7 @@ void GridDriver::_update_counters_execute_motion(int fpu_id,
     FpuCounterInt beta_lsign =
         fpu_counters.getCount(FpuCounterId::sign_beta_last_direction);
 
-    for (const auto &step : waveform.steps)
+    for (const auto &step : waveform)
     {
         int asteps = step.alpha_steps * rsign;
         int bsteps = step.beta_steps * rsign;
