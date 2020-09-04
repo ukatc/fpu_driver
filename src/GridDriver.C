@@ -49,7 +49,7 @@ static const double BetaGearRatio = 1517.662482;    // actual gear ratio
 static const double StepsPerRevolution = 20.0;
 static const double DegreePerRevolution = 360.0;
 
-// Note that these numbers must not be confounded with actual calibrated values!
+// Note that these numbers must not be confused with actual calibrated values!
 // TODO: The Python versions in fpu_constants.py have "float()" functions in
 // them - what is the purpose of this, and is the following C++ version OK?
 static const double StepsPerDegreeAlpha =
@@ -126,6 +126,8 @@ void GridDriver::_post_connect_hook()
 
 #ifdef ENABLE_PROTECTION_CODE
 
+    bool result_ok = false;
+
     // TODO: Check that the FPU database has been properly opened at this point
     // self.fpudb = self.env.open_db(ProtectionDB.dbname)
 
@@ -150,7 +152,8 @@ void GridDriver::_post_connect_hook()
         // TODO: Return a suitable error code
     }
 
-    // Create temporary vectors, with any required initialisation
+    //..........................................................................
+    // Create temporary FPU value vectors, with any required initialisation
     // N.B. std::vector storage is created on the heap, so no problem with
     // local stack space here (unlike std::array)
     std::vector<Interval> apositions_temp(config.num_fpus);
@@ -170,12 +173,113 @@ void GridDriver::_post_connect_hook()
     std::vector<Interval> a_caloffsets_temp(config.num_fpus, Interval(0.0));
     std::vector<Interval> b_caloffsets_temp(config.num_fpus, Interval(0.0));
 
+    //..........................................................................
+    // Read all FPUs' data items from the protection database into the
+    // temporary value vectors
+    struct
+    {
+        FpuDbPositionType type;
+        std::vector<Interval> &vector_ref;
+    } position_items[(int)FpuDbPositionType::NumTypes] = 
+    {
+        { FpuDbPositionType::AlphaPos,   apositions_temp },
+        { FpuDbPositionType::BetaPos,    bpositions_temp },
+        { FpuDbPositionType::AlphaLimit, alimits_temp    },
+        { FpuDbPositionType::BetaLimit,  blimits_temp    }
+    };
+    
+    struct
+    {
+        FpuDbIntValType type;
+        std::vector<int64_t> &vector_ref;
+    } int64_items[(int)FpuDbIntValType::NumTypes] =
+    {
+        // TODO: Check that FreeAlphaRetries and FreeBetaRetries correspond to
+        // maxaretries_temp and maxbretries_temp
+        { FpuDbIntValType::FreeAlphaRetries,    maxaretries_temp  },
+        { FpuDbIntValType::AlphaRetryCount_CW,  aretries_cw_temp  },
+        { FpuDbIntValType::AlphaRetryCount_ACW, aretries_acw_temp },
+        { FpuDbIntValType::FreeBetaRetries,     maxbretries_temp  },
+        { FpuDbIntValType::BetaRetryCount_CW,   bretries_cw_temp  },
+        { FpuDbIntValType::BetaRetryCount_ACW,  bretries_acw_temp }
+    };
+
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
-        auto txn = protection_db.createTransaction();
+        // TODO: If amy of the following operations fail then break out of this
+        // "for" loop
 
-        //TODO: txn->
+
+        auto txn = protection_db.createTransaction();
+        if (txn)
+        {
+            const char *serial_number = grid_state.FPU_state[fpu_id].serial_number;
+
+            // Read the FPU's position values
+      //********* TODO: What to do with the offsets??
+            double datum_offset;
+            result_ok = true;
+            for (int i = 0; i < (int)FpuDbPositionType::NumTypes; i++)
+            {
+                if (!txn->fpuDbTransferPosition(DbTransferType::Read,
+                                                position_items[i].type,
+                                                serial_number,
+                                                position_items[i].vector_ref[fpu_id],
+                                                datum_offset))
+                {
+                    result_ok = false;
+                    break;
+                }
+            }
+
+            // Read the FPU's waveform
+            if (result_ok)
+            {
+                t_waveform_steps waveform;
+                result_ok = txn->fpuDbTransferWaveform(DbTransferType::Read,
+                                                       serial_number,
+                                                       waveform);
+                if (result_ok)
+                {
+                    wavetable_temp.push_back({(int16_t)fpu_id, waveform});
+                }
+            }
+
+            // Read the FPU's wf_reversed flag
+            if (result_ok)
+            {
+                bool wf_reversed_flag = false;
+                result_ok = txn->fpuDbTransferWfReversedFlag(DbTransferType::Read,
+                                                             serial_number,
+                                                             wf_reversed_flag);
+                wf_reversed_temp[fpu_id] = wf_reversed_flag;
+            }
+
+            // Read the FPU's integer values
+            if (result_ok)
+            {
+                for (int i = 0; i < (int)FpuDbIntValType::NumTypes; i++)
+                {
+                    int64_t int64_val;
+                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Read,
+                                                    int64_items[i].type,
+                                                    serial_number,
+                                            int64_items[i].vector_ref[fpu_id]))
+                    {
+                        result_ok = false;
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // TODO: Error
+        }
+
     }
+
+    //..........................................................................
 
     std::vector<t_fpu_position> target_positions_temp(config.num_fpus);
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
@@ -183,6 +287,8 @@ void GridDriver::_post_connect_hook()
         target_positions_temp[fpu_id] = {apositions_temp[fpu_id], 
                                          bpositions_temp[fpu_id]};
     }
+
+    //..........................................................................
 
     apositions = apositions_temp;
     bpositions = bpositions_temp;
@@ -204,6 +310,7 @@ void GridDriver::_post_connect_hook()
     configuring_targets.clear();
     configured_targets.clear();
 
+    //..........................................................................
     // Query positions and compute offsets, if FPUs have been reset.
     // This assumes that the stored positions are correct.
     
@@ -213,8 +320,7 @@ void GridDriver::_post_connect_hook()
     _reset_hook(grid_state, grid_state, fpuset);
     _refresh_positions(grid_state, false, fpuset);
     
-    // TODO: Temporary only - return proper result codes eventually
-    UNUSED_ARG(result);
+    //..........................................................................
 
 #endif // ENABLE_PROTECTION_CODE
 

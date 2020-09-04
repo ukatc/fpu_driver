@@ -47,8 +47,6 @@ enum class DbTransferType
 
 enum class FpuDbPositionType
 {
-    // NOTE: All values below (except for NumTypes) must also have an entry in
-    // ProtectionDbTxn::fpuDbTransferPosition() -> position_subkeys[]
     AlphaLimit = 0,
     AlphaPos,
     BetaLimit,

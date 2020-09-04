@@ -20,6 +20,12 @@
 #ifndef GRIDDRIVER_H
 #define GRIDDRIVER_H
 
+// TODO: ENABLE_PROTECTION_CODE macro
+// Define this macro in a project's global predefined symbols to enable the
+// protection code work-in-progress, or disable it so that can continue to use
+// the unprotected code for the time being.
+// TODO: Remove this macro once done
+
 #include <map>
 #include <vector>
 #include <string>
@@ -29,11 +35,6 @@
 #endif // ENABLE_PROTECTION_CODE
 #include "Interval.h"
 #include "FPUCounters.h"
-
-// ENABLE_PROTECTION_CODE macro note: Define it (in a project's global
-// predefined symbols) to enable the protection code work-in-progress, or
-// disable it so that can continue to use the unprotected code for the time
-// being.
 
 
 namespace mpifps
