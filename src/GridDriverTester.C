@@ -119,7 +119,7 @@ void GridDriverTester::doGridDriverFunctionalTesting()
 }
 
 //------------------------------------------------------------------------------
-void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_driver,
+void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
                                                  bool soft_protection)
 {
     // Performs basic functional testing of a pre-initialised 
@@ -146,7 +146,7 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_dri
     const char *ip_address_str = "127.0.0.1";
     uint16_t port_number = 4700;
     t_gateway_address gateway_address = { ip_address_str, port_number };
-    result = grid_driver.connect(1, &gateway_address);   
+    result = gd.connect(1, &gateway_address);   
 
     //..........................................................................
     // Specify FPUs in fpuset
@@ -162,27 +162,27 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_dri
 
     //..........................................................................
     // Test getGridState()
-    grid_state_result = grid_driver.getGridState(grid_state);
+    grid_state_result = gd.getGridState(grid_state);
     
     //..........................................................................
     // Test readSerialNumbers()
-    result = grid_driver.readSerialNumbers(grid_state, fpuset);
+    result = gd.readSerialNumbers(grid_state, fpuset);
     
     //..........................................................................
     // Test pingFPUs()
-    result = grid_driver.pingFPUs(grid_state, fpuset);
+    result = gd.pingFPUs(grid_state, fpuset);
     
     //..........................................................................
     // Test getGridState() again
-    grid_state_result = grid_driver.getGridState(grid_state);
+    grid_state_result = gd.getGridState(grid_state);
 
     //..........................................................................
     // Test pingFPUs() again
-    result = grid_driver.pingFPUs(grid_state, fpuset);
+    result = gd.pingFPUs(grid_state, fpuset);
 
     //..........................................................................
     // Test resetFPUs()
-    result = grid_driver.resetFPUs(grid_state, fpuset);
+    result = gd.resetFPUs(grid_state, fpuset);
     
     //..........................................................................
     // Test findDatum()
@@ -194,14 +194,14 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_dri
     const bool count_protection = false;
     const bool support_uninitialized_auto = false;
 
-    grid_state_result = grid_driver.getGridState(grid_state);
+    grid_state_result = gd.getGridState(grid_state);
 
     // TODO: Use DATUM_TIMEOUT_DISABLE instead of DATUM_TIMEOUT_ENABLE below?
     // (sometimes times out if long-duration findDatum())
-    result = grid_driver.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
-                                   soft_protection, count_protection,
-                                   support_uninitialized_auto,
-                                   DATUM_TIMEOUT_ENABLE);
+    result = gd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
+                          soft_protection, count_protection,
+                          support_uninitialized_auto,
+                          DATUM_TIMEOUT_ENABLE);
 
     //..........................................................................
     // Test configMotion() and wavetable_was_received()
@@ -231,15 +231,15 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_dri
     bool allow_unconfirmed = false;
     E_FPU_STATE target_state = FPST_READY_FORWARD;
     bool wtable_received_result = 
-            grid_driver.wavetable_was_received(wavetable, 3, fpu_state,
-                                               allow_unconfirmed, target_state);
+            gd.wavetable_was_received(wavetable, 3, fpu_state,
+                                      allow_unconfirmed, target_state);
     UNUSED_ARG(wtable_received_result); // Suppress variable-not-used warning
     
-    grid_state_result = grid_driver.getGridState(grid_state);
+    grid_state_result = gd.getGridState(grid_state);
 
     for (int i = 0; i < TESTING_NUM_FPUS; i++)
     {
-        result = grid_driver.enableMove(i, grid_state);
+        result = gd.enableMove(i, grid_state);
     }
     
     //........................
@@ -258,18 +258,18 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &grid_dri
     */ 
     //........................
     
-    result = grid_driver.configMotion(wavetable, grid_state, fpuset,
-                                      soft_protection, allow_uninitialized,
-                                      ruleset_version, warn_unsafe, verbosity);
+    result = gd.configMotion(wavetable, grid_state, fpuset, soft_protection,
+                             allow_uninitialized, ruleset_version, warn_unsafe,
+                             verbosity);
 
     //..........................................................................
     // Test executeMotion()
     bool sync_command = true;
-    result = grid_driver.executeMotion(grid_state, fpuset, sync_command);
+    result = gd.executeMotion(grid_state, fpuset, sync_command);
     
     //..........................................................................
 
-    result = grid_driver.disconnect();
+    result = gd.disconnect();
 
     //..........................................................................
 

@@ -40,7 +40,7 @@ public:
     void doGridDriverFunctionalTesting();
 
 private:
-    void testInitialisedGridDriver(UnprotectedGridDriver &grid_driver,
+    void testInitialisedGridDriver(UnprotectedGridDriver &gd,
                                    bool soft_protection);
 };
 
