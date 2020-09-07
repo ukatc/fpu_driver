@@ -117,6 +117,12 @@ bool GridDriver::initializedOk()
 }
 
 //------------------------------------------------------------------------------
+ProtectionDB &GridDriver::getProtectionDB()
+{
+    return protection_db;
+}
+
+//------------------------------------------------------------------------------
 void GridDriver::_post_connect_hook()
 {
     //***************************

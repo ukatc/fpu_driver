@@ -327,6 +327,12 @@ E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
 }
 
 //------------------------------------------------------------------------------
+int UnprotectedGridDriver::getNumFpus()
+{
+    return config.num_fpus;
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs, 
                     const t_datum_search_flags &orig_search_modes,
                     enum E_DATUM_SELECTION selected_arm, const t_fpuset &fpuset,

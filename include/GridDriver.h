@@ -59,6 +59,8 @@ public:
 
     bool initializedOk() override;
 
+    ProtectionDB &getProtectionDB();
+    
     E_EtherCANErrCode pingFPUs(t_grid_state &gs, const t_fpuset &fpuset) override;
 
     //............................................
