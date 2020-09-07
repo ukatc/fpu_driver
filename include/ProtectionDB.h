@@ -168,8 +168,15 @@ private:
 
 //==============================================================================
 
+// Forward reference for friend-ing in ProtectionDB below
+class ProtectionDBTester;
+
 class ProtectionDB
 {
+    // Declare test class as friend so that it can access protected/private
+    // member variables and functions
+    friend class ProtectionDBTester;
+
 public:
     bool open(const std::string &dir_str);
     

@@ -559,6 +559,13 @@ static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiond
     return result_ok;
 }
 
+#ifdef FPU_DB_DATA_AGGREGATED
+//------------------------------------------------------------------------------
+void ProtectionDBTester::writeFpuDbTestItemsFromSerialNumbers(GridDriver &gd)
+{
+}
+#endif // FPU_DB_DATA_AGGREGATED
+
 //------------------------------------------------------------------------------
 static std::string getNextFpuTestSerialNumber()
 {

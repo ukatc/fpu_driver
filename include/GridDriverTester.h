@@ -42,6 +42,9 @@ public:
 private:
     void testInitialisedGridDriver(UnprotectedGridDriver &gd,
                                    bool soft_protection);
+#ifdef FPU_DB_DATA_AGGREGATED
+    void writeFpuDbDummyItemsFromSerialNumbers(GridDriver &gd);
+#endif
 };
 
 //==============================================================================

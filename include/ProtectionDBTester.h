@@ -21,7 +21,20 @@
 #define PROTECTIONDBTESTER_H
 
 #include "ProtectionDB.h"
+#include "GridDriver.h"
+
+using namespace mpifps;
 
 bool protectionDB_Test();
+
+class ProtectionDBTester
+{
+    // N.B. This class is friend-ed from ProtectionDB, so it can access their
+    // private and protected member variables and functions for test purposes
+
+public:
+    void writeFpuDbTestItemsFromSerialNumbers(GridDriver &gd);
+
+};
 
 #endif // PROTECTIONDBTESTER_H
