@@ -38,6 +38,51 @@ using namespace mpifps::ethercanif;
 std::string protectionDB_GetDirFromLinuxEnv(bool mockup);
 
 // -----------------------------------------------------------------------------
+// TODO: Macro to enable the aggregation of the FPU database data into a per-FPU
+// data structure, rather than the original Python version approach of having
+// a separate array for each of the FPU data elements
+#define FPU_DB_DATA_AGGREGATED
+
+// -----------------------------------------------------------------------------
+
+#ifdef FPU_DB_DATA_AGGREGATED
+
+struct FpuDbData
+{
+    FpuDbData()
+    {
+        wf_reversed = false;
+        maxaretries = 0;
+        aretries_cw = 0;
+        aretries_acw = 0;
+        maxbretries = 0;
+        bretries_cw = 0;
+        bretries_acw = 0;
+    }
+
+    Interval apos;
+    Interval bpos;
+    bool wf_reversed;
+    Interval alimits;
+    Interval blimits;
+    int64_t maxaretries;
+    int64_t aretries_cw;
+    int64_t aretries_acw;
+    int64_t maxbretries;
+    int64_t bretries_cw;
+    int64_t bretries_acw;
+    FpuCounters counters;
+
+    // TODO: Is having this FPU waveform here appropriate? Or, should it be
+    // written to / read from the FPU database separately? (because the Python
+    // code stores the waveforms in a t_wavetable vector, which is variable-
+    // sized?)
+    t_waveform_steps waveform;
+};
+
+#endif // FPU_DB_DATA_AGGREGATED
+
+// -----------------------------------------------------------------------------
 
 enum class DbTransferType
 {
