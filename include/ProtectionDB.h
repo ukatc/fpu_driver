@@ -125,6 +125,13 @@ class ProtectionDbTxn
 
 public:
     ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
+
+#ifdef FPU_DB_DATA_AGGREGATED
+    bool fpuDbTransferFpu(DbTransferType transfer_type,
+                          const char serial_number[],
+                          FpuDbData &fpu_db_data);
+#endif // FPU_DB_DATA_AGGREGATED
+
     bool fpuDbTransferPosition(DbTransferType transfer_type,
                                FpuDbPositionType position_type, 
                                const char serial_number[], Interval &interval,

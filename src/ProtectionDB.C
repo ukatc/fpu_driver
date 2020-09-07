@@ -268,6 +268,120 @@ ProtectionDbTxn::ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr,
     }
 }
 
+#ifdef FPU_DB_DATA_AGGREGATED
+//------------------------------------------------------------------------------
+bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
+                                       const char serial_number[],
+                                       FpuDbData &fpu_db_data)
+{
+
+    // TODO: Test this function properly - only visually checked so far
+
+    ///*************** TODO: What to do with the offset values??
+    double datum_offset;
+
+    bool result_ok = fpuDbTransferPosition(transfer_type, 
+                                           FpuDbPositionType::AlphaPos,
+                                           serial_number, fpu_db_data.apos,
+                                           datum_offset);
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferPosition(transfer_type, 
+                                          FpuDbPositionType::BetaPos,
+                                          serial_number, fpu_db_data.bpos,
+                                          datum_offset);
+    }
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferWfReversedFlag(transfer_type, serial_number,
+                                                fpu_db_data.wf_reversed);
+    }
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferPosition(transfer_type, 
+                                          FpuDbPositionType::AlphaLimit,
+                                          serial_number, fpu_db_data.alimits,
+                                          datum_offset);
+    }
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferPosition(transfer_type, 
+                                          FpuDbPositionType::BetaLimit,
+                                          serial_number, fpu_db_data.blimits,
+                                          datum_offset);
+    }
+
+    // TODO: Does FreeAlphaRetries / FreeBetaRetries actually correspond to
+    // maxrareties/maxbretries in the items below?
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferInt64Val(transfer_type,
+                                          FpuDbIntValType::FreeAlphaRetries,
+                                          serial_number, 
+                                          fpu_db_data.maxaretries);
+    }
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferInt64Val(transfer_type,
+                                          FpuDbIntValType::AlphaRetries_CW,
+                                          serial_number, 
+                                          fpu_db_data.aretries_cw);
+    }
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferInt64Val(transfer_type,
+                                          FpuDbIntValType::AlphaRetries_ACW,
+                                          serial_number, 
+                                          fpu_db_data.aretries_acw);
+    }
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferInt64Val(transfer_type,
+                                          FpuDbIntValType::FreeBetaRetries,
+                                          serial_number, 
+                                          fpu_db_data.maxbretries);
+    }
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferInt64Val(transfer_type,
+                                          FpuDbIntValType::BetaRetries_CW,
+                                          serial_number, 
+                                          fpu_db_data.bretries_cw);
+    }
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferInt64Val(transfer_type,
+                                          FpuDbIntValType::BetaRetries_ACW,
+                                          serial_number, 
+                                          fpu_db_data.bretries_acw);
+    }
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferCounters(transfer_type, serial_number,
+                                          fpu_db_data.counters);
+    }
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferWaveform(transfer_type, serial_number,
+                                          fpu_db_data.waveform);
+    }
+
+    return result_ok;
+}
+#endif // FPU_DB_DATA_AGGREGATED
+
 //------------------------------------------------------------------------------
 bool ProtectionDbTxn::fpuDbTransferPosition(DbTransferType transfer_type,
                                             FpuDbPositionType position_type,
