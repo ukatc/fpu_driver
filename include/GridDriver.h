@@ -85,14 +85,6 @@ private:
 
     bool initprotection_was_called_ok = false;
 
-    // TODO: This wf_reversed vector was moved here into GridDriver from
-    // UnprotectedGridDriver so that it can eventually be included into an FPU
-    // database data structure - this is OK because it's not actually used in
-    // UnprotectedGridDriver. N.B. The associated set_wtable_reversed() function
-    // is no longer required so has been removed, but the getReversed() function
-    // might still be required? (it's shown in the FPU grid driver document)
-    std::vector<bool> wf_reversed; // N.B. Size is set to config.num_fpus
-
 #ifdef ENABLE_PROTECTION_CODE
 
     //*****************************
@@ -101,13 +93,18 @@ private:
     // converted from their Python equivalents as shown in
     // _post_connect_hook() - check these further
 
-    // Vectors with sizes all set to number of FPUs
+    // N.B. These vectors all have their sizes set to the number of FPUs
     std::vector<Interval> apositions;
     std::vector<Interval> bpositions;
+    // TODO: This wf_reversed vector was moved here into GridDriver from
+    // UnprotectedGridDriver so that it can eventually be included into an FPU
+    // database data structure - this is OK because it's not actually used in
+    // UnprotectedGridDriver. N.B. The associated set_wtable_reversed() function
+    // is no longer required so has been removed, but the getReversed() function
+    // might still be required? (it's shown in the FPU grid driver document)
+    std::vector<bool> wf_reversed; // N.B. Size is set to config.num_fpus
     std::vector<Interval> alimits;
     std::vector<Interval> blimits;
-    std::vector<Interval> a_caloffsets;
-    std::vector<Interval> b_caloffsets;
     std::vector<int64_t> maxaretries;
     std::vector<int64_t> aretries_cw;
     std::vector<int64_t> aretries_acw;
@@ -115,6 +112,9 @@ private:
     std::vector<int64_t> bretries_cw;
     std::vector<int64_t> bretries_acw;
     std::vector<FpuCounters> counters;
+
+    std::vector<Interval> a_caloffsets;
+    std::vector<Interval> b_caloffsets;
     std::vector<FpuCounters> _last_counters;
     std::vector<t_fpu_position> target_positions;
 #endif // ENABLE_PROTECTION_CODE

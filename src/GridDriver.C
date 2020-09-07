@@ -82,8 +82,6 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
 
 #ifdef ENABLE_PROTECTION_CODE
 
-    wf_reversed.resize(config.num_fpus, false);
-
     // TODO: Finish this function
 
     // Initialise LMDB protection database
@@ -282,23 +280,11 @@ void GridDriver::_post_connect_hook()
 
     //..........................................................................
 
-    std::vector<t_fpu_position> target_positions_temp(config.num_fpus);
-    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
-    {
-        target_positions_temp[fpu_id] = {apositions_temp[fpu_id], 
-                                         bpositions_temp[fpu_id]};
-    }
-
-    //..........................................................................
-
     apositions = apositions_temp;
     bpositions = bpositions_temp;
-    last_wavetable = wavetable_temp;
     wf_reversed = wf_reversed_temp;
     alimits = alimits_temp;
     blimits = blimits_temp;
-    a_caloffsets = a_caloffsets_temp;
-    b_caloffsets = b_caloffsets_temp;
     maxaretries = maxaretries_temp;
     aretries_cw = aretries_cw_temp;
     aretries_acw = aretries_acw_temp;
@@ -306,8 +292,24 @@ void GridDriver::_post_connect_hook()
     bretries_cw = bretries_cw_temp;
     bretries_acw = bretries_acw_temp;
     counters = counters_temp;
+
+    //..........................................................................
+
+    last_wavetable = wavetable_temp;
+    a_caloffsets = a_caloffsets_temp;
+    b_caloffsets = b_caloffsets_temp;
     _last_counters = counters_temp;
+
+    //..........................................................................
+
+    std::vector<t_fpu_position> target_positions_temp(config.num_fpus);
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        target_positions_temp[fpu_id] = {apositions_temp[fpu_id], 
+                                         bpositions_temp[fpu_id]};
+    }
     target_positions = target_positions_temp;
+
     configuring_targets.clear();
     configured_targets.clear();
 
