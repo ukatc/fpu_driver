@@ -85,6 +85,14 @@ private:
 
     bool initprotection_was_called_ok = false;
 
+    // TODO: This wf_reversed vector was moved here into GridDriver from
+    // UnprotectedGridDriver so that it can eventually be included into an FPU
+    // database data structure - this is OK because it's not actually used in
+    // UnprotectedGridDriver. N.B. The associated set_wtable_reversed() function
+    // is no longer required so has been removed, but the getReversed() function
+    // might still be required? (it's shown in the FPU grid driver document)
+    std::vector<bool> wf_reversed; // N.B. Size is set to config.num_fpus
+
 #ifdef ENABLE_PROTECTION_CODE
 
     //*****************************
@@ -129,6 +137,10 @@ private:
     double _beta_angle(const t_fpu_state &fpu_state, bool &beta_underflow_ret,
                        bool &beta_overflow_ret);
 #endif // ENABLE_PROTECTION_CODE
+
+    // TODO: Not needed: See comments above disabled set_wtable_reversed() in
+    // GridDriver.C
+    // void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed = false);
 
     // The following hook functions override those in UnprotectedGridDriver
 

@@ -260,7 +260,60 @@ protected:
     }
     virtual void _post_config_motion_hook(const t_wtable &wtable,
                                           t_grid_state &gs,
-                                          const t_fpuset &fpuset);
+                                          const t_fpuset &fpuset)
+    {
+        // NOTE: The original Python version of this function called
+        // set_wtable_reversed(), but this isn't required because it doesn't
+        // do anything in UnprotectedGridDriver (because wf_reversed isn't
+        // used in it)
+        UNUSED_ARG(wtable);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
+    }
+
+    // repeatMotion() hook functions
+    virtual void _pre_repeat_motion_hook(const t_wtable &wtable,
+                                         t_grid_state &gs,
+                                         const t_fpuset &fpuset,
+                                         Range wmode = Range::Error)
+    {
+        UNUSED_ARG(wtable);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
+        UNUSED_ARG(wmode);
+    }
+    virtual void _post_repeat_motion_hook(const t_wtable &wtable,
+                                          t_grid_state &gs,
+                                          const t_fpuset &fpuset)
+    {
+        // NOTE: See comments in _post_config_motion_hook() above - they apply
+        // to this function as well
+        UNUSED_ARG(wtable);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
+    }
+
+    // reverseMotion() hook functions
+    virtual void _pre_reverse_motion_hook(const t_wtable &wtable,
+                                          t_grid_state &gs,
+                                          const t_fpuset &fpuset,
+                                          Range wmode = Range::Error)
+    {
+        UNUSED_ARG(wtable);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
+        UNUSED_ARG(wmode);
+    }  
+    virtual void _post_reverse_motion_hook(const t_wtable &wtable,
+                                          t_grid_state &gs,
+                                          const t_fpuset &fpuset)
+    {
+        // NOTE: See comments in _post_config_motion_hook() above - they apply
+        // to this function as well
+        UNUSED_ARG(wtable);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
+    }
 
     // executeMotion() hook functions
     virtual void _start_execute_motion_hook(t_grid_state &gs,
@@ -309,7 +362,10 @@ protected:
     // TODO: See comments above t_wtable definition in AsyncInterface.h
     t_wtable last_wavetable;
 
-    std::vector<bool> wf_reversed;  // N.B. Size is set to config.num_fpus
+    // NOTE: wf_reversed is not used in UnprotectedGridDriver, so it has been
+    // moved to GridDriver (N.B. The original Python version had it in
+    // UnprotectedGridDriver)
+    // std::vector<bool> wf_reversed;
 
     // _gd: N.B. Can't use a unique_ptr for EtherCANInterface, probably
     // because it's explicitly non-movable
@@ -320,7 +376,6 @@ protected:
     //..........................................................................
 private:
     E_EtherCANErrCode pingIfNeeded(t_grid_state &gs, const t_fpuset &fpuset);
-    void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed = false);
 
     bool wavetables_incomplete = false;
 

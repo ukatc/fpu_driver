@@ -82,6 +82,7 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
 
 #ifdef ENABLE_PROTECTION_CODE
 
+    wf_reversed.resize(config.num_fpus, false);
 
     // TODO: Finish this function
 
@@ -727,6 +728,33 @@ void GridDriver::getFpuSetForConfigNumFpus(t_fpuset &fpuset_ret)
         fpuset_ret[i] = true;
     }
 }
+
+#if 0
+//------------------------------------------------------------------------------
+// TODO: Note: set_wtable_reversed() didn't effectively do anything in the
+// original Python version in FpuGridDriver.py, and so is removed here. This is
+// because:
+//   - wf_reversed is not used in UnprotectedGridDriver
+//   - Therefore, the original Python UnprotectedGridDriver virtual hook
+//     function implementations of _post_config_motion_hook(),
+//     _post_repeat_motion_hook() and _post_reverse_motion_hook() which call
+//     set_wtable_reversed() are superfluous (N.B. But their overrides in
+//     GridDriver are important)
+void UnprotectedGridDriver::set_wtable_reversed(const t_fpuset &fpuset,
+                                                bool is_reversed)
+{
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here 
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (fpuset[fpu_id])
+        {
+            wf_reversed[fpu_id] = is_reversed;
+        }
+    }
+}
+#endif // 0
 
 //------------------------------------------------------------------------------
 int GridDriver::sign(int64_t val)

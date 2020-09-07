@@ -125,8 +125,6 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     config.motor_max_start_frequency = motor_max_start_frequency;
     config.motor_max_rel_increase = motor_max_rel_increase;
     config.motor_max_step_difference = motor_max_step_difference;
-
-    wf_reversed.resize(config.num_fpus, false);
 }
 
 //------------------------------------------------------------------------------
@@ -609,21 +607,6 @@ E_EtherCANErrCode UnprotectedGridDriver::readSerialNumbers(t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
-void UnprotectedGridDriver::_post_config_motion_hook(const t_wtable &wtable,
-                                                     t_grid_state &gs,
-                                                     const t_fpuset &fpuset)
-{
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here
-
-    // TODO: Temporary for now
-    UNUSED_ARG(wtable);
-    UNUSED_ARG(gs);
-
-    set_wtable_reversed(fpuset, false);
-}
-
-//------------------------------------------------------------------------------
 bool UnprotectedGridDriver::wavetable_was_received(const t_wtable &wtable,
                                                    int fpu_id,
                                                    const t_fpu_state &fpu_state,  
@@ -833,22 +816,6 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     // TODO: Is this return variable correct? (does correspond to equivalent 
     // Python code)
     return result;
-}
-
-//------------------------------------------------------------------------------
-void UnprotectedGridDriver::set_wtable_reversed(const t_fpuset &fpuset,
-                                                bool is_reversed)
-{
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here 
-
-    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
-    {
-        if (fpuset[fpu_id])
-        {
-            wf_reversed[fpu_id] = is_reversed;
-        }
-    }
 }
 
 //------------------------------------------------------------------------------
