@@ -22,15 +22,21 @@
 
 //..............................................................................
 
+// Top-level test functions
 static bool protectionDB_TestWithStayingOpen(const std::string &dir_str);
 static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
+
+// FPU database data item transfer test functions
 static bool protectionDB_TestFpuPositionTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuWfReversedFlagTransfer(ProtectionDB &protectiondb);
+
+// FPU database binary-level item transfer test functions
 static bool protectionDB_TestFpuSingleItemWriteRead(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
+
 static std::string getNextFpuTestSerialNumber();
 
 //------------------------------------------------------------------------------
@@ -43,10 +49,9 @@ bool protectionDB_Test()
     //   - An LMDB database must already exist in dir_str location (see below)
     //   - This test functionality currently generates random FPU serial
     //     numbers (see getNextFpuTestSerialNumber()) which it then uses to
-    //     write to and read from the FPU database - however, if one of these
-    //     FPU serial numbers already exists in the database then a test might
-    //     occasionally fail
-    //     *** TODO: *** Fix this eventually
+    //     write to and read from the FPU database. If an item with the same
+    //     serial number / subkey combination already exists in the database
+    //     then it is overwritten
     
     std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
     bool result_ok = false;

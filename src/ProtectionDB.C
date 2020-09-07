@@ -548,7 +548,8 @@ bool ProtectionDbTxn::fpuDbWriteItem(const char serial_number[],
                                      const char subkey[], void *data_ptr,
                                      int num_bytes)
 {
-    // Writes the specified item
+    // Writes the specified item. If an item with the same serial_number/subkey
+    // combination already exists then it is overwritten.
     
     MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
     MDB_val data_val = { (size_t)num_bytes, data_ptr };
