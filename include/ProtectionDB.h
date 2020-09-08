@@ -95,7 +95,7 @@ private:
         bool waveforms_are_equal = false;
         if (waveform.size() == other.waveform.size())
         {
-            bool waveforms_are_equal = true;
+            waveforms_are_equal = true;
             for (size_t i = 0; i < waveform.size(); i++)
             {
                 if ((waveform[i].alpha_steps != other.waveform[i].alpha_steps) ||

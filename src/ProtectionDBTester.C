@@ -55,8 +55,16 @@ bool protectionDB_Test()
     
     std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
     bool result_ok = false;
+
+    // TODO: All test functions in this file should go into ProtectionDBTester,
+    // so the code in this bit should be consolidated with it once this is done
+    ProtectionDBTester protection_db_tester;
+    result_ok = protection_db_tester.testFpuDbDataClass();
     
-    result_ok = protectionDB_TestWithStayingOpen(dir_str);
+    if (result_ok)
+    {
+        result_ok = protectionDB_TestWithStayingOpen(dir_str);
+    }
     
     if (result_ok)
     {
@@ -565,6 +573,95 @@ void ProtectionDBTester::writeFpuDbTestItemsFromSerialNumbers(GridDriver &gd)
 {
 }
 #endif // FPU_DB_DATA_AGGREGATED
+
+//------------------------------------------------------------------------------
+bool ProtectionDBTester::testFpuDbDataClass()
+{
+    bool result_ok = false;
+    FpuDbData fpu_db_data_1;
+
+    protectionDB_PopulateFpuDbDataWithTestValues(fpu_db_data_1);
+
+    // Test the "==" and "!=" operator overloads for when the objects are the
+    // same
+    FpuDbData fpu_db_data_2 = fpu_db_data_1;
+    if (fpu_db_data_2 == fpu_db_data_1)
+    {
+        result_ok = true;
+        if (result_ok)
+        {
+            if (fpu_db_data_2 != fpu_db_data_1)
+            {
+                result_ok = false;
+            }
+        }
+    }
+    else
+    {
+        result_ok = false;
+    }
+    
+    if (result_ok)
+    {
+        FpuDbData fpu_db_data_3 = fpu_db_data_1;
+        
+        // Test differences with a few different data types
+        fpu_db_data_3.apos = Interval(123.0, 456.0);
+        if (!(fpu_db_data_3 != fpu_db_data_1))
+        {
+            result_ok = false;
+        }
+        
+        if (result_ok)
+        {
+            fpu_db_data_3 = fpu_db_data_1;
+            fpu_db_data_3.counters.setCount(FpuCounterId::collisions, 123456);
+            if (fpu_db_data_3 == fpu_db_data_1)
+            {
+                result_ok = false;
+            }
+        }
+        
+        if (result_ok)
+        {
+            fpu_db_data_3 = fpu_db_data_1;
+            fpu_db_data_3.waveform[0].beta_steps = 999;
+            if (fpu_db_data_3 == fpu_db_data_1)
+            {
+                result_ok = false;
+            }
+        }
+    }
+    
+    // TODO: Return true or false
+    return result_ok;
+}
+
+//------------------------------------------------------------------------------
+void protectionDB_PopulateFpuDbDataWithTestValues(FpuDbData &fpu_db_data)
+{
+    fpu_db_data.apos = Interval(1.0, 2.0);
+    fpu_db_data.bpos = Interval(3.0, 4.0);
+    fpu_db_data.wf_reversed = true;
+    fpu_db_data.alimits = Interval(5.0, 6.0);
+    fpu_db_data.blimits = Interval(7.0, 8.0);
+    fpu_db_data.maxaretries = 9;
+    fpu_db_data.aretries_cw = 10;
+    fpu_db_data.aretries_acw = 11;
+    fpu_db_data.maxbretries = 12;
+    fpu_db_data.bretries_cw = 13;
+    fpu_db_data.bretries_acw = 14;
+    for (int i = 0; i < (int)FpuCounterId::NumCounters; i++)
+    {
+        fpu_db_data.counters.setCount((FpuCounterId)i, i * 100);
+    }
+    const int num_waveform_steps = 10;
+    fpu_db_data.waveform.resize(num_waveform_steps);
+    for (int i = 0; i < num_waveform_steps; i++)
+    {
+        fpu_db_data.waveform[i] = { (int16_t)(i + 100), (int16_t)(i + 200) };
+    }
+}
 
 //------------------------------------------------------------------------------
 static std::string getNextFpuTestSerialNumber()

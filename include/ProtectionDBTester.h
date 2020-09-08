@@ -29,12 +29,12 @@ bool protectionDB_Test();
 
 class ProtectionDBTester
 {
-    // N.B. This class is friend-ed from ProtectionDB, so it can access their
+    // N.B. This class is friend-ed from ProtectionDB, so it can access its
     // private and protected member variables and functions for test purposes
 
 public:
     void writeFpuDbTestItemsFromSerialNumbers(GridDriver &gd);
-
+    bool testFpuDbDataClass();
 };
 
 #endif // PROTECTIONDBTESTER_H
