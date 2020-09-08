@@ -51,6 +51,7 @@ struct FpuDbData
 {
     FpuDbData()
     {
+        // Initialise the items which don't initialise themselves
         wf_reversed = false;
         maxaretries = 0;
         aretries_cw = 0;
@@ -60,6 +61,16 @@ struct FpuDbData
         bretries_acw = 0;
     }
 
+    bool operator==(const FpuDbData &other)
+    {
+        return isSameAsOther(other);
+    }
+    
+    bool operator!=(const FpuDbData &other)
+    {
+        return !isSameAsOther(other);
+    }
+    
     Interval apos;
     Interval bpos;
     bool wf_reversed;
@@ -72,12 +83,44 @@ struct FpuDbData
     int64_t bretries_cw;
     int64_t bretries_acw;
     FpuCounters counters;
-
     // TODO: Is having this FPU waveform here appropriate? Or, should it be
     // written to / read from the FPU database separately? (because the Python
-    // code stores the waveforms in a t_wavetable vector, which is variable-
-    // sized?)
+    // code stores the waveforms in a t_wavetable vector, which might be
+    // variable-sized?)
     t_waveform_steps waveform;
+    
+private:
+    bool isSameAsOther(const FpuDbData &other)
+    {
+        bool waveforms_are_equal = false;
+        if (waveform.size() == other.waveform.size())
+        {
+            bool waveforms_are_equal = true;
+            for (size_t i = 0; i < waveform.size(); i++)
+            {
+                if ((waveform[i].alpha_steps != other.waveform[i].alpha_steps) ||
+                    (waveform[i].beta_steps != other.waveform[i].beta_steps))
+                {
+                    waveforms_are_equal = false;
+                    break;
+                }
+            }
+        }
+      
+        return ((apos == other.apos) &&
+                (bpos == other.bpos) &&
+                (wf_reversed == other.wf_reversed) &&
+                (alimits == other.alimits) &&
+                (blimits == other.blimits) &&
+                (maxaretries == other.maxaretries) &&
+                (aretries_cw == other.aretries_cw) &&
+                (aretries_acw == other.aretries_acw) &&
+                (maxbretries == other.maxbretries) &&
+                (bretries_cw == other.bretries_cw) &&
+                (bretries_acw == other.bretries_acw) &&
+                (counters == other.counters) &&
+                waveforms_are_equal);
+    }
 };
 
 #endif // FPU_DB_DATA_AGGREGATED
