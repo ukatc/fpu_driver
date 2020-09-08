@@ -96,6 +96,7 @@ public:
     int getNumRawBytes();
     void *getRawBytesPtr() const;
     void populateFromRawBytes(void *raw_bytes_ptr);
+    bool operator==(const FpuCounters &other);
 
 private:
     std::vector<FpuCounterInt> counters;

@@ -88,6 +88,19 @@ void FpuCounters::populateFromRawBytes(void *raw_bytes_ptr)
     memcpy(counters.data(), raw_bytes_ptr, getNumRawBytes());
 }
 
+//------------------------------------------------------------------------------
+bool FpuCounters::operator==(const FpuCounters &other)
+{
+    for (int i = 0; i < (int)FpuCounterId::NumCounters; i++)
+    {
+        if (counters[i] != other.counters[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 //==============================================================================
 // Unit test function follows
@@ -95,8 +108,10 @@ void FpuCounters::populateFromRawBytes(void *raw_bytes_ptr)
 void testFpuCounters()
 {
     // Ad-hoc test function - single-step through and observe the counter arrays
-    // and other variables in the debugger to check that works OK
+    // and other variables etc in the debugger to check that works OK
     
+    //..........................................................................
+    // Perform various general tests
     FpuCounters fpu_counters;
     
     for (int id = 0; id < (int)FpuCounterId::NumCounters; id++)
@@ -128,5 +143,31 @@ void testFpuCounters()
     void *raw_bytes_ptr = fpu_counters.getRawBytesPtr();
     int num_raw_bytes = fpu_counters.getNumRawBytes();
     memcpy(dummy_array, raw_bytes_ptr, num_raw_bytes);
+
+    //..........................................................................
+    // Test the "==" comparison operator overload
+    FpuCounters fpu_counters_1;
+    FpuCounters fpu_counters_2;
+    FpuCounters fpu_counters_3;
+    for (int i = 0; i < (int)FpuCounterId::NumCounters; i++)
+    {
+        fpu_counters_1.setCount((FpuCounterId)i, i * 10);
+    }
+    fpu_counters_2 = fpu_counters_1;
+    fpu_counters_3 = fpu_counters_1;
+
+    int dummy = 0;
+    if (fpu_counters_1 == fpu_counters_2)
+    {
+        dummy++;
+    }
+
+    fpu_counters_3.setCount(FpuCounterId::total_alpha_steps, 23);
+    if (fpu_counters_1 == fpu_counters_3)
+    {
+        dummy++;
+    }
+
+    //..........................................................................
 }
 
