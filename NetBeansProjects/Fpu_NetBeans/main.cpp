@@ -77,7 +77,7 @@ static void testGridDriver()
     // gd_tester.doGridDriverUnitTests();
     
 #if 0
-    gd_tester.testUnprotectedGridDriver();
+    gd_tester.doUnprotectedGridDriverFunctionalTesting();
 #else
     gd_tester.doGridDriverFunctionalTesting();
 #endif

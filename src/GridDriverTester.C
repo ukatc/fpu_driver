@@ -38,22 +38,6 @@ namespace mpifps
 {
 
 //------------------------------------------------------------------------------
-void GridDriverTester::testUnprotectedGridDriver()
-{
-    E_EtherCANErrCode result;
-    
-    UnprotectedGridDriver ugd(TESTING_NUM_FPUS);
-
-    result = ugd.initialize();
-
-    if (result == DE_OK)
-    {
-        const bool soft_protection = false;
-        testInitialisedGridDriver(ugd, soft_protection);
-    }
-}
-
-//------------------------------------------------------------------------------
 void GridDriverTester::doGridDriverUnitTests()
 {
     // Performs ad-hoc unit tests on a GridDriver instance
@@ -92,6 +76,22 @@ void GridDriverTester::doGridDriverUnitTests()
     
     int dummy = 123;
     
+}
+
+//------------------------------------------------------------------------------
+void GridDriverTester::doUnprotectedGridDriverFunctionalTesting()
+{
+    E_EtherCANErrCode result;
+    
+    UnprotectedGridDriver ugd(TESTING_NUM_FPUS);
+
+    result = ugd.initialize();
+
+    if (result == DE_OK)
+    {
+        const bool soft_protection = false;
+        testInitialisedGridDriver(ugd, soft_protection);
+    }
 }
 
 //------------------------------------------------------------------------------

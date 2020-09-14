@@ -34,9 +34,9 @@ class GridDriverTester
     // so it can access their private and protected member variables and
     // functions for test purposes
 public:
-    void testUnprotectedGridDriver();
-
     void doGridDriverUnitTests();
+
+    void doUnprotectedGridDriverFunctionalTesting();
     void doGridDriverFunctionalTesting();
 
 private:
