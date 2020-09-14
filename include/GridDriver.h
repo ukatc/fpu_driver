@@ -95,6 +95,20 @@ private:
     // converted from their Python equivalents as shown in
     // _post_connect_hook() - check these further
 
+#ifdef FPU_DB_DATA_AGGREGATED
+    struct FpuData
+    {
+        FpuDbData db;
+
+        Interval a_caloffset;
+        Interval b_caloffset;
+        FpuCounters _last_counters;
+        t_fpu_position target_position;
+    };
+
+    std::vector<FpuData> fpus_data;
+
+#else // NOT FPU_DB_DATA_AGGREGATED
     // N.B. These vectors all have their sizes set to the number of FPUs
     std::vector<Interval> apositions;
     std::vector<Interval> bpositions;
@@ -119,6 +133,7 @@ private:
     std::vector<Interval> b_caloffsets;
     std::vector<FpuCounters> _last_counters;
     std::vector<t_fpu_position> target_positions;
+#endif // NOT FPU_DB_DATA_AGGREGATED
 #endif // ENABLE_PROTECTION_CODE
 
     // Variable-sized maps? (for now)

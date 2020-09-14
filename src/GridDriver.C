@@ -125,6 +125,15 @@ ProtectionDB &GridDriver::getProtectionDB()
 //------------------------------------------------------------------------------
 void GridDriver::_post_connect_hook()
 {
+
+    //***************************
+    // TODO: NOTE: This function uses the new std::vector<FpuData> data
+    // structuring - an earlier version which used the old parallel std::vector
+    // approach (i.e. the Python FpuGridDriver.py structure of separate 
+    // apositions, bpositions,... etc each being in their own array of size
+    // config.num_fpus) is #ifdef'd out at the bottom of this file
+    //***************************
+
     //***************************
     // TODO: This function conversion from Python is WIP - finish it
     //***************************
@@ -158,124 +167,49 @@ void GridDriver::_post_connect_hook()
     }
 
     //..........................................................................
-    // Create temporary FPU value vectors, with any required initialisation
-    // N.B. std::vector storage is created on the heap, so no problem with
-    // local stack space here (unlike std::array)
-    std::vector<Interval> apositions_temp(config.num_fpus);
-    std::vector<Interval> bpositions_temp(config.num_fpus);
-    t_wtable wavetable_temp;
-    std::vector<bool> wf_reversed_temp(config.num_fpus, false);
-    std::vector<Interval> alimits_temp(config.num_fpus);
-    std::vector<Interval> blimits_temp(config.num_fpus);
-    std::vector<int64_t> maxaretries_temp(config.num_fpus, 0);
-    std::vector<int64_t> aretries_cw_temp(config.num_fpus, 0);
-    std::vector<int64_t> aretries_acw_temp(config.num_fpus, 0);
-    std::vector<int64_t> maxbretries_temp(config.num_fpus, 0);
-    std::vector<int64_t> bretries_cw_temp(config.num_fpus, 0);
-    std::vector<int64_t> bretries_acw_temp(config.num_fpus, 0);
-    std::vector<FpuCounters> counters_temp(config.num_fpus);
+    // Create temporary FPUs data vector
 
-    std::vector<Interval> a_caloffsets_temp(config.num_fpus, Interval(0.0));
-    std::vector<Interval> b_caloffsets_temp(config.num_fpus, Interval(0.0));
+    std::vector<FpuData> fpus_data_temp(config.num_fpus);
 
     //..........................................................................
-    // Read all FPUs' data items from the protection database into the
-    // temporary value vectors
-    struct
-    {
-        FpuDbPositionType type;
-        std::vector<Interval> &vector_ref;
-    } position_items[(int)FpuDbPositionType::NumTypes] = 
-    {
-        { FpuDbPositionType::AlphaPos,   apositions_temp },
-        { FpuDbPositionType::BetaPos,    bpositions_temp },
-        { FpuDbPositionType::AlphaLimit, alimits_temp    },
-        { FpuDbPositionType::BetaLimit,  blimits_temp    }
-    };
-    
-    struct
-    {
-        FpuDbIntValType type;
-        std::vector<int64_t> &vector_ref;
-    } int64_items[(int)FpuDbIntValType::NumTypes] =
-    {
-        // TODO: Check that FreeAlphaRetries and FreeBetaRetries correspond to
-        // maxaretries_temp and maxbretries_temp
-        { FpuDbIntValType::FreeAlphaRetries, maxaretries_temp  },
-        { FpuDbIntValType::AlphaRetries_CW,  aretries_cw_temp  },
-        { FpuDbIntValType::AlphaRetries_ACW, aretries_acw_temp },
-        { FpuDbIntValType::FreeBetaRetries,  maxbretries_temp  },
-        { FpuDbIntValType::BetaRetries_CW,   bretries_cw_temp  },
-        { FpuDbIntValType::BetaRetries_ACW,  bretries_acw_temp }
-    };
+
+    // ********* TODO: What to do with the interval offsets in the FpuDbData
+    // Interval items??
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
         // TODO: If amy of the following operations fail then break out of this
         // "for" loop
 
+        FpuData single_fpu_data;
 
-        auto txn = protection_db.createTransaction();
-        if (txn)
+        // Read FPU data item from the protection database into the temporary
+        // FPUs data vector
+        result_ok = false;
+        const char *serial_number = grid_state.FPU_state[fpu_id].serial_number;
         {
-            const char *serial_number = grid_state.FPU_state[fpu_id].serial_number;
-
-            // Read the FPU's position values
-      //********* TODO: What to do with the offsets??
-            double datum_offset;
-            result_ok = true;
-            for (int i = 0; i < (int)FpuDbPositionType::NumTypes; i++)
+            // N.B. This transaction is in its own nested scope so that it
+            // automatically closes as soon as the scope ends 
+            auto txn = protection_db.createTransaction();
+            if (txn)
             {
-                if (!txn->fpuDbTransferPosition(DbTransferType::Read,
-                                                position_items[i].type,
-                                                serial_number,
-                                                position_items[i].vector_ref[fpu_id],
-                                                datum_offset))
-                {
-                    result_ok = false;
-                    break;
-                }
+                result_ok = txn->fpuDbTransferFpu(DbTransferType::Read,
+                                                  serial_number,
+                                                  single_fpu_data.db);
             }
+        }
+        
+        if (result_ok)
+        {
+            single_fpu_data.a_caloffset = Interval(0.0);
+            single_fpu_data.b_caloffset = Interval(0.0);
+            single_fpu_data._last_counters = single_fpu_data.db.counters;
+            single_fpu_data.target_position = { single_fpu_data.db.apos,
+                                                single_fpu_data.db.bpos };
 
-            // Read the FPU's waveform
-            if (result_ok)
-            {
-                t_waveform_steps waveform;
-                result_ok = txn->fpuDbTransferWaveform(DbTransferType::Read,
-                                                       serial_number,
-                                                       waveform);
-                if (result_ok)
-                {
-                    wavetable_temp.push_back({(int16_t)fpu_id, waveform});
-                }
-            }
-
-            // Read the FPU's wf_reversed flag
-            if (result_ok)
-            {
-                bool wf_reversed_flag = false;
-                result_ok = txn->fpuDbTransferWfReversedFlag(DbTransferType::Read,
-                                                             serial_number,
-                                                             wf_reversed_flag);
-                wf_reversed_temp[fpu_id] = wf_reversed_flag;
-            }
-
-            // Read the FPU's integer values
-            if (result_ok)
-            {
-                for (int i = 0; i < (int)FpuDbIntValType::NumTypes; i++)
-                {
-                    int64_t int64_val;
-                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Read,
-                                                    int64_items[i].type,
-                                                    serial_number,
-                                            int64_items[i].vector_ref[fpu_id]))
-                    {
-                        result_ok = false;
-                        break;
-                    }
-                }
-            }
+            // TODO: Check that this operation does a DEEP copy of ALL
+            // underlying nested data items
+            fpus_data_temp[fpu_id] = single_fpu_data;
         }
         else
         {
@@ -286,48 +220,24 @@ void GridDriver::_post_connect_hook()
 
     //..........................................................................
 
-    apositions = apositions_temp;
-    bpositions = bpositions_temp;
-    wf_reversed = wf_reversed_temp;
-    alimits = alimits_temp;
-    blimits = blimits_temp;
-    maxaretries = maxaretries_temp;
-    aretries_cw = aretries_cw_temp;
-    aretries_acw = aretries_acw_temp;
-    maxbretries = maxbretries_temp;
-    bretries_cw = bretries_cw_temp;
-    bretries_acw = bretries_acw_temp;
-    counters = counters_temp;
-
-    //..........................................................................
-
-    last_wavetable = wavetable_temp;
-    a_caloffsets = a_caloffsets_temp;
-    b_caloffsets = b_caloffsets_temp;
-    _last_counters = counters_temp;
-
-    //..........................................................................
-
-    std::vector<t_fpu_position> target_positions_temp(config.num_fpus);
-    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    if (result_ok)
     {
-        target_positions_temp[fpu_id] = {apositions_temp[fpu_id], 
-                                         bpositions_temp[fpu_id]};
-    }
-    target_positions = target_positions_temp;
+        // Copy all temporary FPUs data into main FPU data store
+        // TODO: Ensure that does a full deep copy
+        fpus_data = fpus_data_temp;
 
-    configuring_targets.clear();
-    configured_targets.clear();
+        configuring_targets.clear();
+        configured_targets.clear();
 
-    //..........................................................................
-    // Query positions and compute offsets, if FPUs have been reset.
-    // This assumes that the stored positions are correct.
+        // Query positions and compute offsets, if FPUs have been reset.
+        // This assumes that the stored positions are correct.
     
-    // TODO: Check result code of _pingFPUs()
-    result = _pingFPUs(grid_state, fpuset);
+        // TODO: Check result code of _pingFPUs()
+        result = _pingFPUs(grid_state, fpuset);
 
-    _reset_hook(grid_state, grid_state, fpuset);
-    _refresh_positions(grid_state, false, fpuset);
+        _reset_hook(grid_state, grid_state, fpuset);
+        _refresh_positions(grid_state, false, fpuset);
+    }
     
     //..........................................................................
 
@@ -605,7 +515,7 @@ void GridDriver::_update_counters_execute_motion(int fpu_id,
     if (cancel)
     {
         // TODO: Check that this "=" works as expected
-        fpu_counters = _last_counters[fpu_id];
+        fpu_counters = fpus_data[fpu_id]._last_counters;
     }
 
     FpuCounterInt alpha_lsign =
@@ -667,7 +577,7 @@ void GridDriver::_update_counters_execute_motion(int fpu_id,
 
     // Store values for case of subsequent cancellation
     // TODO: Check that this "=" works as expected
-    _last_counters[fpu_id] = fpu_counters;
+    fpus_data[fpu_id]._last_counters = fpu_counters;
 
     // Update sums for FPU
     fpu_counters.addToCount(FpuCounterId::executed_waveforms, 1);
@@ -787,6 +697,225 @@ double GridDriver::boostPythonDivide(double dividend, double divisor)
 
 
 //==============================================================================
+// TODO: Old _post_connect_hook() with the old parallel std::vector data sets
+// structure - keeping for now just in case need to revert to this approach,
+// but hopefully not
+#if 0
+//==============================================================================
+void GridDriver::_post_connect_hook()
+{
+    //***************************
+    // TODO: This function conversion from Python is WIP - finish it
+    //***************************
+
+#ifdef ENABLE_PROTECTION_CODE
+
+    bool result_ok = false;
+
+    // TODO: Check that the FPU database has been properly opened at this point
+    // self.fpudb = self.env.open_db(ProtectionDB.dbname)
+
+    // TODO: Implement the following? (from Python version)
+    // self.healthlog = self.env.open_db(HealthLogDB.dbname)
+
+    E_EtherCANErrCode result;
+
+    t_grid_state grid_state;
+    getGridState(grid_state);
+
+    t_fpuset fpuset;
+    getFpuSetForConfigNumFpus(fpuset);
+
+    //*************** TODO: Do something with result value below
+    result = readSerialNumbers(grid_state, fpuset);
+    // Check for serial number uniqueness
+    std::vector<std::string> duplicate_snumbers;
+    getDuplicateSerialNumbers(grid_state, duplicate_snumbers);
+    if (duplicate_snumbers.size() != 0)
+    {
+        // TODO: Return a suitable error code
+    }
+
+    //..........................................................................
+    // Create temporary FPU value vectors, with any required initialisation
+    // N.B. std::vector storage is created on the heap, so no problem with
+    // local stack space here (unlike std::array)
+    std::vector<Interval> apositions_temp(config.num_fpus);
+    std::vector<Interval> bpositions_temp(config.num_fpus);
+    t_wtable wavetable_temp;
+    std::vector<bool> wf_reversed_temp(config.num_fpus, false);
+    std::vector<Interval> alimits_temp(config.num_fpus);
+    std::vector<Interval> blimits_temp(config.num_fpus);
+    std::vector<int64_t> maxaretries_temp(config.num_fpus, 0);
+    std::vector<int64_t> aretries_cw_temp(config.num_fpus, 0);
+    std::vector<int64_t> aretries_acw_temp(config.num_fpus, 0);
+    std::vector<int64_t> maxbretries_temp(config.num_fpus, 0);
+    std::vector<int64_t> bretries_cw_temp(config.num_fpus, 0);
+    std::vector<int64_t> bretries_acw_temp(config.num_fpus, 0);
+    std::vector<FpuCounters> counters_temp(config.num_fpus);
+
+    std::vector<Interval> a_caloffsets_temp(config.num_fpus, Interval(0.0));
+    std::vector<Interval> b_caloffsets_temp(config.num_fpus, Interval(0.0));
+
+    //..........................................................................
+    // Read all FPUs' data items from the protection database into the
+    // temporary value vectors
+    struct
+    {
+        FpuDbPositionType type;
+        std::vector<Interval> &vector_ref;
+    } position_items[(int)FpuDbPositionType::NumTypes] = 
+    {
+        { FpuDbPositionType::AlphaPos,   apositions_temp },
+        { FpuDbPositionType::BetaPos,    bpositions_temp },
+        { FpuDbPositionType::AlphaLimit, alimits_temp    },
+        { FpuDbPositionType::BetaLimit,  blimits_temp    }
+    };
+    
+    struct
+    {
+        FpuDbIntValType type;
+        std::vector<int64_t> &vector_ref;
+    } int64_items[(int)FpuDbIntValType::NumTypes] =
+    {
+        // TODO: Check that FreeAlphaRetries and FreeBetaRetries correspond to
+        // maxaretries_temp and maxbretries_temp
+        { FpuDbIntValType::FreeAlphaRetries, maxaretries_temp  },
+        { FpuDbIntValType::AlphaRetries_CW,  aretries_cw_temp  },
+        { FpuDbIntValType::AlphaRetries_ACW, aretries_acw_temp },
+        { FpuDbIntValType::FreeBetaRetries,  maxbretries_temp  },
+        { FpuDbIntValType::BetaRetries_CW,   bretries_cw_temp  },
+        { FpuDbIntValType::BetaRetries_ACW,  bretries_acw_temp }
+    };
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        // TODO: If amy of the following operations fail then break out of this
+        // "for" loop
+
+
+        auto txn = protection_db.createTransaction();
+        if (txn)
+        {
+            const char *serial_number = grid_state.FPU_state[fpu_id].serial_number;
+
+            // Read the FPU's position values
+      //********* TODO: What to do with the offsets??
+            double datum_offset;
+            result_ok = true;
+            for (int i = 0; i < (int)FpuDbPositionType::NumTypes; i++)
+            {
+                if (!txn->fpuDbTransferPosition(DbTransferType::Read,
+                                                position_items[i].type,
+                                                serial_number,
+                                                position_items[i].vector_ref[fpu_id],
+                                                datum_offset))
+                {
+                    result_ok = false;
+                    break;
+                }
+            }
+
+            // Read the FPU's waveform
+            if (result_ok)
+            {
+                t_waveform_steps waveform;
+                result_ok = txn->fpuDbTransferWaveform(DbTransferType::Read,
+                                                       serial_number,
+                                                       waveform);
+                if (result_ok)
+                {
+                    wavetable_temp.push_back({(int16_t)fpu_id, waveform});
+                }
+            }
+
+            // Read the FPU's wf_reversed flag
+            if (result_ok)
+            {
+                bool wf_reversed_flag = false;
+                result_ok = txn->fpuDbTransferWfReversedFlag(DbTransferType::Read,
+                                                             serial_number,
+                                                             wf_reversed_flag);
+                wf_reversed_temp[fpu_id] = wf_reversed_flag;
+            }
+
+            // Read the FPU's integer values
+            if (result_ok)
+            {
+                for (int i = 0; i < (int)FpuDbIntValType::NumTypes; i++)
+                {
+                    int64_t int64_val;
+                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Read,
+                                                    int64_items[i].type,
+                                                    serial_number,
+                                            int64_items[i].vector_ref[fpu_id]))
+                    {
+                        result_ok = false;
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // TODO: Error
+        }
+
+    }
+
+    //..........................................................................
+
+    apositions = apositions_temp;
+    bpositions = bpositions_temp;
+    wf_reversed = wf_reversed_temp;
+    alimits = alimits_temp;
+    blimits = blimits_temp;
+    maxaretries = maxaretries_temp;
+    aretries_cw = aretries_cw_temp;
+    aretries_acw = aretries_acw_temp;
+    maxbretries = maxbretries_temp;
+    bretries_cw = bretries_cw_temp;
+    bretries_acw = bretries_acw_temp;
+    counters = counters_temp;
+
+    //..........................................................................
+
+    last_wavetable = wavetable_temp;
+    a_caloffsets = a_caloffsets_temp;
+    b_caloffsets = b_caloffsets_temp;
+    _last_counters = counters_temp;
+
+    //..........................................................................
+
+    std::vector<t_fpu_position> target_positions_temp(config.num_fpus);
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        target_positions_temp[fpu_id] = {apositions_temp[fpu_id], 
+                                         bpositions_temp[fpu_id]};
+    }
+    target_positions = target_positions_temp;
+
+    configuring_targets.clear();
+    configured_targets.clear();
+
+    //..........................................................................
+    // Query positions and compute offsets, if FPUs have been reset.
+    // This assumes that the stored positions are correct.
+    
+    // TODO: Check result code of _pingFPUs()
+    result = _pingFPUs(grid_state, fpuset);
+
+    _reset_hook(grid_state, grid_state, fpuset);
+    _refresh_positions(grid_state, false, fpuset);
+    
+    //..........................................................................
+
+#endif // ENABLE_PROTECTION_CODE
+
+}
+//------------------------------------------------------------------------------
+#endif // 0 
+//------------------------------------------------------------------------------
 
 } // namespace mpifps
 
