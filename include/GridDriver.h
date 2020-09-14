@@ -215,8 +215,6 @@ private:
                                          bool cancel = false);
 #endif // ENABLE_PROTECTION_CODE
 
-    void getFpuSetForConfigNumFpus(t_fpuset &fpuset_ret);
-
     void getDuplicateSerialNumbers(t_grid_state &grid_state,
                         std::vector<std::string> &duplicate_snumbers_ret);
 

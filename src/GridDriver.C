@@ -154,7 +154,7 @@ void GridDriver::_post_connect_hook()
     getGridState(grid_state);
 
     t_fpuset fpuset;
-    getFpuSetForConfigNumFpus(fpuset);
+    createFpuSetFlags(config.num_fpus, fpuset);
 
     //*************** TODO: Do something with result value below
     result = readSerialNumbers(grid_state, fpuset);
@@ -633,20 +633,6 @@ void GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     UNUSED_ARG(fpuset);
 }
 
-//------------------------------------------------------------------------------
-void GridDriver::getFpuSetForConfigNumFpus(t_fpuset &fpuset_ret)
-{
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-    {
-        fpuset_ret[i] = false;
-    }
-
-    for (int i = 0; i < config.num_fpus; i++)
-    {
-        fpuset_ret[i] = true;
-    }
-}
-
 #if 0
 //------------------------------------------------------------------------------
 // TODO: Note: set_wtable_reversed() didn't effectively do anything in the
@@ -724,7 +710,7 @@ void GridDriver::_post_connect_hook()
     getGridState(grid_state);
 
     t_fpuset fpuset;
-    getFpuSetForConfigNumFpus(fpuset);
+    createFpuSetFlags(config.num_fpus, fpuset);
 
     //*************** TODO: Do something with result value below
     result = readSerialNumbers(grid_state, fpuset);

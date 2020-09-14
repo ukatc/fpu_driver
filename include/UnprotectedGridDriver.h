@@ -33,12 +33,13 @@
 #include "InterfaceState.h"
 #include "Interval.h"
 
-
 namespace mpifps
 {
 
 using namespace std;
 using namespace mpifps::ethercanif;
+
+//..............................................................................
 
 // *** TODO: Temporary dummy values for now - need to get from the Linux 
 // environment variables in same way as is done in FpuGridDriver.py - need to
@@ -63,7 +64,6 @@ enum class Range
     Ignore      // Ignore - path unchecked
 };
 
-
 // Define t_fpu_positions - a set of FPU alpha and beta arm positions
 // TODO: t_fpu_positions is std::map<> for now because the original Python code
 // in FpuGridDriver.py seems to use the corresponding data structures (e.g.
@@ -79,11 +79,15 @@ struct t_fpu_position
 };
 using t_fpu_positions = std::map<int, t_fpu_position>; // Keys are fpu_id's
 
-// Forward reference for friend-ing in UnprotectedGridDriver below
-class GridDriverTester;
+//..............................................................................
+
+void createFpuSetFlags(int num_fpus, t_fpuset &fpuset_ret);
 
 
 //==============================================================================
+
+// Forward reference for friend-ing in UnprotectedGridDriver below
+class GridDriverTester;
 
 class UnprotectedGridDriver
 {

@@ -91,6 +91,21 @@ std::string make_logdir(const std::string &log_dir)
 //------------------------------------------------------------------------------
 
 
+//------------------------------------------------------------------------------
+void createFpuSetFlags(int num_fpus, t_fpuset &fpuset_ret)
+{
+    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    {
+        fpuset_ret[i] = false;
+    }
+    
+    for (int i = 0; (i < num_fpus) && (i < MAX_NUM_POSITIONERS); i++)
+    {
+        fpuset_ret[i] = true;
+    }
+}
+
+
 //==============================================================================
 
 UnprotectedGridDriver::UnprotectedGridDriver(

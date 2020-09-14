@@ -139,6 +139,9 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     E_GridState grid_state_result;
     t_grid_state grid_state;
 
+    t_fpuset fpuset;
+    createFpuSetFlags(TESTING_NUM_FPUS, fpuset);
+
     //..........................................................................
     // Test connect()
     // TODO: t_gateway_address::ip is only a pointer - dangerous? Change this
@@ -147,18 +150,6 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     uint16_t port_number = 4700;
     t_gateway_address gateway_address = { ip_address_str, port_number };
     result = gd.connect(1, &gateway_address);   
-
-    //..........................................................................
-    // Specify FPUs in fpuset
-    t_fpuset fpuset;
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        fpuset[fpu_id] = false;
-    }
-    for (int fpu_id = 0; fpu_id < TESTING_NUM_FPUS; fpu_id++)
-    {
-        fpuset[fpu_id] = true;
-    }
 
     //..........................................................................
     // Test getGridState()

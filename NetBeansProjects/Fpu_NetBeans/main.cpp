@@ -58,11 +58,11 @@ int main(int argc, char** argv)
     
     //..........................................................................
     
-    //testGridDriver();
+    testGridDriver();
 
     //testFpuCounters();
 
-    testProtectionDB();
+    //testProtectionDB();
     
     //testProtectionDB();
     
@@ -77,9 +77,9 @@ static void testGridDriver()
     // gd_tester.doGridDriverUnitTests();
     
 #if 0
-    gd_tester.doUnprotectedGridDriverFunctionalTesting();
+    //gd_tester.doUnprotectedGridDriverFunctionalTesting();
 #else
-    gd_tester.doGridDriverFunctionalTesting();
+    //gd_tester.doGridDriverFunctionalTesting();
 #endif
 }
 
