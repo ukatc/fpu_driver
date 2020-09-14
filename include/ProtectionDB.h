@@ -41,6 +41,7 @@ std::string protectionDB_GetDirFromLinuxEnv(bool mockup);
 // TODO: Macro to enable the aggregation of the FPU database data into a per-FPU
 // data structure, rather than the original Python version approach of having
 // a separate array for each of the FPU data elements
+// TODO: Remove this macro and all non-FPU_DB_DATA_AGGREGATED code eventually
 #define FPU_DB_DATA_AGGREGATED
 
 // -----------------------------------------------------------------------------

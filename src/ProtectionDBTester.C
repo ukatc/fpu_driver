@@ -22,6 +22,9 @@
 
 //..............................................................................
 
+// TODO: Make all of the functions in this file into member functions of
+// ProtectionDBTester
+
 // Top-level test functions
 static bool protectionDB_TestWithStayingOpen(const std::string &dir_str);
 static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
@@ -39,7 +42,6 @@ static bool protectionDB_TestFpuSingleItemWriteRead(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
 
 // Miscellaneous test functions
-static void protectionDB_PopulateFpuDbDataWithTestValues(FpuDbData &fpu_db_data);    
 static std::string getNextFpuTestSerialNumber();
 
 //------------------------------------------------------------------------------
@@ -484,7 +486,7 @@ static bool protectionDB_TestFullFpuDataTransfer(ProtectionDB &protectiondb)
 
         // Create a full fpu data structure, and populate it with test data
         FpuDbData fpu_db_data_write;
-        protectionDB_PopulateFpuDbDataWithTestValues(fpu_db_data_write);
+        protectionDB_FillFpuDbDataStructWithTestVals(fpu_db_data_write);
 
         // Write full fpu data structure
         result_ok = transaction->fpuDbTransferFpu(DbTransferType::Write,
@@ -630,17 +632,12 @@ static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiond
 
 #ifdef FPU_DB_DATA_AGGREGATED
 //------------------------------------------------------------------------------
-void ProtectionDBTester::writeFpuDbTestItemsFromSerialNumbers(GridDriver &gd)
-{
-}
-
-//------------------------------------------------------------------------------
 bool ProtectionDBTester::testFpuDbDataClass()
 {
     bool result_ok = false;
     FpuDbData fpu_db_data_1;
 
-    protectionDB_PopulateFpuDbDataWithTestValues(fpu_db_data_1);
+    protectionDB_FillFpuDbDataStructWithTestVals(fpu_db_data_1);
 
     // Test the "==" and "!=" operator overloads for when the objects are the
     // same
@@ -698,7 +695,7 @@ bool ProtectionDBTester::testFpuDbDataClass()
 }
 
 //------------------------------------------------------------------------------
-void protectionDB_PopulateFpuDbDataWithTestValues(FpuDbData &fpu_db_data)
+void protectionDB_FillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data)
 {
     fpu_db_data.apos = Interval(1.0, 2.0);
     fpu_db_data.bpos = Interval(3.0, 4.0);

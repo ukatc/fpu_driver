@@ -26,6 +26,7 @@
 using namespace mpifps;
 
 bool protectionDB_Test();
+void protectionDB_FillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data);
 
 class ProtectionDBTester
 {
@@ -33,7 +34,6 @@ class ProtectionDBTester
     // private and protected member variables and functions for test purposes
 
 public:
-    void writeFpuDbTestItemsFromSerialNumbers(GridDriver &gd);
     bool testFpuDbDataClass();
 };
 
