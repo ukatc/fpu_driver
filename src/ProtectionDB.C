@@ -274,8 +274,8 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
                                        const char serial_number[],
                                        FpuDbData &fpu_db_data)
 {
-
-    // TODO: Test this function properly - only visually checked so far
+    // Reads or writes all data items for a single FPU specified by the given
+    // serial_number.
 
     ///*************** TODO: What to do with the offset values??
     double datum_offset;

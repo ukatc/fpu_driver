@@ -32,11 +32,14 @@ static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuWfReversedFlagTransfer(ProtectionDB &protectiondb);
+static bool protectionDB_TestFullFpuDataTransfer(ProtectionDB &protectiondb);
 
 // FPU database binary-level item transfer test functions
 static bool protectionDB_TestFpuSingleItemWriteRead(ProtectionDB &protectiondb);
 static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
 
+// Miscellaneous test functions
+static void protectionDB_PopulateFpuDbDataWithTestValues(FpuDbData &fpu_db_data);    
 static std::string getNextFpuTestSerialNumber();
 
 //------------------------------------------------------------------------------
@@ -115,6 +118,11 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
         if (result_ok)
         {
             result_ok = protectionDB_TestFpuWfReversedFlagTransfer(protectiondb);
+        }
+        
+        if (result_ok)
+        {
+            result_ok = protectionDB_TestFullFpuDataTransfer(protectiondb);
         }
     }
     
@@ -220,6 +228,19 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         if (protectiondb.open(dir_str))
         {
             result_ok = protectionDB_TestFpuWfReversedFlagTransfer(protectiondb);
+        }
+        else
+        {
+            result_ok = false;
+        }
+    }
+    
+    if (result_ok)
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            result_ok = protectionDB_TestFullFpuDataTransfer(protectiondb);
         }
         else
         {
@@ -395,6 +416,7 @@ static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb)
                                             int64_val_write);
         if (result_ok)
         {
+            // Read back int64_t value
             int64_t int64_val_read;
             result_ok = transaction->fpuDbTransferInt64Val(DbTransferType::Read,
                                             FpuDbIntValType::BetaRetries_ACW,
@@ -431,6 +453,7 @@ static bool protectionDB_TestFpuWfReversedFlagTransfer(ProtectionDB &protectiond
                                                     wf_reversed_write);
         if (result_ok)
         {
+            // Read back wf_reversed value
             bool wf_reversed_read = false;
             result_ok = transaction->fpuDbTransferWfReversedFlag(
                                                     DbTransferType::Read,
@@ -446,6 +469,44 @@ static bool protectionDB_TestFpuWfReversedFlagTransfer(ProtectionDB &protectiond
         }
     }
     
+    return result_ok;
+}
+
+//------------------------------------------------------------------------------
+static bool protectionDB_TestFullFpuDataTransfer(ProtectionDB &protectiondb)
+{
+    bool result_ok = false;
+
+    auto transaction = protectiondb.createTransaction();
+    if (transaction)
+    {
+        std::string serial_number_str = getNextFpuTestSerialNumber();
+
+        // Create a full fpu data structure, and populate it with test data
+        FpuDbData fpu_db_data_write;
+        protectionDB_PopulateFpuDbDataWithTestValues(fpu_db_data_write);
+
+        // Write full fpu data structure
+        result_ok = transaction->fpuDbTransferFpu(DbTransferType::Write,
+                                                  serial_number_str.c_str(),
+                                                  fpu_db_data_write);
+        if (result_ok)
+        {
+            // Read back full fpu data structure
+            FpuDbData fpu_db_data_read;
+            result_ok = transaction->fpuDbTransferFpu(DbTransferType::Read,
+                                                      serial_number_str.c_str(),
+                                                      fpu_db_data_read);
+            if (result_ok)
+            {
+                if (fpu_db_data_read != fpu_db_data_write)
+                {
+                    result_ok = false;
+                }
+            }
+        }
+    }
+
     return result_ok;
 }
 
@@ -572,7 +633,6 @@ static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiond
 void ProtectionDBTester::writeFpuDbTestItemsFromSerialNumbers(GridDriver &gd)
 {
 }
-#endif // FPU_DB_DATA_AGGREGATED
 
 //------------------------------------------------------------------------------
 bool ProtectionDBTester::testFpuDbDataClass()
@@ -662,6 +722,8 @@ void protectionDB_PopulateFpuDbDataWithTestValues(FpuDbData &fpu_db_data)
         fpu_db_data.waveform[i] = { (int16_t)(i + 100), (int16_t)(i + 200) };
     }
 }
+
+#endif // FPU_DB_DATA_AGGREGATED
 
 //------------------------------------------------------------------------------
 static std::string getNextFpuTestSerialNumber()
