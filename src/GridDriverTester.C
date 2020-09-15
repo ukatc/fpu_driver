@@ -298,7 +298,7 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
         return false;
     }
 
-    E_EtherCANErrCode ethercan_result;
+    E_EtherCANErrCode ecan_result;
     t_grid_state grid_state;
 
     t_fpuset fpuset;
@@ -307,20 +307,20 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
     //..........................................................................
     // Get grid FPU serial numbers using an UnprotectedGridDriver instance
     UnprotectedGridDriver ugd(num_fpus);
-    ethercan_result = ugd.initialize();
-    if (ethercan_result == DE_OK)
+    ecan_result = ugd.initialize();
+    if (ecan_result == DE_OK)
     {
-        ethercan_result = ugd.connect(1, &gateway_address);
+        ecan_result = ugd.connect(1, &gateway_address);
     }
     
-    if (ethercan_result == DE_OK)
+    if (ecan_result == DE_OK)
     {
         ugd.getGridState(grid_state);
-        ethercan_result = ugd.readSerialNumbers(grid_state, fpuset);
+        ecan_result = ugd.readSerialNumbers(grid_state, fpuset);
     }
     
     std::vector<std::string> serial_numbers;
-    if (ethercan_result == DE_OK)
+    if (ecan_result == DE_OK)
     {
         for (int i = 0; i < num_fpus; i++)
         {
@@ -330,7 +330,7 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
 
     ugd.disconnect();
     
-    if (ethercan_result != DE_OK)
+    if (ecan_result != DE_OK)
     {
         return false;
     }
