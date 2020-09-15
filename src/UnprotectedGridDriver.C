@@ -259,7 +259,10 @@ E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
     // because too clunky - instead, use Linux named semaphores?
 
     E_EtherCANErrCode result = _gd->connect(ngateways, gateway_addresses);
-    _post_connect_hook();
+    if (result == DE_OK)
+    {
+        result = _post_connect_hook();
+    }
     return result;
 
 /*

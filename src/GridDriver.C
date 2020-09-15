@@ -123,7 +123,7 @@ ProtectionDB &GridDriver::getProtectionDB()
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_post_connect_hook()
+E_EtherCANErrCode GridDriver::_post_connect_hook()
 {
 
     //***************************
@@ -140,15 +140,13 @@ void GridDriver::_post_connect_hook()
 
 #ifdef ENABLE_PROTECTION_CODE
 
-    bool result_ok = false;
-
     // TODO: Check that the FPU database has been properly opened at this point
     // self.fpudb = self.env.open_db(ProtectionDB.dbname)
 
     // TODO: Implement the following? (from Python version)
     // self.healthlog = self.env.open_db(HealthLogDB.dbname)
 
-    E_EtherCANErrCode result;
+    E_EtherCANErrCode ecan_result;
 
     t_grid_state grid_state;
     getGridState(grid_state);
@@ -157,70 +155,71 @@ void GridDriver::_post_connect_hook()
     createFpuSetFlags(config.num_fpus, fpuset);
 
     //*************** TODO: Do something with result value below
-    result = readSerialNumbers(grid_state, fpuset);
-    // Check for serial number uniqueness
-    std::vector<std::string> duplicate_snumbers;
-    getDuplicateSerialNumbers(grid_state, duplicate_snumbers);
-    if (duplicate_snumbers.size() != 0)
+    ecan_result = readSerialNumbers(grid_state, fpuset);
+    if (ecan_result == DE_OK)
     {
-        // TODO: Return a suitable error code
+        // Check for serial number uniqueness
+        std::vector<std::string> duplicate_snumbers;
+        getDuplicateSerialNumbers(grid_state, duplicate_snumbers);
+        if (duplicate_snumbers.size() != 0)
+        {
+            ecan_result = DE_DUPLICATE_SERIAL_NUMBER;
+        }
     }
 
-    //..........................................................................
-    // Create temporary FPUs data vector
-
     std::vector<FpuData> fpus_data_temp(config.num_fpus);
-
-    //..........................................................................
-
-    // ********* TODO: What to do with the interval offsets in the FpuDbData
-    // Interval items??
-
-    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    if (ecan_result == DE_OK)
     {
-        // TODO: If amy of the following operations fail then break out of this
-        // "for" loop
-
-        FpuData single_fpu_data;
-
-        // Read FPU data item from the protection database into the temporary
-        // FPUs data vector
-        result_ok = false;
-        const char *serial_number = grid_state.FPU_state[fpu_id].serial_number;
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
         {
-            // N.B. This transaction is in its own nested scope so that it
-            // automatically closes as soon as the scope ends 
+            // TODO: If amy of the following operations fail then break out of
+            // this "for" loop
+
+            const char *serial_number = grid_state.FPU_state[fpu_id].serial_number;
+
+            FpuData fpu_data;
+            // N.B. This transaction needs to be declared inside this "for"
+            // loop so that it's automatically committed upon each loop
             auto txn = protection_db.createTransaction();
             if (txn)
             {
-                result_ok = txn->fpuDbTransferFpu(DbTransferType::Read,
-                                                  serial_number,
-                                                  single_fpu_data.db);
+                if (txn->fpuDbTransferFpu(DbTransferType::Read, serial_number,
+                                          fpu_data.db))
+                {
+                    // ********* TODO: What to do with the interval offsets in
+                    // the FpuDbData Interval items??
+
+                    fpu_data.a_caloffset = Interval(0.0);
+                    fpu_data.b_caloffset = Interval(0.0);
+                    fpu_data._last_counters = fpu_data.db.counters;
+                    fpu_data.target_position = { fpu_data.db.apos,
+                                                 fpu_data.db.bpos };
+
+                    // TODO: Check that this operation does a DEEP copy of ALL
+                    // underlying nested data items
+                    fpus_data_temp[fpu_id] = fpu_data;
+                }
+                else
+                {
+                    // TODO: Not a good error code for this condition -
+                    // currently only a placeholder only
+                    ecan_result = DE_INVALID_CONFIG;
+                    break;
+                }
+            }
+            else
+            {
+                // TODO: Not a good error code for this condition -
+                // currently only a placeholder only
+                ecan_result = DE_RESOURCE_ERROR;
+                break;
             }
         }
-        
-        if (result_ok)
-        {
-            single_fpu_data.a_caloffset = Interval(0.0);
-            single_fpu_data.b_caloffset = Interval(0.0);
-            single_fpu_data._last_counters = single_fpu_data.db.counters;
-            single_fpu_data.target_position = { single_fpu_data.db.apos,
-                                                single_fpu_data.db.bpos };
-
-            // TODO: Check that this operation does a DEEP copy of ALL
-            // underlying nested data items
-            fpus_data_temp[fpu_id] = single_fpu_data;
-        }
-        else
-        {
-            // TODO: Error
-        }
-
     }
 
     //..........................................................................
 
-    if (result_ok)
+    if (ecan_result == DE_OK)
     {
         // Copy all temporary FPUs data into main FPU data store
         // TODO: Ensure that does a full deep copy
@@ -232,17 +231,28 @@ void GridDriver::_post_connect_hook()
         // Query positions and compute offsets, if FPUs have been reset.
         // This assumes that the stored positions are correct.
     
-        // TODO: Check result code of _pingFPUs()
-        result = _pingFPUs(grid_state, fpuset);
+        ecan_result = _pingFPUs(grid_state, fpuset);
+    }
 
-        _reset_hook(grid_state, grid_state, fpuset);
-        _refresh_positions(grid_state, false, fpuset);
+    // TODO: Are the following calls equivalent to the Python version, in terms
+    // of how error conditions are hamdled? e.g. Should they be called
+    // uncoditionally, even if one of the earlier ones fails?
+
+    if (ecan_result == DE_OK)
+    {
+        // TODO: Add return code for _reset_hook(), and check it here
+        /*ecan_result =*/ _reset_hook(grid_state, grid_state, fpuset);
+    }
+
+    if (ecan_result == DE_OK)
+    {
+        ecan_result = _refresh_positions(grid_state, false, fpuset);
     }
     
     //..........................................................................
 
+    return ecan_result;
 #endif // ENABLE_PROTECTION_CODE
-
 }
 
 //------------------------------------------------------------------------------
@@ -688,7 +698,7 @@ double GridDriver::boostPythonDivide(double dividend, double divisor)
 // but hopefully not
 #if 0
 //==============================================================================
-void GridDriver::_post_connect_hook()
+E_EtherCANErrCode GridDriver::_post_connect_hook()
 {
     //***************************
     // TODO: This function conversion from Python is WIP - finish it

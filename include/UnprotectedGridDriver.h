@@ -174,7 +174,10 @@ public:
 protected:
     // NOTE: The following virtual functions are overridden in GridDriver
 
-    virtual void _post_connect_hook() {}
+    virtual E_EtherCANErrCode _post_connect_hook()
+    {
+        return DE_OK;
+    }
 
     // findDatum() hook functions
     // TODO: Do the t_grid_state's below need to be const? Or will they
