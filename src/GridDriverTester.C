@@ -24,6 +24,7 @@
 #include "GridDriverTester.h"
 #include "E_GridState.h"
 #include "InterfaceState.h"
+#include "ProtectionDBTester.h"
 
 #define TESTING_MAX_NUM_FPUS    (5)
 
@@ -146,9 +147,6 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     // Test connect()
     // TODO: t_gateway_address::ip is only a pointer - dangerous? Change this
     // eventually? (e.g. to a std::string?)
-    const char *ip_address_str = "127.0.0.1";
-    uint16_t port_number = 4700;
-    t_gateway_address gateway_address = { ip_address_str, port_number };
     result = gd.connect(1, &gateway_address);   
 
     //..........................................................................
@@ -267,6 +265,113 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     // Suppress warnings of variables not being used
     UNUSED_ARG(result);
     UNUSED_ARG(grid_state_result);
+}
+
+//------------------------------------------------------------------------------
+bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
+{
+    // *************************************************************************
+    //     IMPORTANT: This test function will overwrite the FPU database's
+    //       items for the first num_fpus x grid FPUs - use with caution
+    // *************************************************************************
+    //
+    // Writes num_fpus FPU test data entries into the FPU database,
+    // corresponding to the serial numbers of the first num_fpus FPUs available
+    // on the grid.
+    //
+    // This function first uses an *UN*protectedGridDriver instance to read
+    // the grid FPUs' serial numbers, because its connect() function will not
+    // call the GridDriver::_post_connect_hook() function override (which would
+    // fail if no FPU data was present yet). It then adds FPU data for these
+    // serial numbers to the FPU database.
+    //
+    // NOTE: The gateway needs to be running before this function is called.
+    // The expected protection database location is controlled by the db_mockup
+    // flag - see protectionDB_GetDirFromLinuxEnv().
+    //
+    // N.B. This function was written to support testing of
+    // GridDriver::_post_connect_hook(), which expects the grid FPU entries to be
+    // present in the FPU database.
+    
+    if ((num_fpus < 1) || (num_fpus >= MAX_NUM_POSITIONERS))
+    {
+        return false;
+    }
+
+    E_EtherCANErrCode ethercan_result;
+    t_grid_state grid_state;
+
+    t_fpuset fpuset;
+    createFpuSetFlags(num_fpus, fpuset);
+    
+    //..........................................................................
+    // Get grid FPU serial numbers using an UnprotectedGridDriver instance
+    UnprotectedGridDriver ugd(num_fpus);
+    ethercan_result = ugd.initialize();
+    if (ethercan_result == DE_OK)
+    {
+        ethercan_result = ugd.connect(1, &gateway_address);
+    }
+    
+    if (ethercan_result == DE_OK)
+    {
+        ugd.getGridState(grid_state);
+        ethercan_result = ugd.readSerialNumbers(grid_state, fpuset);
+    }
+    
+    std::vector<std::string> serial_numbers;
+    if (ethercan_result == DE_OK)
+    {
+        for (int i = 0; i < num_fpus; i++)
+        {
+            serial_numbers.push_back(grid_state.FPU_state[i].serial_number);
+        }
+    }
+
+    ugd.disconnect();
+    
+    if (ethercan_result != DE_OK)
+    {
+        return false;
+    }
+
+    //..........................................................................
+    // Write grid FPU test items to FPU database
+    FpuDbData fpu_db_data;
+    protectionDB_FillFpuDbDataStructWithTestVals(fpu_db_data);
+
+    bool result_ok = false;
+
+    std::string dir_str = protectionDB_GetDirFromLinuxEnv(db_mockup);
+    if (!dir_str.empty())
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            for (size_t i = 0; i < serial_numbers.size(); i++)
+            {
+                result_ok = false;
+                auto txn = protectiondb.createTransaction();
+                if (txn)
+                {
+                    if (txn->fpuDbTransferFpu(DbTransferType::Write,
+                                              serial_numbers[i].c_str(),
+                                              fpu_db_data))
+                    {
+                        result_ok = true;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    //..........................................................................
+
+    return result_ok;
 }
 
 //------------------------------------------------------------------------------

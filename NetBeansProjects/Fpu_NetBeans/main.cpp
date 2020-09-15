@@ -74,12 +74,16 @@ static void testGridDriver()
 {
     GridDriverTester gd_tester;
 
+    bool db_mockup = true;
+    int num_fpus = 3;
+    bool result_ok = gd_tester.writeGridFpusToFpuDb(num_fpus, db_mockup);
+    
     // gd_tester.doGridDriverUnitTests();
     
 #if 0
     //gd_tester.doUnprotectedGridDriverFunctionalTesting();
 #else
-    //gd_tester.doGridDriverFunctionalTesting();
+    gd_tester.doGridDriverFunctionalTesting();
 #endif
 }
 
