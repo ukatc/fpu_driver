@@ -277,7 +277,9 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
     // Reads or writes all data items for a single FPU specified by the given
     // serial_number.
 
-    ///*************** TODO: What to do with the offset values??
+    // *************** TODO: What to do with the offset values?? N.B. There is
+    // an alpha offset adjustment done in GridDriver::_post_connect_hook() as
+    // well
     double datum_offset;
 
     bool result_ok = fpuDbTransferPosition(transfer_type, 

@@ -179,6 +179,17 @@ protected:
         return DE_OK;
     }
 
+    virtual E_EtherCANErrCode _reset_hook(t_grid_state &old_state,
+                                          t_grid_state &gs,
+                                          const t_fpuset &fpuset)
+    {
+        UNUSED_ARG(old_state);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
+
+        return DE_OK;
+    }
+
     // findDatum() hook functions
     // TODO: Do the t_grid_state's below need to be const? Or will they
     // possibly be altered inside the functions?
@@ -235,15 +246,6 @@ protected:
         UNUSED_ARG(was_cancelled);
         UNUSED_ARG(initial_positions);
         UNUSED_ARG(selected_arm);
-    }
-
-    // resetFPUs() hook function
-    virtual void _reset_hook(t_grid_state &old_state, t_grid_state &gs,
-                             const t_fpuset &fpuset)
-    {
-        UNUSED_ARG(old_state);
-        UNUSED_ARG(gs);
-        UNUSED_ARG(fpuset);
     }
 
     // Error counters function

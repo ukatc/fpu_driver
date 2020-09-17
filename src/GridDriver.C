@@ -243,8 +243,7 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
 
     if (ecan_result == DE_OK)
     {
-        // TODO: Add return code for _reset_hook(), and check it here
-        /*ecan_result =*/ _reset_hook(grid_state, grid_state, fpuset);
+        ecan_result = _reset_hook(grid_state, grid_state, fpuset);
     }
 
     if (ecan_result == DE_OK)
@@ -310,6 +309,22 @@ double GridDriver::_beta_angle(const t_fpu_state &fpu_state,
     return ((double)fpu_state.beta_steps) / StepsPerDegreeBeta;
 }
 #endif // ENABLE_PROTECTION_CODE
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
+                                          t_grid_state &gs,
+                                          const t_fpuset &fpuset)
+{
+    E_EtherCANErrCode ecan_result;
+
+
+    // TODO
+    
+    ecan_result = DE_OK;
+
+
+    return ecan_result;
+}
 
 //------------------------------------------------------------------------------
 void GridDriver::_allow_find_datum_hook(t_grid_state &gs,
@@ -379,18 +394,6 @@ void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
     UNUSED_ARG(was_cancelled);
     UNUSED_ARG(initial_positions);
     UNUSED_ARG(selected_arm);
-}
-
-//------------------------------------------------------------------------------
-void GridDriver::_reset_hook(t_grid_state &old_state, t_grid_state &gs,
-                             const t_fpuset &fpuset)
-{
-    // TODO
-
-    // Temporary for now
-    UNUSED_ARG(old_state);
-    UNUSED_ARG(gs);
-    UNUSED_ARG(fpuset);
 }
 
 //------------------------------------------------------------------------------

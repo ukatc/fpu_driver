@@ -570,10 +570,10 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
@@ -582,7 +582,10 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
     t_grid_state old_state;
     _gd->getGridState(old_state);
     
-    result = _gd->resetFPUs(gs, fpuset);
+    ecan_result = _gd->resetFPUs(gs, fpuset);
+
+    // TODO: Only execute the remaining code below if ecan_result from the
+    // resetFPUs() call above returns DE_OK? (check WRT Python version)
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
@@ -596,9 +599,9 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
     // Python version of this function)
     sleepSecs(0.1 * 24.0);
 
-    _reset_hook(old_state, gs, fpuset);
+    ecan_result = _reset_hook(old_state, gs, fpuset);
 
-    return result;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
