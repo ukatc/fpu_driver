@@ -90,6 +90,10 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
     {
         if (protection_db.open(dir_str))
         {
+            // TODO: Implement the following? (from Python version ->
+            // _post_connect_hook())
+            // self.healthlog = self.env.open_db(HealthLogDB.dbname)
+
             initprotection_was_called_ok = true;
             return DE_OK;
         }
@@ -125,7 +129,6 @@ ProtectionDB &GridDriver::getProtectionDB()
 //------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::_post_connect_hook()
 {
-
     //***************************
     // TODO: NOTE: This function uses the new std::vector<FpuData> data
     // structuring - an earlier version which used the old parallel std::vector
@@ -140,12 +143,6 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
 
 #ifdef ENABLE_PROTECTION_CODE
 
-    // TODO: Check that the FPU database has been properly opened at this point
-    // self.fpudb = self.env.open_db(ProtectionDB.dbname)
-
-    // TODO: Implement the following? (from Python version)
-    // self.healthlog = self.env.open_db(HealthLogDB.dbname)
-
     E_EtherCANErrCode ecan_result;
 
     t_grid_state grid_state;
@@ -154,35 +151,30 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     t_fpuset fpuset;
     createFpuSetFlags(config.num_fpus, fpuset);
 
-    //*************** TODO: Do something with result value below
+    // Read serial numbers from grid FPUs, and check for duplicates
     ecan_result = readSerialNumbers(grid_state, fpuset);
     if (ecan_result == DE_OK)
     {
-        // Check for serial number uniqueness
         std::vector<std::string> duplicate_snumbers;
         getDuplicateSerialNumbers(grid_state, duplicate_snumbers);
         if (duplicate_snumbers.size() != 0)
         {
-            ecan_result = DE_DUPLICATE_SERIAL_NUMBER;
+            return DE_DUPLICATE_SERIAL_NUMBER;
         }
     }
 
+    // Read data from FPU database for all grid FPUs
     std::vector<FpuData> fpus_data_temp(config.num_fpus);
     if (ecan_result == DE_OK)
     {
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
         {
-            // TODO: If amy of the following operations fail then break out of
-            // this "for" loop
-
-            const char *serial_number = grid_state.FPU_state[fpu_id].serial_number;
-
-            FpuData fpu_data;
-            // N.B. This transaction needs to be declared inside this "for"
-            // loop so that it's automatically committed upon each loop
             auto txn = protection_db.createTransaction();
             if (txn)
             {
+                const char *serial_number = grid_state.FPU_state[fpu_id].serial_number;
+                FpuData fpu_data;
+                
                 if (txn->fpuDbTransferFpu(DbTransferType::Read, serial_number,
                                           fpu_data.db))
                 {
@@ -202,7 +194,7 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
                 else
                 {
                     // TODO: Not a good error code for this condition -
-                    // currently only a placeholder only
+                    // currently only a placeholder
                     ecan_result = DE_INVALID_CONFIG;
                     break;
                 }
@@ -210,7 +202,7 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
             else
             {
                 // TODO: Not a good error code for this condition -
-                // currently only a placeholder only
+                // currently only a placeholder
                 ecan_result = DE_RESOURCE_ERROR;
                 break;
             }
@@ -700,10 +692,6 @@ double GridDriver::boostPythonDivide(double dividend, double divisor)
 //==============================================================================
 E_EtherCANErrCode GridDriver::_post_connect_hook()
 {
-    //***************************
-    // TODO: This function conversion from Python is WIP - finish it
-    //***************************
-
 #ifdef ENABLE_PROTECTION_CODE
 
     bool result_ok = false;
@@ -721,6 +709,10 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
 
     t_fpuset fpuset;
     createFpuSetFlags(config.num_fpus, fpuset);
+
+    //**************************************
+    // NOTE: OLD FUNCTION
+    //**************************************
 
     //*************** TODO: Do something with result value below
     result = readSerialNumbers(grid_state, fpuset);
@@ -753,6 +745,10 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     std::vector<Interval> a_caloffsets_temp(config.num_fpus, Interval(0.0));
     std::vector<Interval> b_caloffsets_temp(config.num_fpus, Interval(0.0));
 
+    //**************************************
+    // NOTE: OLD FUNCTION
+    //**************************************
+
     //..........................................................................
     // Read all FPUs' data items from the protection database into the
     // temporary value vectors
@@ -784,6 +780,10 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
         { FpuDbIntValType::BetaRetries_ACW,  bretries_acw_temp }
     };
 
+    //**************************************
+    // NOTE: OLD FUNCTION
+    //**************************************
+
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
         // TODO: If amy of the following operations fail then break out of this
@@ -812,6 +812,10 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
                 }
             }
 
+    //**************************************
+    // NOTE: OLD FUNCTION
+    //**************************************
+
             // Read the FPU's waveform
             if (result_ok)
             {
@@ -834,6 +838,10 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
                                                              wf_reversed_flag);
                 wf_reversed_temp[fpu_id] = wf_reversed_flag;
             }
+            
+    //**************************************
+    // NOTE: OLD FUNCTION
+    //**************************************
 
             // Read the FPU's integer values
             if (result_ok)
