@@ -129,16 +129,26 @@ ProtectionDB &GridDriver::getProtectionDB()
 //------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::_post_connect_hook()
 {
+    // Called from the end of the UnprotectedGridDriver::connect() function.
+    // Populates FPU data structures in RAM from the FPU database contents, for
+    // the grid FPUs,
+    // N.B. To support testing of this function, can use
+    // GridDriverTester::writeGridFpusToFpuDb() to create FPU test data in the
+    // FPU database.
+
     //***************************
-    // TODO: NOTE: This function uses the new std::vector<FpuData> data
-    // structuring - an earlier version which used the old parallel std::vector
-    // approach (i.e. the Python FpuGridDriver.py structure of separate 
-    // apositions, bpositions,... etc each being in their own array of size
-    // config.num_fpus) is #ifdef'd out at the bottom of this file
+    // TODO: NOTE: This latest version of this function uses the new
+    // std::vector<FpuData> data structuring. An earlier version (#ifdef'd out
+    // at the bottom of this file) used a parallel std::vector approach
+    // equivalent to the Python version's separate dictionaries for apositions,
+    // bpositions,... etc, but that approach proved to be too clunky in C++. 
     //***************************
 
     //***************************
-    // TODO: This function conversion from Python is WIP - finish it
+    // TODO: This function is mostly complete and working (apart from the TODOs
+    // in it), but will still need final checking once the rest of the
+    // GridDriver C++ functions have been implemented, because some FPU data
+    // structuring might still change.
     //***************************
 
 #ifdef ENABLE_PROTECTION_CODE
@@ -178,17 +188,19 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
                 if (txn->fpuDbTransferFpu(DbTransferType::Read, serial_number,
                                           fpu_data.db))
                 {
-                    // ********* TODO: What to do with the interval offsets in
-                    // the FpuDbData Interval items??
+                    // Adjust alpha position and limits with datum offset
+                    // TODO: Is this addition by Interval::operator+=()
+                    // equivalent to the Python _post_connect_hook() code?
+                    fpu_data.db.apos += config.alpha_datum_offset;
+                    fpu_data.db.alimits += config.alpha_datum_offset;
 
+                    // Populate the remaining FPU data items
                     fpu_data.a_caloffset = Interval(0.0);
                     fpu_data.b_caloffset = Interval(0.0);
                     fpu_data._last_counters = fpu_data.db.counters;
                     fpu_data.target_position = { fpu_data.db.apos,
                                                  fpu_data.db.bpos };
 
-                    // TODO: Check that this operation does a DEEP copy of ALL
-                    // underlying nested data items
                     fpus_data_temp[fpu_id] = fpu_data;
                 }
                 else
@@ -214,21 +226,20 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     if (ecan_result == DE_OK)
     {
         // Copy all temporary FPUs data into main FPU data store
-        // TODO: Ensure that does a full deep copy
         fpus_data = fpus_data_temp;
 
         configuring_targets.clear();
         configured_targets.clear();
 
-        // Query positions and compute offsets, if FPUs have been reset.
-        // This assumes that the stored positions are correct.
-    
         ecan_result = _pingFPUs(grid_state, fpuset);
     }
 
+    // Query positions and compute offsets, if FPUs have been reset.
+    // This assumes that the stored positions are correct.
+
     // TODO: Are the following calls equivalent to the Python version, in terms
-    // of how error conditions are hamdled? e.g. Should they be called
-    // uncoditionally, even if one of the earlier ones fails?
+    // of how error conditions are handled? e.g. Should they be called
+    // unconditionally, even if one of the earlier ones fails?
 
     if (ecan_result == DE_OK)
     {

@@ -63,6 +63,16 @@ public:
         return ((lower != other.lower) || (upper != other.upper));
     }
 
+    bool operator+=(double val)
+    {
+        // TODO: Is this operation equivalent to the Python version of
+        // Interval.__add__()? (which is called from e.g.
+        // GridDriver._post_connect_hook() I think, in the line:
+        // in_dicts[subkey][fpu_id] = val + alpha_datum_offset
+        lower += val;
+        upper += val;
+    }
+
 private:
     // TODO: Initialise to NAN instead 0.0?
     double lower = 0.0;
