@@ -63,7 +63,7 @@ public:
         return ((lower != other.lower) || (upper != other.upper));
     }
 
-    bool operator+=(double val)
+    void operator+=(double val)
     {
         // TODO: Is this operation equivalent to the Python version of
         // Interval.__add__()? (which is called from e.g.
@@ -71,6 +71,16 @@ public:
         // in_dicts[subkey][fpu_id] = val + alpha_datum_offset
         lower += val;
         upper += val;
+    }
+
+    Interval operator-(double val)
+    {
+        // TODO: Is this subtraction operation correct?
+        // N.B. It's used in e.g. GridDriver::_reset_hook()
+        Interval interval_ret;
+        interval_ret.lower = this->lower - val;
+        interval_ret.upper = this->upper - val;
+        return interval_ret;
     }
 
 private:

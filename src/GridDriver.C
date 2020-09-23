@@ -315,13 +315,75 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
                                           t_grid_state &gs,
                                           const t_fpuset &fpuset)
 {
+    // This function needs to be called after a reset or hardware power-on
+    // reset. It updates the offset between the stored FPU positions and
+    // positions reported by ping.
+    //
+    // If the FPUs have been switched off and powered on again, or if they have
+    // been reset for another reason, then the ping values will usually differ
+    // from the recorded valid values, until a successful datum command has
+    // been run. This difference defines an offset which must be added every
+    // time in order to yield the correct position.
+    //
+    // This method needs to be run:
+    //  - Every time the driver is initialising, after the initial ping
+    //  - After every resetFPU command
+
     E_EtherCANErrCode ecan_result;
 
+    t_grid_state grid_state;
+    getGridState(grid_state);
 
-    // TODO
+    ecan_result = readSerialNumbers(gs, fpuset);
+    if (ecan_result == DE_OK)
+    {
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        {
+            if (!fpuset[fpu_id])
+            {
+                continue;
+            }
+
+            // These offsets are the difference between the calibrated angle
+            // and the uncalibrated angle - after a findDatum, they are set to
+            // zero
+            bool a_underflow, a_overflow;
+            double alpha_angle = _alpha_angle(grid_state.FPU_state[fpu_id],
+                                              a_underflow, a_overflow);
+            if (a_underflow || a_overflow)  
+            {
+                // TODO: Nothing to do here? The Python code just prints a
+                // warning
+            }
+            fpus_data[fpu_id].a_caloffset = fpus_data[fpu_id].db.apos - alpha_angle;
+
+            bool b_underflow, b_overflow;
+            double beta_angle = _beta_angle(grid_state.FPU_state[fpu_id],
+                                            b_underflow, b_overflow);
+            if (b_underflow || b_overflow)  
+            {
+                // TODO: Nothing to do here? The Python code just prints a
+                // warning
+            }
+            fpus_data[fpu_id].b_caloffset = fpus_data[fpu_id].db.bpos - beta_angle;
+
+
+
+            //***************************
+            // TODO: Finish and test this function by converting from Python
+            // version
+            //***************************
+
+
+
+
+        }
+
+
+    }
+
+
     
-    ecan_result = DE_OK;
-
 
     return ecan_result;
 }

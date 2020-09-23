@@ -56,6 +56,8 @@ int main(int argc, char** argv)
         dummy_val++;
     }
     
+    Interval interval_5 = interval_1 - 10.0;
+    
     //..........................................................................
     
     testGridDriver();
