@@ -32,7 +32,7 @@ from ethercanif import (__version__, CAN_PROTOCOL_VERSION, GatewayAddress,  Ethe
                         REQD_ANTI_CLOCKWISE,  REQD_CLOCKWISE, DIRST_CLOCKWISE, DIRST_RESTING_LAST_CW,
                         DIRST_ANTI_CLOCKWISE, DIRST_RESTING_LAST_ACW,
                         DEFAULT_WAVEFORM_RULESET_VERSION,
-                        EtherCANException, MovementError, CollisionError, LimitBreachError,
+                        EtherCANException, MovementError, FirmwareTimeoutError, CollisionError, LimitBreachError,
                         AbortMotionError, StepTimingError, InvalidStateException, SystemFailure,
                         InvalidParameterError, SetupError, InvalidWaveformException, ConnectionFailure,
                         SocketFailure, CommandTimeout, ProtectionError, HardwareProtectionError,
