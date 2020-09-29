@@ -136,11 +136,26 @@ private:
 #endif // NOT FPU_DB_DATA_AGGREGATED
 #endif // ENABLE_PROTECTION_CODE
 
-    // Variable-sized maps? (for now)
-    // TODO: See comments above the t_fpu_positions definition in
+    //.............................
+    // TODO: Are these data structures the correct equivalents of the original
+    // Python code? Also, see comments above the t_fpu_positions definition in
     // UnprotectedGridDriver.h
+
+    // TODO: Python version's GridDriver::__init__() has "with self.lock"
+    // around its XXXX_ranges initialisations - is this superfluous because
+    // these are created in the constructor and therefore won't have any
+    // chance of being accessed simultaneously from another instance - OR,
+    // are these data structures shared between multiple instances somehow?
+    // Position intervals which are being configured by configMotion
+    t_fpu_positions configuring_ranges;
+    // Position intervals which have successfully been configured and will
+    // become valid with next executeMotion
+    t_fpu_positions configured_ranges;
+
     t_fpu_positions configuring_targets;
     t_fpu_positions configured_targets;
+
+    //.............................
 
     //*****************************
     //*****************************

@@ -70,8 +70,8 @@ enum class Range
 // the "hook" functions' initial_positions arguments, configuring_targets,
 // configured_targets etc) as variable-sized sets of FPU positions, e.g. whose
 // sizes are governed by the fpuset flags array. Would these structures
-// eventually be better off as arrays of t_fpu_position's of size
-// MAX_NUM_POSITIONERS?
+// eventually be better off as std::vector's or arrays of t_fpu_position's of
+// size MAX_NUM_POSITIONERS or num_fpus?
 struct t_fpu_position
 {
     Interval apos;

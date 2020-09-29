@@ -1,8 +1,21 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+// -*- mode: c++ -*-
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright 2020 UKRI. See file "LICENSE" for license information.
+//
+//
+// Who       When        What
+// --------  ----------  -------------------------------------------------------
+// bwillemse 2020-05-25  TODO: Put comment here
+//------------------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////////////
+// NAME main.cpp
+//
+// Top-level main file for grid driver testing purposes.
+//
+////////////////////////////////////////////////////////////////////////////////
 
 /* 
  * File:   main.cpp
