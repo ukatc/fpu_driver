@@ -43,13 +43,11 @@ public:
 private:
     void testInitialisedGridDriver(UnprotectedGridDriver &gd,
                                    bool soft_protection);
-#ifdef FPU_DB_DATA_AGGREGATED
     void writeFpuDbDummyItemsFromSerialNumbers(GridDriver &gd);
     
     const char *ip_address_str = "127.0.0.1";
     const uint16_t port_number = 4700;
     const t_gateway_address gateway_address = { ip_address_str, port_number };
-#endif
 };
 
 //==============================================================================

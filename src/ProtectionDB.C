@@ -268,7 +268,6 @@ ProtectionDbTxn::ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr,
     }
 }
 
-#ifdef FPU_DB_DATA_AGGREGATED
 //------------------------------------------------------------------------------
 bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
                                        const char serial_number[],
@@ -382,7 +381,6 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
 
     return result_ok;
 }
-#endif // FPU_DB_DATA_AGGREGATED
 
 //------------------------------------------------------------------------------
 bool ProtectionDbTxn::fpuDbTransferPosition(DbTransferType transfer_type,

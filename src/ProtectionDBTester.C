@@ -630,7 +630,6 @@ static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiond
     return result_ok;
 }
 
-#ifdef FPU_DB_DATA_AGGREGATED
 //------------------------------------------------------------------------------
 bool ProtectionDBTester::testFpuDbDataClass()
 {
@@ -719,8 +718,6 @@ void protectionDB_FillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data)
         fpu_db_data.last_waveform[i] = { (int16_t)(i + 100), (int16_t)(i + 200) };
     }
 }
-
-#endif // FPU_DB_DATA_AGGREGATED
 
 //------------------------------------------------------------------------------
 static std::string getNextFpuTestSerialNumber()

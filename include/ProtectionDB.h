@@ -38,15 +38,7 @@ using namespace mpifps::ethercanif;
 std::string protectionDB_GetDirFromLinuxEnv(bool mockup);
 
 // -----------------------------------------------------------------------------
-// TODO: Macro to enable the aggregation of the FPU database data into a per-FPU
-// data structure, rather than the original Python version approach of having
-// a separate array for each of the FPU data elements
-// TODO: Remove this macro and all non-FPU_DB_DATA_AGGREGATED code eventually
-#define FPU_DB_DATA_AGGREGATED
 
-// -----------------------------------------------------------------------------
-
-#ifdef FPU_DB_DATA_AGGREGATED
 // FpuDbData: FPU data which is stored in the protection database.
 struct FpuDbData
 {
@@ -126,8 +118,6 @@ private:
     }
 };
 
-#endif // FPU_DB_DATA_AGGREGATED
-
 // -----------------------------------------------------------------------------
 
 enum class DbTransferType
@@ -172,11 +162,9 @@ class ProtectionDbTxn
 public:
     ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
 
-#ifdef FPU_DB_DATA_AGGREGATED
     bool fpuDbTransferFpu(DbTransferType transfer_type,
                           const char serial_number[],
                           FpuDbData &fpu_db_data);
-#endif // FPU_DB_DATA_AGGREGATED
 
     bool fpuDbTransferPosition(DbTransferType transfer_type,
                                FpuDbPositionType position_type, 
