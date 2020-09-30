@@ -32,6 +32,10 @@
 #include "ethercan/AsyncInterface.h"
 #include "InterfaceState.h"
 #include "Interval.h"
+// N.B. The UnprotectedGridDriver class doesn't use the protection database,
+// but it does use the FpuDbData structure defined in ProtectionDB.h - see
+// comments above the FpuData structure definition elsewhere in this class.
+#include "ProtectionDB.h" 
 
 namespace mpifps
 {
@@ -370,9 +374,6 @@ protected:
     EtherCANInterfaceConfig config;
     bool initialize_was_called_ok = false;
 
-    // TODO: See comments above t_wtable definition in AsyncInterface.h
-    t_wtable last_wavetable;
-
     // NOTE: wf_reversed is not used in UnprotectedGridDriver, so it has been
     // moved to GridDriver (N.B. The original Python version had it in
     // UnprotectedGridDriver)
@@ -383,6 +384,26 @@ protected:
     // TODO: Rename to something like etherCanIfPtr eventually - it's named as
     // _gd so that it's the same as in FpuGridDriver.py for now
     EtherCANInterface *_gd = nullptr;
+
+    // FpuData: Per-FPU data. NOTE: Mostly used only by the GridDriver class
+    // which inherits from this UnprotectedGridDriver class - only the
+    // fpus_data[n].db.last_waveform elements are used here.
+    // TODO: The entire structure is included here only so that
+    // UnprotectedGridDriver can access fpus_data[n].db.last_waveform - this
+    // is not ideal, but might be rationalised in future if
+    // UnprotectedGridDriver and GridDriver are merged into one class
+    // eventually?
+    struct FpuData
+    {
+        FpuDbData db;
+
+        Interval a_caloffset;
+        Interval b_caloffset;
+        FpuCounters _last_counters;
+        t_fpu_position target_position;
+    };
+
+    std::vector<FpuData> fpus_data;
 
     //..........................................................................
 private:

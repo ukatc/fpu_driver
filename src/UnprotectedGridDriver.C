@@ -126,6 +126,8 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     double motor_max_rel_increase,
     double motor_max_step_difference)
 {
+    fpus_data.resize(nfpus);
+    
     config.num_fpus = nfpus;
     config.SocketTimeOutSeconds = SocketTimeOutSeconds;
     config.confirm_each_step = confirm_each_step;
@@ -593,8 +595,12 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
                                old_state.FPU_state[fpu_id]);
     }
 
-    last_wavetable.clear();
-
+    // Clear FPU waveforms
+    for (size_t fpu_id = 0; fpu_id < fpus_data.size(); fpu_id++)
+    {
+        fpus_data[fpu_id].db.last_waveform.clear();
+    }
+    
     // Wait for FPUs to become active (N.B. values adapted from original
     // Python version of this function)
     sleepSecs(0.1 * 24.0);
@@ -699,8 +705,6 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 
     // We make a copy of the wavetable to make sure no side effects are
     // visible to the caller
-    // TODO: This will use lots of local stack - is the stack size big
-    // enough for this?
     t_wtable wtable = wavetable;
 
     // Delete all wtable elements not specified in fpuset
@@ -812,21 +816,8 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 
             if (wavetable_was_received(wtable, fpu_id, gs.FPU_state[fpu_id]))
             {
-                // Add to last_wavetable list (or overwrite existing entry)
-                bool fpu_id_found = false;
-                for (size_t i = 0; i < last_wavetable.size(); i++)
-                {
-                    if (last_wavetable[i].fpu_id == fpu_id)
-                    {
-                        last_wavetable[i] = *it;
-                        fpu_id_found = true;
-                        break;
-                    }
-                }
-                if (!fpu_id_found)
-                {
-                    last_wavetable.push_back(*it);
-                }
+                // Set the FPU's last_waveform
+                fpus_data[fpu_id].db.last_waveform = it->steps;
             }
             else
             {

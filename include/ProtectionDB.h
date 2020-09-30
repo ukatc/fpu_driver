@@ -47,7 +47,7 @@ std::string protectionDB_GetDirFromLinuxEnv(bool mockup);
 // -----------------------------------------------------------------------------
 
 #ifdef FPU_DB_DATA_AGGREGATED
-
+// FpuDbData: FPU data which is stored in the protection database.
 struct FpuDbData
 {
     FpuDbData()
@@ -84,23 +84,25 @@ struct FpuDbData
     int64_t bretries_cw;
     int64_t bretries_acw;
     FpuCounters counters;
-    // TODO: Is having this FPU waveform here appropriate? Or, should it be
-    // written to / read from the FPU database separately? (because the Python
-    // code stores the waveforms in a t_wavetable vector, which might be
-    // variable-sized?)
-    t_waveform_steps waveform;
+    // last_waveform: Contains the last FPU waveform. A zero-sized waveform
+    // means that it's not currrently valid.
+    // TODO: N.B. last_waveform corresponds to an individual FPU's waveform
+    // in tbe Python version's UnprotectedGridDriver.last_wavetable dictionary
+    t_waveform_steps last_waveform;
     
 private:
     bool isSameAsOther(const FpuDbData &other)
     {
         bool waveforms_are_equal = false;
-        if (waveform.size() == other.waveform.size())
+        if (last_waveform.size() == other.last_waveform.size())
         {
             waveforms_are_equal = true;
-            for (size_t i = 0; i < waveform.size(); i++)
+            for (size_t i = 0; i < last_waveform.size(); i++)
             {
-                if ((waveform[i].alpha_steps != other.waveform[i].alpha_steps) ||
-                    (waveform[i].beta_steps != other.waveform[i].beta_steps))
+                if ((last_waveform[i].alpha_steps !=
+                     other.last_waveform[i].alpha_steps) ||
+                    (last_waveform[i].beta_steps !=
+                     other.last_waveform[i].beta_steps))
                 {
                     waveforms_are_equal = false;
                     break;

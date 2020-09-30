@@ -682,7 +682,7 @@ bool ProtectionDBTester::testFpuDbDataClass()
         if (result_ok)
         {
             fpu_db_data_3 = fpu_db_data_1;
-            fpu_db_data_3.waveform[0].beta_steps = 999;
+            fpu_db_data_3.last_waveform[0].beta_steps = 999;
             if (fpu_db_data_3 == fpu_db_data_1)
             {
                 result_ok = false;
@@ -713,10 +713,10 @@ void protectionDB_FillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data)
         fpu_db_data.counters.setCount((FpuCounterId)i, i * 100);
     }
     const int num_waveform_steps = 10;
-    fpu_db_data.waveform.resize(num_waveform_steps);
+    fpu_db_data.last_waveform.resize(num_waveform_steps);
     for (int i = 0; i < num_waveform_steps; i++)
     {
-        fpu_db_data.waveform[i] = { (int16_t)(i + 100), (int16_t)(i + 200) };
+        fpu_db_data.last_waveform[i] = { (int16_t)(i + 100), (int16_t)(i + 200) };
     }
 }
 

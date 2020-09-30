@@ -377,7 +377,7 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
     if (result_ok)
     {
         result_ok = fpuDbTransferWaveform(transfer_type, serial_number,
-                                          fpu_db_data.waveform);
+                                          fpu_db_data.last_waveform);
     }
 
     return result_ok;

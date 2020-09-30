@@ -87,55 +87,6 @@ private:
 
     bool initprotection_was_called_ok = false;
 
-#ifdef ENABLE_PROTECTION_CODE
-
-    //*****************************
-    //*****************************
-    // TODO: The following data structures are my initial WIP best guesses
-    // converted from their Python equivalents as shown in
-    // _post_connect_hook() - check these further
-
-#ifdef FPU_DB_DATA_AGGREGATED
-    struct FpuData
-    {
-        FpuDbData db;
-
-        Interval a_caloffset;
-        Interval b_caloffset;
-        FpuCounters _last_counters;
-        t_fpu_position target_position;
-    };
-
-    std::vector<FpuData> fpus_data;
-
-#else // NOT FPU_DB_DATA_AGGREGATED
-    // N.B. These vectors all have their sizes set to the number of FPUs
-    std::vector<Interval> apositions;
-    std::vector<Interval> bpositions;
-    // TODO: This wf_reversed vector was moved here into GridDriver from
-    // UnprotectedGridDriver so that it can eventually be included into an FPU
-    // database data structure - this is OK because it's not actually used in
-    // UnprotectedGridDriver. N.B. The associated set_wtable_reversed() function
-    // is no longer required so has been removed, but the getReversed() function
-    // might still be required? (it's shown in the FPU grid driver document)
-    std::vector<bool> wf_reversed; // N.B. Size is set to config.num_fpus
-    std::vector<Interval> alimits;
-    std::vector<Interval> blimits;
-    std::vector<int64_t> maxaretries;
-    std::vector<int64_t> aretries_cw;
-    std::vector<int64_t> aretries_acw;
-    std::vector<int64_t> maxbretries;
-    std::vector<int64_t> bretries_cw;
-    std::vector<int64_t> bretries_acw;
-    std::vector<FpuCounters> counters;
-
-    std::vector<Interval> a_caloffsets;
-    std::vector<Interval> b_caloffsets;
-    std::vector<FpuCounters> _last_counters;
-    std::vector<t_fpu_position> target_positions;
-#endif // NOT FPU_DB_DATA_AGGREGATED
-#endif // ENABLE_PROTECTION_CODE
-
     //.............................
     // TODO: Are these data structures the correct equivalents of the original
     // Python code? Also, see comments above the t_fpu_positions definition in
@@ -156,9 +107,6 @@ private:
     t_fpu_positions configured_targets;
 
     //.............................
-
-    //*****************************
-    //*****************************
     
 #ifdef ENABLE_PROTECTION_CODE
 
@@ -241,5 +189,34 @@ private:
 //==============================================================================
 
 } // namespace mpifps
+
+// TODO: OLD CODE: Old non-aggregated FPU data - replaced by FpuData and
+// FpuDbData structures, but kept here for now - remove once no longer needed
+#if 0
+    // N.B. These vectors all have their sizes set to the number of FPUs
+    std::vector<Interval> apositions;
+    std::vector<Interval> bpositions;
+    // TODO: This wf_reversed vector was moved here into GridDriver from
+    // UnprotectedGridDriver so that it can eventually be included into an FPU
+    // database data structure - this is OK because it's not actually used in
+    // UnprotectedGridDriver. N.B. The associated set_wtable_reversed() function
+    // is no longer required so has been removed, but the getReversed() function
+    // might still be required? (it's shown in the FPU grid driver document)
+    std::vector<bool> wf_reversed; // N.B. Size is set to config.num_fpus
+    std::vector<Interval> alimits;
+    std::vector<Interval> blimits;
+    std::vector<int64_t> maxaretries;
+    std::vector<int64_t> aretries_cw;
+    std::vector<int64_t> aretries_acw;
+    std::vector<int64_t> maxbretries;
+    std::vector<int64_t> bretries_cw;
+    std::vector<int64_t> bretries_acw;
+    std::vector<FpuCounters> counters;
+
+    std::vector<Interval> a_caloffsets;
+    std::vector<Interval> b_caloffsets;
+    std::vector<FpuCounters> _last_counters;
+    std::vector<t_fpu_position> target_positions;
+#endif // 0
 
 #endif // GRIDDRIVER_H
