@@ -329,6 +329,11 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
     //  - Every time the driver is initialising, after the initial ping
     //  - After every resetFPU command
 
+
+    // TODO: Have finished this function and visually checked it against the
+    // equivalent Python _reset_hook(), but still need to test it
+
+
     E_EtherCANErrCode ecan_result;
 
     t_grid_state grid_state;
@@ -367,23 +372,14 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
             }
             fpus_data[fpu_id].b_caloffset = fpus_data[fpu_id].db.bpos - beta_angle;
 
+            if (configured_ranges.find(fpu_id) != configured_ranges.end())
+            {
+                configured_ranges.erase(fpu_id);
+            }
 
-
-            //***************************
-            // TODO: Finish and test this function by converting from Python
-            // version
-            //***************************
-
-
-
-
+            fpus_data[fpu_id].db.last_waveform.clear();
         }
-
-
     }
-
-
-    
 
     return ecan_result;
 }
