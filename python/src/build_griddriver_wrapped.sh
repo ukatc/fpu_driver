@@ -90,5 +90,6 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
 # N.B. Linking in the LMDB mdb.o and midl.o object files above works because
 # the mdb.c and midl.c files use "extern C" interally (via lmdb.h file)
 
-# Copy output file into python directory so that it's used by Python scripts
-cp ethercanif.so ..
+# Move output file into python directory because it needs to be available for
+# importing by the Python scripts as well
+mv ethercanif.so ..
