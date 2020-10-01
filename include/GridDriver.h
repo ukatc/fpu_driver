@@ -24,7 +24,7 @@
 // Define this macro in a project's global predefined symbols to enable the
 // protection code work-in-progress, or disable it so that can continue to use
 // the unprotected code for the time being. If disabled then also allows the
-// current build_griddriver_wrapped.sh script to build the BoostPython-wrapped
+// current build_griddriver_wrapped.sh script to build the Boost.Python-wrapped
 // driver successfully (otherwise, will fail because the script doesn't yet
 // add in the required LMDB files and so forth).
 // TODO: Remove this macro once done
@@ -65,7 +65,9 @@ public:
     // TODO: No longer needed?
     //ProtectionDB &getProtectionDB();
     
+#ifdef ENABLE_PROTECTION_CODE
     E_EtherCANErrCode pingFPUs(t_grid_state &gs, const t_fpuset &fpuset) override;
+#endif // ENABLE_PROTECTION_CODE
 
     //............................................
     // TODO: Test function for Boost.Python wrapper experimentation only -
@@ -91,6 +93,8 @@ private:
 
     bool initprotection_was_called_ok = false;
 
+#ifdef ENABLE_PROTECTION_CODE
+
     //.............................
     // TODO: Are these data structures the correct equivalents of the original
     // Python code? Also, see comments above the t_fpu_positions definition in
@@ -112,15 +116,12 @@ private:
 
     //.............................
     
-#ifdef ENABLE_PROTECTION_CODE
-
     ProtectionDB protection_db;
 
     double _alpha_angle(const t_fpu_state &fpu_state, bool &alpha_underflow_ret,
                         bool &alpha_overflow_ret);
     double _beta_angle(const t_fpu_state &fpu_state, bool &beta_underflow_ret,
                        bool &beta_overflow_ret);
-#endif // ENABLE_PROTECTION_CODE
 
     // TODO: Not needed: See comments above disabled set_wtable_reversed() in
     // GridDriver.C
@@ -174,17 +175,18 @@ private:
     void _post_execute_motion_hook(t_grid_state &gs, const t_grid_state &old_gs,
                                    const t_grid_state &move_gs,
                                    const t_fpuset &fpuset) override;
-#ifdef ENABLE_PROTECTION_CODE
+
     void _update_counters_execute_motion(int fpu_id, FpuCounters &fpu_counters,
                                          const t_waveform_steps &waveform,
                                          bool is_reversed,
                                          bool cancel = false);
-#endif // ENABLE_PROTECTION_CODE
 
     void getDuplicateSerialNumbers(t_grid_state &grid_state,
                         std::vector<std::string> &duplicate_snumbers_ret);
 
     int sign(int64_t val);
+
+#endif // ENABLE_PROTECTION_CODE
 
     //..........................................................................
 

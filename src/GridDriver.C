@@ -129,6 +129,11 @@ ProtectionDB &GridDriver::getProtectionDB()
 }
 #endif // 0
 
+
+//------------------------------------------------------------------------------
+#ifdef ENABLE_PROTECTION_CODE
+//------------------------------------------------------------------------------
+
 //------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::_post_connect_hook()
 {
@@ -153,8 +158,6 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     // GridDriver C++ functions have been implemented, because some FPU data
     // structuring might still change.
     //***************************
-
-#ifdef ENABLE_PROTECTION_CODE
 
     E_EtherCANErrCode ecan_result;
 
@@ -257,7 +260,6 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     //..........................................................................
 
     return ecan_result;
-#endif // ENABLE_PROTECTION_CODE
 }
 
 //------------------------------------------------------------------------------
@@ -290,7 +292,6 @@ void GridDriver::getDuplicateSerialNumbers(t_grid_state &grid_state,
     }
 }
 
-#ifdef ENABLE_PROTECTION_CODE
 //------------------------------------------------------------------------------
 double GridDriver::_alpha_angle(const t_fpu_state &fpu_state,
                                 bool &alpha_underflow_ret,
@@ -311,14 +312,12 @@ double GridDriver::_beta_angle(const t_fpu_state &fpu_state,
     beta_overflow_ret = (fpu_state.beta_steps == BETA_OVERFLOW_COUNT);
     return ((double)fpu_state.beta_steps) / StepsPerDegreeBeta;
 }
-#endif // ENABLE_PROTECTION_CODE
 
 //------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
                                           t_grid_state &gs,
                                           const t_fpuset &fpuset)
 {
-#ifdef ENABLE_PROTECTION_CODE
     // This function needs to be called after a reset or hardware power-on
     // reset. It updates the offset between the stored FPU positions and
     // positions reported by ping.
@@ -386,9 +385,6 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
     }
 
     return ecan_result;
-#else // NOT ENABLE_PROTECTION_CODE
-    return DE_OK;
-#endif // NOT ENABLE_PROTECTION_CODE
 }
 
 //------------------------------------------------------------------------------
@@ -554,7 +550,6 @@ void GridDriver::_post_config_motion_hook(const t_wtable &wtable,
     UNUSED_ARG(fpuset);
 }
 
-#ifdef ENABLE_PROTECTION_CODE
 //------------------------------------------------------------------------------
 void GridDriver::_update_counters_execute_motion(int fpu_id,
                                                  FpuCounters &fpu_counters,
@@ -671,7 +666,6 @@ void GridDriver::_update_counters_execute_motion(int fpu_id,
     fpu_counters.addToCount(FpuCounterId::alpha_starts, alpha_starts);
     fpu_counters.addToCount(FpuCounterId::beta_starts, beta_starts);
 }
-#endif // ENABLE_PROTECTION_CODE
 
 //------------------------------------------------------------------------------
 void GridDriver::_start_execute_motion_hook(t_grid_state &gs,
@@ -756,6 +750,11 @@ int GridDriver::sign(int64_t val)
 }
 
 //------------------------------------------------------------------------------
+#endif // ENABLE_PROTECTION_CODE
+//------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------
 // TODO: Boost.Python wrapper test member function - remove eventually
 double GridDriver::boostPythonDivide(double dividend, double divisor)
 {
@@ -771,8 +770,6 @@ double GridDriver::boostPythonDivide(double dividend, double divisor)
 //==============================================================================
 E_EtherCANErrCode GridDriver::_post_connect_hook()
 {
-#ifdef ENABLE_PROTECTION_CODE
-
     bool result_ok = false;
 
     // TODO: Check that the FPU database has been properly opened at this point
@@ -992,10 +989,8 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     _refresh_positions(grid_state, false, fpuset);
     
     //..........................................................................
-
-#endif // ENABLE_PROTECTION_CODE
-
 }
+
 //------------------------------------------------------------------------------
 #endif // 0 
 //------------------------------------------------------------------------------
