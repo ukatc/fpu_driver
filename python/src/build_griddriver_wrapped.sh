@@ -36,9 +36,10 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
     ../../src/DeviceLock.C \
     ../../src/EtherCANInterface.C \
     ../../src/FPUArray.C \
-    ../../src/GridDriver.C \
+    ../../src/FPUCounters.C \
     ../../src/FPUState.C \
     ../../src/GatewayInterface.C \
+    ../../src/GridDriver.C \
     ../../src/GridState.C \
     ../../src/handle_AbortMotion_response.C \
     ../../src/handle_CheckIntegrity_response.C \
@@ -78,7 +79,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
     ../../src/TimeOutList.C \
     ../../src/UnprotectedGridDriver.C \
     -L/usr/local/lib -lboost_python27 \
-    -o griddriver.so mdb.o midl.o
+    -o ethercanif.so mdb.o midl.o
 # NOTE: The Boost.Python library filename "boost_python27" specified above
 # applies to Boost.Python v1.67 and above - see version 1.67 release notes
 # at https://www.boost.org/doc/libs/1_67_0/libs/python/doc/html/rn.html#rn.version_1_67
@@ -88,3 +89,6 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
 #
 # N.B. Linking in the LMDB mdb.o and midl.o object files above works because
 # the mdb.c and midl.c files use "extern C" interally (via lmdb.h file)
+
+# Copy output file into python directory so that it's used by Python scripts
+cp ethercanif.so ..
