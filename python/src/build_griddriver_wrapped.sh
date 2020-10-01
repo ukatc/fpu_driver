@@ -27,7 +27,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
     -I../../include \
     -I../../include/ethercan \
     -I../../lib/liblmdb \
-    griddriver_wrapper.C \
+    ethercanif.C \
     WrapperSharedBase.C \
     ../../src/AsyncInterface.C \
     ../../src/CommandPool.C \

@@ -23,7 +23,10 @@
 // TODO: ENABLE_PROTECTION_CODE macro
 // Define this macro in a project's global predefined symbols to enable the
 // protection code work-in-progress, or disable it so that can continue to use
-// the unprotected code for the time being.
+// the unprotected code for the time being. If disabled then also allows the
+// current build_griddriver_wrapped.sh script to build the BoostPython-wrapped
+// driver successfully (otherwise, will fail because the script doesn't yet
+// add in the required LMDB files and so forth).
 // TODO: Remove this macro once done
 
 #include <map>
@@ -59,7 +62,8 @@ public:
 
     bool initializedOk() override;
 
-    ProtectionDB &getProtectionDB();
+    // TODO: No longer needed?
+    //ProtectionDB &getProtectionDB();
     
     E_EtherCANErrCode pingFPUs(t_grid_state &gs, const t_fpuset &fpuset) override;
 

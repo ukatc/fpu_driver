@@ -113,18 +113,21 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
 //------------------------------------------------------------------------------
 bool GridDriver::initializedOk()
 {
-    if ((initialize_was_called_ok) && (initprotection_was_called_ok))
+    if (initialize_was_called_ok && initprotection_was_called_ok)
     {
         return true;
     }
     return false;
 }
 
+// TODO: No longer needed?
+#if 0
 //------------------------------------------------------------------------------
 ProtectionDB &GridDriver::getProtectionDB()
 {
     return protection_db;
 }
+#endif // 0
 
 //------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::_post_connect_hook()
@@ -315,6 +318,7 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
                                           t_grid_state &gs,
                                           const t_fpuset &fpuset)
 {
+#ifdef ENABLE_PROTECTION_CODE
     // This function needs to be called after a reset or hardware power-on
     // reset. It updates the offset between the stored FPU positions and
     // positions reported by ping.
@@ -382,6 +386,9 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
     }
 
     return ecan_result;
+#else // NOT ENABLE_PROTECTION_CODE
+    return DE_OK;
+#endif // NOT ENABLE_PROTECTION_CODE
 }
 
 //------------------------------------------------------------------------------

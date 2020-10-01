@@ -45,9 +45,6 @@ typedef struct
     t_waveform_steps steps;
 } t_waveform;
 
-// TODO: t_wtable is used as a variable-length array in the Python version of
-// e.g. UnprotectedGridDriver::configMotion(), so might it be better to be a
-// std::map<>?
 typedef std::vector<t_waveform> t_wtable;
 
 typedef bool t_fpuset[MAX_NUM_POSITIONERS];
