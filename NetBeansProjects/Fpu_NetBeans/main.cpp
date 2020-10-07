@@ -73,11 +73,11 @@ int main(int argc, char** argv)
     
     //..........................................................................
     
-    testGridDriver();
+    //testGridDriver();
 
     //testFpuCounters();
 
-    //testProtectionDB();
+    testProtectionDB();
     
     //testProtectionDB();
     
@@ -107,7 +107,8 @@ static void testGridDriver()
 //------------------------------------------------------------------------------
 static void testProtectionDB()
 {
-    bool result_ok = protectionDB_Test();
+    //bool result_ok = protectionDB_Test();
+    bool result_ok = protectionDB_LoopingTestWithConsoleOutput();
 }
 
 //------------------------------------------------------------------------------

@@ -25,6 +25,7 @@
 
 using namespace mpifps;
 
+bool protectionDB_LoopingTestWithConsoleOutput();
 bool protectionDB_Test();
 void protectionDB_FillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data);
 

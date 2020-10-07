@@ -44,6 +44,28 @@ static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiond
 // Miscellaneous test functions
 static std::string getNextFpuTestSerialNumber();
 
+
+//------------------------------------------------------------------------------
+bool protectionDB_LoopingTestWithConsoleOutput()
+{
+    const int num_iterations = 1000;
+    for (int i = 0; i < num_iterations; i++)
+    {
+        printf("Test #%d of %d: Write & verification of all FPU data items: ",
+               i, num_iterations);   // TODO: Use cout / endl stuff instead
+        
+        if (protectionDB_Test())
+        {
+            printf("Passed\n");
+        }
+        else
+        {
+            printf("***FAILED***\n");
+            break;
+        }
+    }
+}
+
 //------------------------------------------------------------------------------
 bool protectionDB_Test()
 {
