@@ -156,6 +156,7 @@
       <itemPath>../../src/GridDriver.C</itemPath>
       <itemPath>../../src/GridDriverTester.C</itemPath>
       <itemPath>../../src/GridState.C</itemPath>
+      <itemPath>../../src/Interval.C</itemPath>
       <itemPath>../../src/ProtectionDB.C</itemPath>
       <itemPath>../../src/ProtectionDBTester.C</itemPath>
       <itemPath>../../src/SBuffer.C</itemPath>
@@ -641,6 +642,8 @@
       <item path="../../src/GridDriverTester.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/GridState.C" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../../src/Interval.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/ProtectionDB.C" ex="false" tool="1" flavor2="0">
       </item>
@@ -1266,6 +1269,8 @@
       <item path="../../src/GridDriverTester.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/GridState.C" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../../src/Interval.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/ProtectionDB.C" ex="false" tool="1" flavor2="0">
       </item>

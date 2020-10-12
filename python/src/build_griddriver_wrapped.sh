@@ -72,6 +72,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" \
     ../../src/handle_WarnCollisionBeta_warning.C \
     ../../src/handle_WarnLimitAlpha_warning.C \
     ../../src/handle_WriteSerialNumber_response.C \
+    ../../src/Interval.C \
     ../../src/ProtectionDB.C \
     ../../src/SBuffer.C \
     ../../src/sync_utils.C	\

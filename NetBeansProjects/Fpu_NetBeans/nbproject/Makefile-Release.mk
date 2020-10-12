@@ -49,6 +49,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/56252444/GridDriver.o \
 	${OBJECTDIR}/_ext/56252444/GridDriverTester.o \
 	${OBJECTDIR}/_ext/56252444/GridState.o \
+	${OBJECTDIR}/_ext/56252444/Interval.o \
 	${OBJECTDIR}/_ext/56252444/ProtectionDB.o \
 	${OBJECTDIR}/_ext/56252444/ProtectionDBTester.o \
 	${OBJECTDIR}/_ext/56252444/SBuffer.o \
@@ -184,6 +185,11 @@ ${OBJECTDIR}/_ext/56252444/GridState.o: ../../src/GridState.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/GridState.o ../../src/GridState.C
+
+${OBJECTDIR}/_ext/56252444/Interval.o: ../../src/Interval.C
+	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/Interval.o ../../src/Interval.C
 
 ${OBJECTDIR}/_ext/56252444/ProtectionDB.o: ../../src/ProtectionDB.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
