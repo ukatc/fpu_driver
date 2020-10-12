@@ -216,6 +216,8 @@ public:
     
     std::unique_ptr<ProtectionDbTxn> createTransaction();
     
+    bool sync();
+
     ~ProtectionDB();
     
 private:

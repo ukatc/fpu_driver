@@ -51,7 +51,7 @@ bool protectionDB_LoopingTestWithConsoleOutput()
     const int num_iterations = 1000;
     for (int i = 0; i < num_iterations; i++)
     {
-        printf("Test #%d of %d: Write & verification of all FPU data items: ",
+        printf("Test #%d of %d: Writing/verifying a single FPU's data items: ",
                i, num_iterations);   // TODO: Use cout / endl stuff instead
         
         if (protectionDB_Test())

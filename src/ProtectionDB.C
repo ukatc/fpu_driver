@@ -229,6 +229,23 @@ std::unique_ptr<ProtectionDbTxn> ProtectionDB::createTransaction()
 }
 
 //------------------------------------------------------------------------------
+bool ProtectionDB::sync()
+{
+    bool result_ok = false;
+
+    if (mdb_env_ptr != nullptr)
+    {
+        bool force = false;    // TODO: Is this the correct flag setting?
+        if (mdb_env_sync(mdb_env_ptr, force) == 0)
+        {
+            result_ok = true;
+        }
+    }
+
+    return result_ok;
+}
+
+//------------------------------------------------------------------------------
 void ProtectionDB::close()
 {
     // Releases all handles, closes ProtectionDB LMDB environment etc
