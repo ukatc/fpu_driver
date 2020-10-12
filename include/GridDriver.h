@@ -134,6 +134,11 @@ private:
     E_EtherCANErrCode _reset_hook(t_grid_state &old_state, t_grid_state &gs,
                                   const t_fpuset &fpuset) override;
 
+    bool _update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
+                      int fpu_id, const Interval &new_apos, bool store);
+    bool _update_bpos(const std::unique_ptr<ProtectionDbTxn> &txn,
+                      int fpu_id, const Interval &new_bpos, bool store);
+
     // findDatum() hook functions
     void _allow_find_datum_hook(t_grid_state &gs,
                                 t_datum_search_flags &search_modes,

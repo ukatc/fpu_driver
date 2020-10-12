@@ -458,18 +458,156 @@ void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
 }
 
 //------------------------------------------------------------------------------
+bool GridDriver::_update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
+                              int fpu_id, const Interval &new_apos, bool store)
+{
+    fpus_data[fpu_id].db.apos = new_apos;
+
+    if (store)
+    {
+        t_grid_state gs;
+        getGridState(gs);
+        const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+        // TODO: Check that the const_cast<> below works OK, AND in
+        // _update_bpos() below as well
+        return txn->fpuDbTransferPosition(DbTransferType::Write,
+                                          FpuDbPositionType::AlphaPos,
+                                          serial_number,
+                                          const_cast<Interval &>(new_apos),
+                                          config.alpha_datum_offset);
+    }
+    else
+    {
+        return true;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool GridDriver::_update_bpos(const std::unique_ptr<ProtectionDbTxn> &txn,
+                              int fpu_id, const Interval &new_bpos, bool store)
+{
+    fpus_data[fpu_id].db.bpos = new_bpos;
+
+    if (store)
+    {
+        t_grid_state gs;
+        getGridState(gs);
+        const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+        // TODO: The position offset is for alpha arm only? So what to do here?
+        double dummy_datum_offset = 0.0;
+        // TODO: Check that the const_cast<> below works OK
+        return txn->fpuDbTransferPosition(DbTransferType::Write,
+                                          FpuDbPositionType::BetaPos,
+                                          serial_number,
+                                          const_cast<Interval &>(new_bpos),
+                                          dummy_datum_offset);
+    }
+    else
+    {
+        return true;
+    }
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::_refresh_positions(t_grid_state &grid_state,
                                                  bool store,
                                                  const t_fpuset &fpuset)
 {
-    // TODO
+    // This is to be run after any movement.
 
-    // Temporary for now
-    UNUSED_ARG(grid_state);
-    UNUSED_ARG(store);
-    UNUSED_ARG(fpuset);
+    // Computes new current positions from step count and offsets (if set), and
+    // stores them to database.
 
-    return DE_OK;
+    // Note: We do not try to recognize a reset behind the back of the driver
+    // as there is no reliable indicator. Protocol 1 does not support to
+    // recognise that. Protocol 2 allows to recognise it, so this might change.
+
+    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
+    bool inconsistency_abort = false;
+
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        ecan_result = DE_OK;
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        {
+            if (!fpuset[fpu_id])
+            {
+                continue;
+            }
+
+            if (!grid_state.FPU_state[fpu_id].ping_ok)
+            {
+                // Position is not known. This flag is set by a successful ping
+                // or datum response, and cleared by every movement as well as
+                // all movement time-outs
+                continue;
+            }
+
+            bool a_underflow, a_overflow;
+            double counted_alpha_angle = _alpha_angle(grid_state.FPU_state[fpu_id],
+                                                      a_underflow, a_overflow);
+            Interval new_alpha = fpus_data[fpu_id].a_caloffset + counted_alpha_angle;
+
+            bool b_underflow, b_overflow;
+            double counted_beta_angle = _beta_angle(grid_state.FPU_state[fpu_id],
+                                                    b_underflow, b_overflow);
+            Interval new_beta = fpus_data[fpu_id].b_caloffset + counted_beta_angle;
+
+            // Compute alpha and beta position intervals and store both to DB
+            Interval a_target = fpus_data[fpu_id].target_position.apos;
+            Interval b_target = fpus_data[fpu_id].target_position.bpos;
+            if (a_underflow || a_overflow)
+            {
+                new_alpha = a_target;
+            }
+            if (b_underflow || b_overflow)
+            {
+                new_beta = b_target;
+            }
+            fpus_data[fpu_id].target_position.apos = new_alpha;
+            fpus_data[fpu_id].target_position.bpos = new_beta;
+
+            if ( (!fpus_data[fpu_id].db.apos.contains(new_alpha, 0.25)) ||
+                 (!fpus_data[fpu_id].db.bpos.contains(new_beta, 0.25)) )
+            {
+                inconsistency_abort = true;
+            }
+
+            bool success = _update_apos(txn, fpu_id, new_alpha, store);
+            if (success)
+            {
+                success = _update_bpos(txn, fpu_id, new_beta, store);
+            }
+            if (!success)
+            {
+                // TODO: Not a good error code for this condition - currently
+                // only a placeholder
+                ecan_result = DE_RESOURCE_ERROR;
+                break;
+            }
+        }
+    }
+    else
+    {
+        // TODO: Not a good error code for this condition - currently only a
+        // placeholder
+        ecan_result = DE_RESOURCE_ERROR;
+    }
+
+    if (!protection_db.sync())
+    {
+        // TODO: Not a good error code for this condition - currently only a
+        // placeholder
+        ecan_result = DE_RESOURCE_ERROR;
+    }
+
+    if ((ecan_result == DE_OK) && inconsistency_abort)
+    {
+        ecan_result = DE_INCONSISTENT_STEP_COUNT;
+    }
+
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
