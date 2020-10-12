@@ -46,6 +46,9 @@ private:
     double upper = 0.0;
 };
 
+// Simple Interval class test function
+void testIntervalClass(void);
+
 //..............................................................................
 
 } // namespace mpifps
