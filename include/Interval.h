@@ -73,14 +73,35 @@ public:
         upper += val;
     }
 
+    Interval operator+(double val)
+    {
+        // TODO: Is this addition operation correct?
+        // N.B. It's used in e.g. GridDriver::_refresh_positions()
+        Interval interval_ret;
+        interval_ret.lower = lower + val;
+        interval_ret.upper = upper + val;
+        return interval_ret;
+    }
+
     Interval operator-(double val)
     {
         // TODO: Is this subtraction operation correct?
         // N.B. It's used in e.g. GridDriver::_reset_hook()
         Interval interval_ret;
-        interval_ret.lower = this->lower - val;
-        interval_ret.upper = this->upper - val;
+        interval_ret.lower = lower - val;
+        interval_ret.upper = upper - val;
         return interval_ret;
+    }
+
+    bool contains(Interval otherInterval, double tolerance)
+    {
+        // N.B. tolerance must be a positive value
+        if ( ((lower - tolerance) <= otherInterval.lower) &&
+             ((upper + tolerance) >= otherInterval.upper) )
+        {
+            return true;
+        }
+        return false;
     }
 
 private:
