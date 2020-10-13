@@ -148,6 +148,12 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
         {
             result_ok = protectionDB_TestFullFpuDataTransfer(protectiondb);
         }
+        
+        // Run the sync() function
+        if (result_ok)
+        {
+            result_ok = protectiondb.sync();
+        }
     }
     
     return result_ok;

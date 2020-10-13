@@ -231,6 +231,7 @@ std::unique_ptr<ProtectionDbTxn> ProtectionDB::createTransaction()
 //------------------------------------------------------------------------------
 bool ProtectionDB::sync()
 {
+    // Flushes the database buffers to disk
     bool result_ok = false;
 
     if (mdb_env_ptr != nullptr)

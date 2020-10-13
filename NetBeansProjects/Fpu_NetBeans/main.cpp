@@ -41,17 +41,15 @@ static void testProtectionDB();
 //------------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-    // Ad-hoc testing of Interval class
-    testIntervalClass();
+    //testIntervalClass();
     
     //testGridDriver();
 
     //testFpuCounters();
 
-    //testProtectionDB();
+    testProtectionDB();
     
-    //testProtectionDB();
-    
+
     return 0;
 }
 
