@@ -135,9 +135,11 @@ private:
                                   const t_fpuset &fpuset) override;
 
     bool _update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
-                      int fpu_id, const Interval &new_apos, bool store);
+                      const char *serial_number, int fpu_id,
+                      const Interval &new_apos, bool store);
     bool _update_bpos(const std::unique_ptr<ProtectionDbTxn> &txn,
-                      int fpu_id, const Interval &new_bpos, bool store);
+                      const char *serial_number, int fpu_id,
+                      const Interval &new_bpos, bool store);
 
     // findDatum() hook functions
     void _allow_find_datum_hook(t_grid_state &gs,

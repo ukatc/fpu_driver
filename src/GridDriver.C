@@ -459,15 +459,12 @@ void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
 
 //------------------------------------------------------------------------------
 bool GridDriver::_update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
-                              int fpu_id, const Interval &new_apos, bool store)
+                              const char *serial_number, int fpu_id,
+                              const Interval &new_apos, bool store)
 {
     fpus_data[fpu_id].db.apos = new_apos;
-
     if (store)
     {
-        t_grid_state gs;
-        getGridState(gs);
-        const char *serial_number = gs.FPU_state[fpu_id].serial_number;
         // TODO: Check that the const_cast<> below works OK, AND in
         // _update_bpos() below as well
         return txn->fpuDbTransferPosition(DbTransferType::Write,
@@ -484,15 +481,12 @@ bool GridDriver::_update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
 
 //------------------------------------------------------------------------------
 bool GridDriver::_update_bpos(const std::unique_ptr<ProtectionDbTxn> &txn,
-                              int fpu_id, const Interval &new_bpos, bool store)
+                              const char *serial_number, int fpu_id,
+                              const Interval &new_bpos, bool store)
 {
     fpus_data[fpu_id].db.bpos = new_bpos;
-
     if (store)
     {
-        t_grid_state gs;
-        getGridState(gs);
-        const char *serial_number = gs.FPU_state[fpu_id].serial_number;
         // TODO: The position offset is for alpha arm only? So what to do here?
         double dummy_datum_offset = 0.0;
         // TODO: Check that the const_cast<> below works OK
@@ -574,10 +568,13 @@ E_EtherCANErrCode GridDriver::_refresh_positions(t_grid_state &grid_state,
                 inconsistency_abort = true;
             }
 
-            bool success = _update_apos(txn, fpu_id, new_alpha, store);
+            const char *serial_number = grid_state.FPU_state[fpu_id].serial_number;
+            bool success = _update_apos(txn, serial_number, fpu_id, new_alpha,
+                                        store);
             if (success)
             {
-                success = _update_bpos(txn, fpu_id, new_beta, store);
+                success = _update_bpos(txn, serial_number, fpu_id, new_beta,
+                                       store);
             }
             if (!success)
             {
