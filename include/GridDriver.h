@@ -58,6 +58,8 @@ public:
   
     using UnprotectedGridDriver::UnprotectedGridDriver; // Inherit constructor
 
+    ~GridDriver();
+
     E_EtherCANErrCode initProtection(bool mockup = false);
 
     bool initializedOk() override;

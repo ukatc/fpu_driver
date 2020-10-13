@@ -43,11 +43,11 @@ int main(int argc, char** argv)
 {
     //testIntervalClass();
     
-    //testGridDriver();
+    testGridDriver();
 
     //testFpuCounters();
 
-    testProtectionDB();
+    //testProtectionDB();
     
 
     return 0;

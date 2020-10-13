@@ -68,6 +68,29 @@ static const int BETA_OVERFLOW_COUNT = BETA_UNDERFLOW_COUNT + (1 << 16) - 1;
 
 
 //==============================================================================
+GridDriver::~GridDriver()
+{
+    // Destructor
+    // If connection is live, gets and stores the positions before exiting
+
+    // TODO: Put C++ equivalent of the Python "with self.lock:" here
+
+    t_grid_state grid_state;
+    getGridState(grid_state);
+
+    t_fpuset fpuset;
+    createFpuSetFlags(config.num_fpus, fpuset);
+
+    if (grid_state.interface_state == DS_CONNECTED)
+    {
+        // Fetch current positions
+        _pingFPUs(grid_state, fpuset);
+    }
+
+    _refresh_positions(grid_state, true, fpuset);
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::initProtection(bool mockup)
 {
     if (initprotection_was_called_ok)
