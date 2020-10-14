@@ -754,7 +754,7 @@ E_EtherCANErrCode GridDriver::_check_allowed_range(int fpu_id, int stepnum,
 // solution to track intervals is therefore much more general and clean.
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode GridDriver::_check_and_register_wtable(t_wtable &wtable,
+E_EtherCANErrCode GridDriver::_check_and_register_wtable(const t_wtable &wtable,
                                                          t_grid_state &gs,
                                                          const t_fpuset &fpuset,
                                                          Range wmode, int sign)
@@ -782,7 +782,7 @@ E_EtherCANErrCode GridDriver::_check_and_register_wtable(t_wtable &wtable,
             continue;
         }
 
-        t_waveform_steps &waveform_steps = wtable[wtable_index].steps;
+        const t_waveform_steps &waveform_steps = wtable[wtable_index].steps;
 
         Interval alimits = fpus_data[fpu_id].db.alimits;
         Interval blimits = fpus_data[fpu_id].db.blimits;
@@ -886,17 +886,12 @@ void GridDriver::_update_error_counters(const t_fpu_state &prev_fpu,
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_pre_config_motion_hook(const t_wtable &wtable,
-                                         t_grid_state &gs,
-                                         const t_fpuset &fpuset, Range wmode)
+E_EtherCANErrCode GridDriver::_pre_config_motion_hook(const t_wtable &wtable,
+                                                      t_grid_state &gs,
+                                                      const t_fpuset &fpuset,
+                                                      Range wmode)
 {
-    // TODO
-
-    // Temporary for now
-    UNUSED_ARG(wtable);
-    UNUSED_ARG(gs);
-    UNUSED_ARG(fpuset);
-    UNUSED_ARG(wmode);
+    return _check_and_register_wtable(wtable, gs, fpuset, wmode, 1);
 }
 
 //------------------------------------------------------------------------------

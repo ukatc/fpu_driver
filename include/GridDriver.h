@@ -172,7 +172,7 @@ private:
                                            const Interval &xpos,
                                            Interval &new_range, Range wmode);
 
-    E_EtherCANErrCode _check_and_register_wtable(t_wtable &wtable,
+    E_EtherCANErrCode _check_and_register_wtable(const t_wtable &wtable,
                                                  t_grid_state &gs,
                                                  const t_fpuset &fpuset,
                                                  Range wmode, int sign);
@@ -182,8 +182,10 @@ private:
                                 bool datum_cmd = false) override;
 
     // configMotion() hook functions
-    void _pre_config_motion_hook(const t_wtable &wtable, t_grid_state &gs,
-                                 const t_fpuset &fpuset, Range wmode) override;
+    E_EtherCANErrCode _pre_config_motion_hook(const t_wtable &wtable,
+                                              t_grid_state &gs,
+                                              const t_fpuset &fpuset,
+                                              Range wmode) override;
     void _post_config_motion_hook(const t_wtable &wtable, t_grid_state &gs,
                                   const t_fpuset &fpuset) override;
 

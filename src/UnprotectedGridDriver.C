@@ -694,10 +694,10 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 
     // TODO: Sort out return values
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
@@ -754,7 +754,12 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         }
     }
 
-    _pre_config_motion_hook(wtable, gs, fpuset, wmode);
+    ecan_result = _pre_config_motion_hook(wtable, gs, fpuset, wmode);
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
     bool update_config = false;
     // TODO: The following is a quite large data structure which will
     // be stored on the local stack - is this OK? (stack overflow?)
@@ -779,11 +784,11 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     // finished loading valid data, but the process was not finished
     // for all FPUs.
 
-    result = _gd->configMotion(wtable, gs, fpuset, allow_uninitialized,
-                               ruleset_version);
+    ecan_result = _gd->configMotion(wtable, gs, fpuset, allow_uninitialized,
+                                    ruleset_version);
     // TODO: Check for the various expected result values - might some
     // non-DE_OK ones might actually be OK?
-    if (result != DE_OK)
+    if (ecan_result != DE_OK)
     {
         update_config = true;
     }
@@ -833,7 +838,7 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 
     // TODO: Is this return variable correct? (does correspond to equivalent 
     // Python code)
-    return result;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
