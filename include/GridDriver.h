@@ -166,6 +166,12 @@ private:
     E_EtherCANErrCode _refresh_positions(t_grid_state &grid_state, bool store,
                                          const t_fpuset &fpuset);
 
+    E_EtherCANErrCode _check_allowed_range(int fpu_id, int stepnum,
+                                           const char *arm_name,
+                                           const Interval &xlimits,
+                                           const Interval &xpos,
+                                           Interval &new_range, Range wmode);
+
     void _update_error_counters(const t_fpu_state &prev_fpu,
                                 const t_fpu_state &moved_fpu,
                                 bool datum_cmd = false) override;

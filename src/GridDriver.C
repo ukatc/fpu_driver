@@ -666,6 +666,57 @@ E_EtherCANErrCode GridDriver::pingFPUs(t_grid_state &gs, const t_fpuset &fpuset)
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_check_allowed_range(int fpu_id, int stepnum,
+                                                   const char *arm_name,
+                                                   const Interval &xlimits,
+                                                   const Interval &xpos,
+                                                   Interval &new_range,
+                                                   Range wmode)
+{
+    // Checks whether waveform step is in allowed interval for this FPU.
+    // Parameters:
+    //   xlimits:   Manually configured limits of the individual FPU, in degrees
+    //   new_range: On entry: Current minimum / maximum interval of real
+    //              position, in degrees
+    //              On exit: New minimum / maximum range if movement is
+    //              executed
+    //   xpos:      New value of variable
+
+    // TODO: The following arguments are in the original Python version of this
+    // function (and are used for displaying diagnostic information), but aren't
+    // needed in this C++ version? (or might they be useful for diagnostics
+    // eventually?)
+    UNUSED_ARG(fpu_id);
+    UNUSED_ARG(stepnum);
+    UNUSED_ARG(arm_name);
+
+    if (wmode == Range::Ignore)
+    {
+        return DE_OK;
+    }
+
+    // If the movement extends the range of the FPU location, this is updated
+    // in the movement range
+    new_range.assignCombine(xpos);
+
+    if (!xlimits.contains(xpos, 0.0))
+    {
+        if (wmode == Range::Error)
+        {
+            // TODO: This error code is a bit vague - add a more specific one
+            return DE_INVALID_WAVEFORM;
+        }
+        else if (wmode == Range::Warn)
+        {
+            // Nothing to do here (the original Python version just showed a
+            // warning)
+        }
+    }
+    
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
 void GridDriver::_update_error_counters(const t_fpu_state &prev_fpu,
                                         const t_fpu_state &moved_fpu,
                                         bool datum_cmd)
