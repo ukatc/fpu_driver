@@ -768,8 +768,6 @@ E_EtherCANErrCode GridDriver::_check_and_register_wtable(const t_wtable &wtable,
     // *********** TODOs: **********
     //   - Use of t_wtable for argument above is placeholder only for now -
     //     OR, is using t_wtable actually OK here?
-    //   - Figure out if the t_fpu_positions types for configuring_ranges and
-    //     configuring_targets are suitable
     E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
 
     t_fpu_positions configuring_ranges_temp;
@@ -827,11 +825,10 @@ E_EtherCANErrCode GridDriver::_check_and_register_wtable(const t_wtable &wtable,
 
             asteps += waveform_steps[step_index].alpha_steps * sign; 
             bsteps += waveform_steps[step_index].beta_steps * sign;
-
-            //****** TODO: CHECK int-to-Interval arithmetic rounding etc here -
-            // need to typecast the ints to doubles first? 
-            Interval alpha_sect = alpha0 + (asteps / StepsPerDegreeAlpha); 
-            Interval beta_sect = beta0 + (bsteps / StepsPerDegreeBeta); 
+            Interval alpha_sect = alpha0 + 
+                                  (((double)asteps) / StepsPerDegreeAlpha);
+            Interval beta_sect = beta0 +
+                                 (((double)bsteps) / StepsPerDegreeBeta); 
 
             ecan_result = _check_allowed_range(fpu_id, step_index, "alpha",
                                                alimits, alpha_sect,
