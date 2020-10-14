@@ -18,6 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <algorithm>
 #include "Interval.h"
 
 namespace mpifps
@@ -98,7 +99,15 @@ Interval Interval::operator-(double val)
 }
 
 //------------------------------------------------------------------------------
-bool Interval::contains(const Interval &otherInterval, double tolerance)
+void Interval::assignCombine(const Interval &otherInterval)
+{
+    // Combines otherInterval into this interval
+    lower = std::min(lower, otherInterval.lower);
+    upper = std::max(upper, otherInterval.upper);
+}
+
+//------------------------------------------------------------------------------
+bool Interval::contains(const Interval &otherInterval, double tolerance) const
 {
     // N.B. tolerance must be a positive value
     if ( ((lower - tolerance) <= otherInterval.lower) &&
@@ -150,19 +159,26 @@ void testIntervalClass(void)
     // Test + operator overload
     Interval interval_6(23.0, 34.0);
     Interval interval_7 = interval_6 + 10.0;
+
+    // Test assignCombine()
+    Interval interval_8(-2.34, 6.5);
+    Interval interval_9(-3.95, 5.0);
+    interval_8.assignCombine(interval_9);
+    Interval interval_10(-2.5, 10.77);
+    interval_8.assignCombine(interval_10);
     
     // Test contains()
-    Interval interval_8(8.0, 22.0);
-    Interval interval_9(10.0, 20.0);
-    if (interval_9.contains(interval_8, 2.0))
+    Interval interval_11(8.0, 22.0);
+    Interval interval_12(10.0, 20.0);
+    if (interval_12.contains(interval_11, 2.0))
     {
         dummy_val++;
     }
-    if (interval_9.contains(interval_8, 2.5))
+    if (interval_12.contains(interval_11, 2.5))
     {
         dummy_val++;
     }
-    if (interval_9.contains(interval_8, 1.999))
+    if (interval_12.contains(interval_11, 1.999))
     {
         dummy_val++;
     }

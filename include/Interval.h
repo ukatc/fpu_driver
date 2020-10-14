@@ -38,7 +38,8 @@ public:
     void operator+=(double val);
     Interval operator+(double val);
     Interval operator-(double val);
-    bool contains(const Interval &otherInterval, double tolerance);
+    void assignCombine(const Interval &otherInterval);
+    bool contains(const Interval &otherInterval, double tolerance) const;
 
 private:
     // TODO: Initialise to NAN instead 0.0?

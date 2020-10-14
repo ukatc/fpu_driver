@@ -41,9 +41,9 @@ static void testProtectionDB();
 //------------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-    //testIntervalClass();
+    testIntervalClass();
     
-    testGridDriver();
+    //testGridDriver();
 
     //testFpuCounters();
 
