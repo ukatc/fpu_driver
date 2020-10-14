@@ -172,6 +172,11 @@ private:
                                            const Interval &xpos,
                                            Interval &new_range, Range wmode);
 
+    E_EtherCANErrCode _check_and_register_wtable(t_wtable &wtable,
+                                                 t_grid_state &gs,
+                                                 const t_fpuset &fpuset,
+                                                 Range wmode, int sign);
+
     void _update_error_counters(const t_fpu_state &prev_fpu,
                                 const t_fpu_state &moved_fpu,
                                 bool datum_cmd = false) override;

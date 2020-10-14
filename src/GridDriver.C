@@ -703,8 +703,8 @@ E_EtherCANErrCode GridDriver::_check_allowed_range(int fpu_id, int stepnum,
     {
         if (wmode == Range::Error)
         {
-            // TODO: This error code is a bit vague - add a more specific one
-            return DE_INVALID_WAVEFORM;
+            // TODO: Is this the correct error code to use?
+            return DE_PROTECTION_ERROR;
         }
         else if (wmode == Range::Warn)
         {
@@ -713,6 +713,159 @@ E_EtherCANErrCode GridDriver::_check_allowed_range(int fpu_id, int stepnum,
         }
     }
     
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
+
+
+// The complexity of the wave table data flow which follows merits a bit of
+// explanation.
+//
+// Generally, the protection wrapper tries to track the position of each FPU as
+// it is moved. When a ping returns, the new position can generally be updated
+// to that point.
+//
+// However, when a movement is started, there is no way to know the exact
+// position before the movement finished regularly, or the next successful ping
+// returns. When an abortMotion message is sent, or a collision occurs, the
+// position is not known.
+//
+// The solution used here is to track not the position, but the worst-case
+// minimum and maximum position. In other words, for each of the alpha and beta
+// coordinates, an INTERVAL of positions is tracked. When a deterministic
+// movement is added to the current interval, the minimum and maximum extent of
+// that movement become added to the current minimum and maximum. In other
+// words, movements expand the region of uncertainty, and regular terminations,
+// pings and datum responses collapse it to an interval of length zero.
+// 
+// If a configMotion command is issued, this defines a tentative future
+// interval, which becomes valid once the corresponding movement is started.
+// If a reverseMotion is issued, this generates an interval with the opposite
+// sign of movements.
+//
+// Tracking the region of uncertainty is not always required, as ping commands
+// can often be used to narrow the possible range of positions down. But doing
+// this has, first, the disadvantage that special-casing is needed for handling
+// an abortMotion or collision situation. Yet exactly these are situations
+// which need to be handled very robustly. And second, tracking the known state
+// of positions during start-up also requires special-casing, which would
+// require a lot of fiddly state handling. This could be error-prone, and the
+// solution to track intervals is therefore much more general and clean.
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_check_and_register_wtable(t_wtable &wtable,
+                                                         t_grid_state &gs,
+                                                         const t_fpuset &fpuset,
+                                                         Range wmode, int sign)
+{
+    // - Compute movement range for each FPU
+    // - Add to current known min / max position
+    // - Compare to allowed range
+    // - If not in range, throw exception or print warning, depending upon the
+    //   protection setting
+
+    // *********** TODOs: **********
+    //   - Use of t_wtable for argument above is placeholder only for now -
+    //     OR, is using t_wtable actually OK here?
+    //   - Figure out if the t_fpu_positions types for configuring_ranges and
+    //     configuring_targets are suitable
+    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
+
+    t_fpu_positions configuring_ranges_temp;
+    t_fpu_positions configuring_targets_temp;
+    for (size_t wtable_index = 0; wtable_index < wtable.size(); wtable_index++)
+    {
+        int fpu_id = wtable[wtable_index].fpu_id;
+        if (!fpuset[fpu_id])
+        {
+            continue;
+        }
+
+        t_waveform_steps &waveform_steps = wtable[wtable_index].steps;
+
+        Interval alimits = fpus_data[fpu_id].db.alimits;
+        Interval blimits = fpus_data[fpu_id].db.blimits;
+
+        Interval alpha0 = fpus_data[fpu_id].db.apos;
+        Interval beta0 = fpus_data[fpu_id].db.bpos;
+
+        Interval wf_arange = alpha0;
+        Interval wf_brange = beta0;
+
+        ecan_result = _check_allowed_range(fpu_id, -1, "alpha", alimits,
+                                           alpha0, wf_arange, wmode);
+        if (ecan_result == DE_OK)
+        {
+            ecan_result = _check_allowed_range(fpu_id, -1, "beta", blimits,
+                                               beta0, wf_brange, wmode);
+        }
+        if (ecan_result != DE_OK)
+        {
+            return ecan_result;
+        }
+
+        int asteps = 0;
+        int bsteps = 0;
+        for (size_t i = 0; i < waveform_steps.size(); i++)
+        {
+            // If the waveform is reversed, we need to go backwards with the
+            // check!
+            int step_index;
+            if (sign == 1)
+            {
+                step_index = i;
+            }
+            else if (sign == -1)
+            {
+                step_index = (waveform_steps.size() - 1) - i;
+            }
+            else
+            {
+                return DE_INVALID_PAR_VALUE;
+            }
+
+            asteps += waveform_steps[step_index].alpha_steps * sign; 
+            bsteps += waveform_steps[step_index].beta_steps * sign;
+
+            //****** TODO: CHECK int-to-Interval arithmetic rounding etc here -
+            // need to typecast the ints to doubles first? 
+            Interval alpha_sect = alpha0 + (asteps / StepsPerDegreeAlpha); 
+            Interval beta_sect = beta0 + (bsteps / StepsPerDegreeBeta); 
+
+            ecan_result = _check_allowed_range(fpu_id, step_index, "alpha",
+                                               alimits, alpha_sect,
+                                               wf_arange, wmode);
+            if (ecan_result == DE_OK)
+            {
+                ecan_result = _check_allowed_range(fpu_id, step_index, "beta",
+                                                   blimits, beta_sect,
+                                                   wf_brange, wmode);
+            }
+            if (ecan_result != DE_OK)
+            {
+                return ecan_result;
+            }
+
+            configuring_ranges_temp[fpu_id] = {wf_arange, wf_brange};
+            configuring_targets_temp[fpu_id] = {alpha_sect, beta_sect};
+        }
+    }
+
+    // This is the list of alpha/beta position intervals that will become
+    // valid if and after an executeMotion is started, and before the new
+    // positions can be retrieved via ping.
+    // Merge the "temp" maps into the overall ones (overwriting any existing
+    // FPU entries)
+    for (const auto &it : configuring_ranges_temp)
+    {
+        configuring_ranges[it.first] = it.second;
+    }
+    for (const auto &it : configuring_targets_temp)
+    {
+        configuring_targets[it.first] = it.second;
+    }
+
     return DE_OK;
 }
 
