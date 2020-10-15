@@ -417,14 +417,120 @@ E_EtherCANErrCode GridDriver::_allow_find_datum_hook(t_grid_state &gs,
                                         const t_fpuset &fpuset,
                                         bool support_uninitialized_auto)
 {
-    // TODO
+    // Checks whether a datum search is safe based upon the stored position,
+    // and returns an error if not.
 
-    // Temporary for now
-    UNUSED_ARG(gs);
-    UNUSED_ARG(search_modes);
-    UNUSED_ARG(selected_arm);
-    UNUSED_ARG(fpuset);
-    UNUSED_ARG(support_uninitialized_auto);
+    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
+
+    // Get fresh ping data
+    ecan_result = _pingFPUs(gs, fpuset);
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
+    const Interval acw_range(0.0, std::numeric_limits<double>::max());
+    const Interval cw_range(-std::numeric_limits<double>::max(), 0.0);
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (!fpuset[fpu_id])
+        {
+            continue;
+        }
+
+        if ((selected_arm == DASEL_BETA) || (selected_arm == DASEL_BOTH))
+        {
+            const Interval &blim = fpus_data[fpu_id].db.blimits;
+            const Interval &bpos = fpus_data[fpu_id].db.bpos;
+            const Interval search_beta_clockwise_range = 
+                                                blim.intersects(acw_range);
+            const Interval search_beta_anti_clockwise_range = 
+                                                blim.intersects(cw_range);
+
+            if (search_modes[fpu_id] == SEARCH_AUTO)
+            {
+                if ((!gs.FPU_state[fpu_id].beta_was_referenced) ||
+                    (gs.FPU_state[fpu_id].state == FPST_UNINITIALIZED))
+                {
+                    if (!blim.contains(bpos))
+                    {
+                        // Beta arm is not in safe range for datum search,
+                        // probably needs manual move
+                        return DE_PROTECTION_ERROR;
+                    }
+
+                    if (support_uninitialized_auto)
+                    {
+                        // Operator wants auto search but hardware is not
+                        // initialised. If possible, we use the database value
+                        // to set the correct direction
+                        if (search_beta_clockwise_range.contains(bpos))
+                        {
+                            search_modes[fpu_id] = SEARCH_CLOCKWISE;
+                        }
+                        else if (search_beta_anti_clockwise_range.contains(bpos))
+                        {
+                            search_modes[fpu_id] = SEARCH_ANTI_CLOCKWISE;
+                        }
+                        else
+                        {
+                            // No directed datum search possible - position for
+                            // FPU ambiguous (operator should consider moving
+                            // the FPU into an unambigous range)
+                            return DE_PROTECTION_ERROR;
+                        }
+                    }
+                    else
+                    {
+                        // FPU is not initialized, support_uninitialized_auto
+                        // is not set, cannot do protected automatic search
+                        return DE_PROTECTION_ERROR;
+                    }
+                }
+                else
+                {
+                    // Beta was zeroed, check automatic search is safe
+                    if (!blim.contains(bpos))
+                    {
+                        // Beta arm is not in safe range for datum search,
+                        // probably needs manual move
+                        return DE_PROTECTION_ERROR;
+                    }
+                }
+            }
+            else if (search_modes[fpu_id] == SEARCH_CLOCKWISE)
+            {
+                if (!search_beta_clockwise_range.contains(bpos))
+                {
+                    // Beta arm of FPU is outside of safe clockwise search
+                    // range
+                    return DE_PROTECTION_ERROR;
+                }
+            }
+            else if (search_modes[fpu_id] == SEARCH_ANTI_CLOCKWISE)
+            {
+                if (!search_beta_anti_clockwise_range.contains(bpos))
+                {
+                    // Beta arm of FPU is outside of safe anticlockwise search
+                    // range
+                    return DE_PROTECTION_ERROR;
+                }
+            }
+        }
+
+        // Check alpha arm
+        if ((selected_arm == DASEL_ALPHA) || (selected_arm == DASEL_BOTH))
+        {
+            const Interval &alim = fpus_data[fpu_id].db.alimits;
+            const Interval &apos = fpus_data[fpu_id].db.apos;
+            if (!alim.contains(apos))
+            {
+                // Alpha arm of FPU is not in safe range for datum search
+                return DE_PROTECTION_ERROR;
+            }
+        }
+    }
+
     return DE_OK;
 }
 

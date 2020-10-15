@@ -119,7 +119,7 @@ bool Interval::contains(const Interval &otherInterval, double tolerance) const
 }
 
 //------------------------------------------------------------------------------
-Interval Interval::intersects(const Interval &otherInterval)
+Interval Interval::intersects(const Interval &otherInterval) const
 {
     // Returns the intersecting range of this interval and otherInterval
     double lower_temp = std::max(otherInterval.lower, lower);

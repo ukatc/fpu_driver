@@ -42,7 +42,7 @@ public:
     Interval operator-(double val);
     void assignCombine(const Interval &otherInterval);
     bool contains(const Interval &otherInterval, double tolerance = 0.0) const;
-    Interval intersects(const Interval &otherInterval);
+    Interval intersects(const Interval &otherInterval) const;
 
 private:
     double lower = std::numeric_limits<double>::quiet_NaN();
