@@ -197,19 +197,20 @@ protected:
     // findDatum() hook functions
     // TODO: Do the t_grid_state's below need to be const? Or will they
     // possibly be altered inside the functions?
-    virtual void _allow_find_datum_hook(t_grid_state &gs,
-                                        t_datum_search_flags &search_modes, // Modifiable
-                                        enum E_DATUM_SELECTION selected_arm,
-                                        const t_fpuset &fpuset,
-                                        bool support_uninitialized_auto = true)
+    virtual E_EtherCANErrCode _allow_find_datum_hook(t_grid_state &gs,
+                                    t_datum_search_flags &search_modes, // Modifiable
+                                    enum E_DATUM_SELECTION selected_arm,
+                                    const t_fpuset &fpuset,
+                                    bool support_uninitialized_auto = true)
     {
         UNUSED_ARG(gs);
         UNUSED_ARG(search_modes);
         UNUSED_ARG(selected_arm);
         UNUSED_ARG(fpuset);
         UNUSED_ARG(support_uninitialized_auto);
+        return DE_OK;
     }
-    virtual void _start_find_datum_hook(t_grid_state &gs,
+    virtual E_EtherCANErrCode _start_find_datum_hook(t_grid_state &gs,
                                         const t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
                                         const t_fpuset &fpuset,
@@ -222,8 +223,9 @@ protected:
         UNUSED_ARG(fpuset);
         UNUSED_ARG(initial_positions_ret);
         UNUSED_ARG(soft_protection);
+        return DE_OK;
     }
-    virtual void _cancel_find_datum_hook(t_grid_state &gs,
+    virtual E_EtherCANErrCode _cancel_find_datum_hook(t_grid_state &gs,
                                          // TODO: These arguments (which are in the Python version)
                                          // are not used so can remove?
                                          //const t_datum_search_flags &search_modes,
@@ -234,8 +236,9 @@ protected:
         UNUSED_ARG(gs);
         UNUSED_ARG(fpuset);
         UNUSED_ARG(initial_positions);
+        return DE_OK;
     }
-    virtual void _finished_find_datum_hook(t_grid_state &prev_gs,
+    virtual E_EtherCANErrCode _finished_find_datum_hook(t_grid_state &prev_gs,
                                            t_grid_state &datum_gs,
                                            const t_datum_search_flags &search_modes,
                                            const t_fpuset &fpuset,
@@ -250,6 +253,7 @@ protected:
         UNUSED_ARG(was_cancelled);
         UNUSED_ARG(initial_positions);
         UNUSED_ARG(selected_arm);
+        return DE_OK;
     }
 
     // Error counters function

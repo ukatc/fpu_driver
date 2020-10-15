@@ -411,7 +411,7 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_allow_find_datum_hook(t_grid_state &gs,
+E_EtherCANErrCode GridDriver::_allow_find_datum_hook(t_grid_state &gs,
                                         t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
                                         const t_fpuset &fpuset,
@@ -425,10 +425,11 @@ void GridDriver::_allow_find_datum_hook(t_grid_state &gs,
     UNUSED_ARG(selected_arm);
     UNUSED_ARG(fpuset);
     UNUSED_ARG(support_uninitialized_auto);
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_start_find_datum_hook(t_grid_state &gs,
+E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
                                         const t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
                                         const t_fpuset &fpuset,
@@ -444,10 +445,11 @@ void GridDriver::_start_find_datum_hook(t_grid_state &gs,
     UNUSED_ARG(fpuset);
     UNUSED_ARG(initial_positions_ret);
     UNUSED_ARG(soft_protection);
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_cancel_find_datum_hook(t_grid_state &gs, 
+E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs, 
                                          const t_fpuset &fpuset,
                                          const t_fpu_positions &initial_positions)
 {
@@ -457,10 +459,11 @@ void GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
     UNUSED_ARG(gs);
     UNUSED_ARG(fpuset);
     UNUSED_ARG(initial_positions);
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
+E_EtherCANErrCode GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
                                            t_grid_state &datum_gs,
                                            const t_datum_search_flags &search_modes,
                                            const t_fpuset &fpuset,
@@ -478,6 +481,7 @@ void GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
     UNUSED_ARG(was_cancelled);
     UNUSED_ARG(initial_positions);
     UNUSED_ARG(selected_arm);
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------

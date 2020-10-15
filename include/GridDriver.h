@@ -144,24 +144,26 @@ private:
                       const Interval &new_bpos, bool store);
 
     // findDatum() hook functions
-    void _allow_find_datum_hook(t_grid_state &gs,
-                                t_datum_search_flags &search_modes,
-                                enum E_DATUM_SELECTION selected_arm,
-                                const t_fpuset &fpuset,
-                                bool support_uninitialized_auto) override;
-    void _start_find_datum_hook(t_grid_state &gs,
-                                const t_datum_search_flags &search_modes,
-                                enum E_DATUM_SELECTION selected_arm,
-                                const t_fpuset &fpuset,
-                                t_fpu_positions &initial_positions_ret,
-                                bool soft_protection) override;
-    void _cancel_find_datum_hook(t_grid_state &gs, const t_fpuset &fpuset,
-                                 const t_fpu_positions &initial_positions) override;
-    void _finished_find_datum_hook(t_grid_state &prev_gs, t_grid_state &datum_gs,
-                                   const t_datum_search_flags &search_modes,
-                                   const t_fpuset &fpuset, bool was_cancelled,
-                                   const t_fpu_positions &initial_positions, // TODO: Not used (in Python version) - remove?
-                                   enum E_DATUM_SELECTION selected_arm) override;
+    E_EtherCANErrCode _allow_find_datum_hook(t_grid_state &gs,
+                                    t_datum_search_flags &search_modes,
+                                    enum E_DATUM_SELECTION selected_arm,
+                                    const t_fpuset &fpuset,
+                                    bool support_uninitialized_auto) override;
+    E_EtherCANErrCode _start_find_datum_hook(t_grid_state &gs,
+                                    const t_datum_search_flags &search_modes,
+                                    enum E_DATUM_SELECTION selected_arm,
+                                    const t_fpuset &fpuset,
+                                    t_fpu_positions &initial_positions_ret,
+                                    bool soft_protection) override;
+    E_EtherCANErrCode _cancel_find_datum_hook(t_grid_state &gs,
+                            const t_fpuset &fpuset,
+                            const t_fpu_positions &initial_positions) override;
+    E_EtherCANErrCode _finished_find_datum_hook(t_grid_state &prev_gs,
+                            t_grid_state &datum_gs,
+                            const t_datum_search_flags &search_modes,
+                            const t_fpuset &fpuset, bool was_cancelled,
+                            const t_fpu_positions &initial_positions, // TODO: Not used (in Python version) - remove?
+                            enum E_DATUM_SELECTION selected_arm) override;
 
     E_EtherCANErrCode _refresh_positions(t_grid_state &grid_state, bool store,
                                          const t_fpuset &fpuset);

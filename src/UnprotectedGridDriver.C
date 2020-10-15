@@ -422,8 +422,13 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     if (soft_protection)
     {
         // Check whether datum search is safe, adjusting search_modes
-        _allow_find_datum_hook(gs, search_modes, selected_arm,
-                               fpuset, support_uninitialized_auto);
+        result = _allow_find_datum_hook(gs, search_modes, selected_arm,
+                                        fpuset, support_uninitialized_auto);
+        if (result != DE_OK)    
+        {
+            return result;
+        }
+
         // We might need to disable the stepcount-based check if (and only
         // if) the step counter does not agree with the database.
         // Check whether a movement against the step count is needed.
@@ -445,8 +450,12 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     }
 
     t_fpu_positions initial_positions;
-    _start_find_datum_hook(gs, search_modes, selected_arm, fpuset,
-                           initial_positions, soft_protection);
+    result = _start_find_datum_hook(gs, search_modes, selected_arm, fpuset,
+                                    initial_positions, soft_protection);
+    if (result != DE_OK)    
+    {
+        return result;
+    }
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
@@ -455,8 +464,12 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
                                  count_protection, &fpuset);
     if (result != DE_OK)
     {
-        // We cancel the datum search altogether, so we can reset
-        // positions to old value
+        // We cancel the datum search altogether, so we can reset positions
+        // to old value
+        // Note: We do NOT check and return the _cancel_find_datum_hook()
+        // return value here, because the startFindDatum() return value above
+        // is far more important, and _cancel_find_datum_hook() isn't very 
+        // likely to fail anyway
         _cancel_find_datum_hook(gs, fpuset, initial_positions);
 
         return result;
@@ -496,9 +509,14 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         }
     }
 
-    _finished_find_datum_hook(prev_gs, gs, search_modes, fpuset,
-                              !finished_ok, initial_positions,
-                              selected_arm);
+    E_EtherCANErrCode finished_func_result = 
+                _finished_find_datum_hook(prev_gs, gs, search_modes, fpuset,
+                                          !finished_ok, initial_positions,
+                                          selected_arm);
+    if (finished_func_result != DE_OK)
+    {
+        return finished_func_result;
+    }
 
     if (was_aborted)
     {
