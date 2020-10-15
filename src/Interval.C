@@ -118,30 +118,49 @@ bool Interval::contains(const Interval &otherInterval, double tolerance) const
     return false;
 }
 
+//------------------------------------------------------------------------------
+Interval Interval::intersects(const Interval &otherInterval)
+{
+    // Returns the intersecting range of this interval and otherInterval
+    double lower_temp = std::max(otherInterval.lower, lower);
+    double upper_temp = std::min(otherInterval.upper, upper);
+    if (lower_temp > upper_temp)
+    {
+        lower_temp = std::numeric_limits<double>::quiet_NaN();
+        upper_temp = std::numeric_limits<double>::quiet_NaN();
+    }
+    return Interval(lower_temp, upper_temp);
+}
+
+
 //==============================================================================
 void testIntervalClass(void)
 {
     // Ad-hoc Interval test function - single-step in debugger and check the
     // results
+
+    int dummy_val = 0;
+    
+    // Test that Interval upper/lower values default to NaN's
+    Interval interval_0;
+   
+    // Test == operator overload
     Interval interval_1(1.1, 1.2);
     Interval interval_2(1.1, 9.9);
-    Interval interval_3(3.5, 3.6);
-    Interval interval_4(1.1, 1.2);
-    int dummy_val = 0;
-
-    // Test == operator overload
     if (interval_1 == interval_2)
     {
         dummy_val++;
     }
     
     // Test != operator overload
+    Interval interval_3(3.5, 3.6);
     if (interval_1 != interval_3)
     {
         dummy_val++;
     }
     
     // Test == operator overload
+    Interval interval_4(1.1, 1.2);
     if (interval_1 == interval_4)
     {
         dummy_val++;
@@ -170,6 +189,10 @@ void testIntervalClass(void)
     // Test contains()
     Interval interval_11(8.0, 22.0);
     Interval interval_12(10.0, 20.0);
+    if (interval_12.contains(interval_11))
+    {
+        dummy_val++;
+    }
     if (interval_12.contains(interval_11, 2.0))
     {
         dummy_val++;
@@ -182,6 +205,13 @@ void testIntervalClass(void)
     {
         dummy_val++;
     }
+    
+    // Test intersects()
+    Interval interval_13(3.2, 6.5);
+    Interval interval_14(4.5, 7.6);
+    Interval interval_15 = interval_13.intersects(interval_14);
+
+    dummy_val++;
 }
 
 //==============================================================================

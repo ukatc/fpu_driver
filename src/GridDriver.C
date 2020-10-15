@@ -699,7 +699,7 @@ E_EtherCANErrCode GridDriver::_check_allowed_range(int fpu_id, int stepnum,
     // in the movement range
     new_range.assignCombine(xpos);
 
-    if (!xlimits.contains(xpos, 0.0))
+    if (!xlimits.contains(xpos))
     {
         if (wmode == Range::Error)
         {

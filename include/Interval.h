@@ -20,6 +20,8 @@
 #ifndef INTERVAL_H
 #define INTERVAL_H
 
+#include <limits>
+
 namespace mpifps
 {
 
@@ -39,15 +41,15 @@ public:
     Interval operator+(double val);
     Interval operator-(double val);
     void assignCombine(const Interval &otherInterval);
-    bool contains(const Interval &otherInterval, double tolerance) const;
+    bool contains(const Interval &otherInterval, double tolerance = 0.0) const;
+    Interval intersects(const Interval &otherInterval);
 
 private:
-    // TODO: Initialise to NAN instead 0.0?
-    double lower = 0.0;
-    double upper = 0.0;
+    double lower = std::numeric_limits<double>::quiet_NaN();
+    double upper = std::numeric_limits<double>::quiet_NaN();
 };
 
-// Simple Interval class test function
+// Interval class test function
 void testIntervalClass(void);
 
 //..............................................................................
