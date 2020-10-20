@@ -107,6 +107,15 @@ void Interval::assignCombine(const Interval &otherInterval)
 }
 
 //------------------------------------------------------------------------------
+Interval Interval::combine(const Interval &otherInterval)
+{
+    // Returns combined interval
+    Interval interval_ret = *this;
+    interval_ret.assignCombine(otherInterval);
+    return interval_ret;
+}
+
+//------------------------------------------------------------------------------
 Interval Interval::extend(double val)
 {
     // Returns interval extended by val
@@ -202,6 +211,13 @@ void testIntervalClass(void)
     interval_1.assignCombine(interval_2);
     interval_3 = Interval(-2.5, 10.77);
     interval_1.assignCombine(interval_3);
+
+    // Test combine()
+    interval_1 = Interval(-2.34, 6.5);
+    interval_2 = Interval(-3.95, 5.0);
+    interval_3 = interval_1.combine(interval_2);
+    interval_1 = Interval(-2.5, 10.77);
+    interval_4 = interval_3.combine(interval_1);
 
     // Test extend()
     interval_1 = Interval(-3.2, 5.6);
