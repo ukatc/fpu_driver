@@ -107,6 +107,22 @@ void Interval::assignCombine(const Interval &otherInterval)
 }
 
 //------------------------------------------------------------------------------
+Interval Interval::extend(double val)
+{
+    // Returns interval extended by val
+    Interval interval_ret = *this;
+    if (val < interval_ret.lower)
+    {
+        interval_ret.lower = val;
+    }
+    else if (val > interval_ret.upper)
+    {
+        interval_ret.upper = val;
+    }
+    return interval_ret;
+}
+
+//------------------------------------------------------------------------------
 bool Interval::contains(const Interval &otherInterval, double tolerance) const
 {
     // N.B. tolerance must be a positive value
@@ -139,28 +155,29 @@ void testIntervalClass(void)
     // Ad-hoc Interval test function - single-step in debugger and check the
     // results
 
+    Interval interval_1;  // N.B. Check that the intervals' internal upper and
+    Interval interval_2;  // lower values default to NaN's here
+    Interval interval_3;
+    Interval interval_4;
     int dummy_val = 0;
     
-    // Test that Interval upper/lower values default to NaN's
-    Interval interval_0;
-   
     // Test == operator overload
-    Interval interval_1(1.1, 1.2);
-    Interval interval_2(1.1, 9.9);
+    interval_1 = Interval(1.1, 1.2);
+    interval_2 = Interval(1.1, 9.9);
     if (interval_1 == interval_2)
     {
         dummy_val++;
     }
     
     // Test != operator overload
-    Interval interval_3(3.5, 3.6);
+    interval_3 = Interval(3.5, 3.6);
     if (interval_1 != interval_3)
     {
         dummy_val++;
     }
     
     // Test == operator overload
-    Interval interval_4(1.1, 1.2);
+    interval_4 = Interval(1.1, 1.2);
     if (interval_1 == interval_4)
     {
         dummy_val++;
@@ -173,43 +190,48 @@ void testIntervalClass(void)
     }
     
     // Test - operator overload
-    Interval interval_5 = interval_1 - 0.5;
+    interval_2 = interval_1 - 0.5;
     
     // Test + operator overload
-    Interval interval_6(23.0, 34.0);
-    Interval interval_7 = interval_6 + 10.0;
+    interval_1 = Interval(23.0, 34.0);
+    interval_2 = interval_1 + 10.0;
 
     // Test assignCombine()
-    Interval interval_8(-2.34, 6.5);
-    Interval interval_9(-3.95, 5.0);
-    interval_8.assignCombine(interval_9);
-    Interval interval_10(-2.5, 10.77);
-    interval_8.assignCombine(interval_10);
-    
+    interval_1 = Interval(-2.34, 6.5);
+    interval_2 = Interval(-3.95, 5.0);
+    interval_1.assignCombine(interval_2);
+    interval_3 = Interval(-2.5, 10.77);
+    interval_1.assignCombine(interval_3);
+
+    // Test extend()
+    interval_1 = Interval(-3.2, 5.6);
+    interval_2 = interval_1.extend(-5.1);
+    interval_3 = interval_1.extend(9.8);
+
     // Test contains()
-    Interval interval_11(8.0, 22.0);
-    Interval interval_12(10.0, 20.0);
-    if (interval_12.contains(interval_11))
+    interval_1 = Interval(8.0, 22.0);
+    interval_2 = Interval(10.0, 20.0);
+    if (interval_2.contains(interval_1))
     {
         dummy_val++;
     }
-    if (interval_12.contains(interval_11, 2.0))
+    if (interval_2.contains(interval_1, 2.0))
     {
         dummy_val++;
     }
-    if (interval_12.contains(interval_11, 2.5))
+    if (interval_2.contains(interval_1, 2.5))
     {
         dummy_val++;
     }
-    if (interval_12.contains(interval_11, 1.999))
+    if (interval_2.contains(interval_1, 1.999))
     {
         dummy_val++;
     }
     
     // Test intersects()
-    Interval interval_13(3.2, 6.5);
-    Interval interval_14(4.5, 7.6);
-    Interval interval_15 = interval_13.intersects(interval_14);
+    interval_1 = Interval(3.2, 6.5);
+    interval_2 = Interval(4.5, 7.6);
+    interval_3 = interval_1.intersects(interval_2);
 
     dummy_val++;
 }

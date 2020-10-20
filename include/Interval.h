@@ -41,6 +41,7 @@ public:
     Interval operator+(double val);
     Interval operator-(double val);
     void assignCombine(const Interval &otherInterval);
+    Interval extend(double val);
     bool contains(const Interval &otherInterval, double tolerance = 0.0) const;
     Interval intersects(const Interval &otherInterval) const;
 
