@@ -57,6 +57,12 @@ static const double StepsPerDegreeAlpha =
 static const double StepsPerDegreeBeta =
                 (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution;
 
+static const double BETA_MIN_HWPROT_DEGREE = -179.4;
+static const double BETA_MAX_HWPROT_DEGREE = 150.4;
+
+static const double ALPHA_MIN_HARDSTOP_DEGREE = -183.2;
+static const double ALPHA_MAX_HARDSTOP_DEGREE = 181.8;
+
 // Overflow / underflow representations in binary FPU step counters - these are
 // intentionally asymmetric for the alpha arm counter
 static const int ALPHA_UNDERFLOW_COUNT = -10000;
@@ -539,18 +545,131 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
                                         const t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
                                         const t_fpuset &fpuset,
-                                        t_fpu_positions &initial_positions_ret,
+                                        t_fpu_positions &initial_positions,
                                         bool soft_protection)
 {
-    // TODO
+    // This function is run when a findDatum command is actually started.
+    // It updates the new range of possible positions to include the zero
+    // point of each arm.
 
-    // Temporary for now
-    UNUSED_ARG(gs);
-    UNUSED_ARG(search_modes);
-    UNUSED_ARG(selected_arm);
-    UNUSED_ARG(fpuset);
-    UNUSED_ARG(initial_positions_ret);
-    UNUSED_ARG(soft_protection);
+    initial_positions.clear();
+
+    // We allow 0.5 degree of imprecision. This is mainly for the FPU
+    // simulator which steps at discrete intervals.
+
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        {
+            if (!fpuset[fpu_id])
+            {
+                continue;
+            }
+
+            // Record initial position intervals so that the known range can
+            // be restored if the datum search is rejected
+            initial_positions[fpu_id] = { fpus_data[fpu_id].db.apos,
+                                          fpus_data[fpu_id].db.bpos };
+
+            Interval atarget = initial_positions[fpu_id].apos;
+            Interval btarget = initial_positions[fpu_id].bpos;
+
+            const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+
+            // Update stored intervals to include zero, and store in DB
+            if ((selected_arm == DASEL_ALPHA) || (selected_arm == DASEL_BOTH))
+            {
+                if (soft_protection)
+                {
+                    Interval new_apos = fpus_data[fpu_id].db.apos.extend(0.0 +
+                                                     config.alpha_datum_offset);
+                    if (!_update_apos(txn, serial_number, fpu_id, new_apos))
+                    {
+                        // TODO: Not a good error code for this condition -
+                        // currently only a placeholder
+                        return DE_RESOURCE_ERROR;
+                    }
+                }
+                else
+                {
+                    Interval protection_interval(ALPHA_MIN_HARDSTOP_DEGREE,
+                                                 ALPHA_MAX_HARDSTOP_DEGREE);
+                    Interval apos = fpus_data[fpu_id].db.apos;
+                    Interval new_range = apos.combine(protection_interval);
+                    if (!_update_apos(txn, serial_number, fpu_id, new_range))
+                    {
+                        // TODO: Not a good error code for this condition -
+                        // currently only a placeholder
+                        return DE_RESOURCE_ERROR;
+                    }
+                }
+                atarget = 0.0;
+            }
+
+            if ((selected_arm == DASEL_BETA) || (selected_arm == DASEL_BOTH))
+            {
+                Interval bpos = fpus_data[fpu_id].db.bpos;
+                if (soft_protection)
+                {
+                    Interval new_bpos = bpos.extend(0.0);
+                    if (!_update_bpos(txn, serial_number, fpu_id, new_bpos))
+                    {
+                        // TODO: Not a good error code for this condition -
+                        // currently only a placeholder
+                        return DE_RESOURCE_ERROR;
+                    }
+                }
+                else
+                {
+                    Interval new_range;
+                    if (search_modes[fpu_id] == SEARCH_CLOCKWISE)
+                    {
+                        new_range = bpos.extend(BETA_MIN_HWPROT_DEGREE);
+                    }
+                    else if (search_modes[fpu_id] == SEARCH_ANTI_CLOCKWISE)
+                    {
+                        new_range = bpos.extend(BETA_MAX_HWPROT_DEGREE);
+                    }
+                    else
+                    {
+                        Interval protection_interval(BETA_MIN_HWPROT_DEGREE,
+                                                     BETA_MAX_HWPROT_DEGREE);
+                        new_range = bpos.combine(protection_interval);
+                    }
+
+                    if (!_update_bpos(txn, serial_number, fpu_id, new_range))
+                    {
+                        // TODO: Not a good error code for this condition -
+                        // currently only a placeholder
+                        return DE_RESOURCE_ERROR;
+                    }
+                }
+                btarget = 0.0;
+            }
+
+            // Update target positions. The target positions are used as a
+            // computed tracked value if the driver cannot retrieve the exact
+            // counted position of the FPU because the firmware counter is in
+            // underflow/overflow. (That should only happen if the datum
+            // search does not move this arm).
+            fpus_data[fpu_id].target_position = { atarget, btarget };
+        }
+    }
+    else
+    {
+        // TODO: Not a good error code for this condition - currently only a
+        // placeholder
+        return DE_RESOURCE_ERROR;
+    }
+
+    if (!protection_db.sync())
+    {
+        // TODO: Not a good error code for this condition - currently only a
+        // placeholder
+        return DE_RESOURCE_ERROR;
+    }
+
     return DE_OK;
 }
 

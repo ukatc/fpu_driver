@@ -138,10 +138,10 @@ private:
 
     bool _update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
                       const char *serial_number, int fpu_id,
-                      const Interval &new_apos, bool store);
+                      const Interval &new_apos, bool store = true);
     bool _update_bpos(const std::unique_ptr<ProtectionDbTxn> &txn,
                       const char *serial_number, int fpu_id,
-                      const Interval &new_bpos, bool store);
+                      const Interval &new_bpos, bool store = true);
 
     // findDatum() hook functions
     E_EtherCANErrCode _allow_find_datum_hook(t_grid_state &gs,
@@ -153,7 +153,7 @@ private:
                                     const t_datum_search_flags &search_modes,
                                     enum E_DATUM_SELECTION selected_arm,
                                     const t_fpuset &fpuset,
-                                    t_fpu_positions &initial_positions_ret,
+                                    t_fpu_positions &initial_positions,
                                     bool soft_protection) override;
     E_EtherCANErrCode _cancel_find_datum_hook(t_grid_state &gs,
                             const t_fpuset &fpuset,

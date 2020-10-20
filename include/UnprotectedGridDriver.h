@@ -214,14 +214,14 @@ protected:
                                         const t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
                                         const t_fpuset &fpuset,
-                                        t_fpu_positions &initial_positions_ret,
+                                        t_fpu_positions &initial_positions,
                                         bool soft_protection)
     {
         UNUSED_ARG(gs);
         UNUSED_ARG(search_modes);
         UNUSED_ARG(selected_arm);
         UNUSED_ARG(fpuset);
-        UNUSED_ARG(initial_positions_ret);
+        UNUSED_ARG(initial_positions);
         UNUSED_ARG(soft_protection);
         return DE_OK;
     }
