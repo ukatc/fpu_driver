@@ -88,6 +88,24 @@ Interval Interval::operator+(double val)
 }
 
 //------------------------------------------------------------------------------
+Interval Interval::operator+(const Interval &intervalToAdd)
+{
+    // TODO: Is this interval+interval addition the same as for the Python
+    // Interval.__add__() version, which just seems to do a NumPy array add of
+    // lower+lower and upper+upper?
+    // Can see this using the following similar code, which produces [4.3 6.4]:
+    //   import numpy
+    //   myarray=numpy.array([1,2])
+    //   myarray2=numpy.array([3.3,4.4])
+    //   print(myarray + myarray2)
+    // N.B. This function is used in e.g. GridDriver::_finished_find_datum_hook()
+    Interval interval_ret;
+    interval_ret.lower = lower + intervalToAdd.lower;
+    interval_ret.upper = upper + intervalToAdd.upper;
+    return interval_ret;
+}
+
+//------------------------------------------------------------------------------
 Interval Interval::operator-(double val)
 {
     // TODO: Is this subtraction operation correct?
@@ -201,9 +219,14 @@ void testIntervalClass(void)
     // Test - operator overload
     interval_2 = interval_1 - 0.5;
     
-    // Test + operator overload
+    // Test + operator overload for adding a scalar
     interval_1 = Interval(23.0, 34.0);
     interval_2 = interval_1 + 10.0;
+
+    // Test + operator overload for adding an interval
+    interval_1 = Interval(23.0, 34.0);
+    interval_2 = Interval(10.6, 8.1);
+    interval_3 = interval_1 + interval_2;
 
     // Test assignCombine()
     interval_1 = Interval(-2.34, 6.5);

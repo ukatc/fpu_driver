@@ -39,6 +39,7 @@ public:
     bool operator!=(const Interval &other);
     void operator+=(double val);
     Interval operator+(double val);
+    Interval operator+(const Interval &intervalToAdd);
     Interval operator-(double val);
     void assignCombine(const Interval &otherInterval);
     Interval combine(const Interval &otherInterval);
