@@ -257,12 +257,14 @@ protected:
     }
 
     // Error counters function
-    virtual void _update_error_counters(const t_fpu_state &prev_fpu,
-                                        const t_fpu_state &moved_fpu,
+    virtual void _update_error_counters(FpuCounters &fpu_counters,
+                                        const t_fpu_state &prev_fpu_state,
+                                        const t_fpu_state &moved_fpu_state,
                                         bool datum_cmd = false)
     {
-        UNUSED_ARG(prev_fpu);
-        UNUSED_ARG(moved_fpu);
+        UNUSED_ARG(fpu_counters);
+        UNUSED_ARG(prev_fpu_state);
+        UNUSED_ARG(moved_fpu_state);
         UNUSED_ARG(datum_cmd);
     }
 
@@ -392,7 +394,8 @@ protected:
 
     // FpuData: Per-FPU data. NOTE: Mostly used only by the GridDriver class
     // which inherits from this UnprotectedGridDriver class - only the
-    // fpus_data[n].db.last_waveform elements are used here.
+    // fpus_data[n].db.last_waveform and pus_data[n].db.counters elements are
+    // used here.
     // TODO: The entire structure is included here only so that
     // UnprotectedGridDriver can access fpus_data[n].db.last_waveform - this
     // is not ideal, but might be rationalised in future if

@@ -81,18 +81,6 @@ public:
 
     //..........................................................................
 private:
-    // Error counters functionality
-    enum class FpuErrorCounterType
-    {
-        Collisions = 0,
-        LimitBreaches,
-        CanTimeouts,
-        DatumTimeouts,
-        MovementTimeouts,
-
-        NumFpuErrorCounterTypes
-    };
-
     bool initprotection_was_called_ok = false;
 
 #ifdef ENABLE_PROTECTION_CODE
@@ -179,8 +167,9 @@ private:
                                                  const t_fpuset &fpuset,
                                                  Range wmode, int sign);
 
-    void _update_error_counters(const t_fpu_state &prev_fpu,
-                                const t_fpu_state &moved_fpu,
+    void _update_error_counters(FpuCounters &fpu_counters,
+                                const t_fpu_state &prev_fpu_state,
+                                const t_fpu_state &moved_fpu_state,
                                 bool datum_cmd = false) override;
 
     // configMotion() hook functions

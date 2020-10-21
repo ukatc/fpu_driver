@@ -887,7 +887,8 @@ E_EtherCANErrCode GridDriver::pingFPUs(t_grid_state &gs, const t_fpuset &fpuset)
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
-        _update_error_counters(gs.FPU_state[fpu_id],
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               gs.FPU_state[fpu_id],
                                prev_gs.FPU_state[fpu_id]);
     }
 
@@ -1096,19 +1097,44 @@ E_EtherCANErrCode GridDriver::_check_and_register_wtable(const t_wtable &wtable,
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_update_error_counters(const t_fpu_state &prev_fpu,
-                                        const t_fpu_state &moved_fpu,
+void GridDriver::_update_error_counters(FpuCounters &fpu_counters,
+                                        const t_fpu_state &prev_fpu_state,
+                                        const t_fpu_state &moved_fpu_state,
                                         bool datum_cmd)
 {
+    if (moved_fpu_state.beta_collision)
+    {
+        fpu_counters.addToCount(FpuCounterId::collisions, 1);
+    }
+    if ((moved_fpu_state.state == FPST_OBSTACLE_ERROR) &&
+        moved_fpu_state.at_alpha_limit)
+    {
+        fpu_counters.addToCount(FpuCounterId::limit_breaches, 1);
+    }
 
-    // TODO
-    // N.B. Also see the Python GridDriver::_update_error_counters() function,
-    // and my new FpuErrorCounterType enum class in GridDriver.h for this
+    if (moved_fpu_state.timeout_count != prev_fpu_state.timeout_count)
+    {
+        int diff = moved_fpu_state.timeout_count - prev_fpu_state.timeout_count;
+        if (diff < 0)
+        {
+            // The underlying unsigned 16-bit value has wrapped around and
+            // needs to be corrected
+            diff += 1 << 16;
+        }
+        fpu_counters.addToCount(FpuCounterId::can_timeout, diff);
+    }
 
-    // Temporary for now
-    UNUSED_ARG(prev_fpu);
-    UNUSED_ARG(moved_fpu);
-    UNUSED_ARG(datum_cmd);
+    if ((moved_fpu_state.last_status == MCE_ERR_DATUM_TIME_OUT) ||
+        ((moved_fpu_state.last_status == MCE_COMMAND_TIMEDOUT) && datum_cmd))
+    {
+        fpu_counters.addToCount(FpuCounterId::datum_timeout, 1);
+    }
+
+    if ((moved_fpu_state.last_status == MCE_COMMAND_TIMEDOUT) &&
+        (moved_fpu_state.last_command == CCMD_EXECUTE_MOTION))
+    {
+        fpu_counters.addToCount(FpuCounterId::movement_timeout, 1);
+    }
 }
 
 //------------------------------------------------------------------------------

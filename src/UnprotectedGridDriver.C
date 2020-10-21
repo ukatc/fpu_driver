@@ -609,7 +609,8 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
-        _update_error_counters(gs.FPU_state[fpu_id],
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               gs.FPU_state[fpu_id],
                                old_state.FPU_state[fpu_id]);
     }
 
@@ -650,7 +651,8 @@ E_EtherCANErrCode UnprotectedGridDriver::readSerialNumbers(t_grid_state &gs,
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
-        _update_error_counters(gs.FPU_state[fpu_id],
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               gs.FPU_state[fpu_id],
                                prev_gs.FPU_state[fpu_id]);
     }
 
@@ -847,7 +849,8 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
                 wtable.erase(it);
             }
             
-            _update_error_counters(prev_gs.FPU_state[fpu_id],
+            _update_error_counters(fpus_data[fpu_id].db.counters,
+                                   prev_gs.FPU_state[fpu_id],
                                    gs.FPU_state[fpu_id]);
         }
 
@@ -976,7 +979,8 @@ E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs
 
     for (int i = 0; i < config.num_fpus; i++)
     {
-        _update_error_counters(prev_gs.FPU_state[i], gs.FPU_state[i]);
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[i], gs.FPU_state[i]);
     }
 
     return result;
