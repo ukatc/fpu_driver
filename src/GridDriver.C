@@ -326,6 +326,8 @@ double GridDriver::_alpha_angle(const t_fpu_state &fpu_state,
                                 bool &alpha_underflow_ret,
                                 bool &alpha_overflow_ret)
 {
+    // TODO: The first argument of this function can just be alpha_steps
+
     alpha_underflow_ret = (fpu_state.alpha_steps == ALPHA_UNDERFLOW_COUNT);
     alpha_overflow_ret = (fpu_state.alpha_steps == ALPHA_OVERFLOW_COUNT);
     return ( ((double)fpu_state.alpha_steps) / StepsPerDegreeAlpha) +
@@ -337,6 +339,8 @@ double GridDriver::_beta_angle(const t_fpu_state &fpu_state,
                                bool &beta_underflow_ret,
                                bool &beta_overflow_ret)
 {
+    // TODO: See comment in _alpha_angle() above
+
     beta_underflow_ret = (fpu_state.beta_steps == BETA_UNDERFLOW_COUNT);
     beta_overflow_ret = (fpu_state.beta_steps == BETA_OVERFLOW_COUNT);
     return ((double)fpu_state.beta_steps) / StepsPerDegreeBeta;
@@ -688,7 +692,8 @@ E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
+E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
+                                           const t_grid_state &prev_gs,
                                            t_grid_state &datum_gs,
                                            const t_datum_search_flags &search_modes,
                                            const t_fpuset &fpuset,
@@ -696,16 +701,260 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
                                            const t_fpu_positions &initial_positions, 
                                            enum E_DATUM_SELECTION selected_arm)
 {
-    // TODO
 
-    // Temporary for now
-    UNUSED_ARG(prev_gs);
-    UNUSED_ARG(datum_gs);
-    UNUSED_ARG(search_modes);
-    UNUSED_ARG(fpuset);
-    UNUSED_ARG(was_cancelled);
-    UNUSED_ARG(initial_positions);
-    UNUSED_ARG(selected_arm);
+
+    // ********** TODO: This function conversion from the Python version is work in
+    // progress
+
+
+    //..........................................................................
+    // TODO: Johannes' comment: "FIXME: check if the next block is still needed"
+    t_fpuset fpuset_refresh;
+    bool refresh_pending = false;
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        if (fpu_id < config.num_fpus)
+        {
+            t_fpu_state &fpu_state = datum_gs.FPU_state[fpu_id];
+            if (((fpu_state.state == FPST_MOVING) ||
+                 (fpu_state.state == FPST_DATUM_SEARCH)) ||
+                (!fpu_state.ping_ok))
+            {
+                fpuset_refresh[fpu_id] = true;
+                refresh_pending = true;
+            }
+        }
+        else
+        {
+            fpuset_refresh[fpu_id] = false;
+        }
+    }
+    if (refresh_pending)
+    {
+        sleepSecs(0.1);
+        E_EtherCANErrCode ping_result = _pingFPUs(datum_gs, fpuset);
+        if (ping_result != DE_OK)
+        {
+            return ping_result;
+        }
+    }
+
+    //..........................................................................
+
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        {
+            if (!fpuset[fpu_id])
+            {
+                continue;
+            }
+
+            FpuData &fpu_data = fpus_data[fpu_id];
+            t_fpu_state &datum_fpu_state = datum_gs.FPU_state[fpu_id];
+            const char *serial_number = datum_fpu_state.serial_number;
+
+            //..................................................................
+            // Alpha arm: Set position intervals to zero, and store in DB
+            if ((datum_fpu_state.alpha_was_referenced) &&
+                (datum_fpu_state.alpha_steps == 0))
+            {
+                fpu_data.a_caloffset = Interval(0.0);
+                if (!_update_apos(txn, serial_number, fpu_id,
+                                  Interval(0.0) + config.alpha_datum_offset))
+                {
+                    // TODO: Not a good error code for this condition -
+                    // currently only a placeholder - and see others in this
+                    // function as well
+                    return DE_RESOURCE_ERROR;
+                }
+
+                // Reset retry count for freeAlphaLimitBreach, because we have
+                // reached a safe position.
+
+                if (fpu_data.db.aretries_acw > 0)
+                {
+                    fpu_data.db.aretries_acw = 0;
+                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                            FpuDbIntValType::AlphaRetries_ACW,
+                                            serial_number,
+                                            fpu_data.db.aretries_acw));
+                    {
+                        // TODO: See above
+                        return DE_RESOURCE_ERROR;
+                    }
+                }
+                if (fpu_data.db.aretries_cw > 0)
+                {
+                    fpu_data.db.aretries_cw = 0;
+                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                            FpuDbIntValType::AlphaRetries_CW,
+                                            serial_number,
+                                            fpu_data.db.aretries_cw));
+                    {
+                        // TODO: See above
+                        return DE_RESOURCE_ERROR;
+                    }
+                }
+            }
+            else
+            {
+                // If ping_ok is set, we assume that even if the datum
+                // operation itself did not succeed, the step counter was
+                // successfully retrieved by a subsequent ping, and the offset
+                // is unchanged.
+
+                if (datum_fpu_state.ping_ok &&
+                    ((selected_arm == DASEL_ALPHA) ||
+                     (selected_arm == DASEL_BOTH)))
+                {
+                    bool a_underflow, a_overflow;
+                    double alpha_angle = _alpha_angle(datum_fpu_state,
+                                                      a_underflow,
+                                                      a_overflow);
+                    Interval a_interval;
+                    if (a_underflow || a_overflow)
+                    {
+                        // We know only we are in the interval between the
+                        // overflow / underflow value and the datum position
+                        a_interval = (Interval(alpha_angle) + 
+                            fpu_data.a_caloffset).extend(0.0 + config.alpha_datum_offset);
+                    }
+                    else
+                    {
+                        a_interval = Interval(alpha_angle) + fpu_data.a_caloffset;
+                    }
+
+                    if (!_update_apos(txn, serial_number, fpu_id, a_interval))
+                    {
+                        // TODO: Not a good error code for this condition -
+                        // currently only a placeholder - and see others in this
+                        // function as well
+                        return DE_RESOURCE_ERROR;
+                    }
+                }
+            }
+
+            //..................................................................
+            // Beta arm
+            if ((datum_fpu_state.beta_was_referenced) &&
+                (datum_fpu_state.beta_steps == 0))
+            {
+                fpu_data.b_caloffset = Interval(0.0);
+                if (!_update_bpos(txn, serial_number, fpu_id, Interval(0.0)))
+                {
+                    return DE_RESOURCE_ERROR;
+                }
+
+                if (fpu_data.db.bretries_acw > 0)
+                {
+                    fpu_data.db.bretries_acw = 0;
+                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                            FpuDbIntValType::BetaRetries_ACW,
+                                            serial_number,
+                                            fpu_data.db.bretries_acw));
+                    {
+                        // TODO: See above
+                        return DE_RESOURCE_ERROR;
+                    }
+                }
+
+                if (fpu_data.db.bretries_cw > 0)
+                {
+                    fpu_data.db.bretries_cw = 0;
+                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                            FpuDbIntValType::BetaRetries_CW,
+                                            serial_number,
+                                            fpu_data.db.bretries_cw));
+                    {
+                        // TODO: See above
+                        return DE_RESOURCE_ERROR;
+                    }
+                }
+            }
+            else
+            {
+                if ((datum_fpu_state.ping_ok) &&
+                    ((selected_arm == DASEL_BETA) ||
+                     (selected_arm == DASEL_BOTH)))
+                {
+                    bool b_underflow, b_overflow;
+                    double beta_angle = _beta_angle(datum_fpu_state,
+                                                    b_underflow,
+                                                    b_overflow);
+                    Interval b_interval;
+                    if (b_underflow || b_overflow)
+                    {
+                        // We know only we are in the interval between the
+                        // overflow / underflow value and the datum position
+                        b_interval = (Interval(beta_angle) + 
+                                      fpu_data.b_caloffset).extend(0.0);
+                    }
+                    else
+                    {
+                        b_interval = Interval(beta_angle) + fpu_data.b_caloffset;
+                    }
+
+                    if (!_update_bpos(txn, serial_number, fpu_id, b_interval))
+                    {
+                        // TODO: Not a good error code for this condition -
+                        // currently only a placeholder - and see others in this
+                        // function as well
+                        return DE_RESOURCE_ERROR;
+                    }
+                }
+            }
+
+            //..................................................................
+
+            const t_fpu_state &prev_fpu_state = prev_gs.FPU_state[fpu_id];
+
+            // This passes prev_fpu_state and datum_fpu_state, to deduce the
+            // time out counts
+            bool datum_cmd = true;
+            _update_error_counters(fpu_data.db.counters, prev_fpu_state,
+                                   datum_fpu_state, datum_cmd);
+
+            // This passes prev_fpu_state and datum_fpu_state, to get the
+            // counter deviations
+            _update_counters_find_datum(fpu_data.db.counters, prev_fpu_state,
+                                        datum_fpu_state);
+
+            if (!txn->fpuDbTransferCounters(DbTransferType::Write,
+                                            serial_number,
+                                            fpu_data.db.counters))
+            {
+                return DE_RESOURCE_ERROR;
+            }
+
+            //..................................................................
+        }
+    }
+    else
+    {
+        // TODO: Not a good error code for this condition - currently only a
+        // placeholder
+        return DE_RESOURCE_ERROR;
+    }
+
+    //..........................................................................
+
+    // TODO here: Implement health log updating as per Python version of this
+    // function
+
+    //..........................................................................
+
+    if (!protection_db.sync())
+    {
+        // TODO: Not a good error code for this condition - currently only a
+        // placeholder
+        return DE_RESOURCE_ERROR;
+    }
+
+    //..........................................................................
+
+    // TODO: Return proper error codes
     return DE_OK;
 }
 

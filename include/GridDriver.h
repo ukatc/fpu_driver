@@ -146,7 +146,7 @@ private:
     E_EtherCANErrCode _cancel_find_datum_hook(t_grid_state &gs,
                             const t_fpuset &fpuset,
                             const t_fpu_positions &initial_positions) override;
-    E_EtherCANErrCode _finished_find_datum_hook(t_grid_state &prev_gs,
+    E_EtherCANErrCode _finished_find_datum_hook(const t_grid_state &prev_gs,
                             t_grid_state &datum_gs,
                             const t_datum_search_flags &search_modes,
                             const t_fpuset &fpuset, bool was_cancelled,
