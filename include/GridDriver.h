@@ -153,6 +153,10 @@ private:
                             const t_fpu_positions &initial_positions, // TODO: Not used (in Python version) - remove?
                             enum E_DATUM_SELECTION selected_arm) override;
 
+    void _update_counters_find_datum(FpuCounters &fpu_counters,
+                                     const t_fpu_state &prev_fpu_state,
+                                     const t_fpu_state &datum_fpu_state);
+
     E_EtherCANErrCode _refresh_positions(t_grid_state &grid_state, bool store,
                                          const t_fpuset &fpuset);
 

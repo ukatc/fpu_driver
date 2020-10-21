@@ -710,6 +710,48 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(t_grid_state &prev_gs,
 }
 
 //------------------------------------------------------------------------------
+void GridDriver::_update_counters_find_datum(FpuCounters &fpu_counters,
+                                             const t_fpu_state &prev_fpu_state,
+                                             const t_fpu_state &datum_fpu_state)
+{
+    fpu_counters.addToCount(FpuCounterId::datum_count, 1);
+
+    // Discard error states, and states which were uninitialised before FPU
+    // is none if datum command didn't succeed. Storing aberrations is skipped
+    // in that case
+
+    if (datum_fpu_state.timeout_count != prev_fpu_state.timeout_count)
+    {
+        fpu_counters.addToCount(FpuCounterId::datum_timeout, 1);
+    }
+
+    if (datum_fpu_state.last_status == MCE_FPU_OK)
+    {
+        if (prev_fpu_state.alpha_was_referenced &&
+            datum_fpu_state.alpha_was_referenced)
+        {
+            fpu_counters.addToCount(FpuCounterId::alpha_aberration_count, 1);
+            fpu_counters.addToCount(FpuCounterId::datum_sum_alpha_aberration,
+                                    datum_fpu_state.alpha_deviation);
+            fpu_counters.addToCount(FpuCounterId::datum_sqsum_alpha_aberration,
+                                    ((FpuCounterInt)datum_fpu_state.alpha_deviation) *
+                                     datum_fpu_state.alpha_deviation);
+        }
+
+        if (prev_fpu_state.beta_was_referenced &&
+            datum_fpu_state.beta_was_referenced)
+        {
+            fpu_counters.addToCount(FpuCounterId::beta_aberration_count, 1);
+            fpu_counters.addToCount(FpuCounterId::datum_sum_beta_aberration,
+                                    datum_fpu_state.beta_deviation);
+            fpu_counters.addToCount(FpuCounterId::datum_sqsum_beta_aberration,
+                                    ((FpuCounterInt)datum_fpu_state.beta_deviation) *
+                                     datum_fpu_state.beta_deviation);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 bool GridDriver::_update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
                               const char *serial_number, int fpu_id,
                               const Interval &new_apos, bool store)
