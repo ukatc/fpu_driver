@@ -682,12 +682,56 @@ E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
                                          const t_fpuset &fpuset,
                                          const t_fpu_positions &initial_positions)
 {
-    // TODO
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        for (const auto &it : initial_positions)
+        {
+            const int fpu_id = it.first;
+            if (fpu_id >= config.num_fpus)
+            {
+                return DE_INVALID_FPU_ID;
+            }
 
-    // Temporary for now
-    UNUSED_ARG(gs);
-    UNUSED_ARG(fpuset);
-    UNUSED_ARG(initial_positions);
+            const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+
+            // Get last stored positions
+            const Interval &apos = it.second.apos;
+            const Interval &bpos = it.second.bpos;
+
+            // Revert stored intervals to old values
+            bool success = false;
+            if (_update_apos(txn, serial_number, fpu_id, apos))
+            {
+                if (_update_bpos(txn, serial_number, fpu_id, bpos))
+                {
+                    success = true;
+                }
+            }
+            if (!success)
+            {
+                // TODO: Not a good error code for this condition - currently
+                // only a placeholder
+                return DE_RESOURCE_ERROR;
+            }
+
+            fpus_data[fpu_id].target_position = { apos, bpos };
+        }
+    }
+    else
+    {
+        // TODO: Not a good error code for this condition - currently only a
+        // placeholder
+        return DE_RESOURCE_ERROR;
+    }
+
+    if (!protection_db.sync())
+    {
+        // TODO: Not a good error code for this condition - currently only a
+        // placeholder
+        return DE_RESOURCE_ERROR;
+    }
+
     return DE_OK;
 }
 
