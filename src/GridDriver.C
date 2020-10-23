@@ -1475,6 +1475,40 @@ E_EtherCANErrCode GridDriver::_pre_config_motion_hook(const t_wtable &wtable,
 }
 
 //------------------------------------------------------------------------------
+// TODO: Johannes' comment: "This can possibly be deleted, but do we want to
+// store the full wavetable?"
+E_EtherCANErrCode GridDriver::_save_wtable_direction(const t_fpuset &fpuset,
+                                                     bool is_reversed,
+                                                     t_grid_state &gs)
+{
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        {
+            if (!fpuset[fpu_id])
+            {
+                continue;
+            }
+
+            fpus_data[fpu_id].db.wf_reversed = is_reversed;
+            if (!txn->fpuDbTransferWfReversedFlag(DbTransferType::Write,
+                                        gs.FPU_state[fpu_id].serial_number,
+                                        fpus_data[fpu_id].db.wf_reversed));
+            {
+                return DE_RESOURCE_ERROR;
+            }
+        }
+    }
+    else
+    {
+        return DE_RESOURCE_ERROR;
+    }
+
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
 void GridDriver::_post_config_motion_hook(const t_wtable &wtable, 
                                           t_grid_state &gs,
                                           const t_fpuset &fpuset)

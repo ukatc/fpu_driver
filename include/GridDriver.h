@@ -181,6 +181,9 @@ private:
                                               t_grid_state &gs,
                                               const t_fpuset &fpuset,
                                               Range wmode) override;
+    E_EtherCANErrCode _save_wtable_direction(const t_fpuset &fpuset,
+                                             bool is_reversed,
+                                             t_grid_state &gs);
     void _post_config_motion_hook(const t_wtable &wtable, t_grid_state &gs,
                                   const t_fpuset &fpuset) override;
 
