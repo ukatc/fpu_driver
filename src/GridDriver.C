@@ -745,12 +745,6 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                                            const t_fpu_positions &initial_positions, 
                                            enum E_DATUM_SELECTION selected_arm)
 {
-
-
-    // ********** TODO: This function conversion from the Python version is work in
-    // progress
-
-
     //..........................................................................
     // TODO: Johannes' comment: "FIXME: check if the next block is still needed"
     t_fpuset fpuset_refresh;
@@ -776,7 +770,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
     if (refresh_pending)
     {
         sleepSecs(0.1);
-        E_EtherCANErrCode ping_result = _pingFPUs(datum_gs, fpuset);
+        E_EtherCANErrCode ping_result = _pingFPUs(datum_gs, fpuset_refresh);
         if (ping_result != DE_OK)
         {
             return ping_result;
@@ -801,7 +795,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
 
             //..................................................................
             // Alpha arm: Set position intervals to zero, and store in DB
-            if ((datum_fpu_state.alpha_was_referenced) &&
+            if (datum_fpu_state.alpha_was_referenced &&
                 (datum_fpu_state.alpha_steps == 0))
             {
                 fpu_data.a_caloffset = Interval(0.0);
@@ -855,8 +849,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                 {
                     bool a_underflow, a_overflow;
                     double alpha_angle = _alpha_angle(datum_fpu_state,
-                                                      a_underflow,
-                                                      a_overflow);
+                                                      a_underflow, a_overflow);
                     Interval a_interval;
                     if (a_underflow || a_overflow)
                     {
@@ -882,7 +875,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
 
             //..................................................................
             // Beta arm
-            if ((datum_fpu_state.beta_was_referenced) &&
+            if (datum_fpu_state.beta_was_referenced &&
                 (datum_fpu_state.beta_steps == 0))
             {
                 fpu_data.b_caloffset = Interval(0.0);
@@ -919,7 +912,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
             }
             else
             {
-                if ((datum_fpu_state.ping_ok) &&
+                if (datum_fpu_state.ping_ok &&
                     ((selected_arm == DASEL_BETA) ||
                      (selected_arm == DASEL_BOTH)))
                 {
@@ -955,7 +948,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
             const t_fpu_state &prev_fpu_state = prev_gs.FPU_state[fpu_id];
 
             // This passes prev_fpu_state and datum_fpu_state, to deduce the
-            // time out counts
+            // timeout counts
             bool datum_cmd = true;
             _update_error_counters(fpu_data.db.counters, prev_fpu_state,
                                    datum_fpu_state, datum_cmd);
