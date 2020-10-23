@@ -281,9 +281,9 @@ protected:
         UNUSED_ARG(wmode);
         return DE_OK;
     }
-    virtual void _post_config_motion_hook(const t_wtable &wtable,
-                                          t_grid_state &gs,
-                                          const t_fpuset &fpuset)
+    virtual E_EtherCANErrCode _post_config_motion_hook(const t_wtable &wtable,
+                                                       t_grid_state &gs,
+                                                       const t_fpuset &fpuset)
     {
         // NOTE: The original Python version of this function called
         // set_wtable_reversed(), but this isn't required because it doesn't
@@ -292,6 +292,7 @@ protected:
         UNUSED_ARG(wtable);
         UNUSED_ARG(gs);
         UNUSED_ARG(fpuset);
+        return DE_OK;
     }
 
     // repeatMotion() hook functions

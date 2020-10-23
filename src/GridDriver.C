@@ -1509,16 +1509,86 @@ E_EtherCANErrCode GridDriver::_save_wtable_direction(const t_fpuset &fpuset,
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_post_config_motion_hook(const t_wtable &wtable, 
-                                          t_grid_state &gs,
-                                          const t_fpuset &fpuset)
+E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable, 
+                                                       t_grid_state &gs,
+                                                       const t_fpuset &fpuset)
 {
-    // TODO
+    // Update ranges that will become valid once executeMotion is started
+    for (const auto &it : configuring_ranges)
+    {
+        int fpu_id = it.first;
+        if (fpu_id >= config.num_fpus)
+        {
+            return DE_INVALID_FPU_ID;
+        }
 
-    // Temporary for now
-    UNUSED_ARG(wtable);
-    UNUSED_ARG(gs);
-    UNUSED_ARG(fpuset);
+        if (!fpuset[fpu_id])
+        {
+            continue;
+        }
+
+        if (wavetable_was_received(wtable, fpu_id, gs.FPU_state[fpu_id]))
+        {
+            configured_ranges[fpu_id] = it.second;
+            // Store actual target position
+            configured_targets[fpu_id] = configuring_targets[fpu_id];
+        }
+    }
+
+    // Create fpuset_wtable
+    t_fpuset fpuset_wtable;
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        fpuset_wtable[fpu_id] = false;
+    }
+    for (size_t i = 0; i < wtable.size(); i++)
+    {
+        if (wtable[i].fpu_id < config.num_fpus)
+        {
+            fpuset_wtable[wtable[i].fpu_id] = true;
+        }
+        else
+        {
+            return DE_INVALID_FPU_ID;
+        }
+    }
+
+    const bool is_reversed = false;
+    E_EtherCANErrCode ecan_result = _save_wtable_direction(fpuset_wtable,
+                                                           is_reversed, gs);
+    if (ecan_result != DE_OK) 
+    {
+        return ecan_result;
+    }
+
+    // Save the changed waveforms
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        for (size_t i = 0; i < wtable.size(); i++)
+        {
+            int fpu_id = wtable[i].fpu_id;
+            if (fpu_id < config.num_fpus)
+            {
+                if (!txn->fpuDbTransferWaveform(DbTransferType::Write,
+                                gs.FPU_state[fpu_id].serial_number,
+                                const_cast<t_waveform_steps &>(wtable[i].steps)))
+                {
+                    return DE_RESOURCE_ERROR;
+                }
+            }
+            else
+            {
+                return DE_INVALID_FPU_ID;
+            }
+        }
+    }
+    else
+    {
+        return DE_RESOURCE_ERROR;
+    }
+
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------

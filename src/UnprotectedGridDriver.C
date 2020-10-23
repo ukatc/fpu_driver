@@ -817,8 +817,8 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     {
         // TODO: Much of the following code is inefficient because iterates
         // through arrays/lists many times - but should work OK. This approach
-        // is currently taken in order to conform with the existing C++ data
-        // structures already defined.
+        // is currently taken in order to conform with the existing t_wtable
+        // data structure already defined.
 
         // Accept configured wavetable entries
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
@@ -854,7 +854,7 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
                                    gs.FPU_state[fpu_id]);
         }
 
-        _post_config_motion_hook(wtable, gs, fpuset);
+        ecan_result = _post_config_motion_hook(wtable, gs, fpuset);
     }
 
     // TODO: Is this return variable correct? (does correspond to equivalent 
