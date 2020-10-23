@@ -883,7 +883,11 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 
     // Wait a short moment to avoid spurious collision
     t_fpu_positions initial_positions;
-    _start_execute_motion_hook(gs, fpuset, initial_positions);
+    result = _start_execute_motion_hook(gs, fpuset, initial_positions);
+    if (result != DE_OK)
+    {
+        return result;
+    }
     sleepSecs(0.1);
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
@@ -893,6 +897,9 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     // equivalent - check this
     if (result != DE_OK)
     {
+        // Note: Do NOT want to return the _cancel_execute_motion_hook() return
+        // value here, because more interested in the startExecuteMotion()
+        // result value above
         _cancel_execute_motion_hook(gs, fpuset, initial_positions);
         return result;
     }
@@ -947,7 +954,12 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 
         // The following hook will narrow down the recorded intervals of
         // positions
-        _post_execute_motion_hook(gs, prev_gs, move_gs, fpuset);
+        E_EtherCANErrCode post_func_result = 
+                    _post_execute_motion_hook(gs, prev_gs, move_gs, fpuset);
+        if (post_func_result != DE_OK)
+        {
+            return post_func_result;
+        }
     }
 
     // TODO: Original Python code - need to do anything with this here?

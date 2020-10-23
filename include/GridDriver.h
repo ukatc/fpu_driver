@@ -189,13 +189,16 @@ private:
                                                const t_fpuset &fpuset) override;
 
     // executeMotion() hook functions
-    void _start_execute_motion_hook(t_grid_state &gs, const t_fpuset &fpuset,
-                                    const t_fpu_positions &initial_positions) override;
-    void _cancel_execute_motion_hook(t_grid_state &gs, const t_fpuset &fpuset,
-                                     const t_fpu_positions &initial_positions) override;
-    void _post_execute_motion_hook(t_grid_state &gs, const t_grid_state &old_gs,
-                                   const t_grid_state &move_gs,
-                                   const t_fpuset &fpuset) override;
+    E_EtherCANErrCode _start_execute_motion_hook(t_grid_state &gs,
+                                                 const t_fpuset &fpuset,
+                            const t_fpu_positions &initial_positions) override;
+    E_EtherCANErrCode _cancel_execute_motion_hook(t_grid_state &gs,
+                                                  const t_fpuset &fpuset,
+                            const t_fpu_positions &initial_positions) override;
+    E_EtherCANErrCode _post_execute_motion_hook(t_grid_state &gs,
+                                                const t_grid_state &old_gs,
+                                                const t_grid_state &move_gs,
+                                                const t_fpuset &fpuset) override;
 
     void _update_counters_execute_motion(int fpu_id, FpuCounters &fpu_counters,
                                          const t_waveform_steps &waveform,

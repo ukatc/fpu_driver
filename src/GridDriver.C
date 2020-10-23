@@ -1709,9 +1709,9 @@ void GridDriver::_update_counters_execute_motion(int fpu_id,
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_start_execute_motion_hook(t_grid_state &gs,
-                                            const t_fpuset &fpuset,
-                                            const t_fpu_positions &initial_positions)
+E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
+                                                         const t_fpuset &fpuset,
+                                    const t_fpu_positions &initial_positions)
 {
     // TODO
 
@@ -1719,12 +1719,14 @@ void GridDriver::_start_execute_motion_hook(t_grid_state &gs,
     UNUSED_ARG(gs);
     UNUSED_ARG(fpuset);
     UNUSED_ARG(initial_positions);
+
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
-                                             const t_fpuset &fpuset,
-                                             const t_fpu_positions &initial_positions)
+E_EtherCANErrCode GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
+                                                          const t_fpuset &fpuset,
+                                    const t_fpu_positions &initial_positions)
 {
     // TODO
 
@@ -1732,13 +1734,15 @@ void GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
     UNUSED_ARG(gs);
     UNUSED_ARG(fpuset);
     UNUSED_ARG(initial_positions);
+
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------
-void GridDriver::_post_execute_motion_hook(t_grid_state &gs,
-                                           const t_grid_state &old_gs,
-                                           const t_grid_state &move_gs,
-                                           const t_fpuset &fpuset)
+E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
+                                                    const t_grid_state &old_gs,
+                                                    const t_grid_state &move_gs,
+                                                    const t_fpuset &fpuset)
 {
     // TODO
 
@@ -1747,6 +1751,8 @@ void GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     UNUSED_ARG(old_gs);
     UNUSED_ARG(move_gs);
     UNUSED_ARG(fpuset);
+
+    return DE_OK;
 }
 
 #if 0

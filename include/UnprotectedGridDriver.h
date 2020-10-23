@@ -340,31 +340,34 @@ protected:
     }
 
     // executeMotion() hook functions
-    virtual void _start_execute_motion_hook(t_grid_state &gs,
-                                            const t_fpuset &fpuset,
-                                            const t_fpu_positions &initial_positions)
+    virtual E_EtherCANErrCode _start_execute_motion_hook(t_grid_state &gs,
+                                                         const t_fpuset &fpuset,
+                                    const t_fpu_positions &initial_positions)
     {
         UNUSED_ARG(gs);
         UNUSED_ARG(fpuset);
         UNUSED_ARG(initial_positions);
+        return DE_OK;
     }
-    virtual void _cancel_execute_motion_hook(t_grid_state &gs,
-                                             const t_fpuset &fpuset,
-                                             const t_fpu_positions &initial_positions)
+    virtual E_EtherCANErrCode _cancel_execute_motion_hook(t_grid_state &gs,
+                                                          const t_fpuset &fpuset,
+                                    const t_fpu_positions &initial_positions)
     {
         UNUSED_ARG(gs);
         UNUSED_ARG(fpuset);
         UNUSED_ARG(initial_positions);
+        return DE_OK;
     }
-    virtual void _post_execute_motion_hook(t_grid_state &gs,
-                                           const t_grid_state &old_gs,
-                                           const t_grid_state &move_gs,
-                                           const t_fpuset &fpuset)
+    virtual E_EtherCANErrCode _post_execute_motion_hook(t_grid_state &gs,
+                                                const t_grid_state &old_gs,
+                                                const t_grid_state &move_gs,
+                                                const t_fpuset &fpuset)
     {
         UNUSED_ARG(gs);
         UNUSED_ARG(old_gs);
         UNUSED_ARG(move_gs);
         UNUSED_ARG(fpuset);
+        return DE_OK;
     }
 
     E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
