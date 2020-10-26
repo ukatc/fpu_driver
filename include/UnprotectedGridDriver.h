@@ -342,7 +342,7 @@ protected:
     // executeMotion() hook functions
     virtual E_EtherCANErrCode _start_execute_motion_hook(t_grid_state &gs,
                                                          const t_fpuset &fpuset,
-                                    const t_fpu_positions &initial_positions)
+                                            t_fpu_positions &initial_positions)
     {
         UNUSED_ARG(gs);
         UNUSED_ARG(fpuset);

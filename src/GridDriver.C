@@ -1598,11 +1598,6 @@ void GridDriver::_update_counters_execute_motion(int fpu_id,
                                                  bool is_reversed,
                                                  bool cancel)
 {
-    
-    // ********* TODO: Test this function - only visually converted from its
-    // Python equivalent so far, not yet tested at all
-    
-    
     if ((fpu_id < 0) || (fpu_id >= config.num_fpus))
     {
         return;
@@ -1711,14 +1706,81 @@ void GridDriver::_update_counters_execute_motion(int fpu_id,
 //------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
                                                          const t_fpuset &fpuset,
-                                    const t_fpu_positions &initial_positions)
+                                            t_fpu_positions &initial_positions)
 {
-    // TODO
+    // This runs before executeMotion command is started. After that point, the
+    // FPU in fpuset should be moving within the ranges set by the last
+    // config_motion, repeat_motion or reverse_motion command. These ranges
+    // are set as the intervals which define the possible positions until the
+    // command has finished.
+    //
+    // initial_positions is filled with the positions as (alpha, beta) tuples
+    // at the time the command was called.
 
-    // Temporary for now
-    UNUSED_ARG(gs);
-    UNUSED_ARG(fpuset);
-    UNUSED_ARG(initial_positions);
+    initial_positions.clear();
+
+    E_EtherCANErrCode ecan_result = _pingFPUs(gs, fpuset);
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        {
+            if (!fpuset[fpu_id])
+            {
+                continue;
+            }
+
+            FpuData &fpu_data = fpus_data[fpu_id];
+
+            initial_positions[fpu_id] = { fpu_data.db.apos, fpu_data.db.bpos };
+            // Copy configured alpha and beta position intervals, and store
+            // both to DB
+            auto it = configured_ranges.find(fpu_id);
+            if (it != configured_ranges.end())
+            {
+                const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+                if (!_update_apos(txn, serial_number, fpu_id, it->second.apos))
+                {
+                    return DE_RESOURCE_ERROR;
+                }
+                if (!_update_bpos(txn, serial_number, fpu_id, it->second.bpos))
+                {
+                    return DE_RESOURCE_ERROR;
+                }
+                // Update target position which is used in case of step counter
+                // overflow
+                fpu_data.target_position = configured_targets[fpu_id];
+
+                _update_counters_execute_motion(fpu_id,
+                                                fpu_data.db.counters,
+                                                fpu_data.db.last_waveform,
+                                                fpu_data.db.wf_reversed);
+
+                if (!txn->fpuDbTransferCounters(DbTransferType::Write,
+                                                serial_number,
+                                                fpu_data.db.counters))
+                {
+                    return DE_RESOURCE_ERROR;
+                }
+            }
+        }
+    }
+    else
+    {
+        return DE_RESOURCE_ERROR;
+    }
+
+    if (!protection_db.sync())
+    {
+        // TODO: Not a good error code for this condition - currently only a
+        // placeholder
+        return DE_RESOURCE_ERROR;
+    }
 
     return DE_OK;
 }
