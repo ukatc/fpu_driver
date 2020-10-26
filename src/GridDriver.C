@@ -1592,6 +1592,40 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_pre_repeat_motion_hook(const t_wtable &wtable,
+                                                      t_grid_state &gs,
+                                                      const t_fpuset &fpuset,
+                                                      Range wmode)
+{
+    // TODO
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_post_repeat_motion_hook(const t_wtable &wtable,
+                                                       t_grid_state &gs,
+                                                       const t_fpuset &fpuset)
+{
+    // TODO
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_pre_reverse_motion_hook(const t_wtable &wtable,
+                                                       t_grid_state &gs,
+                                                       const t_fpuset &fpuset,
+                                                       Range wmode)
+{
+    // TODO
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_post_reverse_motion_hook(const t_wtable &wtable,
+                                                        t_grid_state &gs,
+                                                        const t_fpuset &fpuset)
+{
+    // TODO
+}
+
+//------------------------------------------------------------------------------
 void GridDriver::_update_counters_execute_motion(int fpu_id,
                                                  FpuCounters &fpu_counters,
                                                  const t_waveform_steps &waveform,

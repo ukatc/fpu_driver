@@ -296,47 +296,51 @@ protected:
     }
 
     // repeatMotion() hook functions
-    virtual void _pre_repeat_motion_hook(const t_wtable &wtable,
-                                         t_grid_state &gs,
-                                         const t_fpuset &fpuset,
-                                         Range wmode = Range::Error)
+    virtual E_EtherCANErrCode _pre_repeat_motion_hook(const t_wtable &wtable,
+                                                      t_grid_state &gs,
+                                                      const t_fpuset &fpuset,
+                                                      Range wmode = Range::Error)
     {
         UNUSED_ARG(wtable);
         UNUSED_ARG(gs);
         UNUSED_ARG(fpuset);
         UNUSED_ARG(wmode);
+        return DE_OK;
     }
-    virtual void _post_repeat_motion_hook(const t_wtable &wtable,
-                                          t_grid_state &gs,
-                                          const t_fpuset &fpuset)
+    virtual E_EtherCANErrCode _post_repeat_motion_hook(const t_wtable &wtable,
+                                                       t_grid_state &gs,
+                                                       const t_fpuset &fpuset)
     {
         // NOTE: See comments in _post_config_motion_hook() above - they apply
         // to this function as well
         UNUSED_ARG(wtable);
         UNUSED_ARG(gs);
         UNUSED_ARG(fpuset);
+        return DE_OK;
     }
 
     // reverseMotion() hook functions
-    virtual void _pre_reverse_motion_hook(const t_wtable &wtable,
-                                          t_grid_state &gs,
-                                          const t_fpuset &fpuset,
-                                          Range wmode = Range::Error)
+    virtual E_EtherCANErrCode _pre_reverse_motion_hook(const t_wtable &wtable,
+                                                       t_grid_state &gs,
+                                                       const t_fpuset &fpuset,
+                                                       Range wmode = Range::Error)
     {
         UNUSED_ARG(wtable);
         UNUSED_ARG(gs);
         UNUSED_ARG(fpuset);
         UNUSED_ARG(wmode);
+        return DE_OK;
     }  
-    virtual void _post_reverse_motion_hook(const t_wtable &wtable,
-                                          t_grid_state &gs,
-                                          const t_fpuset &fpuset)
+    virtual E_EtherCANErrCode _post_reverse_motion_hook(const t_wtable &wtable,
+                                                        t_grid_state &gs,
+                                                        const t_fpuset &fpuset)
     {
         // NOTE: See comments in _post_config_motion_hook() above - they apply
         // to this function as well
         UNUSED_ARG(wtable);
         UNUSED_ARG(gs);
         UNUSED_ARG(fpuset);
+        return DE_OK;
     }
 
     // executeMotion() hook functions

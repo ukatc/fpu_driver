@@ -188,6 +188,24 @@ private:
                                                t_grid_state &gs,
                                                const t_fpuset &fpuset) override;
 
+    // repeatMotion() hook functions
+    E_EtherCANErrCode _pre_repeat_motion_hook(const t_wtable &wtable,
+                                              t_grid_state &gs,
+                                              const t_fpuset &fpuset,
+                                              Range wmode = Range::Error) override;
+    E_EtherCANErrCode _post_repeat_motion_hook(const t_wtable &wtable,
+                                               t_grid_state &gs,
+                                               const t_fpuset &fpuset) override;
+
+    // reverseMotion() hook functions
+    E_EtherCANErrCode _pre_reverse_motion_hook(const t_wtable &wtable,
+                                               t_grid_state &gs,
+                                               const t_fpuset &fpuset,
+                                               Range wmode = Range::Error) override;
+    E_EtherCANErrCode _post_reverse_motion_hook(const t_wtable &wtable,
+                                                t_grid_state &gs,
+                                                const t_fpuset &fpuset) override;
+
     // executeMotion() hook functions
     E_EtherCANErrCode _start_execute_motion_hook(t_grid_state &gs,
                                                  const t_fpuset &fpuset,
