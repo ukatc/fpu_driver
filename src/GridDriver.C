@@ -1790,12 +1790,64 @@ E_EtherCANErrCode GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
                                                           const t_fpuset &fpuset,
                                     const t_fpu_positions &initial_positions)
 {
-    // TODO
+    // Cancels registering an executeMotion command which was rejected by the
+    // driver, before an actual movement was started.
 
-    // Temporary for now
-    UNUSED_ARG(gs);
-    UNUSED_ARG(fpuset);
-    UNUSED_ARG(initial_positions);
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        for (const auto &it : initial_positions)
+        {
+            const int fpu_id = it.first;
+            if (fpu_id >= config.num_fpus)
+            {
+                return DE_INVALID_FPU_ID;
+            }
+
+            if (!fpuset[fpu_id])
+            {
+                continue;
+            }
+
+            const Interval &apos = it.second.apos;
+            const Interval &bpos = it.second.bpos;
+            const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+            if (!_update_apos(txn, serial_number, fpu_id, apos))
+            {
+                return DE_RESOURCE_ERROR;
+            }
+            if (!_update_bpos(txn, serial_number, fpu_id, bpos))
+            {
+                return DE_RESOURCE_ERROR;
+            }
+
+            FpuData &fpu_data = fpus_data[fpu_id];
+
+            fpu_data.target_position = { apos, bpos };
+            
+            if (configured_ranges.find(fpu_id) != configured_ranges.end()) 
+            {
+                _update_counters_execute_motion(fpu_id, fpu_data.db.counters,
+                                                fpu_data.db.last_waveform,
+                                                fpu_data.db.wf_reversed, true);
+            }
+            if (!txn->fpuDbTransferCounters(DbTransferType::Write,
+                                            serial_number,
+                                            fpu_data.db.counters))
+            {
+                return DE_RESOURCE_ERROR;
+            }
+        }
+    }
+    else
+    {
+        return DE_RESOURCE_ERROR;
+    }
+
+    if (!protection_db.sync())
+    {
+        return DE_RESOURCE_ERROR;
+    }
 
     return DE_OK;
 }
