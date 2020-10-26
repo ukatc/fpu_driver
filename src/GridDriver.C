@@ -1597,7 +1597,8 @@ E_EtherCANErrCode GridDriver::_pre_repeat_motion_hook(const t_wtable &wtable,
                                                       const t_fpuset &fpuset,
                                                       Range wmode)
 {
-    // TODO
+    const int sign = 1;
+    return _check_and_register_wtable(wtable, gs, fpuset, wmode, sign);
 }
 
 //------------------------------------------------------------------------------
@@ -1605,7 +1606,8 @@ E_EtherCANErrCode GridDriver::_post_repeat_motion_hook(const t_wtable &wtable,
                                                        t_grid_state &gs,
                                                        const t_fpuset &fpuset)
 {
-    // TODO
+    return _post_repeat_reverse_motion_hook(wtable, gs, fpuset,
+                                            FPST_READY_FORWARD, false);
 }
 
 //------------------------------------------------------------------------------
@@ -1614,7 +1616,8 @@ E_EtherCANErrCode GridDriver::_pre_reverse_motion_hook(const t_wtable &wtable,
                                                        const t_fpuset &fpuset,
                                                        Range wmode)
 {
-    // TODO
+    const int sign = -1;
+    return _check_and_register_wtable(wtable, gs, fpuset, wmode, sign);
 }
 
 //------------------------------------------------------------------------------
@@ -1622,7 +1625,49 @@ E_EtherCANErrCode GridDriver::_post_reverse_motion_hook(const t_wtable &wtable,
                                                         t_grid_state &gs,
                                                         const t_fpuset &fpuset)
 {
-    // TODO
+    return _post_repeat_reverse_motion_hook(wtable, gs, fpuset,
+                                            FPST_READY_REVERSE, true);
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_post_repeat_reverse_motion_hook(
+                                                    const t_wtable &wtable,
+                                                    t_grid_state &gs,
+                                                    const t_fpuset &fpuset,
+                                                    E_FPU_STATE target_state,
+                                                    bool is_reversed)
+{
+    // Update ranges that become valid once executeMotion is started
+
+    t_fpuset fpuset_to_save;
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        fpuset_to_save[fpu_id] = false;
+    }
+
+    for (const auto &it : configuring_ranges)
+    {
+        int fpu_id = it.first;
+        if (fpu_id >= config.num_fpus)
+        {
+            return DE_INVALID_FPU_ID;
+        }
+        if (!fpuset[fpu_id])
+        {
+            continue;
+        }
+
+        const bool allow_unconfirmed = true;
+        if (wavetable_was_received(wtable, fpu_id, gs.FPU_state[fpu_id],
+                                   allow_unconfirmed, target_state))
+        {
+            configured_ranges[fpu_id] = it.second;
+            fpuset_to_save[fpu_id] = true;
+            configured_targets[fpu_id] = configuring_targets[fpu_id];
+        }
+    }
+
+    return _save_wtable_direction(fpuset_to_save, is_reversed, gs);
 }
 
 //------------------------------------------------------------------------------

@@ -188,7 +188,7 @@ private:
                                                t_grid_state &gs,
                                                const t_fpuset &fpuset) override;
 
-    // repeatMotion() hook functions
+    // repeatMotion() and reverseMotion() hook functions
     E_EtherCANErrCode _pre_repeat_motion_hook(const t_wtable &wtable,
                                               t_grid_state &gs,
                                               const t_fpuset &fpuset,
@@ -196,8 +196,6 @@ private:
     E_EtherCANErrCode _post_repeat_motion_hook(const t_wtable &wtable,
                                                t_grid_state &gs,
                                                const t_fpuset &fpuset) override;
-
-    // reverseMotion() hook functions
     E_EtherCANErrCode _pre_reverse_motion_hook(const t_wtable &wtable,
                                                t_grid_state &gs,
                                                const t_fpuset &fpuset,
@@ -205,6 +203,11 @@ private:
     E_EtherCANErrCode _post_reverse_motion_hook(const t_wtable &wtable,
                                                 t_grid_state &gs,
                                                 const t_fpuset &fpuset) override;
+    E_EtherCANErrCode _post_repeat_reverse_motion_hook(const t_wtable &wtable,
+                                                       t_grid_state &gs,
+                                                       const t_fpuset &fpuset,
+                                                       E_FPU_STATE target_state,
+                                                       bool is_reversed);
 
     // executeMotion() hook functions
     E_EtherCANErrCode _start_execute_motion_hook(t_grid_state &gs,
