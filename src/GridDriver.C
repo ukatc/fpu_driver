@@ -1858,13 +1858,133 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
                                                     const t_grid_state &move_gs,
                                                     const t_fpuset &fpuset)
 {
-    // TODO
+    // This runs after both an executeMotion has run, and *also* a ping has
+    // returned successfully.
 
-    // Temporary for now
-    UNUSED_ARG(gs);
-    UNUSED_ARG(old_gs);
-    UNUSED_ARG(move_gs);
-    UNUSED_ARG(fpuset);
+    // What do we here if FPUs are still moving (this would happen in case of
+    // an error)? Solution for now: wait.
+    // TODO: The above were Johannes' comments - need to look at this further?
+    for (int loopCount = 0; loopCount < 50; loopCount++)
+    {
+        if ((gs.Counts[FPST_MOVING] > 0) || (gs.Counts[FPST_DATUM_SEARCH] > 0))
+        {
+            // Build set of FPUs requiring refresh based upon their current
+            // state
+            t_fpuset fpuset_refresh;
+            for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+            {
+                fpuset_refresh[fpu_id] = false;
+            }
+            bool refresh_required = false;
+            for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+            {
+                if ((gs.FPU_state[fpu_id].state == FPST_MOVING) ||
+                    (gs.FPU_state[fpu_id].state == FPST_DATUM_SEARCH))
+                {
+                    fpuset_refresh[fpu_id] = true;
+                    refresh_required = true;
+                }
+            }
+            if (!refresh_required)
+            {
+                break;
+            }
+
+            // Add FPUs requiring ping to the set
+            t_fpuset fpuset_ping_notok;
+            need_ping(gs, fpuset, fpuset_ping_notok);
+            for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+            {
+                if (fpuset_ping_notok[fpu_id])
+                {
+                    fpuset_refresh[fpu_id] = true;
+                }
+            }
+
+            sleepSecs(0.2);
+
+            E_EtherCANErrCode ecan_result = _pingFPUs(gs, fpuset_refresh);
+            if (ecan_result == DE_CAN_COMMAND_TIMEOUT_ERROR)
+            {
+                break;
+            }
+            else if (ecan_result != DE_OK)
+            {
+                return ecan_result;
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    // The assumption here is that the offsets did not change, even if the
+    // waveform execution was aborted. This might not be correct in a sense
+    // valid for science measurements, because collisions would compromise the
+    // precision of step counts, but for protection purposes this should be OK.
+    //
+    // Thus, use the step counter positions to update the location. If the FPU
+    // step counters are in underflow / overflow, use the registered target
+    // positions, to continue tracking.
+    // But, roll back the latter to the movement range for an FPU, if that FPU
+    // is not yet at target.
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (!fpuset[fpu_id])
+        {
+            continue;
+        }
+
+        if (gs.FPU_state[fpu_id].state != FPST_RESTING)        
+        {
+            fpus_data[fpu_id].target_position = { fpus_data[fpu_id].db.apos,
+                                                  fpus_data[fpu_id].db.bpos };
+        }
+    }
+
+    const bool store = true;
+    E_EtherCANErrCode ecan_result = _refresh_positions(gs, store, fpuset);
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+        {
+            if (!fpuset[fpu_id])
+            {
+                continue;
+            }
+
+            _update_error_counters(fpus_data[fpu_id].db.counters,
+                                   old_gs.FPU_state[fpu_id],
+                                   move_gs.FPU_state[fpu_id]);
+            const char *serial_number = move_gs.FPU_state[fpu_id].serial_number;
+            if (!txn->fpuDbTransferCounters(DbTransferType::Write, serial_number,
+                                            fpus_data[fpu_id].db.counters))
+            {
+                return DE_RESOURCE_ERROR;
+            }
+        }
+    }
+    else
+    {
+        return DE_RESOURCE_ERROR;
+    }
+
+    // Clear wavetable spans for the addressed FPUs - they are no longer valid
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (fpuset[fpu_id])
+        {
+            // Erase if exists
+            configured_ranges.erase(fpu_id);
+        }
+    }
 
     return DE_OK;
 }
