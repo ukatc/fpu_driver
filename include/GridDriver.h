@@ -226,6 +226,24 @@ private:
                                          bool is_reversed,
                                          bool cancel = false);
 
+    // freeBetaCollision() hook functions
+    E_EtherCANErrCode _pre_free_beta_collision_hook(int fpu_id,
+                                        E_REQUEST_DIRECTION direction,
+                                        const t_grid_state &gs,
+                                        bool soft_protection = true) override;
+    E_EtherCANErrCode _post_free_beta_collision_hook(int fpu_id,
+                                        E_REQUEST_DIRECTION direction,
+                                        const t_grid_state &gs) override;
+
+    // freeAlphaLimitBreach() hook functions
+    E_EtherCANErrCode _pre_free_alpha_limit_breach_hook(int fpu_id,
+                                        E_REQUEST_DIRECTION direction,
+                                        const t_grid_state &gs,
+                                        bool soft_protection = true) override;
+    E_EtherCANErrCode _post_free_alpha_limit_breach_hook(int fpu_id,
+                                        E_REQUEST_DIRECTION direction,
+                                        const t_grid_state &gs) override;
+
     void getDuplicateSerialNumbers(t_grid_state &grid_state,
                         std::vector<std::string> &duplicate_snumbers_ret);
 

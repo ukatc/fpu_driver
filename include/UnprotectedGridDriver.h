@@ -374,6 +374,50 @@ protected:
         return DE_OK;
     }
 
+    // freeBetaCollision() hook functions
+    virtual E_EtherCANErrCode _pre_free_beta_collision_hook(int fpu_id,
+                                                E_REQUEST_DIRECTION direction,
+                                                const t_grid_state &gs,
+                                                bool soft_protection = true)
+    {
+        UNUSED_ARG(fpu_id);
+        UNUSED_ARG(direction);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(soft_protection);
+        return DE_OK;
+    }
+    virtual E_EtherCANErrCode _post_free_beta_collision_hook(int fpu_id,
+                                                E_REQUEST_DIRECTION direction,
+                                                const t_grid_state &gs)
+    {
+        UNUSED_ARG(fpu_id);
+        UNUSED_ARG(direction);
+        UNUSED_ARG(gs);
+        return DE_OK;
+    }
+
+    // freeAlphaLimitBreach() hook functions
+    virtual E_EtherCANErrCode _pre_free_alpha_limit_breach_hook(int fpu_id,
+                                                E_REQUEST_DIRECTION direction,
+                                                const t_grid_state &gs,
+                                                bool soft_protection = true)
+    {
+        UNUSED_ARG(fpu_id);
+        UNUSED_ARG(direction);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(soft_protection);
+        return DE_OK;
+    }
+    virtual E_EtherCANErrCode _post_free_alpha_limit_breach_hook(int fpu_id,
+                                                E_REQUEST_DIRECTION direction,
+                                                const t_grid_state &gs)
+    {
+        UNUSED_ARG(fpu_id);
+        UNUSED_ARG(direction);
+        UNUSED_ARG(gs);
+        return DE_OK;
+    }
+
     E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
     void need_ping(const t_grid_state &gs, const t_fpuset &fpuset,
                    t_fpuset &pingset_ret);

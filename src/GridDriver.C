@@ -2068,6 +2068,48 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     return DE_OK;
 }
 
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_pre_free_beta_collision_hook(int fpu_id,
+                                                E_REQUEST_DIRECTION direction,
+                                                const t_grid_state &gs,
+                                                bool soft_protection)
+{
+    // TODO
+
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_post_free_beta_collision_hook(int fpu_id,
+                                                E_REQUEST_DIRECTION direction,
+                                                const t_grid_state &gs)
+{
+    // TODO
+
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_pre_free_alpha_limit_breach_hook(int fpu_id,
+                                                E_REQUEST_DIRECTION direction,
+                                                const t_grid_state &gs,
+                                                bool soft_protection)
+{
+    // TODO
+
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::_post_free_alpha_limit_breach_hook(int fpu_id,
+                                                E_REQUEST_DIRECTION direction,
+                                                const t_grid_state &gs)
+{
+    // TODO
+
+    return DE_OK;
+}
+
 #if 0
 //------------------------------------------------------------------------------
 // TODO: Note: set_wtable_reversed() didn't effectively do anything in the
