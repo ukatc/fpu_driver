@@ -1084,6 +1084,46 @@ E_EtherCANErrCode UnprotectedGridDriver::enableAlphaLimitProtection(
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::lockFPU(int fpu_id, t_grid_state &gs)
+{
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+
+    E_EtherCANErrCode ecan_result = _gd->lockFPU(fpu_id, gs);
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    return ecan_result;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::unlockFPU(int fpu_id, t_grid_state &gs)
+{
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+
+    E_EtherCANErrCode ecan_result = _gd->unlockFPU(fpu_id, gs);
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    return ecan_result;
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs)
 {
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
