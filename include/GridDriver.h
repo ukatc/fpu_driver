@@ -157,8 +157,8 @@ private:
                                      const t_fpu_state &prev_fpu_state,
                                      const t_fpu_state &datum_fpu_state);
 
-    E_EtherCANErrCode _refresh_positions(t_grid_state &grid_state, bool store,
-                                         const t_fpuset &fpuset);
+    E_EtherCANErrCode _refresh_positions(const t_grid_state &grid_state,
+                                         bool store, const t_fpuset &fpuset);
 
     E_EtherCANErrCode _check_allowed_range(int fpu_id, int stepnum,
                                            const char *arm_name,
