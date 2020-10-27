@@ -171,7 +171,11 @@ public:
 
     E_EtherCANErrCode executeMotion(t_grid_state &gs, const t_fpuset &fpuset,
                                     bool sync_command = true);
-                                
+
+    E_EtherCANErrCode freeBetaCollision(int fpu_id,
+                                        E_REQUEST_DIRECTION direction,
+                                        t_grid_state &gs,
+                                        bool soft_protection = true);
     E_EtherCANErrCode enableMove(int fpu_id, t_grid_state &gs);
 
     //..........................................................................

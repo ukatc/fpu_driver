@@ -970,6 +970,45 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::freeBetaCollision(int fpu_id,
+                                                E_REQUEST_DIRECTION direction,
+                                                t_grid_state &gs,
+                                                bool soft_protection)
+{
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here
+    E_EtherCANErrCode ecan_result;
+    ecan_result = _pre_free_beta_collision_hook(fpu_id, direction, gs,
+                                                soft_protection);
+    if (ecan_result != DE_OK)    
+    {
+        return ecan_result;
+    }
+
+    t_grid_state prev_gs;
+    getGridState(prev_gs);
+
+    ecan_result = _gd->freeBetaCollision(fpu_id, direction, gs);
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    E_EtherCANErrCode post_result = _post_free_beta_collision_hook(fpu_id,
+                                                                   direction,
+                                                                   gs);
+    // N.B. freeBetaCollision()'s return value is a priority
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+    return post_result;
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs)
 {
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
