@@ -66,6 +66,9 @@ static const double ALPHA_MAX_HARDSTOP_DEGREE = 181.8;
 static const int DEFAULT_FREE_BETA_RETRIES = 6;
 static const int FREE_BETA_STEPCOUNT = 10;
 
+static const int DEFAULT_FREE_ALPHA_RETRIES = 6;
+static const int FREE_ALPHA_STEPCOUNT = 11;
+
 // Overflow / underflow representations in binary FPU step counters - these are
 // intentionally asymmetric for the alpha arm counter
 static const int ALPHA_UNDERFLOW_COUNT = -10000;
@@ -2184,7 +2187,58 @@ E_EtherCANErrCode GridDriver::_pre_free_alpha_limit_breach_hook(int fpu_id,
                                                 const t_grid_state &gs,
                                                 bool soft_protection)
 {
-    // TODO
+    FpuData &fpu_data = fpus_data[fpu_id];
+
+    int64_t brcnt;
+    if (direction == REQD_CLOCKWISE)
+    {
+        // *********** TODO: The original Python version does NOT define brcnt
+        // AT ALL here, which might be a bug? (because subsequent attempted use
+        // of undefined brcnt would then fail). Also, what to do in this C++
+        // code? (have just set to 0 for now)
+        brcnt = 0;
+    }
+    else
+    {
+        brcnt = fpu_data.db.aretries_acw;
+    }
+
+    // NOTE: Maximum number of beta retries is now taken from the constants
+    // rather than from the database.
+    // #if soft_protection and (brcnt >= self.maxaretries[fpu_id]): # Old Johannes Python code.
+    if (soft_protection && (brcnt >= DEFAULT_FREE_ALPHA_RETRIES))
+    {
+        return DE_MAX_RETRIES_EXCEEDED;
+    }
+
+    int diff;
+    if (direction == REQD_CLOCKWISE)
+    {
+        diff = -FREE_ALPHA_STEPCOUNT;
+    }
+    else
+    {
+        diff = FREE_ALPHA_STEPCOUNT;
+    }
+
+    Interval apos = fpu_data.db.apos;
+    Interval new_apos = apos + (((double)diff) / StepsPerDegreeAlpha);
+
+    fpu_data.target_position = { new_apos, fpu_data.db.bpos };
+
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+        if (!_update_apos(txn, serial_number, fpu_id, apos.combine(new_apos)))
+        {
+            return DE_RESOURCE_ERROR;
+        }
+    }
+    else
+    {
+        return DE_RESOURCE_ERROR;
+    }
 
     return DE_OK;
 }
@@ -2194,9 +2248,48 @@ E_EtherCANErrCode GridDriver::_post_free_alpha_limit_breach_hook(int fpu_id,
                                                 E_REQUEST_DIRECTION direction,
                                                 const t_grid_state &gs)
 {
-    // TODO
+    int64_t count;
+    FpuDbIntValType db_cw_or_acw;
+    if (direction == REQD_CLOCKWISE)
+    {
+        fpus_data[fpu_id].db.aretries_cw += 1;
+        count = fpus_data[fpu_id].db.aretries_cw;
+        db_cw_or_acw = FpuDbIntValType::AlphaRetries_CW;
+    }
+    else
+    {
+        fpus_data[fpu_id].db.aretries_acw += 1;
+        count = fpus_data[fpu_id].db.aretries_acw;
+        db_cw_or_acw = FpuDbIntValType::AlphaRetries_ACW;
+    }
 
-    return DE_OK;
+    auto txn = protection_db.createTransaction();
+    if (txn)
+    {
+        const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+        if (!txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
+                                        serial_number, count))
+        {
+            return DE_RESOURCE_ERROR;
+        }
+    }
+    else
+    {
+        return DE_RESOURCE_ERROR;
+    }
+
+    // N.B. Old Johannes Python code here which he had commented out:
+    // #self._pingFPUs(grid_state, fpuset=fpuset)
+
+    t_fpuset fpuset;
+    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    {
+        fpuset[i] = false;
+    }
+    fpuset[fpu_id] = true;
+
+    const bool store = true;
+    return _refresh_positions(gs, store, fpuset);
 }
 
 #if 0
