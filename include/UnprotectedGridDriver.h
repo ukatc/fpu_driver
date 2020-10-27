@@ -176,10 +176,14 @@ public:
                                         E_REQUEST_DIRECTION direction,
                                         t_grid_state &gs,
                                         bool soft_protection = true);
+    E_EtherCANErrCode enableBetaCollisionProtection(t_grid_state &gs);
+
     E_EtherCANErrCode freeAlphaLimitBreach(int fpu_id,
                                            E_REQUEST_DIRECTION direction,
                                            t_grid_state &gs,
                                            bool soft_protection = true);
+    E_EtherCANErrCode enableAlphaLimitProtection(t_grid_state &gs);
+
     E_EtherCANErrCode enableMove(int fpu_id, t_grid_state &gs);
 
     //..........................................................................

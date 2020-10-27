@@ -1009,6 +1009,24 @@ E_EtherCANErrCode UnprotectedGridDriver::freeBetaCollision(int fpu_id,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::enableBetaCollisionProtection(
+                                                             t_grid_state &gs)
+{
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+    E_EtherCANErrCode ecan_result = _gd->enableBetaCollisionProtection(gs);
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    return ecan_result;
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::freeAlphaLimitBreach(int fpu_id,
                                                 E_REQUEST_DIRECTION direction,
                                                 t_grid_state &gs,
@@ -1045,6 +1063,24 @@ E_EtherCANErrCode UnprotectedGridDriver::freeAlphaLimitBreach(int fpu_id,
         return ecan_result;
     }
     return post_result;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::enableAlphaLimitProtection(
+                                                            t_grid_state &gs)
+{
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+    E_EtherCANErrCode ecan_result = _gd->enableAlphaLimitProtection(gs);
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
