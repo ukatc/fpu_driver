@@ -184,6 +184,11 @@ public:
                                            bool soft_protection = true);
     E_EtherCANErrCode enableAlphaLimitProtection(t_grid_state &gs);
 
+    E_EtherCANErrCode reverseMotion(t_grid_state &gs, const t_fpuset &fpuset,
+                                    bool soft_protection = true);
+    E_EtherCANErrCode repeatMotion(t_grid_state &gs, const t_fpuset &fpuset,
+                                   bool soft_protection = true);
+
     E_EtherCANErrCode lockFPU(int fpu_id, t_grid_state &gs);
     E_EtherCANErrCode unlockFPU(int fpu_id, t_grid_state &gs);
 
@@ -441,7 +446,9 @@ protected:
     static bool wavetable_was_received(const t_wtable &wtable, int fpu_id,
                                        const t_fpu_state &fpu_state,  
                                        bool allow_unconfirmed = false,
-                                       E_FPU_STATE target_state = FPST_READY_FORWARD);
+                                E_FPU_STATE target_state = FPST_READY_FORWARD);
+    void buildWtableFromLastWaveforms(const t_fpuset &fpuset,
+                                      t_wtable &wtable_ret);
     void sleepSecs(double seconds);
 
     // Config: Only the constructor and initialize() must write this - do NOT

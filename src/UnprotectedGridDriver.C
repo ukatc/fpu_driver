@@ -1084,6 +1084,139 @@ E_EtherCANErrCode UnprotectedGridDriver::enableAlphaLimitProtection(
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::reverseMotion(t_grid_state &gs,
+                                                       const t_fpuset &fpuset,
+                                                       bool soft_protection)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here
+
+    t_wtable wtable;
+    buildWtableFromLastWaveforms(fpuset, wtable);
+
+    Range wmode;
+    if (soft_protection)
+    {
+        wmode = Range::Error;
+    }
+    else
+    {
+        wmode = Range::Warn;
+    }
+
+    E_EtherCANErrCode ecan_result = _pre_reverse_motion_hook(wtable, gs,
+                                                             fpuset, wmode);
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+    ecan_result = _gd->reverseMotion(gs, fpuset);
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    E_EtherCANErrCode post_result = _post_reverse_motion_hook(wtable, gs,
+                                                              fpuset);
+    // Prioritise _gd->reverseMotion() return code
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+    return post_result;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::repeatMotion(t_grid_state &gs,
+                                                      const t_fpuset &fpuset,
+                                                      bool soft_protection)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here
+
+    t_wtable wtable;
+    buildWtableFromLastWaveforms(fpuset, wtable);
+
+    Range wmode;
+    if (soft_protection)
+    {
+        wmode = Range::Error;
+    }
+    else
+    {
+        wmode = Range::Warn;
+    }
+
+    E_EtherCANErrCode ecan_result = _pre_repeat_motion_hook(wtable, gs,
+                                                            fpuset, wmode);
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+    ecan_result = _gd->repeatMotion(gs, fpuset);
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    E_EtherCANErrCode post_result = _post_repeat_motion_hook(wtable, gs,
+                                                             fpuset);
+    // Prioritise _gd->repeatMotion() return code
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+    return post_result;
+}
+
+//------------------------------------------------------------------------------
+void UnprotectedGridDriver::buildWtableFromLastWaveforms(const t_fpuset &fpuset,
+                                                         t_wtable &wtable_ret)
+{
+    wtable_ret.clear();
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        t_waveform_steps &last_waveform = fpus_data[fpu_id].db.last_waveform;
+        if (fpuset[fpu_id] && (last_waveform.size() != 0))
+        {
+            wtable_ret.push_back({(int16_t)fpu_id, last_waveform});
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::lockFPU(int fpu_id, t_grid_state &gs)
 {
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
