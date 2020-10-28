@@ -604,6 +604,45 @@ BOOST_PYTHON_MODULE(ethercanif)
             // but is shown as False in grid driver document
             bp::arg("sync_command") = true))
 
+    .def("freeBetaCollision", &WrappedGridDriver::wrapped_freeBetaCollision,
+            (bp::arg("fpu_id"),
+            bp::arg("direction"),
+            bp::arg("grid_state"),
+            bp::arg("soft_protection") = true))
+
+    .def("enableBetaCollisionProtection",
+                    &WrappedGridDriver::wrapped_enableBetaCollisionProtection,
+            (bp::arg("grid_state")))
+
+    .def("freeAlphaLimitBreach",
+                    &WrappedGridDriver::wrapped_freeAlphaLimitBreach,
+            (bp::arg("fpu_id"),
+            bp::arg("direction"),
+            bp::arg("grid_state"),
+            bp::arg("soft_protection") = true))
+
+    .def("enableAlphaLimitProtection",
+                    &WrappedGridDriver::wrapped_enableAlphaLimitProtection,
+            (bp::arg("grid_state")))
+
+    .def("reverseMotion", &WrappedGridDriver::wrapped_reverseMotion,
+            (bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list(),
+            bp::arg("soft_protection") = true))
+
+    .def("repeatMotion", &WrappedGridDriver::wrapped_repeatMotion,
+            (bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list(),
+            bp::arg("soft_protection") = true))
+
+    .def("lockFPU", &WrappedGridDriver::wrapped_lockFPU,
+            (bp::arg("fpu_id"),
+            bp::arg("grid_state")))
+
+    .def("unlockFPU", &WrappedGridDriver::wrapped_unlockFPU,
+            (bp::arg("fpu_id"),
+            bp::arg("grid_state")))
+
     .def("enableMove", &WrappedGridDriver::wrapped_enableMove,
             (bp::arg("fpu_id"),
             bp::arg("grid_state")))

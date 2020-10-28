@@ -280,6 +280,125 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_freeBetaCollision(int fpu_id,
+                                                E_REQUEST_DIRECTION direction,
+                                                WrapGridState &grid_state,
+                                                bool soft_protection)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        E_EtherCANErrCode ecode = freeBetaCollision(fpu_id, direction,
+                                                    grid_state,
+                                                    soft_protection);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_enableBetaCollisionProtection(
+                                                WrapGridState &grid_state)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        E_EtherCANErrCode ecode = enableBetaCollisionProtection(grid_state);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_freeAlphaLimitBreach(int fpu_id,
+                                                   E_REQUEST_DIRECTION direction,
+                                                   WrapGridState &grid_state,
+                                                   bool soft_protection)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        E_EtherCANErrCode ecode = freeAlphaLimitBreach(fpu_id, direction,
+                                                       grid_state,
+                                                       soft_protection);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_enableAlphaLimitProtection(WrapGridState &grid_state)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        E_EtherCANErrCode ecode = enableAlphaLimitProtection(grid_state);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_reverseMotion(WrapGridState &grid_state,
+                                            bp::list &fpu_list,
+                                            bool soft_protection)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = reverseMotion(grid_state, fpuset,
+                                                soft_protection);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_repeatMotion(WrapGridState &grid_state,
+                                           bp::list &fpu_list,
+                                           bool soft_protection)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = repeatMotion(grid_state, fpuset,
+                                               soft_protection);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_lockFPU(int fpu_id, WrapGridState &grid_state)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        E_EtherCANErrCode ecode = lockFPU(fpu_id, grid_state);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_unlockFPU(int fpu_id, WrapGridState &grid_state)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        E_EtherCANErrCode ecode = unlockFPU(fpu_id, grid_state);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
     E_EtherCANErrCode wrapped_enableMove(int fpu_id, WrapGridState &grid_state)
     {
         if (!checkAndMessageIfInitializedOk())
