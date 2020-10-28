@@ -702,7 +702,6 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     // TODO
     UNUSED_ARG(verbosity);
 
-
     if (!initializedOk())
     {
         return DE_INTERFACE_NOT_INITIALIZED;
@@ -975,6 +974,11 @@ E_EtherCANErrCode UnprotectedGridDriver::freeBetaCollision(int fpu_id,
                                                 t_grid_state &gs,
                                                 bool soft_protection)
 {
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
     // here
     E_EtherCANErrCode ecan_result;
@@ -1012,6 +1016,11 @@ E_EtherCANErrCode UnprotectedGridDriver::freeBetaCollision(int fpu_id,
 E_EtherCANErrCode UnprotectedGridDriver::enableBetaCollisionProtection(
                                                              t_grid_state &gs)
 {
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
     E_EtherCANErrCode ecan_result = _gd->enableBetaCollisionProtection(gs);
@@ -1032,6 +1041,11 @@ E_EtherCANErrCode UnprotectedGridDriver::freeAlphaLimitBreach(int fpu_id,
                                                 t_grid_state &gs,
                                                 bool soft_protection)
 {
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
     // here
     E_EtherCANErrCode ecan_result;
@@ -1069,6 +1083,11 @@ E_EtherCANErrCode UnprotectedGridDriver::freeAlphaLimitBreach(int fpu_id,
 E_EtherCANErrCode UnprotectedGridDriver::enableAlphaLimitProtection(
                                                             t_grid_state &gs)
 {
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
     E_EtherCANErrCode ecan_result = _gd->enableAlphaLimitProtection(gs);
@@ -1219,6 +1238,11 @@ void UnprotectedGridDriver::buildWtableFromLastWaveforms(const t_fpuset &fpuset,
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::lockFPU(int fpu_id, t_grid_state &gs)
 {
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
     // here
     t_grid_state prev_gs;
@@ -1239,6 +1263,11 @@ E_EtherCANErrCode UnprotectedGridDriver::lockFPU(int fpu_id, t_grid_state &gs)
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::unlockFPU(int fpu_id, t_grid_state &gs)
 {
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
     // here
     t_grid_state prev_gs;

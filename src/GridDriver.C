@@ -1329,9 +1329,6 @@ E_EtherCANErrCode GridDriver::_check_and_register_wtable(const t_wtable &wtable,
     // - If not in range, throw exception or print warning, depending upon the
     //   protection setting
 
-    // *********** TODOs: **********
-    //   - Use of t_wtable for argument above is placeholder only for now -
-    //     OR, is using t_wtable actually OK here?
     E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
 
     t_fpu_positions configuring_ranges_temp;
