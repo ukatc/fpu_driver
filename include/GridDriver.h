@@ -134,6 +134,9 @@ private:
 
     E_EtherCANErrCode _reset_hook(t_grid_state &old_state, t_grid_state &gs,
                                   const t_fpuset &fpuset) override;
+    void _reset_counter_hook(double alpha_target, double beta_target,
+                             t_grid_state &old_state, t_grid_state &gs,
+                             const t_fpuset &fpuset) override;
 
     bool _update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
                       const char *serial_number, int fpu_id,

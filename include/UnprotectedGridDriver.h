@@ -212,6 +212,7 @@ protected:
         return DE_OK;
     }
 
+    // Reset hook functions
     virtual E_EtherCANErrCode _reset_hook(t_grid_state &old_state,
                                           t_grid_state &gs,
                                           const t_fpuset &fpuset)
@@ -221,6 +222,16 @@ protected:
         UNUSED_ARG(fpuset);
 
         return DE_OK;
+    }
+    virtual void _reset_counter_hook(double alpha_target, double beta_target,
+                                     t_grid_state &old_state, t_grid_state &gs,
+                                     const t_fpuset &fpuset)
+    {
+        UNUSED_ARG(alpha_target);
+        UNUSED_ARG(beta_target);
+        UNUSED_ARG(old_state);
+        UNUSED_ARG(gs);
+        UNUSED_ARG(fpuset);
     }
 
     // findDatum() hook functions

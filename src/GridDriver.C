@@ -427,6 +427,51 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
 }
 
 //------------------------------------------------------------------------------
+void GridDriver::_reset_counter_hook(double alpha_target, double beta_target,
+                                     t_grid_state &old_state, t_grid_state &gs,
+                                     const t_fpuset &fpuset)
+{
+    // Similar to reset_hook, but run after resetStepCounter() and only
+    // updating the caloffsets
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (!fpuset[fpu_id])
+        {
+            continue;
+        }
+
+        FpuData &fpu_data = fpus_data[fpu_id];
+
+        // These offsets are the difference between the calibrated angle and
+        // the uncalibrated angle - after a findDatum, they are set to zero
+        bool a_underflow, a_overflow;
+        double alpha_angle = _alpha_angle(gs.FPU_state[fpu_id], a_underflow,
+                                          a_overflow);
+        if (a_underflow || a_overflow)
+        {
+            fpu_data.a_caloffset = fpu_data.db.apos - alpha_target;
+        }
+        else
+        {
+            fpu_data.a_caloffset = fpu_data.db.apos - alpha_angle;
+        }
+
+        bool b_underflow, b_overflow;
+        double beta_angle = _beta_angle(gs.FPU_state[fpu_id], b_underflow,
+                                        b_overflow);
+        if (b_underflow || b_overflow)
+        {
+            fpu_data.b_caloffset = fpu_data.db.bpos - beta_target;
+        }
+        else
+        {
+            fpu_data.b_caloffset = fpu_data.db.bpos- beta_angle;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::_allow_find_datum_hook(t_grid_state &gs,
                                         t_datum_search_flags &search_modes,
                                         enum E_DATUM_SELECTION selected_arm,
