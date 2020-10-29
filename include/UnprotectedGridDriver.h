@@ -138,13 +138,22 @@ public:
 
     virtual bool initializedOk();
 
-    E_GridState getGridState(t_grid_state &grid_state_ret);
-
-    int getNumFpus();
-
     E_EtherCANErrCode connect(int ngateways,
                               const t_gateway_address gateway_addresses[]);
     E_EtherCANErrCode disconnect();
+
+    E_EtherCANErrCode setUStepLevel(int ustep_level, t_grid_state &gs,
+                                    const t_fpuset &fpuset);
+    E_EtherCANErrCode setTicksPerSegment(unsigned long nticks,
+                                         t_grid_state &gs,
+                                         const t_fpuset &fpuset);
+    E_EtherCANErrCode setStepsPerSegment(int min_steps, int max_steps,
+                                         t_grid_state &gs,
+                                         const t_fpuset &fpuset);
+
+    E_GridState getGridState(t_grid_state &grid_state_ret);
+
+    int getNumFpus();
 
     E_EtherCANErrCode findDatum(t_grid_state &gs,
                         const t_datum_search_flags &search_modes,

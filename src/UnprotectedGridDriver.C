@@ -336,6 +336,64 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::setUStepLevel(int ustep_level,
+                                                       t_grid_state &gs, 
+                                                       const t_fpuset &fpuset)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    return _gd->setUStepLevel(ustep_level, gs, fpuset);
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::setTicksPerSegment(unsigned long nticks,
+                                                            t_grid_state &gs,
+                                                            const t_fpuset &fpuset)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    return _gd->setTicksPerSegment(nticks, gs, fpuset);
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::setStepsPerSegment(int min_steps,
+                                                            int max_steps,
+                                                            t_grid_state &gs,
+                                                            const t_fpuset &fpuset) 
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    return _gd->setStepsPerSegment(min_steps, max_steps, gs, fpuset);
+}
+
+//------------------------------------------------------------------------------
 E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
 {
     if (!initializedOk())
