@@ -175,6 +175,9 @@ public:
     E_EtherCANErrCode  getDiagnostics(t_grid_state &gs, const t_fpuset &fpuset,
                                       std::string &string_ret);
 
+    E_EtherCANErrCode getFirmwareVersion(t_grid_state &gs,
+                                         const t_fpuset &fpuset);
+
     E_EtherCANErrCode readSerialNumbers(t_grid_state &gs, const t_fpuset &fpuset);
     E_EtherCANErrCode writeSerialNumber(int fpu_id, const char *serial_number,
                                         t_grid_state &gs);
