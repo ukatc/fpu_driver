@@ -765,6 +765,86 @@ E_EtherCANErrCode UnprotectedGridDriver::readRegister(uint16_t address,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
+                                                         const t_fpuset &fpuset,
+                                                         std::string &string_ret)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    static const struct
+    {
+        const char *name;
+        uint16_t address;
+    } reg_defs[] =
+    {
+        { "sstatus2",   0x00001E },
+        { "sstatus3",   0x00001F },
+        { "sstatus4",   0x000020 },
+        { "sstatus5",   0x000021 },
+        { "intflags",   0x000022 },
+        { "stateflags", 0x000023 }
+    }; 
+
+    // TODO: Adjust the following so that the fields are all the same width so
+    // that neat columns are produced, and also change so that the register
+    // addresses and values are displayed in hex
+
+    string_ret = "  RegName    RegAddress:";
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (fpuset[fpu_id])
+        {
+            string_ret += "  FPU[" + std::to_string(fpu_id) + "] ";
+        }
+    }
+    string_ret += "\n";
+
+    string_ret += "  --------   -----------";
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (fpuset[fpu_id])
+        {
+            string_ret += "  ------ ";
+        }
+    }
+    string_ret += "\n";
+
+    for (int i = 0; i < (sizeof(reg_defs) / sizeof(reg_defs[0]));
+         i++)
+    {
+        E_EtherCANErrCode ecan_result = readRegister(reg_defs[i].address,
+                                                     gs, fpuset);
+        if (ecan_result == DE_OK)   
+        {
+            string_ret += std::string(reg_defs[i].name) + "        " +
+                          std::to_string(reg_defs[i].address);
+            for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+            {
+                if (fpuset[fpu_id])
+                {
+                    string_ret += "    " + 
+                        std::to_string(gs.FPU_state[fpu_id].register_value) + " ";
+                }
+            }
+        }
+        else
+        {
+            string_ret += "ERROR: readRegister() failed";
+        }
+        string_ret += "\n";
+    }
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::readSerialNumbers(t_grid_state &gs,
                                                            const t_fpuset &fpuset)
 {

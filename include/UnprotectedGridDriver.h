@@ -172,6 +172,8 @@ public:
 
     E_EtherCANErrCode readRegister(uint16_t address, t_grid_state &gs,
                                    const t_fpuset &fpuset);
+    E_EtherCANErrCode  getDiagnostics(t_grid_state &gs, const t_fpuset &fpuset,
+                                      std::string &string_ret);
 
     E_EtherCANErrCode readSerialNumbers(t_grid_state &gs, const t_fpuset &fpuset);
     E_EtherCANErrCode writeSerialNumber(int fpu_id, const char *serial_number,
