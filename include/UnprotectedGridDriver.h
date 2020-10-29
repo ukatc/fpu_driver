@@ -170,6 +170,9 @@ public:
     E_EtherCANErrCode resetStepCounters(long new_alpha_steps, long new_beta_steps,
                                         t_grid_state &gs, const t_fpuset &fpuset);
 
+    E_EtherCANErrCode readRegister(uint16_t address, t_grid_state &gs,
+                                   const t_fpuset &fpuset);
+
     E_EtherCANErrCode readSerialNumbers(t_grid_state &gs, const t_fpuset &fpuset);
 
     E_EtherCANErrCode configMotion(const t_wtable &wavetable, t_grid_state &gs,
