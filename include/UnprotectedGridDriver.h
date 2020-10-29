@@ -215,6 +215,8 @@ public:
 
     E_EtherCANErrCode enableMove(int fpu_id, t_grid_state &gs);
 
+    E_EtherCANErrCode checkIntegrity(t_grid_state &gs, const t_fpuset &fpuset);
+
     //..........................................................................
 protected:
     // NOTE: The following virtual functions are overridden in GridDriver

@@ -1591,6 +1591,35 @@ E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::checkIntegrity(t_grid_state &gs,
+                                                        const t_fpuset &fpuset)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+
+    E_EtherCANErrCode ecan_result = _gd->checkIntegrity(gs, fpuset);
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    return ecan_result;
+}
+
+//------------------------------------------------------------------------------
 void UnprotectedGridDriver::sleepSecs(double seconds)
 {
     static const double microsecs_in_1_sec = 1000000.0;
