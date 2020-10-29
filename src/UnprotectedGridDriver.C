@@ -663,7 +663,9 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
     ecan_result = _gd->resetFPUs(gs, fpuset);
 
     // TODO: Only execute the remaining code below if ecan_result from the
-    // resetFPUs() call above returns DE_OK? (check WRT Python version)
+    // resetFPUs() call above returns DE_OK? (check WRT Python version, and
+    // other more recently-converted similar C++ functions, e.g.
+    // resetStepCounters() below)
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
@@ -685,6 +687,50 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
     ecan_result = _reset_hook(old_state, gs, fpuset);
 
     return ecan_result;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::resetStepCounters(long new_alpha_steps,
+                                                           long new_beta_steps,
+                                                           t_grid_state &gs,
+                                                           const t_fpuset &fpuset)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here
+
+    t_grid_state old_state;
+    getGridState(old_state);
+
+    ecan_result = _gd->resetStepCounters(new_alpha_steps, new_beta_steps,
+                                         gs, fpuset);
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               old_state.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
+    double alpha_target = (((double)new_alpha_steps) / StepsPerDegreeAlpha) +
+                          config.alpha_datum_offset;
+    double beta_target = ((double)new_beta_steps) / StepsPerDegreeBeta;
+
+    _reset_counter_hook(alpha_target, beta_target, old_state, gs, fpuset);
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------

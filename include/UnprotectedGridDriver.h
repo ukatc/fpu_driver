@@ -167,6 +167,8 @@ public:
     virtual E_EtherCANErrCode pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
 
     E_EtherCANErrCode resetFPUs(t_grid_state &gs, const t_fpuset &fpuset);
+    E_EtherCANErrCode resetStepCounters(long new_alpha_steps, long new_beta_steps,
+                                        t_grid_state &gs, const t_fpuset &fpuset);
 
     E_EtherCANErrCode readSerialNumbers(t_grid_state &gs, const t_fpuset &fpuset);
 
