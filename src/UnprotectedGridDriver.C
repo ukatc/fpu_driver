@@ -795,6 +795,40 @@ E_EtherCANErrCode UnprotectedGridDriver::readSerialNumbers(t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::writeSerialNumber(int fpu_id,
+                                                    const char *serial_number,
+                                                    t_grid_state &gs)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
+    // here 
+
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+    E_EtherCANErrCode ecan_result = _gd->writeSerialNumber(fpu_id,
+                                                           serial_number, gs);
+    if (ecan_result == DE_OK)
+    {
+        t_fpuset fpuset;
+        createFpuSetForSingleFpu(fpu_id, fpuset);
+        ecan_result = _gd->readSerialNumbers(gs, fpuset);
+    }
+
+    for (int i = 0; i < config.num_fpus; i++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    return ecan_result;
+}
+
+//------------------------------------------------------------------------------
 bool UnprotectedGridDriver::wavetable_was_received(const t_wtable &wtable,
                                                    int fpu_id,
                                                    const t_fpu_state &fpu_state,  
@@ -1456,6 +1490,16 @@ void UnprotectedGridDriver::sleepSecs(double seconds)
     usleep((useconds_t)(seconds * microsecs_in_1_sec));
 }
 
+//------------------------------------------------------------------------------
+void UnprotectedGridDriver::createFpuSetForSingleFpu(int fpu_id,
+                                                     t_fpuset &fpuset_ret)
+{
+    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    {
+        fpuset_ret[i] = false;
+    }
+    fpuset_ret[fpu_id] = true;
+}
 
 //==============================================================================
 

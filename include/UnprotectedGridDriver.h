@@ -174,6 +174,8 @@ public:
                                    const t_fpuset &fpuset);
 
     E_EtherCANErrCode readSerialNumbers(t_grid_state &gs, const t_fpuset &fpuset);
+    E_EtherCANErrCode writeSerialNumber(int fpu_id, const char *serial_number,
+                                        t_grid_state &gs);
 
     E_EtherCANErrCode configMotion(const t_wtable &wavetable, t_grid_state &gs,
                         const t_fpuset &fpuset,
@@ -475,6 +477,7 @@ protected:
     void buildWtableFromLastWaveforms(const t_fpuset &fpuset,
                                       t_wtable &wtable_ret);
     void sleepSecs(double seconds);
+    void createFpuSetForSingleFpu(int fpu_id, t_fpuset &fpuset_ret);
 
     // Config: Only the constructor and initialize() must write this - do NOT
     // write at all after initialize() has been called

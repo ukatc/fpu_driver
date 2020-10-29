@@ -2169,11 +2169,7 @@ E_EtherCANErrCode GridDriver::_post_free_beta_collision_hook(int fpu_id,
     // #self._pingFPUs(grid_state, fpuset=fpuset)
 
     t_fpuset fpuset;
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-    {
-        fpuset[i] = false;
-    }
-    fpuset[fpu_id] = true;
+    createFpuSetForSingleFpu(fpu_id, fpuset);
 
     const bool store = true;
     return _refresh_positions(gs, store, fpuset);
@@ -2280,11 +2276,7 @@ E_EtherCANErrCode GridDriver::_post_free_alpha_limit_breach_hook(int fpu_id,
     // #self._pingFPUs(grid_state, fpuset=fpuset)
 
     t_fpuset fpuset;
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-    {
-        fpuset[i] = false;
-    }
-    fpuset[fpu_id] = true;
+    createFpuSetForSingleFpu(fpu_id, fpuset);
 
     const bool store = true;
     return _refresh_positions(gs, store, fpuset);
