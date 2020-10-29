@@ -26,6 +26,7 @@
 #include <cstring>
 #include <cstdlib>
 #include "GridDriver.h"
+#include "FPUConstants.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -33,51 +34,6 @@
 
 namespace mpifps
 {
-
-#ifdef ENABLE_PROTECTION_CODE
-//==============================================================================
-// Define FPU constants
-// TODO: The following constants are converted from fpu_constants.py - do the
-// following?:
-//  - Standardise their naming styles to lowercase_with_underscores
-//  - Move them into GridDriver.h -> GridDriver class's private scope?
-
-static const double AlphaGearRatio = 2050.175633;   // Actual gear ratio
-static const double BetaGearRatio = 1517.662482;    // actual gear ratio
-
-// There are 20 steps per revolution on the non-geared side, so:
-static const double StepsPerRevolution = 20.0;
-static const double DegreePerRevolution = 360.0;
-
-// Note that these numbers must not be confused with actual calibrated values!
-// TODO: The Python versions in fpu_constants.py have "float()" functions in
-// them - what is the purpose of this, and is the following C++ version OK?
-static const double StepsPerDegreeAlpha =
-                (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution;
-static const double StepsPerDegreeBeta =
-                (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution;
-
-static const double BETA_MIN_HWPROT_DEGREE = -179.4;
-static const double BETA_MAX_HWPROT_DEGREE = 150.4;
-
-static const double ALPHA_MIN_HARDSTOP_DEGREE = -183.2;
-static const double ALPHA_MAX_HARDSTOP_DEGREE = 181.8;
-
-static const int DEFAULT_FREE_BETA_RETRIES = 6;
-static const int FREE_BETA_STEPCOUNT = 10;
-
-static const int DEFAULT_FREE_ALPHA_RETRIES = 6;
-static const int FREE_ALPHA_STEPCOUNT = 11;
-
-// Overflow / underflow representations in binary FPU step counters - these are
-// intentionally asymmetric for the alpha arm counter
-static const int ALPHA_UNDERFLOW_COUNT = -10000;
-static const int ALPHA_OVERFLOW_COUNT = ALPHA_UNDERFLOW_COUNT + (1 << 16) - 1;
-
-static const int BETA_UNDERFLOW_COUNT = -0x8000;
-static const int BETA_OVERFLOW_COUNT = BETA_UNDERFLOW_COUNT + (1 << 16) - 1;
-#endif // ENABLE_PROTECTION_CODE
-
 
 //==============================================================================
 GridDriver::~GridDriver()
