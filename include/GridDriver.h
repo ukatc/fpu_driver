@@ -69,6 +69,10 @@ public:
     
 #ifdef ENABLE_PROTECTION_CODE
     E_EtherCANErrCode pingFPUs(t_grid_state &gs, const t_fpuset &fpuset) override;
+    E_EtherCANErrCode trackedAngles(t_grid_state &gs, const t_fpuset &fpuset,
+                                    std::string &return_string,
+                                    bool show_offsets = false,
+                                    bool active = false);
 #endif // ENABLE_PROTECTION_CODE
 
     //............................................

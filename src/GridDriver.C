@@ -1047,6 +1047,120 @@ void GridDriver::_update_counters_find_datum(FpuCounters &fpu_counters,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::trackedAngles(t_grid_state &gs,
+                                            const t_fpuset &fpuset,
+                                            std::string &return_string,
+                                            bool show_offsets, bool active)
+{
+    // Creates a string containing tracked angles, offset, and waveform span
+    // for configured waveforms, for each FPU
+
+    // TODO: The Interval numerical strings are currently produced in fixed
+    // 6-decimal-places format - if this is required to be improved, then
+    // see the Interval::toString() function.
+
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
+
+    return_string.clear();
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (fpuset[fpu_id])
+        {
+            bool a_underflow, a_overflow;
+            double a_angle = _alpha_angle(gs.FPU_state[fpu_id], a_underflow,
+                                          a_overflow);
+            bool b_underflow, b_overflow;
+            double b_angle = _beta_angle(gs.FPU_state[fpu_id], b_underflow,
+                                         b_overflow);
+
+            t_fpu_position fpu_position;
+            std::string prefix;
+            if (active)
+            {
+                auto it = configured_ranges.find(fpu_id);
+                if (it != configured_ranges.end())
+                {
+                    fpu_position = it->second;
+                }
+                prefix = "active";
+            }
+            else
+            {
+                auto it = configuring_ranges.find(fpu_id);
+                if (it != configuring_ranges.end())
+                {
+                    fpu_position = it->second;
+                }
+                prefix = "last";
+            }
+
+            FpuData &fpu_data = fpus_data[fpu_id];
+
+            return_string += "FPU " + std::to_string(fpu_id) +
+                             ": angle = (" +
+                             fpu_data.db.apos.toString() + ", " +
+                             fpu_data.db.bpos.toString() + "), ";
+
+            if (show_offsets)
+            {
+                std::string aflag;
+                if (a_underflow)
+                {
+                    aflag = "!u";
+                }
+                else if (a_overflow)
+                {
+                    aflag = "!o";
+                }
+                else
+                {
+                    aflag = "";
+                }
+
+                std::string bflag;
+                if (b_underflow)
+                {
+                    bflag = "!u";
+                }
+                else if (b_overflow)
+                {
+                    bflag = "!o";
+                }
+                else
+                {
+                    bflag = "";
+                }
+
+                return_string += "offsets = (" + 
+                                 fpu_data.a_caloffset.toString() + ", " +
+                                 fpu_data.b_caloffset.toString() + "), ";
+                return_string += "stepcount angle = (" +
+                                 std::to_string(a_angle) + aflag + ", " +
+                                 std::to_string(b_angle) + bflag + "), ";
+            }
+
+            return_string += prefix + "_wform_range = (" +
+                             fpu_position.apos.toString() + "," +
+                             fpu_position.bpos.toString() + ")\n";
+        }
+    }
+
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
 bool GridDriver::_update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
                               const char *serial_number, int fpu_id,
                               const Interval &new_apos, bool store)
