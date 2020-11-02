@@ -19,6 +19,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <algorithm>
+#include <cmath>
+#include <string>
 #include "Interval.h"
 
 namespace mpifps
@@ -51,6 +53,32 @@ void Interval::getLowerUpper(double &lower_ret, double &upper_ret)
 {
     lower_ret = lower;
     upper_ret = upper;
+}
+
+//------------------------------------------------------------------------------
+std::string Interval::toString()
+{
+    // TODO: This function uses std::to_string() on the double values,
+    // which produces fixed 6-decimal-place output - reduce number of decimal
+    // places using e.g. std::stringstream's?
+    
+    std::string return_string;
+
+    if (std::isnan(lower) && std::isnan(upper))
+    {
+        return_string = "[]";
+    }
+    else if (lower == upper)
+    {
+        return_string = std::to_string(lower);
+    }
+    else
+    {
+        return_string = "[" + std::to_string(lower) + ", " + 
+                              std::to_string(upper) + "]";
+    }
+
+    return return_string;
 }
 
 //------------------------------------------------------------------------------
@@ -187,7 +215,16 @@ void testIntervalClass(void)
     Interval interval_3;
     Interval interval_4;
     int dummy_val = 0;
-    
+
+    // Test toString()
+    std::string interval_string;
+    interval_string = Interval(std::numeric_limits<double>::quiet_NaN(),
+                               std::numeric_limits<double>::quiet_NaN()).toString();
+    interval_string = Interval(std::numeric_limits<double>::quiet_NaN(),
+                               123.0).toString();
+    interval_string = Interval(2.3, 2.3).toString();
+    interval_string = Interval(2.3, 5.6).toString();
+
     // Test == operator overload
     interval_1 = Interval(1.1, 1.2);
     interval_2 = Interval(1.1, 9.9);

@@ -21,6 +21,7 @@
 #define INTERVAL_H
 
 #include <limits>
+#include <string>
 
 namespace mpifps
 {
@@ -35,6 +36,7 @@ public:
     Interval(double lower_in, double upper_in);
 
     void getLowerUpper(double &lower_ret, double &upper_ret);
+    std::string toString();
     bool operator==(const Interval &other);
     bool operator!=(const Interval &other);
     void operator+=(double val);
