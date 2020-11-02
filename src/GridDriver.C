@@ -1324,8 +1324,7 @@ E_EtherCANErrCode GridDriver::pingFPUs(t_grid_state &gs, const t_fpuset &fpuset)
         return result;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here 
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
@@ -2412,8 +2411,7 @@ E_EtherCANErrCode GridDriver::_post_free_alpha_limit_breach_hook(int fpu_id,
 void UnprotectedGridDriver::set_wtable_reversed(const t_fpuset &fpuset,
                                                 bool is_reversed)
 {
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here 
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {

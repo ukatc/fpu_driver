@@ -467,8 +467,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         return result;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here 
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
 
     // Make temporary local copy of search modes to allow local modification
     t_datum_search_flags search_modes;
@@ -654,8 +653,7 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
         return ecan_result;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here 
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
 
     t_grid_state old_state;
     _gd->getGridState(old_state);
@@ -706,8 +704,7 @@ E_EtherCANErrCode UnprotectedGridDriver::resetStepCounters(long new_alpha_steps,
         return ecan_result;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
 
     t_grid_state old_state;
     getGridState(old_state);
@@ -911,8 +908,7 @@ E_EtherCANErrCode UnprotectedGridDriver::writeSerialNumber(int fpu_id,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here 
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
@@ -995,8 +991,7 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         return ecan_result;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here 
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
 
     // We make a copy of the wavetable to make sure no side effects are
     // visible to the caller
@@ -1153,8 +1148,7 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
         return result;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
 
     // Wait a short moment to avoid spurious collision
     t_fpu_positions initial_positions;
@@ -1288,8 +1282,7 @@ E_EtherCANErrCode UnprotectedGridDriver::freeBetaCollision(int fpu_id,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
     E_EtherCANErrCode ecan_result;
     ecan_result = _pre_free_beta_collision_hook(fpu_id, direction, gs,
                                                 soft_protection);
@@ -1355,8 +1348,7 @@ E_EtherCANErrCode UnprotectedGridDriver::freeAlphaLimitBreach(int fpu_id,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
     E_EtherCANErrCode ecan_result;
     ecan_result = _pre_free_alpha_limit_breach_hook(fpu_id, direction, gs,
                                                     soft_protection);
@@ -1427,8 +1419,7 @@ E_EtherCANErrCode UnprotectedGridDriver::reverseMotion(t_grid_state &gs,
         return result;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
 
     t_wtable wtable;
     buildWtableFromLastWaveforms(fpuset, wtable);
@@ -1486,8 +1477,7 @@ E_EtherCANErrCode UnprotectedGridDriver::repeatMotion(t_grid_state &gs,
         return result;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
 
     t_wtable wtable;
     buildWtableFromLastWaveforms(fpuset, wtable);
@@ -1552,8 +1542,7 @@ E_EtherCANErrCode UnprotectedGridDriver::lockFPU(int fpu_id, t_grid_state &gs)
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
@@ -1577,8 +1566,7 @@ E_EtherCANErrCode UnprotectedGridDriver::unlockFPU(int fpu_id, t_grid_state &gs)
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
@@ -1597,8 +1585,7 @@ E_EtherCANErrCode UnprotectedGridDriver::unlockFPU(int fpu_id, t_grid_state &gs)
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs)
 {
-    // TODO: Add C++/Linux equivalent of Python version's "with self.lock"
-    // here
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
 
     if (!initializedOk())
     {
