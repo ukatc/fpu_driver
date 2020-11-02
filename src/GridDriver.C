@@ -55,7 +55,9 @@ GridDriver::~GridDriver()
         _pingFPUs(grid_state, fpuset);
     }
 
+#ifdef ENABLE_PROTECTION_CODE
     _refresh_positions(grid_state, true, fpuset);
+#endif
 }
 
 //------------------------------------------------------------------------------

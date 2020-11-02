@@ -80,17 +80,6 @@ public:
     // TODO: Is a destructor needed?
 
     //..........................................................................
-protected:
-    // N.B. _refresh_positions() has been declared as protected scope (rather
-    // than private) here to fix the following build error in the Boost.Python
-    // wrapped build (build_griddriver_wrapped.sh):
-    //     In destructor ‘virtual mpifps::GridDriver::~GridDriver()’:
-    //     ../../src/GridDriver.C:102:5: error: ‘_refresh_positions’ was not
-    //     declared in this scope
-    E_EtherCANErrCode _refresh_positions(const t_grid_state &grid_state,
-                                         bool store, const t_fpuset &fpuset);
-
-    //..........................................................................
 private:
     bool initprotection_was_called_ok = false;
 
@@ -144,6 +133,9 @@ private:
     bool _update_bpos(const std::unique_ptr<ProtectionDbTxn> &txn,
                       const char *serial_number, int fpu_id,
                       const Interval &new_bpos, bool store = true);
+
+    E_EtherCANErrCode _refresh_positions(const t_grid_state &grid_state,
+                                         bool store, const t_fpuset &fpuset);
 
     // findDatum() hook functions
     E_EtherCANErrCode _allow_find_datum_hook(t_grid_state &gs,
