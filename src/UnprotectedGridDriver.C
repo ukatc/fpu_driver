@@ -1245,6 +1245,39 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::abortMotion(t_grid_state &gs,
+                                                     const t_fpuset &fpuset,
+                                                     bool sync_command)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode result = check_fpuset(fpuset);
+    if (result != DE_OK)
+    {
+        return result;
+    }
+
+    // This must not use locking - it can be sent from any thread by design
+
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+
+    E_EtherCANErrCode ecan_result = _gd->abortMotion(gs, fpuset, sync_command);
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    return ecan_result;
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::freeBetaCollision(int fpu_id,
                                                 E_REQUEST_DIRECTION direction,
                                                 t_grid_state &gs,
