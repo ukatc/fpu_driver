@@ -1047,7 +1047,7 @@ void GridDriver::_update_counters_find_datum(FpuCounters &fpu_counters,
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode GridDriver::trackedAngles(t_grid_state &gs,
+E_EtherCANErrCode GridDriver::trackedAngles(const t_grid_state &gs,
                                             const t_fpuset &fpuset,
                                             std::string &return_string,
                                             bool show_offsets, bool active)
