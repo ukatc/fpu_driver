@@ -87,6 +87,7 @@
       <itemPath>../../include/EtherCANInterface.h</itemPath>
       <itemPath>../../include/EtherCANInterfaceConfig.h</itemPath>
       <itemPath>../../include/Exceptions_INTERIM.h</itemPath>
+      <itemPath>../../include/FPUCommands.h</itemPath>
       <itemPath>../../include/FPUConstants.h</itemPath>
       <itemPath>../../include/FPUCounters.h</itemPath>
       <itemPath>../../include/FPUState.h</itemPath>
@@ -150,6 +151,7 @@
       <itemPath>../../src/DeviceLock.C</itemPath>
       <itemPath>../../src/EtherCANInterface.C</itemPath>
       <itemPath>../../src/FPUArray.C</itemPath>
+      <itemPath>../../src/FPUCommands.C</itemPath>
       <itemPath>../../src/FPUCounters.C</itemPath>
       <itemPath>../../src/FPUState.C</itemPath>
       <itemPath>../../src/GatewayInterface.C</itemPath>
@@ -223,6 +225,8 @@
             flavor2="0">
       </item>
       <item path="../../include/Exceptions_INTERIM.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../include/FPUCommands.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/FPUConstants.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -630,6 +634,8 @@
       <item path="../../src/EtherCANInterface.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/FPUArray.C" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../../src/FPUCommands.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/FPUCounters.C" ex="false" tool="1" flavor2="0">
       </item>
@@ -851,6 +857,8 @@
       </item>
       <item path="../../include/Exceptions_INTERIM.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../../include/FPUCommands.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../../include/FPUConstants.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/FPUCounters.h" ex="false" tool="3" flavor2="0">
@@ -1257,6 +1265,8 @@
       <item path="../../src/EtherCANInterface.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/FPUArray.C" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../../src/FPUCommands.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/FPUCounters.C" ex="false" tool="1" flavor2="0">
       </item>

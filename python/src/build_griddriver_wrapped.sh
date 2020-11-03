@@ -36,6 +36,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" -DENABLE_PROTECTION_CODE \
     ../../src/DeviceLock.C \
     ../../src/EtherCANInterface.C \
     ../../src/FPUArray.C \
+    ../../src/FPUCommands.C \
     ../../src/FPUCounters.C \
     ../../src/FPUState.C \
     ../../src/GatewayInterface.C \
