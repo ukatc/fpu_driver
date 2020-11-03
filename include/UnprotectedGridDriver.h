@@ -27,6 +27,7 @@
 #include "E_LogLevel.h"
 #include "E_GridState.h"
 #include "InterfaceConstants.h"
+#include "FPUCommands.h"
 #include "FPUConstants.h"
 #include "EtherCANInterface.h"
 #include "ethercan/AsyncInterface.h"
@@ -212,6 +213,10 @@ public:
                                     bool soft_protection = true);
     E_EtherCANErrCode repeatMotion(t_grid_state &gs, const t_fpuset &fpuset,
                                    bool soft_protection = true);
+
+    E_EtherCANErrCode countedAngles(t_grid_state &gs, const t_fpuset &fpuset,
+                                    t_fpus_angles &fpus_angles_ret,
+                                    bool show_uninitialized = false);
 
     E_EtherCANErrCode lockFPU(int fpu_id, t_grid_state &gs);
     E_EtherCANErrCode unlockFPU(int fpu_id, t_grid_state &gs);

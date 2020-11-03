@@ -1535,6 +1535,62 @@ void UnprotectedGridDriver::buildWtableFromLastWaveforms(const t_fpuset &fpuset,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::countedAngles(t_grid_state &gs,
+                                                       const t_fpuset &fpuset,
+                                                       t_fpus_angles &fpus_angles_ret,
+                                                       bool show_uninitialized)
+{
+    // Returns alpha and beta angles (in degrees) for the given set of FPUs
+    // based upon the motor step count relative to datum. The angles are only
+    // valid if the FPU has been referenced. Set show_uninitialized to true to
+    // return the step count angles regardless of the state of the referenced
+    // flag (it is up to the caller to decide if the counts can still be
+    // trusted).
+
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
+
+    ecan_result = _pingFPUs(gs, fpuset);
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        _update_error_counters(fpus_data[fpu_id].db.counters,
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
+    }
+
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
+    fpus_angles_ret.clear();
+    t_fpus_angles fpus_angles_temp;
+    list_angles(gs, config.num_fpus, fpus_angles_temp,
+                config.alpha_datum_offset);
+    for (size_t i = 0; i < fpus_angles_temp.size(); i++)
+    {
+        if (fpuset[fpus_angles_temp[i].first])
+        {
+            fpus_angles_ret.push_back(fpus_angles_temp[i]);
+        }
+    }
+
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::lockFPU(int fpu_id, t_grid_state &gs)
 {
     if (!initializedOk())
