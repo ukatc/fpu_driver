@@ -249,6 +249,26 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_resetStepCounters(long new_alpha_steps,
+                                                long new_beta_steps,
+					                            WrapGridState &grid_state,
+                                                bp::list &fpu_list)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = resetStepCounters(new_alpha_steps,
+                                                    new_beta_steps,
+                                                    grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
     E_EtherCANErrCode wrapped_pingFPUs(WrapGridState &grid_state, list &fpu_list)
     {
         if (!checkAndMessageIfInitializedOk())

@@ -591,6 +591,12 @@ BOOST_PYTHON_MODULE(ethercanif)
             (bp::arg("grid_state"),
             bp::arg("fpuset") = bp::list()))
 
+    .def("resetStepCounters", &WrappedGridDriver::wrapped_resetStepCounters,
+            (bp::arg("new_alpha_steps"),
+            bp::arg("new_beta_steps"),
+            bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list()))
+
     .def("pingFPUs", &WrappedGridDriver::wrapped_pingFPUs,
             (bp::arg("grid_state"),
             bp::arg("fpuset") = bp::list()))
