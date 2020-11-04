@@ -668,6 +668,10 @@ BOOST_PYTHON_MODULE(ethercanif)
             (bp::arg("fpu_id"),
             bp::arg("grid_state")))
 
+    .def("checkIntegrity", &WrappedGridDriver::wrapped_checkIntegrity,
+            (bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list()))
+
     // TODO: Test function only - remove when no longer needed
     // Demonstrates named, arbitrarily-ordered arguments with defaulting
     .def("boostPythonDivide", &WrappedGridDriver::boostPythonDivide,

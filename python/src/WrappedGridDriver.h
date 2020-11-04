@@ -483,6 +483,22 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_checkIntegrity(WrapGridState &grid_state,
+                                             bp::list &fpu_list)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = checkIntegrity(grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
 private:
     bool checkAndMessageIfInitializedOk()
     {
