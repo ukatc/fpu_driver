@@ -306,6 +306,22 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_getFirmwareVersion(WrapGridState &grid_state,
+                                                 list & fpu_list)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = getFirmwareVersion(grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
     E_EtherCANErrCode wrapped_readSerialNumbers(WrapGridState &grid_state,
                                                 list &fpu_list)
     {

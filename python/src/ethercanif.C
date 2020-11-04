@@ -606,6 +606,10 @@ BOOST_PYTHON_MODULE(ethercanif)
             (bp::arg("grid_state"),
             bp::arg("fpuset") = bp::list()))
 
+    .def("getFirmwareVersion", &WrappedGridDriver::wrapped_getFirmwareVersion,
+            (bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list()))
+
     .def("readSerialNumbers", &WrappedGridDriver::wrapped_readSerialNumbers,
             (bp::arg("grid_state"),
             bp::arg("fpuset") = bp::list()))
