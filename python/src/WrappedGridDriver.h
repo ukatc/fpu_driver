@@ -58,7 +58,16 @@ public:
         double motor_max_step_difference)
     {
         std::cout << "Grid driver object was successfully created (new C++ version).\n";
-        std::cout << "***** NOTE: Soft protection is not implemented yet *****" << std::endl;
+
+#ifndef ENABLE_PROTECTION_CODE  // NOT ENABLE_PROTECTION_CODE
+        std::cout << "************************************************************\n";
+        std::cout << "************************************************************\n";
+        std::cout << "NOTE: The C++ ENABLE_PROTECTION_CODE macro is disabled in\n";
+        std::cout << "this build, so the soft protection is not functional.\n";
+        std::cout << "************************************************************\n";
+        std::cout << "************************************************************\n";
+        std::cout << std::endl;
+#endif // NOT ENABLE_PROTECTION_CODE
 
         if (confirm_each_step)
         {
@@ -599,6 +608,7 @@ public:
                                             bp::list &fpu_list,
                                             bool show_offsets, bool active)
     {
+#ifdef ENABLE_PROTECTION_CODE
         if (!checkAndMessageIfInitializedOk())
         {
             return DE_INTERFACE_NOT_INITIALIZED;
@@ -614,6 +624,15 @@ public:
         checkInterfaceError(ecode);
 
         std::cout << angles_string << std::endl;
+
+#else // NOT ENABLE_PROTECTION_CODE
+        std::cout << "************************************************************\n";
+        std::cout << "NOTE: The C++ ENABLE_PROTECTION_CODE macro is disabled in\n";
+        std::cout << "this build, so trackedAngles() is not available.\n";
+        std::cout << "************************************************************\n";
+        std::cout << std::endl;
+        E_EtherCANErrCode ecode = DE_FIRMWARE_UNIMPLEMENTED;
+#endif // NOT ENABLE_PROTECTION_CODE
 
         return ecode;
     }
