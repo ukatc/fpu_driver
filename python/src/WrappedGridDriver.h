@@ -269,6 +269,28 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_readRegister(int read_address,
+                                           WrapGridState &grid_state,
+                                           list &fpu_list)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        if ((read_address > 0xffff) || (read_address < 0))
+        {
+            checkInterfaceError(DE_INVALID_PAR_VALUE);
+        }
+        const uint16_t raddress = (uint16_t)read_address;
+        E_EtherCANErrCode ecode = readRegister(raddress, grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
     E_EtherCANErrCode wrapped_pingFPUs(WrapGridState &grid_state, list &fpu_list)
     {
         if (!checkAndMessageIfInitializedOk())
