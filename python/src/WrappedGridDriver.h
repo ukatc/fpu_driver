@@ -352,6 +352,23 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_abortMotion(WrapGridState &grid_state,
+                                          list &fpu_list,
+                                          bool sync_command = true)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = abortMotion(grid_state, fpuset, sync_command);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
     E_EtherCANErrCode wrapped_freeBetaCollision(int fpu_id,
                                                 E_REQUEST_DIRECTION direction,
                                                 WrapGridState &grid_state,

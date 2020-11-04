@@ -1255,6 +1255,7 @@ E_EtherCANErrCode UnprotectedGridDriver::abortMotion(t_grid_state &gs,
     }
 
     // This must not use locking - it can be sent from any thread by design
+    // TODO: Check and understand this further (relative to the Python version)
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);

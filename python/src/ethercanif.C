@@ -625,6 +625,11 @@ BOOST_PYTHON_MODULE(ethercanif)
             // but is shown as False in grid driver document
             bp::arg("sync_command") = true))
 
+    .def("abortMotion", &WrappedGridDriver::wrapped_abortMotion,
+            (bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list(),
+            bp::arg("sync_command") = true))
+
     .def("freeBetaCollision", &WrappedGridDriver::wrapped_freeBetaCollision,
             (bp::arg("fpu_id"),
             bp::arg("direction"),
