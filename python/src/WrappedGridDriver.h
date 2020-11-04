@@ -17,7 +17,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
-
+#include <string>
 #include "WrapperSharedBase.h"
 #include "GridDriver.h"
 #include "InterfaceConstants.h"
@@ -296,6 +296,24 @@ public:
         getFPUSet(fpu_list, fpuset);
 
         E_EtherCANErrCode ecode = readSerialNumbers(grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_writeSerialNumber(int fpu_id,
+                                                bp::str serial_number,
+                                                WrapGridState &grid_state)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        std::string cpp_serial_number = bp::extract<std::string>(serial_number);
+
+        E_EtherCANErrCode ecode = writeSerialNumber(fpu_id,
+                                                    cpp_serial_number.c_str(),
+                                                    grid_state);
         checkInterfaceError(ecode);
         return ecode;
     }

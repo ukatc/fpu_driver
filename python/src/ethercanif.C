@@ -605,6 +605,11 @@ BOOST_PYTHON_MODULE(ethercanif)
             (bp::arg("grid_state"),
             bp::arg("fpuset") = bp::list()))
 
+    .def("writeSerialNumber", &WrappedGridDriver::wrapped_writeSerialNumber,
+            (bp::arg("fpu_id"),
+            bp::arg("snstring"),
+            bp::arg("grid_state")))
+
     .def("configMotion", &WrappedGridDriver::wrapped_configMotion,
             (bp::arg("wavetable"),
             bp::arg("grid_state"),
