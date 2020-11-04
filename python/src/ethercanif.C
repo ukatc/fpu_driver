@@ -553,14 +553,29 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
 
     .def("connect", &WrappedGridDriver::wrapped_connect,
-        // TODO: Add defaulting to the following argument - see 
-        // FpuGridDriver.py function equivalent, FPU grid driver
-        // documentation etc – see DEFAULT_GATEWAY_ADDRESS_LIST / 
-        // MOCK_GATEWAY_ADDRESS_LIST stuff – need to use a bp::list
-        // somehow I think
+            // TODO: Add defaulting to the following argument - see
+            // FpuGridDriver.py function equivalent, FPU grid driver
+            // documentation etc – see DEFAULT_GATEWAY_ADDRESS_LIST /
+            // MOCK_GATEWAY_ADDRESS_LIST stuff – need to use a bp::list
+            // somehow I think - or, check if the argument is empty and
+            // default it if so
             (bp::arg("address_list")))
 
-    .def("disconnect", &WrappedGridDriver::disconnect)
+    .def("setUStepLevel", &WrappedGridDriver::wrapped_setUStepLevel,
+            (bp::arg("ustep_level"),
+            bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list()))
+
+    .def("setTicksPerSegment", &WrappedGridDriver::wrapped_setTicksPerSegment,
+            (bp::arg("nticks"),
+            bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list()))
+
+    .def("setStepsPerSegment", &WrappedGridDriver::wrapped_setStepsPerSegment,
+            (bp::arg("min_steps"),
+            bp::arg("max_steps"),
+            bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list()))
 
     .def("findDatum", &WrappedGridDriver::wrapped_findDatum,
             (bp::arg("grid_state"),

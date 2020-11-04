@@ -152,6 +152,58 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_setUStepLevel(int ustep_level, 
+                                            WrapGridState &grid_state,
+                                            bp::list &fpu_list)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = setUStepLevel(ustep_level, grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_setTicksPerSegment(unsigned long ticks,
+                                                 WrapGridState &grid_state,
+                                                 bp::list &fpu_list)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = setTicksPerSegment(ticks, grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_setStepsPerSegment(int min_steps, int max_steps,
+                                                 WrapGridState &grid_state,
+                                                 bp::list &fpu_list)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        E_EtherCANErrCode ecode = setStepsPerSegment(min_steps, max_steps,
+                                                     grid_state, fpuset);
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
     E_EtherCANErrCode wrapped_findDatum(WrapGridState &grid_state,
                                         bp::dict &dict_search_modes,
                                         E_DATUM_SELECTION selected_arm,
