@@ -271,7 +271,7 @@ public:
 
     E_EtherCANErrCode wrapped_readRegister(int read_address,
                                            WrapGridState &grid_state,
-                                           list &fpu_list)
+                                           bp::list &fpu_list)
     {
         if (!checkAndMessageIfInitializedOk())
         {
@@ -291,7 +291,30 @@ public:
         return ecode;
     }
 
-    E_EtherCANErrCode wrapped_pingFPUs(WrapGridState &grid_state, list &fpu_list)
+    E_EtherCANErrCode wrapped_getDiagnostics(WrapGridState &grid_state,
+                                             bp::list &fpu_list)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        std::string diag_string;
+        E_EtherCANErrCode ecode = getDiagnostics(grid_state, fpuset,
+                                                 diag_string);
+
+        checkInterfaceError(ecode);
+
+        std::cout << diag_string << std::endl;
+
+        return ecode;
+    }
+
+    E_EtherCANErrCode wrapped_pingFPUs(WrapGridState &grid_state,
+                                       bp::list &fpu_list)
     {
         if (!checkAndMessageIfInitializedOk())
         {
@@ -307,7 +330,7 @@ public:
     }
 
     E_EtherCANErrCode wrapped_getFirmwareVersion(WrapGridState &grid_state,
-                                                 list & fpu_list)
+                                                 bp::list & fpu_list)
     {
         if (!checkAndMessageIfInitializedOk())
         {
@@ -323,7 +346,7 @@ public:
     }
 
     E_EtherCANErrCode wrapped_readSerialNumbers(WrapGridState &grid_state,
-                                                list &fpu_list)
+                                                bp::list &fpu_list)
     {
         if (!checkAndMessageIfInitializedOk())
         {
@@ -409,7 +432,7 @@ public:
     }
 
     E_EtherCANErrCode wrapped_abortMotion(WrapGridState &grid_state,
-                                          list &fpu_list,
+                                          bp::list &fpu_list,
                                           bool sync_command = true)
     {
         if (!checkAndMessageIfInitializedOk())

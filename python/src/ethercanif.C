@@ -602,6 +602,10 @@ BOOST_PYTHON_MODULE(ethercanif)
             bp::arg("grid_state"),
             bp::arg("fpuset") = bp::list()))
 
+    .def("getDiagnostics", &WrappedGridDriver::wrapped_getDiagnostics,
+            (bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list()))
+
     .def("pingFPUs", &WrappedGridDriver::wrapped_pingFPUs,
             (bp::arg("grid_state"),
             bp::arg("fpuset") = bp::list()))
