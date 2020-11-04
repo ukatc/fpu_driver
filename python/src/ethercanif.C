@@ -523,189 +523,189 @@ BOOST_PYTHON_MODULE(ethercanif)
     class_<WrappedGridDriver, boost::shared_ptr<WrappedGridDriver> >
         ("GridDriver", no_init)
     .def("__init__", make_constructor(&WrappedGridDriver::initWrapper,
-                                        bp::default_call_policies(),
-            (bp::arg("nfpus") = DEFAULT_NUM_FPUS,
-            bp::arg("SocketTimeOutSeconds") = 20.0,
-            bp::arg("confirm_each_step") = false,
-            bp::arg("waveform_upload_pause_us") = 0,
-            bp::arg("configmotion_max_retry_count") = 5,
-            bp::arg("configmotion_max_resend_count") = 10,
-            bp::arg("min_bus_repeat_delay_ms") = 0,
-            bp::arg("min_fpu_repeat_delay_ms") = 1,
-            bp::arg("alpha_datum_offset") = ALPHA_DATUM_OFFSET,
-            bp::arg("motor_minimum_frequency") = MOTOR_MIN_STEP_FREQUENCY,
-            bp::arg("motor_maximum_frequency") = MOTOR_MAX_STEP_FREQUENCY,
-            bp::arg("motor_max_start_frequency") = MOTOR_MAX_START_FREQUENCY,
-            bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
-            bp::arg("motor_max_step_difference") = MAX_STEP_DIFFERENCE)))
+                                      bp::default_call_policies(),
+         (bp::arg("nfpus") = DEFAULT_NUM_FPUS,
+          bp::arg("SocketTimeOutSeconds") = 20.0,
+          bp::arg("confirm_each_step") = false,
+          bp::arg("waveform_upload_pause_us") = 0,
+          bp::arg("configmotion_max_retry_count") = 5,
+          bp::arg("configmotion_max_resend_count") = 10,
+          bp::arg("min_bus_repeat_delay_ms") = 0,
+          bp::arg("min_fpu_repeat_delay_ms") = 1,
+          bp::arg("alpha_datum_offset") = ALPHA_DATUM_OFFSET,
+          bp::arg("motor_minimum_frequency") = MOTOR_MIN_STEP_FREQUENCY,
+          bp::arg("motor_maximum_frequency") = MOTOR_MAX_STEP_FREQUENCY,
+          bp::arg("motor_max_start_frequency") = MOTOR_MAX_START_FREQUENCY,
+          bp::arg("motor_max_rel_increase") = MAX_ACCELERATION_FACTOR,
+          bp::arg("motor_max_step_difference") = MAX_STEP_DIFFERENCE)))
 
     .def("initialize", &WrappedGridDriver::wrapped_initialize,
-            (bp::arg("logLevel") = DEFAULT_LOGLEVEL,
-            bp::arg("log_dir") = DEFAULT_LOGDIR,
-            bp::arg("firmware_version_address_offset") = 0x61,
-            bp::arg("protection_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_protection.log",
-            bp::arg("control_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_control.log",
-            bp::arg("tx_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_tx.log",
-            bp::arg("rx_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_rx.log",
-            bp::arg("start_timestamp") = DEFAULT_START_TIMESTAMP,
-            bp::arg("mockup") = false))
+         (bp::arg("logLevel") = DEFAULT_LOGLEVEL,
+          bp::arg("log_dir") = DEFAULT_LOGDIR,
+          bp::arg("firmware_version_address_offset") = 0x61,
+          bp::arg("protection_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_protection.log",
+          bp::arg("control_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_control.log",
+          bp::arg("tx_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_tx.log",
+          bp::arg("rx_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_rx.log",
+          bp::arg("start_timestamp") = DEFAULT_START_TIMESTAMP,
+          bp::arg("mockup") = false))
 
     .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
 
     .def("connect", &WrappedGridDriver::wrapped_connect,
-            // TODO: Add defaulting to the following argument - see
-            // FpuGridDriver.py function equivalent, FPU grid driver
-            // documentation etc – see DEFAULT_GATEWAY_ADDRESS_LIST /
-            // MOCK_GATEWAY_ADDRESS_LIST stuff – need to use a bp::list
-            // somehow I think - or, check if the argument is empty and
-            // default it if so
-            (bp::arg("address_list")))
+         // TODO: Add defaulting to the following argument - see
+         // FpuGridDriver.py function equivalent, FPU grid driver
+         // documentation etc – see DEFAULT_GATEWAY_ADDRESS_LIST /
+         // MOCK_GATEWAY_ADDRESS_LIST stuff – need to use a bp::list
+         // somehow I think - or, check if the argument is empty and
+         // default it if so
+         (bp::arg("address_list")))
 
     .def("setUStepLevel", &WrappedGridDriver::wrapped_setUStepLevel,
-            (bp::arg("ustep_level"),
-            bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("ustep_level"),
+          bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("setTicksPerSegment", &WrappedGridDriver::wrapped_setTicksPerSegment,
-            (bp::arg("nticks"),
-            bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("nticks"),
+          bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("setStepsPerSegment", &WrappedGridDriver::wrapped_setStepsPerSegment,
-            (bp::arg("min_steps"),
-            bp::arg("max_steps"),
-            bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("min_steps"),
+          bp::arg("max_steps"),
+          bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("findDatum", &WrappedGridDriver::wrapped_findDatum,
-            (bp::arg("grid_state"),
-            bp::arg("search_modes") = bp::dict(),
-            bp::arg("selected_arm") = DASEL_BOTH,
-            bp::arg("fpuset") = bp::list(),
-            bp::arg("soft_protection") = true,
-            bp::arg("count_protection") = true,
-            bp::arg("support_uninitialized_auto") = true,
-            bp::arg("timeout") = DATUM_TIMEOUT_ENABLE))
+         (bp::arg("grid_state"),
+          bp::arg("search_modes") = bp::dict(),
+          bp::arg("selected_arm") = DASEL_BOTH,
+          bp::arg("fpuset") = bp::list(),
+          bp::arg("soft_protection") = true,
+          bp::arg("count_protection") = true,
+          bp::arg("support_uninitialized_auto") = true,
+          bp::arg("timeout") = DATUM_TIMEOUT_ENABLE))
 
     .def("resetFPUs", &WrappedGridDriver::wrapped_resetFPUs,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("resetStepCounters", &WrappedGridDriver::wrapped_resetStepCounters,
-            (bp::arg("new_alpha_steps"),
-            bp::arg("new_beta_steps"),
-            bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("new_alpha_steps"),
+          bp::arg("new_beta_steps"),
+          bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("readRegister", &WrappedGridDriver::wrapped_readRegister,
-            (bp::arg("address"),
-            bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("address"),
+          bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("getDiagnostics", &WrappedGridDriver::wrapped_getDiagnostics,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("pingFPUs", &WrappedGridDriver::wrapped_pingFPUs,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("getFirmwareVersion", &WrappedGridDriver::wrapped_getFirmwareVersion,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("readSerialNumbers", &WrappedGridDriver::wrapped_readSerialNumbers,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("writeSerialNumber", &WrappedGridDriver::wrapped_writeSerialNumber,
-            (bp::arg("fpu_id"),
-            bp::arg("snstring"),
-            bp::arg("grid_state")))
+         (bp::arg("fpu_id"),
+          bp::arg("snstring"),
+          bp::arg("grid_state")))
 
     .def("configMotion", &WrappedGridDriver::wrapped_configMotion,
-            (bp::arg("wavetable"),
-            bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list(),
-            bp::arg("soft_protection") = true,
-            bp::arg("allow_uninitialized") = false,
-            bp::arg("ruleset_version") = DEFAULT_WAVEFORM_RULESET_VERSION,
-            // TODO: The following arguments are from FpuGridDriver.py ->
-            // configMotion() - keep? (N.B. They aren't documented in the
-            // FPU driver manual of January 22, 2020)
-            bp::arg("warn_unsafe") = true,
-            bp::arg("verbosity") = 3))
+         (bp::arg("wavetable"),
+          bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list(),
+          bp::arg("soft_protection") = true,
+          bp::arg("allow_uninitialized") = false,
+          bp::arg("ruleset_version") = DEFAULT_WAVEFORM_RULESET_VERSION,
+          // TODO: The following arguments are from FpuGridDriver.py ->
+          // configMotion() - keep? (N.B. They aren't documented in the
+          // FPU driver manual of January 22, 2020)
+          bp::arg("warn_unsafe") = true,
+          bp::arg("verbosity") = 3))
 
     .def("executeMotion", &WrappedGridDriver::wrapped_executeMotion,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list(),
-            // TODO: sync_command default is true here and in FpuGridDriver.py,
-            // but is shown as False in grid driver document
-            bp::arg("sync_command") = true))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list(),
+          // TODO: sync_command default is true here and in FpuGridDriver.py,
+          // but is shown as False in grid driver document
+          bp::arg("sync_command") = true))
 
     .def("abortMotion", &WrappedGridDriver::wrapped_abortMotion,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list(),
-            bp::arg("sync_command") = true))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list(),
+          bp::arg("sync_command") = true))
 
     .def("freeBetaCollision", &WrappedGridDriver::wrapped_freeBetaCollision,
-            (bp::arg("fpu_id"),
-            bp::arg("direction"),
-            bp::arg("grid_state"),
-            bp::arg("soft_protection") = true))
+         (bp::arg("fpu_id"),
+          bp::arg("direction"),
+          bp::arg("grid_state"),
+          bp::arg("soft_protection") = true))
 
     .def("enableBetaCollisionProtection",
                     &WrappedGridDriver::wrapped_enableBetaCollisionProtection,
-            (bp::arg("grid_state")))
+         (bp::arg("grid_state")))
 
     .def("freeAlphaLimitBreach",
                     &WrappedGridDriver::wrapped_freeAlphaLimitBreach,
-            (bp::arg("fpu_id"),
-            bp::arg("direction"),
-            bp::arg("grid_state"),
-            bp::arg("soft_protection") = true))
+         (bp::arg("fpu_id"),
+          bp::arg("direction"),
+          bp::arg("grid_state"),
+          bp::arg("soft_protection") = true))
 
     .def("enableAlphaLimitProtection",
                     &WrappedGridDriver::wrapped_enableAlphaLimitProtection,
-            (bp::arg("grid_state")))
+         (bp::arg("grid_state")))
 
     .def("reverseMotion", &WrappedGridDriver::wrapped_reverseMotion,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list(),
-            bp::arg("soft_protection") = true))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list(),
+          bp::arg("soft_protection") = true))
 
     .def("repeatMotion", &WrappedGridDriver::wrapped_repeatMotion,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list(),
-            bp::arg("soft_protection") = true))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list(),
+          bp::arg("soft_protection") = true))
 
     .def("lockFPU", &WrappedGridDriver::wrapped_lockFPU,
-            (bp::arg("fpu_id"),
-            bp::arg("grid_state")))
+         (bp::arg("fpu_id"),
+          bp::arg("grid_state")))
 
     .def("unlockFPU", &WrappedGridDriver::wrapped_unlockFPU,
-            (bp::arg("fpu_id"),
-            bp::arg("grid_state")))
+         (bp::arg("fpu_id"),
+          bp::arg("grid_state")))
 
     .def("enableMove", &WrappedGridDriver::wrapped_enableMove,
-            (bp::arg("fpu_id"),
-            bp::arg("grid_state")))
+         (bp::arg("fpu_id"),
+          bp::arg("grid_state")))
 
     .def("checkIntegrity", &WrappedGridDriver::wrapped_checkIntegrity,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list()))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list()))
 
     .def("trackedAngles", &WrappedGridDriver::wrapped_trackedAngles,
-            (bp::arg("grid_state"),
-            bp::arg("fpuset") = bp::list(),
-            bp::arg("show_offsets") = false,
-            bp::arg("active") = false))
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list(),
+          bp::arg("show_offsets") = false,
+          bp::arg("active") = false))
 
     // TODO: Test function only - remove when no longer needed
     // Demonstrates named, arbitrarily-ordered arguments with defaulting
     .def("boostPythonDivide", &WrappedGridDriver::boostPythonDivide,
-            (bp::arg("dividend") = 23.0,
-            bp::arg("divisor") = 4.0))
+         (bp::arg("dividend") = 23.0,
+          bp::arg("divisor") = 4.0))
     ;
 
     //--------------------------------------------------------------------------
