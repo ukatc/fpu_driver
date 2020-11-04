@@ -691,6 +691,12 @@ BOOST_PYTHON_MODULE(ethercanif)
             (bp::arg("grid_state"),
             bp::arg("fpuset") = bp::list()))
 
+    .def("trackedAngles", &WrappedGridDriver::wrapped_trackedAngles,
+            (bp::arg("grid_state"),
+            bp::arg("fpuset") = bp::list(),
+            bp::arg("show_offsets") = false,
+            bp::arg("active") = false))
+
     // TODO: Test function only - remove when no longer needed
     // Demonstrates named, arbitrarily-ordered arguments with defaulting
     .def("boostPythonDivide", &WrappedGridDriver::boostPythonDivide,

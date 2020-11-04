@@ -572,6 +572,29 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_trackedAngles(WrapGridState &grid_state,
+                                            bp::list &fpu_list,
+                                            bool show_offsets, bool active)
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        std::string angles_string;
+        E_EtherCANErrCode ecode = trackedAngles(grid_state, fpuset,
+                                                angles_string, show_offsets,
+                                                active);
+        checkInterfaceError(ecode);
+
+        std::cout << angles_string << std::endl;
+
+        return ecode;
+    }
+
 private:
     bool checkAndMessageIfInitializedOk()
     {
