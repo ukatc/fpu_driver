@@ -39,11 +39,12 @@ public:
     void doUnprotectedGridDriverFunctionalTesting();
     void doGridDriverFunctionalTesting();
     bool writeGridFpusToFpuDb(int num_fpus, bool db_mockup);
+    static bool writeDummyFpuItemsToFpuDb(bool db_mockup,   // N.B. static
+                                          const char *serial_number);
 
 private:
     void testInitialisedGridDriver(UnprotectedGridDriver &gd,
                                    bool soft_protection);
-    void writeFpuDbDummyItemsFromSerialNumbers(GridDriver &gd);
     
     const char *ip_address_str = "127.0.0.1";
     const uint16_t port_number = 4700;

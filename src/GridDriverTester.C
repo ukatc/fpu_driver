@@ -377,5 +377,45 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
 }
 
 //------------------------------------------------------------------------------
+bool GridDriverTester::writeDummyFpuItemsToFpuDb(bool db_mockup,
+                                                 const char *serial_number)
+{
+    // *************************************************************************
+    //     IMPORTANT: This test function will overwrite the FPU database's
+    //     serial_number FPU fields if they already exist - use with caution
+    // *************************************************************************
+    
+    // Creates a set of dummy field items in the FPU database for an FPU
+    // specified by serial_number.
+    // NOTE: The database must not be currently opened by any other process
+    // when calling this function.
+    // The db_mockup flag controls the expected protection database location -
+    // see protectionDB_GetDirFromLinuxEnv().
+
+    bool result_ok = false;
+    std::string dir_str = protectionDB_GetDirFromLinuxEnv(db_mockup);
+    if (!dir_str.empty())
+    {
+        ProtectionDB protectiondb;
+        if (protectiondb.open(dir_str))
+        {
+            auto txn = protectiondb.createTransaction();
+            if (txn)
+            {
+                FpuDbData fpu_db_data;
+                protectionDB_FillFpuDbDataStructWithTestVals(fpu_db_data);
+                if (txn->fpuDbTransferFpu(DbTransferType::Write, serial_number,
+                                          fpu_db_data))
+                {
+                    result_ok = true;
+                }
+            }
+        }
+    }
+    return result_ok;
+}
+
+//------------------------------------------------------------------------------
+
 
 } // namespace mpifps

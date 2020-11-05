@@ -206,7 +206,7 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
                 {
                     // TODO: Not a good error code for this condition -
                     // currently only a placeholder
-                    ecan_result = DE_INVALID_CONFIG;
+                    ecan_result = DE_RESOURCE_ERROR;
                     break;
                 }
             }

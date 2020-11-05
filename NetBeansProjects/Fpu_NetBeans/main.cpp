@@ -43,6 +43,14 @@ int main(int argc, char** argv)
 {
     testIntervalClass();
     
+    // Test code for writing dummy items to the FPU database for the "PT19" FPU,
+    // which is the serial number of the physical test FPU
+#if 0
+    const bool db_mockup = true;
+    bool result_ok = GridDriverTester::writeDummyFpuItemsToFpuDb(db_mockup,
+                                                                 "PT19");
+#endif // 0
+    
     //testGridDriver();
 
     //testFpuCounters();
