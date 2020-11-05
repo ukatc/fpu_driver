@@ -29,6 +29,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" -DENABLE_PROTECTION_CODE \
     -I../../lib/liblmdb \
     ethercanif.C \
     WrapperSharedBase.C \
+    WrappedGridDriver.C \
     ../../src/AsyncInterface.C \
     ../../src/CommandPool.C \
     ../../src/CommandQueue.C \
