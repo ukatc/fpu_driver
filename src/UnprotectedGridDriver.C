@@ -212,15 +212,16 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 
     //..........................................................................
 
-    E_EtherCANErrCode result;
+    E_EtherCANErrCode ecan_result;
 
     _gd = new (std::nothrow) EtherCANInterface(config);
     if (_gd != nullptr)
     {
         // TODO: Call deInitializeInterface() or deInitialize() from destructor,
         // or elsewhere? BUT is already done from AsyncInterface destructor?
-        result = _gd->initializeInterface();
-        if ((result == DE_OK) || (result == DE_INTERFACE_ALREADY_INITIALIZED))
+        ecan_result = _gd->initializeInterface();
+        if ((ecan_result == DE_OK) || 
+            (ecan_result == DE_INTERFACE_ALREADY_INITIALIZED))
         {
             initialize_was_called_ok = true;
         }
@@ -234,10 +235,10 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     else
     {
         // Fatal error
-        result = DE_OUT_OF_MEMORY;
+        ecan_result = DE_OUT_OF_MEMORY;
     }
 
-    return result;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -260,12 +261,12 @@ E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
     // DeviceLock.C/h WIP conversion from the Python-equivalent module
     // because too clunky - instead, use Linux named semaphores?
 
-    E_EtherCANErrCode result = _gd->connect(ngateways, gateway_addresses);
-    if (result == DE_OK)
+    E_EtherCANErrCode ecan_result = _gd->connect(ngateways, gateway_addresses);
+    if (ecan_result == DE_OK)
     {
-        result = _post_connect_hook();
+        ecan_result = _post_connect_hook();
     }
-    return result;
+    return ecan_result;
 
 /*
     Original Python version of function:
@@ -345,10 +346,10 @@ E_EtherCANErrCode UnprotectedGridDriver::setUStepLevel(int ustep_level,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     return _gd->setUStepLevel(ustep_level, gs, fpuset);
@@ -364,10 +365,10 @@ E_EtherCANErrCode UnprotectedGridDriver::setTicksPerSegment(unsigned long nticks
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     return _gd->setTicksPerSegment(nticks, gs, fpuset);
@@ -384,10 +385,10 @@ E_EtherCANErrCode UnprotectedGridDriver::setStepsPerSegment(int min_steps,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     return _gd->setStepsPerSegment(min_steps, max_steps, gs, fpuset);
@@ -461,10 +462,10 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
@@ -479,11 +480,11 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     if (soft_protection)
     {
         // Check whether datum search is safe, adjusting search_modes
-        result = _allow_find_datum_hook(gs, search_modes, selected_arm,
-                                        fpuset, support_uninitialized_auto);
-        if (result != DE_OK)    
+        ecan_result = _allow_find_datum_hook(gs, search_modes, selected_arm,
+                                             fpuset, support_uninitialized_auto);
+        if (ecan_result != DE_OK)    
         {
-            return result;
+            return ecan_result;
         }
 
         // We might need to disable the stepcount-based check if (and only
@@ -507,19 +508,19 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     }
 
     t_fpu_positions initial_positions;
-    result = _start_find_datum_hook(gs, search_modes, selected_arm, fpuset,
-                                    initial_positions, soft_protection);
-    if (result != DE_OK)    
+    ecan_result = _start_find_datum_hook(gs, search_modes, selected_arm, fpuset,
+                                         initial_positions, soft_protection);
+    if (ecan_result != DE_OK)    
     {
-        return result;
+        return ecan_result;
     }
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
-    result = _gd->startFindDatum(gs, search_modes, selected_arm, timeout,
-                                 count_protection, &fpuset);
-    if (result != DE_OK)
+    ecan_result = _gd->startFindDatum(gs, search_modes, selected_arm, timeout,
+                                      count_protection, &fpuset);
+    if (ecan_result != DE_OK)
     {
         // We cancel the datum search altogether, so we can reset positions
         // to old value
@@ -529,7 +530,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         // likely to fail anyway
         _cancel_find_datum_hook(gs, fpuset, initial_positions);
 
-        return result;
+        return ecan_result;
     }
 
     double time_interval = 0.1;
@@ -549,10 +550,10 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     while (!is_ready)
     {
         bool wait_find_datum_finished = false;
-        result = _gd->waitFindDatum(gs, time_interval,
-                                    wait_find_datum_finished, &fpuset);
-        is_ready = (result != DE_WAIT_TIMEOUT);
-        finished_ok = (result == DE_OK);
+        ecan_result = _gd->waitFindDatum(gs, time_interval,
+                                         wait_find_datum_finished, &fpuset);
+        is_ready = (ecan_result != DE_WAIT_TIMEOUT);
+        finished_ok = (ecan_result == DE_OK);
     }
 
     if (!finished_ok)
@@ -583,7 +584,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
 
     }
 
-    return result;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -615,13 +616,13 @@ E_EtherCANErrCode UnprotectedGridDriver::pingIfNeeded(t_grid_state &gs,
 E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
                                                    const t_fpuset &fpuset)
 {
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result == DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result == DE_OK)
     {
-        result = _gd->pingFPUs(gs, fpuset);
+        ecan_result = _gd->pingFPUs(gs, fpuset);
     }
 
-    return result;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -740,16 +741,16 @@ E_EtherCANErrCode UnprotectedGridDriver::readRegister(uint16_t address,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
-    E_EtherCANErrCode ecan_result = _gd->readRegister(address, gs, fpuset);
+    ecan_result = _gd->readRegister(address, gs, fpuset);
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
@@ -771,10 +772,10 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     static const struct
@@ -850,15 +851,15 @@ E_EtherCANErrCode UnprotectedGridDriver::getFirmwareVersion(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
-    E_EtherCANErrCode ecan_result = _gd->getFirmwareVersion(gs, fpuset);
+    ecan_result = _gd->getFirmwareVersion(gs, fpuset);
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
         _update_error_counters(fpus_data[fpu_id].db.counters,
@@ -877,16 +878,16 @@ E_EtherCANErrCode UnprotectedGridDriver::readSerialNumbers(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
-    result = _gd->readSerialNumbers(gs, fpuset);
+    ecan_result = _gd->readSerialNumbers(gs, fpuset);
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
@@ -895,7 +896,7 @@ E_EtherCANErrCode UnprotectedGridDriver::readSerialNumbers(t_grid_state &gs,
                                prev_gs.FPU_state[fpu_id]);
     }
 
-    return result;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -1142,49 +1143,49 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
 
     // Wait a short moment to avoid spurious collision
     t_fpu_positions initial_positions;
-    result = _start_execute_motion_hook(gs, fpuset, initial_positions);
-    if (result != DE_OK)
+    ecan_result = _start_execute_motion_hook(gs, fpuset, initial_positions);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
     sleepSecs(0.1);
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
     sleepSecs(0.1);
-    result = _gd->startExecuteMotion(gs, fpuset, sync_command);
-    // TODO: The result logic here might not be the same as the Python
+    ecan_result = _gd->startExecuteMotion(gs, fpuset, sync_command);
+    // TODO: The ecan_result logic here might not be the same as the Python
     // equivalent - check this
-    if (result != DE_OK)
+    if (ecan_result != DE_OK)
     {
         // Note: Do NOT want to return the _cancel_execute_motion_hook() return
         // value here, because more interested in the startExecuteMotion()
-        // result value above
+        // ecan_result value above
         _cancel_execute_motion_hook(gs, fpuset, initial_positions);
-        return result;
+        return ecan_result;
     }
 
     double time_interval = 0.1;
     bool is_ready = false;
     //bool was_aborted = false;
     bool refresh_state = false;
-    // TODO: The result logic here might not be the same as the Python
+    // TODO: The ecan_result logic here might not be the same as the Python
     // equivalent - check this
     while (!is_ready)
     {
         bool wait_execute_motion_finished = false;
-        result = _gd->waitExecuteMotion(gs, time_interval,
-                                        wait_execute_motion_finished,
-                                        fpuset);
+        ecan_result = _gd->waitExecuteMotion(gs, time_interval,
+                                             wait_execute_motion_finished,
+                                             fpuset);
         
         // TODO: Python version can be interrupted from Linux signals here,
         // but this isn't appropriate for C++ version because it wlll be
@@ -1192,21 +1193,21 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 
         // (The following check was brought in from 
         // ethercanif.C -> WrapEtherCANInterface::wrap_waitExecuteMotion())
-        if (!wait_execute_motion_finished && (result == DE_OK))
+        if (!wait_execute_motion_finished && (ecan_result == DE_OK))
         {
-            result = DE_WAIT_TIMEOUT;
+            ecan_result = DE_WAIT_TIMEOUT;
         }
 
-        is_ready = (result != DE_WAIT_TIMEOUT);
+        is_ready = (ecan_result != DE_WAIT_TIMEOUT);
     }
 
-    if (result != DE_OK)
+    if (ecan_result != DE_OK)
     {
         refresh_state = true;
     }
 
     // This is skipped in case of a SocketFailure, for example
-    if ((result == DE_OK) || refresh_state)
+    if ((ecan_result == DE_OK) || refresh_state)
     {
         // Execute a ping to update positions
         // (this is only needed for protocol version 1)  <== TODO: Check this
@@ -1235,7 +1236,7 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     //if was_aborted:
     //raise MovementError("executeMotion was aborted by SIGINT")
 
-    return result;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -1248,10 +1249,10 @@ E_EtherCANErrCode UnprotectedGridDriver::abortMotion(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     // This must not use locking - it can be sent from any thread by design
@@ -1260,7 +1261,7 @@ E_EtherCANErrCode UnprotectedGridDriver::abortMotion(t_grid_state &gs,
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
-    E_EtherCANErrCode ecan_result = _gd->abortMotion(gs, fpuset, sync_command);
+    ecan_result = _gd->abortMotion(gs, fpuset, sync_command);
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
@@ -1414,10 +1415,10 @@ E_EtherCANErrCode UnprotectedGridDriver::reverseMotion(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
@@ -1435,8 +1436,7 @@ E_EtherCANErrCode UnprotectedGridDriver::reverseMotion(t_grid_state &gs,
         wmode = Range::Warn;
     }
 
-    E_EtherCANErrCode ecan_result = _pre_reverse_motion_hook(wtable, gs,
-                                                             fpuset, wmode);
+    ecan_result = _pre_reverse_motion_hook(wtable, gs, fpuset, wmode);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -1472,10 +1472,10 @@ E_EtherCANErrCode UnprotectedGridDriver::repeatMotion(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
@@ -1493,8 +1493,7 @@ E_EtherCANErrCode UnprotectedGridDriver::repeatMotion(t_grid_state &gs,
         wmode = Range::Warn;
     }
 
-    E_EtherCANErrCode ecan_result = _pre_repeat_motion_hook(wtable, gs,
-                                                            fpuset, wmode);
+    ecan_result = _pre_repeat_motion_hook(wtable, gs, fpuset, wmode);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -1652,7 +1651,7 @@ E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
-    E_EtherCANErrCode result = _gd->enableMove(fpu_id, gs);
+    E_EtherCANErrCode ecan_result = _gd->enableMove(fpu_id, gs);
 
     // TODO: The following line was in original Python FpuGridDriver.enableMove(),
     // but not needed here?
@@ -1664,7 +1663,7 @@ E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs
                                prev_gs.FPU_state[i], gs.FPU_state[i]);
     }
 
-    return result;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -1676,16 +1675,16 @@ E_EtherCANErrCode UnprotectedGridDriver::checkIntegrity(t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
-    E_EtherCANErrCode ecan_result = _gd->checkIntegrity(gs, fpuset);
+    ecan_result = _gd->checkIntegrity(gs, fpuset);
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
         _update_error_counters(fpus_data[fpu_id].db.counters,

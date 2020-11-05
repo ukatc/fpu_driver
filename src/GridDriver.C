@@ -1064,10 +1064,10 @@ E_EtherCANErrCode GridDriver::trackedAngles(const t_grid_state &gs,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
@@ -1318,10 +1318,10 @@ E_EtherCANErrCode GridDriver::pingFPUs(t_grid_state &gs, const t_fpuset &fpuset)
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode result = check_fpuset(fpuset);
-    if (result != DE_OK)
+    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return result;
+        return ecan_result;
     }
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
@@ -1329,10 +1329,10 @@ E_EtherCANErrCode GridDriver::pingFPUs(t_grid_state &gs, const t_fpuset &fpuset)
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
-    result = _pingFPUs(gs, fpuset);
-    if (result == DE_OK)
+    ecan_result = _pingFPUs(gs, fpuset);
+    if (ecan_result == DE_OK)
     {
-        result = _refresh_positions(gs, true, fpuset);
+        ecan_result = _refresh_positions(gs, true, fpuset);
     }
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
@@ -1342,7 +1342,7 @@ E_EtherCANErrCode GridDriver::pingFPUs(t_grid_state &gs, const t_fpuset &fpuset)
                                prev_gs.FPU_state[fpu_id]);
     }
 
-    return result;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -2466,7 +2466,7 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     // TODO: Implement the following? (from Python version)
     // self.healthlog = self.env.open_db(HealthLogDB.dbname)
 
-    E_EtherCANErrCode result;
+    E_EtherCANErrCode ecan_result;
 
     t_grid_state grid_state;
     getGridState(grid_state);
@@ -2478,8 +2478,8 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     // NOTE: OLD FUNCTION
     //**************************************
 
-    //*************** TODO: Do something with result value below
-    result = readSerialNumbers(grid_state, fpuset);
+    //*************** TODO: Do something with ecan_result value below
+    ecan_result = readSerialNumbers(grid_state, fpuset);
     // Check for serial number uniqueness
     std::vector<std::string> duplicate_snumbers;
     getDuplicateSerialNumbers(grid_state, duplicate_snumbers);
@@ -2670,8 +2670,8 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     // Query positions and compute offsets, if FPUs have been reset.
     // This assumes that the stored positions are correct.
     
-    // TODO: Check result code of _pingFPUs()
-    result = _pingFPUs(grid_state, fpuset);
+    // TODO: Check ecan_result code of _pingFPUs()
+    ecan_result = _pingFPUs(grid_state, fpuset);
 
     _reset_hook(grid_state, grid_state, fpuset);
     _refresh_positions(grid_state, false, fpuset);
