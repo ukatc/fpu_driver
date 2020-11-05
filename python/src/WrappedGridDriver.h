@@ -161,6 +161,18 @@ public:
         return ecode;
     }
 
+    E_EtherCANErrCode wrapped_disconnect()
+    {
+        if (!checkAndMessageIfInitializedOk())
+        {
+            return DE_INTERFACE_NOT_INITIALIZED;
+        }
+
+        E_EtherCANErrCode ecode = disconnect();
+        checkInterfaceError(ecode);
+        return ecode;
+    }
+
     E_EtherCANErrCode wrapped_setUStepLevel(int ustep_level, 
                                             WrapGridState &grid_state,
                                             bp::list &fpu_list)

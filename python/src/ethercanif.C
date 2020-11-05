@@ -561,6 +561,8 @@ BOOST_PYTHON_MODULE(ethercanif)
          // default it if so
          (bp::arg("address_list")))
 
+    .def("disconnect", &WrappedGridDriver::wrapped_disconnect)
+
     .def("setUStepLevel", &WrappedGridDriver::wrapped_setUStepLevel,
          (bp::arg("ustep_level"),
           bp::arg("grid_state"),
