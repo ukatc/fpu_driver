@@ -78,7 +78,7 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
     // TODO: Finish this function
 
     // Initialise LMDB protection database
-    std::string dir_str = protectionDB_GetDirFromLinuxEnv(mockup);
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
     if (!dir_str.empty())
     {
         if (protection_db.open(dir_str))

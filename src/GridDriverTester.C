@@ -289,7 +289,7 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
     //
     // NOTE: The gateway needs to be running before this function is called.
     // The expected protection database location is controlled by the db_mockup
-    // flag - see protectionDB_GetDirFromLinuxEnv().
+    // flag - see ProtectionDB::getDirFromLinuxEnv().
     //
     // N.B. This function was written to support testing of
     // GridDriver::_post_connect_hook(), which expects the grid FPU entries to be
@@ -344,7 +344,7 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
 
     bool result_ok = false;
 
-    std::string dir_str = protectionDB_GetDirFromLinuxEnv(db_mockup);
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(db_mockup);
     if (!dir_str.empty())
     {
         ProtectionDB protectiondb;
@@ -390,10 +390,10 @@ bool GridDriverTester::writeDummyFpuItemsToFpuDb(bool db_mockup,
     // NOTE: The database must not be currently opened by any other process
     // when calling this function.
     // The db_mockup flag controls the expected protection database location -
-    // see protectionDB_GetDirFromLinuxEnv().
+    // see ProtectionDB::getDirFromLinuxEnv().
 
     bool result_ok = false;
-    std::string dir_str = protectionDB_GetDirFromLinuxEnv(db_mockup);
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(db_mockup);
     if (!dir_str.empty())
     {
         ProtectionDB protectiondb;

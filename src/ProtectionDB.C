@@ -59,7 +59,67 @@ static MDB_dbi healthlog_dbi = 0;
 
 
 //==============================================================================
-std::string protectionDB_GetDirFromLinuxEnv(bool mockup)
+FpuDbData::FpuDbData()
+{
+    // Initialise the items which don't initialise themselves
+    wf_reversed = false;
+    maxaretries = 0;
+    aretries_cw = 0;
+    aretries_acw = 0;
+    maxbretries = 0;
+    bretries_cw = 0;
+    bretries_acw = 0;
+}
+
+//------------------------------------------------------------------------------
+bool FpuDbData::operator==(const FpuDbData &other)
+{
+    return isSameAsOther(other);
+}
+
+//------------------------------------------------------------------------------
+bool FpuDbData::operator!=(const FpuDbData &other)
+{
+    return !isSameAsOther(other);
+}
+
+//------------------------------------------------------------------------------
+bool FpuDbData::isSameAsOther(const FpuDbData &other)
+{
+    bool waveforms_are_equal = false;
+    if (last_waveform.size() == other.last_waveform.size())
+    {
+        waveforms_are_equal = true;
+        for (size_t i = 0; i < last_waveform.size(); i++)
+        {
+            if ((last_waveform[i].alpha_steps !=
+                    other.last_waveform[i].alpha_steps) ||
+                (last_waveform[i].beta_steps !=
+                    other.last_waveform[i].beta_steps))
+            {
+                waveforms_are_equal = false;
+                break;
+            }
+        }
+    }
+    
+    return ((apos == other.apos) &&
+            (bpos == other.bpos) &&
+            (wf_reversed == other.wf_reversed) &&
+            (alimits == other.alimits) &&
+            (blimits == other.blimits) &&
+            (maxaretries == other.maxaretries) &&
+            (aretries_cw == other.aretries_cw) &&
+            (aretries_acw == other.aretries_acw) &&
+            (maxbretries == other.maxbretries) &&
+            (bretries_cw == other.bretries_cw) &&
+            (bretries_acw == other.bretries_acw) &&
+            (counters == other.counters) &&
+            waveforms_are_equal);
+}
+
+//==============================================================================
+std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
 {
     // Provides Linux directory for the protection database based upon the
     // Linux environment variables FPU_DATABASE_MOCKUP and FPU_DATABASE, and
@@ -99,7 +159,7 @@ std::string protectionDB_GetDirFromLinuxEnv(bool mockup)
     return dir_str_ret;
 }
 
-//==============================================================================
+//------------------------------------------------------------------------------
 bool ProtectionDB::open(const std::string &dir_str)
 {
     // Opens a protection database (data.mdb and locks.mdb files) in the

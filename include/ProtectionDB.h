@@ -33,36 +33,14 @@
 using namespace mpifps;
 using namespace mpifps::ethercanif;
 
-// -----------------------------------------------------------------------------
-
-std::string protectionDB_GetDirFromLinuxEnv(bool mockup);
-
-// -----------------------------------------------------------------------------
+//==============================================================================
 
 // FpuDbData: FPU data which is stored in the protection database.
 struct FpuDbData
 {
-    FpuDbData()
-    {
-        // Initialise the items which don't initialise themselves
-        wf_reversed = false;
-        maxaretries = 0;
-        aretries_cw = 0;
-        aretries_acw = 0;
-        maxbretries = 0;
-        bretries_cw = 0;
-        bretries_acw = 0;
-    }
-
-    bool operator==(const FpuDbData &other)
-    {
-        return isSameAsOther(other);
-    }
-    
-    bool operator!=(const FpuDbData &other)
-    {
-        return !isSameAsOther(other);
-    }
+    FpuDbData();
+    bool operator==(const FpuDbData &other);
+    bool operator!=(const FpuDbData &other);
     
     Interval apos;
     Interval bpos;
@@ -83,42 +61,10 @@ struct FpuDbData
     t_waveform_steps last_waveform;
     
 private:
-    bool isSameAsOther(const FpuDbData &other)
-    {
-        bool waveforms_are_equal = false;
-        if (last_waveform.size() == other.last_waveform.size())
-        {
-            waveforms_are_equal = true;
-            for (size_t i = 0; i < last_waveform.size(); i++)
-            {
-                if ((last_waveform[i].alpha_steps !=
-                     other.last_waveform[i].alpha_steps) ||
-                    (last_waveform[i].beta_steps !=
-                     other.last_waveform[i].beta_steps))
-                {
-                    waveforms_are_equal = false;
-                    break;
-                }
-            }
-        }
-      
-        return ((apos == other.apos) &&
-                (bpos == other.bpos) &&
-                (wf_reversed == other.wf_reversed) &&
-                (alimits == other.alimits) &&
-                (blimits == other.blimits) &&
-                (maxaretries == other.maxaretries) &&
-                (aretries_cw == other.aretries_cw) &&
-                (aretries_acw == other.aretries_acw) &&
-                (maxbretries == other.maxbretries) &&
-                (bretries_cw == other.bretries_cw) &&
-                (bretries_acw == other.bretries_acw) &&
-                (counters == other.counters) &&
-                waveforms_are_equal);
-    }
+    bool isSameAsOther(const FpuDbData &other);
 };
 
-// -----------------------------------------------------------------------------
+//==============================================================================
 
 enum class DbTransferType
 {
@@ -148,7 +94,7 @@ enum class FpuDbIntValType
     NumTypes
 };
 
-//==============================================================================
+//..............................................................................
 
 class ProtectionDbTxn
 {
@@ -212,12 +158,11 @@ class ProtectionDB
     friend class ProtectionDBTester;
 
 public:
-    bool open(const std::string &dir_str);
-    
-    std::unique_ptr<ProtectionDbTxn> createTransaction();
-    
-    bool sync();
+    static std::string getDirFromLinuxEnv(bool mockup);  // N.B. Static
 
+    bool open(const std::string &dir_str);
+    std::unique_ptr<ProtectionDbTxn> createTransaction();
+    bool sync();
     ~ProtectionDB();
     
 private:
