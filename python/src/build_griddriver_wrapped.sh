@@ -30,6 +30,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" -DENABLE_PROTECTION_CODE \
     ethercanif.C \
     WrapperSharedBase.C \
     WrappedGridDriver.C \
+    WrapEtherCANInterface.C \
     ../../src/AsyncInterface.C \
     ../../src/CommandPool.C \
     ../../src/CommandQueue.C \
