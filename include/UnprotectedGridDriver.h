@@ -480,6 +480,7 @@ protected:
         return DE_OK;
     }
 
+    E_EtherCANErrCode checkInitializedAndFpuset(const t_fpuset &fpuset);
     E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
     void need_ping(const t_grid_state &gs, const t_fpuset &fpuset,
                    t_fpuset &pingset_ret);

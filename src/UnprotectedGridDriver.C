@@ -296,28 +296,6 @@ E_EtherCANErrCode UnprotectedGridDriver::disconnect()
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
-{
-    // Check that config.num_fpus is within range
-    if ((config.num_fpus < 0) || (config.num_fpus >= MAX_NUM_POSITIONERS))
-    {
-        // TODO: Any better error return code for this? DE_INVALID_CONFIG?
-        return DE_INVALID_FPU_ID;
-    }
-
-    // Check if any selected FPU in fpuset has index >= (config.num_fpus - 1)
-    for (int fpu_id = config.num_fpus; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        if (fpuset[fpu_id])
-        {
-            return DE_INVALID_FPU_ID;
-        }
-    }
-
-    return DE_OK;
-}
-
-//------------------------------------------------------------------------------
 void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
                                       const t_fpuset &fpuset,
                                       t_fpuset &pingset_ret)
@@ -341,12 +319,7 @@ E_EtherCANErrCode UnprotectedGridDriver::setUStepLevel(int ustep_level,
                                                        t_grid_state &gs, 
                                                        const t_fpuset &fpuset)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -360,12 +333,7 @@ E_EtherCANErrCode UnprotectedGridDriver::setTicksPerSegment(unsigned long nticks
                                                             t_grid_state &gs,
                                                             const t_fpuset &fpuset)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -380,12 +348,7 @@ E_EtherCANErrCode UnprotectedGridDriver::setStepsPerSegment(int min_steps,
                                                             t_grid_state &gs,
                                                             const t_fpuset &fpuset) 
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -457,12 +420,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     soft_protection is set to false.
     */
 
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -629,9 +587,10 @@ E_EtherCANErrCode UnprotectedGridDriver::_pingFPUs(t_grid_state &gs,
 E_EtherCANErrCode UnprotectedGridDriver::pingFPUs(t_grid_state &gs,
                                                   const t_fpuset &fpuset)
 {
-    if (!initializedOk())
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
+    if (ecan_result != DE_OK)
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        return ecan_result;
     }
 
     // Communicates with all FPUs and queries their status
@@ -643,12 +602,7 @@ E_EtherCANErrCode UnprotectedGridDriver::pingFPUs(t_grid_state &gs,
 E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
                                                    const t_fpuset &fpuset)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -694,12 +648,7 @@ E_EtherCANErrCode UnprotectedGridDriver::resetStepCounters(long new_alpha_steps,
                                                            t_grid_state &gs,
                                                            const t_fpuset &fpuset)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -736,12 +685,7 @@ E_EtherCANErrCode UnprotectedGridDriver::readRegister(uint16_t address,
                                                       t_grid_state &gs,
                                                       const t_fpuset &fpuset)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -767,12 +711,7 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
                                                          const t_fpuset &fpuset,
                                                          std::string &string_ret)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -846,12 +785,7 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
 E_EtherCANErrCode UnprotectedGridDriver::getFirmwareVersion(t_grid_state &gs,
                                                         const t_fpuset &fpuset)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -873,12 +807,7 @@ E_EtherCANErrCode UnprotectedGridDriver::getFirmwareVersion(t_grid_state &gs,
 E_EtherCANErrCode UnprotectedGridDriver::readSerialNumbers(t_grid_state &gs,
                                                            const t_fpuset &fpuset)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -975,18 +904,13 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     // TODO
     UNUSED_ARG(verbosity);
 
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
     // TODO: NOTE: UnprotectedGridDriver::_post_config_motion_hook() DOES also
     // have a body (see UnprotectedGridDriver.h), in addition to
     // GridDriver::_post_config_motion_hook() - check it
 
     // TODO: Sort out return values
 
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -1138,12 +1062,7 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
                                                        const t_fpuset &fpuset,
                                                        bool sync_command)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -1244,12 +1163,7 @@ E_EtherCANErrCode UnprotectedGridDriver::abortMotion(t_grid_state &gs,
                                                      const t_fpuset &fpuset,
                                                      bool sync_command)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -1410,12 +1324,7 @@ E_EtherCANErrCode UnprotectedGridDriver::reverseMotion(t_grid_state &gs,
                                                        const t_fpuset &fpuset,
                                                        bool soft_protection)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -1467,12 +1376,7 @@ E_EtherCANErrCode UnprotectedGridDriver::repeatMotion(t_grid_state &gs,
                                                       const t_fpuset &fpuset,
                                                       bool soft_protection)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -1547,12 +1451,7 @@ E_EtherCANErrCode UnprotectedGridDriver::countedAngles(t_grid_state &gs,
     // flag (it is up to the caller to decide if the counts can still be
     // trusted).
 
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -1670,12 +1569,7 @@ E_EtherCANErrCode UnprotectedGridDriver::enableMove(int fpu_id, t_grid_state &gs
 E_EtherCANErrCode UnprotectedGridDriver::checkIntegrity(t_grid_state &gs,
                                                         const t_fpuset &fpuset)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -1693,6 +1587,40 @@ E_EtherCANErrCode UnprotectedGridDriver::checkIntegrity(t_grid_state &gs,
     }
 
     return ecan_result;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::checkInitializedAndFpuset(
+                                                        const t_fpuset &fpuset)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    return check_fpuset(fpuset);
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
+{
+    // Check that config.num_fpus is within range
+    if ((config.num_fpus < 0) || (config.num_fpus >= MAX_NUM_POSITIONERS))
+    {
+        // TODO: Any better error return code for this? DE_INVALID_CONFIG?
+        return DE_INVALID_FPU_ID;
+    }
+
+    // Check if any selected FPU in fpuset has index >= (config.num_fpus - 1)
+    for (int fpu_id = config.num_fpus; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        if (fpuset[fpu_id])
+        {
+            return DE_INVALID_FPU_ID;
+        }
+    }
+
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------

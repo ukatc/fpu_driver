@@ -1059,12 +1059,7 @@ E_EtherCANErrCode GridDriver::trackedAngles(const t_grid_state &gs,
     // 6-decimal-places format - if this is required to be improved, then
     // see the Interval::toString() function.
 
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
@@ -1313,12 +1308,7 @@ E_EtherCANErrCode GridDriver::_refresh_positions(const t_grid_state &grid_state,
 //------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::pingFPUs(t_grid_state &gs, const t_fpuset &fpuset)
 {
-    if (!initializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    E_EtherCANErrCode ecan_result = check_fpuset(fpuset);
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
         return ecan_result;
