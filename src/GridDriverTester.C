@@ -84,13 +84,13 @@ void GridDriverTester::doGridDriverUnitTests()
 //------------------------------------------------------------------------------
 void GridDriverTester::doUnprotectedGridDriverFunctionalTesting()
 {
-    E_EtherCANErrCode result;
+    E_EtherCANErrCode ecan_result;
     
     UnprotectedGridDriver ugd(TESTING_NUM_FPUS);
 
-    result = ugd.initialize();
+    ecan_result = ugd.initialize();
 
-    if (result == DE_OK)
+    if (ecan_result == DE_OK)
     {
         const bool soft_protection = false;
         testInitialisedGridDriver(ugd, soft_protection);
@@ -102,19 +102,19 @@ void GridDriverTester::doGridDriverFunctionalTesting()
 {
     // Performs a full grid driver functional test sequence
     
-    E_EtherCANErrCode result;
+    E_EtherCANErrCode ecan_result;
 
     GridDriver gd(TESTING_NUM_FPUS);
 
-    result = gd.initialize();
+    ecan_result = gd.initialize();
 
-    if (result == DE_OK)
+    if (ecan_result == DE_OK)
     {
         const bool mockup = true;
-        result = gd.initProtection(mockup);
+        ecan_result = gd.initProtection(mockup);
     }
 
-    if (result == DE_OK)
+    if (ecan_result == DE_OK)
     {
         const bool soft_protection = true;
         testInitialisedGridDriver(gd, soft_protection);
@@ -138,7 +138,7 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     //     the return values to see what's going on, and also look at the 
     //     mock gateway console output
 
-    E_EtherCANErrCode result;
+    E_EtherCANErrCode ecan_result;
     E_GridState grid_state_result;
     t_grid_state grid_state;
 
@@ -149,7 +149,7 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     // Test connect()
     // TODO: t_gateway_address::ip is only a pointer - dangerous? Change this
     // eventually? (e.g. to a std::string?)
-    result = gd.connect(1, &gateway_address);   
+    ecan_result = gd.connect(1, &gateway_address);   
 
     //..........................................................................
     // Test getGridState()
@@ -157,11 +157,11 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     
     //..........................................................................
     // Test readSerialNumbers()
-    result = gd.readSerialNumbers(grid_state, fpuset);
+    ecan_result = gd.readSerialNumbers(grid_state, fpuset);
     
     //..........................................................................
     // Test pingFPUs()
-    result = gd.pingFPUs(grid_state, fpuset);
+    ecan_result = gd.pingFPUs(grid_state, fpuset);
     
     //..........................................................................
     // Test getGridState() again
@@ -169,11 +169,11 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
 
     //..........................................................................
     // Test pingFPUs() again
-    result = gd.pingFPUs(grid_state, fpuset);
+    ecan_result = gd.pingFPUs(grid_state, fpuset);
 
     //..........................................................................
     // Test resetFPUs()
-    result = gd.resetFPUs(grid_state, fpuset);
+    ecan_result = gd.resetFPUs(grid_state, fpuset);
     
     //..........................................................................
     // Test findDatum()
@@ -189,10 +189,10 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
 
     // TODO: Use DATUM_TIMEOUT_DISABLE instead of DATUM_TIMEOUT_ENABLE below?
     // (sometimes times out if long-duration findDatum())
-    result = gd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
-                          soft_protection, count_protection,
-                          support_uninitialized_auto,
-                          DATUM_TIMEOUT_ENABLE);
+    ecan_result = gd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
+                               soft_protection, count_protection,
+                               support_uninitialized_auto,
+                               DATUM_TIMEOUT_ENABLE);
 
     //..........................................................................
     // Test configMotion() and wavetable_was_received()
@@ -230,7 +230,7 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
 
     for (int i = 0; i < TESTING_NUM_FPUS; i++)
     {
-        result = gd.enableMove(i, grid_state);
+        ecan_result = gd.enableMove(i, grid_state);
     }
     
     //........................
@@ -249,23 +249,23 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     */ 
     //........................
     
-    result = gd.configMotion(wavetable, grid_state, fpuset, soft_protection,
-                             allow_uninitialized, ruleset_version, warn_unsafe,
-                             verbosity);
+    ecan_result = gd.configMotion(wavetable, grid_state, fpuset,
+                                  soft_protection, allow_uninitialized,
+                                  ruleset_version, warn_unsafe, verbosity);
 
     //..........................................................................
     // Test executeMotion()
     bool sync_command = true;
-    result = gd.executeMotion(grid_state, fpuset, sync_command);
+    ecan_result = gd.executeMotion(grid_state, fpuset, sync_command);
     
     //..........................................................................
 
-    result = gd.disconnect();
+    ecan_result = gd.disconnect();
 
     //..........................................................................
 
     // Suppress warnings of variables not being used
-    UNUSED_ARG(result);
+    UNUSED_ARG(ecan_result);
     UNUSED_ARG(grid_state_result);
 }
 
