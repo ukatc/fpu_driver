@@ -267,7 +267,7 @@ bool ProtectionDBTester::testFpuPositionTransfer(ProtectionDB &protectiondb)
     auto transaction = protectiondb.createTransaction();
     if (transaction)
     {
-        FpuDbPositionType position_type = FpuDbPositionType::BetaLimit;
+        FpuDbPositionType position_type = FpuDbPositionType::BetaLimits;
         Interval interval_write(1.2, 3.4);
         double datum_offset_write = 180.0;
         std::string serial_number_str = getNextFpuTestSerialNumber();

@@ -74,9 +74,9 @@ enum class DbTransferType
 
 enum class FpuDbPositionType
 {
-    AlphaLimit = 0,
+    AlphaLimits = 0,
     AlphaPos,
-    BetaLimit,
+    BetaLimits,
     BetaPos,
 
     NumTypes

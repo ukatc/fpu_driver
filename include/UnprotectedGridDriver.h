@@ -335,6 +335,7 @@ protected:
                                                        t_grid_state &gs,
                                                        const t_fpuset &fpuset)
     {
+        // TODO: CHECK THIS
         // NOTE: The original Python version of this function called
         // set_wtable_reversed(), but this isn't required because it doesn't
         // do anything in UnprotectedGridDriver (because wf_reversed isn't
@@ -361,6 +362,7 @@ protected:
                                                        t_grid_state &gs,
                                                        const t_fpuset &fpuset)
     {
+        // TODO: CHECK THIS
         // NOTE: See comments in _post_config_motion_hook() above - they apply
         // to this function as well
         UNUSED_ARG(wtable);
@@ -385,6 +387,7 @@ protected:
                                                         t_grid_state &gs,
                                                         const t_fpuset &fpuset)
     {
+        // TODO: CHECK THIS
         // NOTE: See comments in _post_config_motion_hook() above - they apply
         // to this function as well
         UNUSED_ARG(wtable);

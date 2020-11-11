@@ -35,8 +35,8 @@ static const char *alpha_position_keystr = "apos";
 static const char *beta_position_keystr = "bpos";
 static const char *waveform_table_keystr = "wtable";
 static const char *waveform_reversed_keystr = "wfreversed";
-static const char *alpha_limit_keystr = "alimit";
-static const char *beta_limit_keystr = "blimit";
+static const char *alpha_limits_keystr = "alimits";
+static const char *beta_limits_keystr = "blimits";
 static const char *free_alpha_retries_keystr = "aretries";
 static const char *alpha_retries_cw_keystr = "aretries_cw";
 static const char *alpha_retries_acw_keystr = "aretries_acw";
@@ -381,7 +381,7 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
     if (result_ok)
     {
         result_ok = fpuDbTransferPosition(transfer_type, 
-                                          FpuDbPositionType::AlphaLimit,
+                                          FpuDbPositionType::AlphaLimits,
                                           serial_number, fpu_db_data.alimits,
                                           datum_offset);
     }
@@ -389,7 +389,7 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
     if (result_ok)
     {
         result_ok = fpuDbTransferPosition(transfer_type, 
-                                          FpuDbPositionType::BetaLimit,
+                                          FpuDbPositionType::BetaLimits,
                                           serial_number, fpu_db_data.blimits,
                                           datum_offset);
     }
@@ -476,9 +476,9 @@ bool ProtectionDbTxn::fpuDbTransferPosition(DbTransferType transfer_type,
         const char *subkey;
     } position_subkeys[(int)FpuDbPositionType::NumTypes] = 
     {
-        { FpuDbPositionType::AlphaLimit,  alpha_limit_keystr    },
+        { FpuDbPositionType::AlphaLimits, alpha_limits_keystr   },
         { FpuDbPositionType::AlphaPos,    alpha_position_keystr },
-        { FpuDbPositionType::BetaLimit,   beta_limit_keystr     }, 
+        { FpuDbPositionType::BetaLimits,  beta_limits_keystr    }, 
         { FpuDbPositionType::BetaPos,     beta_position_keystr  }
     };
 

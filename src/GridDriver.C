@@ -2507,10 +2507,10 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
         std::vector<Interval> &vector_ref;
     } position_items[(int)FpuDbPositionType::NumTypes] = 
     {
-        { FpuDbPositionType::AlphaPos,   apositions_temp },
-        { FpuDbPositionType::BetaPos,    bpositions_temp },
-        { FpuDbPositionType::AlphaLimit, alimits_temp    },
-        { FpuDbPositionType::BetaLimit,  blimits_temp    }
+        { FpuDbPositionType::AlphaPos,    apositions_temp },
+        { FpuDbPositionType::BetaPos,     bpositions_temp },
+        { FpuDbPositionType::AlphaLimits, alimits_temp    },
+        { FpuDbPositionType::BetaLimits,  blimits_temp    }
     };
     
     struct
