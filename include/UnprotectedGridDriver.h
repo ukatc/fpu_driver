@@ -480,8 +480,13 @@ protected:
         return DE_OK;
     }
 
+    // Error counters functions
+    void updateErrorCountersForFpuSet(const t_grid_state &prev_gs,
+                                      const t_grid_state &gs,
+                                      const t_fpuset &fpuset,
+                                      bool datum_cmd = false);
+
     E_EtherCANErrCode checkInitializedAndFpuset(const t_fpuset &fpuset);
-    E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
     void need_ping(const t_grid_state &gs, const t_fpuset &fpuset,
                    t_fpuset &pingset_ret);
     E_EtherCANErrCode _pingFPUs(t_grid_state &gs, const t_fpuset &fpuset);
@@ -493,7 +498,10 @@ protected:
     void buildWtableFromLastWaveforms(const t_fpuset &fpuset,
                                       t_wtable &wtable_ret);
     void sleepSecs(double seconds);
+
+    E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
     void createFpuSetForSingleFpu(int fpu_id, t_fpuset &fpuset_ret);
+    void createFpuSetForAllConfigFpus(t_fpuset &fpuset_ret);
 
     // Config: Only the constructor and initialize() must write this - do NOT
     // write at all after initialize() has been called

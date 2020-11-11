@@ -1325,12 +1325,7 @@ E_EtherCANErrCode GridDriver::pingFPUs(t_grid_state &gs, const t_fpuset &fpuset)
         ecan_result = _refresh_positions(gs, true, fpuset);
     }
 
-    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
-    {
-        _update_error_counters(fpus_data[fpu_id].db.counters,
-                               prev_gs.FPU_state[fpu_id],
-                               gs.FPU_state[fpu_id]);
-    }
+    updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
     return ecan_result;
 }
