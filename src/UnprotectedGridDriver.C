@@ -610,8 +610,8 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
 
-    t_grid_state old_state;
-    _gd->getGridState(old_state);
+    t_grid_state prev_gs;
+    _gd->getGridState(prev_gs);
     
     ecan_result = _gd->resetFPUs(gs, fpuset);
 
@@ -623,8 +623,8 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
         _update_error_counters(fpus_data[fpu_id].db.counters,
-                               gs.FPU_state[fpu_id],
-                               old_state.FPU_state[fpu_id]);
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
     }
 
     // Clear FPU waveforms
@@ -637,7 +637,7 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
     // Python version of this function)
     sleepSecs(0.1 * 24.0);
 
-    ecan_result = _reset_hook(old_state, gs, fpuset);
+    ecan_result = _reset_hook(prev_gs, gs, fpuset);
 
     return ecan_result;
 }
@@ -656,15 +656,15 @@ E_EtherCANErrCode UnprotectedGridDriver::resetStepCounters(long new_alpha_steps,
 
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
 
-    t_grid_state old_state;
-    getGridState(old_state);
+    t_grid_state prev_gs;
+    getGridState(prev_gs);
 
     ecan_result = _gd->resetStepCounters(new_alpha_steps, new_beta_steps,
                                          gs, fpuset);
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
         _update_error_counters(fpus_data[fpu_id].db.counters,
-                               old_state.FPU_state[fpu_id],
+                               prev_gs.FPU_state[fpu_id],
                                gs.FPU_state[fpu_id]);
     }
     if (ecan_result != DE_OK)
@@ -676,7 +676,7 @@ E_EtherCANErrCode UnprotectedGridDriver::resetStepCounters(long new_alpha_steps,
                           config.alpha_datum_offset;
     double beta_target = ((double)new_beta_steps) / StepsPerDegreeBeta;
 
-    _reset_counter_hook(alpha_target, beta_target, old_state, gs, fpuset);
+    _reset_counter_hook(alpha_target, beta_target, prev_gs, gs, fpuset);
     return DE_OK;
 }
 
@@ -793,11 +793,13 @@ E_EtherCANErrCode UnprotectedGridDriver::getFirmwareVersion(t_grid_state &gs,
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
+
     ecan_result = _gd->getFirmwareVersion(gs, fpuset);
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
         _update_error_counters(fpus_data[fpu_id].db.counters,
-                               prev_gs.FPU_state[fpu_id], gs.FPU_state[fpu_id]);
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
     }
 
     return ecan_result;
@@ -821,8 +823,8 @@ E_EtherCANErrCode UnprotectedGridDriver::readSerialNumbers(t_grid_state &gs,
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
         _update_error_counters(fpus_data[fpu_id].db.counters,
-                               gs.FPU_state[fpu_id],
-                               prev_gs.FPU_state[fpu_id]);
+                               prev_gs.FPU_state[fpu_id],
+                               gs.FPU_state[fpu_id]);
     }
 
     return ecan_result;
@@ -842,6 +844,7 @@ E_EtherCANErrCode UnprotectedGridDriver::writeSerialNumber(int fpu_id,
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
+
     E_EtherCANErrCode ecan_result = _gd->writeSerialNumber(fpu_id,
                                                            serial_number, gs);
     if (ecan_result == DE_OK)
@@ -1241,6 +1244,7 @@ E_EtherCANErrCode UnprotectedGridDriver::enableBetaCollisionProtection(
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
+
     E_EtherCANErrCode ecan_result = _gd->enableBetaCollisionProtection(gs);
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
@@ -1307,6 +1311,7 @@ E_EtherCANErrCode UnprotectedGridDriver::enableAlphaLimitProtection(
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
+
     E_EtherCANErrCode ecan_result = _gd->enableAlphaLimitProtection(gs);
 
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
@@ -1353,6 +1358,7 @@ E_EtherCANErrCode UnprotectedGridDriver::reverseMotion(t_grid_state &gs,
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
+
     ecan_result = _gd->reverseMotion(gs, fpuset);
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
@@ -1405,6 +1411,7 @@ E_EtherCANErrCode UnprotectedGridDriver::repeatMotion(t_grid_state &gs,
 
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
+    
     ecan_result = _gd->repeatMotion(gs, fpuset);
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
