@@ -319,18 +319,6 @@ protected:
         return DE_OK;
     }
 
-    // Error counters function
-    virtual void _update_error_counters(FpuCounters &fpu_counters,
-                                        const t_fpu_state &prev_fpu_state,
-                                        const t_fpu_state &moved_fpu_state,
-                                        bool datum_cmd = false)
-    {
-        UNUSED_ARG(fpu_counters);
-        UNUSED_ARG(prev_fpu_state);
-        UNUSED_ARG(moved_fpu_state);
-        UNUSED_ARG(datum_cmd);
-    }
-
     // configMotion() hook functions
     virtual E_EtherCANErrCode _pre_config_motion_hook(const t_wtable &wtable,
                                                       t_grid_state &gs,
@@ -480,11 +468,21 @@ protected:
         return DE_OK;
     }
 
-    // Error counters functions
+    // Error counter functions
     void updateErrorCountersForFpuSet(const t_grid_state &prev_gs,
                                       const t_grid_state &gs,
                                       const t_fpuset &fpuset,
                                       bool datum_cmd = false);
+    virtual void _update_error_counters(FpuCounters &fpu_counters,
+                                        const t_fpu_state &prev_fpu_state,
+                                        const t_fpu_state &moved_fpu_state,
+                                        bool datum_cmd = false)
+    {
+        UNUSED_ARG(fpu_counters);
+        UNUSED_ARG(prev_fpu_state);
+        UNUSED_ARG(moved_fpu_state);
+        UNUSED_ARG(datum_cmd);
+    }
 
     E_EtherCANErrCode checkInitializedAndFpuset(const t_fpuset &fpuset);
     void need_ping(const t_grid_state &gs, const t_fpuset &fpuset,

@@ -1558,6 +1558,13 @@ void UnprotectedGridDriver::updateErrorCountersForFpuSet(const t_grid_state &pre
 }
 
 //------------------------------------------------------------------------------
+void UnprotectedGridDriver::sleepSecs(double seconds)
+{
+    static const double microsecs_in_1_sec = 1000000.0;
+    usleep((useconds_t)(seconds * microsecs_in_1_sec));
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 {
     // Check that config.num_fpus is within range
@@ -1577,13 +1584,6 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
     }
 
     return DE_OK;
-}
-
-//------------------------------------------------------------------------------
-void UnprotectedGridDriver::sleepSecs(double seconds)
-{
-    static const double microsecs_in_1_sec = 1000000.0;
-    usleep((useconds_t)(seconds * microsecs_in_1_sec));
 }
 
 //------------------------------------------------------------------------------
