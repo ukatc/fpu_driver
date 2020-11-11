@@ -25,17 +25,40 @@
 
 using namespace mpifps;
 
-bool protectionDB_LoopingTestWithConsoleOutput();
-bool protectionDB_Test();
-void protectionDB_FillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data);
-
 class ProtectionDBTester
 {
     // N.B. This class is friend-ed from ProtectionDB, so it can access its
-    // private and protected member variables and functions for test purposes
+    // private and protected member variables and functions for test purposes.
+
+    // N.B. The functions in this class are currently declared as static
+    // because they don't require any private data - this class is just a
+    // convenient test function aggregator for now.
 
 public:
-    bool testFpuDbDataClass();
+    static bool doLoopingTestsWithConsoleOutput();
+    static bool doTests();
+    static void fillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data);
+    static bool testFpuDbDataClass();
+
+private:
+    // Top-level test functions
+    static bool testWithStayingOpen(const std::string &dir_str);
+    static bool testWithClosingReopening(const std::string &dir_str);
+
+    // FPU database data item transfer test functions
+    static bool testFpuPositionTransfer(ProtectionDB &protectiondb);
+    static bool testFpuCountersTransfer(ProtectionDB &protectiondb);
+    static bool testFpuWaveformTransfer(ProtectionDB &protectiondb);
+    static bool testFpuInt64ValTransfer(ProtectionDB &protectiondb);
+    static bool testFpuWfReversedFlagTransfer(ProtectionDB &protectiondb);
+    static bool testFullFpuDataTransfer(ProtectionDB &protectiondb);
+
+    // FPU database binary-level item transfer test functions
+    static bool testFpuSingleItemWriteRead(ProtectionDB &protectiondb);
+    static bool testFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
+
+    // Miscellaneous test functions
+    static std::string getNextFpuTestSerialNumber();
 };
 
 #endif // PROTECTIONDBTESTER_H

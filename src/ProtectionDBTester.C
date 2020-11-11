@@ -20,33 +20,8 @@
 #include <string.h>
 #include "ProtectionDBTester.h"
 
-//..............................................................................
-
-// TODO: Make all of the functions in this file into member functions of
-// ProtectionDBTester
-
-// Top-level test functions
-static bool protectionDB_TestWithStayingOpen(const std::string &dir_str);
-static bool protectionDB_TestWithClosingReopening(const std::string &dir_str);
-
-// FPU database data item transfer test functions
-static bool protectionDB_TestFpuPositionTransfer(ProtectionDB &protectiondb);
-static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb);
-static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb);
-static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb);
-static bool protectionDB_TestFpuWfReversedFlagTransfer(ProtectionDB &protectiondb);
-static bool protectionDB_TestFullFpuDataTransfer(ProtectionDB &protectiondb);
-
-// FPU database binary-level item transfer test functions
-static bool protectionDB_TestFpuSingleItemWriteRead(ProtectionDB &protectiondb);
-static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
-
-// Miscellaneous test functions
-static std::string getNextFpuTestSerialNumber();
-
-
 //------------------------------------------------------------------------------
-bool protectionDB_LoopingTestWithConsoleOutput()
+bool ProtectionDBTester::doLoopingTestsWithConsoleOutput()
 {
     const int num_iterations = 1000;
     for (int i = 0; i < num_iterations; i++)
@@ -54,7 +29,7 @@ bool protectionDB_LoopingTestWithConsoleOutput()
         printf("Test #%d of %d: Writing/verifying a single FPU's data items: ",
                i, num_iterations);   // TODO: Use cout / endl stuff instead
         
-        if (protectionDB_Test())
+        if (doTests())
         {
             printf("Passed\n");
         }
@@ -67,7 +42,7 @@ bool protectionDB_LoopingTestWithConsoleOutput()
 }
 
 //------------------------------------------------------------------------------
-bool protectionDB_Test()
+bool ProtectionDBTester::doTests()
 {
     // Performs a suite of protection database tests - reading and writing
     // items within individual or multiple transactions, also with some 
@@ -90,19 +65,19 @@ bool protectionDB_Test()
     
     if (result_ok)
     {
-        result_ok = protectionDB_TestWithStayingOpen(dir_str);
+        result_ok = testWithStayingOpen(dir_str);
     }
     
     if (result_ok)
     {
-        result_ok = protectionDB_TestWithClosingReopening(dir_str);
+        result_ok = testWithClosingReopening(dir_str);
     }
     
     return result_ok;
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
+bool ProtectionDBTester::testWithStayingOpen(const std::string &dir_str)
 {
     // Performs various ProtectionDB tests with the database being kept open
     // NOTE: An LMDB database must already exist in dir_str location
@@ -112,41 +87,41 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
    
     if (protectiondb.open(dir_str))
     {
-        result_ok = protectionDB_TestFpuSingleItemWriteRead(protectiondb);
+        result_ok = testFpuSingleItemWriteRead(protectiondb);
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestFpuMultipleItemWriteReads(protectiondb);
+            result_ok = testFpuMultipleItemWriteReads(protectiondb);
         }
 
         if (result_ok)
         {
-            result_ok = protectionDB_TestFpuPositionTransfer(protectiondb);
+            result_ok = testFpuPositionTransfer(protectiondb);
         }
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestFpuCountersTransfer(protectiondb);
+            result_ok = testFpuCountersTransfer(protectiondb);
         }
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestFpuWaveformTransfer(protectiondb);
+            result_ok = testFpuWaveformTransfer(protectiondb);
         }
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestFpuInt64ValTransfer(protectiondb);
+            result_ok = testFpuInt64ValTransfer(protectiondb);
         }
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestFpuWfReversedFlagTransfer(protectiondb);
+            result_ok = testFpuWfReversedFlagTransfer(protectiondb);
         }
         
         if (result_ok)
         {
-            result_ok = protectionDB_TestFullFpuDataTransfer(protectiondb);
+            result_ok = testFullFpuDataTransfer(protectiondb);
         }
         
         // Run the sync() function
@@ -160,7 +135,7 @@ static bool protectionDB_TestWithStayingOpen(const std::string &dir_str)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
+bool ProtectionDBTester::testWithClosingReopening(const std::string &dir_str)
 {
     // Performs various ProtectionDB tests with the database being closed
     // and re-opened between each test,
@@ -179,7 +154,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestFpuSingleItemWriteRead(protectiondb);
+            result_ok = testFpuSingleItemWriteRead(protectiondb);
         }
         else
         {
@@ -192,7 +167,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestFpuMultipleItemWriteReads(protectiondb);
+            result_ok = testFpuMultipleItemWriteReads(protectiondb);
         }
         else
         {
@@ -205,7 +180,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestFpuPositionTransfer(protectiondb);
+            result_ok = testFpuPositionTransfer(protectiondb);
         }
         else
         {
@@ -218,7 +193,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestFpuCountersTransfer(protectiondb);
+            result_ok = testFpuCountersTransfer(protectiondb);
         }
         else
         {
@@ -231,7 +206,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestFpuWaveformTransfer(protectiondb);
+            result_ok = testFpuWaveformTransfer(protectiondb);
         }
         else
         {
@@ -244,7 +219,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestFpuInt64ValTransfer(protectiondb);
+            result_ok = testFpuInt64ValTransfer(protectiondb);
         }
         else
         {
@@ -257,7 +232,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestFpuWfReversedFlagTransfer(protectiondb);
+            result_ok = testFpuWfReversedFlagTransfer(protectiondb);
         }
         else
         {
@@ -270,7 +245,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = protectionDB_TestFullFpuDataTransfer(protectiondb);
+            result_ok = testFullFpuDataTransfer(protectiondb);
         }
         else
         {
@@ -282,7 +257,7 @@ static bool protectionDB_TestWithClosingReopening(const std::string &dir_str)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestFpuPositionTransfer(ProtectionDB &protectiondb)
+bool ProtectionDBTester::testFpuPositionTransfer(ProtectionDB &protectiondb)
 {
     // Tests writing and reading back an aggregate position value (interval +
     // datum offset) of an FPU
@@ -329,7 +304,7 @@ static bool protectionDB_TestFpuPositionTransfer(ProtectionDB &protectiondb)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb)
+bool ProtectionDBTester::testFpuCountersTransfer(ProtectionDB &protectiondb)
 {
     // Tests writing and reading back the counters for a single FPU
     
@@ -377,7 +352,7 @@ static bool protectionDB_TestFpuCountersTransfer(ProtectionDB &protectiondb)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb)
+bool ProtectionDBTester::testFpuWaveformTransfer(ProtectionDB &protectiondb)
 {
     // Tests writing and reading back of an FPU waveform
     
@@ -429,7 +404,7 @@ static bool protectionDB_TestFpuWaveformTransfer(ProtectionDB &protectiondb)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb)
+bool ProtectionDBTester::testFpuInt64ValTransfer(ProtectionDB &protectiondb)
 {
     bool result_ok = false;
 
@@ -466,7 +441,7 @@ static bool protectionDB_TestFpuInt64ValTransfer(ProtectionDB &protectiondb)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestFpuWfReversedFlagTransfer(ProtectionDB &protectiondb)
+bool ProtectionDBTester::testFpuWfReversedFlagTransfer(ProtectionDB &protectiondb)
 {
     bool result_ok = false;
 
@@ -503,7 +478,7 @@ static bool protectionDB_TestFpuWfReversedFlagTransfer(ProtectionDB &protectiond
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestFullFpuDataTransfer(ProtectionDB &protectiondb)
+bool ProtectionDBTester::testFullFpuDataTransfer(ProtectionDB &protectiondb)
 {
     bool result_ok = false;
 
@@ -514,7 +489,7 @@ static bool protectionDB_TestFullFpuDataTransfer(ProtectionDB &protectiondb)
 
         // Create a full fpu data structure, and populate it with test data
         FpuDbData fpu_db_data_write;
-        protectionDB_FillFpuDbDataStructWithTestVals(fpu_db_data_write);
+        fillFpuDbDataStructWithTestVals(fpu_db_data_write);
 
         // Write full fpu data structure
         result_ok = transaction->fpuDbTransferFpu(DbTransferType::Write,
@@ -541,7 +516,7 @@ static bool protectionDB_TestFullFpuDataTransfer(ProtectionDB &protectiondb)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestFpuSingleItemWriteRead(ProtectionDB &protectiondb)
+bool ProtectionDBTester::testFpuSingleItemWriteRead(ProtectionDB &protectiondb)
 {
     // Tests writing of a single item and reading it back, all in one transaction
     
@@ -584,7 +559,7 @@ static bool protectionDB_TestFpuSingleItemWriteRead(ProtectionDB &protectiondb)
 }
 
 //------------------------------------------------------------------------------
-static bool protectionDB_TestFpuMultipleItemWriteReads(ProtectionDB &protectiondb)
+bool ProtectionDBTester::testFpuMultipleItemWriteReads(ProtectionDB &protectiondb)
 {
     // Tests writing of multiple items in a first transaction, and reading them
     // back in a second transaction
@@ -664,7 +639,7 @@ bool ProtectionDBTester::testFpuDbDataClass()
     bool result_ok = false;
     FpuDbData fpu_db_data_1;
 
-    protectionDB_FillFpuDbDataStructWithTestVals(fpu_db_data_1);
+    fillFpuDbDataStructWithTestVals(fpu_db_data_1);
 
     // Test the "==" and "!=" operator overloads for when the objects are the
     // same
@@ -722,7 +697,7 @@ bool ProtectionDBTester::testFpuDbDataClass()
 }
 
 //------------------------------------------------------------------------------
-void protectionDB_FillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data)
+void ProtectionDBTester::fillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data)
 {
     fpu_db_data.apos = Interval(1.0, 2.0);
     fpu_db_data.bpos = Interval(3.0, 4.0);
@@ -748,7 +723,7 @@ void protectionDB_FillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data)
 }
 
 //------------------------------------------------------------------------------
-static std::string getNextFpuTestSerialNumber()
+std::string ProtectionDBTester::getNextFpuTestSerialNumber()
 {
     // Provides incrementing serial number strings of the form "TestNNNN", with
     // the NNNN values being incrementing leading-zero values starting from an

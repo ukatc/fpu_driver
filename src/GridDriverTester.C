@@ -340,7 +340,7 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
     //..........................................................................
     // Write grid FPU test items to FPU database
     FpuDbData fpu_db_data;
-    protectionDB_FillFpuDbDataStructWithTestVals(fpu_db_data);
+    ProtectionDBTester::fillFpuDbDataStructWithTestVals(fpu_db_data);
 
     bool result_ok = false;
 
@@ -403,7 +403,7 @@ bool GridDriverTester::writeDummyFpuItemsToFpuDb(bool db_mockup,
             if (txn)
             {
                 FpuDbData fpu_db_data;
-                protectionDB_FillFpuDbDataStructWithTestVals(fpu_db_data);
+                ProtectionDBTester::fillFpuDbDataStructWithTestVals(fpu_db_data);
                 if (txn->fpuDbTransferFpu(DbTransferType::Write, serial_number,
                                           fpu_db_data))
                 {
