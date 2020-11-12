@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME CommandQueue.h
+// NAME RingBuffer.h
 //
 // This class implements a thread-safe array of FIFOs for commands to the ethercan
 // layer which can be queried and waited for efficiently

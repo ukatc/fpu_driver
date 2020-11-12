@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME GridState.h
+// NAME GridState.C
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid

@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME TimeOutList.cpp
+// NAME TimeOutList.C
 //
 // This class implements an ordered list if Time_out values,
 // which can be safely accessed from multiple threads

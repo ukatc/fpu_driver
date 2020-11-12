@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPUState.cpp
+// NAME handle_FreeAlphaLimitBreach_response.C
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid

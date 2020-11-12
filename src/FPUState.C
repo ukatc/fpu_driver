@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME FPUState.cpp
+// NAME FPUState.C
 //
 // This class implements initialization of the FPU state description.
 //

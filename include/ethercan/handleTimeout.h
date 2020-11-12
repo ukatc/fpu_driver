@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME handleFPUResponse.h
+// NAME handleTimeout.h
 //
 // This function implements the handler for FPU CAN responses.
 // It is not a class method, stressing that the FPU status data

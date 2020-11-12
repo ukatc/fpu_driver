@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME DriverConstants.h
+// NAME InterfaceConstants.h
 //
 // This file defines global constants which reflect some
 // properties of the hardware.

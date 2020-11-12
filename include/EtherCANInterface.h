@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME GridDriver.h
+// NAME EtherCANInterface.h
 //
 // This class implements the low-level CAN driver for the MOONS fiber
 // positioner grid

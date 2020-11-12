@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME CommandQueue.cpp
+// NAME CommandQueue.C
 //
 // This class implements a thread-safe array of FIFOs for commands to the CAN
 // layer which can be queried and waited for efficiently

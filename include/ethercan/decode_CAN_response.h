@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME handleFPUResponse.h
+// NAME decode_CAN_response.h
 //
 // This function implements the handler for FPU CAN responses.
 // It is not a class method, stressing that the FPU status data

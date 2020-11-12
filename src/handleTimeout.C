@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME handleTimeout.cpp
+// NAME handleTimeout.C
 //
 // This function implements specific time-out handling, such as
 // cleaning up intermediate state.

@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME GridState.h
+// NAME E_GridState.h
 //
 // This header defines a global state description for the FPU grid.
 //

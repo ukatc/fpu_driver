@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME AsyncInterface.h
+// NAME AsyncInterface.C
 //
 // This class implements the low-level CAN interface for the MOONS fiber
 // positioner grid
