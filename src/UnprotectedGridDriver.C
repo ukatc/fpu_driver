@@ -91,21 +91,6 @@ std::string make_logdir(const std::string &log_dir)
 //------------------------------------------------------------------------------
 
 
-//------------------------------------------------------------------------------
-void createFpuSetFlags(int num_fpus, t_fpuset &fpuset_ret)
-{
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-    {
-        fpuset_ret[i] = false;
-    }
-    
-    for (int i = 0; (i < num_fpus) && (i < MAX_NUM_POSITIONERS); i++)
-    {
-        fpuset_ret[i] = true;
-    }
-}
-
-
 //==============================================================================
 
 UnprotectedGridDriver::UnprotectedGridDriver(
@@ -1214,7 +1199,7 @@ E_EtherCANErrCode UnprotectedGridDriver::enableBetaCollisionProtection(
     E_EtherCANErrCode ecan_result = _gd->enableBetaCollisionProtection(gs);
 
     t_fpuset fpuset;
-    createFpuSetForAllConfigFpus(fpuset);
+    createFpuSetForNumFpus(config.num_fpus, fpuset);
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
     return ecan_result;
@@ -1275,7 +1260,7 @@ E_EtherCANErrCode UnprotectedGridDriver::enableAlphaLimitProtection(
     E_EtherCANErrCode ecan_result = _gd->enableAlphaLimitProtection(gs);
 
     t_fpuset fpuset;
-    createFpuSetForAllConfigFpus(fpuset);
+    createFpuSetForNumFpus(config.num_fpus, fpuset);
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
     return ecan_result;
@@ -1594,17 +1579,26 @@ void UnprotectedGridDriver::createFpuSetForSingleFpu(int fpu_id,
     {
         fpuset_ret[i] = false;
     }
-    fpuset_ret[fpu_id] = true;
+    if ((fpu_id >= 0) && (fpu_id < MAX_NUM_POSITIONERS))
+    {
+        fpuset_ret[fpu_id] = true;
+    }
 }
 
 //------------------------------------------------------------------------------
-void UnprotectedGridDriver::createFpuSetForAllConfigFpus(t_fpuset &fpuset_ret)
+void UnprotectedGridDriver::createFpuSetForNumFpus(int num_fpus,
+                                                   t_fpuset &fpuset_ret)
 {
+    if (num_fpus >= MAX_NUM_POSITIONERS)
+    {
+        num_fpus = MAX_NUM_POSITIONERS;
+    }
+
     for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
     {
         fpuset_ret[i] = false;
     }
-    for (int i = 0; i < config.num_fpus; i++)
+    for (int i = 0; i < num_fpus; i++)
     {
         fpuset_ret[i] = true;
     }

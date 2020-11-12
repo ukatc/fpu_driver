@@ -143,7 +143,7 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     t_grid_state grid_state;
 
     t_fpuset fpuset;
-    createFpuSetFlags(TESTING_NUM_FPUS, fpuset);
+    UnprotectedGridDriver::createFpuSetForNumFpus(TESTING_NUM_FPUS, fpuset);
 
     //..........................................................................
     // Test connect()
@@ -304,7 +304,7 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
     t_grid_state grid_state;
 
     t_fpuset fpuset;
-    createFpuSetFlags(num_fpus, fpuset);
+    UnprotectedGridDriver::createFpuSetForNumFpus(num_fpus, fpuset);
     
     //..........................................................................
     // Get grid FPU serial numbers using an UnprotectedGridDriver instance

@@ -47,7 +47,7 @@ GridDriver::~GridDriver()
     getGridState(grid_state);
 
     t_fpuset fpuset;
-    createFpuSetFlags(config.num_fpus, fpuset);
+    createFpuSetForNumFpus(config.num_fpus, fpuset);
 
     if (grid_state.interface_state == DS_CONNECTED)
     {
@@ -158,7 +158,7 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     getGridState(grid_state);
 
     t_fpuset fpuset;
-    createFpuSetFlags(config.num_fpus, fpuset);
+    createFpuSetForNumFpus(config.num_fpus, fpuset);
 
     // Read serial numbers from grid FPUs, and check for duplicates
     ecan_result = readSerialNumbers(grid_state, fpuset);
@@ -2457,7 +2457,7 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     getGridState(grid_state);
 
     t_fpuset fpuset;
-    createFpuSetFlags(config.num_fpus, fpuset);
+    createFpuSetForNumFpus(config.num_fpus, fpuset);
 
     //**************************************
     // NOTE: OLD FUNCTION

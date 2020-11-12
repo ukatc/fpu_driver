@@ -84,10 +84,6 @@ struct t_fpu_position
 };
 using t_fpu_positions = std::map<int, t_fpu_position>; // Keys are fpu_id's
 
-//..............................................................................
-
-void createFpuSetFlags(int num_fpus, t_fpuset &fpuset_ret);
-
 
 //==============================================================================
 
@@ -501,8 +497,8 @@ protected:
     void sleepSecs(double seconds);
 
     E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
-    void createFpuSetForSingleFpu(int fpu_id, t_fpuset &fpuset_ret);
-    void createFpuSetForAllConfigFpus(t_fpuset &fpuset_ret);
+    static void createFpuSetForSingleFpu(int fpu_id, t_fpuset &fpuset_ret);
+    static void createFpuSetForNumFpus(int num_fpus, t_fpuset &fpuset_ret);
 
     // Config: Only the constructor and initialize() must write this - do NOT
     // write at all after initialize() has been called
