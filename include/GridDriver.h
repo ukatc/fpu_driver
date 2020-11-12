@@ -21,14 +21,13 @@
 #ifndef GRIDDRIVER_H
 #define GRIDDRIVER_H
 
-// TODO: ENABLE_PROTECTION_CODE macro
+// TODO: ENABLE_PROTECTION_CODE macro - remove once done with it
 // Define this macro in a project's global predefined symbols to enable the
 // protection code work-in-progress, or disable it so that can continue to use
 // the unprotected code for the time being. If disabled then also allows the
 // current build_griddriver_wrapped.sh script to build the Boost.Python-wrapped
 // driver successfully (otherwise, will fail because the script doesn't yet
 // add in the required LMDB files and so forth).
-// TODO: Remove this macro once done
 
 #include <map>
 #include <vector>
@@ -65,9 +64,6 @@ public:
 
     bool initializedOk() override;
 
-    // TODO: No longer needed?
-    //ProtectionDB &getProtectionDB();
-    
 #ifdef ENABLE_PROTECTION_CODE
     E_EtherCANErrCode pingFPUs(t_grid_state &gs, const t_fpuset &fpuset) override;
     E_EtherCANErrCode trackedAngles(const t_grid_state &gs,
@@ -76,12 +72,6 @@ public:
                                     bool show_offsets = false,
                                     bool active = false);
 #endif // ENABLE_PROTECTION_CODE
-
-    //............................................
-    // TODO: Test function for Boost.Python wrapper experimentation only -
-    // remove when no longer needed
-    double boostPythonDivide(double dividend, double divisor);
-    //............................................
 
     // TODO: Is a destructor needed?
 
@@ -267,34 +257,5 @@ private:
 //==============================================================================
 
 } // namespace mpifps
-
-// TODO: OLD CODE: Old non-aggregated FPU data - replaced by FpuData and
-// FpuDbData structures, but kept here for now - remove once no longer needed
-#if 0
-    // N.B. These vectors all have their sizes set to the number of FPUs
-    std::vector<Interval> apositions;
-    std::vector<Interval> bpositions;
-    // TODO: This wf_reversed vector was moved here into GridDriver from
-    // UnprotectedGridDriver so that it can eventually be included into an FPU
-    // database data structure - this is OK because it's not actually used in
-    // UnprotectedGridDriver. N.B. The associated set_wtable_reversed() function
-    // is no longer required so has been removed, but the getReversed() function
-    // might still be required? (it's shown in the FPU grid driver document)
-    std::vector<bool> wf_reversed; // N.B. Size is set to config.num_fpus
-    std::vector<Interval> alimits;
-    std::vector<Interval> blimits;
-    std::vector<int64_t> maxaretries;
-    std::vector<int64_t> aretries_cw;
-    std::vector<int64_t> aretries_acw;
-    std::vector<int64_t> maxbretries;
-    std::vector<int64_t> bretries_cw;
-    std::vector<int64_t> bretries_acw;
-    std::vector<FpuCounters> counters;
-
-    std::vector<Interval> a_caloffsets;
-    std::vector<Interval> b_caloffsets;
-    std::vector<FpuCounters> _last_counters;
-    std::vector<t_fpu_position> target_positions;
-#endif // 0
 
 #endif // GRIDDRIVER_H

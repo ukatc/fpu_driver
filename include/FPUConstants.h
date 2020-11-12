@@ -20,8 +20,6 @@
 #ifndef FPUCONSTANTS_H
 #define FPUCONSTANTS_H
 
-// TODO: This file is being gradually adapted from fpu_constants.py
-
 // TODO: Eventually change the naming conventions to
 // lowercase_with_underscores - have just been keeping the uppercase + camel
 // case syntax so that same as original Python for now

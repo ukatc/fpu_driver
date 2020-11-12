@@ -704,11 +704,6 @@ BOOST_PYTHON_MODULE(ethercanif)
           bp::arg("show_offsets") = false,
           bp::arg("active") = false))
 
-    // TODO: Test function only - remove when no longer needed
-    // Demonstrates named, arbitrarily-ordered arguments with defaulting
-    .def("boostPythonDivide", &WrappedGridDriver::boostPythonDivide,
-         (bp::arg("dividend") = 23.0,
-          bp::arg("divisor") = 4.0))
     ;
 
     //--------------------------------------------------------------------------
