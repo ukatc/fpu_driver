@@ -7,13 +7,14 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 2020-06-12  TODO: Put comment here
+// bwillemse 2020-06-12  Created (translated from Python interval.py).
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME Interval.h
 //
-// TODO: Put description here
+// This Interval class represents values as intervals with upper and lower
+// bounds values.
 //
 ////////////////////////////////////////////////////////////////////////////////
 

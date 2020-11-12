@@ -7,13 +7,14 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 2020-08-27  TODO: Put comment here
+// bwillemse 2020-08-27  Created.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME ProtectionDBTester.h
 //
-// TODO: Put description here
+// Provides test functionality for the ProtectionDB grid driver protection
+// database classes.
 //
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -7,13 +7,18 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 2020-04-28  TODO: Put comment here
+// bwillemse 2020-04-28  Created (translated from Python FpuGridDriver.py).
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME UnprotectedGridDriver.h
 //
-// TODO: Put description here
+// This UnprotectedGridDriver class provides the main higher-level unprotected
+// functionality for the grid driver. It also provides virtual, mostly-empty
+// "hook" functions which are called from various places. The separate
+// GridDriver class inherits from this UnprotectedGridDriver class and provides
+// the FPU movement software protection functionality in its overrides of the
+// hook functions.
 //
 ////////////////////////////////////////////////////////////////////////////////
 

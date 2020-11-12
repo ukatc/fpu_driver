@@ -7,14 +7,14 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 2020-08-05  TODO: Put comment here
+// bwillemse 2020-08-05  Created.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME GridDriverTester.C
 //
-// Provides test functionality for the UnprotectedGridDriver and GridDriver
-// classes.
+// Provides test functionality for testing the UnprotectedGridDriver and
+// GridDriver classes.
 //
 ////////////////////////////////////////////////////////////////////////////////
 

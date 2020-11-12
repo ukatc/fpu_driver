@@ -7,13 +7,13 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 2020-08-27  TODO: Put comment here
+// bwillemse 2020-08-27  Created (expanded out of Python protectiondb.py).
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME FPUCounters.h
 //
-// TODO: Put description here
+// FPU counter functionality - stores counts of various FPU events.
 //
 ////////////////////////////////////////////////////////////////////////////////
 

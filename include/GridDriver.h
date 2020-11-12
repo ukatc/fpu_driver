@@ -7,13 +7,14 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 2020-06-15  TODO: Put comment here
+// bwillemse 2020-06-15  Created (translated from Python FpuGridDriver.py).
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME GridDriver.h
 //
-// TODO: Put description here
+// This GridDriver class adds a software protection layer on top of the basic
+// UnprotectedGridDriver class.
 //
 ////////////////////////////////////////////////////////////////////////////////
 

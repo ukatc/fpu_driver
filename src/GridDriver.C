@@ -7,7 +7,7 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 2020-06-15  TODO: Put comment here
+// bwillemse 2020-06-15  Created (translated from Python FpuGridDriver.py).
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -328,11 +328,6 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
     // This method needs to be run:
     //  - Every time the driver is initialising, after the initial ping
     //  - After every resetFPU command
-
-
-    // TODO: Have finished this function and visually checked it against the
-    // equivalent Python _reset_hook(), but still need to test it
-
 
     E_EtherCANErrCode ecan_result;
 

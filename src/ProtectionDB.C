@@ -7,13 +7,14 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 2020-05-20  TODO: Put comment here
+// bwillemse 2020-05-20  Created (translated from Python protectiondb.py).
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME ProtectionDB.C
 //
-// TODO: Put description here
+// Grid driver LMDB database interface layer for reading and writing FPU data
+// items.
 //
 ////////////////////////////////////////////////////////////////////////////////
 

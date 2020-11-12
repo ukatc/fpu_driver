@@ -7,13 +7,15 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 2020-05-13  TODO: Put comment here
+// bwillemse 2020-05-13  Separated this shared functionality out from
+//                       original EtherCAN wrapper code.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 // NAME WrapperSharedBase.h
 //
-// TODO: Put description here
+// Grid driver Boost.Python wrapper functionality shared between the wrapped
+// classes.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
