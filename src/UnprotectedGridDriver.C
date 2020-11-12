@@ -111,22 +111,29 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     double motor_max_rel_increase,
     double motor_max_step_difference)
 {
-    fpus_data.resize(nfpus);
-    
-    config.num_fpus = nfpus;
-    config.SocketTimeOutSeconds = SocketTimeOutSeconds;
-    config.confirm_each_step = confirm_each_step;
-    config.waveform_upload_pause_us = waveform_upload_pause_us;
-    config.configmotion_max_retry_count = configmotion_max_retry_count;
-    config.configmotion_max_resend_count = configmotion_max_resend_count;
-    config.min_bus_repeat_delay_ms = min_bus_repeat_delay_ms;
-    config.min_fpu_repeat_delay_ms = min_fpu_repeat_delay_ms;
-    config.alpha_datum_offset = alpha_datum_offset;
-    config.motor_minimum_frequency = motor_minimum_frequency;
-    config.motor_maximum_frequency = motor_maximum_frequency;
-    config.motor_max_start_frequency = motor_max_start_frequency;
-    config.motor_max_rel_increase = motor_max_rel_increase;
-    config.motor_max_step_difference = motor_max_step_difference;
+    if ((nfpus > 0) && (nfpus <= MAX_NUM_POSITIONERS))
+    {
+        fpus_data.resize(nfpus);
+        
+        config.num_fpus = nfpus;
+        config.SocketTimeOutSeconds = SocketTimeOutSeconds;
+        config.confirm_each_step = confirm_each_step;
+        config.waveform_upload_pause_us = waveform_upload_pause_us;
+        config.configmotion_max_retry_count = configmotion_max_retry_count;
+        config.configmotion_max_resend_count = configmotion_max_resend_count;
+        config.min_bus_repeat_delay_ms = min_bus_repeat_delay_ms;
+        config.min_fpu_repeat_delay_ms = min_fpu_repeat_delay_ms;
+        config.alpha_datum_offset = alpha_datum_offset;
+        config.motor_minimum_frequency = motor_minimum_frequency;
+        config.motor_maximum_frequency = motor_maximum_frequency;
+        config.motor_max_start_frequency = motor_max_start_frequency;
+        config.motor_max_rel_increase = motor_max_rel_increase;
+        config.motor_max_step_difference = motor_max_step_difference;
+    }
+    else
+    {
+        config.num_fpus = 0;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -172,6 +179,11 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     if (initialize_was_called_ok)
     {
         return DE_INTERFACE_ALREADY_INITIALIZED;
+    }
+
+    if (config.num_fpus == 0)
+    {
+        return DE_INVALID_FPU_ID;
     }
 
     config.logLevel = logLevel;

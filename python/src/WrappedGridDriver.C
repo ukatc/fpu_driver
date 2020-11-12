@@ -36,6 +36,14 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
     double motor_max_rel_increase,
     double motor_max_step_difference)
 {
+    if ((nfpus <= 0) || (nfpus > MAX_NUM_POSITIONERS))
+    {
+        std::cout << "*** ERROR ***: nfpus is <=0 or >MAX_NUM_POSITIONERS (" <<
+                     std::to_string(MAX_NUM_POSITIONERS) <<
+                     ") - GridDriver object created is not valid.\n";
+        return boost::shared_ptr<WrappedGridDriver>(nullptr);
+    }
+
     std::cout << "Grid driver object was successfully created (new C++ version).\n";
 
 #ifndef ENABLE_PROTECTION_CODE  // NOT ENABLE_PROTECTION_CODE
