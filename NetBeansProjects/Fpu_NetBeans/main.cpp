@@ -31,11 +31,13 @@
 #include "GridDriverTester.h"
 #include "Interval.h"
 #include "FPUCounters.h"
+#include "FPUAdmin.h"
 
 using namespace std;
 
 static void testGridDriver();
 static void testProtectionDB();
+static void testFpuAdminFuncs();
 
 //*****************************
 // TODO: For testing only
@@ -48,6 +50,8 @@ static void testProtectionDB();
 //------------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
+    testFpuAdminFuncs();
+    
     //testIntervalClass();
     
     // Test code for writing dummy items to the FPU database for the "PT19" FPU,
@@ -58,7 +62,7 @@ int main(int argc, char** argv)
                                                                  "PT19");
 #endif // 0
     
-    testGridDriver();
+    //testGridDriver();
 
     //testFpuCounters();
 
@@ -104,3 +108,10 @@ static void testProtectionDB()
 }
 
 //------------------------------------------------------------------------------
+static void testFpuAdminFuncs()
+{
+    FPUAdmin fpuadmin;
+    
+    fpuadmin.testFPUAdmin();
+}
+
