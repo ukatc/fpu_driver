@@ -195,16 +195,12 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
                 }
                 else
                 {
-                    // TODO: Not a good error code for this condition -
-                    // currently only a placeholder
                     ecan_result = DE_RESOURCE_ERROR;
                     break;
                 }
             }
             else
             {
-                // TODO: Not a good error code for this condition -
-                // currently only a placeholder
                 ecan_result = DE_RESOURCE_ERROR;
                 break;
             }
@@ -585,8 +581,6 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
                                                      config.alpha_datum_offset);
                     if (!_update_apos(txn, serial_number, fpu_id, new_apos))
                     {
-                        // TODO: Not a good error code for this condition -
-                        // currently only a placeholder
                         return DE_RESOURCE_ERROR;
                     }
                 }
@@ -598,8 +592,6 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
                     Interval new_range = apos.combine(protection_interval);
                     if (!_update_apos(txn, serial_number, fpu_id, new_range))
                     {
-                        // TODO: Not a good error code for this condition -
-                        // currently only a placeholder
                         return DE_RESOURCE_ERROR;
                     }
                 }
@@ -614,8 +606,6 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
                     Interval new_bpos = bpos.extend(0.0);
                     if (!_update_bpos(txn, serial_number, fpu_id, new_bpos))
                     {
-                        // TODO: Not a good error code for this condition -
-                        // currently only a placeholder
                         return DE_RESOURCE_ERROR;
                     }
                 }
@@ -639,8 +629,6 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
 
                     if (!_update_bpos(txn, serial_number, fpu_id, new_range))
                     {
-                        // TODO: Not a good error code for this condition -
-                        // currently only a placeholder
                         return DE_RESOURCE_ERROR;
                     }
                 }
@@ -657,15 +645,11 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
     }
     else
     {
-        // TODO: Not a good error code for this condition - currently only a
-        // placeholder
         return DE_RESOURCE_ERROR;
     }
 
     if (!protection_db.sync())
     {
-        // TODO: Not a good error code for this condition - currently only a
-        // placeholder
         return DE_RESOURCE_ERROR;
     }
 
@@ -705,8 +689,6 @@ E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
             }
             if (!success)
             {
-                // TODO: Not a good error code for this condition - currently
-                // only a placeholder
                 return DE_RESOURCE_ERROR;
             }
 
@@ -715,15 +697,11 @@ E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
     }
     else
     {
-        // TODO: Not a good error code for this condition - currently only a
-        // placeholder
         return DE_RESOURCE_ERROR;
     }
 
     if (!protection_db.sync())
     {
-        // TODO: Not a good error code for this condition - currently only a
-        // placeholder
         return DE_RESOURCE_ERROR;
     }
 
@@ -797,9 +775,6 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                 if (!_update_apos(txn, serial_number, fpu_id,
                                   Interval(0.0) + config.alpha_datum_offset))
                 {
-                    // TODO: Not a good error code for this condition -
-                    // currently only a placeholder - and see others in this
-                    // function as well
                     return DE_RESOURCE_ERROR;
                 }
 
@@ -814,7 +789,6 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                                             serial_number,
                                             fpu_data.db.aretries_acw));
                     {
-                        // TODO: See above
                         return DE_RESOURCE_ERROR;
                     }
                 }
@@ -826,7 +800,6 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                                             serial_number,
                                             fpu_data.db.aretries_cw));
                     {
-                        // TODO: See above
                         return DE_RESOURCE_ERROR;
                     }
                 }
@@ -860,9 +833,6 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
 
                     if (!_update_apos(txn, serial_number, fpu_id, a_interval))
                     {
-                        // TODO: Not a good error code for this condition -
-                        // currently only a placeholder - and see others in this
-                        // function as well
                         return DE_RESOURCE_ERROR;
                     }
                 }
@@ -887,7 +857,6 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                                             serial_number,
                                             fpu_data.db.bretries_acw));
                     {
-                        // TODO: See above
                         return DE_RESOURCE_ERROR;
                     }
                 }
@@ -900,7 +869,6 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                                             serial_number,
                                             fpu_data.db.bretries_cw));
                     {
-                        // TODO: See above
                         return DE_RESOURCE_ERROR;
                     }
                 }
@@ -930,9 +898,6 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
 
                     if (!_update_bpos(txn, serial_number, fpu_id, b_interval))
                     {
-                        // TODO: Not a good error code for this condition -
-                        // currently only a placeholder - and see others in this
-                        // function as well
                         return DE_RESOURCE_ERROR;
                     }
                 }
@@ -965,8 +930,6 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
     }
     else
     {
-        // TODO: Not a good error code for this condition - currently only a
-        // placeholder
         return DE_RESOURCE_ERROR;
     }
 
@@ -979,8 +942,6 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
 
     if (!protection_db.sync())
     {
-        // TODO: Not a good error code for this condition - currently only a
-        // placeholder
         return DE_RESOURCE_ERROR;
     }
 
@@ -1262,8 +1223,6 @@ E_EtherCANErrCode GridDriver::_refresh_positions(const t_grid_state &grid_state,
             }
             if (!success)
             {
-                // TODO: Not a good error code for this condition - currently
-                // only a placeholder
                 ecan_result = DE_RESOURCE_ERROR;
                 break;
             }
@@ -1271,15 +1230,11 @@ E_EtherCANErrCode GridDriver::_refresh_positions(const t_grid_state &grid_state,
     }
     else
     {
-        // TODO: Not a good error code for this condition - currently only a
-        // placeholder
         ecan_result = DE_RESOURCE_ERROR;
     }
 
     if (!protection_db.sync())
     {
-        // TODO: Not a good error code for this condition - currently only a
-        // placeholder
         ecan_result = DE_RESOURCE_ERROR;
     }
 
@@ -1946,8 +1901,6 @@ E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
 
     if (!protection_db.sync())
     {
-        // TODO: Not a good error code for this condition - currently only a
-        // placeholder
         return DE_RESOURCE_ERROR;
     }
 

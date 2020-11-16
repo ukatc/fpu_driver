@@ -7,7 +7,7 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 2020-05-25  TODO: Put comment here
+// bwillemse 2020-05-25  Created.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,11 +37,18 @@ using namespace std;
 static void testGridDriver();
 static void testProtectionDB();
 
+//*****************************
+// TODO: For testing only
+//#define GET_STACK_SIZE
+#ifdef GET_STACK_SIZE
+#include <sys/resource.h>
+#endif
+//*****************************
 
 //------------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-    testIntervalClass();
+    //testIntervalClass();
     
     // Test code for writing dummy items to the FPU database for the "PT19" FPU,
     // which is the serial number of the physical test FPU
@@ -51,12 +58,20 @@ int main(int argc, char** argv)
                                                                  "PT19");
 #endif // 0
     
-    //testGridDriver();
+    testGridDriver();
 
     //testFpuCounters();
 
     //testProtectionDB();
     
+
+//*****************************
+// TODO: For testing only
+#ifdef GET_STACK_SIZE
+    struct rlimit rl;
+    int result = getrlimit(RLIMIT_STACK, &rl);
+#endif
+//*****************************    
 
     return 0;
 }
@@ -85,7 +100,7 @@ static void testGridDriver()
 static void testProtectionDB()
 {
     //bool result_ok = protectionDB_Test();
-    bool result_ok = protectionDB_LoopingTestWithConsoleOutput();
+    bool result_ok = ProtectionDBTester::doLoopingTestsWithConsoleOutput();
 }
 
 //------------------------------------------------------------------------------
