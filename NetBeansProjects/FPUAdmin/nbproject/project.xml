@@ -45,8 +45,8 @@ Contributor(s):
             <name>FPUAdmin</name>
             <make-project-type>0</make-project-type>
             <c-extensions>c</c-extensions>
-            <cpp-extensions/>
-            <header-extensions/>
+            <cpp-extensions>C,cpp</cpp-extensions>
+            <header-extensions>h</header-extensions>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects/>
             <sourceRootList/>
