@@ -20,6 +20,8 @@
 #ifndef T_GATEWAY_ADDRESS_H
 #define T_GATEWAY_ADDRESS_H
 
+#include <cstdint>
+
 namespace mpifps
 {
 

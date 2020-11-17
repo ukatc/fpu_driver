@@ -112,6 +112,6 @@ static void testFpuAdminFuncs()
 {
     FPUAdmin fpuadmin;
     
-    fpuadmin.testFPUAdmin();
+    fpuadmin.dummyTest();
 }
 
