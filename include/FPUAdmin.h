@@ -37,8 +37,12 @@ public:
 
     // TODO: Make the following functions static? OR have this FPUAdmin class
     // open an FPU database when it's created?
-    E_EtherCANErrCode flash(int fpu_id, const char *serial_number,
-                            bool reuse_snum);
+
+    // TODO: flashFPU() should be a private function?
+    E_EtherCANErrCode flashFPU(int fpu_id, const char *serial_number,
+                               bool reuse_snum);
+
+
     E_EtherCANErrCode initAsPositions(const char *serial_number,
                                       double apos, double bpos,
                                       bool reinitialize, double adatum_offset);
