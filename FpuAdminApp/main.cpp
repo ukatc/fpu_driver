@@ -13,21 +13,63 @@
 ////////////////////////////////////////////////////////////////////////////////
 // NAME main.cpp
 //
-// Main file for FPUAdmin command-line application, which performs FPU database
-// administration.
+// Main file for FPUAdmin command-line application, which provides FPU database
+// administration facilities.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#include <string>
+
+#include "FPUAdmin.h"
 
 //------------------------------------------------------------------------------
 int main(int argc, char**argv)
 {
     int i;
-    
+
+    mpifps::FPUAdmin fpuadmin;
+    fpuadmin.printHelp();
+
+    // TODO: Temporary for testing only - needs to be set to argv[1], if argc
+    // is >= 2 (argument 1 is normally the app name I think)
+    std::string command_string = "init";
+
+    if (command_string == "init")
+    {
+    }
+    else if (command_string == "flash")
+    {
+    }
+    else if (command_string == "alimits")
+    {
+    }
+    else if (command_string == "blimits")
+    {
+    }
+    else if (command_string == "aretries")
+    {
+    }
+    else if (command_string == "bretries")
+    {
+    }
+    else if (command_string == "list")
+    {
+    }
+    else if (command_string == "list1")
+    {
+    }
+    else if (command_string == "healthlog")
+    {
+        // TODO: Not implemented yet, because no health log in LMDB database
+        // yet
+    }
+
+    return 0;
+
 #if 1
     int aflag = 0;
     int bflag = 0;

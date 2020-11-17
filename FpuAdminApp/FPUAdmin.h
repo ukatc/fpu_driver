@@ -38,18 +38,16 @@ public:
     // TODO: Make the following functions static? OR have this FPUAdmin class
     // open an FPU database when it's created?
 
+    void printHelp();
+
     // TODO: flashFPU() should be a private function?
     E_EtherCANErrCode flashFPU(int fpu_id, const char *serial_number,
                                bool reuse_snum);
 
-
-    E_EtherCANErrCode initAsPositions(const char *serial_number,
-                                      double apos, double bpos,
-                                      bool reinitialize, double adatum_offset);
-    E_EtherCANErrCode initAsIntervals(const char *serial_number, 
-                                      double apos_min, double apos_max,
-                                      double bpos_min, double bpos_max,
-                                      bool reinitialize, double adatum_offset);
+    E_EtherCANErrCode init(const char *serial_number, 
+                           double apos_min, double apos_max,
+                           double bpos_min, double bpos_max,
+                           bool reinitialize, double adatum_offset);
     E_EtherCANErrCode listAll();
     E_EtherCANErrCode listOne(const char *serial_number);
     E_EtherCANErrCode setALimits(const char *serial_number, 
@@ -57,6 +55,7 @@ public:
                                  double adatum_offset);
     E_EtherCANErrCode setBLimits(const char *serial_number, 
                                  double blimit_min, double blimit_max);
+    E_EtherCANErrCode setARetries(const char *serial_number, int aretries);
     E_EtherCANErrCode setBRetries(const char *serial_number, int bretries);
     E_EtherCANErrCode printHealthLog(const char *serial_number);
 

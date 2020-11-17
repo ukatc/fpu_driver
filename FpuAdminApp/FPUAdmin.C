@@ -18,18 +18,72 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
+#include <string>
 #include "FPUAdmin.h"
 #include "UnprotectedGridDriver.h"
 #include "T_GridState.h"
+#include "ProtectionDB.h"
+#include "FPUConstants.h"
 
 namespace mpifps
 {
 
 //------------------------------------------------------------------------------
-void FPUAdmin::dummyTest(void)
+void FPUAdmin::printHelp()
 {
-    std::cout << "Hello\n" << std::endl;
-    dummy++;
+    // TODO: Ensure that the help comments' arguments etc exactly match the
+    // actual code
+    // TODO: Add aretries command to help text? The command is checked for in
+    // fpu-admin, but isn't shown in its help text
+
+    std::cout << "\n";
+    std::cout << 
+        "help\n"
+        "    - Print this message\n"
+        "\n"
+        "flash [--reuse_sn] <serial_number> <fpu_id>\n"
+        "    - Flash serial number to FPU with ID <fpu_id>. FPU must be connected.\n"
+        "      If the --reuse_sn flag is set, it is allowed to\n"
+        "      use a serial number which was used before.\n"
+        "\n"
+        "init [--reinitialize] <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]\n"
+        "    - Initialize protection database for FPU, passing the initial alpha\n"
+        "      and beta arm positions in degree.\n"
+        "      The optional last parameter is the alpha datum offset.\n"
+        "\n"
+        "      If the --reinitialize flag is set, it is allowed to redefine\n"
+        "      FPU positions which already have been stored before.\n"
+        "\n"
+        "init [--reinitialize] <serial_number> [<apos_min>, <apos_max>] [<bpos_min>, <bpos_max>] [<adatum_offset>]\n"
+        "    - As above, but defining position intervals instead.\n"
+        "\n"
+        "list\n"
+        "    - List whole database.\n"
+        "\n"
+        "list1 <serial_number>\n"
+        "    - List data for one FPU.\n"
+        "\n"
+        "alimits <serial_number> <alpha_limit_min> <alpha_limit_max> [<adatum_offset>]\n"
+        "    - Set individual safe limits for alpha arm of this FPU.\n"
+        "\n"
+        "blimits <serial_number> <beta_limit_min> <beta_limit_max>\n"
+        "    - Set safe limits for beta arm of this FPU.\n"
+        "\n"
+        "bretries <serial_number> <freebetatries>\n"
+        "    - Set allowed number of freeBetaCollision command in the same\n"
+        "      direction before the software protection kicks in.\n"
+        "      The retry count is reset to zero upon a successfully finished\n"
+        "      datum search.\n"
+        "\n"
+        "healthlog <serial_number>\n"
+        "    - Print the content of the health log database for an FPU\n"
+        "      to the screen. The index number is the count of finished\n"
+        "      datum searches. Each row also contains the UNIX time stamp\n"
+        "      which can be used to plot against time, or to identify\n"
+        "      events in the driver logs.\n"
+        "\n"
+        "Default alpha datum offset: " << std::to_string(ALPHA_DATUM_OFFSET);
+    std::cout << "\n" << std::endl; 
 }
 
 //------------------------------------------------------------------------------
@@ -90,28 +144,18 @@ E_EtherCANErrCode FPUAdmin::flashFPU(int fpu_id, const char *serial_number,
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::initAsPositions(const char *serial_number,
-                                            double apos, double bpos,
-                                            bool reinitialize,
-                                            double adatum_offset)
+E_EtherCANErrCode FPUAdmin::init(const char *serial_number, 
+                                 double apos_min, double apos_max,
+                                 double bpos_min, double bpos_max,
+                                 bool reinitialize, double adatum_offset)
 {
     // Initializes the FPU in the protection database, passing the initial alpha
-    // and beta arm positions in degrees. The optional last parameter is the
-    // alpha datum offset.
-    // If the reinitialize is true, it is allowed to redefine FPU positions
+    // and beta arm min and max positions in degrees. The optional adatum_offset
+    // parameter is the alpha datum offset.
+    // If reinitialize is true, it is allowed to redefine FPU positions
     // which already have been stored before.
 
-}
-
-//------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::initAsIntervals(const char *serial_number, 
-                                            double apos_min, double apos_max,
-                                            double bpos_min, double bpos_max,
-                                            bool reinitialize,
-                                            double adatum_offset)
-{
-    // Similar to initAsPositions() above, but defining position intervals
-    // instead.
+    FpuDbData fpu_db_data;
 
 }
 
@@ -151,6 +195,14 @@ E_EtherCANErrCode FPUAdmin::setBLimits(const char *serial_number,
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode FPUAdmin::setARetries(const char *serial_number, int aretries)
+{
+    // TODO: Add comment here - the aretries command isn't shown in the Python
+    // fpu-admin version's help text, so figure out the correct text to put
+    // here - something like in setBRetries() below
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode FPUAdmin::setBRetries(const char *serial_number, int bretries)
 {
     // Sets allowed number of freeBetaCollision commands in the same direction
@@ -171,6 +223,14 @@ E_EtherCANErrCode FPUAdmin::printHealthLog(const char *serial_number)
     // TODO: Health log isn't implemented yet
 
     return DE_OK;
+}
+
+//------------------------------------------------------------------------------
+// TODO: For testing only - remove once done
+void FPUAdmin::dummyTest(void)
+{
+    std::cout << "Hello\n" << std::endl;
+    dummy++;
 }
 
 //------------------------------------------------------------------------------
