@@ -1,9 +1,29 @@
+// -*- mode: c++ -*-
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright 2020 UKRI. See file "LICENSE" for license information.
+//
+//
+// Who       When        What
+// --------  ----------  -------------------------------------------------------
+// bwillemse 2020-11-17  Created (project adapted from Python fpu-admin file).
+//------------------------------------------------------------------------------
+
+////////////////////////////////////////////////////////////////////////////////
+// NAME main.cpp
+//
+// Main file for FPUAdmin command-line application, which performs FPU database
+// administration.
+//
+////////////////////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+//------------------------------------------------------------------------------
 int main(int argc, char**argv)
 {
     int i;
@@ -75,3 +95,5 @@ int main(int argc, char**argv)
     
 #endif // 0
 }
+
+//------------------------------------------------------------------------------

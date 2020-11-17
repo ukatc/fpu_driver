@@ -124,7 +124,6 @@ Contributor(s):
       <itemPath>../../include/E_LogLevel.h</itemPath>
       <itemPath>../../include/EtherCANInterface.h</itemPath>
       <itemPath>../../include/EtherCANInterfaceConfig.h</itemPath>
-      <itemPath>../../include/FPUAdmin.h</itemPath>
       <itemPath>../../include/FPUCommands.h</itemPath>
       <itemPath>../../include/FPUConstants.h</itemPath>
       <itemPath>../../include/FPUCounters.h</itemPath>
@@ -184,7 +183,6 @@ Contributor(s):
       <itemPath>../../src/CommandPool.C</itemPath>
       <itemPath>../../src/CommandQueue.C</itemPath>
       <itemPath>../../src/EtherCANInterface.C</itemPath>
-      <itemPath>../../src/FPUAdmin.C</itemPath>
       <itemPath>../../src/FPUArray.C</itemPath>
       <itemPath>../../src/FPUCommands.C</itemPath>
       <itemPath>../../src/FPUCounters.C</itemPath>
@@ -205,7 +203,9 @@ Contributor(s):
                    projectFiles="false">
       <itemPath>Makefile</itemPath>
     </logicalFolder>
-    <itemPath>main.cpp</itemPath>
+    <itemPath>../../FpuAdminApp/FPUAdmin.C</itemPath>
+    <itemPath>../../FpuAdminApp/FPUAdmin.h</itemPath>
+    <itemPath>../../FpuAdminApp/main.cpp</itemPath>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -229,6 +229,12 @@ Contributor(s):
           </preprocessorList>
         </ccTool>
       </compileType>
+      <item path="../../FpuAdminApp/FPUAdmin.C" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../../FpuAdminApp/FPUAdmin.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../FpuAdminApp/main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="../../include/E_GridState.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/E_LogLevel.h" ex="false" tool="3" flavor2="0">
@@ -239,8 +245,6 @@ Contributor(s):
             ex="false"
             tool="3"
             flavor2="0">
-      </item>
-      <item path="../../include/FPUAdmin.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/FPUCommands.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -641,8 +645,6 @@ Contributor(s):
       </item>
       <item path="../../src/EtherCANInterface.C" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="../../src/FPUAdmin.C" ex="false" tool="1" flavor2="0">
-      </item>
       <item path="../../src/FPUArray.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/FPUCommands.C" ex="false" tool="1" flavor2="0">
@@ -819,8 +821,6 @@ Contributor(s):
       <item path="../../src/sync_utils.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/time_utils.C" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -843,6 +843,12 @@ Contributor(s):
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
+      <item path="../../FpuAdminApp/FPUAdmin.C" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../../FpuAdminApp/FPUAdmin.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../FpuAdminApp/main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="../../include/E_GridState.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/E_LogLevel.h" ex="false" tool="3" flavor2="0">
@@ -853,8 +859,6 @@ Contributor(s):
             ex="false"
             tool="3"
             flavor2="0">
-      </item>
-      <item path="../../include/FPUAdmin.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/FPUCommands.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -1255,8 +1259,6 @@ Contributor(s):
       </item>
       <item path="../../src/EtherCANInterface.C" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="../../src/FPUAdmin.C" ex="false" tool="1" flavor2="0">
-      </item>
       <item path="../../src/FPUArray.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/FPUCommands.C" ex="false" tool="1" flavor2="0">
@@ -1433,8 +1435,6 @@ Contributor(s):
       <item path="../../src/sync_utils.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/time_utils.C" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
   </confs>

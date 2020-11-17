@@ -35,13 +35,14 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/_ext/850e8c9d/FPUAdmin.o \
+	${OBJECTDIR}/_ext/850e8c9d/main.o \
 	${OBJECTDIR}/_ext/4211269a/mdb.o \
 	${OBJECTDIR}/_ext/4211269a/midl.o \
 	${OBJECTDIR}/_ext/56252444/AsyncInterface.o \
 	${OBJECTDIR}/_ext/56252444/CommandPool.o \
 	${OBJECTDIR}/_ext/56252444/CommandQueue.o \
 	${OBJECTDIR}/_ext/56252444/EtherCANInterface.o \
-	${OBJECTDIR}/_ext/56252444/FPUAdmin.o \
 	${OBJECTDIR}/_ext/56252444/FPUArray.o \
 	${OBJECTDIR}/_ext/56252444/FPUCommands.o \
 	${OBJECTDIR}/_ext/56252444/FPUCounters.o \
@@ -86,8 +87,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/56252444/handle_WarnLimitAlpha_warning.o \
 	${OBJECTDIR}/_ext/56252444/handle_WriteSerialNumber_response.o \
 	${OBJECTDIR}/_ext/56252444/sync_utils.o \
-	${OBJECTDIR}/_ext/56252444/time_utils.o \
-	${OBJECTDIR}/main.o
+	${OBJECTDIR}/_ext/56252444/time_utils.o
 
 
 # C Compiler Flags
@@ -113,6 +113,16 @@ LDLIBSOPTIONS=
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/fpuadmin: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/fpuadmin ${OBJECTFILES} ${LDLIBSOPTIONS}
+
+${OBJECTDIR}/_ext/850e8c9d/FPUAdmin.o: ../../FpuAdminApp/FPUAdmin.C
+	${MKDIR} -p ${OBJECTDIR}/_ext/850e8c9d
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/850e8c9d/FPUAdmin.o ../../FpuAdminApp/FPUAdmin.C
+
+${OBJECTDIR}/_ext/850e8c9d/main.o: ../../FpuAdminApp/main.cpp
+	${MKDIR} -p ${OBJECTDIR}/_ext/850e8c9d
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/850e8c9d/main.o ../../FpuAdminApp/main.cpp
 
 ${OBJECTDIR}/_ext/4211269a/mdb.o: ../../lib/liblmdb/mdb.c
 	${MKDIR} -p ${OBJECTDIR}/_ext/4211269a
@@ -143,11 +153,6 @@ ${OBJECTDIR}/_ext/56252444/EtherCANInterface.o: ../../src/EtherCANInterface.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/EtherCANInterface.o ../../src/EtherCANInterface.C
-
-${OBJECTDIR}/_ext/56252444/FPUAdmin.o: ../../src/FPUAdmin.C
-	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/FPUAdmin.o ../../src/FPUAdmin.C
 
 ${OBJECTDIR}/_ext/56252444/FPUArray.o: ../../src/FPUArray.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
@@ -373,11 +378,6 @@ ${OBJECTDIR}/_ext/56252444/time_utils.o: ../../src/time_utils.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/time_utils.o ../../src/time_utils.C
-
-${OBJECTDIR}/main.o: main.cpp
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
 
 # Subprojects
 .build-subprojects:
