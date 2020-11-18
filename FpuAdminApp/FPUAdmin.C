@@ -87,8 +87,8 @@ void FPUAdmin::printHelp()
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::flashFPU(int fpu_id, const char *serial_number,
-                                     bool reuse_snum)
+E_EtherCANErrCode FPUAdmin::flash(int fpu_id, const char *serial_number,
+                                  bool reuse_snum)
 {
     // Flashes serial number to FPU with ID <fpu_id>. FPU must be connected.
     // If reuse_snum is true, it is allowed to use a serial number which was
@@ -223,14 +223,6 @@ E_EtherCANErrCode FPUAdmin::printHealthLog(const char *serial_number)
     // TODO: Health log isn't implemented yet
 
     return DE_OK;
-}
-
-//------------------------------------------------------------------------------
-// TODO: For testing only - remove once done
-void FPUAdmin::dummyTest(void)
-{
-    std::cout << "Hello\n" << std::endl;
-    dummy++;
 }
 
 //------------------------------------------------------------------------------
