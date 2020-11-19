@@ -29,68 +29,12 @@ namespace mpifps
 {
 
 //------------------------------------------------------------------------------
-void FPUAdmin::printHelp()
+E_EtherCANErrCode FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
+                                  const char *new_serial_number,
+                                  bool mockup, bool reuse_snum,
+                                  t_gateway_address gateway_address)
 {
-    // TODO: Ensure that the help comments' arguments etc exactly match the
-    // actual code
-    // TODO: Add aretries command to help text? The command is checked for in
-    // fpu-admin, but isn't shown in its help text
-
-    std::cout << "\n";
-    std::cout << 
-        "help\n"
-        "    - Print this message\n"
-        "\n"
-        "flash [--reuse_sn] <serial_number> <fpu_id>\n"
-        "    - Flash serial number to FPU with ID <fpu_id>. FPU must be connected.\n"
-        "      If the --reuse_sn flag is set, it is allowed to\n"
-        "      use a serial number which was used before.\n"
-        "\n"
-        "init [--reinitialize] <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]\n"
-        "    - Initialize protection database for FPU, passing the initial alpha\n"
-        "      and beta arm positions in degree.\n"
-        "      The optional last parameter is the alpha datum offset.\n"
-        "\n"
-        "      If the --reinitialize flag is set, it is allowed to redefine\n"
-        "      FPU positions which already have been stored before.\n"
-        "\n"
-        "init [--reinitialize] <serial_number> [<apos_min>, <apos_max>] [<bpos_min>, <bpos_max>] [<adatum_offset>]\n"
-        "    - As above, but defining position intervals instead.\n"
-        "\n"
-        "list\n"
-        "    - List whole database.\n"
-        "\n"
-        "list1 <serial_number>\n"
-        "    - List data for one FPU.\n"
-        "\n"
-        "alimits <serial_number> <alpha_limit_min> <alpha_limit_max> [<adatum_offset>]\n"
-        "    - Set individual safe limits for alpha arm of this FPU.\n"
-        "\n"
-        "blimits <serial_number> <beta_limit_min> <beta_limit_max>\n"
-        "    - Set safe limits for beta arm of this FPU.\n"
-        "\n"
-        "bretries <serial_number> <freebetatries>\n"
-        "    - Set allowed number of freeBetaCollision command in the same\n"
-        "      direction before the software protection kicks in.\n"
-        "      The retry count is reset to zero upon a successfully finished\n"
-        "      datum search.\n"
-        "\n"
-        "healthlog <serial_number>\n"
-        "    - Print the content of the health log database for an FPU\n"
-        "      to the screen. The index number is the count of finished\n"
-        "      datum searches. Each row also contains the UNIX time stamp\n"
-        "      which can be used to plot against time, or to identify\n"
-        "      events in the driver logs.\n"
-        "\n"
-        "Default alpha datum offset: " << std::to_string(ALPHA_DATUM_OFFSET);
-    std::cout << "\n" << std::endl; 
-}
-
-//------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::flash(int fpu_id, const char *serial_number,
-                                  bool reuse_snum)
-{
-    // Flashes serial number to FPU with ID <fpu_id>. FPU must be connected.
+    // Flashes serial number to FPU with ID fpu_id. FPU must be connected.
     // If reuse_snum is true, it is allowed to use a serial number which was
     // used before.
 
@@ -144,7 +88,8 @@ E_EtherCANErrCode FPUAdmin::flash(int fpu_id, const char *serial_number,
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::init(const char *serial_number, 
+E_EtherCANErrCode FPUAdmin::init(ProtectionDbTxnPtr &txn,
+                                 const char *serial_number, 
                                  double apos_min, double apos_max,
                                  double bpos_min, double bpos_max,
                                  bool reinitialize, double adatum_offset)
@@ -157,19 +102,21 @@ E_EtherCANErrCode FPUAdmin::init(const char *serial_number,
 
     FpuDbData fpu_db_data;
 
+    return DE_OK;
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::listAll()
+E_EtherCANErrCode FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
 {
     // Prints whole database.
     // TODO: Specify that prints to stdout/cout?
 
-
+    
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::listOne(const char *serial_number)
+E_EtherCANErrCode FPUAdmin::listOne(ProtectionDbTxnPtr &txn, 
+                                    const char *serial_number)
 {
     // Prints data for one FPU
     // TODO: Specify that prints to stdout/cout?
@@ -178,7 +125,8 @@ E_EtherCANErrCode FPUAdmin::listOne(const char *serial_number)
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::setALimits(const char *serial_number, 
+E_EtherCANErrCode FPUAdmin::setALimits(ProtectionDbTxnPtr &txn,
+                                       const char *serial_number, 
                                        double alimit_min, double alimit_max,
                                        double adatum_offset)
 {
@@ -187,7 +135,8 @@ E_EtherCANErrCode FPUAdmin::setALimits(const char *serial_number,
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::setBLimits(const char *serial_number, 
+E_EtherCANErrCode FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
+                                       const char *serial_number, 
                                        double blimit_min, double blimit_max)
 {
     // Sets safe limits for beta arm of an FPU.
@@ -195,7 +144,8 @@ E_EtherCANErrCode FPUAdmin::setBLimits(const char *serial_number,
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::setARetries(const char *serial_number, int aretries)
+E_EtherCANErrCode FPUAdmin::setARetries(ProtectionDbTxnPtr &txn,
+                                        const char *serial_number, int aretries)
 {
     // TODO: Add comment here - the aretries command isn't shown in the Python
     // fpu-admin version's help text, so figure out the correct text to put
@@ -203,7 +153,8 @@ E_EtherCANErrCode FPUAdmin::setARetries(const char *serial_number, int aretries)
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::setBRetries(const char *serial_number, int bretries)
+E_EtherCANErrCode FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn,
+                                        const char *serial_number, int bretries)
 {
     // Sets allowed number of freeBetaCollision commands in the same direction
     // before the software protection kicks in. The retry count is reset to
@@ -211,7 +162,8 @@ E_EtherCANErrCode FPUAdmin::setBRetries(const char *serial_number, int bretries)
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::printHealthLog(const char *serial_number)
+E_EtherCANErrCode FPUAdmin::printHealthLog(ProtectionDbTxnPtr &txn,
+                                           const char *serial_number)
 {
     // Prints an FPU's health log from the health log database. Output format
     // details:
