@@ -152,6 +152,8 @@ private:
 // Forward reference for friend-ing in ProtectionDB below
 class ProtectionDBTester;
 
+using ProtectionDbTxnPtr = std::unique_ptr<ProtectionDbTxn>;
+
 class ProtectionDB
 {
     // Declare test class as friend so that it can access protected/private
@@ -162,7 +164,7 @@ public:
     static std::string getDirFromLinuxEnv(bool mockup);  // N.B. Static
 
     bool open(const std::string &dir_str);
-    std::unique_ptr<ProtectionDbTxn> createTransaction();
+    ProtectionDbTxnPtr createTransaction();
     bool sync();
     ~ProtectionDB();
     

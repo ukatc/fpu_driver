@@ -270,9 +270,9 @@ bool ProtectionDB::open(const std::string &dir_str)
 }
 
 //------------------------------------------------------------------------------
-std::unique_ptr<ProtectionDbTxn> ProtectionDB::createTransaction()
+ProtectionDbTxnPtr ProtectionDB::createTransaction()
 {
-    std::unique_ptr<ProtectionDbTxn> ptr_returned;
+    ProtectionDbTxnPtr ptr_returned;
 
     if (mdb_env_ptr != nullptr)
     {
