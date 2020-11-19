@@ -122,6 +122,13 @@ bool FpuDbData::isSameAsOther(const FpuDbData &other)
 //==============================================================================
 std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
 {
+    //************************
+    //************************
+    // TODO: NOTE: I've temporarily modified this function to give a fixed
+    // directory for initial test purposes - see the code change below
+    //************************
+    //************************
+
     // Provides Linux directory for the protection database based upon the
     // Linux environment variables FPU_DATABASE_MOCKUP and FPU_DATABASE, and
     // value of mockup. If unsuccessful then the returned string is empty.
@@ -130,7 +137,17 @@ std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
 
     char *dir_c_str = nullptr;
     std::string dir_str_ret;
+
+#if 1
+    //************************
+    //************************
+    // TODO: Temporary for testing - specify a fixed directory for initial
+    // testing for now
+    //************************
+    //************************
+    dir_str_ret = "/moonsdata/fpudb_NEWFORMAT";
     
+#else // NOT 1
     if (mockup)
     {
         dir_c_str = getenv("FPU_DATABASE_MOCKUP");
@@ -156,7 +173,8 @@ std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
             dir_str_ret = dir_c_str;
         }
     }
-    
+#endif // NOT 1
+
     return dir_str_ret;
 }
 

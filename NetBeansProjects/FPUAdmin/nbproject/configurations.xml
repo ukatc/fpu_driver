@@ -137,7 +137,7 @@ Contributor(s):
       <itemPath>../../include/T_GridState.h</itemPath>
       <itemPath>../../include/UnprotectedGridDriver.h</itemPath>
     </logicalFolder>
-    <logicalFolder name="f1" displayName="lib" projectFiles="true" kind="ROOT">
+    <logicalFolder name="f1" displayName="lib" projectFiles="true">
       <logicalFolder name="f1" displayName="liblmdb" projectFiles="true">
         <itemPath>../../lib/liblmdb/lmdb.h</itemPath>
         <itemPath>../../lib/liblmdb/mdb.c</itemPath>

@@ -78,6 +78,15 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
     // TODO: Finish this function
 
     // Initialise LMDB protection database
+    
+    //********************************
+    //********************************
+    // TODO: The new-format database directory path etc is still WIP. This
+    // database directory and Linux environment variable stuff eventually needs
+    // to be tidied and consolidated across all of this grid driver, FPUAdmin
+    // database administration tool, test functionality etc)
+    //********************************
+    //********************************
     std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
     if (!dir_str.empty())
     {

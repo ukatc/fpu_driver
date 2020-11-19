@@ -55,23 +55,32 @@ bool ProtectionDBTester::doTests()
     //     write to and read from the FPU database. If an item with the same
     //     serial number / subkey combination already exists in the database
     //     then it is overwritten
+
+    //**********************
+    // TODO: I changed the following directory stuff to consolidate it better
+    // with the other places where the database is accessed from (GridDriver
+    // usage, FPUAdmin database management tool etc) - check that it's still
+    // OK
+    //std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
+    const bool mockup = true;
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
+    //**********************
     
-    std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
     bool result_ok = false;
 
-    // TODO: All test functions in this file should go into ProtectionDBTester,
-    // so the code in this bit should be consolidated with it once this is done
-    ProtectionDBTester protection_db_tester;
-    result_ok = protection_db_tester.testFpuDbDataClass();
-    
-    if (result_ok)
+    if (!dir_str.empty())
     {
-        result_ok = testWithStayingOpen(dir_str);
-    }
-    
-    if (result_ok)
-    {
-        result_ok = testWithClosingReopening(dir_str);
+        result_ok = testFpuDbDataClass();
+
+        if (result_ok)
+        {
+            result_ok = testWithStayingOpen(dir_str);
+        }
+
+        if (result_ok)
+        {
+            result_ok = testWithClosingReopening(dir_str);
+        }
     }
     
     return result_ok;
