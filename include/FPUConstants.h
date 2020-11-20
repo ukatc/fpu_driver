@@ -42,6 +42,11 @@ const double StepsPerDegreeAlpha =
 const double StepsPerDegreeBeta =
                 (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution;
 
+const double ALPHA_MIN_DEGREE = -180.2;
+const double ALPHA_MAX_DEGREE = 159.0;
+const double BETA_MIN_DEGREE = -179.3;
+const double BETA_MAX_DEGREE = 140.0;
+
 const double BETA_MIN_HWPROT_DEGREE = -179.4;
 const double BETA_MAX_HWPROT_DEGREE = 150.4;
 

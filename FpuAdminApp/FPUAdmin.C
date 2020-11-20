@@ -102,6 +102,47 @@ E_EtherCANErrCode FPUAdmin::init(ProtectionDbTxnPtr &txn,
 
     FpuDbData fpu_db_data;
 
+    // TODO: In the Python fpu-admin version, the apos/bpos/alimits/blimits
+    // Intervals stored into the database also include alpha and beta OFFSETS
+    // - so need to replicate this somehow
+    fpu_db_data.apos = Interval(apos_min, apos_max); // TODO: Include alpha_offset
+    fpu_db_data.bpos = Interval(bpos_min, bpos_max); // TODO: Include BETA_DATUM_OFFSET
+    fpu_db_data.wf_reversed = false;
+    fpu_db_data.alimits = Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE); // TODO: Include alpha_offset
+    fpu_db_data.blimits = Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE);   // TODO: Include BETA_DATUM_OFFSET
+    fpu_db_data.maxaretries = DEFAULT_FREE_ALPHA_RETRIES;
+    fpu_db_data.aretries_cw = 0;
+    fpu_db_data.aretries_acw = 0;
+    fpu_db_data.maxbretries = DEFAULT_FREE_BETA_RETRIES;
+    fpu_db_data.bretries_cw = 0;
+    fpu_db_data.bretries_acw = 0;
+    if (!reinitialize)
+    {
+        // If the FPU has an existing counters entry in the database, then
+        // retain this
+
+        //*************
+        // ************ TODO: Look more closely at the help comments and Python
+        // code for the reinitialize flag, and check that this C++ code and its
+        // comments reflect this
+        //*************
+
+        // TODO: Need to distinguish between serial number not being found vs
+        // the database read failing at a lower level - if counters entry for
+        // serial number doesn't yet exist then NOT a failure - the counters
+        // just need to be initialised as empty
+        if (!txn->fpuDbTransferCounters(DbTransferType::Read, serial_number,
+                                        fpu_db_data.counters))
+        {
+            fpu_db_data.counters.zeroAll();
+        }
+    }
+    fpu_db_data.last_waveform.clear();
+
+    if (!txn->fpuDbTransferFpu(DbTransferType::Write, serial_number, fpu_db_data))
+    {
+        return DE_RESOURCE_ERROR;
+    }
     return DE_OK;
 }
 

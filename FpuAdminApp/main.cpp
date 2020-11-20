@@ -18,8 +18,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-// NOTE: return's from main() are used rather than exit()'s because runs any
-// destructors before exiting
+// NOTE: return's from main() are used rather than exit()'s, so that all
+// classes created in main() have their destructors properly called - exit()
+// doesn't do this.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,11 +130,11 @@ int main(int argc, char**argv)
 
     //..........................................................................
     // Open database and create transaction
+    ProtectionDB protection_db;
     ProtectionDbTxnPtr txn;
     std::string dir_str = ProtectionDB::getDirFromLinuxEnv(is_mockup);
     if (!dir_str.empty())
     {
-        ProtectionDB protection_db;
         if (protection_db.open(dir_str))
         {
             txn = protection_db.createTransaction();
@@ -143,6 +144,12 @@ int main(int argc, char**argv)
                 
                 return 1;
             }
+        }
+        else
+        {
+            // TODO: Error: Print error message here
+            
+            return 1;
         }
     }
     else
@@ -172,14 +179,15 @@ int main(int argc, char**argv)
     //............................................
     else if (cmd_str == "init")
     {
+        const char *serial_number = arg_strs[1].c_str();
+        
         std::vector<double> doubles_args;
         stringArgsToDoubles(arg_strs, 2, doubles_args);
         if ((doubles_args.size() + 2) == arg_strs.size())
         {
             bool correct_num_args = false;
-            const char *serial_number = arg_strs[1].c_str();
             double apos_min, apos_max, bpos_min, bpos_max;
-            double adatum_offset = 0.0;             //********** TODO: Is this correct default if not specified?
+            double adatum_offset = ALPHA_DATUM_OFFSET;
             
             if ((doubles_args.size() == 2) || (doubles_args.size() == 3))
             {
@@ -344,8 +352,8 @@ void printHelp()
 void stringArgsToDoubles(std::vector<std::string> &arg_strs,
                          int start_index, std::vector<double> &doubles_ret)
 {
-    // Converts arg_strs items, from start_index onwards, into doubles in
-    // doubles_ret. Notes:
+    // Converts arg_strs items into doubles in doubles_ret, starting from
+    // arg_strs[start_index]. Notes:
     //   - If start_index is >= number of items in arg_strs then just returns
     //     with doubles_ret size of 0
     //   - If an argument string couldn't be converted into a double, then
@@ -357,19 +365,18 @@ void stringArgsToDoubles(std::vector<std::string> &arg_strs,
         return;
     }
     
-    for (int i = start_index; arg_strs.size(); i++)
+    for (int i = start_index; i < arg_strs.size(); i++)
     {
         try
         {
             double double_val = std::stod(arg_strs[i]);
             doubles_ret.push_back(double_val);
         }
-        catch (int e)
+        catch (...)
         {
             break;
         }
     }
-    return;
 }
 
 //------------------------------------------------------------------------------
