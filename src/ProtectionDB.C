@@ -49,9 +49,6 @@ static const char *counters_keystr = "counters";
 // used in the Python version?
 //static const char *serialnumber_used_keystr = "serialnumber_used";
 
-// Character to separate the key/subkey parts of the overall key strings
-static const char *keystr_separator_char = "#";
-
 // Sub-database handles - initialised when ProtectionDB.open() is called
 static MDB_dbi fpu_dbi = 0;
 static MDB_dbi healthlog_dbi = 0;
@@ -805,9 +802,57 @@ MDB_val ProtectionDbTxn::fpuDbCreateKeyVal(const char serial_number[],
 
     // Create ASCII key of form <serial_number><separator><subkey>
     // IMPORTANT: serial_number and subkey must not contain the
-    // keystr_separator_char character. *** TODO ***: Check for this here?
-    key_str = std::string(serial_number) + keystr_separator_char + subkey;
+    // fpudb_keystr_separator_char character. *** TODO ***: Check for this here?
+    key_str = std::string(serial_number) + fpudb_keystr_separator_char + subkey;
     return { key_str.size(), const_cast<void *>((const void *)key_str.c_str()) };
+}
+
+//------------------------------------------------------------------------------
+bool ProtectionDbTxn::fpuDbGetSerialNumFromKeyVal(const MDB_val &key_val,
+                                                  std::string &serial_number_ret)
+{
+    // Extracts the serial number string from the beginning of key_val (up
+    // until the fpudb_keystr_separator_char character). If successful then
+    // returns true, otherwise if any problems then returns false.
+
+    // TODO: Harrmonise serial_number_buf_len to the global maximum serial
+    // number length (taking into account null-terminator) - where is this
+    // defined?
+    static const int max_serial_num_len = 10;
+    char serial_num_buf[max_serial_num_len + 1];
+
+    serial_number_ret.clear();
+
+    const char *source_buf = (char *)key_val.mv_data;
+    int serial_num_len = 0;
+    for (int i = 0; i < key_val.mv_size; i++)
+    {
+        if (source_buf[i] != fpudb_keystr_separator_char)
+        {
+            if (i < max_serial_num_len)
+            {
+                serial_num_buf[i] = source_buf[i];
+                serial_num_len++;
+            }
+            else
+            {
+                // Serial number is too long
+                return false;
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    serial_num_buf[serial_num_len] = '\0';
+    if (serial_num_len == 0)
+    {
+        return false;
+    }
+    serial_number_ret = serial_num_buf;
+    return true;
 }
 
 //------------------------------------------------------------------------------

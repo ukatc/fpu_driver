@@ -753,4 +753,34 @@ std::string ProtectionDBTester::getNextFpuTestSerialNumber()
 }
 
 //------------------------------------------------------------------------------
+void ProtectionDBTester::testGetSerialNumFromKeyVal()
+{
+    // Ad-hoc testing of ProtectionDbTxn::fpuDbGetSerialNumFromKeyVal() -
+    // single-step and check the results
+    // NOTE: The following test strings assume that fpudb_keystr_separator_char
+    // is '#'
+    static const char *test_key_strs[] =
+    {
+        "",
+        "PT01#qwerty",
+        "abcdefghijklmnopqrstuvwxyz",
+        "ABCDEFGHIJ#abc",
+        "QWERTYUIOPZ#def",
+        "AB23#",
+        "CD45"
+    };
+    MDB_val key_val;
+    std::string serial_number;
+
+    bool converted_ok = false;
+    for (int i = 0; i < sizeof(test_key_strs) / sizeof(test_key_strs[0]); i++)
+    {
+        key_val.mv_data = (void *)test_key_strs[i];
+        key_val.mv_size = strlen((char *)key_val.mv_data);
+        converted_ok = ProtectionDbTxn::fpuDbGetSerialNumFromKeyVal(key_val,
+                                                                    serial_number);
+    }
+}
+
+//------------------------------------------------------------------------------
 

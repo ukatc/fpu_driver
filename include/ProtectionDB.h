@@ -36,6 +36,12 @@ using namespace mpifps::ethercanif;
 
 //==============================================================================
 
+// Character to separate the key/subkey parts of the overall key strings
+//static const char *fpudb_keystr_separator_char = "#";
+const char fpudb_keystr_separator_char = '#';
+
+//==============================================================================
+
 // FpuDbData: FPU data which is stored in the protection database.
 struct FpuDbData
 {
@@ -106,6 +112,10 @@ class ProtectionDbTxn
     //   - Only create a single instance of this class at a time??
     //     (TODO: See LMDB database rules)
 
+    // Declare test class as friend so that it can access protected/private
+    // member variables and functions
+    friend class ProtectionDBTester;
+
 public:
     ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
 
@@ -140,8 +150,10 @@ public:
     ~ProtectionDbTxn();
 
 private:
-    MDB_val fpuDbCreateKeyVal(const char serial_number[],
+    static MDB_val fpuDbCreateKeyVal(const char serial_number[], // N.B. Static
                               const char subkey[]);
+    static bool fpuDbGetSerialNumFromKeyVal(const MDB_val &key_val, // N.B. Static
+                                            std::string &serial_number_ret);
 
     MDB_env *env_ptr = nullptr;
     MDB_txn *txn_ptr = nullptr;

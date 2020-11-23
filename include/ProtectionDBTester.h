@@ -21,6 +21,7 @@
 #ifndef PROTECTIONDBTESTER_H
 #define PROTECTIONDBTESTER_H
 
+#include <string>
 #include "ProtectionDB.h"
 #include "GridDriver.h"
 
@@ -40,6 +41,7 @@ public:
     static bool doTests();
     static void fillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data);
     static bool testFpuDbDataClass();
+    static void testGetSerialNumFromKeyVal();   // Ad-hoc testing
 
 private:
     // Top-level test functions

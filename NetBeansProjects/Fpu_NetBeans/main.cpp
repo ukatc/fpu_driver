@@ -58,11 +58,11 @@ int main(int argc, char** argv)
                                                                  "PT19");
 #endif // 0
     
-    testGridDriver();
+    //testGridDriver();
 
     //testFpuCounters();
 
-    //testProtectionDB();
+    testProtectionDB();
     
 
 //*****************************
@@ -99,6 +99,9 @@ static void testGridDriver()
 //------------------------------------------------------------------------------
 static void testProtectionDB()
 {
+    
+    ProtectionDBTester::testGetSerialNumFromKeyVal();
+    
     //bool result_ok = protectionDB_Test();
     bool result_ok = ProtectionDBTester::doLoopingTestsWithConsoleOutput();
 }
