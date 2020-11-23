@@ -106,6 +106,8 @@ if __name__ == '__main__' :
             """ % ALPHA_DATUM_OFFSET)
             exit(1)
 
+        #.......................................................................
+        # Capture any specified options
         if "--mockup" in argv:
             is_mockup = True
             n = argv.index("--mockup")
@@ -146,6 +148,7 @@ if __name__ == '__main__' :
 
         command = argv[1]
 
+        #.......................................................................
         if command == "init":
             if not (len(argv) in [5,6]):
                 print("usage: init <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]")
@@ -184,7 +187,6 @@ if __name__ == '__main__' :
                 if counters != None:
                     init_counters.update(counters)
 
-
                 protdb.putInterval(txn, sn, protdb.alpha_positions, aint, alpha_offset)
                 protdb.putInterval(txn, sn, protdb.beta_positions, bint, BETA_DATUM_OFFSET)
                 protdb.putField(txn, sn, protdb.waveform_table, [])
@@ -201,6 +203,7 @@ if __name__ == '__main__' :
                 protdb.putField(txn, sn, protdb.alpha_retry_count_acw, 0)
                 protdb.putField(txn, sn, protdb.counters, init_counters)
 
+        #.......................................................................
         if command == "flash":
             if len(argv) != 4:
                 print("usage: flash <serial_number> <fpu_id>")
@@ -226,8 +229,7 @@ if __name__ == '__main__' :
 
             flash_FPU(fpu_id, serial_number, mockup=is_mockup, gateway_address=gateway_address)
 
-
-
+        #.......................................................................
         if command == "alimits":
             if not (len(argv) in [5,6]) :
                 print("usage: alimits <serial_number> <amin> <amax> [<alpha_datum_offset>]")
@@ -245,6 +247,7 @@ if __name__ == '__main__' :
                 val = Interval(alpha_min, alpha_max)
                 protdb.putInterval(txn, serial_number, protdb.alpha_limits, val, alpha_offset)
 
+        #.......................................................................
         elif command == "blimits":
             if len(argv) != 5:
                 print("usage: blimits <serial_number> <bmin> <bmax>")
@@ -254,12 +257,11 @@ if __name__ == '__main__' :
             beta_min = float(argv[3])
             beta_max = float(argv[4])
 
-
             with env.begin(write=True,db=fpudb) as txn:
                 val = Interval(beta_min, beta_max)
                 protdb.putInterval(txn, serial_number, protdb.beta_limits, val, BETA_DATUM_OFFSET)
 
-
+        #.......................................................................
         elif command == "bretries":
             if len(argv) != 4:
                 print("usage: bretries <serial_number> <nretries>")
@@ -268,11 +270,11 @@ if __name__ == '__main__' :
             serial_number = argv[2]
             bretries = int(argv[3])
 
-
             with env.begin(write=True,db=fpudb) as txn:
                 val = str(bretries)
                 protdb.putField(txn, serial_number, protdb.free_beta_retries, val)
 
+        #.......................................................................
         elif command == "aretries":
             if len(argv) != 4:
                 print("usage: aretries <serial_number> <nretries>")
@@ -281,17 +283,17 @@ if __name__ == '__main__' :
             serial_number = argv[2]
             aretries = int(argv[3])
 
-
             with env.begin(write=True,db=fpudb) as txn:
                 val = str(aretries)
                 protdb.putField(txn, serial_number, protdb.free_alpha_retries, val)
 
-
+        #.......................................................................
         elif command == "list":
             with env.begin(db=fpudb) as txn:
                 for key, val in txn.cursor():
                     print(key, val)
 
+        #.......................................................................
         elif command == "list1":
             if len(argv) != 3:
                 print("usage: list1 <serial_number>")
@@ -319,7 +321,7 @@ if __name__ == '__main__' :
 
                     print(key,":", val)
 
-
+        #.......................................................................
         elif command == "healthlog":
             if len(argv) != 3:
                 print("usage: healthlog <serial_number>")
@@ -340,6 +342,8 @@ if __name__ == '__main__' :
                     key, val = HealthLogDB.getEntry(txn,serial_number, cnt)
                     if not val is None:
                         print(key,":", val)
+
+        #.......................................................................
 
     except FpuGridDriver.EtherCANException as err:
         exit_status = 10
