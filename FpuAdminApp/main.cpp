@@ -60,7 +60,7 @@ int main(int argc, char**argv)
     //..........................................................................
     // Display help if requested, and return
     bool print_help = false;
-    if (arg_strs.size() <= 1)
+    if (arg_strs.size() == 0)
     {
         print_help = true;
     }

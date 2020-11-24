@@ -791,6 +791,71 @@ bool ProtectionDbTxn::fpuDbGetItemDataPtrAndSize(const char serial_number[],
 }
 
 //------------------------------------------------------------------------------
+bool ProtectionDbTxn::fpuDbGetSerialNumbers(
+                                std::vector<std::string> &serial_numbers_ret)
+{
+    MDB_cursor *cursor_ptr;
+    bool return_flag = false;
+
+    serial_numbers_ret.clear();
+
+    // TODO: Want to get all available serial numbers, even if some of the 
+    // retrievals fail? (i.e. don't stop on first failure?)
+
+    if (mdb_cursor_open(txn_ptr, fpu_dbi, &cursor_ptr) == MDB_SUCCESS)
+    {
+        MDB_val key_val;
+        MDB_val data_val;
+        std::string serial_number;
+        std::string prev_serial_number;
+        MDB_cursor_op cursor_op = MDB_FIRST;    // Start from first item
+        while (1)
+        {
+            int mdb_result = mdb_cursor_get(cursor_ptr, &key_val, &data_val, 
+                                            cursor_op);
+            cursor_op = MDB_NEXT;
+            if (mdb_result == MDB_SUCCESS)
+            {
+                if (fpuDbGetSerialNumFromKeyVal(key_val, serial_number))
+                {
+                    // Each FPU serial number has a number of items on it in
+                    // the database (each with a different sub-key suffix) -
+                    // only record each serial number once. N.B. This works
+                    // because the keys are always stored in order in the
+                    // database
+                    if (serial_number != prev_serial_number)
+                    {
+                        serial_numbers_ret.push_back(serial_number);
+                        prev_serial_number = serial_number;
+                    }
+                }
+                else
+                {
+                    // Serial number extraction failed somehow
+                    break;
+                }
+            }
+            else
+            {
+                mdb_cursor_close(cursor_ptr);
+                if (mdb_result == MDB_NOTFOUND)
+                {
+                    // Normal end-of-database reached
+                    return_flag = true;
+                }
+                else
+                {
+                    // Unexpected error result
+                }
+                break;
+            }
+        }
+    }
+
+    return return_flag;
+}
+
+//------------------------------------------------------------------------------
 MDB_val ProtectionDbTxn::fpuDbCreateKeyVal(const char serial_number[],
                                            const char subkey[])
 {

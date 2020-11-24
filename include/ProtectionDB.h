@@ -147,11 +147,13 @@ public:
                                     const char subkey[], void **data_ptr_ret,
                                     int &num_bytes_ret);
 
+    bool fpuDbGetSerialNumbers(std::vector<std::string> &serial_numbers_ret);
+
     ~ProtectionDbTxn();
 
 private:
     static MDB_val fpuDbCreateKeyVal(const char serial_number[], // N.B. Static
-                              const char subkey[]);
+                                     const char subkey[]);
     static bool fpuDbGetSerialNumFromKeyVal(const MDB_val &key_val, // N.B. Static
                                             std::string &serial_number_ret);
 
