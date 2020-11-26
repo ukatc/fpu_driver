@@ -156,13 +156,43 @@ E_EtherCANErrCode FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::listOne(ProtectionDbTxnPtr &txn, 
-                                    const char *serial_number)
+void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
 {
-    // Prints data for one FPU
-    // TODO: Specify that prints to stdout/cout?
+    // apos / bpos / wf_reversed
+    // TODO: Also display alpha offset (and beta offset?) - see fpu driver
+    // manual example output on page 24
+    std::cout << "apos = " << fpu_db_data.apos.toString() <<
+                 ", bpos = " << fpu_db_data.bpos.toString();
+    const char *wf_reversed_str = "";
+    if (fpu_db_data.wf_reversed)
+    {
+        wf_reversed_str = "true";
+    }
+    else
+    {
+        wf_reversed_str = "false";
+    }
+    std::cout << ", wf_reversed = " << wf_reversed_str << "\n";
+    
+    // alimits / blimits
+    // TODO: Also display alpha offset (and beta offset?) - see fpu driver
+    // manual example output on page 24
+    std::cout << "alimits = " << fpu_db_data.alimits.toString() <<
+                 ", blimits = " << fpu_db_data.blimits.toString() << "\n";
 
+    // maxaretries / aretries_cw / aretries_acw
+    std::cout << "max_a_retries = " << std::to_string(fpu_db_data.maxaretries) <<
+       ", a_retries_cw = " << std::to_string(fpu_db_data.aretries_cw) <<
+       ", a_retries_acw = " << std::to_string(fpu_db_data.aretries_acw) << "\n";
 
+    // maxbretries / bretries_cw / bretries_acw
+    std::cout << "max_b_retries = " << std::to_string(fpu_db_data.maxbretries) <<
+       ", b_retries_cw = " << std::to_string(fpu_db_data.bretries_cw) <<
+       ", b_retries_acw = " << std::to_string(fpu_db_data.bretries_acw) << "\n";
+
+    // TODO: Also display fpu_db_data.counters and fpu_db_data.last_waveform?
+
+    std::cout << std::endl;
 }
 
 //------------------------------------------------------------------------------

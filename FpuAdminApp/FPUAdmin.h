@@ -61,6 +61,9 @@ public:
                                          int bretries);
     static E_EtherCANErrCode printHealthLog(ProtectionDbTxnPtr &txn,
                                             const char *serial_number);
+
+private:
+    static void printFpuDbData(FpuDbData &fpu_db_data);
 };
 
 //==============================================================================
