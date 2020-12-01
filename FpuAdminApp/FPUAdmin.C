@@ -29,10 +29,9 @@ namespace mpifps
 {
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
-                                  const char *new_serial_number,
-                                  bool mockup, bool reuse_snum,
-                                  t_gateway_address gateway_address)
+bool FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
+                     const char *new_serial_number, bool mockup,
+                     bool reuse_snum, t_gateway_address gateway_address)
 {
     // Flashes serial number to FPU with ID fpu_id. FPU must be connected.
     // If reuse_snum is true, it is allowed to use a serial number which was
@@ -81,18 +80,19 @@ E_EtherCANErrCode FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
         ecan_result = ugd.writeSerialNumber(fpu_id, serial_number, grid_state);
     }
 
-    return ecan_result;
+    // TODO: Print ecan_result or similar to std::cout?
+    
+    return false;
 #else
-    return DE_OK;
+    return true;
 #endif
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::init(ProtectionDbTxnPtr &txn,
-                                 const char *serial_number, 
-                                 double apos_min, double apos_max,
-                                 double bpos_min, double bpos_max,
-                                 bool reinitialize, double adatum_offset)
+bool FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number, 
+                    double apos_min, double apos_max,
+                    double bpos_min, double bpos_max,
+                    bool reinitialize, double adatum_offset)
 {
     // Initializes the FPU in the protection database, passing the initial alpha
     // and beta arm min and max positions in degrees. The optional adatum_offset
@@ -141,23 +141,54 @@ E_EtherCANErrCode FPUAdmin::init(ProtectionDbTxnPtr &txn,
 
     if (!txn->fpuDbTransferFpu(DbTransferType::Write, serial_number, fpu_db_data))
     {
-        return DE_RESOURCE_ERROR;
+        return false;
     }
-    return DE_OK;
+    return true;
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
+bool FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
 {
-    // Prints whole database.
-    // TODO: Specify that prints to stdout/cout?
+    // Prints data for all FPUs in database using std::cout
 
-    
+    std::vector<std::string> serial_numbers;
+    if (txn->fpuDbGetSerialNumbers(serial_numbers))
+    {
+        
+    }
+    else
+    {
+        // TODO: 
+        return false;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+bool FPUAdmin::listOne(ProtectionDbTxnPtr &txn, const char *serial_number)
+{
+    // Prints serial number and data for one FPU using std::cout
+
+    std::cout << "FPU serial number: " << serial_number << "\n";
+    FpuDbData fpu_db_data;
+    if (txn->fpuDbTransferFpu(DbTransferType::Read, serial_number, fpu_db_data))
+    {
+        printFpuDbData(fpu_db_data);
+        return true;
+    }
+    else
+    {
+        std::cout << "**ERROR**: One or more of this FPU's data items are "
+                     "missing from the database.\n" << std::endl;
+        return false;
+    }
 }
 
 //------------------------------------------------------------------------------
 void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
 {
+    // Prints data for one FPU using std::cout
+
     // apos / bpos / wf_reversed
     // TODO: Also display alpha offset (and beta offset?) - see fpu driver
     // manual example output on page 24
@@ -196,56 +227,75 @@ void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::setALimits(ProtectionDbTxnPtr &txn,
-                                       const char *serial_number, 
-                                       double alimit_min, double alimit_max,
-                                       double adatum_offset)
+bool FPUAdmin::setALimits(ProtectionDbTxnPtr &txn, const char *serial_number, 
+                          double alimit_min, double alimit_max,
+                          double adatum_offset)
 {
     // Sets safe limits for alpha arm of an FPU.
 
+    Interval alimits_interval(alimit_min, alimit_max);
+    // TODO: Modify below once have better return codes
+    return txn->fpuDbTransferPosition(DbTransferType::Write,
+                                      FpuDbPositionType::AlphaLimits,
+                                      serial_number, alimits_interval,
+                                      adatum_offset);
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
-                                       const char *serial_number, 
-                                       double blimit_min, double blimit_max)
+bool FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn, const char *serial_number, 
+                          double blimit_min, double blimit_max)
 {
     // Sets safe limits for beta arm of an FPU.
 
+    Interval blimits_interval(blimit_min, blimit_max);
+    double datum_offset = 0.0;
+    // TODO: Modify below once have better return codes
+    return txn->fpuDbTransferPosition(DbTransferType::Write,
+                                      FpuDbPositionType::BetaLimits,
+                                      serial_number, blimits_interval,
+                                      datum_offset); //************* TODO: Put a beta datum offset constant here?
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::setARetries(ProtectionDbTxnPtr &txn,
-                                        const char *serial_number, int aretries)
+bool FPUAdmin::setARetries(ProtectionDbTxnPtr &txn, const char *serial_number,
+                           int64_t aretries)
 {
-    // TODO: Add comment here - the aretries command isn't shown in the Python
-    // fpu-admin version's help text, so figure out the correct text to put
-    // here - something like in setBRetries() below
+    // Sets allowed number of freeAlphaLimitBreach commands in the same
+    // direction before the software protection kicks in. The retry count is
+    // reset to zero upon a successfully finished datum search.
+
+    return txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                      FpuDbIntValType::FreeAlphaRetries,
+                                      serial_number, aretries);
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn,
-                                        const char *serial_number, int bretries)
+bool FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn, const char *serial_number,
+                           int64_t bretries)
 {
     // Sets allowed number of freeBetaCollision commands in the same direction
     // before the software protection kicks in. The retry count is reset to
     // zero upon a successfully finished datum search.
+
+    return txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                      FpuDbIntValType::FreeBetaRetries,
+                                      serial_number, bretries);
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode FPUAdmin::printHealthLog(ProtectionDbTxnPtr &txn,
-                                           const char *serial_number)
+bool FPUAdmin::printHealthLog(ProtectionDbTxnPtr &txn, const char *serial_number)
 {
-    // Prints an FPU's health log from the health log database. Output format
-    // details:
+    // Prints an FPU's health log from the health log database to std::cout.
+    // Output format details:
     //   - The index number is the count of finished datum searches
     //   - Each row also contains the UNIX time stamp which can be used to plot
     //     against time, or to identify events in the driver logs.
-    // TODO: Specify that prints to stdout/cout?
 
     // TODO: Health log isn't implemented yet
 
-    return DE_OK;
+    std::cout << "**ERROR**: printHealthLog() command is not implemented yet.\n"
+              << std::endl;
+    return false;
 }
 
 //------------------------------------------------------------------------------

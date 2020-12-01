@@ -45,6 +45,10 @@ int main(int argc, char**argv)
     // TODO: Look for the is_mockup flag in the Linux environment variables -
     // see Python fpu-admin file
     bool is_mockup = false;
+    static const char *aretries_cmd_str = "aretries";
+    static const char *bretries_cmd_str = "bretries";
+    static const char *alimits_cmd_str = "alimits";
+    static const char *blimits_cmd_str = "blimits";
 
     // Capture argument strings into convenient vector
     std::vector<std::string> arg_strs;
@@ -220,61 +224,148 @@ int main(int argc, char**argv)
         
             if (correct_num_args)
             {
-                E_EtherCANErrCode ecan_result = 
-                        FPUAdmin::init(txn, serial_number,
-                                       apos_min, apos_max,
-                                       bpos_min, bpos_max, reinitialize,
-                                       adatum_offset);
-                if (ecan_result != DE_OK)
+                if (FPUAdmin::init(txn, serial_number, apos_min, apos_max,
+                                   bpos_min, bpos_max, reinitialize,
+                                   adatum_offset))
                 {
-                    // TODO: Error: Display error etc
-                    
+                    return 0;
+                }
+                else
+                {
                     return 1;
                 }
             }
             else
             {
-                std::cout << "**ERROR**: Incorrect number of arguments - "
-                             "see help for required argument lists.\n" << std::endl;
+                std::cout << "**ERROR**: Incorrect number of arguments.\n" <<
+                             std::endl;
                 return 1;
             }
         }
         else
         {
-            std::cout << "**ERROR: An argument wasn't in the correct format -"
-                         "see help for correct format.\n" << std::endl;
+            std::cout << "**ERROR: An argument wasn't in the correct format.\n" <<
+                         std::endl;
             return 1;
         }
     }
 
     //..........................................................................
-    else if (cmd_str == "alimits")
+    else if ((cmd_str == alimits_cmd_str) || (cmd_str == blimits_cmd_str))
     {
+        if (arg_strs.size() >= 4)
+        {
+            const char *serial_number = arg_strs[1].c_str();
+            std::vector<double> doubles_args;
+            stringArgsToDoubles(arg_strs, 2, doubles_args);
+            if ((doubles_args.size() + 2) == arg_strs.size())
+            {
+                if (cmd_str == alimits_cmd_str)
+                {
+                    double adatum_offset = ALPHA_DATUM_OFFSET;
+                    if (doubles_args.size() == 3)
+                    {
+                        adatum_offset = doubles_args[2];
+                    }
+                    return FPUAdmin::setALimits(txn, serial_number,
+                                                doubles_args[0], 
+                                                doubles_args[1],
+                                                adatum_offset);
+                }
+                else
+                {
+                    return FPUAdmin::setBLimits(txn, serial_number,
+                                                doubles_args[0],
+                                                doubles_args[1]);
+                }
+            }
+            else
+            {
+                std::cout << "**ERROR: An argument wasn't in the correct format.\n" <<
+                             std::endl;
+                return 1;
+            }
+        }
+        else
+        {
+            std::cout << "**ERROR**: Incorrect number of arguments.\n" << std::endl;
+            return 1;
+        }
     }
     
     //..........................................................................
-    else if (cmd_str == "blimits")
+    else if ((cmd_str == aretries_cmd_str) || (cmd_str == bretries_cmd_str))
     {
-    }
-
-    //..........................................................................
-    else if (cmd_str == "aretries")
-    {
-    }
-
-    //..........................................................................
-    else if (cmd_str == "bretries")
-    {
+        if (arg_strs.size() == 3)
+        {
+            try
+            {
+                const char *serial_number = arg_strs[1].c_str();
+                int retries = std::stoi(arg_strs[2]);
+                if (cmd_str == aretries_cmd_str)
+                {
+                    return FPUAdmin::setARetries(txn, serial_number, retries);
+                }
+                else
+                {
+                    return FPUAdmin::setBRetries(txn, serial_number, retries);
+                }
+            }
+            catch (...)
+            {
+                std::cout << "**ERROR: Retries value format is incorrect.\n" << std::endl;
+                return 1;
+            } 
+            return 0;
+        }
+        else
+        {
+            std::cout << "**ERROR**: Incorrect number of arguments.\n" << std::endl;
+            return 1;
+        }
     }
 
     //..........................................................................
     else if (cmd_str == "list")
     {
+        if (arg_strs.size() == 1)
+        {
+            if (FPUAdmin::listAll(txn))
+            {
+                return 0;
+            }
+            else
+            {
+                return 1;
+            }
+        }
+        else
+        {
+            std::cout << "**ERROR**: Incorrect number of arguments.\n" << std::endl;
+            return 1;
+        }
     }
 
     //..........................................................................
     else if (cmd_str == "list1")
     {
+        if (arg_strs.size() == 2)
+        {
+            const char *serial_number = arg_strs[1].c_str();
+            if (FPUAdmin::listOne(txn, serial_number))
+            {
+                return 0;
+            }
+            else
+            {
+                return 1;
+            }
+        }
+        else
+        {
+            std::cout << "**ERROR**: Incorrect number of arguments.\n" << std::endl;
+            return 1;
+        }
     }
 
     //..........................................................................
@@ -285,8 +376,15 @@ int main(int argc, char**argv)
     }
 
     //..........................................................................
+    else
+    {
+        // std::cout << "**ERROR**: Command not recognised.\n" << std::endl;
+        return 1;
+    }
 
-    return 0;
+    //..........................................................................
+    
+    return 1;
 }
 
 //------------------------------------------------------------------------------
@@ -294,21 +392,22 @@ void printHelp()
 {
     // TODO: Ensure that the help comments' arguments etc exactly match the
     // actual code
+    // TODO: Put "not implemented yet" for any commands which aren't implemented yet
     // TODO: Add aretries command to help text? The command is checked for in
     // fpu-admin, but isn't shown in its help text
 
     std::cout << "\n";
     std::cout << 
         "help\n"
-        "    - Print this message\n"
+        "    - Prints this message\n"
         "\n"
         "flash [--reuse_sn] <serial_number> <fpu_id>\n"
-        "    - Flash serial number to FPU with ID <fpu_id>. FPU must be connected.\n"
+        "    - Flashes serial number to FPU with ID <fpu_id>. FPU must be connected.\n"
         "      If the --reuse_sn flag is set, it is allowed to\n"
         "      use a serial number which was used before.\n"
         "\n"
         "init [--reinitialize] <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]\n"
-        "    - Initialize protection database for FPU, passing the initial alpha\n"
+        "    - Initializes FPU data in protection database, passing the initial alpha\n"
         "      and beta arm positions in degree.\n"
         "      The optional last parameter is the alpha datum offset.\n"
         "\n"
@@ -316,28 +415,34 @@ void printHelp()
         "      FPU positions which already have been stored before.\n"
         "\n"
         "init [--reinitialize] <serial_number> <apos_min> <apos_max> <bpos_min> <bpos_max> [<adatum_offset>]\n"
-        "    - As above, but defining position intervals instead.\n"
+        "    - As above, but specifies the positions in terms of INTERVALS instead.\n"
         "\n"
         "list\n"
-        "    - List whole database.\n"
+        "    - Lists the whole database.\n"
         "\n"
         "list1 <serial_number>\n"
-        "    - List data for one FPU.\n"
+        "    - Lists data for one FPU.\n"
         "\n"
         "alimits <serial_number> <alpha_limit_min> <alpha_limit_max> [<adatum_offset>]\n"
-        "    - Set individual safe limits for alpha arm of this FPU.\n"
+        "    - Sets individual safe limits for alpha arm of this FPU.\n"
         "\n"
         "blimits <serial_number> <beta_limit_min> <beta_limit_max>\n"
-        "    - Set safe limits for beta arm of this FPU.\n"
+        "    - Sets safe limits for beta arm of this FPU.\n"
         "\n"
-        "bretries <serial_number> <freebetatries>\n"
-        "    - Set allowed number of freeBetaCollision command in the same\n"
+        "aretries <serial_number> <freealpharetries>\n"
+        "    - Sets allowed number of freeAlphaLimitBreach commands in the same\n"
+        "      direction before the software protection kicks in.\n"
+        "      The retry count is reset to zero upon a successfully finished\n"
+        "      datum search.\n"
+        "\n"
+        "bretries <serial_number> <freebetaretries>\n"
+        "    - Sets allowed number of freeBetaCollision commands in the same\n"
         "      direction before the software protection kicks in.\n"
         "      The retry count is reset to zero upon a successfully finished\n"
         "      datum search.\n"
         "\n"
         "healthlog <serial_number>\n"
-        "    - Print the content of the health log database for an FPU\n"
+        "    - Prints the content of the health log database for an FPU\n"
         "      to the screen. The index number is the count of finished\n"
         "      datum searches. Each row also contains the UNIX time stamp\n"
         "      which can be used to plot against time, or to identify\n"

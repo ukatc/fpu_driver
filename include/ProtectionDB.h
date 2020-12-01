@@ -91,7 +91,7 @@ enum class FpuDbPositionType
 
 enum class FpuDbIntValType
 {
-    FreeAlphaRetries,
+    FreeAlphaRetries = 0,
     AlphaRetries_CW,
     AlphaRetries_ACW,
     FreeBetaRetries,
