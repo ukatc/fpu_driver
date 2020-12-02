@@ -34,10 +34,25 @@
 
 using namespace mpifps;
 
+//..............................................................................
+
+// Multi-use error strings
+static const char *bad_num_args_str = "Error: Incorrect number of arguments.";
+static const char *bad_numerical_format_str = "Error: Bad numerical argument format.";
+
+// Multi-use command strings
+static const char *aretries_cmd_str = "aretries";
+static const char *bretries_cmd_str = "bretries";
+static const char *alimits_cmd_str = "alimits";
+static const char *blimits_cmd_str = "blimits";
+
+//..............................................................................
+
 static void printHelp();
-static void stringArgsToDoubles(std::vector<std::string> &arg_strs,
+static void stringArgsToDoubles(const std::vector<std::string> &arg_strs,
                                 int start_index,
                                 std::vector<double> &doubles_ret);
+static bool stringToInt(const std::string &string_in, int &integer_ret);
 
 //------------------------------------------------------------------------------
 int main(int argc, char**argv)
@@ -45,10 +60,6 @@ int main(int argc, char**argv)
     // TODO: Look for the is_mockup flag in the Linux environment variables -
     // see Python fpu-admin file
     bool is_mockup = false;
-    static const char *aretries_cmd_str = "aretries";
-    static const char *bretries_cmd_str = "bretries";
-    static const char *alimits_cmd_str = "alimits";
-    static const char *blimits_cmd_str = "blimits";
 
     // Capture argument strings into convenient vector
     std::vector<std::string> arg_strs;
@@ -89,6 +100,7 @@ int main(int argc, char**argv)
     bool reinitialize = false;
     bool reuse_sn = false;
     t_gateway_address gateway_address = { nullptr, 0 };
+    t_gateway_address *gateway_address_ptr = nullptr;
 
     // N.B. Start at index of [1], because [0] should be command command
     for (auto it = arg_strs.begin() + 1; it != arg_strs.end();)
@@ -118,7 +130,14 @@ int main(int argc, char**argv)
                 // that it's pointing to needs to be persistent
                 gateway_address.ip = it->c_str();
                 gateway_address.port = 4700;
+                gateway_address_ptr = &gateway_address;
                 erase_item = true;
+            }
+            else
+            {
+                std::cout << "Error: --gateway_address does not have an"
+                             "address specified." << std::endl;
+                return 1;
             }
         }
         
@@ -144,31 +163,31 @@ int main(int argc, char**argv)
             txn = protection_db.createTransaction();
             if (!txn)
             {
-                // TODO: Error: Print error message here
-                
+                std::cout << "Error: Could not create database transaction." <<
+                             std::endl;
                 return 1;
             }
         }
         else
         {
-            // TODO: Error: Print error message here
-            
+            std::cout << "Error: Could not open protection database." << std::endl;
             return 1;
         }
     }
     else
     {
-        // TODO: Error: Print error message here
-        
+        std::cout << "Error: Could not determine directory of protection database -\n";
+        std::cout << "are the Linux environment variables set correctly?" << std::endl;
         return 1;
     }
         
         
-        // ********************** TODO: call ProtectionDB::sync() somewhere? OR will it automatically
-        // sync when the database is closed when this app finishes?
-    
-        // ********************** TODO: Need to close protection_db somewhere?
+    // ********************** TODO: call ProtectionDB::sync() somewhere? OR will it automatically
+    // sync when the database is closed when this app finishes?
 
+    // ********************** TODO: Need to close protection_db somewhere?
+
+    
     // Process specified command - N.B. at this stage, the number of items
     // in arg_strs might be less than the original, because the options above
     // will have been removed, so need to use indexes accordingly
@@ -177,75 +196,94 @@ int main(int argc, char**argv)
     //..........................................................................
     if (cmd_str == "flash")
     {
-    }
-    
-    //..........................................................................
-    else if (cmd_str == "init")
-    {
-        const char *serial_number = arg_strs[1].c_str();
-        
-        std::vector<double> doubles_args;
-        stringArgsToDoubles(arg_strs, 2, doubles_args);
-        if ((doubles_args.size() + 2) == arg_strs.size())
+        if (arg_strs.size() == 3)
         {
-            bool correct_num_args = false;
-            double apos_min, apos_max, bpos_min, bpos_max;
-            double adatum_offset = ALPHA_DATUM_OFFSET;
-            
-            if ((doubles_args.size() == 2) || (doubles_args.size() == 3))
+            const char *serial_number = arg_strs[1].c_str();
+            int fpu_id;
+            if (stringToInt(arg_strs[2], fpu_id))
             {
-                correct_num_args = true;
-
-                // 2 x single position values
-                apos_min = doubles_args[0];
-                apos_max = apos_min;
-                bpos_min = doubles_args[1];
-                bpos_max = bpos_min;
-                if (doubles_args.size() == 3)
-                {
-                    adatum_offset = doubles_args[2];
-                }
-            }
-
-            else if ((arg_strs.size() == 4) || (arg_strs.size() == 5))
-            {
-                correct_num_args = true;
-
-                // 2 x pairs of min/max intervals
-                apos_min = doubles_args[0];
-                apos_max = doubles_args[1];
-                bpos_min = doubles_args[2];
-                bpos_max = doubles_args[3];
-                if (arg_strs.size() == 5)
-                {
-                    adatum_offset = doubles_args[4];
-                }
-            }
-        
-            if (correct_num_args)
-            {
-                if (FPUAdmin::init(txn, serial_number, apos_min, apos_max,
-                                   bpos_min, bpos_max, reinitialize,
-                                   adatum_offset))
-                {
-                    return 0;
-                }
-                else
-                {
-                    return 1;
-                }
+                return FPUAdmin::flash(txn, fpu_id, serial_number, is_mockup,
+                                       reuse_sn, gateway_address_ptr);
             }
             else
             {
-                std::cout << "**ERROR**: Incorrect number of arguments.\n" <<
-                             std::endl;
+                std::cout << bad_numerical_format_str << std::endl;
                 return 1;
             }
         }
         else
         {
-            std::cout << "**ERROR: An argument wasn't in the correct format.\n" <<
-                         std::endl;
+            std::cout << bad_num_args_str << std::endl;
+            return 1;
+        }
+    }
+    
+    //..........................................................................
+    else if (cmd_str == "init")
+    {
+        if (arg_strs.size() >= 4)
+        {
+            const char *serial_number = arg_strs[1].c_str();
+
+            std::vector<double> doubles_args;
+            stringArgsToDoubles(arg_strs, 2, doubles_args);
+            if ((doubles_args.size() + 2) == arg_strs.size())
+            {
+                bool correct_num_args = false;
+                double apos_min, apos_max, bpos_min, bpos_max;
+                double adatum_offset = ALPHA_DATUM_OFFSET;
+
+                if ((doubles_args.size() == 2) || (doubles_args.size() == 3))
+                {
+                    correct_num_args = true;
+
+                    // 2 x single position values
+                    apos_min = doubles_args[0];
+                    apos_max = apos_min;
+                    bpos_min = doubles_args[1];
+                    bpos_max = bpos_min;
+                    if (doubles_args.size() == 3)
+                    {
+                        adatum_offset = doubles_args[2];
+                    }
+                }
+                else if ((arg_strs.size() == 4) || (arg_strs.size() == 5))
+                {
+                    correct_num_args = true;
+
+                    // 2 x pairs of min/max intervals
+                    apos_min = doubles_args[0];
+                    apos_max = doubles_args[1];
+                    bpos_min = doubles_args[2];
+                    bpos_max = doubles_args[3];
+                    if (arg_strs.size() == 5)
+                    {
+                        adatum_offset = doubles_args[4];
+                    }
+                }
+
+                if (correct_num_args)
+                {
+                    return FPUAdmin::init(txn, serial_number,
+                                          apos_min, apos_max,
+                                          bpos_min, bpos_max,
+                                          reinitialize, adatum_offset);
+                }
+                else
+                {
+                    std::cout << bad_num_args_str << std::endl;
+                    return 1;
+                }
+            }
+            else
+            {
+                std::cout << bad_numerical_format_str << std::endl;
+                return 1;
+            }
+        }
+        else
+        {
+            std::cout << bad_num_args_str << std::endl;
             return 1;
         }
     }
@@ -260,6 +298,8 @@ int main(int argc, char**argv)
             stringArgsToDoubles(arg_strs, 2, doubles_args);
             if ((doubles_args.size() + 2) == arg_strs.size())
             {
+                double limit_min = doubles_args[0];
+                double limit_max = doubles_args[1];
                 if (cmd_str == alimits_cmd_str)
                 {
                     double adatum_offset = ALPHA_DATUM_OFFSET;
@@ -268,27 +308,24 @@ int main(int argc, char**argv)
                         adatum_offset = doubles_args[2];
                     }
                     return FPUAdmin::setALimits(txn, serial_number,
-                                                doubles_args[0], 
-                                                doubles_args[1],
+                                                limit_min, limit_max,
                                                 adatum_offset);
                 }
                 else
                 {
                     return FPUAdmin::setBLimits(txn, serial_number,
-                                                doubles_args[0],
-                                                doubles_args[1]);
+                                                limit_min, limit_max);
                 }
             }
             else
             {
-                std::cout << "**ERROR: An argument wasn't in the correct format.\n" <<
-                             std::endl;
+                std::cout << bad_numerical_format_str << std::endl;
                 return 1;
             }
         }
         else
         {
-            std::cout << "**ERROR**: Incorrect number of arguments.\n" << std::endl;
+            std::cout << bad_num_args_str << std::endl;
             return 1;
         }
     }
@@ -298,10 +335,11 @@ int main(int argc, char**argv)
     {
         if (arg_strs.size() == 3)
         {
-            try
+            const char *serial_number = arg_strs[1].c_str();
+
+            int retries;
+            if (stringToInt(arg_strs[2], retries))
             {
-                const char *serial_number = arg_strs[1].c_str();
-                int retries = std::stoi(arg_strs[2]);
                 if (cmd_str == aretries_cmd_str)
                 {
                     return FPUAdmin::setARetries(txn, serial_number, retries);
@@ -311,16 +349,16 @@ int main(int argc, char**argv)
                     return FPUAdmin::setBRetries(txn, serial_number, retries);
                 }
             }
-            catch (...)
+            else
             {
-                std::cout << "**ERROR: Retries value format is incorrect.\n" << std::endl;
+                std::cout << bad_numerical_format_str << std::endl;
                 return 1;
             } 
             return 0;
         }
         else
         {
-            std::cout << "**ERROR**: Incorrect number of arguments.\n" << std::endl;
+            std::cout << bad_num_args_str << std::endl;
             return 1;
         }
     }
@@ -330,18 +368,11 @@ int main(int argc, char**argv)
     {
         if (arg_strs.size() == 1)
         {
-            if (FPUAdmin::listAll(txn))
-            {
-                return 0;
-            }
-            else
-            {
-                return 1;
-            }
+            return FPUAdmin::listAll(txn);
         }
         else
         {
-            std::cout << "**ERROR**: Incorrect number of arguments.\n" << std::endl;
+            std::cout << bad_num_args_str << std::endl;
             return 1;
         }
     }
@@ -352,18 +383,11 @@ int main(int argc, char**argv)
         if (arg_strs.size() == 2)
         {
             const char *serial_number = arg_strs[1].c_str();
-            if (FPUAdmin::listOne(txn, serial_number))
-            {
-                return 0;
-            }
-            else
-            {
-                return 1;
-            }
+            return FPUAdmin::listOne(txn, serial_number);
         }
         else
         {
-            std::cout << "**ERROR**: Incorrect number of arguments.\n" << std::endl;
+            std::cout << bad_num_args_str << std::endl;
             return 1;
         }
     }
@@ -371,20 +395,18 @@ int main(int argc, char**argv)
     //..........................................................................
     else if (cmd_str == "healthlog")
     {
-        // TODO: Not implemented yet, because no health log in LMDB database
-        // yet
+        std::cout << "Error: healthlog command is not implemented yet." << std::endl;
+        return 1;
     }
 
     //..........................................................................
     else
     {
-        // std::cout << "**ERROR**: Command not recognised.\n" << std::endl;
+        std::cout << "Error: Command not recognised." << std::endl;
         return 1;
     }
 
     //..........................................................................
-    
-    return 1;
 }
 
 //------------------------------------------------------------------------------
@@ -424,7 +446,7 @@ void printHelp()
         "    - Lists data for one FPU.\n"
         "\n"
         "alimits <serial_number> <alpha_limit_min> <alpha_limit_max> [<adatum_offset>]\n"
-        "    - Sets individual safe limits for alpha arm of this FPU.\n"
+        "    - Sets safe limits for alpha arm of this FPU.\n"
         "\n"
         "blimits <serial_number> <beta_limit_min> <beta_limit_max>\n"
         "    - Sets safe limits for beta arm of this FPU.\n"
@@ -432,19 +454,19 @@ void printHelp()
         "aretries <serial_number> <freealpharetries>\n"
         "    - Sets allowed number of freeAlphaLimitBreach commands in the same\n"
         "      direction before the software protection kicks in.\n"
-        "      The retry count is reset to zero upon a successfully finished\n"
+        "      The retry count is reset to zero upon a successfully-completed\n"
         "      datum search.\n"
         "\n"
         "bretries <serial_number> <freebetaretries>\n"
         "    - Sets allowed number of freeBetaCollision commands in the same\n"
         "      direction before the software protection kicks in.\n"
-        "      The retry count is reset to zero upon a successfully finished\n"
+        "      The retry count is reset to zero upon a successfully-completed\n"
         "      datum search.\n"
         "\n"
         "healthlog <serial_number>\n"
         "    - Prints the content of the health log database for an FPU\n"
         "      to the screen. The index number is the count of finished\n"
-        "      datum searches. Each row also contains the UNIX time stamp\n"
+        "      datum searches. Each row also contains the UNIX timestamp\n"
         "      which can be used to plot against time, or to identify\n"
         "      events in the driver logs.\n"
         "\n"
@@ -453,7 +475,7 @@ void printHelp()
 }
 
 //------------------------------------------------------------------------------
-void stringArgsToDoubles(std::vector<std::string> &arg_strs,
+void stringArgsToDoubles(const std::vector<std::string> &arg_strs,
                          int start_index, std::vector<double> &doubles_ret)
 {
     // Converts arg_strs items into doubles in doubles_ret, starting from
@@ -480,6 +502,23 @@ void stringArgsToDoubles(std::vector<std::string> &arg_strs,
         {
             break;
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+bool stringToInt(const std::string &string_in, int &integer_ret)
+{
+    // Converts a string to an integer. Returns true if OK, or false if the
+    // conversion wasn't successful.
+    
+    try
+    {
+        integer_ret = std::stoi(string_in);
+        return true;
+    }
+    catch (...)
+    {
+        return false;
     }
 }
 

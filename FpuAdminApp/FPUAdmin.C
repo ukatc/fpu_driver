@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <string>
+#include <string.h>
 #include "FPUAdmin.h"
 #include "UnprotectedGridDriver.h"
 #include "T_GridState.h"
@@ -31,61 +32,143 @@ namespace mpifps
 //------------------------------------------------------------------------------
 bool FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
                      const char *new_serial_number, bool mockup,
-                     bool reuse_snum, t_gateway_address gateway_address)
+                     bool reuse_snum,
+                     const t_gateway_address *gateway_address_ptr)
 {
     // Flashes serial number to FPU with ID fpu_id. FPU must be connected.
-    // If reuse_snum is true, it is allowed to use a serial number which was
-    // used before.
+    // If reuse_snum is true, a previously-defined serial number can be used.
+    // If gateway_address_ptr is not nullptr then it uses that gateway
+    // address, otherwise it uses the mockup flag to determine it.
 
-    UnprotectedGridDriver ugd(fpu_id + 1);
-
-#if 0
-    //if gateway_address is None:
-    const t_gateway_address gateway_address;
-    if (mockup)
+    //..........................................................................
+    // Check arguments
+    if ((fpu_id < 0) || (fpu_id >= MAX_NUM_POSITIONERS))
     {
-        gateway_address = [ FpuGridDriver.GatewayAddress("127.0.0.1", p)
-                            for p in [4700, 4701, 4702] ]
+        std::cout << "Error: fpu_id must be in the range 0 to " <<
+                      std::to_string((int)MAX_NUM_POSITIONERS) <<
+                      "." << std::endl;
+        return 1;
+    }
+
+    // TODO: Use a macro constant from somewhere for specifying the maximum
+    // serial number length
+    const int max_snum_len = 6;
+    if ((strlen(new_serial_number) == 0) ||
+        (strlen(new_serial_number) > max_snum_len))
+    {
+        std::cout << "Error: Serial number length must be between 1 and " <<
+                      std::to_string(max_snum_len) << "." << std::endl;
+        return 1;
+    }
+
+    //..........................................................................
+    // Check if serial number is already in use
+    int64_t snum_flag_used_val = 0;
+    bool read_was_ok = txn->fpuDbTransferInt64Val(DbTransferType::Read,
+                                                  FpuDbIntValType::SnumUsedFlag,
+                                                  new_serial_number,
+                                                  snum_flag_used_val);
+    if ((read_was_ok) && (snum_flag_used_val == SNUM_USED_CHECK_VAL))
+    {
+        // Serial number is already in use in database
+        if (!reuse_snum)
+        {
+            std::cout << "Flash command rejected: Serial number is already in use.\n"
+                         "Call with '--reuse_sn' to use it again." << std::endl;
+            return 1;
+        }
     }
     else
     {
-        gateway_address = [ FpuGridDriver.GatewayAddress(GATEWAY0_ADDRESS, 4700) ]
+        // Not in use yet - add it to database
+        snum_flag_used_val = SNUM_USED_CHECK_VAL;
+        if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                        FpuDbIntValType::SnumUsedFlag,
+                                        new_serial_number,
+                                        snum_flag_used_val))
+        {
+            return 1;
+        }
     }
 
+    //..........................................................................
+    // Connect to grid and write serial number to FPU
 
-    // TODO: t_gateway_address::ip is only a pointer - dangerous? Change this
-    // eventually? (e.g. to a std::string?)
+    // Create gateway address list
+    t_gateway_address gateway_addresses[MAX_NUM_GATEWAYS];
+    int num_gateways;
+    if (gateway_address_ptr != nullptr)
+    {
+        gateway_addresses[0] = *gateway_address_ptr;
+        num_gateways = 1;
+    }
+    else
+    {
+        if (mockup)
+        {
+            for (int i = 0; i < MAX_NUM_GATEWAYS; i++)
+            {
+                gateway_addresses[i] = { "127.0.0.1", (uint16_t)(4700 + i) };
+            }
+            num_gateways = MAX_NUM_GATEWAYS;
+        }
+        else
+        {
+            // ************ TODO: Get GATEWAY0_ADDRESS from Linux environment
+            // variable of the same name - see the Python definition of
+            // GATEWAY0_ADDRESS
+            const char *dummy_gateway0_address = "192.168.0.10";
+            //gateway_addresses[0] = { GATEWAY0_ADDRESS, 4700 };
+            gateway_addresses[0] = { dummy_gateway0_address, 4700 };
+            num_gateways = 1;
+        }
+    }
 
-    // ********* TODO: The following should be MULTIPLE gateways??? (see original
-    // flash_FPU() function)
-    E_EtherCANErrorCode ecan_result = ugd.connect(1, gateway_address);
+    // Connect to grid
+    UnprotectedGridDriver ugd(fpu_id + 1);
+    ugd.initialize();
 
+    std::cout << "Connecting to grid..." << std::endl;
+    E_EtherCANErrCode ecan_result = ugd.connect(num_gateways,
+                                                gateway_addresses);
     t_grid_state grid_state;
+    t_fpuset fpuset;
+
+    /* *************************************
+       *************************************    
+    TODO: Ping & read ALL serial numbers (based upon ugd's number of FPUs (using
+    getNumFpus()?), OR only need to ping and read serial numbers for THIS SINGLE
+    FPU?
+    createFpuSetForNumFpus(int num_fpus, t_fpuset &fpuset_ret);
+    */
+
     if (ecan_result == DE_OK)
     {
+        std::cout << "Pinging FPUs..." << std::endl;
         ugd.getGridState(grid_state);
-
-        ecan_result = ugd.pingFPUs(grid_state);
+        ecan_result = ugd.pingFPUs(grid_state, fpuset);
     }
 
     if (ecan_result == DE_OK)
     {
-        ecan_result = ugd.readSerialNumbers(grid_state);
+        std::cout << "Reading serial numbers..." << std::endl;
+        ecan_result = ugd.readSerialNumbers(grid_state, fpuset);
     }
 
+    // Write serial number to FPU
     if (ecan_result == DE_OK)
     {
-        // print("flashing FPU #%i with serial number %r" % (fpu_id, serial_number))
-
-        ecan_result = ugd.writeSerialNumber(fpu_id, serial_number, grid_state);
+        std::cout << "Flashing FPU " << std::to_string(fpu_id) <<
+                     " with serial number " << new_serial_number << std::endl;
+        ecan_result = ugd.writeSerialNumber(fpu_id, new_serial_number,
+                                            grid_state);
     }
 
     // TODO: Print ecan_result or similar to std::cout?
     
     return false;
-#else
-    return true;
-#endif
+
+    //..........................................................................
 }
 
 //------------------------------------------------------------------------------
@@ -187,7 +270,7 @@ bool FPUAdmin::listOne(ProtectionDbTxnPtr &txn, const char *serial_number)
 //------------------------------------------------------------------------------
 void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
 {
-    // Prints data for one FPU using std::cout
+    // Prints useful data for one FPU using std::cout
 
     // apos / bpos / wf_reversed
     // TODO: Also display alpha offset (and beta offset?) - see fpu driver
@@ -234,7 +317,6 @@ bool FPUAdmin::setALimits(ProtectionDbTxnPtr &txn, const char *serial_number,
     // Sets safe limits for alpha arm of an FPU.
 
     Interval alimits_interval(alimit_min, alimit_max);
-    // TODO: Modify below once have better return codes
     return txn->fpuDbTransferPosition(DbTransferType::Write,
                                       FpuDbPositionType::AlphaLimits,
                                       serial_number, alimits_interval,
@@ -249,7 +331,6 @@ bool FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn, const char *serial_number,
 
     Interval blimits_interval(blimit_min, blimit_max);
     double datum_offset = 0.0;
-    // TODO: Modify below once have better return codes
     return txn->fpuDbTransferPosition(DbTransferType::Write,
                                       FpuDbPositionType::BetaLimits,
                                       serial_number, blimits_interval,

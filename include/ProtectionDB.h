@@ -50,8 +50,8 @@ struct FpuDbData
     bool operator==(const FpuDbData &other);
     bool operator!=(const FpuDbData &other);
     
-     // snum_used_flag: In the database, this dummy field's existence for a
-     // serial number is used to indicate that the serial number is in use
+     // snum_used_flag: In the database, this field's existence for a serial
+     // number is used to indicate that the serial number is in use for an FPU
     int64_t snum_used_flag;
 
     Interval apos;

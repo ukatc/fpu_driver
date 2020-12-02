@@ -37,7 +37,8 @@ public:
     // the unique_ptr itself doesn't have its ownership transferred
     static bool flash(ProtectionDbTxnPtr &txn, int fpu_id,
                       const char *new_serial_number, bool mockup,
-                      bool reuse_snum, t_gateway_address gateway_address);
+                      bool reuse_snum, 
+                      const t_gateway_address *gateway_address_ptr);
     static bool init(ProtectionDbTxnPtr &txn, const char *serial_number, 
                      double apos_min, double apos_max,
                      double bpos_min, double bpos_max,
