@@ -91,7 +91,7 @@ int main(int argc, char**argv)
     if (print_help)
     {
         printHelp();
-        return 0;
+        return AppReturnOk;
     }
     
     //..........................................................................
@@ -137,7 +137,7 @@ int main(int argc, char**argv)
             {
                 std::cout << "Error: --gateway_address does not have an"
                              "address specified." << std::endl;
-                return 1;
+                return AppReturnError;
             }
         }
         
@@ -165,20 +165,20 @@ int main(int argc, char**argv)
             {
                 std::cout << "Error: Could not create database transaction." <<
                              std::endl;
-                return 1;
+                return AppReturnError;
             }
         }
         else
         {
             std::cout << "Error: Could not open protection database." << std::endl;
-            return 1;
+            return AppReturnError;
         }
     }
     else
     {
         std::cout << "Error: Could not determine directory of protection database -\n";
         std::cout << "are the Linux environment variables set correctly?" << std::endl;
-        return 1;
+        return AppReturnError;
     }
         
         
@@ -208,13 +208,13 @@ int main(int argc, char**argv)
             else
             {
                 std::cout << bad_numerical_format_str << std::endl;
-                return 1;
+                return AppReturnError;
             }
         }
         else
         {
             std::cout << bad_num_args_str << std::endl;
-            return 1;
+            return AppReturnError;
         }
     }
     
@@ -272,19 +272,19 @@ int main(int argc, char**argv)
                 else
                 {
                     std::cout << bad_num_args_str << std::endl;
-                    return 1;
+                    return AppReturnError;
                 }
             }
             else
             {
                 std::cout << bad_numerical_format_str << std::endl;
-                return 1;
+                return AppReturnError;
             }
         }
         else
         {
             std::cout << bad_num_args_str << std::endl;
-            return 1;
+            return AppReturnError;
         }
     }
 
@@ -320,13 +320,13 @@ int main(int argc, char**argv)
             else
             {
                 std::cout << bad_numerical_format_str << std::endl;
-                return 1;
+                return AppReturnError;
             }
         }
         else
         {
             std::cout << bad_num_args_str << std::endl;
-            return 1;
+            return AppReturnError;
         }
     }
     
@@ -352,14 +352,13 @@ int main(int argc, char**argv)
             else
             {
                 std::cout << bad_numerical_format_str << std::endl;
-                return 1;
+                return AppReturnError;
             } 
-            return 0;
         }
         else
         {
             std::cout << bad_num_args_str << std::endl;
-            return 1;
+            return AppReturnError;
         }
     }
 
@@ -373,7 +372,7 @@ int main(int argc, char**argv)
         else
         {
             std::cout << bad_num_args_str << std::endl;
-            return 1;
+            return AppReturnError;
         }
     }
 
@@ -388,7 +387,7 @@ int main(int argc, char**argv)
         else
         {
             std::cout << bad_num_args_str << std::endl;
-            return 1;
+            return AppReturnError;
         }
     }
 
@@ -396,14 +395,14 @@ int main(int argc, char**argv)
     else if (cmd_str == "healthlog")
     {
         std::cout << "Error: healthlog command is not implemented yet." << std::endl;
-        return 1;
+        return AppReturnError;
     }
 
     //..........................................................................
     else
     {
         std::cout << "Error: Command not recognised." << std::endl;
-        return 1;
+        return AppReturnError;
     }
 
     //..........................................................................

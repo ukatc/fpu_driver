@@ -30,13 +30,13 @@ namespace mpifps
 {
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
-                     const char *new_serial_number, bool mockup,
-                     bool reuse_snum,
-                     const t_gateway_address *gateway_address_ptr)
+AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
+                             const char *new_serial_number, bool mockup,
+                             bool reuse_snum,
+                             const t_gateway_address *gateway_address_ptr)
 {
-    // Flashes serial number to FPU with ID fpu_id. FPU must be connected.
-    // If reuse_snum is true, a previously-defined serial number can be used.
+    // Flashes serial number to FPU with ID of fpu_id. FPU must be connected.
+    // If reuse_snum is true then a previously-defined serial number can be used.
     // If gateway_address_ptr is not nullptr then it uses that gateway
     // address, otherwise it uses the mockup flag to determine it.
 
@@ -47,7 +47,7 @@ bool FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
         std::cout << "Error: fpu_id must be in the range 0 to " <<
                       std::to_string((int)MAX_NUM_POSITIONERS) <<
                       "." << std::endl;
-        return 1;
+        return AppReturnError;
     }
 
     // TODO: Use a macro constant from somewhere for specifying the maximum
@@ -58,7 +58,7 @@ bool FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
     {
         std::cout << "Error: Serial number length must be between 1 and " <<
                       std::to_string(max_snum_len) << "." << std::endl;
-        return 1;
+        return AppReturnError;
     }
 
     //..........................................................................
@@ -70,24 +70,25 @@ bool FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
                                                   snum_flag_used_val);
     if ((read_was_ok) && (snum_flag_used_val == SNUM_USED_CHECK_VAL))
     {
-        // Serial number is already in use in database
+        // Serial number is already in use
         if (!reuse_snum)
         {
             std::cout << "Flash command rejected: Serial number is already in use.\n"
                          "Call with '--reuse_sn' to use it again." << std::endl;
-            return 1;
+            return AppReturnError;
         }
     }
     else
     {
-        // Not in use yet - add it to database
+        // Serial number is not in use yet - add it to database
         snum_flag_used_val = SNUM_USED_CHECK_VAL;
         if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
                                         FpuDbIntValType::SnumUsedFlag,
                                         new_serial_number,
                                         snum_flag_used_val))
         {
-            return 1;
+            // ******** TODO: Display database write failure error message here
+            return AppReturnError;
         }
     }
 
@@ -164,18 +165,24 @@ bool FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
                                             grid_state);
     }
 
-    // TODO: Print ecan_result or similar to std::cout?
-    
-    return false;
+    if (ecan_result == DE_OK)
+    {
+        return AppReturnOk;
+    }
+    else
+    {
+        // TODO: Print ecan_result value or similar to std::cout
+        return AppReturnError;
+    }
 
     //..........................................................................
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number, 
-                    double apos_min, double apos_max,
-                    double bpos_min, double bpos_max,
-                    bool reinitialize, double adatum_offset)
+AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number, 
+                            double apos_min, double apos_max,
+                            double bpos_min, double bpos_max,
+                            bool reinitialize, double adatum_offset)
 {
     // Initializes the FPU in the protection database, passing the initial alpha
     // and beta arm min and max positions in degrees. The optional adatum_offset
@@ -214,6 +221,8 @@ bool FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
         // the database read failing at a lower level - if counters entry for
         // serial number doesn't yet exist then NOT a failure - the counters
         // just need to be initialised as empty
+        // TODO: If the following fails due to a database read error then return
+        // AppReturnError
         if (!txn->fpuDbTransferCounters(DbTransferType::Read, serial_number,
                                         fpu_db_data.counters))
         {
@@ -222,33 +231,37 @@ bool FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
     }
     fpu_db_data.last_waveform.clear();
 
-    if (!txn->fpuDbTransferFpu(DbTransferType::Write, serial_number, fpu_db_data))
+    if (txn->fpuDbTransferFpu(DbTransferType::Write, serial_number, fpu_db_data))
     {
-        return false;
+        return AppReturnOk;
     }
-    return true;
+    else
+    {
+        return AppReturnError;
+    }
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
+AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
 {
     // Prints data for all FPUs in database using std::cout
 
     std::vector<std::string> serial_numbers;
-    if (txn->fpuDbGetSerialNumbers(serial_numbers))
+    if (txn->fpuDbGetAllSerialNumbers(serial_numbers))
     {
         
     }
     else
     {
         // TODO: 
-        return false;
+        return AppReturnError;
     }
-    return true;
+    return AppReturnOk;
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::listOne(ProtectionDbTxnPtr &txn, const char *serial_number)
+AppReturnVal FPUAdmin::listOne(ProtectionDbTxnPtr &txn,
+                               const char *serial_number)
 {
     // Prints serial number and data for one FPU using std::cout
 
@@ -257,13 +270,13 @@ bool FPUAdmin::listOne(ProtectionDbTxnPtr &txn, const char *serial_number)
     if (txn->fpuDbTransferFpu(DbTransferType::Read, serial_number, fpu_db_data))
     {
         printFpuDbData(fpu_db_data);
-        return true;
+        return AppReturnOk;
     }
     else
     {
-        std::cout << "**ERROR**: One or more of this FPU's data items are "
+        std::cout << "Error: One or more of this FPU's data items are "
                      "missing from the database.\n" << std::endl;
-        return false;
+        return AppReturnError;
     }
 }
 
@@ -310,61 +323,94 @@ void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::setALimits(ProtectionDbTxnPtr &txn, const char *serial_number, 
-                          double alimit_min, double alimit_max,
-                          double adatum_offset)
+AppReturnVal FPUAdmin::setALimits(ProtectionDbTxnPtr &txn,
+                                  const char *serial_number, 
+                                  double alimit_min, double alimit_max,
+                                  double adatum_offset)
 {
     // Sets safe limits for alpha arm of an FPU.
 
     Interval alimits_interval(alimit_min, alimit_max);
-    return txn->fpuDbTransferPosition(DbTransferType::Write,
-                                      FpuDbPositionType::AlphaLimits,
-                                      serial_number, alimits_interval,
-                                      adatum_offset);
+    if (txn->fpuDbTransferPosition(DbTransferType::Write,
+                                   FpuDbPositionType::AlphaLimits,
+                                   serial_number, alimits_interval,
+                                   adatum_offset))
+    {
+        return AppReturnOk;
+    }
+    else
+    {
+        return AppReturnError;
+    }
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn, const char *serial_number, 
-                          double blimit_min, double blimit_max)
+AppReturnVal FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
+                                  const char *serial_number, 
+                                  double blimit_min, double blimit_max)
 {
     // Sets safe limits for beta arm of an FPU.
 
     Interval blimits_interval(blimit_min, blimit_max);
     double datum_offset = 0.0;
-    return txn->fpuDbTransferPosition(DbTransferType::Write,
-                                      FpuDbPositionType::BetaLimits,
-                                      serial_number, blimits_interval,
-                                      datum_offset); //************* TODO: Put a beta datum offset constant here?
+    if (txn->fpuDbTransferPosition(DbTransferType::Write,
+                                   FpuDbPositionType::BetaLimits,
+                                   serial_number, blimits_interval,
+                                   datum_offset)) //************* TODO: Put a beta datum offset constant here?
+    {
+        return AppReturnOk;
+    }
+    else
+    {
+        return AppReturnError;
+    }
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::setARetries(ProtectionDbTxnPtr &txn, const char *serial_number,
-                           int64_t aretries)
+AppReturnVal FPUAdmin::setARetries(ProtectionDbTxnPtr &txn,
+                                   const char *serial_number,
+                                   int64_t aretries)
 {
     // Sets allowed number of freeAlphaLimitBreach commands in the same
     // direction before the software protection kicks in. The retry count is
     // reset to zero upon a successfully finished datum search.
 
-    return txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                      FpuDbIntValType::FreeAlphaRetries,
-                                      serial_number, aretries);
+    if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                   FpuDbIntValType::FreeAlphaRetries,
+                                   serial_number, aretries))
+    {
+        return AppReturnOk;
+    }
+    else
+    {
+        return AppReturnError;
+    }
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn, const char *serial_number,
-                           int64_t bretries)
+AppReturnVal FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn,
+                                   const char *serial_number,
+                                   int64_t bretries)
 {
     // Sets allowed number of freeBetaCollision commands in the same direction
     // before the software protection kicks in. The retry count is reset to
     // zero upon a successfully finished datum search.
 
-    return txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                      FpuDbIntValType::FreeBetaRetries,
-                                      serial_number, bretries);
+    if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                   FpuDbIntValType::FreeBetaRetries,
+                                   serial_number, bretries))
+    {
+        return AppReturnOk;
+    }
+    else
+    {
+        return AppReturnError;
+    }
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::printHealthLog(ProtectionDbTxnPtr &txn, const char *serial_number)
+AppReturnVal FPUAdmin::printHealthLog(ProtectionDbTxnPtr &txn,
+                                      const char *serial_number)
 {
     // Prints an FPU's health log from the health log database to std::cout.
     // Output format details:
@@ -374,9 +420,9 @@ bool FPUAdmin::printHealthLog(ProtectionDbTxnPtr &txn, const char *serial_number
 
     // TODO: Health log isn't implemented yet
 
-    std::cout << "**ERROR**: printHealthLog() command is not implemented yet.\n"
+    std::cout << "Error: printHealthLog() command is not implemented yet.\n"
               << std::endl;
-    return false;
+    return AppReturnError;
 }
 
 //------------------------------------------------------------------------------
