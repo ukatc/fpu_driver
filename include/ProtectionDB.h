@@ -153,7 +153,7 @@ public:
                                     const char subkey[], void **data_ptr_ret,
                                     int &num_bytes_ret);
 
-    bool fpuDbGetSerialNumbers(std::vector<std::string> &serial_numbers_ret);
+    bool fpuDbGetAllSerialNumbers(std::vector<std::string> &serial_numbers_ret);
 
     ~ProtectionDbTxn();
 

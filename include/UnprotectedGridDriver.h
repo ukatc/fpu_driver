@@ -226,6 +226,10 @@ public:
 
     E_EtherCANErrCode checkIntegrity(t_grid_state &gs, const t_fpuset &fpuset);
 
+    // Static functions
+    static void createFpuSetForSingleFpu(int fpu_id, t_fpuset &fpuset_ret);
+    static void createFpuSetForNumFpus(int num_fpus, t_fpuset &fpuset_ret);
+
     //..........................................................................
 protected:
     // NOTE: The following virtual functions are overridden in GridDriver
@@ -502,8 +506,6 @@ protected:
     void sleepSecs(double seconds);
 
     E_EtherCANErrCode check_fpuset(const t_fpuset &fpuset);
-    static void createFpuSetForSingleFpu(int fpu_id, t_fpuset &fpuset_ret);
-    static void createFpuSetForNumFpus(int num_fpus, t_fpuset &fpuset_ret);
 
     // Config: Only the constructor and initialize() must write this - do NOT
     // write at all after initialize() has been called

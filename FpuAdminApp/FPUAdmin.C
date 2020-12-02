@@ -29,6 +29,8 @@
 namespace mpifps
 {
 
+static const char *db_write_failed_str = "Error: FPU database write failed.";
+
 //------------------------------------------------------------------------------
 AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
                              const char *new_serial_number, bool mockup,
@@ -87,7 +89,7 @@ AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
                                         new_serial_number,
                                         snum_flag_used_val))
         {
-            // ******** TODO: Display database write failure error message here
+            std::cout << db_write_failed_str << std::endl;
             return AppReturnError;
         }
     }
@@ -135,13 +137,11 @@ AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
     t_grid_state grid_state;
     t_fpuset fpuset;
 
-    /* *************************************
-       *************************************    
-    TODO: Ping & read ALL serial numbers (based upon ugd's number of FPUs (using
-    getNumFpus()?), OR only need to ping and read serial numbers for THIS SINGLE
-    FPU?
-    createFpuSetForNumFpus(int num_fpus, t_fpuset &fpuset_ret);
-    */
+    // TODO: Currently pings and reads the serial numbers for all FPUs up to
+    // fpu_id (which is the equivalent functionality to that in the original
+    // Python flash_FPU() function in fpu-admin), but might only need to do
+    // this for the single FPU?
+    UnprotectedGridDriver::createFpuSetForNumFpus(fpu_id + 1, fpuset);
 
     if (ecan_result == DE_OK)
     {
@@ -171,7 +171,8 @@ AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
     }
     else
     {
-        // TODO: Print ecan_result value or similar to std::cout
+        std::cout << "Error: Operation failed unexpectedly - error code = " <<
+                     std::to_string(ecan_result) << "." << std::endl;
         return AppReturnError;
     }
 
@@ -237,6 +238,7 @@ AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
     }
     else
     {
+        std::cout << db_write_failed_str << std::endl;
         return AppReturnError;
     }
 }
@@ -249,11 +251,15 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
     std::vector<std::string> serial_numbers;
     if (txn->fpuDbGetAllSerialNumbers(serial_numbers))
     {
-        
+        for (size_t i = 0; i < serial_numbers.size(); i++)
+        {
+            printSingleFpu(txn, serial_numbers[i].c_str());
+        }
     }
     else
     {
-        // TODO: 
+        std::cout << "Error: Unexpected failure while collating serial numbers "
+                     "from FPU database." << std::endl;
         return AppReturnError;
     }
     return AppReturnOk;
@@ -263,6 +269,25 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
 AppReturnVal FPUAdmin::listOne(ProtectionDbTxnPtr &txn,
                                const char *serial_number)
 {
+    // Prints serial number and data for one FPU using std::cout. Returns an
+    // application return value.
+
+    if (printSingleFpu(txn, serial_number))
+    {
+        return AppReturnOk;
+    }
+    else
+    {
+        // N.B. Error message will have been generated during printSingleFpu()
+        // call above
+        return AppReturnError;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool FPUAdmin::printSingleFpu(ProtectionDbTxnPtr &txn,
+                              const char *serial_number)
+{
     // Prints serial number and data for one FPU using std::cout
 
     std::cout << "FPU serial number: " << serial_number << "\n";
@@ -270,13 +295,13 @@ AppReturnVal FPUAdmin::listOne(ProtectionDbTxnPtr &txn,
     if (txn->fpuDbTransferFpu(DbTransferType::Read, serial_number, fpu_db_data))
     {
         printFpuDbData(fpu_db_data);
-        return AppReturnOk;
+        return true;
     }
     else
     {
         std::cout << "Error: One or more of this FPU's data items are "
-                     "missing from the database.\n" << std::endl;
-        return AppReturnError;
+                     "missing from database.\n" << std::endl;
+        return false;
     }
 }
 
@@ -340,6 +365,7 @@ AppReturnVal FPUAdmin::setALimits(ProtectionDbTxnPtr &txn,
     }
     else
     {
+        std::cout << db_write_failed_str << std::endl;
         return AppReturnError;
     }
 }
@@ -362,6 +388,7 @@ AppReturnVal FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
     }
     else
     {
+        std::cout << db_write_failed_str << std::endl;
         return AppReturnError;
     }
 }
@@ -383,6 +410,7 @@ AppReturnVal FPUAdmin::setARetries(ProtectionDbTxnPtr &txn,
     }
     else
     {
+        std::cout << db_write_failed_str << std::endl;
         return AppReturnError;
     }
 }
@@ -404,6 +432,7 @@ AppReturnVal FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn,
     }
     else
     {
+        std::cout << db_write_failed_str << std::endl;
         return AppReturnError;
     }
 }

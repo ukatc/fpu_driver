@@ -800,7 +800,7 @@ bool ProtectionDbTxn::fpuDbGetItemDataPtrAndSize(const char serial_number[],
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbGetSerialNumbers(
+bool ProtectionDbTxn::fpuDbGetAllSerialNumbers(
                                 std::vector<std::string> &serial_numbers_ret)
 {
     MDB_cursor *cursor_ptr;

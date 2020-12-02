@@ -74,6 +74,8 @@ public:
                                        const char *serial_number);
 
 private:
+    static bool printSingleFpu(ProtectionDbTxnPtr &txn, 
+                               const char *serial_number);
     static void printFpuDbData(FpuDbData &fpu_db_data);
 };
 

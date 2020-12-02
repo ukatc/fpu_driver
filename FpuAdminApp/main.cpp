@@ -135,7 +135,7 @@ int main(int argc, char**argv)
             }
             else
             {
-                std::cout << "Error: --gateway_address does not have an"
+                std::cout << "Error: --gateway_address does not have an "
                              "address specified." << std::endl;
                 return AppReturnError;
             }
@@ -163,7 +163,7 @@ int main(int argc, char**argv)
             txn = protection_db.createTransaction();
             if (!txn)
             {
-                std::cout << "Error: Could not create database transaction." <<
+                std::cout << "Error: Could not create a database transaction." <<
                              std::endl;
                 return AppReturnError;
             }
@@ -181,13 +181,6 @@ int main(int argc, char**argv)
         return AppReturnError;
     }
         
-        
-    // ********************** TODO: call ProtectionDB::sync() somewhere? OR will it automatically
-    // sync when the database is closed when this app finishes?
-
-    // ********************** TODO: Need to close protection_db somewhere?
-
-    
     // Process specified command - N.B. at this stage, the number of items
     // in arg_strs might be less than the original, because the options above
     // will have been removed, so need to use indexes accordingly
