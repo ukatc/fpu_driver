@@ -32,6 +32,7 @@ static const char *healthlog_subdb_name = "healthlog";
 // static const char *verification_subdb_name = "verification";
 
 // Database key strings
+static const char *snum_used_flag_keystr = "snum_used";
 static const char *alpha_position_keystr = "apos";
 static const char *beta_position_keystr = "bpos";
 static const char *waveform_table_keystr = "wtable";
@@ -45,9 +46,6 @@ static const char *free_beta_retries_keystr = "bretries";
 static const char *beta_retries_cw_keystr = "bretries_cw";
 static const char *beta_retries_acw_keystr = "bretries_acw";
 static const char *counters_keystr = "counters";
-// TODO: Will the following string be used - is there a corresponding string
-// used in the Python version?
-//static const char *serialnumber_used_keystr = "serialnumber_used";
 
 // Sub-database handles - initialised when ProtectionDB.open() is called
 static MDB_dbi fpu_dbi = 0;
@@ -60,6 +58,7 @@ static MDB_dbi healthlog_dbi = 0;
 FpuDbData::FpuDbData()
 {
     // Initialise the items which don't initialise themselves
+    snum_used_flag = SNUM_USED_CHECK_VAL;
     wf_reversed = false;
     maxaretries = 0;
     aretries_cw = 0;
@@ -101,7 +100,8 @@ bool FpuDbData::isSameAsOther(const FpuDbData &other)
         }
     }
     
-    return ((apos == other.apos) &&
+    return ((snum_used_flag == other.snum_used_flag) &&
+            (apos == other.apos) &&
             (bpos == other.bpos) &&
             (wf_reversed == other.wf_reversed) &&
             (alimits == other.alimits) &&
@@ -375,10 +375,18 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
     // well
     double datum_offset;
 
-    bool result_ok = fpuDbTransferPosition(transfer_type, 
-                                           FpuDbPositionType::AlphaPos,
-                                           serial_number, fpu_db_data.apos,
-                                           datum_offset);
+    bool result_ok = fpuDbTransferInt64Val(transfer_type, 
+                                           FpuDbIntValType::SnumUsedFlag,
+                                           serial_number,
+                                           fpu_db_data.snum_used_flag);
+
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferPosition(transfer_type, 
+                                          FpuDbPositionType::AlphaPos,
+                                          serial_number, fpu_db_data.apos,
+                                          datum_offset);
+    }
 
     if (result_ok)
     {
@@ -654,6 +662,7 @@ bool ProtectionDbTxn::fpuDbTransferInt64Val(DbTransferType transfer_type,
         const char *subkey;
     } intval_type_subkeys[(int)FpuDbIntValType::NumTypes] =
     {
+        { FpuDbIntValType::SnumUsedFlag,     snum_used_flag_keystr     },
         { FpuDbIntValType::FreeAlphaRetries, free_alpha_retries_keystr },
         { FpuDbIntValType::AlphaRetries_CW,  alpha_retries_cw_keystr   },
         { FpuDbIntValType::AlphaRetries_ACW, alpha_retries_acw_keystr  }, 
@@ -801,6 +810,11 @@ bool ProtectionDbTxn::fpuDbGetSerialNumbers(
 
     // TODO: Want to get all available serial numbers, even if some of the 
     // retrievals fail? (i.e. don't stop on first failure?)
+
+    // TODO: Consider whether this function should only register the serial
+    // numbers of the snum_used_flag items (because their purpose is to
+    // indicate whether a serial number is in use), or whether we want to see
+    // ALL serial numbers for all items (as this function currently does)
 
     if (mdb_cursor_open(txn_ptr, fpu_dbi, &cursor_ptr) == MDB_SUCCESS)
     {

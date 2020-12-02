@@ -709,6 +709,7 @@ bool ProtectionDBTester::testFpuDbDataClass()
 //------------------------------------------------------------------------------
 void ProtectionDBTester::fillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data)
 {
+    fpu_db_data.snum_used_flag = SNUM_USED_CHECK_VAL;
     fpu_db_data.apos = Interval(1.0, 2.0);
     fpu_db_data.bpos = Interval(3.0, 4.0);
     fpu_db_data.wf_reversed = true;

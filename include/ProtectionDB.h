@@ -37,8 +37,9 @@ using namespace mpifps::ethercanif;
 //==============================================================================
 
 // Character to separate the key/subkey parts of the overall key strings
-//static const char *fpudb_keystr_separator_char = "#";
 const char fpudb_keystr_separator_char = '#';
+
+#define SNUM_USED_CHECK_VAL    (0xabcd)
 
 //==============================================================================
 
@@ -49,6 +50,10 @@ struct FpuDbData
     bool operator==(const FpuDbData &other);
     bool operator!=(const FpuDbData &other);
     
+     // snum_used_flag: In the database, this dummy field's existence for a
+     // serial number is used to indicate that the serial number is in use
+    int64_t snum_used_flag;
+
     Interval apos;
     Interval bpos;
     bool wf_reversed;
@@ -91,7 +96,8 @@ enum class FpuDbPositionType
 
 enum class FpuDbIntValType
 {
-    FreeAlphaRetries = 0,
+    SnumUsedFlag = 0,
+    FreeAlphaRetries,
     AlphaRetries_CW,
     AlphaRetries_ACW,
     FreeBetaRetries,
