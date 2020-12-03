@@ -44,13 +44,7 @@ AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
 
     //..........................................................................
     // Check arguments
-    if ((fpu_id < 0) || (fpu_id >= MAX_NUM_POSITIONERS))
-    {
-        std::cout << "Error: fpu_id must be in the range 0 to " <<
-                     std::to_string((int)MAX_NUM_POSITIONERS) <<
-                     "." << std::endl;
-        return AppReturnError;
-    }
+    bool args_are_ok = true;
 
     const int max_snum_len = ethercanif::DIGITS_SERIAL_NUMBER;
     if ((strlen(new_serial_number) == 0) ||
@@ -58,6 +52,19 @@ AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
     {
         std::cout << "Error: Serial number length must be between 1 and " <<
                       std::to_string(max_snum_len) << "." << std::endl;
+        args_are_ok = false;
+    }
+
+    if ((fpu_id < 0) || (fpu_id > (MAX_NUM_POSITIONERS - 1)))
+    {
+        std::cout << "Error: fpu_id must be in the range 0 to " <<
+                     std::to_string((int)(MAX_NUM_POSITIONERS - 1)) <<
+                     "." << std::endl;
+        args_are_ok = false;
+    }
+
+    if (!args_are_ok)
+    {
         return AppReturnError;
     }
 
@@ -259,10 +266,10 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
         return AppReturnError;
     }
     
-    std::cout << "*** SUMMARY ***: " << std::to_string(serial_numbers.size()) <<
+    std::cout << "\n*** SUMMARY ***: " << std::to_string(serial_numbers.size()) <<
                  " unique serial numbers were found in the FPU database,\n"
                  "of which " << std::to_string(num_fpus_with_good_data) <<
-                 " of these have all of their FPU data items correctly present." << std::endl;
+                 " have all of their FPU data items correctly present." << std::endl;
     return AppReturnOk;
 }
 
@@ -300,7 +307,7 @@ bool FPUAdmin::printSingleFpu(ProtectionDbTxnPtr &txn,
     }
     else
     {
-        std::cout << "Error: At least one (and possibly all) of this FPU's data items "
+        std::cout << "Error: At least one (and possibly all) of this FPU's data items\n"
                      "are missing from the database." << std::endl;
         return false;
     }

@@ -99,7 +99,9 @@ int main(int argc, char**argv)
     // to keep its subsequent navigation simpler
     bool reinitialize = false;
     bool reuse_sn = false;
-    t_gateway_address gateway_address = { nullptr, 0 };
+    static std::string gateway_ip_str;  // Static to guarantee persistence
+    gateway_ip_str.clear();
+    static t_gateway_address gateway_address = { nullptr, 0 };
     t_gateway_address *gateway_address_ptr = nullptr;
 
     // N.B. Start at index of [1], because [0] should be command command
@@ -118,7 +120,7 @@ int main(int argc, char**argv)
         }
         else if ((*it == "--reuse_sn") || (*it == "--reuse-sn"))
         {
-            bool reuse_sn = true;
+            reuse_sn = true;
             erase_item = true;
         }
         else if ((*it == "--gateway_address"))
@@ -126,17 +128,20 @@ int main(int argc, char**argv)
             it = arg_strs.erase(it);
             if (it != arg_strs.end())
             {
-                // NOTE: gateway_address.ip is a POINTER, and so the location
-                // that it's pointing to needs to be persistent
-                gateway_address.ip = it->c_str();
+                // NOTE: gateway_address.ip is a POINTER, and so the
+                // gateway_ip_str.c_str() that it's pointing to is persistent
+                // (and not potentially optimised away)
+                gateway_ip_str = *it;
+                gateway_address.ip = gateway_ip_str.c_str();
                 gateway_address.port = 4700;
+                
                 gateway_address_ptr = &gateway_address;
                 erase_item = true;
             }
             else
             {
-                std::cout << "Error: --gateway_address does not have an "
-                             "address specified." << std::endl;
+                std::cout << "Error: --gateway_address does not have a "
+                             "gateway address specified." << std::endl;
                 return AppReturnError;
             }
         }
@@ -192,7 +197,7 @@ int main(int argc, char**argv)
         if (arg_strs.size() == 3)
         {
             const char *serial_number = arg_strs[1].c_str();
-            int fpu_id;
+            int fpu_id = 9999;
             if (stringToInt(arg_strs[2], fpu_id))
             {
                 return FPUAdmin::flash(txn, fpu_id, serial_number, is_mockup,
