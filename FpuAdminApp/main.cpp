@@ -245,7 +245,7 @@ int main(int argc, char**argv)
                         adatum_offset = doubles_args[2];
                     }
                 }
-                else if ((arg_strs.size() == 4) || (arg_strs.size() == 5))
+                else if ((doubles_args.size() == 4) || (doubles_args.size() == 5))
                 {
                     correct_num_args = true;
 
@@ -254,7 +254,7 @@ int main(int argc, char**argv)
                     apos_max = doubles_args[1];
                     bpos_min = doubles_args[2];
                     bpos_max = doubles_args[3];
-                    if (arg_strs.size() == 5)
+                    if (doubles_args.size() == 5)
                     {
                         adatum_offset = doubles_args[4];
                     }
