@@ -47,14 +47,12 @@ AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
     if ((fpu_id < 0) || (fpu_id >= MAX_NUM_POSITIONERS))
     {
         std::cout << "Error: fpu_id must be in the range 0 to " <<
-                      std::to_string((int)MAX_NUM_POSITIONERS) <<
-                      "." << std::endl;
+                     std::to_string((int)MAX_NUM_POSITIONERS) <<
+                     "." << std::endl;
         return AppReturnError;
     }
 
-    // TODO: Use a macro constant from somewhere for specifying the maximum
-    // serial number length
-    const int max_snum_len = 6;
+    const int max_snum_len = ethercanif::DIGITS_SERIAL_NUMBER;
     if ((strlen(new_serial_number) == 0) ||
         (strlen(new_serial_number) > max_snum_len))
     {
@@ -212,18 +210,12 @@ AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
         // If the FPU has an existing counters entry in the database, then
         // retain this
 
-        //*************
-        // ************ TODO: Look more closely at the help comments and Python
-        // code for the reinitialize flag, and check that this C++ code and its
-        // comments reflect this
-        //*************
-
         // TODO: Need to distinguish between serial number not being found vs
         // the database read failing at a lower level - if counters entry for
         // serial number doesn't yet exist then NOT a failure - the counters
         // just need to be initialised as empty
-        // TODO: If the following fails due to a database read error then return
-        // AppReturnError
+        // TODO: If the following fails due to a database read error then 
+        // display error message and return AppReturnError
         if (!txn->fpuDbTransferCounters(DbTransferType::Read, serial_number,
                                         fpu_db_data.counters))
         {
@@ -249,11 +241,15 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
     // Prints data for all FPUs in database using std::cout
 
     std::vector<std::string> serial_numbers;
+    int num_fpus_with_good_data = 0;
     if (txn->fpuDbGetAllSerialNumbers(serial_numbers))
     {
         for (size_t i = 0; i < serial_numbers.size(); i++)
         {
-            printSingleFpu(txn, serial_numbers[i].c_str());
+            if (printSingleFpu(txn, serial_numbers[i].c_str()))
+            {
+                num_fpus_with_good_data++;
+            }
         }
     }
     else
@@ -262,6 +258,11 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
                      "from FPU database." << std::endl;
         return AppReturnError;
     }
+    
+    std::cout << "*** SUMMARY ***: " << std::to_string(serial_numbers.size()) <<
+                 " unique serial numbers were found in the FPU database,\n"
+                 "of which " << std::to_string(num_fpus_with_good_data) <<
+                 " of these have all of their FPU data items correctly present." << std::endl;
     return AppReturnOk;
 }
 
@@ -299,8 +300,8 @@ bool FPUAdmin::printSingleFpu(ProtectionDbTxnPtr &txn,
     }
     else
     {
-        std::cout << "Error: One or more of this FPU's data items are "
-                     "missing from database.\n" << std::endl;
+        std::cout << "Error: At least one (and possibly all) of this FPU's data items "
+                     "are missing from the database." << std::endl;
         return false;
     }
 }
@@ -449,8 +450,7 @@ AppReturnVal FPUAdmin::printHealthLog(ProtectionDbTxnPtr &txn,
 
     // TODO: Health log isn't implemented yet
 
-    std::cout << "Error: printHealthLog() command is not implemented yet.\n"
-              << std::endl;
+    std::cout << "Error: printHealthLog() command is not implemented yet." << std::endl;
     return AppReturnError;
 }
 

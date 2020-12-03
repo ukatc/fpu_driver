@@ -894,10 +894,7 @@ bool ProtectionDbTxn::fpuDbGetSerialNumFromKeyVal(const MDB_val &key_val,
     // until the fpudb_keystr_separator_char character). If successful then
     // returns true, otherwise if any problems then returns false.
 
-    // TODO: Harrmonise serial_number_buf_len to the global maximum serial
-    // number length (taking into account null-terminator) - where is this
-    // defined?
-    static const int max_serial_num_len = 10;
+    static const int max_serial_num_len = ethercanif::DIGITS_SERIAL_NUMBER;
     char serial_num_buf[max_serial_num_len + 1];
 
     serial_number_ret.clear();

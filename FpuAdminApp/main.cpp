@@ -18,9 +18,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-// NOTE: return's from main() are used rather than exit()'s, so that all
-// classes created in main() have their destructors properly called - exit()
-// doesn't do this.
+// NOTE: return statements from main() are used rather than exit()'s, so that
+// all classes created in main() have their destructors properly called (exit()
+// doesn't do this).
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -406,9 +406,6 @@ void printHelp()
 {
     // TODO: Ensure that the help comments' arguments etc exactly match the
     // actual code
-    // TODO: Put "not implemented yet" for any commands which aren't implemented yet
-    // TODO: Add aretries command to help text? The command is checked for in
-    // fpu-admin, but isn't shown in its help text
 
     std::cout << "\n";
     std::cout << 
@@ -426,7 +423,7 @@ void printHelp()
         "      The optional last parameter is the alpha datum offset.\n"
         "\n"
         "      If the --reinitialize flag is set, it is allowed to redefine\n"
-        "      FPU positions which already have been stored before.\n"
+        "      FPU positions which have already been stored before.\n"
         "\n"
         "init [--reinitialize] <serial_number> <apos_min> <apos_max> <bpos_min> <bpos_max> [<adatum_offset>]\n"
         "    - As above, but specifies the positions in terms of INTERVALS instead.\n"
