@@ -9,8 +9,8 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-Linux
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux
-CND_ARTIFACT_NAME_Debug=fpuadmin
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux/fpuadmin
+CND_ARTIFACT_NAME_Debug=fpu-admin
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux/fpu-admin
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux/package
 CND_PACKAGE_NAME_Debug=fpuadmin.tar
 CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux/package/fpuadmin.tar

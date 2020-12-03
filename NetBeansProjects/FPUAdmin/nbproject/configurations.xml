@@ -228,6 +228,9 @@ Contributor(s):
             <Elem>VERSION="v0.0.1"</Elem>
           </preprocessorList>
         </ccTool>
+        <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/fpu-admin</output>
+        </linkerTool>
       </compileType>
       <item path="../../FpuAdminApp/FPUAdmin.C" ex="false" tool="1" flavor2="0">
       </item>
