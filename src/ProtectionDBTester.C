@@ -764,6 +764,9 @@ void ProtectionDBTester::testGetSerialNumFromKeyVal()
     {
         "",
         "PT01#qwerty",
+        "abcdef",
+        "abcdef#",
+        "abcdef#vvv",
         "abcdefghijklmnopqrstuvwxyz",
         "ABCDEFGHIJ#abc",
         "QWERTYUIOPZ#def",

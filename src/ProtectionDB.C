@@ -892,42 +892,43 @@ bool ProtectionDbTxn::fpuDbGetSerialNumFromKeyVal(const MDB_val &key_val,
 {
     // Extracts the serial number string from the beginning of key_val (up
     // until the fpudb_keystr_separator_char character). If successful then
-    // returns true, otherwise if any problems then returns false.
+    // returns true, otherwise if any problems then still tries to populate
+    // serial_number_ret but returns false.
+    // N.B. The maximum serial number length is given by 
+    // ethercanif::DIGITS_SERIAL_NUMBER, but a bigger buffer is used so that
+    // can catch any errant serial numbers of greater length as well
+    static const int snum_buf_len = 20;
+    char serial_num_buf[snum_buf_len];
 
-    static const int max_serial_num_len = ethercanif::DIGITS_SERIAL_NUMBER;
-    char serial_num_buf[max_serial_num_len + 1];
-
+    memset(serial_num_buf, '\0', snum_buf_len); // Ensure a null-terminator
     serial_number_ret.clear();
 
+    bool separator_char_found = false;
     const char *source_buf = (char *)key_val.mv_data;
-    int serial_num_len = 0;
-    for (int i = 0; i < key_val.mv_size; i++)
+    for (int i = 0; ((i < (snum_buf_len - 1)) && (i < key_val.mv_size)); i++)
     {
-        if (source_buf[i] != fpudb_keystr_separator_char)
+        if (source_buf[i] == fpudb_keystr_separator_char)
         {
-            if (i < max_serial_num_len)
-            {
-                serial_num_buf[i] = source_buf[i];
-                serial_num_len++;
-            }
-            else
-            {
-                // Serial number is too long
-                return false;
-            }
+            separator_char_found = true;
+            break;
         }
-        else
+        else if (source_buf[i] == '\0')
         {
             break;
         }
+        else
+        {
+            serial_num_buf[i] = source_buf[i];
+        }
     }
 
-    serial_num_buf[serial_num_len] = '\0';
-    if (serial_num_len == 0)
+    serial_number_ret = serial_num_buf;
+    
+    if ((!separator_char_found) || (serial_number_ret.size() == 0) ||
+        (serial_number_ret.size() > ethercanif::DIGITS_SERIAL_NUMBER))
     {
         return false;
     }
-    serial_number_ret = serial_num_buf;
     return true;
 }
 

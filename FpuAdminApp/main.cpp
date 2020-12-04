@@ -20,7 +20,8 @@
 
 // NOTE: return statements from main() are used rather than exit()'s, so that
 // all classes created in main() have their destructors properly called (exit()
-// doesn't do this).
+// doesn't do this) - for example, the ProtectionDB/ProtectionDbTxn destructors,
+// as well as possibly others.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -185,7 +186,7 @@ int main(int argc, char**argv)
         std::cout << "are the Linux environment variables set correctly?" << std::endl;
         return AppReturnError;
     }
-        
+
     // Process specified command - N.B. at this stage, the number of items
     // in arg_strs might be less than the original, because the options above
     // will have been removed, so need to use indexes accordingly
