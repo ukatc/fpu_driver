@@ -30,6 +30,8 @@ namespace mpifps
 {
 
 static const char *db_write_failed_str = "Error: FPU database write failed.";
+static const char *fpu_snum_not_in_database_str =
+                    "Error: FPU serial number is not yet defined in database.";
 
 //------------------------------------------------------------------------------
 AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
@@ -257,6 +259,7 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
             {
                 num_fpus_with_good_data++;
             }
+            std::cout << std::endl;
         }
     }
     else
@@ -266,10 +269,10 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
         return AppReturnError;
     }
     
-    std::cout << "\n*** SUMMARY ***: " << std::to_string(serial_numbers.size()) <<
+    std::cout << "*** SUMMARY ***: " << std::to_string(serial_numbers.size()) <<
                  " unique serial numbers were found in the FPU database,\n"
                  "of which " << std::to_string(num_fpus_with_good_data) <<
-                 " have all of their FPU data items correctly present." << std::endl;
+                 " have all of their FPU data items correctly present.\n" << std::endl;
     return AppReturnOk;
 }
 
@@ -307,7 +310,7 @@ bool FPUAdmin::printSingleFpu(ProtectionDbTxnPtr &txn,
     }
     else
     {
-        std::cout << "Error: At least one (and possibly all) of this FPU's data items\n"
+        std::cout << "Error: One or more of this FPU's data items "
                      "are missing from the database." << std::endl;
         return false;
     }
@@ -348,7 +351,7 @@ void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
     // maxbretries / bretries_cw / bretries_acw
     std::cout << "max_b_retries = " << std::to_string(fpu_db_data.maxbretries) <<
        ", b_retries_cw = " << std::to_string(fpu_db_data.bretries_cw) <<
-       ", b_retries_acw = " << std::to_string(fpu_db_data.bretries_acw) << "\n";
+       ", b_retries_acw = " << std::to_string(fpu_db_data.bretries_acw);
 
     // TODO: Also display fpu_db_data.counters and fpu_db_data.last_waveform?
 
@@ -363,17 +366,25 @@ AppReturnVal FPUAdmin::setALimits(ProtectionDbTxnPtr &txn,
 {
     // Sets safe limits for alpha arm of an FPU.
 
-    Interval alimits_interval(alimit_min, alimit_max);
-    if (txn->fpuDbTransferPosition(DbTransferType::Write,
-                                   FpuDbPositionType::AlphaLimits,
-                                   serial_number, alimits_interval,
-                                   adatum_offset))
+    if (isSerialNumberUsed(txn, serial_number))
     {
-        return AppReturnOk;
+        Interval alimits_interval(alimit_min, alimit_max);
+        if (txn->fpuDbTransferPosition(DbTransferType::Write,
+                                       FpuDbPositionType::AlphaLimits,
+                                       serial_number, alimits_interval,
+                                       adatum_offset))
+        {
+            return AppReturnOk;
+        }
+        else
+        {
+            std::cout << db_write_failed_str << std::endl;
+            return AppReturnError;
+        }
     }
     else
     {
-        std::cout << db_write_failed_str << std::endl;
+        std::cout << fpu_snum_not_in_database_str << std::endl;
         return AppReturnError;
     }
 }
@@ -385,18 +396,26 @@ AppReturnVal FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
 {
     // Sets safe limits for beta arm of an FPU.
 
-    Interval blimits_interval(blimit_min, blimit_max);
-    double datum_offset = 0.0;
-    if (txn->fpuDbTransferPosition(DbTransferType::Write,
-                                   FpuDbPositionType::BetaLimits,
-                                   serial_number, blimits_interval,
-                                   datum_offset)) //************* TODO: Put a beta datum offset constant here?
+    if (isSerialNumberUsed(txn, serial_number))
     {
-        return AppReturnOk;
+        Interval blimits_interval(blimit_min, blimit_max);
+        double datum_offset = 0.0;
+        if (txn->fpuDbTransferPosition(DbTransferType::Write,
+                                       FpuDbPositionType::BetaLimits,
+                                       serial_number, blimits_interval,
+                                       datum_offset)) //************* TODO: Put a beta datum offset constant here?
+        {
+            return AppReturnOk;
+        }
+        else
+        {
+            std::cout << db_write_failed_str << std::endl;
+            return AppReturnError;
+        }
     }
     else
     {
-        std::cout << db_write_failed_str << std::endl;
+        std::cout << fpu_snum_not_in_database_str << std::endl;
         return AppReturnError;
     }
 }
@@ -407,18 +426,26 @@ AppReturnVal FPUAdmin::setARetries(ProtectionDbTxnPtr &txn,
                                    int64_t aretries)
 {
     // Sets allowed number of freeAlphaLimitBreach commands in the same
-    // direction before the software protection kicks in. The retry count is
-    // reset to zero upon a successfully finished datum search.
+    // direction before the software protection kicks in. N.B. The retry count
+    // is reset to zero upon a successfully finished datum search.
 
-    if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                   FpuDbIntValType::FreeAlphaRetries,
-                                   serial_number, aretries))
+    if (isSerialNumberUsed(txn, serial_number))
     {
-        return AppReturnOk;
+        if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                       FpuDbIntValType::FreeAlphaRetries,
+                                       serial_number, aretries))
+        {
+            return AppReturnOk;
+        }
+        else
+        {
+            std::cout << db_write_failed_str << std::endl;
+            return AppReturnError;
+        }
     }
     else
     {
-        std::cout << db_write_failed_str << std::endl;
+        std::cout << fpu_snum_not_in_database_str << std::endl;
         return AppReturnError;
     }
 }
@@ -429,20 +456,48 @@ AppReturnVal FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn,
                                    int64_t bretries)
 {
     // Sets allowed number of freeBetaCollision commands in the same direction
-    // before the software protection kicks in. The retry count is reset to
-    // zero upon a successfully finished datum search.
+    // before the software protection kicks in. N.B. The retry count is reset
+    // to zero upon a successfully finished datum search.
 
-    if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                   FpuDbIntValType::FreeBetaRetries,
-                                   serial_number, bretries))
+    if (isSerialNumberUsed(txn, serial_number))
     {
-        return AppReturnOk;
+        if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                       FpuDbIntValType::FreeBetaRetries,
+                                       serial_number, bretries))
+        {
+            return AppReturnOk;
+        }
+        else
+        {
+            std::cout << db_write_failed_str << std::endl;
+            return AppReturnError;
+        }
     }
     else
     {
-        std::cout << db_write_failed_str << std::endl;
+        std::cout << fpu_snum_not_in_database_str << std::endl;
         return AppReturnError;
     }
+}
+
+//------------------------------------------------------------------------------
+bool FPUAdmin::isSerialNumberUsed(ProtectionDbTxnPtr &txn,
+                                  const char *serial_number)
+{
+    // TODO: Need to differentiate between serial number not in database,
+    // vs database read failure (once implement more detailed return codes)
+    int64_t snum_used_flag = 0;
+    bool result_ok = txn->fpuDbTransferInt64Val(DbTransferType::Read, 
+                                                FpuDbIntValType::SnumUsedFlag,
+                                                serial_number, snum_used_flag);
+    if (result_ok)
+    {
+        if (snum_used_flag == SNUM_USED_CHECK_VAL)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------

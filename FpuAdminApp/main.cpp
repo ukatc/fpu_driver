@@ -227,14 +227,11 @@ int main(int argc, char**argv)
             stringArgsToDoubles(arg_strs, 2, doubles_args);
             if ((doubles_args.size() + 2) == arg_strs.size())
             {
-                bool correct_num_args = false;
                 double apos_min, apos_max, bpos_min, bpos_max;
                 double adatum_offset = ALPHA_DATUM_OFFSET;
 
                 if ((doubles_args.size() == 2) || (doubles_args.size() == 3))
                 {
-                    correct_num_args = true;
-
                     // 2 x single position values
                     apos_min = doubles_args[0];
                     apos_max = apos_min;
@@ -247,8 +244,6 @@ int main(int argc, char**argv)
                 }
                 else if ((doubles_args.size() == 4) || (doubles_args.size() == 5))
                 {
-                    correct_num_args = true;
-
                     // 2 x pairs of min/max intervals
                     apos_min = doubles_args[0];
                     apos_max = doubles_args[1];
@@ -259,19 +254,16 @@ int main(int argc, char**argv)
                         adatum_offset = doubles_args[4];
                     }
                 }
-
-                if (correct_num_args)
-                {
-                    return FPUAdmin::init(txn, serial_number,
-                                          apos_min, apos_max,
-                                          bpos_min, bpos_max,
-                                          reinitialize, adatum_offset);
-                }
                 else
                 {
                     std::cout << bad_num_args_str << std::endl;
                     return AppReturnError;
                 }
+
+                return FPUAdmin::init(txn, serial_number,
+                                      apos_min, apos_max,
+                                      bpos_min, bpos_max,
+                                      reinitialize, adatum_offset);
             }
             else
             {
@@ -300,10 +292,16 @@ int main(int argc, char**argv)
                 double limit_max = doubles_args[1];
                 if (cmd_str == alimits_cmd_str)
                 {
+                    // alimits
                     double adatum_offset = ALPHA_DATUM_OFFSET;
                     if (doubles_args.size() == 3)
                     {
                         adatum_offset = doubles_args[2];
+                    }
+                    else if (doubles_args.size() != 2)
+                    {
+                        std::cout << bad_num_args_str << std::endl;
+                        return AppReturnError;
                     }
                     return FPUAdmin::setALimits(txn, serial_number,
                                                 limit_min, limit_max,
@@ -311,8 +309,17 @@ int main(int argc, char**argv)
                 }
                 else
                 {
-                    return FPUAdmin::setBLimits(txn, serial_number,
-                                                limit_min, limit_max);
+                    // blimits
+                    if (doubles_args.size() == 2)
+                    {
+                        return FPUAdmin::setBLimits(txn, serial_number,
+                                                    limit_min, limit_max);
+                    }
+                    else
+                    {
+                        std::cout << bad_num_args_str << std::endl;
+                        return AppReturnError;
+                    }
                 }
             }
             else
