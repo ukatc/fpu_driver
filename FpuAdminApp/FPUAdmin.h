@@ -79,7 +79,7 @@ private:
     static void printFpuDbData(FpuDbData &fpu_db_data);
     static bool isSerialNumberUsed(ProtectionDbTxnPtr &txn,
                                    const char *serial_number);
-
+    static bool checkAndMessageForSerialNumberLength(const char *serial_number);
 };
 
 //==============================================================================

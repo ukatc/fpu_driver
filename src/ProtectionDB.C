@@ -830,7 +830,8 @@ bool ProtectionDbTxn::fpuDbGetAllSerialNumbers(
             cursor_op = MDB_NEXT;
             if (mdb_result == MDB_SUCCESS)
             {
-                if (fpuDbGetSerialNumFromKeyVal(key_val, serial_number))
+                fpuDbGetSerialNumFromKeyVal(key_val, serial_number);
+                if (serial_number.size() != 0)
                 {
                     // Each FPU serial number has a number of items on it in
                     // the database (each with a different sub-key suffix) -
@@ -842,11 +843,6 @@ bool ProtectionDbTxn::fpuDbGetAllSerialNumbers(
                         serial_numbers_ret.push_back(serial_number);
                         prev_serial_number = serial_number;
                     }
-                }
-                else
-                {
-                    // Serial number extraction failed somehow
-                    break;
                 }
             }
             else

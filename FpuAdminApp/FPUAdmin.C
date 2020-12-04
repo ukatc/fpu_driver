@@ -48,12 +48,8 @@ AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
     // Check arguments
     bool args_are_ok = true;
 
-    const int max_snum_len = ethercanif::DIGITS_SERIAL_NUMBER;
-    if ((strlen(new_serial_number) == 0) ||
-        (strlen(new_serial_number) > max_snum_len))
+    if (!checkAndMessageForSerialNumberLength(new_serial_number))
     {
-        std::cout << "Error: Serial number length must be between 1 and " <<
-                      std::to_string(max_snum_len) << "." << std::endl;
         args_are_ok = false;
     }
 
@@ -198,6 +194,11 @@ AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
     // If reinitialize is true, it is allowed to redefine FPU positions
     // which already have been stored before.
 
+    if (!checkAndMessageForSerialNumberLength(serial_number))
+    {
+        return AppReturnError;
+    }
+
     FpuDbData fpu_db_data;
 
     // TODO: In the Python fpu-admin version, the apos/bpos/alimits/blimits
@@ -255,12 +256,15 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
     {
         for (size_t i = 0; i < serial_numbers.size(); i++)
         {
+            std::cout << "----------------------------------------" <<
+                         "------------------------------\n";
             if (printSingleFpu(txn, serial_numbers[i].c_str()))
             {
                 num_fpus_with_good_data++;
             }
-            std::cout << std::endl;
         }
+        std::cout << "----------------------------------------" <<
+                     "------------------------------\n" << std::endl;
     }
     else
     {
@@ -301,7 +305,14 @@ bool FPUAdmin::printSingleFpu(ProtectionDbTxnPtr &txn,
 {
     // Prints serial number and data for one FPU using std::cout
 
-    std::cout << "FPU serial number: " << serial_number << "\n";
+    std::string snum_err_str;
+    if (strlen(serial_number) > ethercanif::DIGITS_SERIAL_NUMBER)
+    {
+        snum_err_str = " <<<<< ERROR: Serial number longer than max " +
+                       std::to_string(ethercanif::DIGITS_SERIAL_NUMBER);
+    }
+    
+    std::cout << "FPU serial number: " << serial_number << snum_err_str << "\n";
     FpuDbData fpu_db_data;
     if (txn->fpuDbTransferFpu(DbTransferType::Read, serial_number, fpu_db_data))
     {
@@ -366,6 +377,11 @@ AppReturnVal FPUAdmin::setALimits(ProtectionDbTxnPtr &txn,
 {
     // Sets safe limits for alpha arm of an FPU.
 
+    if (!checkAndMessageForSerialNumberLength(serial_number))
+    {
+        return AppReturnError;
+    }
+
     if (isSerialNumberUsed(txn, serial_number))
     {
         Interval alimits_interval(alimit_min, alimit_max);
@@ -395,6 +411,11 @@ AppReturnVal FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
                                   double blimit_min, double blimit_max)
 {
     // Sets safe limits for beta arm of an FPU.
+
+    if (!checkAndMessageForSerialNumberLength(serial_number))
+    {
+        return AppReturnError;
+    }
 
     if (isSerialNumberUsed(txn, serial_number))
     {
@@ -429,6 +450,11 @@ AppReturnVal FPUAdmin::setARetries(ProtectionDbTxnPtr &txn,
     // direction before the software protection kicks in. N.B. The retry count
     // is reset to zero upon a successfully finished datum search.
 
+    if (!checkAndMessageForSerialNumberLength(serial_number))
+    {
+        return AppReturnError;
+    }
+
     if (isSerialNumberUsed(txn, serial_number))
     {
         if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
@@ -458,6 +484,11 @@ AppReturnVal FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn,
     // Sets allowed number of freeBetaCollision commands in the same direction
     // before the software protection kicks in. N.B. The retry count is reset
     // to zero upon a successfully finished datum search.
+
+    if (!checkAndMessageForSerialNumberLength(serial_number))
+    {
+        return AppReturnError;
+    }
 
     if (isSerialNumberUsed(txn, serial_number))
     {
@@ -514,6 +545,23 @@ AppReturnVal FPUAdmin::printHealthLog(ProtectionDbTxnPtr &txn,
 
     std::cout << "Error: printHealthLog() command is not implemented yet." << std::endl;
     return AppReturnError;
+}
+
+//------------------------------------------------------------------------------
+bool FPUAdmin::checkAndMessageForSerialNumberLength(const char *serial_number)
+{
+    if ((strlen(serial_number) > 0) && 
+        (strlen(serial_number) <= ethercanif::DIGITS_SERIAL_NUMBER))
+    {
+        return true;
+    }
+    else
+    {
+        std::cout << "Error: Serial number length must be between 1 and " <<
+                      std::to_string(ethercanif::DIGITS_SERIAL_NUMBER) <<
+                      "." << std::endl;
+        return false;
+    }
 }
 
 //------------------------------------------------------------------------------
