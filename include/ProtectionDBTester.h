@@ -61,7 +61,7 @@ private:
     static bool testFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
 
     // Miscellaneous test functions
-    static std::string getNextFpuTestSerialNumber();
+    static std::string getRandomFpuTestSerialNumber();
 };
 
 #endif // PROTECTIONDBTESTER_H

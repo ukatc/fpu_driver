@@ -24,7 +24,7 @@
 //------------------------------------------------------------------------------
 bool ProtectionDBTester::doLoopingTestsWithConsoleOutput()
 {
-    const int num_iterations = 1000;
+    const int num_iterations = 100;
     for (int i = 0; i < num_iterations; i++)
     {
         printf("Test #%d of %d: Writing/verifying a single FPU's data items: ",
@@ -51,7 +51,7 @@ bool ProtectionDBTester::doTests()
     // IMPORTANT NOTES:
     //   - An LMDB database must already exist in dir_str location (see below)
     //   - This test functionality currently generates random FPU serial
-    //     numbers (see getNextFpuTestSerialNumber()) which it then uses to
+    //     numbers (see getRandomFpuTestSerialNumber() which it then uses to
     //     write to and read from the FPU database. If an item with the same
     //     serial number / subkey combination already exists in the database
     //     then it is overwritten
@@ -279,8 +279,8 @@ bool ProtectionDBTester::testFpuPositionTransfer(ProtectionDB &protectiondb)
     {
         FpuDbPositionType position_type = FpuDbPositionType::BetaLimits;
         Interval interval_write(1.2, 3.4);
-        double datum_offset_write = 180.0;
-        std::string serial_number_str = getNextFpuTestSerialNumber();
+        double datum_offset_write = ALPHA_DATUM_OFFSET;
+        std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Write position value
         result_ok = transaction->fpuDbTransferPosition(DbTransferType::Write,
@@ -329,7 +329,7 @@ bool ProtectionDBTester::testFpuCountersTransfer(ProtectionDB &protectiondb)
             fpu_counters_write.setCount((FpuCounterId)i, i * 10);
         }
 
-        std::string serial_number_str = getNextFpuTestSerialNumber();
+        std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Write counters
         result_ok = transaction->fpuDbTransferCounters(DbTransferType::Write,
@@ -371,7 +371,7 @@ bool ProtectionDBTester::testFpuWaveformTransfer(ProtectionDB &protectiondb)
     auto transaction = protectiondb.createTransaction();
     if (transaction)
     {
-        std::string serial_number_str = getNextFpuTestSerialNumber();
+        std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Write waveform
         t_waveform_steps waveform_write = 
@@ -421,7 +421,7 @@ bool ProtectionDBTester::testFpuInt64ValTransfer(ProtectionDB &protectiondb)
     auto transaction = protectiondb.createTransaction();
     if (transaction)
     {
-        std::string serial_number_str = getNextFpuTestSerialNumber();
+        std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Write int64_t value
         int64_t int64_val_write = 0x123456789abcdef0;
@@ -458,7 +458,7 @@ bool ProtectionDBTester::testFpuWfReversedFlagTransfer(ProtectionDB &protectiond
     auto transaction = protectiondb.createTransaction();
     if (transaction)
     {
-        std::string serial_number_str = getNextFpuTestSerialNumber();
+        std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Write wf_reversed bool value
         bool wf_reversed_write = true;
@@ -495,7 +495,7 @@ bool ProtectionDBTester::testFullFpuDataTransfer(ProtectionDB &protectiondb)
     auto transaction = protectiondb.createTransaction();
     if (transaction)
     {
-        std::string serial_number_str = getNextFpuTestSerialNumber();
+        std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Create a full fpu data structure, and populate it with test data
         FpuDbData fpu_db_data_write;
@@ -536,7 +536,7 @@ bool ProtectionDBTester::testFpuSingleItemWriteRead(ProtectionDB &protectiondb)
     if (transaction)
     {
         // Write item
-        std::string serial_number_str = getNextFpuTestSerialNumber();
+        std::string serial_number_str = getRandomFpuTestSerialNumber();
         char subkey[] = "TestSubkey";
         char data_str[] = "0123456789";
         result_ok = transaction->fpuDbWriteItem(serial_number_str.c_str(),
@@ -576,7 +576,7 @@ bool ProtectionDBTester::testFpuMultipleItemWriteReads(ProtectionDB &protectiond
 
     bool result_ok = false;
     const int num_iterations = 100;
-    std::string serial_number_str = getNextFpuTestSerialNumber();
+    std::string serial_number_str = getRandomFpuTestSerialNumber();
     uint64_t test_multiplier = 0x123456789abcdef0L;
     
     // N.B. The transactions in the following code are each in their own scope
@@ -734,21 +734,27 @@ void ProtectionDBTester::fillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data)
 }
 
 //------------------------------------------------------------------------------
-std::string ProtectionDBTester::getNextFpuTestSerialNumber()
+std::string ProtectionDBTester::getRandomFpuTestSerialNumber()
 {
-    // Provides incrementing serial number strings of the form "TestNNNN", with
-    // the NNNN values being incrementing leading-zero values starting from an
-    // initial random number 0-4999
-    
-    // Initialise random number generator
-    time_t t;
-    srand((unsigned)time(&t));
+    // Provides serial number strings of the form "TstNNN", with the NNN
+    // characters being a random leading-zero-padded number between 000 and
+    // 999.
+    // N.B. The maximum allowed serial number length is given by
+    // ethercanif::DIGITS_SERIAL_NUMBER
+
+    // Seed the random number generator exactly once
+    static bool seeded = false;
+    if (!seeded)
+    {
+        time_t t;
+        srand((unsigned)time(&t));
+        seeded = true;
+    }
    
-    static int number = rand() % 5000; // 0-4999
-    number++;
+    int number = rand() % 1000; // 0-999
     
     char serial_number_c_str[20];
-    snprintf(serial_number_c_str, sizeof(serial_number_c_str), "Test%04d", number);
+    snprintf(serial_number_c_str, sizeof(serial_number_c_str), "Tst%03d", number);
 
     return std::string(serial_number_c_str);
 }
