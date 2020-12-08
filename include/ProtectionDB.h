@@ -41,6 +41,37 @@ const char fpudb_keystr_separator_char = '#';
 
 #define SNUM_USED_CHECK_VAL    (0xabcd)
 
+//..............................................................................
+
+enum class DbTransferType
+{
+    Read,
+    Write
+};
+
+enum class FpuDbPositionType
+{
+    AlphaLimits = 0,
+    AlphaPos,
+    BetaLimits,
+    BetaPos,
+
+    NumTypes
+};
+
+enum class FpuDbIntValType
+{
+    SnumUsedFlag = 0,
+    FreeAlphaRetries,
+    AlphaRetries_CW,
+    AlphaRetries_ACW,
+    FreeBetaRetries,
+    BetaRetries_CW,
+    BetaRetries_ACW,
+
+    NumTypes
+};
+
 //==============================================================================
 
 // FpuDbData: FPU data which is stored in the protection database.
@@ -77,37 +108,6 @@ private:
 };
 
 //==============================================================================
-
-enum class DbTransferType
-{
-    Read,
-    Write
-};
-
-enum class FpuDbPositionType
-{
-    AlphaLimits = 0,
-    AlphaPos,
-    BetaLimits,
-    BetaPos,
-
-    NumTypes
-};
-
-enum class FpuDbIntValType
-{
-    SnumUsedFlag = 0,
-    FreeAlphaRetries,
-    AlphaRetries_CW,
-    AlphaRetries_ACW,
-    FreeBetaRetries,
-    BetaRetries_CW,
-    BetaRetries_ACW,
-
-    NumTypes
-};
-
-//..............................................................................
 
 class ProtectionDbTxn
 {
