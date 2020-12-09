@@ -385,8 +385,8 @@ AppReturnVal FPUAdmin::setALimits(ProtectionDbTxnPtr &txn,
     if (isSerialNumberUsed(txn, serial_number))
     {
         Interval alimits_interval(alimit_min, alimit_max);
-        if (txn->fpuDbTransferPosition(DbTransferType::Write,
-                                       FpuDbPositionType::AlphaLimits,
+        if (txn->fpuDbTransferInterval(DbTransferType::Write,
+                                       FpuDbIntervalType::AlphaLimits,
                                        serial_number, alimits_interval,
                                        adatum_offset))
         {
@@ -421,8 +421,8 @@ AppReturnVal FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
     {
         Interval blimits_interval(blimit_min, blimit_max);
         double datum_offset = 0.0;
-        if (txn->fpuDbTransferPosition(DbTransferType::Write,
-                                       FpuDbPositionType::BetaLimits,
+        if (txn->fpuDbTransferInterval(DbTransferType::Write,
+                                       FpuDbIntervalType::BetaLimits,
                                        serial_number, blimits_interval,
                                        datum_offset)) //************* TODO: Put a beta datum offset constant here?
         {

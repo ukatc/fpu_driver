@@ -49,7 +49,7 @@ private:
     static bool testWithClosingReopening(const std::string &dir_str);
 
     // FPU database data item transfer test functions
-    static bool testFpuPositionTransfer(ProtectionDB &protectiondb);
+    static bool testFpuIntervalTransfer(ProtectionDB &protectiondb);
     static bool testFpuCountersTransfer(ProtectionDB &protectiondb);
     static bool testFpuWaveformTransfer(ProtectionDB &protectiondb);
     static bool testFpuInt64ValTransfer(ProtectionDB &protectiondb);

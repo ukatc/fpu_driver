@@ -1121,8 +1121,8 @@ bool GridDriver::_update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
     {
         // TODO: Check that the const_cast<> below works OK, AND in
         // _update_bpos() below as well
-        return txn->fpuDbTransferPosition(DbTransferType::Write,
-                                          FpuDbPositionType::AlphaPos,
+        return txn->fpuDbTransferInterval(DbTransferType::Write,
+                                          FpuDbIntervalType::AlphaPos,
                                           serial_number,
                                           const_cast<Interval &>(new_apos),
                                           config.alpha_datum_offset);
@@ -1144,8 +1144,8 @@ bool GridDriver::_update_bpos(const std::unique_ptr<ProtectionDbTxn> &txn,
         // TODO: The position offset is for alpha arm only? So what to do here?
         double dummy_datum_offset = 0.0;
         // TODO: Check that the const_cast<> below works OK
-        return txn->fpuDbTransferPosition(DbTransferType::Write,
-                                          FpuDbPositionType::BetaPos,
+        return txn->fpuDbTransferInterval(DbTransferType::Write,
+                                          FpuDbIntervalType::BetaPos,
                                           serial_number,
                                           const_cast<Interval &>(new_bpos),
                                           dummy_datum_offset);

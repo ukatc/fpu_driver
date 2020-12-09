@@ -382,16 +382,16 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
 
     if (result_ok)
     {
-        result_ok = fpuDbTransferPosition(transfer_type, 
-                                          FpuDbPositionType::AlphaPos,
+        result_ok = fpuDbTransferInterval(transfer_type, 
+                                          FpuDbIntervalType::AlphaPos,
                                           serial_number, fpu_db_data.apos,
                                           datum_offset);
     }
 
     if (result_ok)
     {
-        result_ok = fpuDbTransferPosition(transfer_type, 
-                                          FpuDbPositionType::BetaPos,
+        result_ok = fpuDbTransferInterval(transfer_type, 
+                                          FpuDbIntervalType::BetaPos,
                                           serial_number, fpu_db_data.bpos,
                                           datum_offset);
     }
@@ -404,16 +404,16 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
 
     if (result_ok)
     {
-        result_ok = fpuDbTransferPosition(transfer_type, 
-                                          FpuDbPositionType::AlphaLimits,
+        result_ok = fpuDbTransferInterval(transfer_type, 
+                                          FpuDbIntervalType::AlphaLimits,
                                           serial_number, fpu_db_data.alimits,
                                           datum_offset);
     }
 
     if (result_ok)
     {
-        result_ok = fpuDbTransferPosition(transfer_type, 
-                                          FpuDbPositionType::BetaLimits,
+        result_ok = fpuDbTransferInterval(transfer_type, 
+                                          FpuDbIntervalType::BetaLimits,
                                           serial_number, fpu_db_data.blimits,
                                           datum_offset);
     }
@@ -485,33 +485,33 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbTransferPosition(DbTransferType transfer_type,
-                                            FpuDbPositionType position_type,
+bool ProtectionDbTxn::fpuDbTransferInterval(DbTransferType transfer_type,
+                                            FpuDbIntervalType interval_type,
                                             const char serial_number[],
                                             Interval &interval,
                                             double &datum_offset)
 {
     // Reads or writes an aggregate position type (interval + datum offset)
-    // of type FpuDbPositionType for an FPU
+    // of type FpuDbIntervalType for an FPU
     
     static const struct
     {
-        FpuDbPositionType type;
+        FpuDbIntervalType type;
         const char *subkey;
-    } position_subkeys[(int)FpuDbPositionType::NumTypes] = 
+    } interval_subkeys[(int)FpuDbIntervalType::NumTypes] = 
     {
-        { FpuDbPositionType::AlphaLimits, alpha_limits_keystr   },
-        { FpuDbPositionType::AlphaPos,    alpha_position_keystr },
-        { FpuDbPositionType::BetaLimits,  beta_limits_keystr    }, 
-        { FpuDbPositionType::BetaPos,     beta_position_keystr  }
+        { FpuDbIntervalType::AlphaLimits, alpha_limits_keystr   },
+        { FpuDbIntervalType::AlphaPos,    alpha_position_keystr },
+        { FpuDbIntervalType::BetaLimits,  beta_limits_keystr    }, 
+        { FpuDbIntervalType::BetaPos,     beta_position_keystr  }
     };
 
     const char *subkey = nullptr;
-    for (int i = 0; i < (int)FpuDbPositionType::NumTypes; i++)
+    for (int i = 0; i < (int)FpuDbIntervalType::NumTypes; i++)
     {
-        if (position_subkeys[i].type == position_type)
+        if (interval_subkeys[i].type == interval_type)
         {
-            subkey = position_subkeys[i].subkey;
+            subkey = interval_subkeys[i].subkey;
             break;
         }
     }

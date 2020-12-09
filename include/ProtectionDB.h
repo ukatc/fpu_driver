@@ -49,7 +49,7 @@ enum class DbTransferType
     Write
 };
 
-enum class FpuDbPositionType
+enum class FpuDbIntervalType
 {
     AlphaLimits = 0,
     AlphaPos,
@@ -129,8 +129,8 @@ public:
                           const char serial_number[],
                           FpuDbData &fpu_db_data);
 
-    bool fpuDbTransferPosition(DbTransferType transfer_type,
-                               FpuDbPositionType position_type, 
+    bool fpuDbTransferInterval(DbTransferType transfer_type,
+                               FpuDbIntervalType interval_type, 
                                const char serial_number[], Interval &interval,
                                double &datum_offset);
     bool fpuDbTransferCounters(DbTransferType transfer_type,

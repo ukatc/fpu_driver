@@ -106,7 +106,7 @@ bool ProtectionDBTester::testWithStayingOpen(const std::string &dir_str)
 
         if (result_ok)
         {
-            result_ok = testFpuPositionTransfer(protectiondb);
+            result_ok = testFpuIntervalTransfer(protectiondb);
         }
         
         if (result_ok)
@@ -190,7 +190,7 @@ bool ProtectionDBTester::testWithClosingReopening(const std::string &dir_str)
         ProtectionDB protectiondb;
         if (protectiondb.open(dir_str))
         {
-            result_ok = testFpuPositionTransfer(protectiondb);
+            result_ok = testFpuIntervalTransfer(protectiondb);
         }
         else
         {
@@ -267,24 +267,24 @@ bool ProtectionDBTester::testWithClosingReopening(const std::string &dir_str)
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDBTester::testFpuPositionTransfer(ProtectionDB &protectiondb)
+bool ProtectionDBTester::testFpuIntervalTransfer(ProtectionDB &protectiondb)
 {
-    // Tests writing and reading back an aggregate position value (interval +
-    // datum offset) of an FPU
+    // Tests writing and reading back an aggregate interval + datum offset
+    // of an FPU
     
     bool result_ok = false;
     
     auto transaction = protectiondb.createTransaction();
     if (transaction)
     {
-        FpuDbPositionType position_type = FpuDbPositionType::BetaLimits;
+        FpuDbIntervalType interval_type = FpuDbIntervalType::BetaLimits;
         Interval interval_write(1.2, 3.4);
         double datum_offset_write = ALPHA_DATUM_OFFSET;
         std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Write position value
-        result_ok = transaction->fpuDbTransferPosition(DbTransferType::Write,
-                                                       position_type,
+        result_ok = transaction->fpuDbTransferInterval(DbTransferType::Write,
+                                                       interval_type,
                                                        serial_number_str.c_str(),
                                                        interval_write,
                                                        datum_offset_write);
@@ -293,8 +293,8 @@ bool ProtectionDBTester::testFpuPositionTransfer(ProtectionDB &protectiondb)
             // Read back position value
             Interval interval_read;
             double datum_offset_read = -999.0;
-            result_ok = transaction->fpuDbTransferPosition(DbTransferType::Read,
-                                                           position_type,
+            result_ok = transaction->fpuDbTransferInterval(DbTransferType::Read,
+                                                           interval_type,
                                                            serial_number_str.c_str(),
                                                            interval_read,
                                                            datum_offset_read);

@@ -103,14 +103,14 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     // temporary value vectors
     struct
     {
-        FpuDbPositionType type;
+        FpuDbIntervalType type;
         std::vector<Interval> &vector_ref;
-    } position_items[(int)FpuDbPositionType::NumTypes] = 
+    } interval_items[(int)FpuDbIntervalType::NumTypes] = 
     {
-        { FpuDbPositionType::AlphaPos,    apositions_temp },
-        { FpuDbPositionType::BetaPos,     bpositions_temp },
-        { FpuDbPositionType::AlphaLimits, alimits_temp    },
-        { FpuDbPositionType::BetaLimits,  blimits_temp    }
+        { FpuDbIntervalType::AlphaPos,    apositions_temp },
+        { FpuDbIntervalType::BetaPos,     bpositions_temp },
+        { FpuDbIntervalType::AlphaLimits, alimits_temp    },
+        { FpuDbIntervalType::BetaLimits,  blimits_temp    }
     };
     
     struct
@@ -148,12 +148,12 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
       //********* TODO: What to do with the offsets??
             double datum_offset;
             result_ok = true;
-            for (int i = 0; i < (int)FpuDbPositionType::NumTypes; i++)
+            for (int i = 0; i < (int)FpuDbIntervalType::NumTypes; i++)
             {
-                if (!txn->fpuDbTransferPosition(DbTransferType::Read,
-                                                position_items[i].type,
+                if (!txn->fpuDbTransferInterval(DbTransferType::Read,
+                                                interval_items[i].type,
                                                 serial_number,
-                                                position_items[i].vector_ref[fpu_id],
+                                                interval_items[i].vector_ref[fpu_id],
                                                 datum_offset))
                 {
                     result_ok = false;
