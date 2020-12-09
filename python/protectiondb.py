@@ -42,7 +42,6 @@ INIT_COUNTERS = {
 }
 
 def get_sn(fpu):
-    
     if type(fpu) == types.StringType:
         serial_number = fpu
     else:
@@ -76,15 +75,12 @@ class ProtectionDB:
         
     @staticmethod
     def putInterval(txn, serial_number, subkey, interval, offset=0):
-        """Stores a position interval.
-        
-        In theory, it is cleaner to only store
-        the relative values. But we want the DB content
-        to be human-readable, and easy to interpret,
-        and a uniform angle interpretation, 
-        so it is better to store positional values always 
-        along with the offset they refer to."""
-        
+        # Stores a position interval.
+        # In theory, it is cleaner to only store the relative values.
+        # But we want the DB content to be human-readable, and easy to
+        # interpret, and a uniform angle interpretation, so it is
+        # better to store positional values always along with the
+        # offset they refer to.
         val = [interval, offset]
         ProtectionDB.putField(txn, serial_number, subkey, val)
         
@@ -103,7 +99,6 @@ class ProtectionDB:
             
         val = literal_eval(data)
         return val
-
     
     @classmethod
     def getField(cls, txn, fpu, subkey):
@@ -131,21 +126,18 @@ class ProtectionDB:
                       cls.serialnumber_used]:
             return val
         else:
-            # return position span as interval object
-            
+            # Return position span as interval object.
             # The code below transforms an absolute position and
             # offset into a relative position. This allows to have
-            # configurable offsets for the alpha datum position.  The
-            # reason for that absolute position data is stored along
+            # configurable offsets for the alpha datum position. The
+            # reason that absolute position data is stored along
             # with the offset is the goal to store data both
             # offset-independent and human-readable.
             ivlist, stored_offset = val
             return Interval(ivlist) - stored_offset
 
-
     @classmethod
     def put_alpha_position(cls, txn, fpu, apos, aoffset):
-        
         # store the datum offsets along with each position
         # (this allows to reconfigure the zero point later)
         cls.putInterval(txn, fpu.serial_number, cls.alpha_positions, apos, aoffset)
@@ -154,7 +146,6 @@ class ProtectionDB:
     def put_beta_position(cls, txn, fpu, bpos):
         # store the datum offsets along with each position
         # (this allows to reconfigure the zero point later)
-
         cls.putInterval(txn, fpu.serial_number, cls.beta_positions, bpos, 0)
 
     @classmethod
@@ -167,7 +158,6 @@ class ProtectionDB:
 
     @classmethod
     def store_bretry_count(cls, txn, fpu, clockwise, cnt):
-
         if clockwise :
             subkey = cls.beta_retry_count_cw
         else:
@@ -177,25 +167,18 @@ class ProtectionDB:
 
     @classmethod
     def store_aretry_count(cls, txn, fpu, clockwise, cnt):
-
         if clockwise :
             subkey = cls.alpha_retry_count_cw
         else:
             subkey = cls.alpha_retry_count_acw
 
         cls.putField(txn, fpu.serial_number, subkey, cnt)
-
-        
             
     @classmethod
     def put_counters(cls, txn, fpu, counter_vals):
-        # store the datum offsets along with each position
-        # (this allows to reconfigure the zero point later)
-
         cls.putField(txn, fpu.serial_number, cls.counters, counter_vals)
             
     
-
 class HealthLogDB:
     dbname = "healthlog"
     counters = "counters2"
@@ -222,7 +205,6 @@ class HealthLogDB:
             return key, None
         
         return key, literal_eval(val)    
-
 
 
 def open_database_env(mockup=False):
