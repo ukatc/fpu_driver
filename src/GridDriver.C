@@ -193,6 +193,9 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
                     fpu_data.db.apos += config.alpha_datum_offset;
                     fpu_data.db.alimits += config.alpha_datum_offset;
 
+                    // TODO: Will BETA datum offset adjustment also be required
+                    // here eventually?
+
                     // Populate the remaining FPU data items
                     fpu_data.a_caloffset = Interval(0.0);
                     fpu_data.b_caloffset = Interval(0.0);
@@ -1119,8 +1122,7 @@ bool GridDriver::_update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
     fpus_data[fpu_id].db.apos = new_apos;
     if (store)
     {
-        // TODO: Check that the const_cast<> below works OK, AND in
-        // _update_bpos() below as well
+        // TODO: Check that the const_cast<> below works OK
         return txn->fpuDbTransferInterval(DbTransferType::Write,
                                           FpuDbIntervalType::AlphaPos,
                                           serial_number,
@@ -1141,14 +1143,13 @@ bool GridDriver::_update_bpos(const std::unique_ptr<ProtectionDbTxn> &txn,
     fpus_data[fpu_id].db.bpos = new_bpos;
     if (store)
     {
-        // TODO: The position offset is for alpha arm only? So what to do here?
-        double dummy_datum_offset = 0.0;
+        double beta_datum_offset = BETA_DATUM_OFFSET;
         // TODO: Check that the const_cast<> below works OK
         return txn->fpuDbTransferInterval(DbTransferType::Write,
                                           FpuDbIntervalType::BetaPos,
                                           serial_number,
                                           const_cast<Interval &>(new_bpos),
-                                          dummy_datum_offset);
+                                          beta_datum_offset);
     }
     else
     {

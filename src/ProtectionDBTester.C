@@ -293,7 +293,10 @@ bool ProtectionDBTester::testFpuIntervalTransfer(ProtectionDB &protectiondb)
             // Read back position value
             Interval interval_read;
             double datum_offset_read = -999.0;
-            result_ok = transaction->fpuDbTransferInterval(DbTransferType::Read,
+            // NOTE: Using DbTransferType::ReadRaw rather than
+            // DbTransferType::Read here, because the latter would subtract
+            // the offset from the interval and thus make the comparison invalid
+            result_ok = transaction->fpuDbTransferInterval(DbTransferType::ReadRaw,
                                                            interval_type,
                                                            serial_number_str.c_str(),
                                                            interval_read,
@@ -508,8 +511,12 @@ bool ProtectionDBTester::testFullFpuDataTransfer(ProtectionDB &protectiondb)
         if (result_ok)
         {
             // Read back full fpu data structure
+            // NOTE: Using DbTransferType::ReadRaw rather than
+            // DbTransferType::Read here, so that the RAW intervals (apos/bpos/
+            // alimits/blimits) are read, rather than the offset-modified
+            // ones, so that should read back the same as what was written above
             FpuDbData fpu_db_data_read;
-            result_ok = transaction->fpuDbTransferFpu(DbTransferType::Read,
+            result_ok = transaction->fpuDbTransferFpu(DbTransferType::ReadRaw,
                                                       serial_number_str.c_str(),
                                                       fpu_db_data_read);
             if (result_ok)

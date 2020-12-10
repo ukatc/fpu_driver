@@ -188,11 +188,10 @@ AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
                             double bpos_min, double bpos_max,
                             bool reinitialize, double adatum_offset)
 {
-    // Initializes the FPU in the protection database, passing the initial alpha
-    // and beta arm min and max positions in degrees. The optional adatum_offset
-    // parameter is the alpha datum offset.
-    // If reinitialize is true, it is allowed to redefine FPU positions
-    // which already have been stored before.
+    // Initialises the FPU in the protection database. The initial alpha and
+    // beta arm min and max positions are in degrees. If reinitialize is true,
+    // it is allowed to redefine FPU positions which already have been stored
+    // before.
 
     if (!checkAndMessageForSerialNumberLength(serial_number))
     {
@@ -201,20 +200,29 @@ AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
 
     FpuDbData fpu_db_data;
 
-    // TODO: In the Python fpu-admin version, the apos/bpos/alimits/blimits
-    // Intervals stored into the database also include alpha and beta OFFSETS
-    // - so need to replicate this somehow
-    fpu_db_data.apos = Interval(apos_min, apos_max); // TODO: Include alpha_offset
-    fpu_db_data.bpos = Interval(bpos_min, bpos_max); // TODO: Include BETA_DATUM_OFFSET
+    fpu_db_data.snum_used_flag = SNUM_USED_CHECK_VAL;
+
+    fpu_db_data.apos = Interval(apos_min, apos_max);
+    fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaPos] = adatum_offset;
+
+    fpu_db_data.bpos = Interval(bpos_min, bpos_max);
+    fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaPos] = BETA_DATUM_OFFSET;
+
+    fpu_db_data.alimits = Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE);
+    fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaLimits] = adatum_offset;
+
+    fpu_db_data.blimits = Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE);
+    fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaLimits] = BETA_DATUM_OFFSET;
+
     fpu_db_data.wf_reversed = false;
-    fpu_db_data.alimits = Interval(ALPHA_MIN_DEGREE, ALPHA_MAX_DEGREE); // TODO: Include alpha_offset
-    fpu_db_data.blimits = Interval(BETA_MIN_DEGREE, BETA_MAX_DEGREE);   // TODO: Include BETA_DATUM_OFFSET
+
     fpu_db_data.maxaretries = DEFAULT_FREE_ALPHA_RETRIES;
     fpu_db_data.aretries_cw = 0;
     fpu_db_data.aretries_acw = 0;
     fpu_db_data.maxbretries = DEFAULT_FREE_BETA_RETRIES;
     fpu_db_data.bretries_cw = 0;
     fpu_db_data.bretries_acw = 0;
+
     if (!reinitialize)
     {
         // If the FPU has an existing counters entry in the database, then
@@ -232,6 +240,7 @@ AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
             fpu_db_data.counters.zeroAll();
         }
     }
+
     fpu_db_data.last_waveform.clear();
 
     if (txn->fpuDbTransferFpu(DbTransferType::Write, serial_number, fpu_db_data))
@@ -314,7 +323,13 @@ bool FPUAdmin::printSingleFpu(ProtectionDbTxnPtr &txn,
     
     std::cout << "FPU serial number: " << serial_number << snum_err_str << "\n";
     FpuDbData fpu_db_data;
-    if (txn->fpuDbTransferFpu(DbTransferType::Read, serial_number, fpu_db_data))
+    // NOTE: Using DbTransferType::ReadRaw rather than just DbTransferType::Read
+    // here, because the latter will subtract the offset from the interval, but
+    // we just want the raw interval and offset values
+    // TODO: Is this correct? This is what the fpu-admin Python version's 
+    // "list1" command seems to do - it calls getRawField() for all fields
+    if (txn->fpuDbTransferFpu(DbTransferType::ReadRaw, serial_number,
+                              fpu_db_data))
     {
         printFpuDbData(fpu_db_data);
         return true;
@@ -330,13 +345,21 @@ bool FPUAdmin::printSingleFpu(ProtectionDbTxnPtr &txn,
 //------------------------------------------------------------------------------
 void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
 {
-    // Prints useful data for one FPU using std::cout
+    // Prints useful data for one FPU using std::cout.
 
-    // apos / bpos / wf_reversed
-    // TODO: Also display alpha offset (and beta offset?) - see fpu driver
-    // manual example output on page 24
-    std::cout << "apos = " << fpu_db_data.apos.toString() <<
-                 ", bpos = " << fpu_db_data.bpos.toString();
+    // apos / bpos intervals + offsets
+    std::cout << "apos = [" << fpu_db_data.apos.toString() << ", " <<
+        std::to_string(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaPos]) << "]\n";
+    std::cout << "bpos = [" << fpu_db_data.bpos.toString() << ", " <<
+        std::to_string(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaPos]) << "]\n";
+
+    // alimits / blimits intervals + offsets
+    std::cout << "alimits = [" << fpu_db_data.alimits.toString() << ", " <<
+        std::to_string(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaLimits]) << "]\n";
+    std::cout << "blimits = [" << fpu_db_data.blimits.toString() << ", " <<
+        std::to_string(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaLimits]) << "]\n";
+
+    // wf_reversed flag
     const char *wf_reversed_str = "";
     if (fpu_db_data.wf_reversed)
     {
@@ -346,13 +369,7 @@ void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
     {
         wf_reversed_str = "false";
     }
-    std::cout << ", wf_reversed = " << wf_reversed_str << "\n";
-    
-    // alimits / blimits
-    // TODO: Also display alpha offset (and beta offset?) - see fpu driver
-    // manual example output on page 24
-    std::cout << "alimits = " << fpu_db_data.alimits.toString() <<
-                 ", blimits = " << fpu_db_data.blimits.toString() << "\n";
+    std::cout << "wf_reversed = " << wf_reversed_str << "\n";
 
     // maxaretries / aretries_cw / aretries_acw
     std::cout << "max_a_retries = " << std::to_string(fpu_db_data.maxaretries) <<
@@ -420,11 +437,11 @@ AppReturnVal FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
     if (isSerialNumberUsed(txn, serial_number))
     {
         Interval blimits_interval(blimit_min, blimit_max);
-        double datum_offset = 0.0;
+        double beta_datum_offset = BETA_DATUM_OFFSET;
         if (txn->fpuDbTransferInterval(DbTransferType::Write,
                                        FpuDbIntervalType::BetaLimits,
                                        serial_number, blimits_interval,
-                                       datum_offset)) //************* TODO: Put a beta datum offset constant here?
+                                       beta_datum_offset))
         {
             return AppReturnOk;
         }

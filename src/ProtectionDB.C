@@ -66,6 +66,11 @@ FpuDbData::FpuDbData()
     maxbretries = 0;
     bretries_cw = 0;
     bretries_acw = 0;
+
+    datum_offsets[(int)FpuDbIntervalType::AlphaPos] = ALPHA_DATUM_OFFSET;
+    datum_offsets[(int)FpuDbIntervalType::AlphaLimits] = ALPHA_DATUM_OFFSET;
+    datum_offsets[(int)FpuDbIntervalType::BetaPos] = BETA_DATUM_OFFSET;
+    datum_offsets[(int)FpuDbIntervalType::BetaLimits] = BETA_DATUM_OFFSET;
 }
 
 //------------------------------------------------------------------------------
@@ -99,7 +104,17 @@ bool FpuDbData::isSameAsOther(const FpuDbData &other)
             }
         }
     }
-    
+
+    bool offsets_are_equal = true;
+    for (int i = 0; i < (int)FpuDbIntervalType::NumTypes; i++)
+    {
+        if (datum_offsets[i] != other.datum_offsets[i])
+        {
+            offsets_are_equal = false;
+            break;
+        }
+    }
+
     return ((snum_used_flag == other.snum_used_flag) &&
             (apos == other.apos) &&
             (bpos == other.bpos) &&
@@ -113,7 +128,8 @@ bool FpuDbData::isSameAsOther(const FpuDbData &other)
             (bretries_cw == other.bretries_cw) &&
             (bretries_acw == other.bretries_acw) &&
             (counters == other.counters) &&
-            waveforms_are_equal);
+            waveforms_are_equal && 
+            offsets_are_equal);
 }
 
 //==============================================================================
@@ -369,23 +385,25 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
 {
     // Reads or writes all data items for a single FPU specified by the given
     // serial_number.
+    // NOTE: For a read transfer, specifying DbTransferType::Read versus
+    // DbTransferType::ReadRaw will affect how the interval values (apos/bpos/
+    // alimits/blimits) are read - see the comments in fpuDbTransferInterval().
 
-    // *************** TODO: What to do with the offset values?? N.B. There is
-    // an alpha offset adjustment done in GridDriver::_post_connect_hook() as
-    // well
-    double datum_offset;
-
+    //..........................................................................
+    // Serial-number-used flag
     bool result_ok = fpuDbTransferInt64Val(transfer_type, 
                                            FpuDbIntValType::SnumUsedFlag,
                                            serial_number,
                                            fpu_db_data.snum_used_flag);
 
+    //..........................................................................
+    // Intervals and their datum offsets (apos/bpos/alimits/blimits)
     if (result_ok)
     {
         result_ok = fpuDbTransferInterval(transfer_type, 
                                           FpuDbIntervalType::AlphaPos,
                                           serial_number, fpu_db_data.apos,
-                                          datum_offset);
+                fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaPos]);
     }
 
     if (result_ok)
@@ -393,13 +411,7 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
         result_ok = fpuDbTransferInterval(transfer_type, 
                                           FpuDbIntervalType::BetaPos,
                                           serial_number, fpu_db_data.bpos,
-                                          datum_offset);
-    }
-
-    if (result_ok)
-    {
-        result_ok = fpuDbTransferWfReversedFlag(transfer_type, serial_number,
-                                                fpu_db_data.wf_reversed);
+                fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaPos]);
     }
 
     if (result_ok)
@@ -407,7 +419,7 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
         result_ok = fpuDbTransferInterval(transfer_type, 
                                           FpuDbIntervalType::AlphaLimits,
                                           serial_number, fpu_db_data.alimits,
-                                          datum_offset);
+                fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaLimits]);
     }
 
     if (result_ok)
@@ -415,12 +427,21 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
         result_ok = fpuDbTransferInterval(transfer_type, 
                                           FpuDbIntervalType::BetaLimits,
                                           serial_number, fpu_db_data.blimits,
-                                          datum_offset);
+                fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaLimits]);
     }
 
+    //..........................................................................
+    // Waveform-reversed flag
+    if (result_ok)
+    {
+        result_ok = fpuDbTransferWfReversedFlag(transfer_type, serial_number,
+                                                fpu_db_data.wf_reversed);
+    }
+
+    //..........................................................................
+    // Alpha/beta arm retry counts
     // TODO: Does FreeAlphaRetries / FreeBetaRetries actually correspond to
     // maxrareties/maxbretries in the items below?
-
     if (result_ok)
     {
         result_ok = fpuDbTransferInt64Val(transfer_type,
@@ -469,17 +490,23 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
                                           fpu_db_data.bretries_acw);
     }
 
+    //..........................................................................
+    // Counters
     if (result_ok)
     {
         result_ok = fpuDbTransferCounters(transfer_type, serial_number,
                                           fpu_db_data.counters);
     }
 
+    //..........................................................................
+    // Last waveform
     if (result_ok)
     {
         result_ok = fpuDbTransferWaveform(transfer_type, serial_number,
                                           fpu_db_data.last_waveform);
     }
+
+    //..........................................................................
 
     return result_ok;
 }
@@ -491,9 +518,21 @@ bool ProtectionDbTxn::fpuDbTransferInterval(DbTransferType transfer_type,
                                             Interval &interval,
                                             double &datum_offset)
 {
-    // Reads or writes an aggregate position type (interval + datum offset)
-    // of type FpuDbIntervalType for an FPU
-    
+    // Reads or writes an interval + datum offset combination of type
+    // FpuDbIntervalType for an FPU.
+    //
+    // NOTE: Read transfer types:
+    //   - DbTransferType::Read: Adjusts the returned interval by subtracting
+    //     the datum offset from the raw interval in the database
+    //   - DbTransferType::ReadRaw: Just gets the raw interval + offset values
+    //     from the FPU database
+    //
+    // In theory, it is cleaner to only store the relative values. But we want
+    // the database content to be easy to interpret and have a uniform angle
+    // interpretation, so it is better to always store interval values along
+    // with the offset they refer to. So we store the datum offsets along with
+    // each position interval (this allows to reconfigure the zero point later).
+
     static const struct
     {
         FpuDbIntervalType type;
@@ -541,8 +580,28 @@ bool ProtectionDbTxn::fpuDbTransferInterval(DbTransferType transfer_type,
                 if (num_item_data_bytes == sizeof(doubles_array))
                 {
                     memcpy(doubles_array, item_data_ptr, sizeof(doubles_array));
-                    interval = Interval(doubles_array[0], doubles_array[1]);
+
                     datum_offset = doubles_array[2];
+                    if (transfer_type == DbTransferType::Read)
+                    {
+                        // DbTransferType::Read
+                        // For this normal interval read (rather than a raw
+                        // read), subtract the datum offset value - this
+                        // transforms the absolute position and offset into a
+                        // relative position. This allows storing of the
+                        // intervals independently of their offset, allowing
+                        // configurable offsets for the alpha datum position.
+                        // BW NOTE: This is equivalent to the original Python
+                        // version's ProtectionDB.getField() function ->
+                        // interval-specific adjustment code.
+                        interval = Interval(doubles_array[0], doubles_array[1]) -
+                                   datum_offset;
+                    }
+                    else
+                    {
+                        // DbTransferType::ReadRaw
+                        interval = Interval(doubles_array[0], doubles_array[1]);
+                    }
                     return true;
                 }
             }

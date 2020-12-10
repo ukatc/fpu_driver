@@ -432,7 +432,7 @@ void printHelp()
         "\n"
         "init [--reinitialize] <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]\n"
         "    - Initializes FPU data in protection database, passing the initial alpha\n"
-        "      and beta arm positions in degree.\n"
+        "      and beta arm positions in degrees.\n"
         "      The optional last parameter is the alpha datum offset.\n"
         "\n"
         "      If the --reinitialize flag is set, it is allowed to redefine\n"

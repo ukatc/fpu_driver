@@ -68,10 +68,6 @@ std::string Interval::toString()
     {
         return_string = "[]";
     }
-    else if (lower == upper)
-    {
-        return_string = std::to_string(lower);
-    }
     else
     {
         return_string = "[" + std::to_string(lower) + ", " + 

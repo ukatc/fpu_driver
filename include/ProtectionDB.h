@@ -45,7 +45,15 @@ const char fpudb_keystr_separator_char = '#';
 
 enum class DbTransferType
 {
+    // For reading, there are two options, which specify the way in which the
+    // apos/alimits/bpos/blimits intervals are read:
+    //   - Read: The returned intervals have their corresponding datum offset
+    //     values in the database subtracted from them
+    //   - ReadRaw: Doesn't subtract the datum offsets from the intervals -
+    //     just reads the raw database intervals
     Read,
+    ReadRaw,
+    
     Write
 };
 
@@ -85,11 +93,17 @@ struct FpuDbData
      // number is used to indicate that the serial number is in use for an FPU
     int64_t snum_used_flag;
 
+    // Intervals note: When one or all of these intervals is read from the
+    // FPU database (using fpuDbTransferInterval() or fpuDbTransferFpu()),
+    // the 2 different DbTransferType read options specify how these intervals
+    // will be populated - see the comments in the
+    // ProtectionDbTxn::fpuDbTransferInterval() function.
     Interval apos;
     Interval bpos;
-    bool wf_reversed;
     Interval alimits;
     Interval blimits;
+
+    bool wf_reversed;
     int64_t maxaretries;
     int64_t aretries_cw;
     int64_t aretries_acw;
@@ -102,6 +116,16 @@ struct FpuDbData
     // TODO: N.B. last_waveform corresponds to an individual FPU's waveform
     // in tbe Python version's UnprotectedGridDriver.last_wavetable dictionary
     t_waveform_steps last_waveform;
+
+    // Datum offsets
+    // These will reflect the raw datum offset values corresponding to the
+    // apos/bpos/alimits/blimits intervals for the FPU, whenever the full set
+    // of FPU data is read from the database using fpuDbTransferFpu().
+    // However, note that generally the apos/alimits/ bpos/blimits interval
+    // values above will have these offsets subtracted automatically when the
+    // FPU data is read from the database with DbTransferType::Read specifid
+    // (unless DbTransferType::ReadRaw is used instead).
+    double datum_offsets[(int)FpuDbIntervalType::NumTypes];
     
 private:
     bool isSameAsOther(const FpuDbData &other);
