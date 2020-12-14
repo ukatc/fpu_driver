@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <algorithm>
 #include <unistd.h>
+#include <signal.h>
 #include <new>
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
@@ -43,6 +44,83 @@
 
 namespace mpifps
 {
+
+//==============================================================================
+// Abort signal handler functionality
+//
+// N.B. These variables and functions are file-scope globals to support the
+// Linux signal handler function being a C function (rather than a C++ member
+// function) to keep things simple.
+static int sig_handler_signum = SIGINT;
+// The following are atomics to make them thread-safe, because they are
+// modified from the signal handler, which is called from a different thread.
+// TODO: Would these variables be at risk of the C++ static initialization
+// order problem / fiasco?   
+static std::atomic<sighandler_t> sig_handler_original(nullptr);
+static std::atomic<bool> sig_handler_triggered(false);
+static std::atomic<bool> sig_handler_released(true);
+
+static void sigHandlerRelease();
+
+//------------------------------------------------------------------------------
+static void sigHandlerFunc(int signum)
+{
+    if (signum == sig_handler_signum)
+    {
+        sigHandlerRelease();
+        sig_handler_triggered = true;
+    }
+}
+
+//------------------------------------------------------------------------------
+static void sigHandlerRelease()
+{
+    if (!sig_handler_released)
+    {
+        signal(sig_handler_signum, sig_handler_original);
+        sig_handler_released = true;
+    }
+}
+
+//------------------------------------------------------------------------------
+    
+class SignalHandler
+{
+    // Context manager for handling a signal while waiting for command
+    // completion.
+    // NOTE: Only a single instance is allowed at a time.
+
+    // TODO: Can't have this SignalHandler class directly in
+    // UnprotectedGridDriver, because it’s a CONTROL-C mechanism for use in
+    // the Boost,Python wrapper only - need to implement a GENERIC abort flag
+    // mechanism in UnprotectedGridDriver
+
+public:
+    SignalHandler(int signum = SIGINT)
+    {
+        sig_handler_signum = signum;
+        sig_handler_triggered = false;
+        sig_handler_released = false;
+        sig_handler_original = signal(sig_handler_signum, sigHandlerFunc);
+    }
+
+    bool wasTriggered()
+    {
+        bool was_triggered = sig_handler_triggered;
+        sig_handler_triggered = false;
+        return was_triggered;
+    }
+    
+    ~SignalHandler()
+    {
+        sigHandlerRelease();
+        sig_handler_triggered = false;
+    }
+};
+
+
+//==============================================================================
+
 // TODO: Temporary "warn()" placeholder for now - implement something better
 #define warn(warnString)
 
