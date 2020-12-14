@@ -33,6 +33,7 @@ static const int abort_handler_signum = SIGINT;
 // order problem / fiasco?   
 static std::atomic<bool> abort_handler_is_installed(false);
 static std::atomic<sighandler_t> signal_handler_original(nullptr);
+static std::atomic<bool> abortHandlerTestFlag(false); // For testing only
 
 static void abortHandlerFunction(int signum);
 static void abortHandlerRelease();
@@ -69,6 +70,8 @@ void abortHandlerFunction(int signum)
     {
         abortHandlerRelease();
         gridDriverAbortDuringFindDatumOrExecuteMotion();
+
+        abortHandlerTestFlag = true;    // For testing only
     }
 }
 
@@ -83,6 +86,43 @@ void abortHandlerRelease()
         abort_handler_is_installed = false;
     }
 }
+
+//------------------------------------------------------------------------------
+void abortHandlerTest()
+{
+    // Test function - tests that the abort handler picks up the Ctrl-C signal
+    // OK. Can call from e.g. beginning of WrappedGridDriver::initWrapper() for
+    // test purposes and do a wrapped grid driver build, then from a Python
+    // shell do the following:
+    //     from ethercanif import *
+    //     gd=GridDriver(1)
+    //     ===== Testing Ctrl-C handling =====
+    //     Test 1 of 10 - hit Ctrl-C
+    //     ^CCtrl-C signal was received OK
+    //     Test 2 of 10 - hit Ctrl-C
+    //     ^CCtrl-C signal was received OK
+    //     ...etc
+
+    std::cout << "===== Testing Ctrl-C handling =====" << std::endl;
+    const int num_runs = 10;
+    for (int i = 0; i < num_runs; i++)
+    {
+        std::cout << "Test " << std::to_string(i + 1) << " of " <<
+                     std::to_string(num_runs) << " - hit Ctrl-C" << std::endl;
+        abortHandlerInstall();
+        while (1)
+        {
+            if (abortHandlerTestFlag)
+            {
+                abortHandlerTestFlag = false;
+                std::cout << "Ctrl-C signal was received OK" << std::endl;
+                break;
+            }
+        }
+        abortHandlerUninstall();
+    }    
+}
+
 
 //==============================================================================
 boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
@@ -101,6 +141,10 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
     double motor_max_rel_increase,
     double motor_max_step_difference)
 {
+    // For Ctrl-C testing only - uncomment to test Ctrl-C detection - see
+    // further comments in abortHandlerTest()
+    // abortHandlerTest();
+
     if ((nfpus <= 0) || (nfpus > MAX_NUM_POSITIONERS))
     {
         std::cout << "*** ERROR ***: nfpus is <=0 or >MAX_NUM_POSITIONERS (" <<
