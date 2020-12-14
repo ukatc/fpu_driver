@@ -455,6 +455,18 @@ int UnprotectedGridDriver::getNumFpus()
 }
 
 //------------------------------------------------------------------------------
+void UnprotectedGridDriver::triggerAbortDuringFindDatumOrExecuteMotion(void)
+{
+    // Triggers the aborting of FPU motion during findDatum() or
+    // executeMotion() if either of them are currently in the process of moving
+    // FPUs.
+    // NOTE: This function will be called from a DIFFERENT THREAD from the
+    // thread on which the grid driver is running, so a thread-safe atomic
+    // variable is used.
+    abort_motion_pending = true;
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs, 
                     const t_datum_search_flags &orig_search_modes,
                     enum E_DATUM_SELECTION selected_arm, const t_fpuset &fpuset,
@@ -577,19 +589,26 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     bool was_aborted = false;
     bool finished_ok = false;
 
-    // TODO: In the Python equivalent code, has code to allow aborting
-    // from a signal (see was_aborted etc) - but this isn't appropriate
-    // in this C++ version because will be part of ESO driver? Come back
-    // to this / check what kind of ESO driver abort mechanism is required
-    //
     // TODO: In the Python equivalent code, has try/finally block - but
     // is this required/useful/appropriate in this C++ code - are there 
     // any exceptions to be caught?
+    abort_motion_pending = false;
     while (!is_ready)
     {
         bool wait_find_datum_finished = false;
         ecan_result = _gd->waitFindDatum(gs, time_interval,
                                          wait_find_datum_finished, &fpuset);
+        if (abort_motion_pending)
+        {
+            abort_motion_pending = false;
+            E_EtherCANErrCode abort_result = abortMotion(gs, fpuset);
+            if (abort_result != DE_OK)
+            {
+                return abort_result;
+            }
+            was_aborted = true;
+            break;
+        }
         is_ready = (ecan_result != DE_WAIT_TIMEOUT);
         finished_ok = (ecan_result == DE_OK);
     }
@@ -616,10 +635,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
 
     if (was_aborted)
     {
-
-        // TODO: See Python equivalent - not appropriate to abort etc? (also
-        // see comments further up in this function)
-
+        return DE_MOVEMENT_ABORTED;
     }
 
     return ecan_result;
@@ -1152,21 +1168,30 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
 
     double time_interval = 0.1;
     bool is_ready = false;
-    //bool was_aborted = false;
+    bool was_aborted = false;
     bool refresh_state = false;
     // TODO: The ecan_result logic here might not be the same as the Python
     // equivalent - check this
+    abort_motion_pending = false;
     while (!is_ready)
     {
         bool wait_execute_motion_finished = false;
         ecan_result = _gd->waitExecuteMotion(gs, time_interval,
                                              wait_execute_motion_finished,
                                              fpuset);
+        if (abort_motion_pending)
+        {
+            abort_motion_pending = false;
+            E_EtherCANErrCode abort_result = abortMotion(gs, fpuset);
+            if (abort_result != DE_OK)
+            {
+                return abort_result;
+            }
+            was_aborted = true;
+            refresh_state = true;
+            break;
+        }
         
-        // TODO: Python version can be interrupted from Linux signals here,
-        // but this isn't appropriate for C++ version because it wlll be
-        // inside ESO driver?
-
         // (The following check was brought in from 
         // ethercanif.C -> WrapEtherCANInterface::wrap_waitExecuteMotion())
         if (!wait_execute_motion_finished && (ecan_result == DE_OK))
@@ -1208,9 +1233,10 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
         }
     }
 
-    // TODO: Original Python code - need to do anything with this here?
-    //if was_aborted:
-    //raise MovementError("executeMotion was aborted by SIGINT")
+    if (was_aborted)
+    {
+        return DE_MOVEMENT_ABORTED;
+    }
 
     return ecan_result;
 }

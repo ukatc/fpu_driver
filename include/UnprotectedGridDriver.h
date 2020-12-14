@@ -157,6 +157,8 @@ public:
 
     int getNumFpus();
 
+    void triggerAbortDuringFindDatumOrExecuteMotion(void);
+
     E_EtherCANErrCode findDatum(t_grid_state &gs,
                         const t_datum_search_flags &search_modes,
                         enum E_DATUM_SELECTION selected_arm,
@@ -547,6 +549,8 @@ protected:
     //..........................................................................
 private:
     E_EtherCANErrCode pingIfNeeded(t_grid_state &gs, const t_fpuset &fpuset);
+
+    std::atomic<bool> abort_motion_pending{false};
 
     bool wavetables_incomplete = false;
 
