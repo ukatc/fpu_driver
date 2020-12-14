@@ -92,6 +92,8 @@ using t_fpu_positions = std::map<int, t_fpu_position>; // Keys are fpu_id's
 
 //==============================================================================
 
+void gridDriverAbortDuringFindDatumOrExecuteMotion(void);
+
 // Forward reference for friend-ing in UnprotectedGridDriver below
 class GridDriverTester;
 
@@ -156,8 +158,6 @@ public:
     E_GridState getGridState(t_grid_state &grid_state_ret);
 
     int getNumFpus();
-
-    void triggerAbortDuringFindDatumOrExecuteMotion(void);
 
     E_EtherCANErrCode findDatum(t_grid_state &gs,
                         const t_datum_search_flags &search_modes,
@@ -549,8 +549,6 @@ protected:
     //..........................................................................
 private:
     E_EtherCANErrCode pingIfNeeded(t_grid_state &gs, const t_fpuset &fpuset);
-
-    std::atomic<bool> abort_motion_pending{false};
 
     bool wavetables_incomplete = false;
 

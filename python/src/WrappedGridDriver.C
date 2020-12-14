@@ -17,9 +17,74 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
+#include <signal.h>
 #include "WrappedGridDriver.h"
 
+
+//==============================================================================
+// Abort signal handler functionality
+// Supports the actioning of any Ctrl-C abort signal while findDatum() or
+// executeMotion() are moving FPUs.
+
+static const int abort_handler_signum = SIGINT;
+// The following are atomics to make them thread-safe, because they are
+// modified from the signal handler, which is called from a different thread.
+// TODO: Would these variables be at risk of the C++ static initialization
+// order problem / fiasco?   
+static std::atomic<bool> abort_handler_is_installed(false);
+static std::atomic<sighandler_t> signal_handler_original(nullptr);
+
+static void abortHandlerFunction(int signum);
+static void abortHandlerRelease();
+
 //------------------------------------------------------------------------------
+void abortHandlerInstall()
+{
+    // Installs a Linux signal handler for Ctrl-C.
+
+    if (!abort_handler_is_installed)
+    {
+        signal_handler_original = signal(abort_handler_signum,
+                                         abortHandlerFunction);
+        abort_handler_is_installed = true;
+    }
+}
+
+//------------------------------------------------------------------------------
+void abortHandlerUninstall()
+{
+    // Uninstalls the abort signal handler.
+
+    abortHandlerRelease();
+}
+
+//------------------------------------------------------------------------------
+void abortHandlerFunction(int signum)
+{
+    // If the abort handler is installed, then this function is called when
+    // Ctrl-C is hit - passes the abort signal to the grid driver instance
+    // (if any).
+
+    if (signum == abort_handler_signum)
+    {
+        abortHandlerRelease();
+        gridDriverAbortDuringFindDatumOrExecuteMotion();
+    }
+}
+
+//------------------------------------------------------------------------------
+void abortHandlerRelease()
+{
+    // Uninstalls the abort signal handler.
+
+    if (abort_handler_is_installed)
+    {
+        signal(abort_handler_signum, signal_handler_original);
+        abort_handler_is_installed = false;
+    }
+}
+
+//==============================================================================
 boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
     int nfpus,
     double SocketTimeOutSeconds,
@@ -242,10 +307,13 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_findDatum(WrapGridState &grid_state
     t_datum_search_flags direction_flags;
     getDatumFlags(dict_search_modes, direction_flags, fpuset);
 
+    abortHandlerInstall();   // Provides Ctrl-C aborting during FPU motion
     E_EtherCANErrCode ecode = findDatum(grid_state, direction_flags,
                                         selected_arm, fpuset, soft_protection,
                                         count_protection, 
                                         support_uninitialized_auto, timeout);
+    abortHandlerUninstall();
+
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -451,7 +519,10 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_executeMotion(WrapGridState &grid_s
     t_fpuset fpuset;
     getFPUSet(fpu_list, fpuset);
 
+    abortHandlerInstall();   // Provides Ctrl-C aborting during FPU motion
     E_EtherCANErrCode ecode = executeMotion(grid_state, fpuset, sync_command);
+    abortHandlerUninstall();
+
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -683,4 +754,5 @@ const EtherCANInterfaceConfig &WrappedGridDriver::getConfig() const
     return config;
 }
 
-//------------------------------------------------------------------------------
+//==============================================================================
+
