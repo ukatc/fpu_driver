@@ -25,27 +25,20 @@
 // Abort signal handler functionality
 // Supports the actioning of any Ctrl-C abort signal while findDatum() or
 // executeMotion() are moving FPUs.
-
-// USE_SIGACTION: Specifies to use sigaction() function instead of signal(),
-// as recommended by the signal() manual page comments.
-#define USE_SIGACTION
+// N.B. The sigaction() function is used instead of signal(), as recommended by
+// the signal() manual page https://man7.org/linux/man-pages/man2/signal.2.html. 
 
 static const int abort_handler_signum = SIGINT;
 
-// The following are atomics to make them thread-safe, because they are
+// The following are atomics to make them thread-safe because they are
 // modified from the signal handler, which is called from a different thread.
-// TODO: Would these variables be at risk of the C++ static initialization
-// order problem / fiasco?   
 static std::atomic<bool> abort_handler_is_installed(false);
-
-#ifdef USE_SIGACTION
-// ********* TODO: Ideally make original_sigaction atomic
+static std::atomic<bool> abort_handler_test_flag(false); // For testing only
+// TODO: original_sigaction ideally also needs to be atomic (along with the
+// usage of temporary non-atomic structures for the sigaction() calls), but its
+// large size isn't easily supported by GCC - see
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65756.
 static struct sigaction original_sigaction;
-#else  // NOT USE_SIGACTION
-static std::atomic<sighandler_t> signal_handler_original(nullptr);
-#endif  // NOT USE_SIGACTION
-
-static std::atomic<bool> abortHandlerTestFlag(false); // For testing only
 
 static void abortHandlerFunction(int signum);
 static void abortHandlerRelease();
@@ -57,19 +50,16 @@ void abortHandlerInstall()
 
     if (!abort_handler_is_installed)
     {
-#ifdef USE_SIGACTION
         struct sigaction abort_sigaction;
-        abort_sigaction.sa_handler = abortHandlerFunction,
+        abort_sigaction.sa_handler = abortHandlerFunction;
         sigemptyset(&abort_sigaction.sa_mask);
         abort_sigaction.sa_flags = 0;
 
-        int result = sigaction(abort_handler_signum, &abort_sigaction,
-                               &original_sigaction);
-#else  // NOT USE_SIGACTION
-        signal_handler_original = signal(abort_handler_signum,
-                                         abortHandlerFunction);
-#endif  // NOT USE_SIGACTION
-        abort_handler_is_installed = true;
+        if (sigaction(abort_handler_signum, &abort_sigaction,
+                      &original_sigaction) == 0)
+        {
+            abort_handler_is_installed = true;
+        }
     }
 }
 
@@ -93,7 +83,7 @@ void abortHandlerFunction(int signum)
         abortHandlerRelease();
         gridDriverAbortDuringFindDatumOrExecuteMotion();
 
-        abortHandlerTestFlag = true;    // For testing only
+        abort_handler_test_flag = true;    // For testing only
     }
 }
 
@@ -104,12 +94,8 @@ void abortHandlerRelease()
 
     if (abort_handler_is_installed)
     {
-#ifdef USE_SIGACTION
         int result = sigaction(abort_handler_signum, &original_sigaction,
                                nullptr);
-#else  // NOT USE_SIGACTION
-        signal(abort_handler_signum, signal_handler_original);
-#endif  // NOT USE_SIGACTION
         abort_handler_is_installed = false;
     }
 }
@@ -139,9 +125,9 @@ void abortHandlerTest()
         abortHandlerInstall();
         while (1)
         {
-            if (abortHandlerTestFlag)
+            if (abort_handler_test_flag)
             {
-                abortHandlerTestFlag = false;
+                abort_handler_test_flag = false;
                 std::cout << "Ctrl-C signal was received OK" << std::endl;
                 break;
             }
