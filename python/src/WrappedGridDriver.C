@@ -26,13 +26,25 @@
 // Supports the actioning of any Ctrl-C abort signal while findDatum() or
 // executeMotion() are moving FPUs.
 
+// USE_SIGACTION: Specifies to use sigaction() function instead of signal(),
+// as recommended by the signal() manual page comments.
+#define USE_SIGACTION
+
 static const int abort_handler_signum = SIGINT;
+
 // The following are atomics to make them thread-safe, because they are
 // modified from the signal handler, which is called from a different thread.
 // TODO: Would these variables be at risk of the C++ static initialization
 // order problem / fiasco?   
 static std::atomic<bool> abort_handler_is_installed(false);
+
+#ifdef USE_SIGACTION
+// ********* TODO: Ideally make original_sigaction atomic
+static struct sigaction original_sigaction;
+#else  // NOT USE_SIGACTION
 static std::atomic<sighandler_t> signal_handler_original(nullptr);
+#endif  // NOT USE_SIGACTION
+
 static std::atomic<bool> abortHandlerTestFlag(false); // For testing only
 
 static void abortHandlerFunction(int signum);
@@ -45,8 +57,18 @@ void abortHandlerInstall()
 
     if (!abort_handler_is_installed)
     {
+#ifdef USE_SIGACTION
+        struct sigaction abort_sigaction;
+        abort_sigaction.sa_handler = abortHandlerFunction,
+        sigemptyset(&abort_sigaction.sa_mask);
+        abort_sigaction.sa_flags = 0;
+
+        int result = sigaction(abort_handler_signum, &abort_sigaction,
+                               &original_sigaction);
+#else  // NOT USE_SIGACTION
         signal_handler_original = signal(abort_handler_signum,
                                          abortHandlerFunction);
+#endif  // NOT USE_SIGACTION
         abort_handler_is_installed = true;
     }
 }
@@ -82,7 +104,12 @@ void abortHandlerRelease()
 
     if (abort_handler_is_installed)
     {
+#ifdef USE_SIGACTION
+        int result = sigaction(abort_handler_signum, &original_sigaction,
+                               nullptr);
+#else  // NOT USE_SIGACTION
         signal(abort_handler_signum, signal_handler_original);
+#endif  // NOT USE_SIGACTION
         abort_handler_is_installed = false;
     }
 }
