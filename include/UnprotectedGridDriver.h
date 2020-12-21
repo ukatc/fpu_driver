@@ -217,6 +217,11 @@ public:
     E_EtherCANErrCode repeatMotion(t_grid_state &gs, const t_fpuset &fpuset,
                                    bool soft_protection = true);
 
+    void listAngles(const t_grid_state &gs, t_fpus_angles &fpus_angles_ret,
+                    double alpha_datum_offset = ALPHA_DATUM_OFFSET,
+                    bool show_uninitialized = false,
+                    double asteps_per_deg = StepsPerDegreeAlpha,
+                    double bsteps_per_deg = StepsPerDegreeBeta);
     E_EtherCANErrCode countedAngles(t_grid_state &gs, const t_fpuset &fpuset,
                                     t_fpus_angles &fpus_angles_ret,
                                     bool show_uninitialized = false);

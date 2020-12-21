@@ -1094,7 +1094,7 @@ E_EtherCANErrCode GridDriver::trackedAnglesString(const t_grid_state &gs,
             FpuData &fpu_data = fpus_data[fpu_id];
 
             return_string += "FPU " + std::to_string(fpu_id) +
-                             ": angle = (" +
+                             ": angles = (" +
                              fpu_data.db.apos.toString() + ", " +
                              fpu_data.db.bpos.toString() + "), ";
 

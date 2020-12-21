@@ -760,6 +760,78 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_checkIntegrity(WrapGridState &grid_
 }
 
 //------------------------------------------------------------------------------
+E_EtherCANErrCode WrappedGridDriver::wrapped_list_angles(WrapGridState &grid_state,
+                                                         double alpha_datum_offset,
+                                                         bool show_uninitialized,
+                                                         double asteps_per_deg,
+                                                         double bsteps_per_deg)
+{
+    // TODO: This wrapper currently only produces a string which is output
+    // to the Python console - but the native Python list_angles() returns
+    // a data structure - so need to mimic that eventually?
+
+    if (!checkAndMessageIfInitializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    t_fpus_angles fpus_angles;
+    listAngles(grid_state, fpus_angles, alpha_datum_offset, show_uninitialized,
+               asteps_per_deg, bsteps_per_deg);
+
+    std::string angles_string;
+    createFpuDoublesAnglesString(fpus_angles, angles_string);
+    std::cout << angles_string << std::endl;
+
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode WrappedGridDriver::wrapped_countedAngles(WrapGridState &grid_state,
+                                                           bp::list &fpu_list,
+                                                           bool show_uninitialized)
+{
+    // TODO: This wrapper currently only produces a string which is output
+    // to the Python console - but the native Python list_angles() returns
+    // a data structure - so need to mimic that eventually?
+
+    if (!checkAndMessageIfInitializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    t_fpuset fpuset;
+    getFPUSet(fpu_list, fpuset);
+
+    t_fpus_angles fpus_angles;
+    E_EtherCANErrCode ecode = countedAngles(grid_state, fpuset, fpus_angles,
+                                            show_uninitialized);
+    checkInterfaceError(ecode);
+
+    std::string angles_string;
+    createFpuDoublesAnglesString(fpus_angles, angles_string);
+    std::cout << angles_string << std::endl;
+
+    return ecode;
+}
+
+//------------------------------------------------------------------------------
+void WrappedGridDriver::createFpuDoublesAnglesString(const t_fpus_angles &fpus_angles,
+                                                     std::string &angles_string_ret)
+{
+    angles_string_ret.clear();
+    for (const auto &it : fpus_angles)
+    {
+        // TODO: std::to_string() produces fixed 6-decimal-places format - fix
+        // this
+        angles_string_ret += "FPU " + std::to_string(it.first) + 
+                             ": angles = (" +
+                             std::to_string(it.second.alpha) + ", " +
+                             std::to_string(it.second.beta) + ")\n";
+    }
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode WrappedGridDriver::wrapped_trackedAngles(WrapGridState &grid_state,
                                                            bp::list &fpu_list,
                                                            bool show_offsets,

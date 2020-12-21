@@ -142,12 +142,22 @@ public:
     E_EtherCANErrCode wrapped_enableMove(int fpu_id, WrapGridState &grid_state);
     E_EtherCANErrCode wrapped_checkIntegrity(WrapGridState &grid_state,
                                              bp::list &fpu_list);
+    E_EtherCANErrCode wrapped_list_angles(WrapGridState &grid_state,
+                                          double alpha_datum_offset,
+                                          bool show_uninitialized,
+                                          double asteps_per_deg,
+                                          double bsteps_per_deg);
+    E_EtherCANErrCode wrapped_countedAngles(WrapGridState &grid_state,
+                                            bp::list &fpu_list,
+                                            bool show_uninitialized);
     E_EtherCANErrCode wrapped_trackedAngles(WrapGridState &grid_state,
                                             bp::list &fpu_list,
                                             bool show_offsets, bool active);
 
 private:
     bool checkAndMessageIfInitializedOk();
+    void createFpuDoublesAnglesString(const t_fpus_angles &fpus_angles,
+                                      std::string &angles_string_ret);
     const EtherCANInterfaceConfig &getConfig() const override;
 };
 

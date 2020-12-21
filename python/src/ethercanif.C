@@ -698,6 +698,18 @@ BOOST_PYTHON_MODULE(ethercanif)
          (bp::arg("grid_state"),
           bp::arg("fpuset") = bp::list()))
 
+    .def("list_angles", &WrappedGridDriver::wrapped_list_angles,
+         (bp::arg("grid_state"),
+          bp::arg("alpha_datum_offset") = ALPHA_DATUM_OFFSET,
+          bp::arg("show_uninitialized") = false,
+          bp::arg("asteps_per_deg") = StepsPerDegreeAlpha,
+          bp::arg("bsteps_per_deg") = StepsPerDegreeBeta))
+
+    .def("countedAngles", &WrappedGridDriver::wrapped_countedAngles,
+         (bp::arg("grid_state"),
+          bp::arg("fpuset") = bp::list(),
+          bp::arg("show_uninitialized") = false))
+
     .def("trackedAngles", &WrappedGridDriver::wrapped_trackedAngles,
          (bp::arg("grid_state"),
           bp::arg("fpuset") = bp::list(),

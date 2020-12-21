@@ -35,6 +35,7 @@
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
 #include "ethercan/FPUArray.h"
+#include "FPUConstants.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -1429,6 +1430,22 @@ void UnprotectedGridDriver::buildWtableFromLastWaveforms(const t_fpuset &fpuset,
 }
 
 //------------------------------------------------------------------------------
+void UnprotectedGridDriver::listAngles(const t_grid_state &gs,
+                                       t_fpus_angles &fpus_angles_ret,
+                                       double alpha_datum_offset,
+                                       bool show_uninitialized,
+                                       double asteps_per_deg,
+                                       double bsteps_per_deg)
+{
+    // Thin member function wrapper for the separate standalone list_angles()
+    // function, to support an easy Boost,Python wrapper function to be created.
+    // See the list_angles() comments.
+
+    list_angles(gs, config.num_fpus, fpus_angles_ret, alpha_datum_offset,
+                show_uninitialized, asteps_per_deg, bsteps_per_deg);
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::countedAngles(t_grid_state &gs,
                                                        const t_fpuset &fpuset,
                                                        t_fpus_angles &fpus_angles_ret,
@@ -1440,6 +1457,15 @@ E_EtherCANErrCode UnprotectedGridDriver::countedAngles(t_grid_state &gs,
     // return the step count angles regardless of the state of the referenced
     // flag (it is up to the caller to decide if the counts can still be
     // trusted).
+    //
+    // Further comments from the grid driver document:
+    // The differences to the utility function list_angles() are as follows:
+    //   - This function always retrieves the current angles
+    //   - This function always uses the same alpha datum offset with which the
+    //     driver was configured upon initialisation
+    // Therefore, when it is intended to evaluate angles from a previously-
+    // retrieved grid_state structure without modifying it, the function
+    // list_angles() needs to be used.
 
     E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
