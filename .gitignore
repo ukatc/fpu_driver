@@ -29,3 +29,5 @@ version
 python/src/WrapperSharedBase.o
 python/src/mdb.o
 python/src/midl.o
+/NetBeansProjects/FPUAdmin/build/
+/NetBeansProjects/FPUAdmin/dist/

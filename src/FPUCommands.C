@@ -30,8 +30,8 @@ void list_angles(const t_grid_state &gs, int num_fpus,
                  double bsteps_per_deg)
 {
     // Determines approximate angular positions for each FPU in the grid. The
-    // optional second and third argument are the scaling factors, and the
-    // fourth argument is the number of FPUs shown.
+    // optional asteps_per_deg and bsteps_per_deg arguments are the scaling
+    // factors.
 
     // *** Lambda ***
     auto tvalid = [&](bool zeroed)

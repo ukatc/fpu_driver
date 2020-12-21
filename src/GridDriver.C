@@ -1037,8 +1037,8 @@ E_EtherCANErrCode GridDriver::trackedAnglesVals(const t_grid_state &gs,
 
 //------------------------------------------------------------------------------
 E_EtherCANErrCode GridDriver::trackedAnglesString(const t_grid_state &gs,
-                                            const t_fpuset &fpuset,
-                                            std::string &return_string,
+                                                  const t_fpuset &fpuset,
+                                                  std::string &return_string,
                                                   bool show_offsets,
                                                   bool active)
 {
@@ -1409,8 +1409,8 @@ E_EtherCANErrCode GridDriver::_check_and_register_wtable(const t_wtable &wtable,
     // - Compute movement range for each FPU
     // - Add to current known min / max position
     // - Compare to allowed range
-    // - If not in range, throw exception or print warning, depending upon the
-    //   protection setting
+    // - If not in range then return error code, depending upon the protection
+    //   setting
 
     E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
 
