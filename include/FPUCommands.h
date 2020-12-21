@@ -42,6 +42,8 @@ void list_angles(const t_grid_state &gs, int num_fpus,
                  double asteps_per_deg = StepsPerDegreeAlpha,
                  double bsteps_per_deg = StepsPerDegreeBeta);
 
+std::string doubleToString(double val);
+
 } // namespace mpifps
 
 #endif // FPUCOMMANDS_H

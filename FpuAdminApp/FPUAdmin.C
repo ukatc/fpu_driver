@@ -25,6 +25,7 @@
 #include "T_GridState.h"
 #include "ProtectionDB.h"
 #include "FPUConstants.h"
+#include "FPUCommands.h"
 
 namespace mpifps
 {
@@ -349,15 +350,15 @@ void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
 
     // apos / bpos intervals + offsets
     std::cout << "apos = [" << fpu_db_data.apos.toString() << ", " <<
-        std::to_string(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaPos]) << "]\n";
+        doubleToString(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaPos]) << "]\n";
     std::cout << "bpos = [" << fpu_db_data.bpos.toString() << ", " <<
-        std::to_string(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaPos]) << "]\n";
+        doubleToString(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaPos]) << "]\n";
 
     // alimits / blimits intervals + offsets
     std::cout << "alimits = [" << fpu_db_data.alimits.toString() << ", " <<
-        std::to_string(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaLimits]) << "]\n";
+        doubleToString(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaLimits]) << "]\n";
     std::cout << "blimits = [" << fpu_db_data.blimits.toString() << ", " <<
-        std::to_string(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaLimits]) << "]\n";
+        doubleToString(fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaLimits]) << "]\n";
 
     // wf_reversed flag
     const char *wf_reversed_str = "";

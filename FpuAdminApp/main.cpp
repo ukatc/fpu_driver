@@ -32,6 +32,7 @@
 #include <iostream>
 
 #include "FPUAdmin.h"
+#include "FPUCommands.h"
 
 using namespace mpifps;
 
@@ -472,7 +473,7 @@ void printHelp()
         "      which can be used to plot against time, or to identify\n"
         "      events in the driver logs.\n"
         "\n"
-        "Default alpha datum offset: " << std::to_string(ALPHA_DATUM_OFFSET);
+        "Default alpha datum offset: " << doubleToString(ALPHA_DATUM_OFFSET);
     std::cout << "\n" << std::endl; 
 }
 

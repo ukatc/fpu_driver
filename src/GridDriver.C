@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include "GridDriver.h"
 #include "FPUConstants.h"
+#include "FPUCommands.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -1045,10 +1046,6 @@ E_EtherCANErrCode GridDriver::trackedAnglesString(const t_grid_state &gs,
     // Creates a string containing tracked angles, offset, and waveform span
     // for configured waveforms, for each FPU in fpuset
 
-    // TODO: The Interval numerical strings are currently produced in fixed
-    // 6-decimal-places format - if this is required to be improved, then
-    // see the Interval::toString() function.
-
     E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
     if (ecan_result != DE_OK)
     {
@@ -1132,8 +1129,8 @@ E_EtherCANErrCode GridDriver::trackedAnglesString(const t_grid_state &gs,
                                  fpu_data.a_caloffset.toString() + ", " +
                                  fpu_data.b_caloffset.toString() + "), ";
                 return_string += "stepcount angle = (" +
-                                 std::to_string(a_angle) + aflag + ", " +
-                                 std::to_string(b_angle) + bflag + "), ";
+                                 doubleToString(a_angle) + aflag + ", " +
+                                 doubleToString(b_angle) + bflag + "), ";
             }
 
             return_string += prefix + "_wform_range = (" +

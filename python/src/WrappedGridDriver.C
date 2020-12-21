@@ -19,6 +19,7 @@
 #include <iostream>
 #include <signal.h>
 #include "WrappedGridDriver.h"
+#include "FPUCommands.h"
 
 
 //==============================================================================
@@ -822,12 +823,10 @@ void WrappedGridDriver::createFpuDoublesAnglesString(const t_fpus_angles &fpus_a
     angles_string_ret.clear();
     for (const auto &it : fpus_angles)
     {
-        // TODO: std::to_string() produces fixed 6-decimal-places format - fix
-        // this
         angles_string_ret += "FPU " + std::to_string(it.first) + 
                              ": angles = (" +
-                             std::to_string(it.second.alpha) + ", " +
-                             std::to_string(it.second.beta) + ")\n";
+                             doubleToString(it.second.alpha) + ", " +
+                             doubleToString(it.second.beta) + ")\n";
     }
 }
 

@@ -18,6 +18,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <limits>
+#include <string>
 #include "FPUCommands.h"
 
 namespace mpifps
@@ -59,6 +60,17 @@ void list_angles(const t_grid_state &gs, int num_fpus,
         
         fpus_angles_ret.push_back({fpu_id, {alpha_angle, beta_angle}});
     }
+}
+
+//------------------------------------------------------------------------------
+std::string doubleToString(double val)
+{
+    // Converts a double value to a string, with a sensible number of decimal
+    // places.
+
+    // TODO: Finish this function so that displays sensible number of decimal
+    // places - e.g. use std::stringstream's?
+    return std::to_string(val);
 }
 
 //------------------------------------------------------------------------------

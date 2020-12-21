@@ -22,6 +22,7 @@
 #include <cmath>
 #include <string>
 #include "Interval.h"
+#include "FPUCommands.h"
 
 namespace mpifps
 {
@@ -58,10 +59,6 @@ void Interval::getLowerUpper(double &lower_ret, double &upper_ret)
 //------------------------------------------------------------------------------
 std::string Interval::toString()
 {
-    // TODO: This function uses std::to_string() on the double values,
-    // which produces fixed 6-decimal-place output - reduce number of decimal
-    // places using e.g. std::stringstream's?
-    
     std::string return_string;
 
     if (std::isnan(lower) && std::isnan(upper))
@@ -70,8 +67,8 @@ std::string Interval::toString()
     }
     else
     {
-        return_string = "[" + std::to_string(lower) + ", " + 
-                              std::to_string(upper) + "]";
+        return_string = "[" + doubleToString(lower) + ", " + 
+                              doubleToString(upper) + "]";
     }
 
     return return_string;
