@@ -1006,13 +1006,44 @@ void GridDriver::_update_counters_find_datum(FpuCounters &fpu_counters,
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode GridDriver::trackedAngles(const t_grid_state &gs,
+E_EtherCANErrCode GridDriver::trackedAnglesVals(const t_grid_state &gs,
+                                                const t_fpuset &fpuset,
+                                                t_fpu_positions &positions_ret)
+{
+    // Gets the tracked angle values for the FPUs in fpuset.
+    // TODO: N.B. In terms of the original Python version, this function is
+    // equivalent to calling trackedAngles() with retrieve=True.
+
+    E_EtherCANErrCode ecan_result = checkInitializedAndFpuset(fpuset);
+    if (ecan_result != DE_OK)
+    {
+        return ecan_result;
+    }
+
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
+
+    positions_ret.clear();
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (fpuset[fpu_id])
+        {
+            positions_ret[fpu_id] = { fpus_data[fpu_id].db.apos,
+                                      fpus_data[fpu_id].db.bpos };
+        }
+    }
+
+    return DE_OK;
+}
+
+//------------------------------------------------------------------------------
+E_EtherCANErrCode GridDriver::trackedAnglesString(const t_grid_state &gs,
                                             const t_fpuset &fpuset,
                                             std::string &return_string,
-                                            bool show_offsets, bool active)
+                                                  bool show_offsets,
+                                                  bool active)
 {
     // Creates a string containing tracked angles, offset, and waveform span
-    // for configured waveforms, for each FPU
+    // for configured waveforms, for each FPU in fpuset
 
     // TODO: The Interval numerical strings are currently produced in fixed
     // 6-decimal-places format - if this is required to be improved, then

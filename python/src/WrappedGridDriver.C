@@ -775,8 +775,9 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_trackedAngles(WrapGridState &grid_s
     getFPUSet(fpu_list, fpuset);
 
     std::string angles_string;
-    E_EtherCANErrCode ecode = trackedAngles(grid_state, fpuset, angles_string,
-                                            show_offsets, active);
+    E_EtherCANErrCode ecode = trackedAnglesString(grid_state, fpuset,
+                                                  angles_string,
+                                                  show_offsets, active);
     checkInterfaceError(ecode);
 
     std::cout << angles_string << std::endl;
