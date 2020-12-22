@@ -120,12 +120,12 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/fpu_netbeans: ${OBJECTFILES}
 ${OBJECTDIR}/_ext/4211269a/mdb.o: ../../lib/liblmdb/mdb.c
 	${MKDIR} -p ${OBJECTDIR}/_ext/4211269a
 	${RM} "$@.d"
-	$(COMPILE.c) -g -I../../lib/liblmdb -I../../include -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/4211269a/mdb.o ../../lib/liblmdb/mdb.c
+	$(COMPILE.c) -g -DENABLE_PROTECTION_CODE -I../../lib/liblmdb -I../../include -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/4211269a/mdb.o ../../lib/liblmdb/mdb.c
 
 ${OBJECTDIR}/_ext/4211269a/midl.o: ../../lib/liblmdb/midl.c
 	${MKDIR} -p ${OBJECTDIR}/_ext/4211269a
 	${RM} "$@.d"
-	$(COMPILE.c) -g -I../../lib/liblmdb -I../../include -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/4211269a/midl.o ../../lib/liblmdb/midl.c
+	$(COMPILE.c) -g -DENABLE_PROTECTION_CODE -I../../lib/liblmdb -I../../include -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/4211269a/midl.o ../../lib/liblmdb/midl.c
 
 ${OBJECTDIR}/_ext/56252444/AsyncInterface.o: ../../src/AsyncInterface.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444

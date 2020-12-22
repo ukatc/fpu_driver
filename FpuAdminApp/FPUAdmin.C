@@ -325,8 +325,9 @@ bool FPUAdmin::printSingleFpu(ProtectionDbTxnPtr &txn,
     std::cout << "FPU serial number: " << serial_number << snum_err_str << "\n";
     FpuDbData fpu_db_data;
     // NOTE: Using DbTransferType::ReadRaw rather than just DbTransferType::Read
-    // here, because the latter will subtract the offset from the interval, but
-    // we just want the raw interval and offset values
+    // here, because the latter will subtract the alpha/beta datum offsets from
+    // their corresponding intervals, but we just want the raw interval and
+    // offset values
     // TODO: Is this correct? This is what the fpu-admin Python version's 
     // "list1" command seems to do - it calls getRawField() for all fields
     if (txn->fpuDbTransferFpu(DbTransferType::ReadRaw, serial_number,

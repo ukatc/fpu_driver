@@ -196,6 +196,9 @@
             <pElem>../../include</pElem>
           </incDir>
           <commandLine>-pthread</commandLine>
+          <preprocessorList>
+            <Elem>ENABLE_PROTECTION_CODE</Elem>
+          </preprocessorList>
         </cTool>
         <ccTool>
           <standard>8</standard>
