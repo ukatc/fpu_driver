@@ -202,59 +202,14 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     const int verbosity = 3;
 
     t_wtable wavetable;
-    
-    // gen_wf(10,10)
-    static const t_waveform_steps waveform_steps_10_10 =
-    {
-        { 62, 62}, {112, 112}, {162, 162}, {212, 162}, {193, 112},
-        {162, 62}, {112,  62}, { 62,  62}, { 62,  47}
-    };
 
-    // gen_wf(20,20)
-    static const t_waveform_steps waveform_steps_20_20 =
-    {
-        { 62,   0}, {112,   0}, {162,   0}, {212,  62}, {250, 112},
-        {250, 162}, {250, 212}, {250, 250}, {212, 250}, {162, 212},
-        {112, 162}, { 62, 112}, {62,   62}, {62,   62}, { 58,  28}
-    };
-
-    // gen_wf(90,90)
-    static const t_waveform_steps waveform_steps_90_90 =
-    {
-        { 62,   0}, {112,   0}, {162,   0}, {212,   0}, {250,   0},
-        {250,   0}, {250,   0}, {250,   0}, {250,   0}, {250,   0},
-        {250,  62}, {250, 112}, {250, 162}, {250, 212}, {250, 250},
-        {250, 250}, {250, 250}, {250, 250}, {250, 250}, {250, 250},
-        {250, 250}, {250, 250}, {250, 250}, {250, 250}, {250, 250},
-        {250, 250}, {250, 250}, {250, 250}, {250, 250}, {250, 250},
-        {250, 250}, {250, 250}, {250, 250}, {250, 250}, {250, 250},
-        {250, 250}, {250, 250}, {250, 250}, {250, 250}, {250, 212},
-        {212, 162}, {162, 112}, {112,  62}, { 62,  62}, { 62,  62},
-        { 62,  62}, { 31,  56}
-    };
-
-    // gen_wf(-89,-89)
-    static const t_waveform_steps waveform_steps_minus89_minus89 =
-    {
-        { -62,    0}, {-112,    0}, {-162,    0}, {-212,    0}, {-250,    0},
-        {-250,    0}, {-250,    0}, {-250,    0}, {-250,    0}, {-250,    0},
-        {-250,    0}, {-250,    0}, {-250,  -62}, {-250, -112}, {-250, -162},
-        {-250, -212}, {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250},
-        {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250},
-        {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250},
-        {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250},
-        {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-212, -250},
-        {-162, -250}, {-112, -212}, { -62, -162}, {-62,  -112}, {-62,   -62},
-        { -62,  -62}, {-62,   -62}, { -43,  -34}
-    };
-    
     static const t_waveform test_waveforms[TESTING_MAX_NUM_FPUS] =
     {
-        {0, waveform_steps_10_10 },
-        {1, waveform_steps_20_20 },
-        {2, waveform_steps_90_90 },
-        {3, waveform_steps_minus89_minus89 },
-        {4, waveform_steps_10_10 }
+        {0, getWaveform(GeneratedWaveform::Steps_10_10) },
+        {1, getWaveform(GeneratedWaveform::Steps_20_20) },
+        {2, getWaveform(GeneratedWaveform::Steps_90_90) },
+        {3, getWaveform(GeneratedWaveform::Steps_Minus89_Minus89) },
+        {4, getWaveform(GeneratedWaveform::Steps_10_10) }
     };
     for (int i = 0; i < TESTING_NUM_FPUS; i++)
     {
@@ -313,6 +268,79 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     // Suppress warnings of variables not being used
     UNUSED_ARG(ecan_result);
     UNUSED_ARG(grid_state_result);
+}
+
+//------------------------------------------------------------------------------
+const t_waveform_steps &GridDriverTester::getWaveform(GeneratedWaveform gen_waveform)
+{
+    static const t_waveform_steps waveform_steps_none = {};
+    
+    // gen_wf(10,10)
+    static const t_waveform_steps waveform_steps_10_10 =
+    {
+        { 62, 62}, {112, 112}, {162, 162}, {212, 162}, {193, 112},
+        {162, 62}, {112,  62}, { 62,  62}, { 62,  47}
+    };
+
+    // gen_wf(20,20)
+    static const t_waveform_steps waveform_steps_20_20 =
+    {
+        { 62,   0}, {112,   0}, {162,   0}, {212,  62}, {250, 112},
+        {250, 162}, {250, 212}, {250, 250}, {212, 250}, {162, 212},
+        {112, 162}, { 62, 112}, {62,   62}, {62,   62}, { 58,  28}
+    };
+
+    // gen_wf(90,90)
+    static const t_waveform_steps waveform_steps_90_90 =
+    {
+        { 62,   0}, {112,   0}, {162,   0}, {212,   0}, {250,   0},
+        {250,   0}, {250,   0}, {250,   0}, {250,   0}, {250,   0},
+        {250,  62}, {250, 112}, {250, 162}, {250, 212}, {250, 250},
+        {250, 250}, {250, 250}, {250, 250}, {250, 250}, {250, 250},
+        {250, 250}, {250, 250}, {250, 250}, {250, 250}, {250, 250},
+        {250, 250}, {250, 250}, {250, 250}, {250, 250}, {250, 250},
+        {250, 250}, {250, 250}, {250, 250}, {250, 250}, {250, 250},
+        {250, 250}, {250, 250}, {250, 250}, {250, 250}, {250, 212},
+        {212, 162}, {162, 112}, {112,  62}, { 62,  62}, { 62,  62},
+        { 62,  62}, { 31,  56}
+    };
+
+    // gen_wf(-89,-89)
+    static const t_waveform_steps waveform_steps_minus89_minus89 =
+    {
+        { -62,    0}, {-112,    0}, {-162,    0}, {-212,    0}, {-250,    0},
+        {-250,    0}, {-250,    0}, {-250,    0}, {-250,    0}, {-250,    0},
+        {-250,    0}, {-250,    0}, {-250,  -62}, {-250, -112}, {-250, -162},
+        {-250, -212}, {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250},
+        {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250},
+        {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250},
+        {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250},
+        {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-212, -250},
+        {-162, -250}, {-112, -212}, { -62, -162}, {-62,  -112}, {-62,   -62},
+        { -62,  -62}, {-62,   -62}, { -43,  -34}
+    };
+
+    static const struct
+    {
+        GeneratedWaveform gen_waveform;
+        t_waveform_steps waveform_steps;
+    } waveform_defs[] = 
+    {
+        { GeneratedWaveform::Steps_10_10, waveform_steps_10_10 },
+        { GeneratedWaveform::Steps_20_20, waveform_steps_20_20 },
+        { GeneratedWaveform::Steps_90_90, waveform_steps_90_90 },
+        { GeneratedWaveform::Steps_Minus89_Minus89, waveform_steps_minus89_minus89 }
+    };
+    
+    for (int i = 0; i < (sizeof(waveform_defs) / sizeof(waveform_defs[0])); i++)
+    {
+        if (waveform_defs[i].gen_waveform == gen_waveform)
+        {
+            return waveform_defs[i].waveform_steps;
+        }
+    }
+    
+    return waveform_steps_none;
 }
 
 //------------------------------------------------------------------------------

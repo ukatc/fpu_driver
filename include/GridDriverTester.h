@@ -44,8 +44,16 @@ public:
                                           const char *serial_number);
 
 private:
+    enum class GeneratedWaveform
+    {
+        Steps_10_10,
+        Steps_20_20,
+        Steps_90_90,
+        Steps_Minus89_Minus89
+    };
     void testInitialisedGridDriver(UnprotectedGridDriver &gd,
                                    bool soft_protection);
+    const t_waveform_steps &getWaveform(GeneratedWaveform gen_waveform);
     
     const char *ip_address_str = "127.0.0.1";
     const uint16_t port_number = 4700;
