@@ -58,11 +58,11 @@ int main(int argc, char** argv)
                                                                  "PT19");
 #endif // 0
     
-    //testGridDriver();
+    testGridDriver();
 
     //testFpuCounters();
 
-    testProtectionDB();
+    //testProtectionDB();
     
 
 //*****************************
@@ -90,7 +90,7 @@ static void testGridDriver()
     // gd_tester.doGridDriverUnitTests();
     
 #if 0
-    //gd_tester.doUnprotectedGridDriverFunctionalTesting();
+    gd_tester.doUnprotectedGridDriverFunctionalTesting();
 #else
     gd_tester.doGridDriverFunctionalTesting();
 #endif
