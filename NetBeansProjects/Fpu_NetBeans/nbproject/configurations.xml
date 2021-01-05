@@ -179,7 +179,7 @@
                    kind="IMPORTANT_FILES_FOLDER">
       <itemPath>Makefile</itemPath>
     </logicalFolder>
-    <itemPath>main.cpp</itemPath>
+    <itemPath>../../FpuMainForTesting.cpp</itemPath>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -214,6 +214,8 @@
           </preprocessorList>
         </ccTool>
       </compileType>
+      <item path="../../FpuMainForTesting.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="../../include/DeviceLock.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/E_GridState.h" ex="false" tool="3" flavor2="0">
@@ -818,8 +820,6 @@
       <item path="../../src/sync_utils.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/time_utils.C" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -845,6 +845,8 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
+      <item path="../../FpuMainForTesting.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="../../include/DeviceLock.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../include/E_GridState.h" ex="false" tool="3" flavor2="0">
@@ -1449,8 +1451,6 @@
       <item path="../../src/sync_utils.C" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../../src/time_utils.C" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
   </confs>

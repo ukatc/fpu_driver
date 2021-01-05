@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/_ext/29dd86f/FpuMainForTesting.o \
 	${OBJECTDIR}/_ext/4211269a/mdb.o \
 	${OBJECTDIR}/_ext/4211269a/midl.o \
 	${OBJECTDIR}/_ext/56252444/AsyncInterface.o \
@@ -89,8 +90,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/56252444/handle_WarnLimitAlpha_warning.o \
 	${OBJECTDIR}/_ext/56252444/handle_WriteSerialNumber_response.o \
 	${OBJECTDIR}/_ext/56252444/sync_utils.o \
-	${OBJECTDIR}/_ext/56252444/time_utils.o \
-	${OBJECTDIR}/main.o
+	${OBJECTDIR}/_ext/56252444/time_utils.o
 
 
 # C Compiler Flags
@@ -116,6 +116,11 @@ LDLIBSOPTIONS=
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/fpu_netbeans: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/fpu_netbeans ${OBJECTFILES} ${LDLIBSOPTIONS}
+
+${OBJECTDIR}/_ext/29dd86f/FpuMainForTesting.o: ../../FpuMainForTesting.cpp
+	${MKDIR} -p ${OBJECTDIR}/_ext/29dd86f
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DENABLE_PROTECTION_CODE -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/29dd86f/FpuMainForTesting.o ../../FpuMainForTesting.cpp
 
 ${OBJECTDIR}/_ext/4211269a/mdb.o: ../../lib/liblmdb/mdb.c
 	${MKDIR} -p ${OBJECTDIR}/_ext/4211269a
@@ -391,11 +396,6 @@ ${OBJECTDIR}/_ext/56252444/time_utils.o: ../../src/time_utils.C
 	${MKDIR} -p ${OBJECTDIR}/_ext/56252444
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DENABLE_PROTECTION_CODE -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/56252444/time_utils.o ../../src/time_utils.C
-
-${OBJECTDIR}/main.o: main.cpp
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -DENABLE_PROTECTION_CODE -DVERSION=\"v0.0.1\" -I../../lib/liblmdb -I../../include -I../../include/ethercan -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
 
 # Subprojects
 .build-subprojects:
