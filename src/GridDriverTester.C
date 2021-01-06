@@ -100,7 +100,7 @@ void GridDriverTester::doUnprotectedGridDriverFunctionalTesting()
 //------------------------------------------------------------------------------
 void GridDriverTester::doGridDriverFunctionalTesting()
 {
-    // Performs a full grid driver functional test sequence
+    // Performs a grid driver functional test sequence
     
     E_EtherCANErrCode ecan_result;
 
@@ -138,7 +138,8 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     //     the return values to see what's going on, and also look at the 
     //     mock gateway console output
 
-    E_EtherCANErrCode ecan_result;
+    volatile E_EtherCANErrCode ecan_result; // volatile so not optimised away,
+                                            // so can see value in debugger
     E_GridState grid_state_result;
     t_grid_state grid_state;
 
@@ -152,57 +153,63 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     ecan_result = gd.connect(1, &gateway_address);   
 
     //..........................................................................
-    // Test getGridState()
-    grid_state_result = gd.getGridState(grid_state);
+    if (ecan_result == DE_OK)
+    {
+        // Test getGridState()
+        grid_state_result = gd.getGridState(grid_state);
     
-    //..........................................................................
-    // Test readSerialNumbers()
-    ecan_result = gd.readSerialNumbers(grid_state, fpuset);
+        // Test readSerialNumbers()
+        ecan_result = gd.readSerialNumbers(grid_state, fpuset);
+    }
     
     //..........................................................................
     // Test pingFPUs()
-    ecan_result = gd.pingFPUs(grid_state, fpuset);
+    if (ecan_result == DE_OK)
+    {
+        ecan_result = gd.pingFPUs(grid_state, fpuset);
     
-    //..........................................................................
-    // Test getGridState() again
-    grid_state_result = gd.getGridState(grid_state);
+        // Test getGridState() again
+        grid_state_result = gd.getGridState(grid_state);
+    }
 
-    //..........................................................................
     // Test pingFPUs() again
-    ecan_result = gd.pingFPUs(grid_state, fpuset);
+    if (ecan_result == DE_OK)
+    {
+        ecan_result = gd.pingFPUs(grid_state, fpuset);
+    }
 
     //..........................................................................
     // Test resetFPUs()
-    ecan_result = gd.resetFPUs(grid_state, fpuset);
+    if (ecan_result == DE_OK)
+    {
+        ecan_result = gd.resetFPUs(grid_state, fpuset);
+    }
     
     //..........................................................................
     // Test findDatum()
-    t_datum_search_flags search_modes;
-    for (int fpu_id = 0; fpu_id < TESTING_NUM_FPUS; fpu_id++)
+    if (ecan_result == DE_OK)
     {
-        search_modes[fpu_id] = SEARCH_CLOCKWISE;
+        t_datum_search_flags search_modes;
+        for (int fpu_id = 0; fpu_id < TESTING_NUM_FPUS; fpu_id++)
+        {
+            search_modes[fpu_id] = SEARCH_CLOCKWISE;
+        }
+        const bool count_protection = false;
+        const bool support_uninitialized_auto = false;
+
+        grid_state_result = gd.getGridState(grid_state);
+
+        // TODO: Use DATUM_TIMEOUT_DISABLE instead of DATUM_TIMEOUT_ENABLE below?
+        // (sometimes times out if long-duration findDatum())
+        ecan_result = gd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
+                                   soft_protection, count_protection,
+                                   support_uninitialized_auto,
+                                   DATUM_TIMEOUT_ENABLE);
     }
-    const bool count_protection = false;
-    const bool support_uninitialized_auto = false;
-
-    grid_state_result = gd.getGridState(grid_state);
-
-    // TODO: Use DATUM_TIMEOUT_DISABLE instead of DATUM_TIMEOUT_ENABLE below?
-    // (sometimes times out if long-duration findDatum())
-    ecan_result = gd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
-                               soft_protection, count_protection,
-                               support_uninitialized_auto,
-                               DATUM_TIMEOUT_ENABLE);
 
     //..........................................................................
-    // Test configMotion() and wavetable_was_received()
-    const bool allow_uninitialized = true;
-    const int ruleset_version = DEFAULT_WAVEFORM_RULESET_VERSION;
-    const bool warn_unsafe = true;
-    const int verbosity = 3;
-
+    // Create a wavetable
     t_wtable wavetable;
-
     static const t_waveform test_waveforms[TESTING_MAX_NUM_FPUS] =
     {
         {0, getWaveform(GeneratedWaveform::Steps_10_10) },
@@ -216,22 +223,32 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
         wavetable.push_back(test_waveforms[i]);
     }
 
-    // Ad-hoc partial test of wavetable_was_received() (N.B. private function,
-    // accessible because this test class is friend'ed from the grid driver
-    // classes)
-    t_fpu_state fpu_state;
-    bool allow_unconfirmed = false;
-    E_FPU_STATE target_state = FPST_READY_FORWARD;
-    bool wtable_received_result = 
-            gd.wavetable_was_received(wavetable, 3, fpu_state,
-                                      allow_unconfirmed, target_state);
-    UNUSED_ARG(wtable_received_result); // Suppress variable-not-used warning
+    //..........................................................................
+    // Test wavetable_was_received() - ad-hoc partial test
+    // (N.B. private function, accessible because this test class is friend'ed
+    // from the grid driver classes)
+    if (ecan_result == DE_OK)
+    {
+        t_fpu_state fpu_state;
+        bool allow_unconfirmed = false;
+        E_FPU_STATE target_state = FPST_READY_FORWARD;
+        bool wtable_received_result =
+                gd.wavetable_was_received(wavetable, 3, fpu_state,
+                                          allow_unconfirmed, target_state);
+        UNUSED_ARG(wtable_received_result); // Suppress variable-not-used warning
+    }
     
+    //..........................................................................
+    // Test enableMove()
     grid_state_result = gd.getGridState(grid_state);
 
     for (int i = 0; i < TESTING_NUM_FPUS; i++)
     {
         ecan_result = gd.enableMove(i, grid_state);
+        if (ecan_result != DE_OK)
+        {
+            break;
+        }
     }
     
     //........................
@@ -250,14 +267,27 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     */ 
     //........................
     
-    ecan_result = gd.configMotion(wavetable, grid_state, fpuset,
-                                  soft_protection, allow_uninitialized,
-                                  ruleset_version, warn_unsafe, verbosity);
+    //..........................................................................
+    // test configMotion()
+    if (ecan_result == DE_OK)
+    {
+        const bool allow_uninitialized = true;
+        const int ruleset_version = DEFAULT_WAVEFORM_RULESET_VERSION;
+        const bool warn_unsafe = true;
+        const int verbosity = 3;
+
+        ecan_result = gd.configMotion(wavetable, grid_state, fpuset,
+                                      soft_protection, allow_uninitialized,
+                                      ruleset_version, warn_unsafe, verbosity);
+    }
 
     //..........................................................................
     // Test executeMotion()
-    bool sync_command = true;
-    ecan_result = gd.executeMotion(grid_state, fpuset, sync_command);
+    if (ecan_result == DE_OK)
+    {
+        bool sync_command = true;
+        ecan_result = gd.executeMotion(grid_state, fpuset, sync_command);
+    }
     
     //..........................................................................
 
@@ -266,7 +296,6 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     //..........................................................................
 
     // Suppress warnings of variables not being used
-    UNUSED_ARG(ecan_result);
     UNUSED_ARG(grid_state_result);
 }
 
@@ -316,8 +345,8 @@ const t_waveform_steps &GridDriverTester::getWaveform(GeneratedWaveform gen_wave
         {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250},
         {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250},
         {-250, -250}, {-250, -250}, {-250, -250}, {-250, -250}, {-212, -250},
-        {-162, -250}, {-112, -212}, { -62, -162}, {-62,  -112}, {-62,   -62},
-        { -62,  -62}, {-62,   -62}, { -43,  -34}
+        {-162, -250}, {-112, -212}, { -62, -162}, { -62, -112}, { -62,  -62},
+        { -62,  -62}, { -62,  -62}, { -43,  -34}
     };
 
     static const struct

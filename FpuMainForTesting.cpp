@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
-// NAME main.cpp
+// NAME FpuMainForTesting.cpp
 //
 // Top-level main file for grid driver testing purposes.
 //
@@ -48,6 +48,14 @@ static void testProtectionDB();
 //------------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
+    //*****************************
+    // TODO: For testing only
+#ifdef GET_STACK_SIZE
+    struct rlimit rl;
+    int result = getrlimit(RLIMIT_STACK, &rl);
+#endif
+    //*****************************
+
     //testIntervalClass();
     
     // Test code for writing dummy items to the FPU database for the "PT19" FPU,
@@ -64,15 +72,6 @@ int main(int argc, char** argv)
 
     //testProtectionDB();
     
-
-//*****************************
-// TODO: For testing only
-#ifdef GET_STACK_SIZE
-    struct rlimit rl;
-    int result = getrlimit(RLIMIT_STACK, &rl);
-#endif
-//*****************************    
-
     return 0;
 }
 

@@ -79,7 +79,7 @@ E_EtherCANErrCode CommandPool::initialize()
             int capacity=0;
             const int cap_individual = config.num_fpus * 10;
             const int cap_wform = config.num_fpus * MAX_SUB_COMMANDS;
-	    const int cap_sync = 10;
+	        const int cap_sync = 10;
 
             switch (i)
             {
