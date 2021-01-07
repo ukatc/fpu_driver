@@ -238,8 +238,6 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     _gd = new (std::nothrow) EtherCANInterface(config);
     if (_gd != nullptr)
     {
-        // TODO: Call deInitializeInterface() or deInitialize() from destructor,
-        // or elsewhere? BUT is already done from AsyncInterface destructor?
         ecan_result = _gd->initializeInterface();
         if ((ecan_result == DE_OK) || 
             (ecan_result == DE_INTERFACE_ALREADY_INITIALIZED))
@@ -249,8 +247,6 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
         else
         {
             delete _gd;
-
-            // TODO: Check if also need to call _gd->deinitializeInterface() here
         }
     }
     else

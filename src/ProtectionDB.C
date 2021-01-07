@@ -251,6 +251,9 @@ bool ProtectionDB::open(const std::string &dir_str)
     {
         // N.B. Using default flags for now, so flags value is 0x0
         // N.B. Creates new data.mdb abd lock.mdb files if they aren't present
+        // N.B. mdb_env_open() documentation says "If this function fails,
+        // mdb_env_close() must be called to discard the MDB_env handle" - this
+        // is done in the subsequent close() function call
         // TODO: Check the required state of MDB_NOTLS flag
         // TODO: Check that following permissions are OK
         unsigned int flags = 0x0;

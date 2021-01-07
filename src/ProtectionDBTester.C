@@ -800,4 +800,39 @@ void ProtectionDBTester::testGetSerialNumFromKeyVal()
 }
 
 //------------------------------------------------------------------------------
+void ProtectionDBTester::testDbOpeningScenarios()
+{
+    // TODO: This function is WIP - will come back to once have better
+    // ProtectionDB / ProtectionDBTxn return codes in place
+
+
+    // Ad-hoc testing of ProtectionDB::open(), to check behaviour with a few of
+    // the following scenarios:
+    //   - Specified directory exists or doesn't exist
+    //   - Database files already exist or don't exist
+    //   - Sub-databases (e.g. fpudb) already exist or don't exist inside the
+    //     database files
+    // Note: Each protectiondb instance is tried in its own code scope, so that
+    // it's automatically closed again once it goes out of scope
+
+    volatile bool result;  // volatile so not optimised away
+
+    {
+        // Test for when directory, files and sub-databases all exist - N.B.
+        // they need to all be present for this test to pass
+        ProtectionDB protectiondb;
+        const bool mockup = true;
+        std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
+        result = protectiondb.open(dir_str);
+    }
+
+    {
+        ProtectionDB protectiondb;
+        std::string dir_str = "/moonsdata/shouldnt_exist";
+        result = protectiondb.open(dir_str);
+    }
+
+}
+
+//------------------------------------------------------------------------------
 

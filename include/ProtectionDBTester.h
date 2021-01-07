@@ -42,6 +42,7 @@ public:
     static void fillFpuDbDataStructWithTestVals(FpuDbData &fpu_db_data);
     static bool testFpuDbDataClass();
     static void testGetSerialNumFromKeyVal();   // Ad-hoc testing
+    static void testDbOpeningScenarios();  // Ad-hoc testing
 
 private:
     // Top-level test functions
