@@ -451,17 +451,18 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
     if (!dir_str.empty())
     {
         ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
+        if (protectiondb.open(dir_str) == MDB_SUCCESS)
         {
             for (size_t i = 0; i < serial_numbers.size(); i++)
             {
                 result_ok = false;
-                auto txn = protectiondb.createTransaction();
+                MdbResult mdb_result = MDB_PANIC;
+                auto txn = protectiondb.createTransaction(mdb_result);
                 if (txn)
                 {
                     if (txn->fpuDbTransferFpu(DbTransferType::Write,
                                               serial_numbers[i].c_str(),
-                                              fpu_db_data))
+                                              fpu_db_data) == MDB_SUCCESS)
                     {
                         result_ok = true;
                     }
@@ -500,15 +501,16 @@ bool GridDriverTester::writeDummyFpuItemsToFpuDb(bool db_mockup,
     if (!dir_str.empty())
     {
         ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
+        if (protectiondb.open(dir_str) == MDB_SUCCESS)
         {
-            auto txn = protectiondb.createTransaction();
+            MdbResult mdb_result = MDB_PANIC;
+            auto txn = protectiondb.createTransaction(mdb_result);
             if (txn)
             {
                 FpuDbData fpu_db_data;
                 ProtectionDBTester::fillFpuDbDataStructWithTestVals(fpu_db_data);
                 if (txn->fpuDbTransferFpu(DbTransferType::Write, serial_number,
-                                          fpu_db_data))
+                                          fpu_db_data) == MDB_SUCCESS)
                 {
                     result_ok = true;
                 }
