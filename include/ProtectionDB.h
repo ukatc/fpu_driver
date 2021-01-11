@@ -80,6 +80,43 @@ enum class FpuDbIntValType
     NumTypes
 };
 
+// MdbResult: The result/return type for most of the database-related functions
+// in ProtectionDB and ProjectionDBTxn. Notes:
+//   - Defined in relation to the low-level LMDB C library int return value
+//     type
+//   - The original LMDB return types represent two different code types/ranges:
+//       - LMDB-specific MDB_XXXX return codes, which are zero or negative
+//         values - these are defined in lmdb.h - also see
+//         http://www.lmdb.tech/doc/group__errors.html
+//       - A small number of GNU/Linux "errno" return codes such as EACCES,
+//         ENOMEM etc - see them in the LMDB C library's mdb_strerror() 
+//         function, see https://man7.org/linux/man-pages/man3/errno.3.html etc
+//   - MDB_SUCCESS (0) indicates a successful operation
+//   - Some further MDB_XXXX return codes have also been added below, to
+//     indicate some protection-database-level errors (with their values being
+//     in a different range from the standard LMDB ones)
+//   - Use ProtectionDB::getResultString() to get a nicely-formatted result
+//     string from the result value
+//   - (N.B. In the LMDB C library's mdb_strerror() function, says of the
+//     return codes: "A major mess, we should have used LMDB-specific error
+//     codes for everything")
+enum
+{
+    // Boundary specifically outside normal LMDB range - do not use or change
+    MDB_EXTRA_RESULT_CODES_LOWER = -25000, 
+
+    // Further result codes to use
+    // N.B. These also need corresponding entries in
+    // ProtectionDB::getResultString()
+    MDB_VERIFY_FAILED,
+    MDB_INCORRECT_SNUM_USED_FLAG_VAL,
+
+    // Boundary - do not use or change
+    MDB_EXTRA_RESULT_CODES_UPPER
+};
+typedef int MdbResult;
+
+
 //==============================================================================
 
 // FpuDbData: FPU data which is stored in the protection database.
@@ -147,41 +184,43 @@ class ProtectionDbTxn
     friend class ProtectionDBTester;
 
 public:
-    ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr, bool &created_ok_ret);
+    ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr,
+                    MdbResult &mdb_result_ret);
 
-    bool fpuDbTransferFpu(DbTransferType transfer_type,
-                          const char serial_number[],
-                          FpuDbData &fpu_db_data);
-
-    bool fpuDbTransferInterval(DbTransferType transfer_type,
-                               FpuDbIntervalType interval_type, 
-                               const char serial_number[], Interval &interval,
-                               double &datum_offset);
-    bool fpuDbTransferCounters(DbTransferType transfer_type,
+    MdbResult fpuDbTransferFpu(DbTransferType transfer_type,
                                const char serial_number[],
-                               FpuCounters &fpu_counters);
-    bool fpuDbTransferWaveform(DbTransferType transfer_type,
-                               const char serial_number[],
-                               t_waveform_steps &waveform);
-    bool fpuDbTransferInt64Val(DbTransferType transfer_type,
-                               FpuDbIntValType intval_type,
-                               const char serial_number[],
-                               int64_t &int64_val);
-    bool fpuDbTransferWfReversedFlag(DbTransferType transfer_type,
-                                     const char serial_number[],
-                                     bool &wf_reversed);
+                               FpuDbData &fpu_db_data);
 
-    bool fpuDbWriteItem(const char serial_number[], const char subkey[],
-                        void *data_ptr, int num_bytes);
-    bool fpuDbGetItemDataPtrAndSize(const char serial_number[],
-                                    const char subkey[], void **data_ptr_ret,
-                                    int &num_bytes_ret);
+    MdbResult fpuDbTransferInterval(DbTransferType transfer_type,
+                                    FpuDbIntervalType interval_type,
+                                    const char serial_number[],
+                                    Interval &interval,
+                                    double &datum_offset);
+    MdbResult fpuDbTransferCounters(DbTransferType transfer_type,
+                                    const char serial_number[],
+                                    FpuCounters &fpu_counters);
+    MdbResult fpuDbTransferWaveform(DbTransferType transfer_type,
+                                    const char serial_number[],
+                                    t_waveform_steps &waveform);
+    MdbResult fpuDbTransferInt64Val(DbTransferType transfer_type,
+                                    FpuDbIntValType intval_type,
+                                    const char serial_number[],
+                                    int64_t &int64_val);
+    MdbResult fpuDbTransferWfReversedFlag(DbTransferType transfer_type,
+                                          const char serial_number[],
+                                          bool &wf_reversed);
 
-    bool fpuDbGetAllSerialNumbers(std::vector<std::string> &serial_numbers_ret);
+    MdbResult fpuDbGetAllSerialNumbers(std::vector<std::string> &serial_numbers_ret);
 
     ~ProtectionDbTxn();
 
 private:
+    MdbResult fpuDbWriteItem(const char serial_number[], const char subkey[],
+                             void *data_ptr, int num_bytes);
+    MdbResult fpuDbGetItemDataPtrAndSize(const char serial_number[],
+                                         const char subkey[],
+                                         void **data_ptr_ret,
+                                         int &num_bytes_ret);
     static MDB_val fpuDbCreateKeyVal(const char serial_number[], // N.B. Static
                                      const char subkey[]);
     static bool fpuDbGetSerialNumFromKeyVal(const MDB_val &key_val, // N.B. Static
@@ -207,11 +246,13 @@ class ProtectionDB
 public:
     static std::string getDirFromLinuxEnv(bool mockup);  // N.B. Static
 
-    bool open(const std::string &dir_str);
-    ProtectionDbTxnPtr createTransaction();
-    bool sync();
+    MdbResult open(const std::string &dir_str);
+    ProtectionDbTxnPtr createTransaction(MdbResult &mdb_result_ret);
+    MdbResult sync();
     ~ProtectionDB();
-    
+
+    static std::string getResultString(MdbResult mdb_result); // N.B. Static
+
 private:
     void close();
 

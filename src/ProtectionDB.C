@@ -146,7 +146,7 @@ std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
     // Linux environment variables FPU_DATABASE_MOCKUP and FPU_DATABASE, and
     // value of mockup. If unsuccessful then the returned string is empty.
     // The environment variables need to be of the form e.g. "/var/lib/fpudb",
-    // and must **NOT** have a final "/" character
+    // and must **NOT** have a final "/" character.
 
     char *dir_c_str = nullptr;
     std::string dir_str_ret;
@@ -192,7 +192,7 @@ std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDB::open(const std::string &dir_str)
+MdbResult ProtectionDB::open(const std::string &dir_str)
 {
     // Opens a protection database (data.mdb and locks.mdb files) in the
     // location pointed to by dir_str. Notes:
@@ -229,25 +229,25 @@ bool ProtectionDB::open(const std::string &dir_str)
     // max_spare_txns=1
     // create=True      <== **IMPORTANT** - create directory if doesn't exist?
 
-    int mdb_result = mdb_env_create(&mdb_env_ptr);
-    if (mdb_result == 0)
+    MdbResult mdb_result = mdb_env_create(&mdb_env_ptr);
+    if (mdb_result == MDB_SUCCESS)
     {
         mdb_result = mdb_env_set_maxdbs(mdb_env_ptr, 10);
     }
     
-    if (mdb_result == 0)
+    if (mdb_result == MDB_SUCCESS)
     {
         mdb_result = mdb_env_set_mapsize(mdb_env_ptr, dbsize);
     }
 
-    if (mdb_result == 0)
+    if (mdb_result == MDB_SUCCESS)
     {
         // TODO: The following keeps compatibility with the original
         // Python code defaults, but are this many readers needed?
         mdb_result = mdb_env_set_maxreaders(mdb_env_ptr, 126);
     }
 
-    if (mdb_result == 0)
+    if (mdb_result == MDB_SUCCESS)
     {
         // N.B. Using default flags for now, so flags value is 0x0
         // N.B. Creates new data.mdb abd lock.mdb files if they aren't present
@@ -266,27 +266,27 @@ bool ProtectionDB::open(const std::string &dir_str)
     // TODO: Check if these operations create the sub-databases if they don't 
     // exist yet, and put comment to this effect here
     MDB_txn *txn_ptr = nullptr;
-    if (mdb_result == 0)
+    if (mdb_result == MDB_SUCCESS)
     {
         // Create dummy transaction
         mdb_result = mdb_txn_begin(mdb_env_ptr, nullptr, 0x0, &txn_ptr);
     }
     
-    if (mdb_result == 0)
+    if (mdb_result == MDB_SUCCESS)
     {
         // Create FPU sub-database handle
         mdb_result = mdb_dbi_open(txn_ptr, fpu_subdb_name, MDB_CREATE,
                                   &fpu_dbi);
     }
     
-    if (mdb_result == 0)
+    if (mdb_result == MDB_SUCCESS)
     {
         // Create health log sub-database handle
         mdb_result = mdb_dbi_open(txn_ptr, healthlog_subdb_name, MDB_CREATE,
                                   &healthlog_dbi);
     }
     
-    if (mdb_result == 0)
+    if (mdb_result == MDB_SUCCESS)
     {
         // Commit dummy transaction to finish with it
         mdb_result = mdb_txn_commit(txn_ptr);
@@ -294,28 +294,34 @@ bool ProtectionDB::open(const std::string &dir_str)
     
     //..........................................................................
     
-    if (mdb_result != 0)
+    if (mdb_result != MDB_SUCCESS)
     {
         // Failure - close the database
         close();
-        return false;
     }
-    return true;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-ProtectionDbTxnPtr ProtectionDB::createTransaction()
+ProtectionDbTxnPtr ProtectionDB::createTransaction(MdbResult &mdb_result_ret)
 {
+    // Creates a protection database transaction. Return values:
+    //   - If successful then the returned ProtectionDbTxnPtr contains a valid
+    //     pointer, and mdb_result_ret will contain MDB_SUCCESS
+    //   - If not successful then the returned ProtectionDBTxnPtr contains a
+    //     null pointer, and mdb_result_ret will contain a database error code
+
     ProtectionDbTxnPtr ptr_returned;
+
+    mdb_result_ret = MDB_PANIC;
 
     if (mdb_env_ptr != nullptr)
     {
-        bool created_ok = false;
         // TODO: C++11 doesn't support make_unique - ask if OK to compile
         // as C++14 in final ESO driver
         //ptr_returned = std::make_unique<FpuDbTxn>(*_mdb_env_ptr, created_ok);
-        ptr_returned.reset(new ProtectionDbTxn(mdb_env_ptr, created_ok));
-        if (!created_ok)
+        ptr_returned.reset(new ProtectionDbTxn(mdb_env_ptr, mdb_result_ret));
+        if (mdb_result_ret != MDB_SUCCESS)
         {
             ptr_returned.reset();
         }
@@ -324,27 +330,25 @@ ProtectionDbTxnPtr ProtectionDB::createTransaction()
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDB::sync()
+MdbResult ProtectionDB::sync()
 {
-    // Flushes the database buffers to disk
-    bool result_ok = false;
+    // Flushes the database buffers to disk.
+
+    MdbResult mdb_result = MDB_PANIC;
 
     if (mdb_env_ptr != nullptr)
     {
-        bool force = false;    // TODO: Is this the correct flag setting?
-        if (mdb_env_sync(mdb_env_ptr, force) == 0)
-        {
-            result_ok = true;
-        }
+        int force = 0;    // TODO: Is this the correct flag setting?
+        mdb_result = mdb_env_sync(mdb_env_ptr, force);
     }
 
-    return result_ok;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
 void ProtectionDB::close()
 {
-    // Releases all handles, closes ProtectionDB LMDB environment etc
+    // Releases all handles, closes ProtectionDB LMDB environment etc.
     if (mdb_env_ptr != nullptr)
     {
         // TODO: mdb_dbi_close() has caveats - see its documentation - but this
@@ -368,23 +372,69 @@ ProtectionDB::~ProtectionDB()
     close();
 }
 
+//------------------------------------------------------------------------------
+std::string ProtectionDB::getResultString(MdbResult mdb_result)
+{
+    // Provides a nicely-formatted result string for the mdb_result value. This
+    // is a thin wrapper for the LMDB C library's mdb_strerror() function, but
+    // also includes the extra MDB_XXXX error codes defined in ProtectionDB.h.
+    // N.B. Also see the comments above the MdbResult define in ProtectionDB.h.
+
+    static const struct
+    {
+        MdbResult mdb_result;
+        const char *str;
+    } extra_result_strings[] =
+    {
+        { MDB_VERIFY_FAILED,
+         "MDB_VERIFY_FAILED: Value read back did not equal value written" },
+        { MDB_INCORRECT_SNUM_USED_FLAG_VAL,
+         "MDB_INCORRECT_SNUM_USED_FLAG_VAL: Incorrect serial-number-used flag value" }
+    };
+
+    std::string result_string;
+                                
+    if ((mdb_result > MDB_EXTRA_RESULT_CODES_LOWER) &&
+        (mdb_result < MDB_EXTRA_RESULT_CODES_UPPER))
+    {
+        bool foundExtra = false;
+        for (size_t i = 0;
+             i < (sizeof(extra_result_strings) / sizeof(extra_result_strings[0]));
+             i++)
+        {
+            if (extra_result_strings[i].mdb_result == mdb_result)
+            {
+                result_string = extra_result_strings[i].str;
+                foundExtra = true;
+                break;
+            }
+        }
+        if (!foundExtra)
+        {
+            result_string = "**ERROR**: Database result code was not recognised";
+        }
+    }
+    else
+    {
+        result_string = mdb_strerror(mdb_result);
+    }
+
+    return "Result code = " + std::to_string(mdb_result) + ": " + result_string;
+}
+
 //==============================================================================
 ProtectionDbTxn::ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr,
-                                 bool &created_ok_ret)
+                                 MdbResult &mdb_result_ret)
 {
     env_ptr = protectiondb_mdb_env_ptr;
 
-    created_ok_ret = false;
-    if (mdb_txn_begin(env_ptr, nullptr, 0x0, &txn_ptr) == 0)
-    {
-        created_ok_ret = true;
-    }
+    mdb_result_ret = mdb_txn_begin(env_ptr, nullptr, 0x0, &txn_ptr);
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
-                                       const char serial_number[],
-                                       FpuDbData &fpu_db_data)
+MdbResult ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
+                                            const char serial_number[],
+                                            FpuDbData &fpu_db_data)
 {
     // Reads or writes all data items for a single FPU specified by the given
     // serial_number.
@@ -394,132 +444,132 @@ bool ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
 
     //..........................................................................
     // Serial-number-used flag
-    bool result_ok = fpuDbTransferInt64Val(transfer_type, 
-                                           FpuDbIntValType::SnumUsedFlag,
-                                           serial_number,
-                                           fpu_db_data.snum_used_flag);
+    MdbResult mdb_result = fpuDbTransferInt64Val(transfer_type,
+                                                 FpuDbIntValType::SnumUsedFlag,
+                                                 serial_number,
+                                                 fpu_db_data.snum_used_flag);
 
     //..........................................................................
     // Intervals and their datum offsets (apos/bpos/alimits/blimits)
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferInterval(transfer_type, 
-                                          FpuDbIntervalType::AlphaPos,
-                                          serial_number, fpu_db_data.apos,
+        mdb_result = fpuDbTransferInterval(transfer_type,
+                                           FpuDbIntervalType::AlphaPos,
+                                           serial_number, fpu_db_data.apos,
                 fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaPos]);
     }
 
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferInterval(transfer_type, 
-                                          FpuDbIntervalType::BetaPos,
-                                          serial_number, fpu_db_data.bpos,
+        mdb_result = fpuDbTransferInterval(transfer_type,
+                                           FpuDbIntervalType::BetaPos,
+                                           serial_number, fpu_db_data.bpos,
                 fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaPos]);
     }
 
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferInterval(transfer_type, 
-                                          FpuDbIntervalType::AlphaLimits,
-                                          serial_number, fpu_db_data.alimits,
+        mdb_result = fpuDbTransferInterval(transfer_type,
+                                           FpuDbIntervalType::AlphaLimits,
+                                           serial_number, fpu_db_data.alimits,
                 fpu_db_data.datum_offsets[(int)FpuDbIntervalType::AlphaLimits]);
     }
 
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferInterval(transfer_type, 
-                                          FpuDbIntervalType::BetaLimits,
-                                          serial_number, fpu_db_data.blimits,
+        mdb_result = fpuDbTransferInterval(transfer_type,
+                                           FpuDbIntervalType::BetaLimits,
+                                           serial_number, fpu_db_data.blimits,
                 fpu_db_data.datum_offsets[(int)FpuDbIntervalType::BetaLimits]);
     }
 
     //..........................................................................
     // Waveform-reversed flag
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferWfReversedFlag(transfer_type, serial_number,
-                                                fpu_db_data.wf_reversed);
+        mdb_result = fpuDbTransferWfReversedFlag(transfer_type, serial_number,
+                                                 fpu_db_data.wf_reversed);
     }
 
     //..........................................................................
     // Alpha/beta arm retry counts
     // TODO: Does FreeAlphaRetries / FreeBetaRetries actually correspond to
     // maxrareties/maxbretries in the items below?
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferInt64Val(transfer_type,
-                                          FpuDbIntValType::FreeAlphaRetries,
-                                          serial_number, 
-                                          fpu_db_data.maxaretries);
+        mdb_result = fpuDbTransferInt64Val(transfer_type,
+                                           FpuDbIntValType::FreeAlphaRetries,
+                                           serial_number,
+                                           fpu_db_data.maxaretries);
     }
 
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferInt64Val(transfer_type,
-                                          FpuDbIntValType::AlphaRetries_CW,
-                                          serial_number, 
-                                          fpu_db_data.aretries_cw);
+        mdb_result = fpuDbTransferInt64Val(transfer_type,
+                                           FpuDbIntValType::AlphaRetries_CW,
+                                           serial_number,
+                                           fpu_db_data.aretries_cw);
     }
 
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferInt64Val(transfer_type,
-                                          FpuDbIntValType::AlphaRetries_ACW,
-                                          serial_number, 
-                                          fpu_db_data.aretries_acw);
+        mdb_result = fpuDbTransferInt64Val(transfer_type,
+                                           FpuDbIntValType::AlphaRetries_ACW,
+                                           serial_number,
+                                           fpu_db_data.aretries_acw);
     }
 
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferInt64Val(transfer_type,
-                                          FpuDbIntValType::FreeBetaRetries,
-                                          serial_number, 
-                                          fpu_db_data.maxbretries);
+        mdb_result = fpuDbTransferInt64Val(transfer_type,
+                                           FpuDbIntValType::FreeBetaRetries,
+                                           serial_number,
+                                           fpu_db_data.maxbretries);
     }
 
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferInt64Val(transfer_type,
-                                          FpuDbIntValType::BetaRetries_CW,
-                                          serial_number, 
-                                          fpu_db_data.bretries_cw);
+        mdb_result = fpuDbTransferInt64Val(transfer_type,
+                                           FpuDbIntValType::BetaRetries_CW,
+                                           serial_number,
+                                           fpu_db_data.bretries_cw);
     }
 
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferInt64Val(transfer_type,
-                                          FpuDbIntValType::BetaRetries_ACW,
-                                          serial_number, 
-                                          fpu_db_data.bretries_acw);
+        mdb_result = fpuDbTransferInt64Val(transfer_type,
+                                           FpuDbIntValType::BetaRetries_ACW,
+                                           serial_number,
+                                           fpu_db_data.bretries_acw);
     }
 
     //..........................................................................
     // Counters
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferCounters(transfer_type, serial_number,
-                                          fpu_db_data.counters);
+        mdb_result = fpuDbTransferCounters(transfer_type, serial_number,
+                                           fpu_db_data.counters);
     }
 
     //..........................................................................
     // Last waveform
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        result_ok = fpuDbTransferWaveform(transfer_type, serial_number,
-                                          fpu_db_data.last_waveform);
+        mdb_result = fpuDbTransferWaveform(transfer_type, serial_number,
+                                           fpu_db_data.last_waveform);
     }
 
     //..........................................................................
 
-    return result_ok;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbTransferInterval(DbTransferType transfer_type,
-                                            FpuDbIntervalType interval_type,
-                                            const char serial_number[],
-                                            Interval &interval,
-                                            double &datum_offset)
+MdbResult ProtectionDbTxn::fpuDbTransferInterval(DbTransferType transfer_type,
+                                                 FpuDbIntervalType interval_type,
+                                                 const char serial_number[],
+                                                 Interval &interval,
+                                                 double &datum_offset)
 {
     // Reads or writes an interval + datum offset combination of type
     // FpuDbIntervalType for an FPU.
@@ -536,6 +586,8 @@ bool ProtectionDbTxn::fpuDbTransferInterval(DbTransferType transfer_type,
     // with the offset they refer to. So we store the datum offsets along with
     // each position interval (this allows to reconfigure the zero point later).
 
+    MdbResult mdb_result = MDB_PANIC;
+
     static const struct
     {
         FpuDbIntervalType type;
@@ -544,7 +596,7 @@ bool ProtectionDbTxn::fpuDbTransferInterval(DbTransferType transfer_type,
     {
         { FpuDbIntervalType::AlphaLimits, alpha_limits_keystr   },
         { FpuDbIntervalType::AlphaPos,    alpha_position_keystr },
-        { FpuDbIntervalType::BetaLimits,  beta_limits_keystr    }, 
+        { FpuDbIntervalType::BetaLimits,  beta_limits_keystr    },
         { FpuDbIntervalType::BetaPos,     beta_position_keystr  }
     };
 
@@ -566,19 +618,18 @@ bool ProtectionDbTxn::fpuDbTransferInterval(DbTransferType transfer_type,
             // Write the position item
             interval.getLowerUpper(doubles_array[0], doubles_array[1]);
             doubles_array[2] = datum_offset;
-            if (fpuDbWriteItem(serial_number, subkey, doubles_array,
-                               sizeof(doubles_array)))
-            {
-                return true;
-            }
+            mdb_result = fpuDbWriteItem(serial_number, subkey, doubles_array,
+                                        sizeof(doubles_array));
         }
         else
         {
             // Read the position item
             void *item_data_ptr = nullptr;
             int num_item_data_bytes = 0;
-            if (fpuDbGetItemDataPtrAndSize(serial_number, subkey,
-                                           &item_data_ptr, num_item_data_bytes))
+            mdb_result = fpuDbGetItemDataPtrAndSize(serial_number, subkey,
+                                                    &item_data_ptr,
+                                                    num_item_data_bytes);
+            if (mdb_result == MDB_SUCCESS)
             {
                 if (num_item_data_bytes == sizeof(doubles_array))
                 {
@@ -605,55 +656,65 @@ bool ProtectionDbTxn::fpuDbTransferInterval(DbTransferType transfer_type,
                         // DbTransferType::ReadRaw
                         interval = Interval(doubles_array[0], doubles_array[1]);
                     }
-                    return true;
+                    mdb_result = MDB_SUCCESS;
+                }
+                else
+                {
+                    mdb_result = MDB_BAD_VALSIZE;
                 }
             }
         }
     }
 
-    return false;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbTransferCounters(DbTransferType transfer_type,
-                                            const char serial_number[],
-                                            FpuCounters &fpu_counters)
+MdbResult ProtectionDbTxn::fpuDbTransferCounters(DbTransferType transfer_type,
+                                                 const char serial_number[],
+                                                 FpuCounters &fpu_counters)
 {
-    // Reads or writes a set of FPU counters
-    
+    // Reads or writes a set of FPU counters.
+
+    MdbResult mdb_result = MDB_PANIC;
+
     if (transfer_type == DbTransferType::Write)
     {
-        if (fpuDbWriteItem(serial_number, counters_keystr,
-                           fpu_counters.getRawBytesPtr(),
-                           fpu_counters.getNumRawBytes()))
-        {
-            return true;
-        }
+        mdb_result = fpuDbWriteItem(serial_number, counters_keystr,
+                                    fpu_counters.getRawBytesPtr(),
+                                    fpu_counters.getNumRawBytes());
     }
     else
     {
         void *item_data_ptr = nullptr;
         int num_item_bytes = 0;
-        if (fpuDbGetItemDataPtrAndSize(serial_number, counters_keystr,
-                                       &item_data_ptr, num_item_bytes))
+        mdb_result = fpuDbGetItemDataPtrAndSize(serial_number, counters_keystr,
+                                                &item_data_ptr, num_item_bytes);
+        if (mdb_result == MDB_SUCCESS)
         {
             if (num_item_bytes == fpu_counters.getNumRawBytes())
             {
                 fpu_counters.populateFromRawBytes(item_data_ptr);
-                return true;
+                mdb_result = MDB_SUCCESS;
+            }
+            else
+            {
+                mdb_result = MDB_BAD_VALSIZE;
             }
         }
     }
 
-    return false;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
-                                            const char serial_number[],
-                                            t_waveform_steps &waveform)
+MdbResult ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
+                                                 const char serial_number[],
+                                                 t_waveform_steps &waveform)
 {
-    // Reads or writes a forward or reversed waveform
+    // Reads or writes a forward or reversed waveform.
+
+    MdbResult mdb_result = MDB_PANIC;
 
     // NOTE: StepsIntType matches the t_step_pair.alpha_steps and
     // t_step_pair.beta_steps types
@@ -672,19 +733,18 @@ bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
             *(intBufPtr + ((i * 2) + 1)) = waveform[i].beta_steps;
         }
 
-        // Write to database
-        if (fpuDbWriteItem(serial_number, waveform_table_keystr,
-                           bytesBuf.data(), bytesBuf.size()))
-        {
-            return true;
-        }
+        mdb_result = fpuDbWriteItem(serial_number, waveform_table_keystr,
+                                    bytesBuf.data(), bytesBuf.size());
     }
     else
     {
         void *item_data_ptr = nullptr;
         int num_item_bytes = 0;
-        if (fpuDbGetItemDataPtrAndSize(serial_number, waveform_table_keystr,
-                                       &item_data_ptr, num_item_bytes))
+        mdb_result = fpuDbGetItemDataPtrAndSize(serial_number,
+                                                waveform_table_keystr,
+                                                &item_data_ptr,
+                                                num_item_bytes);
+        if (mdb_result == MDB_SUCCESS)
         {
             // Check that number of bytes is a multiple of the combined
             // 2 x StepsIntType sizes of t_step_pair
@@ -698,25 +758,28 @@ bool ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
                     waveform[i].alpha_steps = *(intBufPtr + (i * 2));
                     waveform[i].beta_steps = *(intBufPtr + ((i * 2) + 1));
                 }
-                return true;
+                mdb_result = MDB_SUCCESS;
             }
             else
             {
                 waveform.resize(0);
+                mdb_result = MDB_BAD_VALSIZE;
             }
         }
     }
 
-    return false;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbTransferInt64Val(DbTransferType transfer_type,
-                                            FpuDbIntValType intval_type,
-                                            const char serial_number[],
-                                            int64_t &int64_val)
+MdbResult ProtectionDbTxn::fpuDbTransferInt64Val(DbTransferType transfer_type,
+                                                 FpuDbIntValType intval_type,
+                                                 const char serial_number[],
+                                                 int64_t &int64_val)
 {
-    // Reads or writes an int64_t value
+    // Reads or writes an int64_t value.
+
+    MdbResult mdb_result = MDB_PANIC;
 
     static const struct
     {
@@ -747,38 +810,43 @@ bool ProtectionDbTxn::fpuDbTransferInt64Val(DbTransferType transfer_type,
     {
         if (transfer_type == DbTransferType::Write)
         {
-            if (fpuDbWriteItem(serial_number, subkey, &int64_val,
-                               sizeof(int64_t)))
-            {
-                return true;
-            }
+            mdb_result = fpuDbWriteItem(serial_number, subkey, &int64_val,
+                                        sizeof(int64_t));
         }
         else
         {
             void *item_data_ptr = nullptr;
             int num_item_bytes = 0;
-            if (fpuDbGetItemDataPtrAndSize(serial_number, subkey,
-                                           &item_data_ptr, num_item_bytes))
+            mdb_result = fpuDbGetItemDataPtrAndSize(serial_number, subkey,
+                                                    &item_data_ptr,
+                                                    num_item_bytes);
+            if (mdb_result == MDB_SUCCESS)    
             {
                 if (num_item_bytes == sizeof(int64_t))
                 {
                     memcpy(&int64_val, item_data_ptr, sizeof(int64_t));
-                    return true;
+                    mdb_result = MDB_SUCCESS;
+                }
+                else
+                {
+                    mdb_result = MDB_BAD_VALSIZE;
                 }
             }
         }
     }
 
-    return false;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbTransferWfReversedFlag(DbTransferType transfer_type,
-                                                  const char serial_number[],
-                                                  bool &wf_reversed)
+MdbResult ProtectionDbTxn::fpuDbTransferWfReversedFlag(DbTransferType transfer_type,
+                                                       const char serial_number[],
+                                                       bool &wf_reversed)
 {
-    // Reads or writes the waveform-reversed bool flag
-    
+    // Reads or writes the waveform-reversed bool flag.
+
+    MdbResult mdb_result = MDB_PANIC;
+
     if (transfer_type == DbTransferType::Write)
     {
         uint8_t wf_reversed_byte_val;
@@ -790,18 +858,17 @@ bool ProtectionDbTxn::fpuDbTransferWfReversedFlag(DbTransferType transfer_type,
         {
             wf_reversed_byte_val = 0;
         }
-        if (fpuDbWriteItem(serial_number, waveform_reversed_keystr,
-                           &wf_reversed_byte_val, sizeof(uint8_t)))
-        {
-            return true;
-        }
+        mdb_result = fpuDbWriteItem(serial_number, waveform_reversed_keystr,
+                                    &wf_reversed_byte_val, sizeof(uint8_t));
     }
     else
     {
         void *item_data_ptr = nullptr;
         int num_item_bytes = 0;
-        if (fpuDbGetItemDataPtrAndSize(serial_number, waveform_reversed_keystr,
-                                       &item_data_ptr, num_item_bytes))
+        mdb_result = fpuDbGetItemDataPtrAndSize(serial_number,
+                                                waveform_reversed_keystr,
+                                                &item_data_ptr, num_item_bytes);
+        if (mdb_result == MDB_SUCCESS)    
         {
             if (num_item_bytes == sizeof(uint8_t))
             {
@@ -814,59 +881,65 @@ bool ProtectionDbTxn::fpuDbTransferWfReversedFlag(DbTransferType transfer_type,
                 {
                     wf_reversed = false;
                 }
-                return true;
+                mdb_result = MDB_SUCCESS;
+            }
+            else
+            {
+                mdb_result = MDB_BAD_VALSIZE;
             }
         }
     }
 
-    return false;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbWriteItem(const char serial_number[],
-                                     const char subkey[], void *data_ptr,
-                                     int num_bytes)
+MdbResult ProtectionDbTxn::fpuDbWriteItem(const char serial_number[],
+                                          const char subkey[], void *data_ptr,
+                                          int num_bytes)
 {
     // Writes the specified item. If an item with the same serial_number/subkey
     // combination already exists then it is overwritten.
     
     MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
     MDB_val data_val = { (size_t)num_bytes, data_ptr };
-    if (mdb_put(txn_ptr, fpu_dbi, &key_val, &data_val, 0x0) == MDB_SUCCESS)
-    {
-        return true;
-    }
-    return false;
+    return mdb_put(txn_ptr, fpu_dbi, &key_val, &data_val, 0x0);
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbGetItemDataPtrAndSize(const char serial_number[],
-                                                 const char subkey[],
-                                                 void **data_ptr_ret,
-                                                 int &num_bytes_ret)
+MdbResult ProtectionDbTxn::fpuDbGetItemDataPtrAndSize(const char serial_number[],
+                                                      const char subkey[],
+                                                      void **data_ptr_ret,
+                                                      int &num_bytes_ret)
 {
     // For the specified item, gets a pointer to its data and gets its size -
-    // this is possible because this is an in-memory database
-    
+    // this is possible because this is an in-memory database.
+
+    MdbResult mdb_result = MDB_PANIC;
+
     MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
     MDB_val data_val = { 0, nullptr };
-    if (mdb_get(txn_ptr, fpu_dbi, &key_val, &data_val) == MDB_SUCCESS)
+    mdb_result = mdb_get(txn_ptr, fpu_dbi, &key_val, &data_val);
+    if (mdb_result == MDB_SUCCESS)
     {
         *data_ptr_ret = data_val.mv_data;
         num_bytes_ret = data_val.mv_size;
-        return true;
     }
-    *data_ptr_ret = nullptr;
-    num_bytes_ret = 0;
-    return false;
+    else
+    {
+        *data_ptr_ret = nullptr;
+        num_bytes_ret = 0;
+    }
+
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDbTxn::fpuDbGetAllSerialNumbers(
+MdbResult ProtectionDbTxn::fpuDbGetAllSerialNumbers(
                                 std::vector<std::string> &serial_numbers_ret)
 {
     MDB_cursor *cursor_ptr;
-    bool return_flag = false;
+    MdbResult mdb_result = MDB_PANIC;
 
     serial_numbers_ret.clear();
 
@@ -878,7 +951,8 @@ bool ProtectionDbTxn::fpuDbGetAllSerialNumbers(
     // indicate whether a serial number is in use), or whether we want to see
     // ALL serial numbers for all items (as this function currently does)
 
-    if (mdb_cursor_open(txn_ptr, fpu_dbi, &cursor_ptr) == MDB_SUCCESS)
+    mdb_result = mdb_cursor_open(txn_ptr, fpu_dbi, &cursor_ptr);
+    if (mdb_result == MDB_SUCCESS)
     {
         MDB_val key_val;
         MDB_val data_val;
@@ -887,8 +961,8 @@ bool ProtectionDbTxn::fpuDbGetAllSerialNumbers(
         MDB_cursor_op cursor_op = MDB_FIRST;    // Start from first item
         while (1)
         {
-            int mdb_result = mdb_cursor_get(cursor_ptr, &key_val, &data_val, 
-                                            cursor_op);
+            mdb_result = mdb_cursor_get(cursor_ptr, &key_val, &data_val, 
+                                        cursor_op);
             cursor_op = MDB_NEXT;
             if (mdb_result == MDB_SUCCESS)
             {
@@ -913,7 +987,7 @@ bool ProtectionDbTxn::fpuDbGetAllSerialNumbers(
                 if (mdb_result == MDB_NOTFOUND)
                 {
                     // Normal end-of-database reached
-                    return_flag = true;
+                    mdb_result = MDB_SUCCESS;
                 }
                 else
                 {
@@ -924,7 +998,7 @@ bool ProtectionDbTxn::fpuDbGetAllSerialNumbers(
         }
     }
 
-    return return_flag;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
@@ -932,7 +1006,7 @@ MDB_val ProtectionDbTxn::fpuDbCreateKeyVal(const char serial_number[],
                                            const char subkey[])
 {
     // N.B. Need static persistent key_str below because its raw c_str is
-    // pointed to by the returned MDB_val
+    // pointed to by the returned MDB_val.
     // TODO: This is NOT thread-safe (because single static instance) - will
     // this be a problem?
     static std::string key_str;
@@ -963,7 +1037,7 @@ bool ProtectionDbTxn::fpuDbGetSerialNumFromKeyVal(const MDB_val &key_val,
 
     bool separator_char_found = false;
     const char *source_buf = (char *)key_val.mv_data;
-    for (int i = 0; ((i < (snum_buf_len - 1)) && (i < key_val.mv_size)); i++)
+    for (size_t i = 0; ((i < (snum_buf_len - 1)) && (i < key_val.mv_size)); i++)
     {
         if (source_buf[i] == fpudb_keystr_separator_char)
         {
