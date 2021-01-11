@@ -50,16 +50,16 @@ private:
     static bool testWithClosingReopening(const std::string &dir_str);
 
     // FPU database data item transfer test functions
-    static bool testFpuIntervalTransfer(ProtectionDB &protectiondb);
-    static bool testFpuCountersTransfer(ProtectionDB &protectiondb);
-    static bool testFpuWaveformTransfer(ProtectionDB &protectiondb);
-    static bool testFpuInt64ValTransfer(ProtectionDB &protectiondb);
-    static bool testFpuWfReversedFlagTransfer(ProtectionDB &protectiondb);
-    static bool testFullFpuDataTransfer(ProtectionDB &protectiondb);
+    static MdbResult testFpuIntervalTransfer(ProtectionDB &protectiondb);
+    static MdbResult testFpuCountersTransfer(ProtectionDB &protectiondb);
+    static MdbResult testFpuWaveformTransfer(ProtectionDB &protectiondb);
+    static MdbResult testFpuInt64ValTransfer(ProtectionDB &protectiondb);
+    static MdbResult testFpuWfReversedFlagTransfer(ProtectionDB &protectiondb);
+    static MdbResult testFullFpuDataTransfer(ProtectionDB &protectiondb);
 
     // FPU database binary-level item transfer test functions
-    static bool testFpuSingleItemWriteRead(ProtectionDB &protectiondb);
-    static bool testFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
+    static MdbResult testFpuSingleItemWriteRead(ProtectionDB &protectiondb);
+    static MdbResult testFpuMultipleItemWriteReads(ProtectionDB &protectiondb);
 
     // Miscellaneous test functions
     static std::string getRandomFpuTestSerialNumber();

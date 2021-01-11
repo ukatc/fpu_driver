@@ -25,7 +25,7 @@
 bool ProtectionDBTester::doLoopingTestsWithConsoleOutput()
 {
     const int num_iterations = 100;
-    for (int i = 0; i < num_iterations; i++)
+    for (int i = 1; i <= num_iterations; i++)
     {
         printf("Test #%d of %d: Writing/verifying a single FPU's data items: ",
                i, num_iterations);   // TODO: Use cout / endl stuff instead
@@ -37,9 +37,11 @@ bool ProtectionDBTester::doLoopingTestsWithConsoleOutput()
         else
         {
             printf("***FAILED***\n");
-            break;
+            return false;
         }
     }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -93,55 +95,59 @@ bool ProtectionDBTester::testWithStayingOpen(const std::string &dir_str)
     // NOTE: An LMDB database must already exist in dir_str location
 
     ProtectionDB protectiondb;
-    bool result_ok = false;
+    MdbResult mdb_result = MDB_PANIC;
    
-    if (protectiondb.open(dir_str))
+    if (protectiondb.open(dir_str) == MDB_SUCCESS)
     {
-        result_ok = testFpuSingleItemWriteRead(protectiondb);
+        mdb_result = testFpuSingleItemWriteRead(protectiondb);
         
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuMultipleItemWriteReads(protectiondb);
+            mdb_result = testFpuMultipleItemWriteReads(protectiondb);
         }
 
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuIntervalTransfer(protectiondb);
+            mdb_result = testFpuIntervalTransfer(protectiondb);
         }
         
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuCountersTransfer(protectiondb);
+            mdb_result = testFpuCountersTransfer(protectiondb);
         }
         
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuWaveformTransfer(protectiondb);
+            mdb_result = testFpuWaveformTransfer(protectiondb);
         }
         
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuInt64ValTransfer(protectiondb);
+            mdb_result = testFpuInt64ValTransfer(protectiondb);
         }
         
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuWfReversedFlagTransfer(protectiondb);
+            mdb_result = testFpuWfReversedFlagTransfer(protectiondb);
         }
         
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFullFpuDataTransfer(protectiondb);
+            mdb_result = testFullFpuDataTransfer(protectiondb);
         }
         
         // Run the sync() function
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = protectiondb.sync();
+            mdb_result = protectiondb.sync();
         }
     }
     
-    return result_ok;
+    if (mdb_result != MDB_SUCCESS)
+    {
+        return false;
+    }
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -158,123 +164,103 @@ bool ProtectionDBTester::testWithClosingReopening(const std::string &dir_str)
     //     closure, can do a dump of the database to check its contents, using
     //     e.g.: mdb_dump . -p -s fpu
 
-    bool result_ok = false;
+    MdbResult mdb_result = MDB_PANIC;
     
     {
         ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
+        mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuSingleItemWriteRead(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
+            mdb_result = testFpuSingleItemWriteRead(protectiondb);
         }
     }
     
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
         ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
+        mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuMultipleItemWriteReads(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
+            mdb_result = testFpuMultipleItemWriteReads(protectiondb);
         }
     }
 
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
         ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
+        mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuIntervalTransfer(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
+            mdb_result = testFpuIntervalTransfer(protectiondb);
         }
     }
     
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
         ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
+        mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuCountersTransfer(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
+            mdb_result = testFpuCountersTransfer(protectiondb);
         }
     }
     
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
         ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
+        mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuWaveformTransfer(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
+            mdb_result = testFpuWaveformTransfer(protectiondb);
         }
     }
     
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
         ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
+        mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuInt64ValTransfer(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
+            mdb_result = testFpuInt64ValTransfer(protectiondb);
         }
     }
     
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
         ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
+        mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFpuWfReversedFlagTransfer(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
+            mdb_result = testFpuWfReversedFlagTransfer(protectiondb);
         }
     }
     
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
         ProtectionDB protectiondb;
-        if (protectiondb.open(dir_str))
+        mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = testFullFpuDataTransfer(protectiondb);
-        }
-        else
-        {
-            result_ok = false;
+            mdb_result = testFullFpuDataTransfer(protectiondb);
         }
     }
     
-    return result_ok;    
+    if (mdb_result != MDB_SUCCESS)
+    {
+        return false;
+    }
+    return true;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDBTester::testFpuIntervalTransfer(ProtectionDB &protectiondb)
+MdbResult ProtectionDBTester::testFpuIntervalTransfer(ProtectionDB &protectiondb)
 {
     // Tests writing and reading back an aggregate interval + datum offset
     // of an FPU
     
-    bool result_ok = false;
+    MdbResult mdb_result = MDB_PANIC;
     
-    auto transaction = protectiondb.createTransaction();
+    auto transaction = protectiondb.createTransaction(mdb_result);
     if (transaction)
     {
         FpuDbIntervalType interval_type = FpuDbIntervalType::BetaLimits;
@@ -283,12 +269,12 @@ bool ProtectionDBTester::testFpuIntervalTransfer(ProtectionDB &protectiondb)
         std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Write position value
-        result_ok = transaction->fpuDbTransferInterval(DbTransferType::Write,
-                                                       interval_type,
-                                                       serial_number_str.c_str(),
-                                                       interval_write,
-                                                       datum_offset_write);
-        if (result_ok)
+        mdb_result = transaction->fpuDbTransferInterval(DbTransferType::Write,
+                                                        interval_type,
+                                                        serial_number_str.c_str(),
+                                                        interval_write,
+                                                        datum_offset_write);
+        if (mdb_result == MDB_SUCCESS)
         {
             // Read back position value
             Interval interval_read;
@@ -296,34 +282,34 @@ bool ProtectionDBTester::testFpuIntervalTransfer(ProtectionDB &protectiondb)
             // NOTE: Using DbTransferType::ReadRaw rather than
             // DbTransferType::Read here, because the latter would subtract
             // the offset from the interval and thus make the comparison invalid
-            result_ok = transaction->fpuDbTransferInterval(DbTransferType::ReadRaw,
-                                                           interval_type,
-                                                           serial_number_str.c_str(),
-                                                           interval_read,
-                                                           datum_offset_read);
-            if (result_ok)
+            mdb_result = transaction->fpuDbTransferInterval(DbTransferType::ReadRaw,
+                                                            interval_type,
+                                                            serial_number_str.c_str(),
+                                                            interval_read,
+                                                            datum_offset_read);
+            if (mdb_result == MDB_SUCCESS)
             {
                 // Compare read and written, and indicate if any difference
                 if ((interval_read != interval_write) ||
                     (datum_offset_read != datum_offset_write))
                 {
-                    result_ok = false;
+                    mdb_result = MDB_VERIFY_FAILED;
                 }
             }
         }
     }
     
-    return result_ok;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDBTester::testFpuCountersTransfer(ProtectionDB &protectiondb)
+MdbResult ProtectionDBTester::testFpuCountersTransfer(ProtectionDB &protectiondb)
 {
     // Tests writing and reading back the counters for a single FPU
     
-    bool result_ok = false;
+    MdbResult mdb_result = MDB_PANIC;
     
-    auto transaction = protectiondb.createTransaction();
+    auto transaction = protectiondb.createTransaction(mdb_result);
     if (transaction)
     {
         FpuCounters fpu_counters_write;
@@ -335,17 +321,17 @@ bool ProtectionDBTester::testFpuCountersTransfer(ProtectionDB &protectiondb)
         std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Write counters
-        result_ok = transaction->fpuDbTransferCounters(DbTransferType::Write,
-                                                       serial_number_str.c_str(),
-                                                       fpu_counters_write);
-        if (result_ok)
+        mdb_result = transaction->fpuDbTransferCounters(DbTransferType::Write,
+                                                        serial_number_str.c_str(),
+                                                        fpu_counters_write);
+        if (mdb_result == MDB_SUCCESS)
         {
             // Read back counters
             FpuCounters fpu_counters_read;
-            result_ok = transaction->fpuDbTransferCounters(DbTransferType::Read,
-                                                           serial_number_str.c_str(),
-                                                           fpu_counters_read);
-            if (result_ok)
+            mdb_result = transaction->fpuDbTransferCounters(DbTransferType::Read,
+                                                            serial_number_str.c_str(),
+                                                            fpu_counters_read);
+            if (mdb_result == MDB_SUCCESS)
             {
                 // Compare read and written, and indicate if any difference
                 for (int i = 0; i < (int)FpuCounterId::NumCounters; i++)
@@ -353,7 +339,7 @@ bool ProtectionDBTester::testFpuCountersTransfer(ProtectionDB &protectiondb)
                     if (fpu_counters_read.getCount((FpuCounterId)i) !=
                         fpu_counters_write.getCount((FpuCounterId)i))
                     {
-                        result_ok = false;
+                        mdb_result = MDB_VERIFY_FAILED;
                         break;
                     }
                 }
@@ -361,17 +347,17 @@ bool ProtectionDBTester::testFpuCountersTransfer(ProtectionDB &protectiondb)
         }
     }
     
-    return result_ok;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDBTester::testFpuWaveformTransfer(ProtectionDB &protectiondb)
+MdbResult ProtectionDBTester::testFpuWaveformTransfer(ProtectionDB &protectiondb)
 {
     // Tests writing and reading back of an FPU waveform
     
-    bool result_ok = false;
+    MdbResult mdb_result = MDB_PANIC;
     
-    auto transaction = protectiondb.createTransaction();
+    auto transaction = protectiondb.createTransaction(mdb_result);
     if (transaction)
     {
         std::string serial_number_str = getRandomFpuTestSerialNumber();
@@ -379,17 +365,17 @@ bool ProtectionDBTester::testFpuWaveformTransfer(ProtectionDB &protectiondb)
         // Write waveform
         t_waveform_steps waveform_write = 
             {{1, -2}, {-3, 4}, {50, 60}, {7, 8}, {9, 10}};
-        result_ok = transaction->fpuDbTransferWaveform(DbTransferType::Write,
+        mdb_result = transaction->fpuDbTransferWaveform(DbTransferType::Write,
                                                     serial_number_str.c_str(),
                                                     waveform_write);
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
             // Read back waveform
             t_waveform_steps waveform_read;
-            result_ok = transaction->fpuDbTransferWaveform(DbTransferType::Read,
+            mdb_result = transaction->fpuDbTransferWaveform(DbTransferType::Read,
                                                     serial_number_str.c_str(),
                                                     waveform_read);
-            if (result_ok)
+            if (mdb_result == MDB_SUCCESS)
             {
                 if (waveform_read.size() == waveform_write.size())
                 {
@@ -400,102 +386,102 @@ bool ProtectionDBTester::testFpuWaveformTransfer(ProtectionDB &protectiondb)
                             (waveform_read[i].beta_steps != 
                              waveform_write[i].beta_steps))
                         {
-                            result_ok = false;
+                            mdb_result = MDB_VERIFY_FAILED;
                             break;
                         }
                     }
                 }
                 else
                 {
-                    result_ok = false;
+                    mdb_result = MDB_VERIFY_FAILED;
                 }
             }
         }
     }
 
-    return result_ok;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDBTester::testFpuInt64ValTransfer(ProtectionDB &protectiondb)
+MdbResult ProtectionDBTester::testFpuInt64ValTransfer(ProtectionDB &protectiondb)
 {
-    bool result_ok = false;
+    MdbResult mdb_result = MDB_PANIC;
 
-    auto transaction = protectiondb.createTransaction();
+    auto transaction = protectiondb.createTransaction(mdb_result);
     if (transaction)
     {
         std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Write int64_t value
         int64_t int64_val_write = 0x123456789abcdef0;
-        result_ok = transaction->fpuDbTransferInt64Val(DbTransferType::Write,
+        mdb_result = transaction->fpuDbTransferInt64Val(DbTransferType::Write,
                                             FpuDbIntValType::BetaRetries_ACW,
                                             serial_number_str.c_str(),
                                             int64_val_write);
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
             // Read back int64_t value
             int64_t int64_val_read;
-            result_ok = transaction->fpuDbTransferInt64Val(DbTransferType::Read,
+            mdb_result = transaction->fpuDbTransferInt64Val(DbTransferType::Read,
                                             FpuDbIntValType::BetaRetries_ACW,
                                             serial_number_str.c_str(),
                                             int64_val_read);
-            if (result_ok)
+            if (mdb_result == MDB_SUCCESS)
             {
                 if (int64_val_read != int64_val_write)
                 {
-                    result_ok = false;
+                    mdb_result = MDB_VERIFY_FAILED;
                 }
             }
         }
     }
 
-    return result_ok;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDBTester::testFpuWfReversedFlagTransfer(ProtectionDB &protectiondb)
+MdbResult ProtectionDBTester::testFpuWfReversedFlagTransfer(ProtectionDB &protectiondb)
 {
-    bool result_ok = false;
+    MdbResult mdb_result = MDB_PANIC;
 
-    auto transaction = protectiondb.createTransaction();
+    auto transaction = protectiondb.createTransaction(mdb_result);
     if (transaction)
     {
         std::string serial_number_str = getRandomFpuTestSerialNumber();
 
         // Write wf_reversed bool value
         bool wf_reversed_write = true;
-        result_ok = transaction->fpuDbTransferWfReversedFlag(
+        mdb_result = transaction->fpuDbTransferWfReversedFlag(
                                                     DbTransferType::Write,
                                                     serial_number_str.c_str(),
                                                     wf_reversed_write);
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
             // Read back wf_reversed value
             bool wf_reversed_read = false;
-            result_ok = transaction->fpuDbTransferWfReversedFlag(
+            mdb_result = transaction->fpuDbTransferWfReversedFlag(
                                                     DbTransferType::Read,
                                                     serial_number_str.c_str(),
                                                     wf_reversed_read);
-            if (result_ok)
+            if (mdb_result == MDB_SUCCESS)
             {
                 if (wf_reversed_read != wf_reversed_write)
                 {
-                    result_ok = false;
+                    mdb_result = MDB_VERIFY_FAILED;
                 }
             }
         }
     }
     
-    return result_ok;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDBTester::testFullFpuDataTransfer(ProtectionDB &protectiondb)
+MdbResult ProtectionDBTester::testFullFpuDataTransfer(ProtectionDB &protectiondb)
 {
-    bool result_ok = false;
+    MdbResult mdb_result = MDB_PANIC;
 
-    auto transaction = protectiondb.createTransaction();
+    auto transaction = protectiondb.createTransaction(mdb_result);
     if (transaction)
     {
         std::string serial_number_str = getRandomFpuTestSerialNumber();
@@ -505,10 +491,10 @@ bool ProtectionDBTester::testFullFpuDataTransfer(ProtectionDB &protectiondb)
         fillFpuDbDataStructWithTestVals(fpu_db_data_write);
 
         // Write full fpu data structure
-        result_ok = transaction->fpuDbTransferFpu(DbTransferType::Write,
-                                                  serial_number_str.c_str(),
-                                                  fpu_db_data_write);
-        if (result_ok)
+        mdb_result = transaction->fpuDbTransferFpu(DbTransferType::Write,
+                                                   serial_number_str.c_str(),
+                                                   fpu_db_data_write);
+        if (mdb_result == MDB_SUCCESS)
         {
             // Read back full fpu data structure
             // NOTE: Using DbTransferType::ReadRaw rather than
@@ -516,72 +502,72 @@ bool ProtectionDBTester::testFullFpuDataTransfer(ProtectionDB &protectiondb)
             // alimits/blimits) are read, rather than the offset-modified
             // ones, so that should read back the same as what was written above
             FpuDbData fpu_db_data_read;
-            result_ok = transaction->fpuDbTransferFpu(DbTransferType::ReadRaw,
-                                                      serial_number_str.c_str(),
-                                                      fpu_db_data_read);
-            if (result_ok)
+            mdb_result = transaction->fpuDbTransferFpu(DbTransferType::ReadRaw,
+                                                       serial_number_str.c_str(),
+                                                       fpu_db_data_read);
+            if (mdb_result == MDB_SUCCESS)
             {
                 if (fpu_db_data_read != fpu_db_data_write)
                 {
-                    result_ok = false;
+                    mdb_result = MDB_VERIFY_FAILED;
                 }
             }
         }
     }
 
-    return result_ok;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDBTester::testFpuSingleItemWriteRead(ProtectionDB &protectiondb)
+MdbResult ProtectionDBTester::testFpuSingleItemWriteRead(ProtectionDB &protectiondb)
 {
     // Tests writing of a single item and reading it back, all in one transaction
     
-    bool result_ok = false;
+    MdbResult mdb_result = MDB_PANIC;
     
-    auto transaction = protectiondb.createTransaction();
+    auto transaction = protectiondb.createTransaction(mdb_result);
     if (transaction)
     {
         // Write item
         std::string serial_number_str = getRandomFpuTestSerialNumber();
         char subkey[] = "TestSubkey";
         char data_str[] = "0123456789";
-        result_ok = transaction->fpuDbWriteItem(serial_number_str.c_str(),
-                                                subkey, (void *)data_str,
-                                                strlen(data_str));
+        mdb_result = transaction->fpuDbWriteItem(serial_number_str.c_str(),
+                                                 subkey, (void *)data_str,
+                                                 strlen(data_str));
 
         // Get item buffer
         void *item_data_ptr = nullptr;
         int item_num_bytes = 0;
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
-            result_ok = 
+            mdb_result = 
                 transaction->fpuDbGetItemDataPtrAndSize(serial_number_str.c_str(),
                                                         subkey, &item_data_ptr,
                                                         item_num_bytes);
         }
         
         // Verify that item read back matches item written
-        if (result_ok)
+        if (mdb_result == MDB_SUCCESS)
         {
-            if ((item_num_bytes != strlen(data_str)) ||
+            if ((item_num_bytes != (int)strlen(data_str)) ||
                 (memcmp(data_str, item_data_ptr, strlen(data_str)) != 0))
             {
-                result_ok = false;
+                mdb_result = MDB_VERIFY_FAILED;
             }
         }
     }
     
-    return result_ok;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
-bool ProtectionDBTester::testFpuMultipleItemWriteReads(ProtectionDB &protectiondb)
+MdbResult ProtectionDBTester::testFpuMultipleItemWriteReads(ProtectionDB &protectiondb)
 {
     // Tests writing of multiple items in a first transaction, and reading them
     // back in a second transaction
 
-    bool result_ok = false;
+    MdbResult mdb_result = MDB_PANIC;
     const int num_iterations = 100;
     std::string serial_number_str = getRandomFpuTestSerialNumber();
     uint64_t test_multiplier = 0x123456789abcdef0L;
@@ -591,33 +577,33 @@ bool ProtectionDBTester::testFpuMultipleItemWriteReads(ProtectionDB &protectiond
     // of scope and is destroyed
     
     {
-        auto transaction = protectiondb.createTransaction();
+        auto transaction = protectiondb.createTransaction(mdb_result);
         if (transaction)
         {
-            result_ok = true;
+            mdb_result = MDB_SUCCESS;
             for (int i = 0; i < num_iterations; i++)
             {
                 char subkey_str[10];
                 snprintf(subkey_str, sizeof(subkey_str), "%03d", i);
                 uint64_t test_val = ((uint64_t)i) * test_multiplier;
-                if (!transaction->fpuDbWriteItem(serial_number_str.c_str(),
+                mdb_result = transaction->fpuDbWriteItem(serial_number_str.c_str(),
                                                  subkey_str, (void *)&test_val,
-                                                 sizeof(test_val)))
+                                                 sizeof(test_val));
+                if (mdb_result != MDB_SUCCESS)   
                 {
                     // Error
-                    result_ok = false;
                     break;
                 }
             }
         }
     }
 
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        auto transaction = protectiondb.createTransaction();
+        auto transaction = protectiondb.createTransaction(mdb_result);
         if (transaction)
         {
-            result_ok = true;
+            mdb_result = MDB_SUCCESS;
             for (int i = 0; i < num_iterations; i++)
             {
                 char subkey_str[10];
@@ -625,29 +611,29 @@ bool ProtectionDBTester::testFpuMultipleItemWriteReads(ProtectionDB &protectiond
                 uint64_t test_val = ((uint64_t)i) * test_multiplier;
                 void *item_data_ptr = nullptr;
                 int item_num_bytes = 0;
-                if (transaction->fpuDbGetItemDataPtrAndSize(serial_number_str.c_str(),
-                                                            subkey_str,
-                                                            &item_data_ptr,
-                                                            item_num_bytes))
+                mdb_result = transaction->fpuDbGetItemDataPtrAndSize(
+                                                    serial_number_str.c_str(),
+                                                    subkey_str, &item_data_ptr,
+                                                    item_num_bytes);
+                if (mdb_result == MDB_SUCCESS)    
                 {
                     if ((item_num_bytes != sizeof(test_val)) ||
                         (memcmp(item_data_ptr, (void *)&test_val,
                                 sizeof(test_val)) != 0))
                     {
-                        result_ok = false;
+                        mdb_result = MDB_VERIFY_FAILED;
                         break;
                     }
                 }
                 else
                 {
-                    result_ok = false;
                     break;
                 }
             }
         }
     }
     
-    return result_ok;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
@@ -709,7 +695,6 @@ bool ProtectionDBTester::testFpuDbDataClass()
         }
     }
     
-    // TODO: Return true or false
     return result_ok;
 }
 
@@ -790,7 +775,7 @@ void ProtectionDBTester::testGetSerialNumFromKeyVal()
     std::string serial_number;
 
     bool converted_ok = false;
-    for (int i = 0; i < sizeof(test_key_strs) / sizeof(test_key_strs[0]); i++)
+    for (size_t i = 0; i < sizeof(test_key_strs) / sizeof(test_key_strs[0]); i++)
     {
         key_val.mv_data = (void *)test_key_strs[i];
         key_val.mv_size = strlen((char *)key_val.mv_data);
@@ -815,7 +800,7 @@ void ProtectionDBTester::testDbOpeningScenarios()
     // Note: Each protectiondb instance is tried in its own code scope, so that
     // it's automatically closed again once it goes out of scope
 
-    volatile bool result;  // volatile so not optimised away
+    volatile MdbResult mdb_result = MDB_PANIC;  // volatile so not optimised away
 
     {
         // Test for when directory, files and sub-databases all exist - N.B.
@@ -823,13 +808,13 @@ void ProtectionDBTester::testDbOpeningScenarios()
         ProtectionDB protectiondb;
         const bool mockup = true;
         std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
-        result = protectiondb.open(dir_str);
+        mdb_result = protectiondb.open(dir_str);
     }
 
     {
         ProtectionDB protectiondb;
         std::string dir_str = "/moonsdata/shouldnt_exist";
-        result = protectiondb.open(dir_str);
+        mdb_result = protectiondb.open(dir_str);
     }
 
 }
