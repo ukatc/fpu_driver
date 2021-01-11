@@ -91,7 +91,7 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
     std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
     if (!dir_str.empty())
     {
-        if (protection_db.open(dir_str))
+        if (protection_db.open(dir_str) == MDB_SUCCESS)
         {
             // TODO: Implement the following? (from Python version ->
             // _post_connect_hook())
@@ -179,14 +179,15 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     {
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
         {
-            auto txn = protection_db.createTransaction();
+            MdbResult mdb_result = MDB_PANIC;
+            auto txn = protection_db.createTransaction(mdb_result);
             if (txn)
             {
                 const char *serial_number = grid_state.FPU_state[fpu_id].serial_number;
                 FpuData fpu_data;
                 
                 if (txn->fpuDbTransferFpu(DbTransferType::Read, serial_number,
-                                          fpu_data.db))
+                                          fpu_data.db) == MDB_SUCCESS)
                 {
                     // Adjust alpha position and limits with datum offset
                     // TODO: Is this addition by Interval::operator+=()
@@ -565,7 +566,8 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
     // We allow 0.5 degree of imprecision. This is mainly for the FPU
     // simulator which steps at discrete intervals.
 
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
@@ -661,7 +663,7 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
         return DE_RESOURCE_ERROR;
     }
 
-    if (!protection_db.sync())
+    if (protection_db.sync() != MDB_SUCCESS)
     {
         return DE_RESOURCE_ERROR;
     }
@@ -674,7 +676,8 @@ E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
                                          const t_fpuset &fpuset,
                                          const t_fpu_positions &initial_positions)
 {
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         for (const auto &it : initial_positions)
@@ -713,7 +716,7 @@ E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
         return DE_RESOURCE_ERROR;
     }
 
-    if (!protection_db.sync())
+    if (protection_db.sync() != MDB_SUCCESS)
     {
         return DE_RESOURCE_ERROR;
     }
@@ -765,7 +768,8 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
 
     //..........................................................................
 
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
@@ -797,10 +801,10 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                 if (fpu_data.db.aretries_acw > 0)
                 {
                     fpu_data.db.aretries_acw = 0;
-                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                            FpuDbIntValType::AlphaRetries_ACW,
-                                            serial_number,
-                                            fpu_data.db.aretries_acw));
+                    if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                    FpuDbIntValType::AlphaRetries_ACW,
+                                    serial_number,
+                                    fpu_data.db.aretries_acw) != MDB_SUCCESS)
                     {
                         return DE_RESOURCE_ERROR;
                     }
@@ -808,10 +812,10 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                 if (fpu_data.db.aretries_cw > 0)
                 {
                     fpu_data.db.aretries_cw = 0;
-                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                            FpuDbIntValType::AlphaRetries_CW,
-                                            serial_number,
-                                            fpu_data.db.aretries_cw));
+                    if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                    FpuDbIntValType::AlphaRetries_CW,
+                                    serial_number,
+                                    fpu_data.db.aretries_cw) != MDB_SUCCESS)
                     {
                         return DE_RESOURCE_ERROR;
                     }
@@ -865,10 +869,10 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                 if (fpu_data.db.bretries_acw > 0)
                 {
                     fpu_data.db.bretries_acw = 0;
-                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                            FpuDbIntValType::BetaRetries_ACW,
-                                            serial_number,
-                                            fpu_data.db.bretries_acw));
+                    if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                    FpuDbIntValType::BetaRetries_ACW,
+                                    serial_number,
+                                    fpu_data.db.bretries_acw) != MDB_SUCCESS)
                     {
                         return DE_RESOURCE_ERROR;
                     }
@@ -877,10 +881,10 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                 if (fpu_data.db.bretries_cw > 0)
                 {
                     fpu_data.db.bretries_cw = 0;
-                    if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                            FpuDbIntValType::BetaRetries_CW,
-                                            serial_number,
-                                            fpu_data.db.bretries_cw));
+                    if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                    FpuDbIntValType::BetaRetries_CW,
+                                    serial_number,
+                                    fpu_data.db.bretries_cw) != MDB_SUCCESS)
                     {
                         return DE_RESOURCE_ERROR;
                     }
@@ -931,9 +935,9 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
             _update_counters_find_datum(fpu_data.db.counters, prev_fpu_state,
                                         datum_fpu_state);
 
-            if (!txn->fpuDbTransferCounters(DbTransferType::Write,
-                                            serial_number,
-                                            fpu_data.db.counters))
+            if (txn->fpuDbTransferCounters(DbTransferType::Write,
+                                           serial_number,
+                                           fpu_data.db.counters) != MDB_SUCCESS)
             {
                 return DE_RESOURCE_ERROR;
             }
@@ -953,7 +957,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
 
     //..........................................................................
 
-    if (!protection_db.sync())
+    if (protection_db.sync() != MDB_SUCCESS)
     {
         return DE_RESOURCE_ERROR;
     }
@@ -1151,11 +1155,18 @@ bool GridDriver::_update_apos(const std::unique_ptr<ProtectionDbTxn> &txn,
     if (store)
     {
         // TODO: Check that the const_cast<> below works OK
-        return txn->fpuDbTransferInterval(DbTransferType::Write,
-                                          FpuDbIntervalType::AlphaPos,
-                                          serial_number,
-                                          const_cast<Interval &>(new_apos),
-                                          config.alpha_datum_offset);
+        if (txn->fpuDbTransferInterval(DbTransferType::Write,
+                                       FpuDbIntervalType::AlphaPos,
+                                       serial_number,
+                                       const_cast<Interval &>(new_apos),
+                                       config.alpha_datum_offset) == MDB_SUCCESS)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
     else
     {
@@ -1173,11 +1184,18 @@ bool GridDriver::_update_bpos(const std::unique_ptr<ProtectionDbTxn> &txn,
     {
         double beta_datum_offset = BETA_DATUM_OFFSET;
         // TODO: Check that the const_cast<> below works OK
-        return txn->fpuDbTransferInterval(DbTransferType::Write,
-                                          FpuDbIntervalType::BetaPos,
-                                          serial_number,
-                                          const_cast<Interval &>(new_bpos),
-                                          beta_datum_offset);
+        if (txn->fpuDbTransferInterval(DbTransferType::Write,
+                                       FpuDbIntervalType::BetaPos,
+                                       serial_number,
+                                       const_cast<Interval &>(new_bpos),
+                                       beta_datum_offset) == MDB_SUCCESS)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
     else
     {
@@ -1202,7 +1220,8 @@ E_EtherCANErrCode GridDriver::_refresh_positions(const t_grid_state &grid_state,
     E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
     bool inconsistency_abort = false;
 
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         ecan_result = DE_OK;
@@ -1271,7 +1290,7 @@ E_EtherCANErrCode GridDriver::_refresh_positions(const t_grid_state &grid_state,
         ecan_result = DE_RESOURCE_ERROR;
     }
 
-    if (!protection_db.sync())
+    if (protection_db.sync() != MDB_SUCCESS)
     {
         ecan_result = DE_RESOURCE_ERROR;
     }
@@ -1564,7 +1583,8 @@ E_EtherCANErrCode GridDriver::_save_wtable_direction(const t_fpuset &fpuset,
                                                      bool is_reversed,
                                                      t_grid_state &gs)
 {
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
@@ -1575,9 +1595,9 @@ E_EtherCANErrCode GridDriver::_save_wtable_direction(const t_fpuset &fpuset,
             }
 
             fpus_data[fpu_id].db.wf_reversed = is_reversed;
-            if (!txn->fpuDbTransferWfReversedFlag(DbTransferType::Write,
-                                        gs.FPU_state[fpu_id].serial_number,
-                                        fpus_data[fpu_id].db.wf_reversed));
+            if (txn->fpuDbTransferWfReversedFlag(DbTransferType::Write,
+                            gs.FPU_state[fpu_id].serial_number,
+                            fpus_data[fpu_id].db.wf_reversed) != MDB_SUCCESS)
             {
                 return DE_RESOURCE_ERROR;
             }
@@ -1645,7 +1665,8 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
     }
 
     // Save the changed waveforms
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         for (size_t i = 0; i < wtable.size(); i++)
@@ -1653,9 +1674,9 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
             int fpu_id = wtable[i].fpu_id;
             if (fpu_id < config.num_fpus)
             {
-                if (!txn->fpuDbTransferWaveform(DbTransferType::Write,
-                                gs.FPU_state[fpu_id].serial_number,
-                                const_cast<t_waveform_steps &>(wtable[i].steps)))
+                if (txn->fpuDbTransferWaveform(DbTransferType::Write,
+                        gs.FPU_state[fpu_id].serial_number,
+                        const_cast<t_waveform_steps &>(wtable[i].steps)) != MDB_SUCCESS)
                 {
                     return DE_RESOURCE_ERROR;
                 }
@@ -1887,7 +1908,8 @@ E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
         return ecan_result;
     }
 
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
@@ -1923,9 +1945,9 @@ E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
                                                 fpu_data.db.last_waveform,
                                                 fpu_data.db.wf_reversed);
 
-                if (!txn->fpuDbTransferCounters(DbTransferType::Write,
-                                                serial_number,
-                                                fpu_data.db.counters))
+                if (txn->fpuDbTransferCounters(DbTransferType::Write,
+                                               serial_number,
+                                               fpu_data.db.counters) != MDB_SUCCESS)
                 {
                     return DE_RESOURCE_ERROR;
                 }
@@ -1937,7 +1959,7 @@ E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
         return DE_RESOURCE_ERROR;
     }
 
-    if (!protection_db.sync())
+    if (protection_db.sync() != MDB_SUCCESS)
     {
         return DE_RESOURCE_ERROR;
     }
@@ -1953,7 +1975,8 @@ E_EtherCANErrCode GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
     // Cancels registering an executeMotion command which was rejected by the
     // driver, before an actual movement was started.
 
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         for (const auto &it : initial_positions)
@@ -1991,9 +2014,9 @@ E_EtherCANErrCode GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
                                                 fpu_data.db.last_waveform,
                                                 fpu_data.db.wf_reversed, true);
             }
-            if (!txn->fpuDbTransferCounters(DbTransferType::Write,
-                                            serial_number,
-                                            fpu_data.db.counters))
+            if (txn->fpuDbTransferCounters(DbTransferType::Write,
+                                           serial_number,
+                                           fpu_data.db.counters) != MDB_SUCCESS)
             {
                 return DE_RESOURCE_ERROR;
             }
@@ -2004,7 +2027,7 @@ E_EtherCANErrCode GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
         return DE_RESOURCE_ERROR;
     }
 
-    if (!protection_db.sync())
+    if (protection_db.sync() != MDB_SUCCESS)
     {
         return DE_RESOURCE_ERROR;
     }
@@ -2110,7 +2133,8 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
         return ecan_result;
     }
 
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
@@ -2124,8 +2148,8 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
                                    old_gs.FPU_state[fpu_id],
                                    move_gs.FPU_state[fpu_id]);
             const char *serial_number = move_gs.FPU_state[fpu_id].serial_number;
-            if (!txn->fpuDbTransferCounters(DbTransferType::Write, serial_number,
-                                            fpus_data[fpu_id].db.counters))
+            if (txn->fpuDbTransferCounters(DbTransferType::Write, serial_number,
+                                fpus_data[fpu_id].db.counters) != MDB_SUCCESS)
             {
                 return DE_RESOURCE_ERROR;
             }
@@ -2190,7 +2214,8 @@ E_EtherCANErrCode GridDriver::_pre_free_beta_collision_hook(int fpu_id,
 
     fpu_data.target_position = { fpu_data.db.apos, new_bpos };
 
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         const char *serial_number = gs.FPU_state[fpu_id].serial_number;
@@ -2227,12 +2252,13 @@ E_EtherCANErrCode GridDriver::_post_free_beta_collision_hook(int fpu_id,
         db_cw_or_acw = FpuDbIntValType::BetaRetries_ACW;
     }
     
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         const char *serial_number = gs.FPU_state[fpu_id].serial_number;
-        if (!txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
-                                        serial_number, count))
+        if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
+                                       serial_number, count) != MDB_SUCCESS)
         {
             return DE_RESOURCE_ERROR;
         }
@@ -2297,7 +2323,8 @@ E_EtherCANErrCode GridDriver::_pre_free_alpha_limit_breach_hook(int fpu_id,
 
     fpu_data.target_position = { new_apos, fpu_data.db.bpos };
 
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         const char *serial_number = gs.FPU_state[fpu_id].serial_number;
@@ -2334,12 +2361,13 @@ E_EtherCANErrCode GridDriver::_post_free_alpha_limit_breach_hook(int fpu_id,
         db_cw_or_acw = FpuDbIntValType::AlphaRetries_ACW;
     }
 
-    auto txn = protection_db.createTransaction();
+    MdbResult mdb_result = MDB_PANIC;
+    auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
         const char *serial_number = gs.FPU_state[fpu_id].serial_number;
-        if (!txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
-                                        serial_number, count))
+        if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
+                                       serial_number, count) != MDB_SUCCESS)
         {
             return DE_RESOURCE_ERROR;
         }
