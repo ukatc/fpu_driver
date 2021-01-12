@@ -30,7 +30,6 @@
 namespace mpifps
 {
 
-static const char *db_write_failed_str = "Error: FPU database write failed.";
 static const char *fpu_snum_not_in_database_str =
                     "Error: FPU serial number is not yet defined in database.";
 
@@ -70,32 +69,46 @@ AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
     //..........................................................................
     // Check if serial number is already in use
     int64_t snum_flag_used_val = 0;
-    bool read_was_ok = txn->fpuDbTransferInt64Val(DbTransferType::Read,
-                                                  FpuDbIntValType::SnumUsedFlag,
-                                                  new_serial_number,
-                                                  snum_flag_used_val);
-    if ((read_was_ok) && (snum_flag_used_val == SNUM_USED_CHECK_VAL))
+    MdbResult mdb_result = txn->fpuDbTransferInt64Val(DbTransferType::Read,
+                                                      FpuDbIntValType::SnumUsedFlag,
+                                                      new_serial_number,
+                                                      snum_flag_used_val);
+    if (mdb_result == MDB_SUCCESS)
     {
-        // Serial number is already in use
-        if (!reuse_snum)
+        if (snum_flag_used_val == SNUM_USED_CHECK_VAL)
         {
-            std::cout << "Flash command rejected: Serial number is already in use.\n"
-                         "Call with '--reuse_sn' to use it again." << std::endl;
+            // Serial number is already in use
+            if (!reuse_snum)
+            {
+                std::cout << "Flash command rejected: Serial number is already in use.\n"
+                            "Call with '--reuse_sn' to use it again." << std::endl;
+                return AppReturnError;
+            }
+        }
+        else
+        {
+            std::cout << "Error: Serial number is already in use, AND its in-use flag value is incorrect" << std::endl;
+            return AppReturnError;
+        }
+    }
+    else if (mdb_result == MDB_NOTFOUND)
+    {
+        // Serial number is not in use yet - add it to database
+        snum_flag_used_val = SNUM_USED_CHECK_VAL;
+        mdb_result = txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                        FpuDbIntValType::SnumUsedFlag,
+                                        new_serial_number,
+                                        snum_flag_used_val);
+        if (mdb_result != MDB_SUCCESS) 
+        {
+            printUnexpectedDbResult(mdb_result);
             return AppReturnError;
         }
     }
     else
     {
-        // Serial number is not in use yet - add it to database
-        snum_flag_used_val = SNUM_USED_CHECK_VAL;
-        if (!txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                        FpuDbIntValType::SnumUsedFlag,
-                                        new_serial_number,
-                                        snum_flag_used_val))
-        {
-            std::cout << db_write_failed_str << std::endl;
-            return AppReturnError;
-        }
+        printUnexpectedDbResult(mdb_result);
+        return AppReturnError;
     }
 
     //..........................................................................
@@ -224,33 +237,37 @@ AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
     fpu_db_data.bretries_cw = 0;
     fpu_db_data.bretries_acw = 0;
 
+    MdbResult mdb_result = MDB_PANIC;
+
     if (!reinitialize)
     {
-        // If the FPU has an existing counters entry in the database, then
+        // If the FPU has an existing counters entry in the database then
         // retain this
-
-        // TODO: Need to distinguish between serial number not being found vs
-        // the database read failing at a lower level - if counters entry for
-        // serial number doesn't yet exist then NOT a failure - the counters
-        // just need to be initialised as empty
-        // TODO: If the following fails due to a database read error then 
-        // display error message and return AppReturnError
-        if (!txn->fpuDbTransferCounters(DbTransferType::Read, serial_number,
-                                        fpu_db_data.counters))
+        mdb_result = txn->fpuDbTransferCounters(DbTransferType::Read,
+                                                serial_number,
+                                                fpu_db_data.counters);
+        if (mdb_result == MDB_NOTFOUND)
         {
             fpu_db_data.counters.zeroAll();
+        }
+        else if (mdb_result != MDB_SUCCESS)
+        {
+            printUnexpectedDbResult(mdb_result);
+            return AppReturnError;
         }
     }
 
     fpu_db_data.last_waveform.clear();
 
-    if (txn->fpuDbTransferFpu(DbTransferType::Write, serial_number, fpu_db_data))
+    mdb_result = txn->fpuDbTransferFpu(DbTransferType::Write, serial_number,
+                                       fpu_db_data);
+    if (mdb_result == MDB_SUCCESS)
     {
         return AppReturnOk;
     }
     else
     {
-        std::cout << db_write_failed_str << std::endl;
+        printUnexpectedDbResult(mdb_result);
         return AppReturnError;
     }
 }
@@ -262,7 +279,8 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
 
     std::vector<std::string> serial_numbers;
     int num_fpus_with_good_data = 0;
-    if (txn->fpuDbGetAllSerialNumbers(serial_numbers))
+    MdbResult mdb_result = txn->fpuDbGetAllSerialNumbers(serial_numbers);
+    if (mdb_result == MDB_SUCCESS)
     {
         for (size_t i = 0; i < serial_numbers.size(); i++)
         {
@@ -278,6 +296,7 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
     }
     else
     {
+        printUnexpectedDbResult(mdb_result);
         std::cout << "Error: Unexpected failure while collating serial numbers "
                      "from FPU database." << std::endl;
         return AppReturnError;
@@ -330,16 +349,22 @@ bool FPUAdmin::printSingleFpu(ProtectionDbTxnPtr &txn,
     // offset values
     // TODO: Is this correct? This is what the fpu-admin Python version's 
     // "list1" command seems to do - it calls getRawField() for all fields
-    if (txn->fpuDbTransferFpu(DbTransferType::ReadRaw, serial_number,
-                              fpu_db_data))
+    MdbResult mdb_result = txn->fpuDbTransferFpu(DbTransferType::ReadRaw,
+                                                 serial_number, fpu_db_data);
+    if (mdb_result == MDB_SUCCESS)  
     {
         printFpuDbData(fpu_db_data);
         return true;
     }
-    else
+    else if (mdb_result == MDB_NOTFOUND)
     {
         std::cout << "Error: One or more of this FPU's data items "
                      "are missing from the database." << std::endl;
+        return false;
+    }
+    else
+    {
+        printUnexpectedDbResult(mdb_result);
         return false;
     }
 }
@@ -396,30 +421,25 @@ AppReturnVal FPUAdmin::setALimits(ProtectionDbTxnPtr &txn,
 {
     // Sets safe limits for alpha arm of an FPU.
 
-    if (!checkAndMessageForSerialNumberLength(serial_number))
-    {
-        return AppReturnError;
-    }
-
-    if (isSerialNumberUsed(txn, serial_number))
+    if (checkAndMessageBeforeSetting(txn, serial_number))
     {
         Interval alimits_interval(alimit_min, alimit_max);
-        if (txn->fpuDbTransferInterval(DbTransferType::Write,
-                                       FpuDbIntervalType::AlphaLimits,
-                                       serial_number, alimits_interval,
-                                       adatum_offset))
+        MdbResult mdb_result = txn->fpuDbTransferInterval(DbTransferType::Write,
+                                                FpuDbIntervalType::AlphaLimits,
+                                                serial_number, alimits_interval,
+                                                adatum_offset);
+        if (mdb_result == MDB_SUCCESS)    
         {
             return AppReturnOk;
         }
         else
         {
-            std::cout << db_write_failed_str << std::endl;
+            printUnexpectedDbResult(mdb_result);
             return AppReturnError;
         }
     }
     else
     {
-        std::cout << fpu_snum_not_in_database_str << std::endl;
         return AppReturnError;
     }
 }
@@ -431,31 +451,26 @@ AppReturnVal FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
 {
     // Sets safe limits for beta arm of an FPU.
 
-    if (!checkAndMessageForSerialNumberLength(serial_number))
-    {
-        return AppReturnError;
-    }
-
-    if (isSerialNumberUsed(txn, serial_number))
+    if (checkAndMessageBeforeSetting(txn, serial_number))
     {
         Interval blimits_interval(blimit_min, blimit_max);
         double beta_datum_offset = BETA_DATUM_OFFSET;
-        if (txn->fpuDbTransferInterval(DbTransferType::Write,
-                                       FpuDbIntervalType::BetaLimits,
-                                       serial_number, blimits_interval,
-                                       beta_datum_offset))
+        MdbResult mdb_result = txn->fpuDbTransferInterval(DbTransferType::Write,
+                                                FpuDbIntervalType::BetaLimits,
+                                                serial_number, blimits_interval,
+                                                beta_datum_offset);
+        if (mdb_result == MDB_SUCCESS)    
         {
             return AppReturnOk;
         }
         else
         {
-            std::cout << db_write_failed_str << std::endl;
+            printUnexpectedDbResult(mdb_result);
             return AppReturnError;
         }
     }
     else
     {
-        std::cout << fpu_snum_not_in_database_str << std::endl;
         return AppReturnError;
     }
 }
@@ -469,28 +484,23 @@ AppReturnVal FPUAdmin::setARetries(ProtectionDbTxnPtr &txn,
     // direction before the software protection kicks in. N.B. The retry count
     // is reset to zero upon a successfully finished datum search.
 
-    if (!checkAndMessageForSerialNumberLength(serial_number))
+    if (checkAndMessageBeforeSetting(txn, serial_number))
     {
-        return AppReturnError;
-    }
-
-    if (isSerialNumberUsed(txn, serial_number))
-    {
-        if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                       FpuDbIntValType::FreeAlphaRetries,
-                                       serial_number, aretries))
+        MdbResult mdb_result = txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                            FpuDbIntValType::FreeAlphaRetries,
+                                            serial_number, aretries);
+        if (mdb_result == MDB_SUCCESS)
         {
             return AppReturnOk;
         }
         else
         {
-            std::cout << db_write_failed_str << std::endl;
+            printUnexpectedDbResult(mdb_result);
             return AppReturnError;
         }
     }
     else
     {
-        std::cout << fpu_snum_not_in_database_str << std::endl;
         return AppReturnError;
     }
 }
@@ -504,50 +514,75 @@ AppReturnVal FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn,
     // before the software protection kicks in. N.B. The retry count is reset
     // to zero upon a successfully finished datum search.
 
-    if (!checkAndMessageForSerialNumberLength(serial_number))
+    if (checkAndMessageBeforeSetting(txn, serial_number))
     {
-        return AppReturnError;
-    }
-
-    if (isSerialNumberUsed(txn, serial_number))
-    {
-        if (txn->fpuDbTransferInt64Val(DbTransferType::Write,
-                                       FpuDbIntValType::FreeBetaRetries,
-                                       serial_number, bretries))
+        MdbResult mdb_result = txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                            FpuDbIntValType::FreeBetaRetries,
+                                            serial_number, bretries);
+        if (mdb_result == MDB_SUCCESS)    
         {
             return AppReturnOk;
         }
         else
         {
-            std::cout << db_write_failed_str << std::endl;
+            printUnexpectedDbResult(mdb_result);
             return AppReturnError;
         }
     }
     else
     {
-        std::cout << fpu_snum_not_in_database_str << std::endl;
         return AppReturnError;
     }
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::isSerialNumberUsed(ProtectionDbTxnPtr &txn,
-                                  const char *serial_number)
+bool FPUAdmin::checkAndMessageBeforeSetting(ProtectionDbTxnPtr &txn,
+                                            const char *serial_number)
 {
-    // TODO: Need to differentiate between serial number not in database,
-    // vs database read failure (once implement more detailed return codes)
+    if (!checkAndMessageForSerialNumberLength(serial_number))
+    {
+        return false;
+    }
+
+    MdbResult mdb_result = checkIfSerialNumberUsed(txn, serial_number);
+    if (mdb_result == MDB_SUCCESS)
+    {
+        return true;
+    }
+    else if (mdb_result == MDB_NOTFOUND)
+    {
+        std::cout << fpu_snum_not_in_database_str << std::endl;
+        return false;
+    }
+    else
+    {
+        printUnexpectedDbResult(mdb_result);
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+MdbResult FPUAdmin::checkIfSerialNumberUsed(ProtectionDbTxnPtr &txn,
+                                            const char *serial_number)
+{
+    // Checks if a serial number is currently in use in the database. Returns:
+    //   - MDB_SUCCESS if found and its serial-number-used flag value is OK
+    //   - MDB_NOTFOUND if not found
+    //   - MDB_INCORRECT_SNUM_USED_FLAG_VAL if a serial number entry was found,
+    //     but its check value was incorrect
+    //   - Other codes if unexpected database error
     int64_t snum_used_flag = 0;
-    bool result_ok = txn->fpuDbTransferInt64Val(DbTransferType::Read, 
+    MdbResult mdb_result = txn->fpuDbTransferInt64Val(DbTransferType::Read, 
                                                 FpuDbIntValType::SnumUsedFlag,
                                                 serial_number, snum_used_flag);
-    if (result_ok)
+    if (mdb_result == MDB_SUCCESS)
     {
-        if (snum_used_flag == SNUM_USED_CHECK_VAL)
+        if (snum_used_flag != SNUM_USED_CHECK_VAL)
         {
-            return true;
+            mdb_result = MDB_INCORRECT_SNUM_USED_FLAG_VAL;
         }
     }
-    return false;
+    return mdb_result;
 }
 
 //------------------------------------------------------------------------------
@@ -581,6 +616,13 @@ bool FPUAdmin::checkAndMessageForSerialNumberLength(const char *serial_number)
                       "." << std::endl;
         return false;
     }
+}
+
+//------------------------------------------------------------------------------
+void FPUAdmin::printUnexpectedDbResult(MdbResult mdb_result)
+{
+    std::cout << "Database error " <<
+                 ProtectionDB::getResultString(mdb_result) << std::endl;
 }
 
 //------------------------------------------------------------------------------

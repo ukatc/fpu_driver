@@ -165,11 +165,13 @@ int main(int argc, char**argv)
     std::string dir_str = ProtectionDB::getDirFromLinuxEnv(is_mockup);
     if (!dir_str.empty())
     {
-        if (protection_db.open(dir_str))
+        MdbResult mdb_result = protection_db.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
         {
-            txn = protection_db.createTransaction();
+            txn = protection_db.createTransaction(mdb_result);
             if (!txn)
             {
+                FPUAdmin::printUnexpectedDbResult(mdb_result);
                 std::cout << "Error: Could not create a database transaction." <<
                              std::endl;
                 return AppReturnError;
@@ -177,6 +179,7 @@ int main(int argc, char**argv)
         }
         else
         {
+            FPUAdmin::printUnexpectedDbResult(mdb_result);
             std::cout << "Error: Could not open protection database." << std::endl;
             return AppReturnError;
         }

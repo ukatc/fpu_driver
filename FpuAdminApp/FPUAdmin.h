@@ -72,13 +72,16 @@ public:
                                     int64_t bretries);
     static AppReturnVal printHealthLog(ProtectionDbTxnPtr &txn,
                                        const char *serial_number);
+    static void printUnexpectedDbResult(MdbResult mdb_result);
 
 private:
     static bool printSingleFpu(ProtectionDbTxnPtr &txn, 
                                const char *serial_number);
     static void printFpuDbData(FpuDbData &fpu_db_data);
-    static bool isSerialNumberUsed(ProtectionDbTxnPtr &txn,
-                                   const char *serial_number);
+    static MdbResult checkIfSerialNumberUsed(ProtectionDbTxnPtr &txn,
+                                             const char *serial_number);
+    static bool checkAndMessageBeforeSetting(ProtectionDbTxnPtr &txn,
+                                             const char *serial_number);
     static bool checkAndMessageForSerialNumberLength(const char *serial_number);
 };
 

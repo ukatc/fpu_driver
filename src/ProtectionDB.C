@@ -419,7 +419,7 @@ std::string ProtectionDB::getResultString(MdbResult mdb_result)
         result_string = mdb_strerror(mdb_result);
     }
 
-    return "Result code = " + std::to_string(mdb_result) + ": " + result_string;
+    return "(" + std::to_string(mdb_result) + "): " + result_string;
 }
 
 //==============================================================================
