@@ -361,7 +361,7 @@ const t_waveform_steps &GridDriverTester::getWaveform(GeneratedWaveform gen_wave
         { GeneratedWaveform::Steps_Minus89_Minus89, waveform_steps_minus89_minus89 }
     };
     
-    for (int i = 0; i < (sizeof(waveform_defs) / sizeof(waveform_defs[0])); i++)
+    for (size_t i = 0; i < (sizeof(waveform_defs) / sizeof(waveform_defs[0])); i++)
     {
         if (waveform_defs[i].gen_waveform == gen_waveform)
         {

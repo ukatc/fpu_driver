@@ -492,12 +492,12 @@ void stringArgsToDoubles(const std::vector<std::string> &arg_strs,
     //     doubles_ret will contain only the first items successfully converted
     
     doubles_ret.clear();
-    if (start_index >= arg_strs.size())
+    if (start_index >= (int)arg_strs.size())
     {
         return;
     }
     
-    for (int i = start_index; i < arg_strs.size(); i++)
+    for (size_t i = start_index; i < arg_strs.size(); i++)
     {
         try
         {

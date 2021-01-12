@@ -763,7 +763,7 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
     }
     string_ret += "\n";
 
-    for (int i = 0; i < (sizeof(reg_defs) / sizeof(reg_defs[0]));
+    for (size_t i = 0; i < (sizeof(reg_defs) / sizeof(reg_defs[0]));
          i++)
     {
         E_EtherCANErrCode ecan_result = readRegister(reg_defs[i].address,
@@ -787,6 +787,8 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
         }
         string_ret += "\n";
     }
+
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
