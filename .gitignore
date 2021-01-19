@@ -33,3 +33,6 @@ python/src/midl.o
 /NetBeansProjects/FPUAdmin/dist/
 NetBeansProjects/Fpu_NetBeans/nbproject/private/private.xml
 NetBeansProjects/FPUAdmin/nbproject/private/private.xml
+FpuAdminApp/fpu-admin-clbuild
+FpuAdminApp/mdb.o
+FpuAdminApp/midl.o
