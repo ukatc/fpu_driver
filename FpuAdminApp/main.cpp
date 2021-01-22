@@ -159,6 +159,53 @@ int main(int argc, char**argv)
     }
 
     //..........................................................................
+
+    std::string &cmd_str = arg_strs[0];
+
+    //..........................................................................
+    if (cmd_str == "create-empty-db")
+    {
+        if (arg_strs.size() == 2)
+        {
+            std::string &dir_str = arg_strs[1];
+
+            if (dir_str.size() >= 1)
+            {
+                if (dir_str.back() == '/')
+                {
+                    std::cout << "Error: Do not provide trailing /.\n" << std::endl;
+                    return AppReturnError;
+                }
+
+                ProtectionDB protectiondb;
+                MdbResult mdb_result = protectiondb.createEmpty(dir_str);
+                if (mdb_result == MDB_SUCCESS)
+                {
+                    std::cout << "Success - created empty grid driver database in " <<
+                                 dir_str << ".\n" << std::endl;
+                    return AppReturnOk;
+                }
+                else
+                {
+                    std::cout << "Error: Command failed with the following result:\n";
+                    std::cout << ProtectionDB::getResultString(mdb_result) << std::endl;
+                    return AppReturnError;
+                }
+            }
+            else
+            {
+                std::cout << "Error: Directory string is zero-length\n" << std::endl;
+                return AppReturnError;
+            }
+        }
+        else
+        {
+            std::cout << bad_num_args_str << std::endl;
+            return AppReturnError;
+        }
+    }
+
+    //..........................................................................
     // Open database and create transaction
     ProtectionDB protection_db;
     ProtectionDbTxnPtr txn;
@@ -194,7 +241,6 @@ int main(int argc, char**argv)
     // Process specified command - N.B. at this stage, the number of items
     // in arg_strs might be less than the original, because the options above
     // will have been removed, so need to use indexes accordingly
-    std::string cmd_str = arg_strs[0];
 
     //..........................................................................
     if (cmd_str == "flash")
@@ -423,11 +469,30 @@ void printHelp()
 {
     // TODO: Ensure that the help comments' arguments etc exactly match the
     // actual code
+    // TODO: Remove the "new C++ version" and new/old database compatibility
+    // comments from the help text eventually
 
-    std::cout << "\n";
-    std::cout << 
+    std::cout <<
+        "\n"
+        "===========================================================================\n"
+        "fpu-admin: MOONS FPU grid driver administration utility (new C++ version)\n"
+        "\n"
+        "      ********** NOTE: NEW GRID DRIVER DATABASE FORMAT IS **********\n"
+        "      ********** NOT COMPATIBLE WITH OLD PYTHON VERSION   **********\n"
+        "===========================================================================\n"
+        "\n"
         "help\n"
         "    - Prints this message\n"
+        "\n"
+        "create-empty-db <directory_path>\n"
+        "    - Creates an empty grid driver database in the specified directory,\n"
+        "      and adds the required sub-databases into it.\n"
+        "      The directory must be specified in the form /xxxx/xxxx, WITHOUT a\n"
+        "      trailing /, and with optional quotes around it (essential if path has\n"
+        "      spaces in it).\n"
+        "      The directory must already exist and have the appropriate read/write\n"
+        "      permissions.\n"
+        "      This command aborts if a database already exists in the directory.\n"
         "\n"
         "flash [--reuse_sn] <serial_number> <fpu_id>\n"
         "    - Flashes serial number to FPU with ID <fpu_id>. FPU must be connected.\n"
