@@ -106,10 +106,12 @@ enum
     MDB_EXTRA_RESULT_CODES_LOWER = -25000, 
 
     // Further result codes to use
-    // N.B. These also need corresponding entries in
-    // ProtectionDB::getResultString()
+    // ***NOTE***: These also need corresponding entries in ProtectionDB::
+    // getResultString()
     MDB_VERIFY_FAILED,
     MDB_INCORRECT_SNUM_USED_FLAG_VAL,
+    MDB_DB_ALREADY_EXISTS,
+    MDB_OLD_INCOMPATIBLE_DB_FORMAT,
 
     // Boundary - do not use or change
     MDB_EXTRA_RESULT_CODES_UPPER
@@ -246,6 +248,7 @@ class ProtectionDB
 public:
     static std::string getDirFromLinuxEnv(bool mockup);  // N.B. Static
 
+    MdbResult createEmpty(const std::string &dir_str);
     MdbResult open(const std::string &dir_str);
     ProtectionDbTxnPtr createTransaction(MdbResult &mdb_result_ret);
     MdbResult sync();
@@ -254,6 +257,14 @@ public:
     static std::string getResultString(MdbResult mdb_result); // N.B. Static
 
 private:
+    enum class OpenOrCreate
+    {
+        Open,
+        Create
+    };
+
+    MdbResult openOrCreate(const std::string &dir_str,
+                           OpenOrCreate open_or_create);
     void close();
 
     MDB_env *mdb_env_ptr = nullptr;

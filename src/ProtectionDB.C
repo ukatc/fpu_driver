@@ -13,23 +13,63 @@
 ////////////////////////////////////////////////////////////////////////////////
 // NAME ProtectionDB.C
 //
-// Grid driver LMDB database interface layer for reading and writing FPU data
-// items.
+// MOONS grid driver database interface layer for reading and writing FPU data
+// items. This database uses an LMDB database for its storage, which consists
+// of a pair of LMDB-format "environment" files, data.mdb abd lock.mdb, Inside
+// this database, a few grid-driver-specific LMDB "sub-databases" are used, for
+// example "fpu_db" and others.
+//
+// During use, the files and the directory that they are in must have the
+// appropriate read/write permissions.
+//
+// ************************** IMPORTANT NOTE: **********************************
+// The format of this C++ grid driver LMDB database is NOT COMPATIBLE with the
+// older Python-based grid driver LMDB database format:
+//   - This C++ version uses a binary format for the FPU data items inside the
+//     LMDB database, whereas the older Python version uses a Python-native
+//     ASCII-like format
+//   - In this C++ version, the sub-databases inside the main database have
+//     deliberately been given different names to that of the Python version
+//     (e.g. "fpu_db" versus "fpu" respectively for the FPU sub-database), so
+//     that any attempted accidental cross-use generates errors - see the
+//     comments above fpu_subdb_name and the other sub-database name
+//     definitions below
+//
+// ===============================
+// LMDB generic command-line tools
+// ===============================
+// The third-party LMDB database library provides a number of associated
+// command-line utilities which can be used to perform various operations at
+// raw LMDB database level:
+//   - See http://www.lmdb.tech/doc/tools.html (these tools can be installed
+//     as the lmdb-utils package in Linux, or built from source):
+//       - mdb_copy
+//       - mdb_dump
+//       - mdb_load
+//       - mdb_stat
 //
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <string>
 #include <cstring>
 #include <cstdlib>
 #include "ProtectionDB.h"
 
 // ProtectionDB sub-database names
-static const char *fpu_subdb_name = "fpu";
-static const char *healthlog_subdb_name = "healthlog";
-// TODO: Is "verification" sub-database needed?
-// static const char *verification_subdb_name = "verification";
+// NOTE: This C++ code deliberately uses new sub-database names which are
+// different from the old Python version (which instead uses "fpu" and
+// "healthlog" without the "_db" suffixes), so that it can detect attempted
+// accidental cross-use of the incompatible databases
+static const char *fpu_subdb_name = "fpu_db";
+static const char *old_fpu_subdb_name = "fpu";  // Old Python version's name
+// TODO: The health log database implemented in the original Python database
+// implementation isn't fleshed out in this C++ version yet
+static const char *healthlog_subdb_name = "healthlog_db";
+// TODO: Is the "verification" sub-database needed?
+// static const char *verification_subdb_name = "verification_db";
 
 // Database key strings
 static const char *snum_used_flag_keystr = "snum_used";
@@ -192,20 +232,115 @@ std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
 }
 
 //------------------------------------------------------------------------------
+MdbResult ProtectionDB::createEmpty(const std::string &dir_str)
+{
+    // Creates an empty protection database LMDB "environment" (data.mdb and
+    // lock.mdb files) in the specified directory, and creates the empty
+    // sub-databases inside it which are required for the grid driver.
+    // Notes:
+    //   - The directory must already exist and have the appropriate read/write
+    //     permissions
+    //   - See comments in openOrCreate() for the required dir_str format
+    //   - The database is closed again immediately after creation, and open()
+    //     must then subsequently be called to open and use it
+    //   - Possible outcomes:
+    //       - If successful then returns MDB_SUCCESS
+    //       - If a database already exists in the specified directory then the
+    //         function aborts and returns MDB_DB_ALREADY_EXISTS - this is to
+    //         prevent accidental overwriting of an existing database
+    //       - If any other problems then returns various other MdbResult/LMDB
+    //         return codes
+    //   - This function is provided because the standard LMDB command-line tools
+    //     (see comments at top of this file) don't provide any database
+    //     creation capability
+
+    std::string data_mdb_file_path = dir_str + "/data.mdb";
+    if (access(data_mdb_file_path.c_str(), F_OK) == 0)
+    {
+        return MDB_DB_ALREADY_EXISTS;
+    }
+
+    return openOrCreate(dir_str, OpenOrCreate::Create);
+}
+
+//------------------------------------------------------------------------------
 MdbResult ProtectionDB::open(const std::string &dir_str)
 {
-    // Opens a protection database (data.mdb and locks.mdb files) in the
-    // location pointed to by dir_str. Notes:
-    //   - If the directory doesn't exist then this function fails
-    //   - If the directory exists but the files aren't present in it
-    //     then it creates them, i.e. creates a new database
-    //   - File and/or directory permissions must have been set up correctly
-    //     or this function may fail
+    // Opens an already-existing grid driver protection database environment
+    // (data.mdb and lock.mdb files) in the location pointed to by dir_str.
+    // Notes:
+    //   - See comments in openOrCreate() for the required dir_str format
+    //   - If the files do not exist in the specified directory, or they (or
+    //     the specified directory) do not have the required read and write
+    //     permissions, then this function fails
+
+    // *** IMPORTANT NOTE ***: This C++ grid driver database interface is NOT
+    // COMPATIBLE with the older, original Python-based database interface
+    // format - see comments at top of this file.
     
     // TODO: Must only call exactly once for a particular LMDB file in this
     // process (see the LMDB documentation) - enforce this somehow?
-    
+
     //..........................................................................
+    // Check that the database environment files exist (data.mdb and
+    // lock.mdb) and they they have the correct read/write permissions
+    std::string data_mdb_file_path = dir_str + "/data.mdb";
+    std::string lock_mdb_file_path = dir_str + "/lock.mdb";
+
+    // Check existence
+    if ((access(data_mdb_file_path.c_str(), F_OK) != 0) ||
+        (access(lock_mdb_file_path.c_str(), F_OK) != 0))
+    {
+        return ENOENT;
+    }
+
+    // Check access permissions
+    const int access_permissions = R_OK | W_OK;
+    if (access(data_mdb_file_path.c_str(), access_permissions) != 0)
+    {
+        return errno;
+    }
+    if (access(lock_mdb_file_path.c_str(), access_permissions) != 0)
+    {
+        return errno;
+    }
+
+    // Open database
+    return openOrCreate(dir_str, OpenOrCreate::Open);
+}
+
+//------------------------------------------------------------------------------
+MdbResult ProtectionDB::openOrCreate(const std::string &dir_str,
+                                     OpenOrCreate open_or_create)
+{
+    // Opens or creates a grid driver protection database, which consists of
+    // the data.mdb and lock.mdb "environment" files and the grid-driver-
+    // specific sub-databases inside them.
+    //
+    // dir_str must be of the general form e.g. "/var/lib/fpudb", and must
+    // **NOT** have a final "/" character.
+    //
+    // This function combines the open and create operations for the following
+    // reasons:
+    //   - The code is almost the same for both operations because the LMDB C
+    //     library code supports opening or creation of the "environment" files
+    //     and sub-databases from the same functions
+    //   - Having both of these operations together in this function ensures
+    //     that any created database's settings are compatible with their
+    //     subsequent opening settings
+
+    //..........................................................................
+
+    unsigned int dbi_open_flags;
+    if (open_or_create == OpenOrCreate::Create)
+    {
+        dbi_open_flags = MDB_CREATE;
+    }
+    else
+    {
+        dbi_open_flags = 0x0;
+    }
+
     size_t dbsize;
 
     // Needs 64 bit (large file support) for normal database size
@@ -223,12 +358,7 @@ MdbResult ProtectionDB::open(const std::string &dir_str)
     }
 
     //..........................................................................
-    // Initialise and open database environment
-    // TODO: In the original Python code, the following are defaulted - see
-    // https://lmdb.readthedocs.io/en/release/ -> Environment class - 
-    // max_spare_txns=1
-    // create=True      <== **IMPORTANT** - create directory if doesn't exist?
-
+    // Open/create database environment
     MdbResult mdb_result = mdb_env_create(&mdb_env_ptr);
     if (mdb_result == MDB_SUCCESS)
     {
@@ -249,41 +379,61 @@ MdbResult ProtectionDB::open(const std::string &dir_str)
 
     if (mdb_result == MDB_SUCCESS)
     {
+        // Open the "environment" (data.mdb/lock.mdb files) - if they don't
+        // exist then they are created
         // N.B. Using default flags for now, so flags value is 0x0
-        // N.B. Creates new data.mdb abd lock.mdb files if they aren't present
         // N.B. mdb_env_open() documentation says "If this function fails,
         // mdb_env_close() must be called to discard the MDB_env handle" - this
         // is done in the subsequent close() function call
         // TODO: Check the required state of MDB_NOTLS flag
-        // TODO: Check that following permissions are OK
         unsigned int flags = 0x0;
-        mdb_result = mdb_env_open(mdb_env_ptr, dir_str.c_str(), flags, 0755);
+        // ************************* TODO: Check that the following UNIX permissions are OK - I've had
+        // ************************* them as 0755 until now, but don't want execute permissions, so is
+        // 0666 OK?
+        const mdb_mode_t mdb_permissions = 0666;
+        mdb_result = mdb_env_open(mdb_env_ptr, dir_str.c_str(), flags,
+                                  mdb_permissions);
     }
 
     //..........................................................................
     // Create sub-database handles - will use for entire time that ProtectionDB
     // is open
-    // TODO: Check if these operations create the sub-databases if they don't 
-    // exist yet, and put comment to this effect here
     MDB_txn *txn_ptr = nullptr;
     if (mdb_result == MDB_SUCCESS)
     {
         // Create dummy transaction
         mdb_result = mdb_txn_begin(mdb_env_ptr, nullptr, 0x0, &txn_ptr);
     }
+
+    if (mdb_result == MDB_SUCCESS)
+    {
+        // Check if trying to open an old incompatible Python database, by
+        // checking if its FPU sub-database has the old name rather than the
+        // new name
+        if (open_or_create == OpenOrCreate::Open)
+        {
+            if (mdb_dbi_open(txn_ptr, old_fpu_subdb_name, 0x0,
+                             &fpu_dbi) == MDB_SUCCESS)
+            {
+                mdb_result = MDB_OLD_INCOMPATIBLE_DB_FORMAT;
+            }
+        }
+    }
     
     if (mdb_result == MDB_SUCCESS)
     {
-        // Create FPU sub-database handle
-        mdb_result = mdb_dbi_open(txn_ptr, fpu_subdb_name, MDB_CREATE,
+        // Create FPU sub-database handle - if dbi_open_flags specifies
+        // MDB_CREATE then will also create the sub-database if doesn't exist
+        mdb_result = mdb_dbi_open(txn_ptr, fpu_subdb_name, dbi_open_flags,
                                   &fpu_dbi);
     }
     
     if (mdb_result == MDB_SUCCESS)
     {
-        // Create health log sub-database handle
-        mdb_result = mdb_dbi_open(txn_ptr, healthlog_subdb_name, MDB_CREATE,
-                                  &healthlog_dbi);
+        // Create health log sub-database handle - if dbi_open_flags specifies
+        // MDB_CREATE then will also create the sub-database if doesn't exist
+        mdb_result = mdb_dbi_open(txn_ptr, healthlog_subdb_name,
+                                  dbi_open_flags, &healthlog_dbi);
     }
     
     if (mdb_result == MDB_SUCCESS)
@@ -294,9 +444,9 @@ MdbResult ProtectionDB::open(const std::string &dir_str)
     
     //..........................................................................
     
-    if (mdb_result != MDB_SUCCESS)
+    if ((mdb_result != MDB_SUCCESS) ||
+        (open_or_create == OpenOrCreate::Create))
     {
-        // Failure - close the database
         close();
     }
     return mdb_result;
@@ -386,10 +536,22 @@ std::string ProtectionDB::getResultString(MdbResult mdb_result)
         const char *str;
     } extra_result_strings[] =
     {
-        { MDB_VERIFY_FAILED,
-         "MDB_VERIFY_FAILED: Value read back did not equal value written" },
-        { MDB_INCORRECT_SNUM_USED_FLAG_VAL,
-         "MDB_INCORRECT_SNUM_USED_FLAG_VAL: Incorrect serial-number-used flag value" }
+        {
+            MDB_VERIFY_FAILED,
+            "MDB_VERIFY_FAILED: Value read back did not equal value written"
+        },
+        {
+             MDB_INCORRECT_SNUM_USED_FLAG_VAL,
+            "MDB_INCORRECT_SNUM_USED_FLAG_VAL: Incorrect serial-number-used flag value"
+        },
+        {
+            MDB_DB_ALREADY_EXISTS,
+            "MDB_DB_ALREADY_EXISTS: A database already exists in the specified directory"
+        },
+        {
+            MDB_OLD_INCOMPATIBLE_DB_FORMAT,
+            "MDB_OLD_INCOMPATIBLE_DB_FORMAT: Attempting to open old incompatible Python-format database"
+        }
     };
 
     std::string result_string;

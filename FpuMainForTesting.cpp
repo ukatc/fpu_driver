@@ -98,11 +98,13 @@ static void testGridDriver()
 //------------------------------------------------------------------------------
 static void testProtectionDB()
 {
+    // ProtectionDBTester::doTests();
+
     // ProtectionDBTester::testGetSerialNumFromKeyVal();
     
     ProtectionDBTester::testDbOpeningScenarios();
     
-    // bool result_ok = ProtectionDBTester::doLoopingTestsWithConsoleOutput();
+    //bool result_ok = ProtectionDBTester::doLoopingTestsWithConsoleOutput();
 }
 
 //------------------------------------------------------------------------------
