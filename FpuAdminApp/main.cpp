@@ -194,7 +194,7 @@ int main(int argc, char**argv)
             }
             else
             {
-                std::cout << "Error: Directory string is zero-length\n" << std::endl;
+                std::cout << "Error: Directory string is zero-length.\n" << std::endl;
                 return AppReturnError;
             }
         }
@@ -218,16 +218,16 @@ int main(int argc, char**argv)
             txn = protection_db.createTransaction(mdb_result);
             if (!txn)
             {
-                FPUAdmin::printUnexpectedDbResult(mdb_result);
-                std::cout << "Error: Could not create a database transaction." <<
+                std::cout << "Error: Could not create a database transaction:" <<
                              std::endl;
+                FPUAdmin::printUnexpectedDbResult(mdb_result);
                 return AppReturnError;
             }
         }
         else
         {
+            std::cout << "Error: Problem when opening protection database:" << std::endl;
             FPUAdmin::printUnexpectedDbResult(mdb_result);
-            std::cout << "Error: Could not open protection database." << std::endl;
             return AppReturnError;
         }
     }
@@ -477,8 +477,8 @@ void printHelp()
         "===========================================================================\n"
         "fpu-admin: MOONS FPU grid driver administration utility (new C++ version)\n"
         "\n"
-        "      ********** NOTE: NEW GRID DRIVER DATABASE FORMAT IS **********\n"
-        "      ********** NOT COMPATIBLE WITH OLD PYTHON VERSION   **********\n"
+        "       ******** NOTE: NEW C++ GRID DRIVER DATABASE FORMAT ********\n"
+        "       ******** IS NOT COMPATIBLE WITH OLD PYTHON VERSION ********\n"
         "===========================================================================\n"
         "\n"
         "help\n"

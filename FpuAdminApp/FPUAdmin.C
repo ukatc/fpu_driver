@@ -296,9 +296,9 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
     }
     else
     {
-        printUnexpectedDbResult(mdb_result);
         std::cout << "Error: Unexpected failure while collating serial numbers "
-                     "from FPU database." << std::endl;
+                     "from FPU database:" << std::endl;
+        printUnexpectedDbResult(mdb_result);
         return AppReturnError;
     }
     
