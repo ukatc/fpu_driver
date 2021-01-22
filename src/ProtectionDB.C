@@ -254,7 +254,7 @@ MdbResult ProtectionDB::createEmpty(const std::string &dir_str)
     //     (see comments at top of this file) don't provide any database
     //     creation capability
 
-    std::string data_mdb_file_path = dir_str + "/data.mdb";
+    const std::string data_mdb_file_path = dir_str + "/data.mdb";
     if (access(data_mdb_file_path.c_str(), F_OK) == 0)
     {
         return MDB_DB_ALREADY_EXISTS;
@@ -284,8 +284,8 @@ MdbResult ProtectionDB::open(const std::string &dir_str)
     //..........................................................................
     // Check that the database environment files exist (data.mdb and
     // lock.mdb) and they they have the correct read/write permissions
-    std::string data_mdb_file_path = dir_str + "/data.mdb";
-    std::string lock_mdb_file_path = dir_str + "/lock.mdb";
+    const std::string data_mdb_file_path = dir_str + "/data.mdb";
+    const std::string lock_mdb_file_path = dir_str + "/lock.mdb";
 
     // Check existence
     if ((access(data_mdb_file_path.c_str(), F_OK) != 0) ||
@@ -408,8 +408,7 @@ MdbResult ProtectionDB::openOrCreate(const std::string &dir_str,
     if (mdb_result == MDB_SUCCESS)
     {
         // Check if trying to open an old incompatible Python database, by
-        // checking if its FPU sub-database has the old name rather than the
-        // new name
+        // checking if there is an FPU sub-database present with the old name
         if (open_or_create == OpenOrCreate::Open)
         {
             if (mdb_dbi_open(txn_ptr, old_fpu_subdb_name, 0x0,
@@ -426,6 +425,11 @@ MdbResult ProtectionDB::openOrCreate(const std::string &dir_str,
         // MDB_CREATE then will also create the sub-database if doesn't exist
         mdb_result = mdb_dbi_open(txn_ptr, fpu_subdb_name, dbi_open_flags,
                                   &fpu_dbi);
+        if ((open_or_create == OpenOrCreate::Open) &&
+            (mdb_result == MDB_NOTFOUND))
+        {
+            mdb_result = MDB_FPU_SUBDB_MISSING;
+        }
     }
     
     if (mdb_result == MDB_SUCCESS)
@@ -434,6 +438,11 @@ MdbResult ProtectionDB::openOrCreate(const std::string &dir_str,
         // MDB_CREATE then will also create the sub-database if doesn't exist
         mdb_result = mdb_dbi_open(txn_ptr, healthlog_subdb_name,
                                   dbi_open_flags, &healthlog_dbi);
+        if ((open_or_create == OpenOrCreate::Open) &&
+            (mdb_result == MDB_NOTFOUND))
+        {
+            mdb_result = MDB_HEALTHLOG_SUBDB_MISSING;
+        }
     }
     
     if (mdb_result == MDB_SUCCESS)
@@ -550,7 +559,15 @@ std::string ProtectionDB::getResultString(MdbResult mdb_result)
         },
         {
             MDB_OLD_INCOMPATIBLE_DB_FORMAT,
-            "MDB_OLD_INCOMPATIBLE_DB_FORMAT: Attempting to open old incompatible Python-format database"
+            "MDB_OLD_INCOMPATIBLE_DB_FORMAT: Attempting to open an old incompatible Python-format database"
+        },
+        {
+            MDB_FPU_SUBDB_MISSING,
+            "MDB_FPU_SUBDB_MISSING: The FPU sub-database is missing from the database"
+        },
+        {
+            MDB_HEALTHLOG_SUBDB_MISSING,
+            "MDB_HEALTHLOG_SUBDB_MISSING: The health log sub-database is missing from the database"
         }
     };
 
