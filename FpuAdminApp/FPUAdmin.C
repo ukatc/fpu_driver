@@ -33,9 +33,44 @@ namespace mpifps
 static const char *fpu_snum_not_in_database_str =
                     "Error: FPU serial number is not yet defined in database.";
 
+ProtectionDB FPUAdmin::protectiondb;
+ProtectionDbTxnPtr FPUAdmin::txn;
+
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
-                             const char *new_serial_number, bool mockup,
+AppReturnVal FPUAdmin::createEmptyDb(const std::string &dir_str)
+{
+    if (dir_str.size() >= 1)
+    {
+        if (dir_str.back() == '/')
+        {
+            std::cout << "Error: Do not provide trailing /.\n" << std::endl;
+            return AppReturnError;
+        }
+
+        MdbResult mdb_result = protectiondb.createEmpty(dir_str);
+        if (mdb_result == MDB_SUCCESS)
+        {
+            std::cout << "Success - created empty grid driver database in " <<
+                            dir_str << ".\n" << std::endl;
+            return AppReturnOk;
+        }
+        else
+        {
+            std::cout << "Error: Command failed with the following result:\n";
+            std::cout << ProtectionDB::getResultString(mdb_result) << std::endl;
+            return AppReturnError;
+        }
+    }
+    else
+    {
+        std::cout << "Error: Directory string is zero-length.\n" << std::endl;
+        return AppReturnError;
+    }
+}
+
+//------------------------------------------------------------------------------
+AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
+                             const char *new_serial_number,
                              bool reuse_snum,
                              const t_gateway_address *gateway_address_ptr)
 {
@@ -43,6 +78,12 @@ AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
     // If reuse_snum is true then a previously-defined serial number can be used.
     // If gateway_address_ptr is not nullptr then it uses that gateway
     // address, otherwise it uses the mockup flag to determine it.
+
+    //..........................................................................
+    if (!openDbAndCreateTxnWithMessages(mockup))
+    {
+        return AppReturnError;
+    }
 
     //..........................................................................
     // Check arguments
@@ -197,7 +238,7 @@ AppReturnVal FPUAdmin::flash(ProtectionDbTxnPtr &txn, int fpu_id,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number, 
+AppReturnVal FPUAdmin::init(bool mockup, const char *serial_number, 
                             double apos_min, double apos_max,
                             double bpos_min, double bpos_max,
                             bool reinitialize, double adatum_offset)
@@ -206,6 +247,11 @@ AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
     // beta arm min and max positions are in degrees. If reinitialize is true,
     // it is allowed to redefine FPU positions which already have been stored
     // before.
+
+    if (!openDbAndCreateTxnWithMessages(mockup))
+    {
+        return AppReturnError;
+    }
 
     if (!checkAndMessageForSerialNumberLength(serial_number))
     {
@@ -273,9 +319,14 @@ AppReturnVal FPUAdmin::init(ProtectionDbTxnPtr &txn, const char *serial_number,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
+AppReturnVal FPUAdmin::listAll(bool mockup)
 {
     // Prints data for all FPUs in database using std::cout
+
+    if (!openDbAndCreateTxnWithMessages(mockup))
+    {
+        return AppReturnError;
+    }
 
     std::vector<std::string> serial_numbers;
     int num_fpus_with_good_data = 0;
@@ -286,7 +337,7 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
         {
             std::cout << "----------------------------------------" <<
                          "------------------------------\n";
-            if (printSingleFpu(txn, serial_numbers[i].c_str()))
+            if (printSingleFpu(serial_numbers[i].c_str()))
             {
                 num_fpus_with_good_data++;
             }
@@ -310,13 +361,17 @@ AppReturnVal FPUAdmin::listAll(ProtectionDbTxnPtr &txn)
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::listOne(ProtectionDbTxnPtr &txn,
-                               const char *serial_number)
+AppReturnVal FPUAdmin::listOne(bool mockup, const char *serial_number)
 {
     // Prints serial number and data for one FPU using std::cout. Returns an
     // application return value.
 
-    if (printSingleFpu(txn, serial_number))
+    if (!openDbAndCreateTxnWithMessages(mockup))
+    {
+        return AppReturnError;
+    }
+
+    if (printSingleFpu(serial_number))
     {
         return AppReturnOk;
     }
@@ -329,8 +384,7 @@ AppReturnVal FPUAdmin::listOne(ProtectionDbTxnPtr &txn,
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::printSingleFpu(ProtectionDbTxnPtr &txn,
-                              const char *serial_number)
+bool FPUAdmin::printSingleFpu(const char *serial_number)
 {
     // Prints serial number and data for one FPU using std::cout
 
@@ -414,21 +468,25 @@ void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::setALimits(ProtectionDbTxnPtr &txn,
-                                  const char *serial_number, 
+AppReturnVal FPUAdmin::setALimits(bool mockup, const char *serial_number, 
                                   double alimit_min, double alimit_max,
                                   double adatum_offset)
 {
     // Sets safe limits for alpha arm of an FPU.
 
-    if (checkAndMessageBeforeSetting(txn, serial_number))
+    if (!openDbAndCreateTxnWithMessages(mockup))
+    {
+        return AppReturnError;
+    }
+
+    if (checkAndMessageBeforeSetting(serial_number))
     {
         Interval alimits_interval(alimit_min, alimit_max);
         MdbResult mdb_result = txn->fpuDbTransferInterval(DbTransferType::Write,
                                                 FpuDbIntervalType::AlphaLimits,
                                                 serial_number, alimits_interval,
                                                 adatum_offset);
-        if (mdb_result == MDB_SUCCESS)    
+        if (mdb_result == MDB_SUCCESS)
         {
             return AppReturnOk;
         }
@@ -445,13 +503,17 @@ AppReturnVal FPUAdmin::setALimits(ProtectionDbTxnPtr &txn,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
-                                  const char *serial_number, 
+AppReturnVal FPUAdmin::setBLimits(bool mockup, const char *serial_number, 
                                   double blimit_min, double blimit_max)
 {
     // Sets safe limits for beta arm of an FPU.
 
-    if (checkAndMessageBeforeSetting(txn, serial_number))
+    if (!openDbAndCreateTxnWithMessages(mockup))
+    {
+        return AppReturnError;
+    }
+
+    if (checkAndMessageBeforeSetting(serial_number))
     {
         Interval blimits_interval(blimit_min, blimit_max);
         double beta_datum_offset = BETA_DATUM_OFFSET;
@@ -476,15 +538,19 @@ AppReturnVal FPUAdmin::setBLimits(ProtectionDbTxnPtr &txn,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::setARetries(ProtectionDbTxnPtr &txn,
-                                   const char *serial_number,
+AppReturnVal FPUAdmin::setARetries(bool mockup, const char *serial_number,
                                    int64_t aretries)
 {
     // Sets allowed number of freeAlphaLimitBreach commands in the same
     // direction before the software protection kicks in. N.B. The retry count
     // is reset to zero upon a successfully finished datum search.
 
-    if (checkAndMessageBeforeSetting(txn, serial_number))
+    if (!openDbAndCreateTxnWithMessages(mockup))
+    {
+        return AppReturnError;
+    }
+
+    if (checkAndMessageBeforeSetting(serial_number))
     {
         MdbResult mdb_result = txn->fpuDbTransferInt64Val(DbTransferType::Write,
                                             FpuDbIntValType::FreeAlphaRetries,
@@ -506,15 +572,19 @@ AppReturnVal FPUAdmin::setARetries(ProtectionDbTxnPtr &txn,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn,
-                                   const char *serial_number,
+AppReturnVal FPUAdmin::setBRetries(bool mockup, const char *serial_number,
                                    int64_t bretries)
 {
     // Sets allowed number of freeBetaCollision commands in the same direction
     // before the software protection kicks in. N.B. The retry count is reset
     // to zero upon a successfully finished datum search.
 
-    if (checkAndMessageBeforeSetting(txn, serial_number))
+    if (!openDbAndCreateTxnWithMessages(mockup))
+    {
+        return AppReturnError;
+    }
+
+    if (checkAndMessageBeforeSetting(serial_number))
     {
         MdbResult mdb_result = txn->fpuDbTransferInt64Val(DbTransferType::Write,
                                             FpuDbIntValType::FreeBetaRetries,
@@ -536,15 +606,14 @@ AppReturnVal FPUAdmin::setBRetries(ProtectionDbTxnPtr &txn,
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::checkAndMessageBeforeSetting(ProtectionDbTxnPtr &txn,
-                                            const char *serial_number)
+bool FPUAdmin::checkAndMessageBeforeSetting(const char *serial_number)
 {
     if (!checkAndMessageForSerialNumberLength(serial_number))
     {
         return false;
     }
 
-    MdbResult mdb_result = checkIfSerialNumberUsed(txn, serial_number);
+    MdbResult mdb_result = checkIfSerialNumberUsed(serial_number);
     if (mdb_result == MDB_SUCCESS)
     {
         return true;
@@ -562,8 +631,7 @@ bool FPUAdmin::checkAndMessageBeforeSetting(ProtectionDbTxnPtr &txn,
 }
 
 //------------------------------------------------------------------------------
-MdbResult FPUAdmin::checkIfSerialNumberUsed(ProtectionDbTxnPtr &txn,
-                                            const char *serial_number)
+MdbResult FPUAdmin::checkIfSerialNumberUsed(const char *serial_number)
 {
     // Checks if a serial number is currently in use in the database. Returns:
     //   - MDB_SUCCESS if found and its serial-number-used flag value is OK
@@ -586,8 +654,7 @@ MdbResult FPUAdmin::checkIfSerialNumberUsed(ProtectionDbTxnPtr &txn,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::printHealthLog(ProtectionDbTxnPtr &txn,
-                                      const char *serial_number)
+AppReturnVal FPUAdmin::printHealthLog(bool mockup, const char *serial_number)
 {
     // Prints an FPU's health log from the health log database to std::cout.
     // Output format details:
@@ -597,8 +664,47 @@ AppReturnVal FPUAdmin::printHealthLog(ProtectionDbTxnPtr &txn,
 
     // TODO: Health log isn't implemented yet
 
+    if (!openDbAndCreateTxnWithMessages(mockup))
+    {
+        return AppReturnError;
+    }
+
     std::cout << "Error: printHealthLog() command is not implemented yet." << std::endl;
     return AppReturnError;
+}
+
+//------------------------------------------------------------------------------
+bool FPUAdmin::openDbAndCreateTxnWithMessages(bool mockup)
+{
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
+    if (dir_str.empty())
+    {
+        std::cout << "Error: Could not determine directory of protection database -\n";
+        std::cout << "are the Linux environment variables set correctly?" << std::endl;
+        return false;
+    }
+
+    MdbResult mdb_result = protectiondb.open(dir_str);
+    if (mdb_result == MDB_SUCCESS)
+    {
+        txn = protectiondb.createTransaction(mdb_result);
+        if (!txn)
+        {
+            std::cout << "Error: Could not create a database transaction:" <<
+                            std::endl;
+            FPUAdmin::printUnexpectedDbResult(mdb_result);
+            return false;
+        }
+    }
+    else
+    {
+        std::cout << "Error: Problem when opening protection database (in " <<
+                     dir_str << "):" << std::endl;
+        FPUAdmin::printUnexpectedDbResult(mdb_result);
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------

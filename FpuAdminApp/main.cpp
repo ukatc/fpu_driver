@@ -49,15 +49,7 @@ static const char *alimits_cmd_str = "alimits";
 static const char *blimits_cmd_str = "blimits";
 
 //..............................................................................
-// Declare protection database object here so that persists for full app
-// duration and has global scope so that don't need to pass into functions
-// everywhere
-static ProtectionDB protectiondb;
 
-//..............................................................................
-
-static bool openDbAndCreateTxnWithMessages(bool is_mockup,
-                                           ProtectionDbTxnPtr &txn_ret);
 static void printHelp();
 static void stringArgsToDoubles(const std::vector<std::string> &arg_strs,
                                 int start_index,
@@ -68,9 +60,9 @@ static bool stringToInt(const std::string &string_in, int &integer_ret);
 //------------------------------------------------------------------------------
 int main(int argc, char**argv)
 {
-    // TODO: Look for the is_mockup flag in the Linux environment variables -
+    // TODO: Look for the mockup flag in the Linux environment variables -
     // see Python fpu-admin file
-    bool is_mockup = false;
+    bool mockup = false;
 
     // Capture argument strings into convenient vector
     std::vector<std::string> arg_strs;
@@ -121,7 +113,7 @@ int main(int argc, char**argv)
         bool erase_item = false;
         if (*it == "--mockup")
         {
-            is_mockup = true;
+            mockup = true;
             erase_item = true;
         }
         else if (*it == "--reinitialize")
@@ -168,6 +160,9 @@ int main(int argc, char**argv)
     }
 
     //..........................................................................
+    // Process specified command - N.B. at this stage, the number of items
+    // in arg_strs might be less than the original, because the options above
+    // will have been removed, so need to use indexes accordingly
 
     std::string &cmd_str = arg_strs[0];
 
@@ -177,34 +172,7 @@ int main(int argc, char**argv)
         if (arg_strs.size() == 2)
         {
             std::string &dir_str = arg_strs[1];
-
-            if (dir_str.size() >= 1)
-            {
-                if (dir_str.back() == '/')
-                {
-                    std::cout << "Error: Do not provide trailing /.\n" << std::endl;
-                    return AppReturnError;
-                }
-
-                MdbResult mdb_result = protectiondb.createEmpty(dir_str);
-                if (mdb_result == MDB_SUCCESS)
-                {
-                    std::cout << "Success - created empty grid driver database in " <<
-                                 dir_str << ".\n" << std::endl;
-                    return AppReturnOk;
-                }
-                else
-                {
-                    std::cout << "Error: Command failed with the following result:\n";
-                    std::cout << ProtectionDB::getResultString(mdb_result) << std::endl;
-                    return AppReturnError;
-                }
-            }
-            else
-            {
-                std::cout << "Error: Directory string is zero-length.\n" << std::endl;
-                return AppReturnError;
-            }
+            return FPUAdmin::createEmptyDb(dir_str);
         }
         else
         {
@@ -214,20 +182,7 @@ int main(int argc, char**argv)
     }
 
     //..........................................................................
-    // Open database and create transaction
-    ProtectionDbTxnPtr txn;
-    if (!openDbAndCreateTxnWithMessages(is_mockup, txn))
-    {
-        return AppReturnError;
-    }
-
-    //..........................................................................
-    // Process specified command - N.B. at this stage, the number of items
-    // in arg_strs might be less than the original, because the options above
-    // will have been removed, so need to use indexes accordingly
-
-    //..........................................................................
-    if (cmd_str == "flash")
+    else if (cmd_str == "flash")
     {
         if (arg_strs.size() == 3)
         {
@@ -235,8 +190,8 @@ int main(int argc, char**argv)
             int fpu_id = 9999;
             if (stringToInt(arg_strs[2], fpu_id))
             {
-                return FPUAdmin::flash(txn, fpu_id, serial_number, is_mockup,
-                                       reuse_sn, gateway_address_ptr);
+                return FPUAdmin::flash(mockup, fpu_id, serial_number, reuse_sn,
+                                       gateway_address_ptr);
             }
             else
             {
@@ -295,7 +250,7 @@ int main(int argc, char**argv)
                     return AppReturnError;
                 }
 
-                return FPUAdmin::init(txn, serial_number,
+                return FPUAdmin::init(mockup, serial_number,
                                       apos_min, apos_max,
                                       bpos_min, bpos_max,
                                       reinitialize, adatum_offset);
@@ -338,7 +293,7 @@ int main(int argc, char**argv)
                         std::cout << bad_num_args_str << std::endl;
                         return AppReturnError;
                     }
-                    return FPUAdmin::setALimits(txn, serial_number,
+                    return FPUAdmin::setALimits(mockup, serial_number,
                                                 limit_min, limit_max,
                                                 adatum_offset);
                 }
@@ -347,7 +302,7 @@ int main(int argc, char**argv)
                     // blimits
                     if (doubles_args.size() == 2)
                     {
-                        return FPUAdmin::setBLimits(txn, serial_number,
+                        return FPUAdmin::setBLimits(mockup, serial_number,
                                                     limit_min, limit_max);
                     }
                     else
@@ -382,11 +337,13 @@ int main(int argc, char**argv)
             {
                 if (cmd_str == aretries_cmd_str)
                 {
-                    return FPUAdmin::setARetries(txn, serial_number, retries);
+                    return FPUAdmin::setARetries(mockup, serial_number,
+                                                 retries);
                 }
                 else
                 {
-                    return FPUAdmin::setBRetries(txn, serial_number, retries);
+                    return FPUAdmin::setBRetries(mockup, serial_number,
+                                                 retries);
                 }
             }
             else
@@ -407,7 +364,7 @@ int main(int argc, char**argv)
     {
         if (arg_strs.size() == 1)
         {
-            return FPUAdmin::listAll(txn);
+            return FPUAdmin::listAll(mockup);
         }
         else
         {
@@ -422,7 +379,7 @@ int main(int argc, char**argv)
         if (arg_strs.size() == 2)
         {
             const char *serial_number = arg_strs[1].c_str();
-            return FPUAdmin::listOne(txn, serial_number);
+            return FPUAdmin::listOne(mockup, serial_number);
         }
         else
         {
@@ -434,8 +391,16 @@ int main(int argc, char**argv)
     //..........................................................................
     else if (cmd_str == "healthlog")
     {
-        std::cout << "Error: healthlog command is not implemented yet." << std::endl;
-        return AppReturnError;
+        if (arg_strs.size() == 2)
+        {
+            const char *serial_number = arg_strs[1].c_str();
+            return FPUAdmin::printHealthLog(mockup, serial_number);
+        }
+        else
+        {
+            std::cout << bad_num_args_str << std::endl;
+            return AppReturnError;
+        }
     }
 
     //..........................................................................
@@ -447,42 +412,6 @@ int main(int argc, char**argv)
 
     //..........................................................................
 }
-
-//------------------------------------------------------------------------------
-bool openDbAndCreateTxnWithMessages(bool is_mockup, ProtectionDbTxnPtr &txn_ret)
-{
-    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(is_mockup);
-    if (!dir_str.empty())
-    {
-        MdbResult mdb_result = protectiondb.open(dir_str);
-        if (mdb_result == MDB_SUCCESS)
-        {
-            txn_ret = protectiondb.createTransaction(mdb_result);
-            if (!txn_ret)
-            {
-                std::cout << "Error: Could not create a database transaction:" <<
-                             std::endl;
-                FPUAdmin::printUnexpectedDbResult(mdb_result);
-                return false;
-            }
-        }
-        else
-        {
-            std::cout << "Error: Problem when opening protection database:" << std::endl;
-            FPUAdmin::printUnexpectedDbResult(mdb_result);
-            return false;
-        }
-    }
-    else
-    {
-        std::cout << "Error: Could not determine directory of protection database -\n";
-        std::cout << "are the Linux environment variables set correctly?" << std::endl;
-        return false;
-    }
-
-    return true;
-}
-
 
 //------------------------------------------------------------------------------
 void printHelp()

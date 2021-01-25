@@ -44,45 +44,39 @@ typedef enum
 class FPUAdmin
 {
 public:
-    // N.B. The following functions use REFERENCES to ProtectionDbTxnPtr, so
-    // the unique_ptr itself doesn't have its ownership transferred
-    static AppReturnVal flash(ProtectionDbTxnPtr &txn, int fpu_id,
-                              const char *new_serial_number, bool mockup,
-                              bool reuse_snum, 
+    static AppReturnVal createEmptyDb(const std::string &dir_str);
+    static AppReturnVal flash(bool mockup, int fpu_id,
+                              const char *new_serial_number,
+                              bool reuse_snum,
                               const t_gateway_address *gateway_address_ptr);
-    static AppReturnVal init(ProtectionDbTxnPtr &txn, const char *serial_number, 
+    static AppReturnVal init(bool mockup, const char *serial_number,
                              double apos_min, double apos_max,
                              double bpos_min, double bpos_max,
                              bool reinitialize, double adatum_offset);
-    static AppReturnVal listAll(ProtectionDbTxnPtr &txn);
-    static AppReturnVal listOne(ProtectionDbTxnPtr &txn,
-                                const char *serial_number);
-    static AppReturnVal setALimits(ProtectionDbTxnPtr &txn,
-                                   const char *serial_number, 
+    static AppReturnVal listAll(bool mockup);
+    static AppReturnVal listOne(bool mockup, const char *serial_number);
+    static AppReturnVal setALimits(bool mockup, const char *serial_number, 
                                    double alimit_min, double alimit_max,
                                    double adatum_offset);
-    static AppReturnVal setBLimits(ProtectionDbTxnPtr &txn,
-                                   const char *serial_number, 
+    static AppReturnVal setBLimits(bool mockup, const char *serial_number, 
                                    double blimit_min, double blimit_max);
-    static AppReturnVal setARetries(ProtectionDbTxnPtr &txn,
-                                    const char *serial_number,
+    static AppReturnVal setARetries(bool mockup, const char *serial_number,
                                     int64_t aretries);
-    static AppReturnVal setBRetries(ProtectionDbTxnPtr &txn,
-                                    const char *serial_number,
+    static AppReturnVal setBRetries(bool mockup, const char *serial_number,
                                     int64_t bretries);
-    static AppReturnVal printHealthLog(ProtectionDbTxnPtr &txn,
-                                       const char *serial_number);
-    static void printUnexpectedDbResult(MdbResult mdb_result);
+    static AppReturnVal printHealthLog(bool mockup, const char *serial_number);
+    static void printUnexpectedDbResult(MdbResult mdb_result);  // N.B. Static
 
 private:
-    static bool printSingleFpu(ProtectionDbTxnPtr &txn, 
-                               const char *serial_number);
+    static bool openDbAndCreateTxnWithMessages(bool mockup);
+    static bool printSingleFpu(const char *serial_number);
     static void printFpuDbData(FpuDbData &fpu_db_data);
-    static MdbResult checkIfSerialNumberUsed(ProtectionDbTxnPtr &txn,
-                                             const char *serial_number);
-    static bool checkAndMessageBeforeSetting(ProtectionDbTxnPtr &txn,
-                                             const char *serial_number);
+    static MdbResult checkIfSerialNumberUsed(const char *serial_number);
+    static bool checkAndMessageBeforeSetting(const char *serial_number);
     static bool checkAndMessageForSerialNumberLength(const char *serial_number);
+
+    static ProtectionDB protectiondb;
+    static ProtectionDbTxnPtr txn;
 };
 
 //==============================================================================
