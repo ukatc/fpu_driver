@@ -49,12 +49,21 @@ static const char *alimits_cmd_str = "alimits";
 static const char *blimits_cmd_str = "blimits";
 
 //..............................................................................
+// Declare protection database object here so that persists for full app
+// duration and has global scope so that don't need to pass into functions
+// everywhere
+static ProtectionDB protectiondb;
 
+//..............................................................................
+
+static bool openDbAndCreateTxnWithMessages(bool is_mockup,
+                                           ProtectionDbTxnPtr &txn_ret);
 static void printHelp();
 static void stringArgsToDoubles(const std::vector<std::string> &arg_strs,
                                 int start_index,
                                 std::vector<double> &doubles_ret);
 static bool stringToInt(const std::string &string_in, int &integer_ret);
+
 
 //------------------------------------------------------------------------------
 int main(int argc, char**argv)
@@ -177,7 +186,6 @@ int main(int argc, char**argv)
                     return AppReturnError;
                 }
 
-                ProtectionDB protectiondb;
                 MdbResult mdb_result = protectiondb.createEmpty(dir_str);
                 if (mdb_result == MDB_SUCCESS)
                 {
@@ -207,37 +215,13 @@ int main(int argc, char**argv)
 
     //..........................................................................
     // Open database and create transaction
-    ProtectionDB protection_db;
     ProtectionDbTxnPtr txn;
-    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(is_mockup);
-    if (!dir_str.empty())
+    if (!openDbAndCreateTxnWithMessages(is_mockup, txn))
     {
-        MdbResult mdb_result = protection_db.open(dir_str);
-        if (mdb_result == MDB_SUCCESS)
-        {
-            txn = protection_db.createTransaction(mdb_result);
-            if (!txn)
-            {
-                std::cout << "Error: Could not create a database transaction:" <<
-                             std::endl;
-                FPUAdmin::printUnexpectedDbResult(mdb_result);
-                return AppReturnError;
-            }
-        }
-        else
-        {
-            std::cout << "Error: Problem when opening protection database:" << std::endl;
-            FPUAdmin::printUnexpectedDbResult(mdb_result);
-            return AppReturnError;
-        }
-    }
-    else
-    {
-        std::cout << "Error: Could not determine directory of protection database -\n";
-        std::cout << "are the Linux environment variables set correctly?" << std::endl;
         return AppReturnError;
     }
 
+    //..........................................................................
     // Process specified command - N.B. at this stage, the number of items
     // in arg_strs might be less than the original, because the options above
     // will have been removed, so need to use indexes accordingly
@@ -463,6 +447,42 @@ int main(int argc, char**argv)
 
     //..........................................................................
 }
+
+//------------------------------------------------------------------------------
+bool openDbAndCreateTxnWithMessages(bool is_mockup, ProtectionDbTxnPtr &txn_ret)
+{
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(is_mockup);
+    if (!dir_str.empty())
+    {
+        MdbResult mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
+        {
+            txn_ret = protectiondb.createTransaction(mdb_result);
+            if (!txn_ret)
+            {
+                std::cout << "Error: Could not create a database transaction:" <<
+                             std::endl;
+                FPUAdmin::printUnexpectedDbResult(mdb_result);
+                return false;
+            }
+        }
+        else
+        {
+            std::cout << "Error: Problem when opening protection database:" << std::endl;
+            FPUAdmin::printUnexpectedDbResult(mdb_result);
+            return false;
+        }
+    }
+    else
+    {
+        std::cout << "Error: Could not determine directory of protection database -\n";
+        std::cout << "are the Linux environment variables set correctly?" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 
 //------------------------------------------------------------------------------
 void printHelp()
