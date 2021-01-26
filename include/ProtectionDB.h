@@ -248,6 +248,8 @@ class ProtectionDB
     friend class ProtectionDBTester;
 
 public:
+    static void getLinuxEnvVariableNames(std::string &main_dir_env_name_ret,
+                                         std::string &mockup_dir_env_name_ret);
     static std::string getDirFromLinuxEnv(bool mockup);  // N.B. Static
 
     MdbResult createEmpty(const std::string &dir_str);

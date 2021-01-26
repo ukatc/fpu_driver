@@ -421,6 +421,24 @@ void printHelp()
     // TODO: Remove the "new C++ version" and new/old database compatibility
     // comments from the help text eventually
 
+    // Get the Linux environment variable names and settings
+    std::string main_dir_env_name;
+    std::string mockup_dir_env_name;
+    ProtectionDB::getLinuxEnvVariableNames(main_dir_env_name,
+                                           mockup_dir_env_name);
+    char not_defined_str[] = "<not defined>";
+    char *main_dir_env_value_str = getenv(main_dir_env_name.c_str());
+    if (main_dir_env_value_str == nullptr)
+    {
+        main_dir_env_value_str = not_defined_str;
+    }
+    char *mockup_dir_env_value_str = getenv(mockup_dir_env_name.c_str());
+    if (mockup_dir_env_value_str == nullptr)
+    {
+        mockup_dir_env_value_str = not_defined_str;
+    }
+
+    // Display the help
     std::cout <<
         "\n"
         "===========================================================================\n"
@@ -429,6 +447,20 @@ void printHelp()
         "       ******** NOTE: NEW C++ GRID DRIVER DATABASE FORMAT ********\n"
         "       ******** IS NOT COMPATIBLE WITH OLD PYTHON VERSION ********\n"
         "===========================================================================\n"
+        "\n"
+        "------------------------------------\n"
+        "Linux environment variables required\n"
+        "------------------------------------\n"
+        "For all commands except create-empty-db, the FPU grid driver's database\n"
+        "directory is specified using the following Linux environment variables,\n"
+        "which are currently set to the following values:\n";
+    std::cout << "  - " << main_dir_env_name << ": " << main_dir_env_value_str << "\n";
+    std::cout << "  - " << mockup_dir_env_name << ": " << mockup_dir_env_value_str << "\n\n";
+
+    std::cout <<
+        "------------------\n"
+        "Commands available\n"
+        "------------------\n"
         "\n"
         "help\n"
         "    - Prints this message\n"

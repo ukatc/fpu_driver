@@ -679,8 +679,13 @@ bool FPUAdmin::openDbAndCreateTxnWithMessages(bool mockup)
     std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
     if (dir_str.empty())
     {
-        std::cout << "Error: Could not determine directory of protection database -\n";
-        std::cout << "are the Linux environment variables set correctly?" << std::endl;
+        std::string main_dir_env_name;
+        std::string mockup_dir_env_name;
+        ProtectionDB::getLinuxEnvVariableNames(main_dir_env_name,
+                                               mockup_dir_env_name);
+        std::cout << "Error: Could not determine directory of protection database - are the\n";
+        std::cout << "following Linux environment variables set correctly?:\n";
+        std::cout << main_dir_env_name << ", " << mockup_dir_env_name << std::endl;
         return false;
     }
 

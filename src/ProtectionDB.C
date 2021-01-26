@@ -87,6 +87,10 @@ static const char *beta_retries_cw_keystr = "bretries_cw";
 static const char *beta_retries_acw_keystr = "bretries_acw";
 static const char *counters_keystr = "counters";
 
+// Database Linux environment variable definitions
+static const char *fpudb_env_str = "FPU_DATABASE_DIR_NEWFORMAT";
+static const char *fpudb_env_mockup_str = "FPU_DATABASE_DIR_NEWFORMAT_MOCKUP";
+
 // Sub-database handles - initialised when ProtectionDB.open() is called
 static MDB_dbi fpu_dbi = 0;
 static MDB_dbi healthlog_dbi = 0;
@@ -173,6 +177,18 @@ bool FpuDbData::isSameAsOther(const FpuDbData &other)
 }
 
 //==============================================================================
+void ProtectionDB::getLinuxEnvVariableNames(std::string &main_dir_env_name_ret,
+                                            std::string &mockup_dir_env_name_ret)
+{
+    // Provides the names of the FPU database directory environment variables
+    // which the grid driver expects. N.B. It's their names, rather than what
+    // they are set to, which are returned.
+
+    main_dir_env_name_ret = fpudb_env_str;
+    mockup_dir_env_name_ret = fpudb_env_mockup_str;
+}
+
+//------------------------------------------------------------------------------
 std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
 {
     // Provides a Linux directory path for the protection database based upon
@@ -182,8 +198,6 @@ std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
     // The environment variables need to be of the form e.g. "/var/lib/fpudb",
     // and must **NOT** have a final "/" character.
 
-    static const char *fpudb_env_str = "FPU_DATABASE_NEWFORMAT";
-    static const char *fpudb_env_mockup_str = "FPU_DATABASE_NEWFORMAT_MOCKUP";
     char *dir_c_str = nullptr;
     std::string dir_str_ret;
 
