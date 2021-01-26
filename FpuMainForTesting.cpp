@@ -98,6 +98,11 @@ static void testGridDriver()
 //------------------------------------------------------------------------------
 static void testProtectionDB()
 {
+
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(false);
+
+    dir_str = ProtectionDB::getDirFromLinuxEnv(true);
+
     // ProtectionDBTester::doTests();
 
     // ProtectionDBTester::testGetSerialNumFromKeyVal();

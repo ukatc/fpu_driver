@@ -175,58 +175,43 @@ bool FpuDbData::isSameAsOther(const FpuDbData &other)
 //==============================================================================
 std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
 {
-    //************************
-    //************************
-    // TODO: NOTE: I've temporarily modified this function to give a fixed
-    // directory for initial test purposes - see the code change below
-    //************************
-    //************************
-
-    // Provides Linux directory for the protection database based upon the
-    // Linux environment variables FPU_DATABASE_MOCKUP and FPU_DATABASE, and
-    // value of mockup. If unsuccessful then the returned string is empty.
+    // Provides a Linux directory path for the protection database based upon
+    // the Linux environment variables FPU_DATABASE_NEWFORMAT and
+    // FPU_DATABASE_NEWFORMAT_MOCKUP, and the value of mockup. If unsuccessful
+    // then the returned string is empty.
     // The environment variables need to be of the form e.g. "/var/lib/fpudb",
     // and must **NOT** have a final "/" character.
 
+    static const char *fpudb_env_str = "FPU_DATABASE_NEWFORMAT";
+    static const char *fpudb_env_mockup_str = "FPU_DATABASE_NEWFORMAT_MOCKUP";
     char *dir_c_str = nullptr;
     std::string dir_str_ret;
 
-#if 1
-    //************************
-    //************************
-    // TODO: Temporary for testing - specify a fixed directory for initial
-    // testing for now
-    //************************
-    //************************
-    dir_str_ret = "/moonsdata/fpudb_NEWFORMAT";
-    
-#else // NOT 1
-    if (mockup)
+    if (!mockup)
     {
-        dir_c_str = getenv("FPU_DATABASE_MOCKUP");
-        if (dir_c_str == nullptr)
-        {
-            dir_c_str = getenv("FPU_DATABASE");
-            if (dir_c_str != nullptr)
-            {
-                dir_str_ret = dir_c_str;
-                dir_str_ret += "_mockup";
-            }
-        }
-        else
+        dir_c_str = getenv(fpudb_env_str);
+        if (dir_c_str != nullptr)
         {
             dir_str_ret = dir_c_str;
         }
     }
     else
     {
-        dir_c_str = getenv("FPU_DATABASE");
+        dir_c_str = getenv(fpudb_env_mockup_str);
         if (dir_c_str != nullptr)
         {
             dir_str_ret = dir_c_str;
         }
+        else
+        {
+            dir_c_str = getenv(fpudb_env_str);
+            if (dir_c_str != nullptr)
+            {
+                dir_str_ret = dir_c_str;
+                dir_str_ret += "_MOCKUP";
+            }
+        }
     }
-#endif // NOT 1
 
     return dir_str_ret;
 }
