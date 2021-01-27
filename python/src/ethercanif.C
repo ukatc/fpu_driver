@@ -92,6 +92,7 @@ void translate_interface_error(EtherCANException const& e)
     case DE_INSUFFICENT_NUM_GATEWAYS :
     case DE_INVALID_CONFIG :
     case DE_SYNC_CONFIG_FAILED:
+    case DE_WRITE_VERIFICATION_FAILED:
         PyErr_SetString(SetupErrorExceptionTypeObj, e.what());
         break;
 
@@ -374,6 +375,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("DE_DUPLICATE_SERIAL_NUMBER", DE_DUPLICATE_SERIAL_NUMBER)
     .value("DE_INVALID_CONFIG", DE_INVALID_CONFIG)
     .value("DE_SYNC_CONFIG_FAILED", DE_SYNC_CONFIG_FAILED)
+    .value("DE_WRITE_VERIFICATION_FAILED", DE_WRITE_VERIFICATION_FAILED)
     .value("DE_INVALID_INTERFACE_STATE", DE_INVALID_INTERFACE_STATE)
     .value("DE_OUT_OF_MEMORY", DE_OUT_OF_MEMORY)
     .value("DE_RESOURCE_ERROR", DE_RESOURCE_ERROR)

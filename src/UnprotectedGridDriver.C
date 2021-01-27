@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <unistd.h>
 #include <new>
+#include <string.h>
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
 #include "ethercan/FPUArray.h"
@@ -853,7 +854,14 @@ E_EtherCANErrCode UnprotectedGridDriver::writeSerialNumber(int fpu_id,
                                                            serial_number, gs);
     if (ecan_result == DE_OK)
     {
+        // Read FPU's modified serial number back into grid state, and verify
+        // that is new serial number
         ecan_result = _gd->readSerialNumbers(gs, fpuset);
+        if (strncmp(gs.FPU_state[fpu_id].serial_number, serial_number,
+                    LEN_SERIAL_NUMBER) != 0)
+        {
+            return DE_WRITE_VERIFICATION_FAILED;
+        }
     }
 
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);

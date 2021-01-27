@@ -168,6 +168,9 @@ enum E_EtherCANErrCode
     // Sending SYNC configuration failed
     DE_SYNC_CONFIG_FAILED = 203,
 
+    // A write to an FPU did not read back the same value
+    DE_WRITE_VERIFICATION_FAILED = 204,
+
     /***************************************/
     /* invalid command parameters*/
 

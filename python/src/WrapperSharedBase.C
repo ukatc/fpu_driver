@@ -556,6 +556,11 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 DE_SYNC_CONFIG_FAILED);
         break;
 
+    case DE_WRITE_VERIFICATION_FAILED:
+        throw EtherCANException("DE_WRITE_VERIFICATION_FAILED: After a write operation, a readback showed a different value",
+                                DE_WRITE_VERIFICATION_FAILED);
+        break;
+
     case DE_ASSERTION_FAILED:
         throw EtherCANException("DE_ASSERTION_FAILED: The EtherCAN interface determined an internal logic error, "
                                 "should probably be terminated.",
