@@ -39,8 +39,10 @@ public:
 
     void doUnprotectedGridDriverFunctionalTesting();
     void doGridDriverFunctionalTesting();
-    bool writeGridFpusToFpuDb(int num_fpus, bool db_mockup);
-    static bool writeDummyFpuItemsToFpuDb(bool db_mockup,   // N.B. static
+    bool writeGridFpusToFpuDb(int num_fpus,
+                              const t_gateway_address &gateway_address,
+                              bool use_mockup_db);
+    static bool writeDummyFpuItemsToFpuDb(bool use_mockup_db,   // N.B. static
                                           const char *serial_number);
 
 private:
@@ -52,12 +54,9 @@ private:
         Steps_Minus89_Minus89
     };
     void testInitialisedGridDriver(UnprotectedGridDriver &gd,
+                                   const t_gateway_address &gateway_address,
                                    bool soft_protection);
     const t_waveform_steps &getWaveform(GeneratedWaveform gen_waveform);
-    
-    const char *ip_address_str = "127.0.0.1";
-    const uint16_t port_number = 4700;
-    const t_gateway_address gateway_address = { ip_address_str, port_number };
 };
 
 //==============================================================================

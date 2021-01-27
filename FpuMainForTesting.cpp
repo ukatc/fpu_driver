@@ -70,7 +70,7 @@ int main(int argc, char** argv)
 
     //testFpuCounters();
 
-    testProtectionDB();
+    //testProtectionDB();
     
     return 0;
 }

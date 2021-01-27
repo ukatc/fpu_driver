@@ -86,14 +86,21 @@ void GridDriverTester::doUnprotectedGridDriverFunctionalTesting()
 {
     E_EtherCANErrCode ecan_result;
     
+    //********************************************
+    // Set the required parameters here
+    const char *ip_address_str = "192.168.0.12";
+    //********************************************
+
     UnprotectedGridDriver ugd(TESTING_NUM_FPUS);
 
     ecan_result = ugd.initialize();
 
     if (ecan_result == DE_OK)
     {
+        const uint16_t port_number = 4700;
+        const t_gateway_address gateway_address = { ip_address_str, port_number };
         const bool soft_protection = false;
-        testInitialisedGridDriver(ugd, soft_protection);
+        testInitialisedGridDriver(ugd, gateway_address, soft_protection);
     }
 }
 
@@ -104,25 +111,33 @@ void GridDriverTester::doGridDriverFunctionalTesting()
     
     E_EtherCANErrCode ecan_result;
 
+    //********************************************
+    // Set the required parameters here
+    const char *ip_address_str = "192.168.0.12";
+    const bool use_mockup_db = false;
+    //********************************************
+
     GridDriver gd(TESTING_NUM_FPUS);
 
     ecan_result = gd.initialize();
 
     if (ecan_result == DE_OK)
     {
-        const bool mockup = true;
-        ecan_result = gd.initProtection(mockup);
+        ecan_result = gd.initProtection(use_mockup_db);
     }
 
     if (ecan_result == DE_OK)
     {
+        const uint16_t port_number = 4700;
+        const t_gateway_address gateway_address = { ip_address_str, port_number };
         const bool soft_protection = true;
-        testInitialisedGridDriver(gd, soft_protection);
+        testInitialisedGridDriver(gd, gateway_address, soft_protection);
     }
 }
 
 //------------------------------------------------------------------------------
 void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
+                                       const t_gateway_address &gateway_address,
                                                  bool soft_protection)
 {
     // Performs basic functional testing of a pre-initialised 
@@ -373,7 +388,9 @@ const t_waveform_steps &GridDriverTester::getWaveform(GeneratedWaveform gen_wave
 }
 
 //------------------------------------------------------------------------------
-bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
+bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus,
+                                       const t_gateway_address &gateway_address,
+                                            bool use_mockup_db)
 {
     // *************************************************************************
     //     IMPORTANT: This test function will overwrite the FPU database's
@@ -391,8 +408,8 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
     // serial numbers to the FPU database.
     //
     // NOTE: The gateway needs to be running before this function is called.
-    // The expected protection database location is controlled by the db_mockup
-    // flag - see ProtectionDB::getDirFromLinuxEnv().
+    // The expected protection database location is controlled by the
+    // use_mockup_db flag - see ProtectionDB::getDirFromLinuxEnv().
     //
     // N.B. This function was written to support testing of
     // GridDriver::_post_connect_hook(), which expects the grid FPU entries to be
@@ -447,7 +464,7 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
 
     bool result_ok = false;
 
-    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(db_mockup);
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(use_mockup_db);
     if (!dir_str.empty())
     {
         ProtectionDB protectiondb;
@@ -481,7 +498,7 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus, bool db_mockup)
 }
 
 //------------------------------------------------------------------------------
-bool GridDriverTester::writeDummyFpuItemsToFpuDb(bool db_mockup,
+bool GridDriverTester::writeDummyFpuItemsToFpuDb(bool use_mockup_db,
                                                  const char *serial_number)
 {
     // *************************************************************************
@@ -493,11 +510,11 @@ bool GridDriverTester::writeDummyFpuItemsToFpuDb(bool db_mockup,
     // specified by serial_number.
     // NOTE: The database must not be currently opened by any other process
     // when calling this function.
-    // The db_mockup flag controls the expected protection database location -
-    // see ProtectionDB::getDirFromLinuxEnv().
+    // The use_mockup_db flag controls the expected protection database
+    // location - see ProtectionDB::getDirFromLinuxEnv().
 
     bool result_ok = false;
-    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(db_mockup);
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(use_mockup_db);
     if (!dir_str.empty())
     {
         ProtectionDB protectiondb;
