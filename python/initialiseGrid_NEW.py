@@ -69,7 +69,7 @@ def initialize_FPU(args):
 
     print("Connecting grid:", gd.connect(address_list=gateway_address))
 
-    # We monitor the FPU grid by a variable which is called grid_state, and
+    # We monitor the FPU grid by a variable which is called grid_state, which
     # reflects the state of all FPUs.
     grid_state = gd.getGridState()
 
@@ -83,7 +83,8 @@ def initialize_FPU(args):
 #-------------------------------------------------------------------------------
 if __name__ == '__main__':
 
-    print("Module version is:", ethercanif.__version__, ", CAN PROTOCOL version:", ethercanif.CAN_PROTOCOL_VERSION)
+    print("Module version is:", ethercanif.__version__, ", CAN PROTOCOL version:",\
+          ethercanif.CAN_PROTOCOL_VERSION)
 
     if wflib is None:
        print("***wflib.load_paths function is not available until the mocpath module is installed.") 
@@ -96,11 +97,8 @@ if __name__ == '__main__':
     print("Issuing pingFPUs and getting positions:")
     gd.pingFPUs(grid_state)
 
-    # BW TODO: trackedAngles() is not yet available because it requires the
-    # protection functionality to first be implemented - add once it's available
-    #print("Tracked positions:")
-    #gd.trackedAngles(grid_state)
-    print("NOTE: The tracked positions are not available because the software protection functionality is not implemented yet.")
+    print("Tracked positions:")
+    gd.trackedAngles(grid_state)
 
     clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
     acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(args.N)])
