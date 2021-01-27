@@ -61,12 +61,12 @@ int main(int argc, char** argv)
     // Test code for writing dummy items to the FPU database for the "PT19" FPU,
     // which is the serial number of the physical test FPU
 #if 0
-    const bool db_mockup = true;
-    bool result_ok = GridDriverTester::writeDummyFpuItemsToFpuDb(db_mockup,
+    const bool use_mockup_db = true;
+    bool result_ok = GridDriverTester::writeDummyFpuItemsToFpuDb(use_mockup_db,
                                                                  "PT19");
 #endif // 0
     
-    //testGridDriver();
+    testGridDriver();
 
     //testFpuCounters();
 
@@ -81,9 +81,9 @@ static void testGridDriver()
     GridDriverTester gd_tester;
 
 /*
-    bool db_mockup = true;
+    bool use_mockup_db = true;
     int num_fpus = 3;
-    bool result_ok = gd_tester.writeGridFpusToFpuDb(num_fpus, db_mockup);
+    bool result_ok = gd_tester.writeGridFpusToFpuDb(num_fpus, use_mockup_db);
 */
 
     // gd_tester.doGridDriverUnitTests();

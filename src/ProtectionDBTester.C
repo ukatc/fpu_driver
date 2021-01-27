@@ -64,8 +64,8 @@ bool ProtectionDBTester::doTests()
     // usage, FPUAdmin database management tool etc) - check that it's still
     // OK
     //std::string dir_str = "/moonsdata/fpudb_NEWFORMAT";
-    const bool mockup = true;
-    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
+    const bool use_mockup_db = true;
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(use_mockup_db);
     //**********************
     
     bool result_ok = false;
@@ -806,8 +806,8 @@ void ProtectionDBTester::testDbOpeningScenarios()
         // Test for when directory, files and sub-databases all exist - N.B.
         // they need to all be present for this test to pass
         ProtectionDB protectiondb;
-        const bool mockup = true;
-        std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
+        const bool use_mockup_db = true;
+        std::string dir_str = ProtectionDB::getDirFromLinuxEnv(use_mockup_db);
         mdb_result = protectiondb.open(dir_str);
     }
 

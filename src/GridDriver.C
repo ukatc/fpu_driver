@@ -62,7 +62,7 @@ GridDriver::~GridDriver()
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode GridDriver::initProtection(bool mockup)
+E_EtherCANErrCode GridDriver::initProtection(bool use_mockup_db)
 {
     if (initprotection_was_called_ok)
     {
@@ -88,7 +88,7 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
     // database administration tool, test functionality etc)
     //********************************
     //********************************
-    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(use_mockup_db);
     if (!dir_str.empty())
     {
         if (protection_db.open(dir_str) == MDB_SUCCESS)
@@ -106,7 +106,7 @@ E_EtherCANErrCode GridDriver::initProtection(bool mockup)
     return DE_RESOURCE_ERROR;
 
 #else // NOT ENABLE_PROTECTION_CODE
-    UNUSED_ARG(mockup);
+    UNUSED_ARG(use_mockup_db);
 
     initprotection_was_called_ok = true;
     return DE_OK;

@@ -250,7 +250,7 @@ class ProtectionDB
 public:
     static void getLinuxEnvVariableNames(std::string &main_dir_env_name_ret,
                                          std::string &mockup_dir_env_name_ret);
-    static std::string getDirFromLinuxEnv(bool mockup);  // N.B. Static
+    static std::string getDirFromLinuxEnv(bool use_mockup_db);  // N.B. Static
 
     MdbResult createEmpty(const std::string &dir_str);
     MdbResult open(const std::string &dir_str);

@@ -49,26 +49,27 @@ public:
                               const char *new_serial_number,
                               bool reuse_snum,
                               const t_gateway_address *gateway_address_ptr);
-    static AppReturnVal init(bool mockup, const char *serial_number,
+    static AppReturnVal init(bool use_mockup_db, const char *serial_number,
                              double apos_min, double apos_max,
                              double bpos_min, double bpos_max,
                              bool reinitialize, double adatum_offset);
-    static AppReturnVal listAll(bool mockup);
-    static AppReturnVal listOne(bool mockup, const char *serial_number);
-    static AppReturnVal setALimits(bool mockup, const char *serial_number, 
+    static AppReturnVal listAll(bool use_mockup_db);
+    static AppReturnVal listOne(bool use_mockup_db, const char *serial_number);
+    static AppReturnVal setALimits(bool use_mockup_db, const char *serial_number,
                                    double alimit_min, double alimit_max,
                                    double adatum_offset);
-    static AppReturnVal setBLimits(bool mockup, const char *serial_number, 
+    static AppReturnVal setBLimits(bool use_mockup_db, const char *serial_number,
                                    double blimit_min, double blimit_max);
-    static AppReturnVal setARetries(bool mockup, const char *serial_number,
+    static AppReturnVal setARetries(bool use_mockup_db, const char *serial_number,
                                     int64_t aretries);
-    static AppReturnVal setBRetries(bool mockup, const char *serial_number,
+    static AppReturnVal setBRetries(bool use_mockup_db, const char *serial_number,
                                     int64_t bretries);
-    static AppReturnVal printHealthLog(bool mockup, const char *serial_number);
+    static AppReturnVal printHealthLog(bool use_mockup_db,
+                                       const char *serial_number);
     static void printUnexpectedDbResult(MdbResult mdb_result);  // N.B. Static
 
 private:
-    static bool openDbAndCreateTxnWithMessages(bool mockup);
+    static bool openDbAndCreateTxnWithMessages(bool use_mockup_db);
     static bool printSingleFpu(const char *serial_number);
     static void printFpuDbData(FpuDbData &fpu_db_data);
     static MdbResult checkIfSerialNumberUsed(const char *serial_number);

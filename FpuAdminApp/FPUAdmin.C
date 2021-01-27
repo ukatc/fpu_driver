@@ -122,7 +122,7 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
             if (!reuse_snum)
             {
                 std::cout << "Flash command rejected: Serial number is already in use.\n"
-                            "Call with '--reuse_sn' to use it again." << std::endl;
+                             "Call with '--reuse_sn' to use it again." << std::endl;
                 return AppReturnError;
             }
         }
@@ -238,7 +238,7 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::init(bool mockup, const char *serial_number, 
+AppReturnVal FPUAdmin::init(bool use_mockup_db, const char *serial_number,
                             double apos_min, double apos_max,
                             double bpos_min, double bpos_max,
                             bool reinitialize, double adatum_offset)
@@ -248,7 +248,7 @@ AppReturnVal FPUAdmin::init(bool mockup, const char *serial_number,
     // it is allowed to redefine FPU positions which already have been stored
     // before.
 
-    if (!openDbAndCreateTxnWithMessages(mockup))
+    if (!openDbAndCreateTxnWithMessages(use_mockup_db))
     {
         return AppReturnError;
     }
@@ -319,11 +319,11 @@ AppReturnVal FPUAdmin::init(bool mockup, const char *serial_number,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::listAll(bool mockup)
+AppReturnVal FPUAdmin::listAll(bool use_mockup_db)
 {
     // Prints data for all FPUs in database using std::cout
 
-    if (!openDbAndCreateTxnWithMessages(mockup))
+    if (!openDbAndCreateTxnWithMessages(use_mockup_db))
     {
         return AppReturnError;
     }
@@ -361,12 +361,12 @@ AppReturnVal FPUAdmin::listAll(bool mockup)
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::listOne(bool mockup, const char *serial_number)
+AppReturnVal FPUAdmin::listOne(bool use_mockup_db, const char *serial_number)
 {
     // Prints serial number and data for one FPU using std::cout. Returns an
     // application return value.
 
-    if (!openDbAndCreateTxnWithMessages(mockup))
+    if (!openDbAndCreateTxnWithMessages(use_mockup_db))
     {
         return AppReturnError;
     }
@@ -468,13 +468,13 @@ void FPUAdmin::printFpuDbData(FpuDbData &fpu_db_data)
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::setALimits(bool mockup, const char *serial_number, 
+AppReturnVal FPUAdmin::setALimits(bool use_mockup_db, const char *serial_number,
                                   double alimit_min, double alimit_max,
                                   double adatum_offset)
 {
     // Sets safe limits for alpha arm of an FPU.
 
-    if (!openDbAndCreateTxnWithMessages(mockup))
+    if (!openDbAndCreateTxnWithMessages(use_mockup_db))
     {
         return AppReturnError;
     }
@@ -503,12 +503,12 @@ AppReturnVal FPUAdmin::setALimits(bool mockup, const char *serial_number,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::setBLimits(bool mockup, const char *serial_number, 
+AppReturnVal FPUAdmin::setBLimits(bool use_mockup_db, const char *serial_number,
                                   double blimit_min, double blimit_max)
 {
     // Sets safe limits for beta arm of an FPU.
 
-    if (!openDbAndCreateTxnWithMessages(mockup))
+    if (!openDbAndCreateTxnWithMessages(use_mockup_db))
     {
         return AppReturnError;
     }
@@ -538,14 +538,14 @@ AppReturnVal FPUAdmin::setBLimits(bool mockup, const char *serial_number,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::setARetries(bool mockup, const char *serial_number,
+AppReturnVal FPUAdmin::setARetries(bool use_mockup_db, const char *serial_number,
                                    int64_t aretries)
 {
     // Sets allowed number of freeAlphaLimitBreach commands in the same
     // direction before the software protection kicks in. N.B. The retry count
     // is reset to zero upon a successfully finished datum search.
 
-    if (!openDbAndCreateTxnWithMessages(mockup))
+    if (!openDbAndCreateTxnWithMessages(use_mockup_db))
     {
         return AppReturnError;
     }
@@ -572,14 +572,14 @@ AppReturnVal FPUAdmin::setARetries(bool mockup, const char *serial_number,
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::setBRetries(bool mockup, const char *serial_number,
+AppReturnVal FPUAdmin::setBRetries(bool use_mockup_db, const char *serial_number,
                                    int64_t bretries)
 {
     // Sets allowed number of freeBetaCollision commands in the same direction
     // before the software protection kicks in. N.B. The retry count is reset
     // to zero upon a successfully finished datum search.
 
-    if (!openDbAndCreateTxnWithMessages(mockup))
+    if (!openDbAndCreateTxnWithMessages(use_mockup_db))
     {
         return AppReturnError;
     }
@@ -654,7 +654,8 @@ MdbResult FPUAdmin::checkIfSerialNumberUsed(const char *serial_number)
 }
 
 //------------------------------------------------------------------------------
-AppReturnVal FPUAdmin::printHealthLog(bool mockup, const char *serial_number)
+AppReturnVal FPUAdmin::printHealthLog(bool use_mockup_db,
+                                      const char *serial_number)
 {
     // Prints an FPU's health log from the health log database to std::cout.
     // Output format details:
@@ -664,7 +665,7 @@ AppReturnVal FPUAdmin::printHealthLog(bool mockup, const char *serial_number)
 
     // TODO: Health log isn't implemented yet
 
-    if (!openDbAndCreateTxnWithMessages(mockup))
+    if (!openDbAndCreateTxnWithMessages(use_mockup_db))
     {
         return AppReturnError;
     }
@@ -674,9 +675,9 @@ AppReturnVal FPUAdmin::printHealthLog(bool mockup, const char *serial_number)
 }
 
 //------------------------------------------------------------------------------
-bool FPUAdmin::openDbAndCreateTxnWithMessages(bool mockup)
+bool FPUAdmin::openDbAndCreateTxnWithMessages(bool use_mockup_db)
 {
-    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(mockup);
+    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(use_mockup_db);
     if (dir_str.empty())
     {
         std::string main_dir_env_name;

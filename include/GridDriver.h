@@ -60,7 +60,7 @@ public:
 
     ~GridDriver();
 
-    E_EtherCANErrCode initProtection(bool mockup = false);
+    E_EtherCANErrCode initProtection(bool use_mockup_db = false);
 
     bool initializedOk() override;
 

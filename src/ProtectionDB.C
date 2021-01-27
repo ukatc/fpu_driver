@@ -189,19 +189,19 @@ void ProtectionDB::getLinuxEnvVariableNames(std::string &main_dir_env_name_ret,
 }
 
 //------------------------------------------------------------------------------
-std::string ProtectionDB::getDirFromLinuxEnv(bool mockup)
+std::string ProtectionDB::getDirFromLinuxEnv(bool use_mockup_db)
 {
     // Provides a Linux directory path for the protection database based upon
-    // the Linux environment variables FPU_DATABASE_NEWFORMAT and
-    // FPU_DATABASE_NEWFORMAT_MOCKUP, and the value of mockup. If unsuccessful
-    // then the returned string is empty.
+    // the Linux environment variables FPU_DATABASE_DIR_NEWFORMAT and
+    // FPU_DATABASE_DIR_NEWFORMAT_MOCKUP, and the value of use_mockup_db. If
+    // unsuccessful then the returned string is empty.
     // The environment variables need to be of the form e.g. "/var/lib/fpudb",
     // and must **NOT** have a final "/" character.
 
     char *dir_c_str = nullptr;
     std::string dir_str_ret;
 
-    if (!mockup)
+    if (!use_mockup_db)
     {
         dir_c_str = getenv(fpudb_env_str);
         if (dir_c_str != nullptr)
