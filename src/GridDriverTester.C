@@ -117,7 +117,11 @@ void GridDriverTester::doGridDriverFunctionalTesting()
     const bool use_mockup_db = false;
     //********************************************
 
+#ifdef USE_2ND_CANBUS
+    GridDriver gd(NEXT_CANBUS_FPU_ID + 1);
+#else
     GridDriver gd(TESTING_NUM_FPUS);
+#endif
 
     ecan_result = gd.initialize();
 
@@ -159,7 +163,11 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     t_grid_state grid_state;
 
     t_fpuset fpuset;
+#ifdef USE_2ND_CANBUS
+    UnprotectedGridDriver::createFpuSetForSingleFpu(NEXT_CANBUS_FPU_ID, fpuset);
+#else
     UnprotectedGridDriver::createFpuSetForNumFpus(TESTING_NUM_FPUS, fpuset);
+#endif
 
     //..........................................................................
     // Test connect()
@@ -204,6 +212,22 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     // Test findDatum()
     if (ecan_result == DE_OK)
     {
+#ifdef USE_2ND_CANBUS
+        t_datum_search_flags search_modes;
+        for (int fpu_id = 0; fpu_id < NEXT_CANBUS_FPU_ID + 1; fpu_id++)
+        {
+            search_modes[fpu_id] = SEARCH_CLOCKWISE;
+        }
+        const bool count_protection = true;
+        const bool support_uninitialized_auto = false;
+
+        grid_state_result = gd.getGridState(grid_state);
+
+        ecan_result = gd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
+                                   soft_protection, count_protection,
+                                   support_uninitialized_auto,
+                                   DATUM_TIMEOUT_ENABLE);
+#else
         t_datum_search_flags search_modes;
         for (int fpu_id = 0; fpu_id < TESTING_NUM_FPUS; fpu_id++)
         {
@@ -220,6 +244,7 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
                                    soft_protection, count_protection,
                                    support_uninitialized_auto,
                                    DATUM_TIMEOUT_ENABLE);
+#endif
     }
 
     //..........................................................................

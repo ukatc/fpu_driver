@@ -159,7 +159,11 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     getGridState(grid_state);
 
     t_fpuset fpuset;
+#ifdef USE_2ND_CANBUS
+    createFpuSetForSingleFpu(NEXT_CANBUS_FPU_ID, fpuset);
+#else
     createFpuSetForNumFpus(config.num_fpus, fpuset);
+#endif
 
     // Read serial numbers from grid FPUs, and check for duplicates
     ecan_result = readSerialNumbers(grid_state, fpuset);
@@ -167,10 +171,12 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     {
         std::vector<std::string> duplicate_snumbers;
         getDuplicateSerialNumbers(grid_state, duplicate_snumbers);
+#ifndef USE_2ND_CANBUS // NOT USE_2ND_CANBUS
         if (duplicate_snumbers.size() != 0)
         {
             return DE_DUPLICATE_SERIAL_NUMBER;
         }
+#endif // NOT USE_2ND_CANBUS
     }
 
     // Read data from FPU database for all grid FPUs
@@ -179,6 +185,12 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     {
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
         {
+#ifdef USE_2ND_CANBUS
+            if (!fpuset[fpu_id])
+            {
+                continue;
+            }
+#endif
             MdbResult mdb_result = MDB_PANIC;
             auto txn = protection_db.createTransaction(mdb_result);
             if (txn)
