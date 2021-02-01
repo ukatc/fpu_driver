@@ -78,32 +78,42 @@ E_EtherCANErrCode GridDriver::initProtection(bool use_mockup_db)
 
     // TODO: Finish this function
 
-    // Initialise LMDB protection database
-    
-    //********************************
-    //********************************
-    // TODO: The new-format database directory path etc is still WIP. This
-    // database directory and Linux environment variable stuff eventually needs
-    // to be tidied and consolidated across all of this grid driver, FPUAdmin
-    // database administration tool, test functionality etc)
-    //********************************
-    //********************************
+    // Open LMDB protection database
     std::string dir_str = ProtectionDB::getDirFromLinuxEnv(use_mockup_db);
     if (!dir_str.empty())
     {
-        if (protection_db.open(dir_str) == MDB_SUCCESS)
+        MdbResult mdb_result = protection_db.open(dir_str);
+        switch (mdb_result)
         {
+        case MDB_SUCCESS:
             // TODO: Implement the following? (from Python version ->
             // _post_connect_hook())
             // self.healthlog = self.env.open_db(HealthLogDB.dbname)
-
             initprotection_was_called_ok = true;
             return DE_OK;
+            break;
+
+        case ENOENT:
+            return DE_DB_OPEN_FAILURE_DIR_OR_FILE_NOT_FOUND;
+            break;
+
+        case EACCES:
+            return DE_DB_OPEN_FAILURE_ACCESS_DENIED;
+            break;
+
+        case MDB_OLD_INCOMPATIBLE_DB_FORMAT:
+            return DE_DB_OPEN_FAILURE_OLD_FORMAT;
+            break;
+
+        default:
+            return DE_DB_OPEN_FAILURE_OTHER;
+            break;
         }
     }
-
-    // TODO: Return more detailed error code eventually?
-    return DE_RESOURCE_ERROR;
+    else
+    {
+        return DE_DB_ENVIRONMENT_VARIABLE_NOT_FOUND;
+    }
 
 #else // NOT ENABLE_PROTECTION_CODE
     UNUSED_ARG(use_mockup_db);
@@ -221,13 +231,13 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
                 }
                 else
                 {
-                    ecan_result = DE_RESOURCE_ERROR;
+                    ecan_result = DE_DB_MISSING_FPU_ENTRY_OR_READ_FAILED;
                     break;
                 }
             }
             else
             {
-                ecan_result = DE_RESOURCE_ERROR;
+                ecan_result = DE_DB_TRANSACTION_CREATION_FAILED;
                 break;
             }
         }
@@ -608,7 +618,7 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
                                                      config.alpha_datum_offset);
                     if (!_update_apos(txn, serial_number, fpu_id, new_apos))
                     {
-                        return DE_RESOURCE_ERROR;
+                        return DE_DB_WRITE_FAILED;
                     }
                 }
                 else
@@ -619,7 +629,7 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
                     Interval new_range = apos.combine(protection_interval);
                     if (!_update_apos(txn, serial_number, fpu_id, new_range))
                     {
-                        return DE_RESOURCE_ERROR;
+                        return DE_DB_WRITE_FAILED;
                     }
                 }
                 atarget = 0.0;
@@ -633,7 +643,7 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
                     Interval new_bpos = bpos.extend(0.0);
                     if (!_update_bpos(txn, serial_number, fpu_id, new_bpos))
                     {
-                        return DE_RESOURCE_ERROR;
+                        return DE_DB_WRITE_FAILED;
                     }
                 }
                 else
@@ -656,7 +666,7 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
 
                     if (!_update_bpos(txn, serial_number, fpu_id, new_range))
                     {
-                        return DE_RESOURCE_ERROR;
+                        return DE_DB_WRITE_FAILED;
                     }
                 }
                 btarget = 0.0;
@@ -672,12 +682,12 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     if (protection_db.sync() != MDB_SUCCESS)
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_SYNC_FAILED;
     }
 
     return DE_OK;
@@ -717,7 +727,7 @@ E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
             }
             if (!success)
             {
-                return DE_RESOURCE_ERROR;
+                return DE_DB_WRITE_FAILED;
             }
 
             fpus_data[fpu_id].target_position = { apos, bpos };
@@ -725,12 +735,12 @@ E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     if (protection_db.sync() != MDB_SUCCESS)
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_SYNC_FAILED;
     }
 
     return DE_OK;
@@ -804,7 +814,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                 if (!_update_apos(txn, serial_number, fpu_id,
                                   Interval(0.0) + config.alpha_datum_offset))
                 {
-                    return DE_RESOURCE_ERROR;
+                    return DE_DB_WRITE_FAILED;
                 }
 
                 // Reset retry count for freeAlphaLimitBreach, because we have
@@ -818,7 +828,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                                     serial_number,
                                     fpu_data.db.aretries_acw) != MDB_SUCCESS)
                     {
-                        return DE_RESOURCE_ERROR;
+                        return DE_DB_WRITE_FAILED;
                     }
                 }
                 if (fpu_data.db.aretries_cw > 0)
@@ -829,7 +839,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                                     serial_number,
                                     fpu_data.db.aretries_cw) != MDB_SUCCESS)
                     {
-                        return DE_RESOURCE_ERROR;
+                        return DE_DB_WRITE_FAILED;
                     }
                 }
             }
@@ -862,7 +872,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
 
                     if (!_update_apos(txn, serial_number, fpu_id, a_interval))
                     {
-                        return DE_RESOURCE_ERROR;
+                        return DE_DB_WRITE_FAILED;
                     }
                 }
             }
@@ -875,7 +885,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                 fpu_data.b_caloffset = Interval(0.0);
                 if (!_update_bpos(txn, serial_number, fpu_id, Interval(0.0)))
                 {
-                    return DE_RESOURCE_ERROR;
+                    return DE_DB_WRITE_FAILED;
                 }
 
                 if (fpu_data.db.bretries_acw > 0)
@@ -886,7 +896,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                                     serial_number,
                                     fpu_data.db.bretries_acw) != MDB_SUCCESS)
                     {
-                        return DE_RESOURCE_ERROR;
+                        return DE_DB_WRITE_FAILED;
                     }
                 }
 
@@ -898,7 +908,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                                     serial_number,
                                     fpu_data.db.bretries_cw) != MDB_SUCCESS)
                     {
-                        return DE_RESOURCE_ERROR;
+                        return DE_DB_WRITE_FAILED;
                     }
                 }
             }
@@ -927,7 +937,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
 
                     if (!_update_bpos(txn, serial_number, fpu_id, b_interval))
                     {
-                        return DE_RESOURCE_ERROR;
+                        return DE_DB_WRITE_FAILED;
                     }
                 }
             }
@@ -951,7 +961,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
                                            serial_number,
                                            fpu_data.db.counters) != MDB_SUCCESS)
             {
-                return DE_RESOURCE_ERROR;
+                return DE_DB_WRITE_FAILED;
             }
 
             //..................................................................
@@ -959,7 +969,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     //..........................................................................
@@ -971,7 +981,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
 
     if (protection_db.sync() != MDB_SUCCESS)
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_SYNC_FAILED;
     }
 
     //..........................................................................
@@ -1292,19 +1302,19 @@ E_EtherCANErrCode GridDriver::_refresh_positions(const t_grid_state &grid_state,
             }
             if (!success)
             {
-                ecan_result = DE_RESOURCE_ERROR;
+                ecan_result = DE_DB_WRITE_FAILED;
                 break;
             }
         }
     }
     else
     {
-        ecan_result = DE_RESOURCE_ERROR;
+        ecan_result = DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     if (protection_db.sync() != MDB_SUCCESS)
     {
-        ecan_result = DE_RESOURCE_ERROR;
+        ecan_result = DE_DB_SYNC_FAILED;
     }
 
     if ((ecan_result == DE_OK) && inconsistency_abort)
@@ -1611,13 +1621,13 @@ E_EtherCANErrCode GridDriver::_save_wtable_direction(const t_fpuset &fpuset,
                             gs.FPU_state[fpu_id].serial_number,
                             fpus_data[fpu_id].db.wf_reversed) != MDB_SUCCESS)
             {
-                return DE_RESOURCE_ERROR;
+                return DE_DB_WRITE_FAILED;
             }
         }
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     return DE_OK;
@@ -1690,7 +1700,7 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
                         gs.FPU_state[fpu_id].serial_number,
                         const_cast<t_waveform_steps &>(wtable[i].steps)) != MDB_SUCCESS)
                 {
-                    return DE_RESOURCE_ERROR;
+                    return DE_DB_WRITE_FAILED;
                 }
             }
             else
@@ -1701,7 +1711,7 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     return DE_OK;
@@ -1942,11 +1952,11 @@ E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
                 const char *serial_number = gs.FPU_state[fpu_id].serial_number;
                 if (!_update_apos(txn, serial_number, fpu_id, it->second.apos))
                 {
-                    return DE_RESOURCE_ERROR;
+                    return DE_DB_WRITE_FAILED;
                 }
                 if (!_update_bpos(txn, serial_number, fpu_id, it->second.bpos))
                 {
-                    return DE_RESOURCE_ERROR;
+                    return DE_DB_WRITE_FAILED;
                 }
                 // Update target position which is used in case of step counter
                 // overflow
@@ -1961,19 +1971,19 @@ E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
                                                serial_number,
                                                fpu_data.db.counters) != MDB_SUCCESS)
                 {
-                    return DE_RESOURCE_ERROR;
+                    return DE_DB_WRITE_FAILED;
                 }
             }
         }
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     if (protection_db.sync() != MDB_SUCCESS)
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_SYNC_FAILED;
     }
 
     return DE_OK;
@@ -2009,11 +2019,11 @@ E_EtherCANErrCode GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
             const char *serial_number = gs.FPU_state[fpu_id].serial_number;
             if (!_update_apos(txn, serial_number, fpu_id, apos))
             {
-                return DE_RESOURCE_ERROR;
+                return DE_DB_WRITE_FAILED;
             }
             if (!_update_bpos(txn, serial_number, fpu_id, bpos))
             {
-                return DE_RESOURCE_ERROR;
+                return DE_DB_WRITE_FAILED;
             }
 
             FpuData &fpu_data = fpus_data[fpu_id];
@@ -2030,18 +2040,18 @@ E_EtherCANErrCode GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
                                            serial_number,
                                            fpu_data.db.counters) != MDB_SUCCESS)
             {
-                return DE_RESOURCE_ERROR;
+                return DE_DB_WRITE_FAILED;
             }
         }
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     if (protection_db.sync() != MDB_SUCCESS)
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_SYNC_FAILED;
     }
 
     return DE_OK;
@@ -2163,13 +2173,13 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
             if (txn->fpuDbTransferCounters(DbTransferType::Write, serial_number,
                                 fpus_data[fpu_id].db.counters) != MDB_SUCCESS)
             {
-                return DE_RESOURCE_ERROR;
+                return DE_DB_WRITE_FAILED;
             }
         }
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     // Clear wavetable spans for the addressed FPUs - they are no longer valid
@@ -2233,12 +2243,12 @@ E_EtherCANErrCode GridDriver::_pre_free_beta_collision_hook(int fpu_id,
         const char *serial_number = gs.FPU_state[fpu_id].serial_number;
         if (!_update_bpos(txn, serial_number, fpu_id, bpos.combine(new_bpos)))
         {
-            return DE_RESOURCE_ERROR;
+            return DE_DB_WRITE_FAILED;
         }
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     return DE_OK;
@@ -2272,12 +2282,12 @@ E_EtherCANErrCode GridDriver::_post_free_beta_collision_hook(int fpu_id,
         if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
                                        serial_number, count) != MDB_SUCCESS)
         {
-            return DE_RESOURCE_ERROR;
+            return DE_DB_WRITE_FAILED;
         }
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     // N.B. Old Johannes Python code here which he had commented out:
@@ -2342,12 +2352,12 @@ E_EtherCANErrCode GridDriver::_pre_free_alpha_limit_breach_hook(int fpu_id,
         const char *serial_number = gs.FPU_state[fpu_id].serial_number;
         if (!_update_apos(txn, serial_number, fpu_id, apos.combine(new_apos)))
         {
-            return DE_RESOURCE_ERROR;
+            return DE_DB_WRITE_FAILED;
         }
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     return DE_OK;
@@ -2381,12 +2391,12 @@ E_EtherCANErrCode GridDriver::_post_free_alpha_limit_breach_hook(int fpu_id,
         if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
                                        serial_number, count) != MDB_SUCCESS)
         {
-            return DE_RESOURCE_ERROR;
+            return DE_DB_WRITE_FAILED;
         }
     }
     else
     {
-        return DE_RESOURCE_ERROR;
+        return DE_DB_TRANSACTION_CREATION_FAILED;
     }
 
     // N.B. Old Johannes Python code here which he had commented out:

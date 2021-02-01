@@ -54,6 +54,7 @@ enum E_InterfaceState
 // something went seriously wrong.
 enum E_EtherCANErrCode
 {
+    //..........................................................................
     // Everything worked
     DE_OK = 0,
 
@@ -252,6 +253,29 @@ enum E_EtherCANErrCode
     // cannot correctly track the FPUs any more. It is required to measure the
     // position and update the position database.
     DE_INCONSISTENT_STEP_COUNT = 607,
+
+    //..........................................................................
+    // Database errors
+
+    // Database opening failures
+    DE_DB_ENVIRONMENT_VARIABLE_NOT_FOUND = 701,
+    DE_DB_OPEN_FAILURE_DIR_OR_FILE_NOT_FOUND = 702,
+    DE_DB_OPEN_FAILURE_ACCESS_DENIED = 703,
+    DE_DB_OPEN_FAILURE_OLD_FORMAT = 704,
+    DE_DB_OPEN_FAILURE_OTHER = 705,
+
+    // Transaction creation failed
+    DE_DB_TRANSACTION_CREATION_FAILED = 706,
+
+    // No database FPU entry corresponding to a physical FPU, or there was a
+    // read error of some sort
+    DE_DB_MISSING_FPU_ENTRY_OR_READ_FAILED = 707,
+
+    // Writing of a database FPU item failed
+    DE_DB_WRITE_FAILED = 708,
+
+    // Database synchronisation operation failed
+    DE_DB_SYNC_FAILED = 709,
 
     //..........................................................................
     // Unknown error - use for e.g. initialising return values at the
