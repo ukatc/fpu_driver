@@ -601,31 +601,31 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 DE_DB_ENV_VARIABLE_NOT_FOUND);
         break;
 
-    case DE_DB_OPEN_DIR_OR_FILE_NOT_FOUND:
-        throw EtherCANException("DE_DB_OPEN_DIR_OR_FILE_NOT_FOUND: Database opening error:"
+    case DE_DB_DIR_OR_FILE_NOT_FOUND:
+        throw EtherCANException("DE_DB_DIR_OR_FILE_NOT_FOUND: Database opening error:"
                                 " Invalid directory, or database file(s) were not found.",
-                                DE_DB_OPEN_DIR_OR_FILE_NOT_FOUND);
+                                DE_DB_DIR_OR_FILE_NOT_FOUND);
         break;
 
-    case DE_DB_OPEN_ACCESS_DENIED:
-        throw EtherCANException("DE_DB_OPEN_ACCESS_DENIED: Database opening error:"
+    case DE_DB_ACCESS_DENIED:
+        throw EtherCANException("DE_DB_ACCESS_DENIED: Database opening error:"
                                 " Access is denied - the grid driver does not have"
                                 " sufficient privileges to access the database files"
                                 " and/or the directory which they are in.",
-                                DE_DB_OPEN_ACCESS_DENIED);
+                                DE_DB_ACCESS_DENIED);
         break;
 
-    case DE_DB_OPEN_OLD_FORMAT:
-        throw EtherCANException("DE_DB_OPEN_OLD_FORMAT: Database opening error:"
+    case DE_DB_OLD_FORMAT:
+        throw EtherCANException("DE_DB_OLD_FORMAT: Database opening error:"
                                 " The database files found are of the old incompatible"
                                 " Python format, and cannot be used.",
-                                DE_DB_OPEN_OLD_FORMAT);
+                                DE_DB_OLD_FORMAT);
         break;
 
-    case DE_DB_OPEN_OTHER_FAILURE:
-        throw EtherCANException("DE_DB_OPEN_OTHER_FAILURE: Database opening error:"
+    case DE_DB_OTHER_OPENING_FAILURE:
+        throw EtherCANException("DE_DB_OTHER_OPENING_FAILURE: Database opening error:"
                                 " An other unspecified failure occurred.",
-                                DE_DB_OPEN_OTHER_FAILURE);
+                                DE_DB_OTHER_OPENING_FAILURE);
         break;
 
     case DE_DB_TRANSACTION_CREATION_FAILED:

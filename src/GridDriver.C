@@ -94,19 +94,19 @@ E_EtherCANErrCode GridDriver::initProtection(bool use_mockup_db)
             break;
 
         case ENOENT:
-            return DE_DB_OPEN_DIR_OR_FILE_NOT_FOUND;
+            return DE_DB_DIR_OR_FILE_NOT_FOUND;
             break;
 
         case EACCES:
-            return DE_DB_OPEN_ACCESS_DENIED;
+            return DE_DB_ACCESS_DENIED;
             break;
 
         case MDB_OLD_INCOMPATIBLE_DB_FORMAT:
-            return DE_DB_OPEN_OLD_FORMAT;
+            return DE_DB_OLD_FORMAT;
             break;
 
         default:
-            return DE_DB_OPEN_OTHER_FAILURE;
+            return DE_DB_OTHER_OPENING_FAILURE;
             break;
         }
     }
