@@ -219,57 +219,80 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(E_LogLevel logLevel,
                                         const std::string &start_timestamp,
                                         bool mockup)
 {
-    if (initializedOk())
-    {
-        return DE_INTERFACE_ALREADY_INITIALIZED;
-    }
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
 
-    E_EtherCANErrCode ecode = initialize(logLevel, log_dir,
-                                         firmware_version_address_offset,
-                                         protection_logfile,
-                                         control_logfile,
-                                         tx_logfile, rx_logfile,
-                                         start_timestamp);
-    if ((ecode == DE_OK) || (ecode == DE_INTERFACE_ALREADY_INITIALIZED))
+    if (!initializedOk())   // Only initialise if not already done
     {
-        ecode = initProtection(mockup);
-        if ((ecode != DE_OK) && (ecode != DE_INTERFACE_ALREADY_INITIALIZED))
+        ecode = initialize(logLevel, log_dir, firmware_version_address_offset,
+                           protection_logfile, control_logfile, tx_logfile,
+                           rx_logfile, start_timestamp);
+        if (ecode == DE_OK)
         {
-            std::cout << "*** ERROR ***: Protection initialisation failed" << std::endl;
+            ecode = initProtection(mockup);
+            if (ecode != DE_OK)
+            {
+                std::cout << "*** ERROR ***: initProtection() call failed "
+                             "during the initialize command" << std::endl;
+            }
+        }
+        else
+        {
+            std::cout << "*** ERROR ***: initialize() call failed during "
+                         "the initialize command" << std::endl;
         }
     }
+    else
+    {
+        std::cout << "Warning: initialize() has already been called - skipping."
+                  << std::endl;
+        ecode = DE_OK;
+    }
 
+    checkInterfaceError(ecode);
     return ecode;
 }
 
 //------------------------------------------------------------------------------
 WrapGridState WrappedGridDriver::wrapped_getGridState()
 {
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+    
     WrapGridState grid_state;
     if (checkAndMessageIfInitializedOk())
     {
         /*E_GridState grid_state_enum = */ getGridState(grid_state);
+        ecode = DE_OK;
     }
     else
     {
         // TODO: Zero grid_state here, using e.g. memset? BUT WrapGridState
         // is a class rather than a POD structure, so would this be OK?
+
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
-    return grid_state;
+
+    checkInterfaceError(ecode);
+
+    return grid_state;  // N.B. Returning grid_state rather than ecode
 }
 
 //------------------------------------------------------------------------------
 E_EtherCANErrCode WrappedGridDriver::wrapped_connect(bp::list &list_gateway_addresses)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_gateway_address address_array[MAX_NUM_GATEWAYS];
+        const int actual_num_gw = convertGatewayAddresses(list_gateway_addresses,
+                                                          address_array);
+        ecode = connect(actual_num_gw, address_array);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_gateway_address address_array[MAX_NUM_GATEWAYS];
-    const int actual_num_gw = convertGatewayAddresses(list_gateway_addresses,
-                                                      address_array);
-    E_EtherCANErrCode ecode = connect(actual_num_gw, address_array);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -277,12 +300,17 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_connect(bp::list &list_gateway_addr
 //------------------------------------------------------------------------------
 E_EtherCANErrCode WrappedGridDriver::wrapped_disconnect()
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        ecode = disconnect();
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode ecode = disconnect();
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -292,15 +320,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_setUStepLevel(int ustep_level,
                                                            WrapGridState &grid_state,
                                                            bp::list &fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = setUStepLevel(ustep_level, grid_state, fpuset);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = setUStepLevel(ustep_level, grid_state, fpuset);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -311,15 +344,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_setTicksPerSegment(
                                                     WrapGridState &grid_state,
                                                     bp::list &fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = setTicksPerSegment(ticks, grid_state, fpuset);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = setTicksPerSegment(ticks, grid_state, fpuset);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -330,16 +368,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_setStepsPerSegment(int min_steps,
                                                     WrapGridState &grid_state,
                                                     bp::list &fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = setStepsPerSegment(min_steps, max_steps, grid_state, fpuset);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = setStepsPerSegment(min_steps, max_steps,
-                                                 grid_state, fpuset);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -354,23 +396,26 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_findDatum(WrapGridState &grid_state
                                                 bool support_uninitialized_auto,
                                                 E_DATUM_TIMEOUT_FLAG timeout)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        t_datum_search_flags direction_flags;
+        getDatumFlags(dict_search_modes, direction_flags, fpuset);
+
+        abortHandlerInstall();   // Provides Ctrl-C aborting during FPU motion
+        ecode = findDatum(grid_state, direction_flags, selected_arm, fpuset,
+                          soft_protection, count_protection, 
+                          support_uninitialized_auto, timeout);
+        abortHandlerUninstall();
     }
-
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    t_datum_search_flags direction_flags;
-    getDatumFlags(dict_search_modes, direction_flags, fpuset);
-
-    abortHandlerInstall();   // Provides Ctrl-C aborting during FPU motion
-    E_EtherCANErrCode ecode = findDatum(grid_state, direction_flags,
-                                        selected_arm, fpuset, soft_protection,
-                                        count_protection, 
-                                        support_uninitialized_auto, timeout);
-    abortHandlerUninstall();
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
+    }
 
     checkInterfaceError(ecode);
     return ecode;
@@ -380,15 +425,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_findDatum(WrapGridState &grid_state
 E_EtherCANErrCode WrappedGridDriver::wrapped_resetFPUs(WrapGridState& grid_state,
                                                        list& fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = resetFPUs(grid_state, fpuset);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = resetFPUs(grid_state, fpuset);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -399,16 +449,21 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_resetStepCounters(long new_alpha_st
                                                                WrapGridState &grid_state,
                                                                bp::list &fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = resetStepCounters(new_alpha_steps, new_beta_steps, grid_state,
+                                  fpuset);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = resetStepCounters(new_alpha_steps, new_beta_steps,
-                                                grid_state, fpuset);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -418,20 +473,28 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_readRegister(int read_address,
                                                           WrapGridState &grid_state,
                                                           bp::list &fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        if ((read_address >= 0) && (read_address <= 0xffff))
+        {
+            const uint16_t raddress = (uint16_t)read_address;
+            ecode = readRegister(raddress, grid_state, fpuset);
+        }
+        else
+        {
+            ecode = DE_INVALID_PAR_VALUE;
+        }
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    if ((read_address > 0xffff) || (read_address < 0))
-    {
-        checkInterfaceError(DE_INVALID_PAR_VALUE);
-    }
-    const uint16_t raddress = (uint16_t)read_address;
-    E_EtherCANErrCode ecode = readRegister(raddress, grid_state, fpuset);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -440,16 +503,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_readRegister(int read_address,
 E_EtherCANErrCode WrappedGridDriver::wrapped_getDiagnostics(WrapGridState &grid_state,
                                                             bp::list &fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
-    {
-        return DE_INTERFACE_NOT_INITIALIZED;
-    }
-
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
     std::string diag_string;
-    E_EtherCANErrCode ecode = getDiagnostics(grid_state, fpuset, diag_string);
+
+    if (checkAndMessageIfInitializedOk())
+    {
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = getDiagnostics(grid_state, fpuset, diag_string);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
+    }
 
     checkInterfaceError(ecode);
 
@@ -462,15 +529,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_getDiagnostics(WrapGridState &grid_
 E_EtherCANErrCode WrappedGridDriver::wrapped_pingFPUs(WrapGridState &grid_state,
                                                       bp::list &fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = pingFPUs(grid_state, fpuset);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = pingFPUs(grid_state, fpuset);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -480,15 +552,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_getFirmwareVersion(
                                                     WrapGridState &grid_state,
                                                     bp::list & fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = getFirmwareVersion(grid_state, fpuset);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = getFirmwareVersion(grid_state, fpuset);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -497,15 +574,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_getFirmwareVersion(
 E_EtherCANErrCode WrappedGridDriver::wrapped_readSerialNumbers(WrapGridState &grid_state,
                                                                bp::list &fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = readSerialNumbers(grid_state, fpuset);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = readSerialNumbers(grid_state, fpuset);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -515,16 +597,19 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_writeSerialNumber(int fpu_id,
                                                                bp::str serial_number,
                                                                WrapGridState &grid_state)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        std::string cpp_serial_number = bp::extract<std::string>(serial_number);
+
+        ecode = writeSerialNumber(fpu_id, cpp_serial_number.c_str(), grid_state);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    std::string cpp_serial_number = bp::extract<std::string>(serial_number);
-
-    E_EtherCANErrCode ecode = writeSerialNumber(fpu_id,
-                                                cpp_serial_number.c_str(),
-                                                grid_state);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -545,21 +630,26 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_configMotion(bp::dict &dict_wavefor
     // Call signature is:
     // configMotion( { fpuid0 : { (asteps, bsteps), (asteps, bsteps), ...],
     //                 fpuid1 : { ... }, ...}})
-    if (!checkAndMessageIfInitializedOk())
+
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        t_wtable wtable;
+        convertWavetable(dict_waveforms, wtable);
+
+        ecode = configMotion(wtable, grid_state, fpuset, soft_protection,
+                             allow_uninitialized, ruleset_version, warn_unsafe,
+                             verbosity);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    t_wtable wtable;
-    convertWavetable(dict_waveforms, wtable);
-
-    E_EtherCANErrCode ecode = configMotion(wtable, grid_state, fpuset,
-                                           soft_protection, allow_uninitialized,
-                                           ruleset_version, warn_unsafe,
-                                           verbosity);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -569,17 +659,21 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_executeMotion(WrapGridState &grid_s
                                                            bp::list &fpu_list,
                                                            bool sync_command)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        abortHandlerInstall();   // Provides Ctrl-C aborting during FPU motion
+        ecode = executeMotion(grid_state, fpuset, sync_command);
+        abortHandlerUninstall();
     }
-
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    abortHandlerInstall();   // Provides Ctrl-C aborting during FPU motion
-    E_EtherCANErrCode ecode = executeMotion(grid_state, fpuset, sync_command);
-    abortHandlerUninstall();
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
+    }
 
     checkInterfaceError(ecode);
     return ecode;
@@ -590,15 +684,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_abortMotion(WrapGridState &grid_sta
                                                          bp::list &fpu_list,
                                                          bool sync_command)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = abortMotion(grid_state, fpuset, sync_command);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = abortMotion(grid_state, fpuset, sync_command);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -609,13 +708,18 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_freeBetaCollision(int fpu_id,
                                                 WrapGridState &grid_state,
                                                 bool soft_protection)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        ecode = freeBetaCollision(fpu_id, direction, grid_state,
+                                  soft_protection);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode ecode = freeBetaCollision(fpu_id, direction, grid_state,
-                                                soft_protection);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -624,12 +728,17 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_freeBetaCollision(int fpu_id,
 E_EtherCANErrCode WrappedGridDriver::wrapped_enableBetaCollisionProtection(
                                             WrapGridState &grid_state)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        ecode = enableBetaCollisionProtection(grid_state);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode ecode = enableBetaCollisionProtection(grid_state);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -640,13 +749,18 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_freeAlphaLimitBreach(int fpu_id,
                                                 WrapGridState &grid_state,
                                                 bool soft_protection)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        ecode = freeAlphaLimitBreach(fpu_id, direction, grid_state,
+                                     soft_protection);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode ecode = freeAlphaLimitBreach(fpu_id, direction,
-                                                   grid_state, soft_protection);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -655,12 +769,17 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_freeAlphaLimitBreach(int fpu_id,
 E_EtherCANErrCode WrappedGridDriver::wrapped_enableAlphaLimitProtection(
                                                     WrapGridState &grid_state)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        ecode = enableAlphaLimitProtection(grid_state);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode ecode = enableAlphaLimitProtection(grid_state);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -670,15 +789,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_reverseMotion(WrapGridState &grid_s
                                                            bp::list &fpu_list,
                                                            bool soft_protection)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = reverseMotion(grid_state, fpuset, soft_protection);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = reverseMotion(grid_state, fpuset, soft_protection);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -688,15 +812,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_repeatMotion(WrapGridState &grid_st
                                                           bp::list &fpu_list,
                                                           bool soft_protection)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = repeatMotion(grid_state, fpuset, soft_protection);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = repeatMotion(grid_state, fpuset, soft_protection);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -705,12 +834,17 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_repeatMotion(WrapGridState &grid_st
 E_EtherCANErrCode WrappedGridDriver::wrapped_lockFPU(int fpu_id, 
                                                      WrapGridState &grid_state)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        ecode = lockFPU(fpu_id, grid_state);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode ecode = lockFPU(fpu_id, grid_state);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -719,12 +853,17 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_lockFPU(int fpu_id,
 E_EtherCANErrCode WrappedGridDriver::wrapped_unlockFPU(int fpu_id,
                                                        WrapGridState &grid_state)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        ecode = unlockFPU(fpu_id, grid_state);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode ecode = unlockFPU(fpu_id, grid_state);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -733,12 +872,17 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_unlockFPU(int fpu_id,
 E_EtherCANErrCode WrappedGridDriver::wrapped_enableMove(int fpu_id,
                                                         WrapGridState &grid_state)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        ecode = enableMove(fpu_id, grid_state);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    E_EtherCANErrCode ecode = enableMove(fpu_id, grid_state);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -747,15 +891,20 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_enableMove(int fpu_id,
 E_EtherCANErrCode WrappedGridDriver::wrapped_checkIntegrity(WrapGridState &grid_state,
                                                             bp::list &fpu_list)
 {
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        ecode = checkIntegrity(grid_state, fpuset);
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    E_EtherCANErrCode ecode = checkIntegrity(grid_state, fpuset);
     checkInterfaceError(ecode);
     return ecode;
 }
@@ -771,20 +920,26 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_list_angles(WrapGridState &grid_sta
     // to the Python console - but the native Python list_angles() returns
     // a data structure - so need to mimic that eventually?
 
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpus_angles fpus_angles;
+        listAngles(grid_state, fpus_angles, alpha_datum_offset, show_uninitialized,
+                   asteps_per_deg, bsteps_per_deg);
+
+        std::string angles_string;
+        createFpuDoublesAnglesString(fpus_angles, angles_string);
+        std::cout << angles_string << std::endl;
+        ecode = DE_OK;
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpus_angles fpus_angles;
-    listAngles(grid_state, fpus_angles, alpha_datum_offset, show_uninitialized,
-               asteps_per_deg, bsteps_per_deg);
-
-    std::string angles_string;
-    createFpuDoublesAnglesString(fpus_angles, angles_string);
-    std::cout << angles_string << std::endl;
-
-    return DE_OK;
+    checkInterfaceError(ecode);
+    return ecode;
 }
 
 //------------------------------------------------------------------------------
@@ -796,23 +951,29 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_countedAngles(WrapGridState &grid_s
     // to the Python console - but the native Python list_angles() returns
     // a data structure - so need to mimic that eventually?
 
-    if (!checkAndMessageIfInitializedOk())
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        t_fpus_angles fpus_angles;
+        ecode = countedAngles(grid_state, fpuset, fpus_angles,
+                              show_uninitialized);
+        if (ecode == DE_OK)
+        {
+            std::string angles_string;
+            createFpuDoublesAnglesString(fpus_angles, angles_string);
+            std::cout << angles_string << std::endl;
+        }
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
     }
 
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    t_fpus_angles fpus_angles;
-    E_EtherCANErrCode ecode = countedAngles(grid_state, fpuset, fpus_angles,
-                                            show_uninitialized);
     checkInterfaceError(ecode);
-
-    std::string angles_string;
-    createFpuDoublesAnglesString(fpus_angles, angles_string);
-    std::cout << angles_string << std::endl;
-
     return ecode;
 }
 
@@ -836,22 +997,26 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_trackedAngles(WrapGridState &grid_s
                                                            bool show_offsets,
                                                            bool active)
 {
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
 #ifdef ENABLE_PROTECTION_CODE
-    if (!checkAndMessageIfInitializedOk())
+    if (checkAndMessageIfInitializedOk())
     {
-        return DE_INTERFACE_NOT_INITIALIZED;
+        t_fpuset fpuset;
+        getFPUSet(fpu_list, fpuset);
+
+        std::string angles_string;
+        ecode = trackedAnglesString(grid_state, fpuset, angles_string,
+                                    show_offsets, active);
+        if (ecode == DE_OK)
+        {
+            std::cout << angles_string << std::endl;
+        }
     }
-
-    t_fpuset fpuset;
-    getFPUSet(fpu_list, fpuset);
-
-    std::string angles_string;
-    E_EtherCANErrCode ecode = trackedAnglesString(grid_state, fpuset,
-                                                  angles_string,
-                                                  show_offsets, active);
-    checkInterfaceError(ecode);
-
-    std::cout << angles_string << std::endl;
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
+    }
 
 #else // NOT ENABLE_PROTECTION_CODE
     std::cout << "************************************************************\n";
@@ -859,9 +1024,10 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_trackedAngles(WrapGridState &grid_s
     std::cout << "this build, so trackedAngles() is not available.\n";
     std::cout << "************************************************************\n";
     std::cout << std::endl;
-    E_EtherCANErrCode ecode = DE_FIRMWARE_UNIMPLEMENTED;
+    ecode = DE_FIRMWARE_UNIMPLEMENTED;
 #endif // NOT ENABLE_PROTECTION_CODE
 
+    checkInterfaceError(ecode);
     return ecode;
 }
 
@@ -873,7 +1039,8 @@ bool WrappedGridDriver::checkAndMessageIfInitializedOk()
         return true;
     }
     std::cout << std::endl;
-    std::cout << "*** ERROR ***: Not yet initialized successfully - initialize() was not yet called, or it failed\n" << std::endl;
+    std::cout << "*** ERROR ***: Not yet initialized successfully - "
+                 "initialize() was not yet called, or it failed" << std::endl;
     return false;
 }
 

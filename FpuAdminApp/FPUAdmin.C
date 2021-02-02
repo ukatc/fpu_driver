@@ -229,6 +229,9 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
     }
     else
     {
+        // TODO: Also display a longer "DE_XXX" error code STRING and message -
+        // need to first implement a function to return error code strings / 
+        // longer messages, given the numerical error codes
         std::cout << "Error: Operation failed unexpectedly - error code = " <<
                      std::to_string(ecan_result) << "." << std::endl;
         return AppReturnError;
