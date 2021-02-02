@@ -42,6 +42,7 @@ PyObject* CommandTimeoutExceptionTypeObj = 0;
 PyObject* CAN_OverflowExceptionTypeObj = 0;
 PyObject* ProtectionErrorExceptionTypeObj = 0;
 PyObject* HardwareProtectionErrorExceptionTypeObj = 0;
+PyObject* DatabaseErrorExceptionTypeObj = 0;
 
 
 namespace   // Avoid cluttering the global namespace.
@@ -59,20 +60,20 @@ void translate_interface_error(EtherCANException const& e)
     // Use the Python 'C' API to set up an exception object
     switch (e.getErrCode())
     {
-    case DE_INTERFACE_NOT_INITIALIZED :
-    case DE_INTERFACE_ALREADY_INITIALIZED :
-    case DE_STILL_BUSY :
-    case DE_UNRESOLVED_COLLISION :
-    case DE_FPU_NOT_INITIALIZED :
-    case DE_INTERFACE_ALREADY_CONNECTED :
-    case DE_INTERFACE_STILL_CONNECTED :
-    case DE_WAVEFORM_NOT_READY :
-    case DE_FPUS_NOT_CALIBRATED :
-    case DE_NO_MOVABLE_FPUS :
-    case DE_FPUS_LOCKED :
-    case DE_INVALID_FPU_STATE :
-    case DE_INVALID_INTERFACE_STATE :
-    case DE_IN_ABORTED_STATE :
+    case DE_INTERFACE_NOT_INITIALIZED:
+    case DE_INTERFACE_ALREADY_INITIALIZED:
+    case DE_STILL_BUSY:
+    case DE_UNRESOLVED_COLLISION:
+    case DE_FPU_NOT_INITIALIZED:
+    case DE_INTERFACE_ALREADY_CONNECTED:
+    case DE_INTERFACE_STILL_CONNECTED:
+    case DE_WAVEFORM_NOT_READY:
+    case DE_FPUS_NOT_CALIBRATED:
+    case DE_NO_MOVABLE_FPUS:
+    case DE_FPUS_LOCKED:
+    case DE_INVALID_FPU_STATE:
+    case DE_INVALID_INTERFACE_STATE:
+    case DE_IN_ABORTED_STATE:
     case DE_ALPHA_ARM_ON_LIMIT_SWITCH:
         PyErr_SetString(InvalidStateExceptionTypeObj, e.what());
         break;
@@ -89,27 +90,27 @@ void translate_interface_error(EtherCANException const& e)
         break;
 
     case DE_FIRMWARE_UNIMPLEMENTED:
-    case DE_INSUFFICENT_NUM_GATEWAYS :
-    case DE_INVALID_CONFIG :
+    case DE_INSUFFICENT_NUM_GATEWAYS:
+    case DE_INVALID_CONFIG:
     case DE_SYNC_CONFIG_FAILED:
     case DE_WRITE_VERIFICATION_FAILED:
         PyErr_SetString(SetupErrorExceptionTypeObj, e.what());
         break;
 
-    case DE_INVALID_FPU_ID :
-    case DE_INVALID_PAR_VALUE :
+    case DE_INVALID_FPU_ID:
+    case DE_INVALID_PAR_VALUE:
     case DE_DUPLICATE_SERIAL_NUMBER:
         PyErr_SetString(InvalidParameterExceptionTypeObj, e.what());
         break;
 
-    case DE_WAIT_TIMEOUT :
+    case DE_WAIT_TIMEOUT:
         // this is normally not raised, because not necessarily an error
         PyErr_SetString(ConnectionFailureExceptionTypeObj, e.what());
         break;
-    case DE_NO_CONNECTION :
+    case DE_NO_CONNECTION:
         PyErr_SetString(SocketFailureExceptionTypeObj, e.what());
         break;
-    case DE_MAX_RETRIES_EXCEEDED :
+    case DE_MAX_RETRIES_EXCEEDED:
     case DE_CAN_COMMAND_TIMEOUT_ERROR:
         PyErr_SetString(CommandTimeoutExceptionTypeObj, e.what());
         break;
@@ -118,7 +119,7 @@ void translate_interface_error(EtherCANException const& e)
         PyErr_SetString(CAN_OverflowExceptionTypeObj, e.what());
         break;
 
-    case DE_INVALID_WAVEFORM :
+    case DE_INVALID_WAVEFORM:
     case DE_INVALID_WAVEFORM_TAIL:
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:
     case DE_INVALID_WAVEFORM_RAGGED:
@@ -151,6 +152,18 @@ void translate_interface_error(EtherCANException const& e)
 
     case DE_INCONSISTENT_STEP_COUNT:
         PyErr_SetString(HardwareProtectionErrorExceptionTypeObj, e.what());
+        break;
+
+    case DE_DB_ENV_VARIABLE_NOT_FOUND:
+    case DE_DB_OPEN_DIR_OR_FILE_NOT_FOUND:
+    case DE_DB_OPEN_ACCESS_DENIED:
+    case DE_DB_OPEN_OLD_FORMAT:
+    case DE_DB_OPEN_OTHER_FAILURE:
+    case DE_DB_TRANSACTION_CREATION_FAILED:
+    case DE_DB_MISSING_FPU_ENTRY_OR_READ_FAILED:
+    case DE_DB_WRITE_FAILED:
+    case DE_DB_SYNC_FAILED:
+        PyErr_SetString(DatabaseErrorExceptionTypeObj, e.what());
         break;
 
     default:
@@ -210,6 +223,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     CAN_OverflowExceptionTypeObj = EtherCANExceptionClass("CAN_BufferOverflowException", ConnectionFailureExceptionTypeObj);
     ProtectionErrorExceptionTypeObj = EtherCANExceptionClass("ProtectionError", InvalidStateExceptionTypeObj);
     HardwareProtectionErrorExceptionTypeObj = EtherCANExceptionClass("HardwareProtectionError", MovementErrorExceptionTypeObj);
+    DatabaseErrorExceptionTypeObj = EtherCANExceptionClass("DatabaseErrorException", EtherCANExceptionTypeObj);
 
     register_exception_translator<EtherCANException>(&translate_interface_error);
 

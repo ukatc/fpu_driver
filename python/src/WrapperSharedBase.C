@@ -592,6 +592,68 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
         break;
 
     //..........................................................................
+     // Database errors
+
+    case DE_DB_ENV_VARIABLE_NOT_FOUND:
+        throw EtherCANException("DE_DB_ENV_VARIABLE_NOT_FOUND: One or more of the Linux"
+                                " environment variables which are needed to specify the"
+                                " database directory are missing.",
+                                DE_DB_ENV_VARIABLE_NOT_FOUND);
+        break;
+
+    case DE_DB_OPEN_DIR_OR_FILE_NOT_FOUND:
+        throw EtherCANException("DE_DB_OPEN_DIR_OR_FILE_NOT_FOUND: Database opening error:"
+                                " Invalid directory, or database file(s) were not found.",
+                                DE_DB_OPEN_DIR_OR_FILE_NOT_FOUND);
+        break;
+
+    case DE_DB_OPEN_ACCESS_DENIED:
+        throw EtherCANException("DE_DB_OPEN_ACCESS_DENIED: Database opening error:"
+                                " Access is denied - the grid driver does not have"
+                                " sufficient privileges to access the database files"
+                                " and/or the directory which they are in.",
+                                DE_DB_OPEN_ACCESS_DENIED);
+        break;
+
+    case DE_DB_OPEN_OLD_FORMAT:
+        throw EtherCANException("DE_DB_OPEN_OLD_FORMAT: Database opening error:"
+                                " The database files found are of the old incompatible"
+                                " Python format, and cannot be used.",
+                                DE_DB_OPEN_OLD_FORMAT);
+        break;
+
+    case DE_DB_OPEN_OTHER_FAILURE:
+        throw EtherCANException("DE_DB_OPEN_OTHER_FAILURE: Database opening error:"
+                                " An other unspecified failure occurred.",
+                                DE_DB_OPEN_OTHER_FAILURE);
+        break;
+
+    case DE_DB_TRANSACTION_CREATION_FAILED:
+        throw EtherCANException("DE_DB_TRANSACTION_CREATION_FAILED:"
+                                " An attempted database transaction creation failed.",
+                                DE_DB_TRANSACTION_CREATION_FAILED);
+        break;
+
+    case DE_DB_MISSING_FPU_ENTRY_OR_READ_FAILED:
+        throw EtherCANException("DE_DB_MISSING_FPU_ENTRY_OR_READ_FAILED:"
+                                " For a physical FPU's serial number, one or more of its"
+                                " required data items are missing from the database, or the"
+                                " reading of these items failed for some reason.",
+                                DE_DB_MISSING_FPU_ENTRY_OR_READ_FAILED);
+        break;
+
+    case DE_DB_WRITE_FAILED:
+        throw EtherCANException("DE_DB_WRITE_FAILED: An attempted write of a data item failed.",
+                                DE_DB_WRITE_FAILED);
+        break;
+
+    case DE_DB_SYNC_FAILED:
+        throw EtherCANException("DE_DB_SYNC_FAILED:"
+                                " A database synchronisation operation failed.",
+                                DE_DB_SYNC_FAILED);
+        break;
+
+    //..........................................................................
     // Unknown error
     case DE_ERROR_UNKNOWN:
         throw EtherCANException("DE_ERROR_UNKNOWN: An unknown error occurred.",
