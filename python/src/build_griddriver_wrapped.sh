@@ -21,7 +21,12 @@
 gcc -fPIC -I../../lib/liblmdb -pthread -O2 -g -W -Wall -Wno-unused-parameter -Wbad-function-cast -Wuninitialized -c ../../lib/liblmdb/mdb.c
 gcc -fPIC -I../../lib/liblmdb -pthread -O2 -g -W -Wall -Wno-unused-parameter -Wbad-function-cast -Wuninitialized -c ../../lib/liblmdb/midl.c
 
-g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" -DENABLE_PROTECTION_CODE \
+# TODO: The -g command-line option enables debug information in the build -
+# this is required if wanting to debug this build in a debugger, e.g. in the
+# Eclipse CDT IDE with the "special Wrapped_Grid_Driver_In_Python" launch
+# configuration
+# g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" -DENABLE_PROTECTION_CODE \
+g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" -DENABLE_PROTECTION_CODE -g \
     -I/usr/local/include \
     -I/usr/include/python2.7 \
     -I../../include \
