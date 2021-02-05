@@ -49,13 +49,14 @@ private:
     enum class GeneratedWaveform
     {
         Steps_10_10,
+        Steps_Minus9_Minus9,
         Steps_20_20,
         Steps_90_90,
         Steps_Minus89_Minus89
     };
-    void testInitialisedGridDriver(UnprotectedGridDriver &gd,
+    void testInitialisedGridDriver(int num_fpus, UnprotectedGridDriver &gd,
                                    const t_gateway_address &gateway_address,
-                                   bool soft_protection);
+                                   bool protection_on);
     const t_waveform_steps &getWaveform(GeneratedWaveform gen_waveform);
 };
 

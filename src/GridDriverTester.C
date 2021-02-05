@@ -28,13 +28,6 @@
 
 #define TESTING_MAX_NUM_FPUS    (5)
 
-// NOTE: Can change TESTING_NUM_FPUS as required, up to TESTING_MAX_NUM_FPUS -
-// and set mock gateway (if used) to the same value when invoking it
-#define TESTING_NUM_FPUS        (1)
-#if (TESTING_NUM_FPUS > TESTING_MAX_NUM_FPUS)
-#error "BUILD ERROR: TESTING_NUM_FPUS > TESTING_MAX_NUM_FPUS"
-#endif
-
 namespace mpifps
 {
 
@@ -88,10 +81,11 @@ void GridDriverTester::doUnprotectedGridDriverFunctionalTesting()
     
     //********************************************
     // Set the required parameters here
+    const int num_fpus = 1;
     const char *ip_address_str = "192.168.0.12";
     //********************************************
 
-    UnprotectedGridDriver ugd(TESTING_NUM_FPUS);
+    UnprotectedGridDriver ugd(num_fpus);
 
     ecan_result = ugd.initialize();
 
@@ -99,8 +93,8 @@ void GridDriverTester::doUnprotectedGridDriverFunctionalTesting()
     {
         const uint16_t port_number = 4700;
         const t_gateway_address gateway_address = { ip_address_str, port_number };
-        const bool soft_protection = false;
-        testInitialisedGridDriver(ugd, gateway_address, soft_protection);
+        const bool protection_on = false;
+        testInitialisedGridDriver(num_fpus, ugd, gateway_address, protection_on);
     }
 }
 
@@ -112,15 +106,17 @@ void GridDriverTester::doGridDriverFunctionalTesting()
     E_EtherCANErrCode ecan_result;
 
     //********************************************
-    // Set the required parameters here
-    const char *ip_address_str = "192.168.0.12";
+    // Set the required test parameters here
+    const int num_fpus = 1;
+    //const char *ip_address_str = "192.168.0.10"; // Good physical gateway
+    const char *ip_address_str = "127.0.0.1";      // Local mock gateway
     const bool use_mockup_db = false;
     //********************************************
 
 #ifdef USE_2ND_CANBUS
     GridDriver gd(NEXT_CANBUS_FPU_ID + 1);
 #else
-    GridDriver gd(TESTING_NUM_FPUS);
+    GridDriver gd(num_fpus);
 #endif
 
     ecan_result = gd.initialize();
@@ -134,15 +130,16 @@ void GridDriverTester::doGridDriverFunctionalTesting()
     {
         const uint16_t port_number = 4700;
         const t_gateway_address gateway_address = { ip_address_str, port_number };
-        const bool soft_protection = true;
-        testInitialisedGridDriver(gd, gateway_address, soft_protection);
+        const bool protection_on = true;
+        testInitialisedGridDriver(num_fpus, gd, gateway_address, protection_on);
     }
 }
 
 //------------------------------------------------------------------------------
-void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
+void GridDriverTester::testInitialisedGridDriver(int num_fpus,
+                                                 UnprotectedGridDriver &gd,
                                        const t_gateway_address &gateway_address,
-                                                 bool soft_protection)
+                                                 bool protection_on)
 {
     // Performs basic functional testing of a pre-initialised 
     // UnprotectedGridDriver or GridDriver object, for up to 5 FPUs. Notes:
@@ -160,13 +157,22 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     volatile E_EtherCANErrCode ecan_result; // volatile so not optimised away,
                                             // so can see value in debugger
     E_GridState grid_state_result;
-    t_grid_state grid_state;
+    t_grid_state gs;
+
+    //..........................................................................
+
+    if (num_fpus > TESTING_MAX_NUM_FPUS)
+    {
+        return;
+    }
+
+    //..........................................................................
 
     t_fpuset fpuset;
 #ifdef USE_2ND_CANBUS
     UnprotectedGridDriver::createFpuSetForSingleFpu(NEXT_CANBUS_FPU_ID, fpuset);
 #else
-    UnprotectedGridDriver::createFpuSetForNumFpus(TESTING_NUM_FPUS, fpuset);
+    UnprotectedGridDriver::createFpuSetForNumFpus(num_fpus, fpuset);
 #endif
 
     //..........................................................................
@@ -179,33 +185,33 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     if (ecan_result == DE_OK)
     {
         // Test getGridState()
-        grid_state_result = gd.getGridState(grid_state);
+        grid_state_result = gd.getGridState(gs);
     
         // Test readSerialNumbers()
-        ecan_result = gd.readSerialNumbers(grid_state, fpuset);
+        ecan_result = gd.readSerialNumbers(gs, fpuset);
     }
     
     //..........................................................................
     // Test pingFPUs()
     if (ecan_result == DE_OK)
     {
-        ecan_result = gd.pingFPUs(grid_state, fpuset);
+        ecan_result = gd.pingFPUs(gs, fpuset);
     
         // Test getGridState() again
-        grid_state_result = gd.getGridState(grid_state);
+        grid_state_result = gd.getGridState(gs);
     }
 
     // Test pingFPUs() again
     if (ecan_result == DE_OK)
     {
-        ecan_result = gd.pingFPUs(grid_state, fpuset);
+        ecan_result = gd.pingFPUs(gs, fpuset);
     }
 
     //..........................................................................
     // Test resetFPUs()
     if (ecan_result == DE_OK)
     {
-        ecan_result = gd.resetFPUs(grid_state, fpuset);
+        ecan_result = gd.resetFPUs(gs, fpuset);
     }
     
     //..........................................................................
@@ -223,24 +229,25 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
 
         grid_state_result = gd.getGridState(grid_state);
 
-        ecan_result = gd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
+        ecan_result = gd.findDatum(gs, search_modes, DASEL_BOTH, fpuset,
                                    soft_protection, count_protection,
                                    support_uninitialized_auto,
                                    DATUM_TIMEOUT_ENABLE);
 #else
         t_datum_search_flags search_modes;
-        for (int fpu_id = 0; fpu_id < TESTING_NUM_FPUS; fpu_id++)
+        for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
         {
             search_modes[fpu_id] = SEARCH_CLOCKWISE;
         }
-        const bool count_protection = false;
         const bool support_uninitialized_auto = false;
 
-        grid_state_result = gd.getGridState(grid_state);
+        grid_state_result = gd.getGridState(gs);
 
         // TODO: Use DATUM_TIMEOUT_DISABLE instead of DATUM_TIMEOUT_ENABLE below?
         // (sometimes times out if long-duration findDatum())
-        ecan_result = gd.findDatum(grid_state, search_modes, DASEL_BOTH, fpuset,
+        const bool soft_protection = protection_on;
+        const bool count_protection = protection_on;
+        ecan_result = gd.findDatum(gs, search_modes, DASEL_BOTH, fpuset,
                                    soft_protection, count_protection,
                                    support_uninitialized_auto,
                                    DATUM_TIMEOUT_ENABLE);
@@ -258,7 +265,7 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
         {3, getWaveform(GeneratedWaveform::Steps_Minus89_Minus89) },
         {4, getWaveform(GeneratedWaveform::Steps_10_10) }
     };
-    for (int i = 0; i < TESTING_NUM_FPUS; i++)
+    for (int i = 0; i < num_fpus; i++)
     {
         wavetable.push_back(test_waveforms[i]);
     }
@@ -280,11 +287,11 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     
     //..........................................................................
     // Test enableMove()
-    grid_state_result = gd.getGridState(grid_state);
+    grid_state_result = gd.getGridState(gs);
 
-    for (int i = 0; i < TESTING_NUM_FPUS; i++)
+    for (int i = 0; i < num_fpus; i++)
     {
-        ecan_result = gd.enableMove(i, grid_state);
+        ecan_result = gd.enableMove(i, gs);
         if (ecan_result != DE_OK)
         {
             break;
@@ -296,11 +303,11 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     // following code to test the wtable
     // pruning code inside configMotion()
     /*    
-    if (TESTING_NUM_FPUS >= 2)
+    if (num_fpus >= 2)
     {
         fpuset[1] = false;
     }
-    if (TESTING_NUM_FPUS >= 4)
+    if (num_fpus >= 4)
     {
         fpuset[3] = false;
     }
@@ -316,7 +323,8 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
         const bool warn_unsafe = true;
         const int verbosity = 3;
 
-        ecan_result = gd.configMotion(wavetable, grid_state, fpuset,
+        const bool soft_protection = protection_on;
+        ecan_result = gd.configMotion(wavetable, gs, fpuset,
                                       soft_protection, allow_uninitialized,
                                       ruleset_version, warn_unsafe, verbosity);
     }
@@ -326,7 +334,7 @@ void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
     if (ecan_result == DE_OK)
     {
         bool sync_command = true;
-        ecan_result = gd.executeMotion(grid_state, fpuset, sync_command);
+        ecan_result = gd.executeMotion(gs, fpuset, sync_command);
     }
     
     //..........................................................................
@@ -349,6 +357,13 @@ const t_waveform_steps &GridDriverTester::getWaveform(GeneratedWaveform gen_wave
     {
         { 62, 62}, {112, 112}, {162, 162}, {212, 162}, {193, 112},
         {162, 62}, {112,  62}, { 62,  62}, { 62,  47}
+    };
+
+    // gen_wf(-9,-9)
+    static const t_waveform_steps waveform_steps_minus9_minus9 =
+    {
+        { -62,    0}, {-112,    0}, {-162, -62}, {-212, -112}, {-162, -162},
+        {-112, -162}, { -62, -112}, { -62, -62}, {-62,   -62}, { -17,  -25}
     };
 
     // gen_wf(20,20)
@@ -396,6 +411,7 @@ const t_waveform_steps &GridDriverTester::getWaveform(GeneratedWaveform gen_wave
     } waveform_defs[] = 
     {
         { GeneratedWaveform::Steps_10_10, waveform_steps_10_10 },
+        { GeneratedWaveform::Steps_Minus9_Minus9, waveform_steps_minus9_minus9 },
         { GeneratedWaveform::Steps_20_20, waveform_steps_20_20 },
         { GeneratedWaveform::Steps_90_90, waveform_steps_90_90 },
         { GeneratedWaveform::Steps_Minus89_Minus89, waveform_steps_minus89_minus89 }

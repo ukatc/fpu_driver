@@ -1273,15 +1273,21 @@ E_EtherCANErrCode GridDriver::_refresh_positions(const t_grid_state &grid_state,
             Interval new_beta = fpus_data[fpu_id].b_caloffset + counted_beta_angle;
 
             // Compute alpha and beta position intervals and store both to DB
-            Interval a_target = fpus_data[fpu_id].target_position.apos;
-            Interval b_target = fpus_data[fpu_id].target_position.bpos;
             if (a_underflow || a_overflow)
             {
-                new_alpha = a_target;
+                // TODO: The Python version has the following warning here -
+                // is anything required here for this C++ version? 
+                // print("Warning: _refresh_positions(): FPU id %i: using stored alpha target value"
+                //       " to bypass counter underflow/overflow" % fpu_id)
+                new_alpha = fpus_data[fpu_id].target_position.apos;
             }
             if (b_underflow || b_overflow)
             {
-                new_beta = b_target;
+                // TODO: The Python version has the following warning here -
+                // is anything required here for this C++ version? 
+                // print("Warning: _refresh_positions(): FPU id %i: using stored alpha target value"
+                //       " to bypass counter underflow/overflow" % fpu_id)
+                new_beta = fpus_data[fpu_id].target_position.bpos;
             }
             fpus_data[fpu_id].target_position.apos = new_alpha;
             fpus_data[fpu_id].target_position.bpos = new_beta;
@@ -1915,7 +1921,7 @@ E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
 {
     // This runs before executeMotion command is started. After that point, the
     // FPU in fpuset should be moving within the ranges set by the last
-    // config_motion, repeat_motion or reverse_motion command. These ranges
+    // configMotion(), repeatMotion() or reverseMotion() command. These ranges
     // are set as the intervals which define the possible positions until the
     // command has finished.
     //
