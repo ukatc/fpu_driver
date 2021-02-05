@@ -35,8 +35,39 @@ namespace mpifps
 void GridDriverTester::doGridDriverUnitTests()
 {
     // Performs ad-hoc unit tests on a GridDriver instance
+
     static const int num_fpus = 10;
     GridDriver gd(num_fpus);
+
+
+    //..........................................................................
+    // Test UnprotectedGridDriver::wavetable_was_received()
+
+    // Create a wavetable
+    t_wtable wavetable;
+    static const t_waveform test_waveforms[TESTING_MAX_NUM_FPUS] =
+    {
+        {0, getWaveform(GeneratedWaveform::Steps_10_10) },
+        {1, getWaveform(GeneratedWaveform::Steps_20_20) },
+        {2, getWaveform(GeneratedWaveform::Steps_90_90) },
+        {3, getWaveform(GeneratedWaveform::Steps_Minus89_Minus89) },
+        {4, getWaveform(GeneratedWaveform::Steps_10_10) }
+    };
+    for (int i = 0; i < num_fpus; i++)
+    {
+        wavetable.push_back(test_waveforms[i]);
+    }
+
+    // Test wavetable_was_received() - ad-hoc partial test
+    // (N.B. private function, accessible because this test class is friend'ed
+    // from the grid driver classes)
+    t_fpu_state fpu_state;
+    bool allow_unconfirmed = false;
+    E_FPU_STATE target_state = FPST_READY_FORWARD;
+    bool wtable_received_result =
+            gd.wavetable_was_received(wavetable, 3, fpu_state,
+                                      allow_unconfirmed, target_state);
+    UNUSED_ARG(wtable_received_result); // Suppress variable-not-used warning
 
     //..........................................................................
     // Test GridDriver::getDuplicateSerialNumbers()
@@ -154,11 +185,6 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
     //     the return values to see what's going on, and also look at the 
     //     mock gateway console output
 
-    volatile E_EtherCANErrCode ecan_result; // volatile so not optimised away,
-                                            // so can see value in debugger
-    E_GridState grid_state_result;
-    t_grid_state gs;
-
     //..........................................................................
 
     if (num_fpus > TESTING_MAX_NUM_FPUS)
@@ -167,6 +193,20 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
     }
 
     //..........................................................................
+
+    volatile E_EtherCANErrCode ecan_result; // volatile so not optimised away,
+                                            // so can see value in debugger
+    E_GridState grid_state_result;
+    t_grid_state gs;
+    const bool support_uninitialized_auto = false;
+    const bool soft_protection = protection_on;
+    const bool count_protection = protection_on;
+
+    t_datum_search_flags search_modes;
+    for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
+    {
+        search_modes[fpu_id] = SEARCH_CLOCKWISE;
+    }
 
     t_fpuset fpuset;
 #ifdef USE_2ND_CANBUS
@@ -224,8 +264,6 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
         {
             search_modes[fpu_id] = SEARCH_CLOCKWISE;
         }
-        const bool count_protection = true;
-        const bool support_uninitialized_auto = false;
 
         grid_state_result = gd.getGridState(grid_state);
 
@@ -234,19 +272,10 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
                                    support_uninitialized_auto,
                                    DATUM_TIMEOUT_ENABLE);
 #else
-        t_datum_search_flags search_modes;
-        for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
-        {
-            search_modes[fpu_id] = SEARCH_CLOCKWISE;
-        }
-        const bool support_uninitialized_auto = false;
-
         grid_state_result = gd.getGridState(gs);
 
         // TODO: Use DATUM_TIMEOUT_DISABLE instead of DATUM_TIMEOUT_ENABLE below?
         // (sometimes times out if long-duration findDatum())
-        const bool soft_protection = protection_on;
-        const bool count_protection = protection_on;
         ecan_result = gd.findDatum(gs, search_modes, DASEL_BOTH, fpuset,
                                    soft_protection, count_protection,
                                    support_uninitialized_auto,
@@ -254,37 +283,6 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
 #endif
     }
 
-    //..........................................................................
-    // Create a wavetable
-    t_wtable wavetable;
-    static const t_waveform test_waveforms[TESTING_MAX_NUM_FPUS] =
-    {
-        {0, getWaveform(GeneratedWaveform::Steps_10_10) },
-        {1, getWaveform(GeneratedWaveform::Steps_20_20) },
-        {2, getWaveform(GeneratedWaveform::Steps_90_90) },
-        {3, getWaveform(GeneratedWaveform::Steps_Minus89_Minus89) },
-        {4, getWaveform(GeneratedWaveform::Steps_10_10) }
-    };
-    for (int i = 0; i < num_fpus; i++)
-    {
-        wavetable.push_back(test_waveforms[i]);
-    }
-
-    //..........................................................................
-    // Test wavetable_was_received() - ad-hoc partial test
-    // (N.B. private function, accessible because this test class is friend'ed
-    // from the grid driver classes)
-    if (ecan_result == DE_OK)
-    {
-        t_fpu_state fpu_state;
-        bool allow_unconfirmed = false;
-        E_FPU_STATE target_state = FPST_READY_FORWARD;
-        bool wtable_received_result =
-                gd.wavetable_was_received(wavetable, 3, fpu_state,
-                                          allow_unconfirmed, target_state);
-        UNUSED_ARG(wtable_received_result); // Suppress variable-not-used warning
-    }
-    
     //..........................................................................
     // Test enableMove()
     grid_state_result = gd.getGridState(gs);
@@ -315,26 +313,53 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
     //........................
     
     //..........................................................................
-    // test configMotion()
+    // Test configMotion() / executeMotion() - a positive motion followed by
+    // a negative one, which should bring us back to near datum
     if (ecan_result == DE_OK)
     {
-        const bool allow_uninitialized = true;
+        t_wtable wavetable;
+        const bool allow_uninitialized = false;
         const int ruleset_version = DEFAULT_WAVEFORM_RULESET_VERSION;
         const bool warn_unsafe = true;
         const int verbosity = 3;
 
-        const bool soft_protection = protection_on;
+        // Test for (10,10)
+        wavetable.push_back({0, getWaveform(GeneratedWaveform::Steps_10_10)});
+        gd.getGridState(gs);
         ecan_result = gd.configMotion(wavetable, gs, fpuset,
                                       soft_protection, allow_uninitialized,
                                       ruleset_version, warn_unsafe, verbosity);
+        if (ecan_result == DE_OK)
+        {
+            bool sync_command = true;
+            gd.getGridState(gs);
+            ecan_result = gd.executeMotion(gs, fpuset, sync_command);
+        }
+
+        // Test for (-9,-9)
+        wavetable.clear();
+        wavetable.push_back({0, getWaveform(GeneratedWaveform::Steps_Minus9_Minus9)});
+        gd.getGridState(gs);
+        ecan_result = gd.configMotion(wavetable, gs, fpuset,
+                                      soft_protection, allow_uninitialized,
+                                      ruleset_version, warn_unsafe, verbosity);
+        if (ecan_result == DE_OK)
+        {
+            bool sync_command = true;
+            gd.getGridState(gs);
+            ecan_result = gd.executeMotion(gs, fpuset, sync_command);
+        }
     }
 
     //..........................................................................
-    // Test executeMotion()
+    // Test findDatum() again
     if (ecan_result == DE_OK)
     {
-        bool sync_command = true;
-        ecan_result = gd.executeMotion(gs, fpuset, sync_command);
+        gd.getGridState(gs);
+        ecan_result = gd.findDatum(gs, search_modes, DASEL_BOTH, fpuset,
+                                   soft_protection, count_protection,
+                                   support_uninitialized_auto,
+                                   DATUM_TIMEOUT_ENABLE);
     }
     
     //..........................................................................
