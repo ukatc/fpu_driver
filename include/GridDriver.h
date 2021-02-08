@@ -129,10 +129,6 @@ private:
     double _beta_angle(const t_fpu_state &fpu_state, bool &beta_underflow_ret,
                        bool &beta_overflow_ret);
 
-    // TODO: Not needed? See comments above disabled set_wtable_reversed() in
-    // GridDriver.C
-    // void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed = false);
-
     // The following hook functions override those in UnprotectedGridDriver
 
     E_EtherCANErrCode _post_connect_hook() override;

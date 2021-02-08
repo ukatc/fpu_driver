@@ -347,14 +347,11 @@ protected:
                                                        t_grid_state &gs,
                                                        const t_fpuset &fpuset)
     {
-        // TODO: CHECK THIS
-        // NOTE: The original Python version of this function called
-        // set_wtable_reversed(), but this isn't required because it doesn't
-        // do anything in UnprotectedGridDriver (because wf_reversed isn't
-        // used in it)
+        // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
+
         UNUSED_ARG(wtable);
         UNUSED_ARG(gs);
-        UNUSED_ARG(fpuset);
+        set_wtable_reversed(fpuset, false);
         return DE_OK;
     }
 
@@ -374,12 +371,11 @@ protected:
                                                        t_grid_state &gs,
                                                        const t_fpuset &fpuset)
     {
-        // TODO: CHECK THIS
-        // NOTE: See comments in _post_config_motion_hook() above - they apply
-        // to this function as well
+        // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
+
         UNUSED_ARG(wtable);
         UNUSED_ARG(gs);
-        UNUSED_ARG(fpuset);
+        set_wtable_reversed(fpuset, false);
         return DE_OK;
     }
 
@@ -399,12 +395,11 @@ protected:
                                                         t_grid_state &gs,
                                                         const t_fpuset &fpuset)
     {
-        // TODO: CHECK THIS
-        // NOTE: See comments in _post_config_motion_hook() above - they apply
-        // to this function as well
+        // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
+
         UNUSED_ARG(wtable);
         UNUSED_ARG(gs);
-        UNUSED_ARG(fpuset);
+        set_wtable_reversed(fpuset, true);
         return DE_OK;
     }
 
@@ -554,6 +549,8 @@ protected:
     //..........................................................................
 private:
     E_EtherCANErrCode pingIfNeeded(t_grid_state &gs, const t_fpuset &fpuset);
+
+    void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed = false);
 
     bool wavetables_incomplete = false;
 

@@ -1054,6 +1054,24 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 }
 
 //------------------------------------------------------------------------------
+void UnprotectedGridDriver::set_wtable_reversed(const t_fpuset &fpuset,
+                                                bool is_reversed)
+{
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here?
+    // BUT will also be in UnprotectedGridDriver::_post_config_motion_hook() /
+    // _post_repeat_motion_hook() / _post_reverse_motion_hook()? (or at least
+    // in the original Python version)
+
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+    {
+        if (fpuset[fpu_id])
+        {
+            fpus_data[fpu_id].db.wf_reversed = is_reversed;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
                                                        const t_fpuset &fpuset,
                                                        bool sync_command)
