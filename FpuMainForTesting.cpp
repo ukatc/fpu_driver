@@ -66,11 +66,11 @@ int main(int argc, char** argv)
                                                                  "PT19");
 #endif // 0
     
-    testGridDriver();
+    //testGridDriver();
 
     //testFpuCounters();
 
-    //testProtectionDB();
+    testProtectionDB();
     
     return 0;
 }
@@ -99,9 +99,9 @@ static void testGridDriver()
 static void testProtectionDB()
 {
 
-    std::string dir_str = ProtectionDB::getDirFromLinuxEnv(false);
+    // std::string dir_str = ProtectionDB::getDirFromLinuxEnv(false);
 
-    dir_str = ProtectionDB::getDirFromLinuxEnv(true);
+    // dir_str = ProtectionDB::getDirFromLinuxEnv(true);
 
     // ProtectionDBTester::doTests();
 

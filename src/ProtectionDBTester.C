@@ -800,15 +800,54 @@ void ProtectionDBTester::testDbOpeningScenarios()
     // Note: Each protectiondb instance is tried in its own code scope, so that
     // it's automatically closed again once it goes out of scope
 
-    volatile MdbResult mdb_result = MDB_PANIC;  // volatile so not optimised away
+    MdbResult mdb_result = MDB_PANIC;
 
     {
         // Test for when directory, files and sub-databases all exist - N.B.
         // they need to all be present for this test to pass
         ProtectionDB protectiondb;
-        const bool use_mockup_db = true;
+        const bool use_mockup_db = false;
         std::string dir_str = ProtectionDB::getDirFromLinuxEnv(use_mockup_db);
         mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
+        {
+            auto txn = protectiondb.createTransaction(mdb_result);
+
+            if (txn)
+            {
+                // Test a couple of writes to same FPU item, to check that
+                // overwrites if already exists
+                const char dummy_serial_number[] = "dummy";
+                int64_t dummyVal = 0x5697856439102534L;
+
+                mdb_result =
+                    txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                               FpuDbIntValType::BetaRetries_ACW,
+                                               dummy_serial_number, dummyVal);
+                if (mdb_result == MDB_SUCCESS)
+                {
+                    dummyVal = 0x0;
+                    mdb_result =
+                        txn->fpuDbTransferInt64Val(DbTransferType::Read,
+                                                   FpuDbIntValType::BetaRetries_ACW,
+                                                   dummy_serial_number, dummyVal);
+                }
+
+                dummyVal = 0x5678;
+                mdb_result =
+                    txn->fpuDbTransferInt64Val(DbTransferType::Write,
+                                               FpuDbIntValType::BetaRetries_ACW,
+                                               dummy_serial_number, dummyVal);
+                if (mdb_result == MDB_SUCCESS)
+                {
+                    dummyVal = 0x0;
+                    mdb_result =
+                        txn->fpuDbTransferInt64Val(DbTransferType::Read,
+                                                   FpuDbIntValType::BetaRetries_ACW,
+                                                   dummy_serial_number, dummyVal);
+                }
+            }
+        }
     }
 
     {
