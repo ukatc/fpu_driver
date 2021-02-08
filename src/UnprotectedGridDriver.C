@@ -983,7 +983,6 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         return ecan_result;
     }
 
-    bool update_config = false;
     // TODO: The following is a quite large data structure which will
     // be stored on the local stack - is this OK? (stack overflow?)
     // Or, better to create it on the heap using a std::unique_ptr?
@@ -992,31 +991,16 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
-    // TODO: The equivalent Python code here has 3-deep-nested "try" blocks,
-    // and it is not yet clear what the equivalent C++ code needs to be here.
-    //
-    // TODO: configMotion(), and configMotionAsync() which it calls, can
-    // return a large number of different error codes - see what needs
-    // to be done here relative to the Python implementation, and also
-    // what the equivalent C++ response for the Python version's 
-    // InvalidWaveformException, InvalidStateException, SocketFailure,
-    // CommandTimeout etc would be (if required)
-    //
-    // e.g. If SocketFailure or CommandTimeout then would be a
-    // transmission failure. Here, it is possible that some FPUs have
-    // finished loading valid data, but the process was not finished
-    // for all FPUs.
-
     ecan_result = _gd->configMotion(wtable, gs, fpuset, allow_uninitialized,
                                     ruleset_version);
-    // TODO: Check for the various expected result values - might some
-    // non-DE_OK ones might actually be OK?
-    if (ecan_result != DE_OK)
-    {
-        update_config = true;
-    }
-
-    if (update_config)
+    // N.B. If returns DE_NO_CONNECTION or DE_CAN_COMMAND_TIMEOUT_ERROR then
+    // would be a transmission failure. Here, it is possible that some FPUs
+    // have finished loading valid data, but the process was not finished
+    // for all FPUs.
+    // (N.B. DE_NO_CONNECTION is equivalent to the Python version's
+    // SocketFailure exception)
+    if ((ecan_result == DE_OK) || (ecan_result == DE_NO_CONNECTION) || 
+        (ecan_result == DE_CAN_COMMAND_TIMEOUT_ERROR))
     {
         // TODO: Much of the following code is inefficient because iterates
         // through arrays/lists many times - but should work OK. This approach
@@ -1057,11 +1041,15 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
                                    gs.FPU_state[fpu_id]);
         }
 
-        ecan_result = _post_config_motion_hook(wtable, gs, fpuset);
+        E_EtherCANErrCode post_ecan_result =
+                             _post_config_motion_hook(wtable, gs, fpuset);
+        // Prioritise any _gd->configMotion() error code first
+        if (ecan_result == DE_OK)
+        {
+            ecan_result = post_ecan_result;
+        }
     }
 
-    // TODO: Is this return variable correct? (does correspond to equivalent 
-    // Python code)
     return ecan_result;
 }
 
