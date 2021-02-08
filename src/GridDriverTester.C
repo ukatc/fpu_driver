@@ -201,6 +201,11 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
     const bool support_uninitialized_auto = false;
     const bool soft_protection = protection_on;
     const bool count_protection = protection_on;
+    // datum_timeout is DISABLED for now so that findDatum() doesn't time out,
+    // which would otherwise do if the FPU arm(s) are far away from datum.
+    // IMPORTANT: Be careful with this with physical FPUs - the datum timeout
+    // is normally a safeguard.
+    const E_DATUM_TIMEOUT_FLAG datum_timeout = DATUM_TIMEOUT_DISABLE;
 
     t_datum_search_flags search_modes;
     for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
@@ -264,23 +269,13 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
         {
             search_modes[fpu_id] = SEARCH_CLOCKWISE;
         }
+#endif
 
-        grid_state_result = gd.getGridState(grid_state);
-
-        ecan_result = gd.findDatum(gs, search_modes, DASEL_BOTH, fpuset,
-                                   soft_protection, count_protection,
-                                   support_uninitialized_auto,
-                                   DATUM_TIMEOUT_ENABLE);
-#else
         grid_state_result = gd.getGridState(gs);
 
-        // TODO: Use DATUM_TIMEOUT_DISABLE instead of DATUM_TIMEOUT_ENABLE below?
-        // (sometimes times out if long-duration findDatum())
         ecan_result = gd.findDatum(gs, search_modes, DASEL_BOTH, fpuset,
                                    soft_protection, count_protection,
-                                   support_uninitialized_auto,
-                                   DATUM_TIMEOUT_ENABLE);
-#endif
+                                   support_uninitialized_auto, datum_timeout);
     }
 
     //..........................................................................
@@ -323,6 +318,7 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
         const bool warn_unsafe = true;
         const int verbosity = 3;
 
+        //..............................
         // Test for (10,10)
         wavetable.push_back({0, getWaveform(GeneratedWaveform::Steps_10_10)});
         gd.getGridState(gs);
@@ -336,19 +332,26 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
             ecan_result = gd.executeMotion(gs, fpuset, sync_command);
         }
 
+        //..............................
         // Test for (-9,-9)
-        wavetable.clear();
-        wavetable.push_back({0, getWaveform(GeneratedWaveform::Steps_Minus9_Minus9)});
-        gd.getGridState(gs);
-        ecan_result = gd.configMotion(wavetable, gs, fpuset,
-                                      soft_protection, allow_uninitialized,
-                                      ruleset_version, warn_unsafe, verbosity);
+        if (ecan_result == DE_OK)
+        {
+            wavetable.clear();
+            wavetable.push_back({0, getWaveform(GeneratedWaveform::Steps_Minus9_Minus9)});
+            gd.getGridState(gs);
+            ecan_result = gd.configMotion(wavetable, gs, fpuset,
+                                          soft_protection, allow_uninitialized,
+                                          ruleset_version, warn_unsafe,
+                                          verbosity);
+        }
         if (ecan_result == DE_OK)
         {
             bool sync_command = true;
             gd.getGridState(gs);
             ecan_result = gd.executeMotion(gs, fpuset, sync_command);
         }
+
+        //........................................
     }
 
     //..........................................................................
@@ -358,8 +361,7 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
         gd.getGridState(gs);
         ecan_result = gd.findDatum(gs, search_modes, DASEL_BOTH, fpuset,
                                    soft_protection, count_protection,
-                                   support_uninitialized_auto,
-                                   DATUM_TIMEOUT_ENABLE);
+                                   support_uninitialized_auto, datum_timeout);
     }
     
     //..........................................................................
