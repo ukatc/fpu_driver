@@ -552,6 +552,8 @@ private:
 
     void set_wtable_reversed(const t_fpuset &fpuset, bool is_reversed = false);
 
+    bool isMovementError(E_EtherCANErrCode ecan_result);
+
     bool wavetables_incomplete = false;
 
     // TODO: Add locked_gateways here, but need to convert Python devicelock.py

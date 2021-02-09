@@ -1143,7 +1143,11 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
         is_ready = (ecan_result != DE_WAIT_TIMEOUT);
     }
 
-    if (ecan_result != DE_OK)
+    // TODO: The following isMovementError() function is hopefully equivalent
+    // to the Python version's check for the MovementError exception, but check
+    // this further
+    if (isMovementError(ecan_result) ||
+        (ecan_result == DE_CAN_COMMAND_TIMEOUT_ERROR))
     {
         refresh_state = true;
     }
@@ -1180,6 +1184,40 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     }
 
     return ecan_result;
+}
+
+//------------------------------------------------------------------------------
+bool UnprotectedGridDriver::isMovementError(E_EtherCANErrCode ecan_result)
+{
+    // Indicates if ecan_result is one of the group of "movement errors",
+    // equivalent to the Python version's MovementError exception, which
+    // the exception hierarchy in BOOST_PYTHON_MODULE(ethercanif) in
+    // ethercanif.C shows has a number of sub-exceptions (see
+    // MovementErrorExceptionTypeObj) which correspond to the following
+    // DE_XXX error codes.
+    // TODO: This function woukd be better checking between a RANGE of
+    // DE_*** error codes - e.g. could define DE_MOVEMENTERR_BOTTOM and
+    // DE_MOVEMENTERR_TOP enum values in E_EtherCANErrCode for this,
+    // OR look for codes in the 600 range (but these ranges aren't properly
+    // defined anywhere yet)
+
+    static const E_EtherCANErrCode movementErrorCodes[] =
+    {
+        DE_NEW_COLLISION, DE_NEW_LIMIT_BREACH, DE_STEP_TIMING_ERROR,
+        DE_MOVEMENT_ABORTED, DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH,
+        DE_DATUM_COMMAND_HW_TIMEOUT, DE_INCONSISTENT_STEP_COUNT
+    };
+
+    for (int i = 0;
+         i < (sizeof(movementErrorCodes) / sizeof(movementErrorCodes[0]));
+         i++)
+    {
+        if (ecan_result == movementErrorCodes[i])
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------
