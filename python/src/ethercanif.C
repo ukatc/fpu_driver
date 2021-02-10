@@ -23,6 +23,7 @@
 
 #include "WrapEtherCANInterface.h"
 #include "WrappedGridDriver.h"
+#include "ErrorCodes.h"
 
 PyObject* EtherCANExceptionTypeObj = 0;
 PyObject* InvalidWaveformExceptionTypeObj = 0;
@@ -57,118 +58,47 @@ E_GridState wrapGetGridStateSummary(WrapGridState& grid_state)
 //------------------------------------------------------------------------------
 void translate_interface_error(EtherCANException const& e)
 {
-    // Use the Python 'C' API to set up an exception object
-    switch (e.getErrCode())
+    // Sets up an exception object using the Python C API.
+
+    static const struct
     {
-    case DE_INTERFACE_NOT_INITIALIZED:
-    case DE_INTERFACE_ALREADY_INITIALIZED:
-    case DE_STILL_BUSY:
-    case DE_UNRESOLVED_COLLISION:
-    case DE_FPU_NOT_INITIALIZED:
-    case DE_INTERFACE_ALREADY_CONNECTED:
-    case DE_INTERFACE_STILL_CONNECTED:
-    case DE_WAVEFORM_NOT_READY:
-    case DE_FPUS_NOT_CALIBRATED:
-    case DE_NO_MOVABLE_FPUS:
-    case DE_FPUS_LOCKED:
-    case DE_INVALID_FPU_STATE:
-    case DE_INVALID_INTERFACE_STATE:
-    case DE_IN_ABORTED_STATE:
-    case DE_ALPHA_ARM_ON_LIMIT_SWITCH:
-        PyErr_SetString(InvalidStateExceptionTypeObj, e.what());
-        break;
+        EtherCANErrorGroup error_group;
+        PyObject *type;
+    } exception_defs[] =
+    {
+        { EtherCANErrorGroup::InvalidState, InvalidStateExceptionTypeObj },
+        { EtherCANErrorGroup::Protection, ProtectionErrorExceptionTypeObj },
+        { EtherCANErrorGroup::SystemFailure, SystemFailureExceptionTypeObj },
+        { EtherCANErrorGroup::Setup, SetupErrorExceptionTypeObj },
+        { EtherCANErrorGroup::InvalidParameter, InvalidParameterExceptionTypeObj },
+        { EtherCANErrorGroup::ConnectionFailure, ConnectionFailureExceptionTypeObj },
+        { EtherCANErrorGroup::SocketFailure, SocketFailureExceptionTypeObj },
+        { EtherCANErrorGroup::CommandTimeout, CommandTimeoutExceptionTypeObj },
+        { EtherCANErrorGroup::CANOverflow, CAN_OverflowExceptionTypeObj },
+        { EtherCANErrorGroup::InvalidWaveform, InvalidWaveformExceptionTypeObj },
+        { EtherCANErrorGroup::Collision, CollisionErrorExceptionTypeObj },
+        { EtherCANErrorGroup::LimitBreach, LimitBreachErrorExceptionTypeObj },
+        { EtherCANErrorGroup::Timing, TimingErrorExceptionTypeObj },
+        { EtherCANErrorGroup::AbortMotion, AbortMotionErrorExceptionTypeObj },
+        { EtherCANErrorGroup::FirmwareTimeout, FirmwareTimeOutExceptionTypeObj },
+        { EtherCANErrorGroup::HardwareProtection, HardwareProtectionErrorExceptionTypeObj },
+        { EtherCANErrorGroup::Database, DatabaseErrorExceptionTypeObj },
+        { EtherCANErrorGroup::General, EtherCANExceptionTypeObj }
+    };
 
-    case DE_PROTECTION_ERROR:
-        PyErr_SetString(ProtectionErrorExceptionTypeObj, e.what());
-        break;
+    EtherCANErrorGroup error_group = errorGroup(e.getErrCode());
 
-    case DE_OUT_OF_MEMORY:
-    case DE_RESOURCE_ERROR:
-    case DE_ASSERTION_FAILED:
-    case DE_ERROR_UNKNOWN:
-        PyErr_SetString(SystemFailureExceptionTypeObj, e.what());
-        break;
-
-    case DE_FIRMWARE_UNIMPLEMENTED:
-    case DE_INSUFFICENT_NUM_GATEWAYS:
-    case DE_INVALID_CONFIG:
-    case DE_SYNC_CONFIG_FAILED:
-    case DE_WRITE_VERIFICATION_FAILED:
-        PyErr_SetString(SetupErrorExceptionTypeObj, e.what());
-        break;
-
-    case DE_INVALID_FPU_ID:
-    case DE_INVALID_PAR_VALUE:
-    case DE_DUPLICATE_SERIAL_NUMBER:
-        PyErr_SetString(InvalidParameterExceptionTypeObj, e.what());
-        break;
-
-    case DE_WAIT_TIMEOUT:
-        // this is normally not raised, because not necessarily an error
-        PyErr_SetString(ConnectionFailureExceptionTypeObj, e.what());
-        break;
-    case DE_NO_CONNECTION:
-        PyErr_SetString(SocketFailureExceptionTypeObj, e.what());
-        break;
-    case DE_MAX_RETRIES_EXCEEDED:
-    case DE_CAN_COMMAND_TIMEOUT_ERROR:
-        PyErr_SetString(CommandTimeoutExceptionTypeObj, e.what());
-        break;
-
-    case DE_FIRMWARE_CAN_BUFFER_OVERFLOW:
-        PyErr_SetString(CAN_OverflowExceptionTypeObj, e.what());
-        break;
-
-    case DE_INVALID_WAVEFORM:
-    case DE_INVALID_WAVEFORM_TAIL:
-    case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:
-    case DE_INVALID_WAVEFORM_RAGGED:
-    case DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:
-    case DE_INVALID_WAVEFORM_CHANGE:
-        PyErr_SetString(InvalidWaveformExceptionTypeObj, e.what());
-        break;
-
-    case DE_NEW_COLLISION:
-        PyErr_SetString(CollisionErrorExceptionTypeObj, e.what());
-        break;
-    case DE_NEW_LIMIT_BREACH:
-        PyErr_SetString(LimitBreachErrorExceptionTypeObj, e.what());
-        break;
-    case DE_STEP_TIMING_ERROR:
-        PyErr_SetString(TimingErrorExceptionTypeObj, e.what());
-        break;
-
-    case DE_MOVEMENT_ABORTED:
-        PyErr_SetString(AbortMotionErrorExceptionTypeObj, e.what());
-        break;
-
-    case DE_DATUM_COMMAND_HW_TIMEOUT:
-        PyErr_SetString(FirmwareTimeOutExceptionTypeObj, e.what());
-        break;
-
-    case DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH:
-        PyErr_SetString(HardwareProtectionErrorExceptionTypeObj, e.what());
-        break;
-
-    case DE_INCONSISTENT_STEP_COUNT:
-        PyErr_SetString(HardwareProtectionErrorExceptionTypeObj, e.what());
-        break;
-
-    case DE_DB_ENV_VARIABLE_NOT_FOUND:
-    case DE_DB_DIR_OR_FILE_NOT_FOUND:
-    case DE_DB_ACCESS_DENIED:
-    case DE_DB_OLD_FORMAT:
-    case DE_DB_OTHER_OPENING_FAILURE:
-    case DE_DB_TRANSACTION_CREATION_FAILED:
-    case DE_DB_MISSING_FPU_ENTRY_OR_READ_FAILED:
-    case DE_DB_WRITE_FAILED:
-    case DE_DB_SYNC_FAILED:
-        PyErr_SetString(DatabaseErrorExceptionTypeObj, e.what());
-        break;
-
-    default:
-        PyErr_SetString(EtherCANExceptionTypeObj, e.what());
+    PyObject *exception_type = EtherCANExceptionTypeObj;
+    for (int i = 0; i < (sizeof(exception_defs) / sizeof(exception_defs[0])); i++)
+    {
+        if (exception_defs[i].error_group == error_group)
+        {
+            exception_type = exception_defs[i].type;
+            break;
+        }
     }
+
+    PyErr_SetString(exception_type, e.what());
 }
 
 }
