@@ -24,6 +24,7 @@
 #include "GridDriverTester.h"
 #include "E_GridState.h"
 #include "InterfaceState.h"
+#include "ErrorCodes.h"
 #include "ProtectionDBTester.h"
 
 #define TESTING_MAX_NUM_FPUS    (5)

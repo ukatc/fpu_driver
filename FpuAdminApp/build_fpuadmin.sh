@@ -22,6 +22,7 @@ g++ -std=c++11 -pthread -fPIC -DVERSION=\"v0.5.0\" -DENABLE_PROTECTION_CODE \
     ../src/CommandQueue.C \
     ../src/decode_CAN_response.C \
     ../src/DeviceLock.C \
+    ../src/ErrorCodes.C \
     ../src/EtherCANInterface.C \
     ../src/FPUArray.C \
     ../src/FPUCommands.C \

@@ -26,6 +26,7 @@
 #include "ProtectionDB.h"
 #include "FPUConstants.h"
 #include "FPUCommands.h"
+#include "ErrorCodes.h"
 
 namespace mpifps
 {

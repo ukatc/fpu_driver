@@ -37,6 +37,7 @@
 #include "EtherCANInterface.h"
 #include "ethercan/AsyncInterface.h"
 #include "InterfaceState.h"
+#include "ErrorCodes.h"
 #include "Interval.h"
 // N.B. The UnprotectedGridDriver class doesn't use the protection database,
 // but it does use the FpuDbData structure defined in ProtectionDB.h - see

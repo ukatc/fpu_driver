@@ -24,7 +24,6 @@
 #ifndef FPUADMIN_H
 #define FPUADMIN_H
 
-#include "InterfaceState.h"
 #include "T_GatewayAddress.h"
 #include "ProtectionDB.h"
 

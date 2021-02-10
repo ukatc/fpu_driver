@@ -31,40 +31,36 @@
 namespace mpifps
 {
 
-
-
 typedef int t_counts[NUM_FPU_STATES];
 
 typedef struct
 {
-    // individual states of each FPU. The index
-    // is always the logical ID of each FPU.
+    // Individual states of each FPU. The index is always the logical ID of
+    // each FPU.
     t_fpu_state FPU_state[MAX_NUM_POSITIONERS];
 
-    // count of each FPU state
+    // Count of each FPU state
     t_counts Counts;
 
-
-    // number of minor time-outs
-    // Important: This unsigned counter wraps around
-    // which is fine. (Wrapping of unsigned integral
-    // types does not cause undefined  behavior in C/C++.)
+    // Number of minor time-outs
+    // Important: This unsigned counter wraps around which is fine. (Wrapping
+    // of unsigned integral types does not cause undefined  behavior in C/C++)
     unsigned long count_timeout;
 
     unsigned long count_can_overflow;
 
-    // number of commands awaiting a response.
+    // Number of commands awaiting a response.
     unsigned int count_pending;
 
-    // number of queued commands
+    // Number of queued commands
     unsigned int num_queued;
 
-
-    // seqeucne number for broadcast commands
+    // Sequence number for broadcast commands
     uint8_t broadcast_sequence_number;
 
-    // state of the driver itself
+    // State of the driver itself
     E_InterfaceState interface_state;
+
 } t_grid_state;
 
 }

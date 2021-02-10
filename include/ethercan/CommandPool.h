@@ -27,6 +27,7 @@
 #include <pthread.h>
 
 #include "../InterfaceState.h"
+#include "../ErrorCodes.h"
 #include "../EtherCANInterfaceConfig.h"
 
 #include "E_CAN_COMMAND.h"
