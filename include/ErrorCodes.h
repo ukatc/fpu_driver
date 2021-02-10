@@ -23,6 +23,7 @@
 namespace mpifps
 {
 
+//==============================================================================
 // This enum contains return codes which should shed light on the cause if
 // something went seriously wrong.
 enum E_EtherCANErrCode
@@ -258,6 +259,35 @@ enum E_EtherCANErrCode
 
     //..........................................................................
 };
+
+// Define error groups enum
+enum class EtherCANErrorGroup
+{
+    InvalidState,
+    Protection,
+    SystemFailure,
+    Setup,
+    InvalidParameter,
+    ConnectionFailure,
+    SocketFailure,
+    CommandTimeout,
+    CANOverflow,
+    InvalidWaveform,
+    Collision,
+    LimitBreach,
+    Timing,
+    AbortMotion,
+    FirmwareTimeout,
+    HardwareProtection,
+    Database,
+    General
+};
+
+//==============================================================================
+
+EtherCANErrorGroup errorGroup(E_EtherCANErrCode ecan_result);
+
+//==============================================================================
 
 } // namespace mpifps
 
