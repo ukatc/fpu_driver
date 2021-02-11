@@ -2115,7 +2115,8 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
             sleepSecs(0.2);
 
             E_EtherCANErrCode ecan_result = _pingFPUs(gs, fpuset_refresh);
-            if (ecan_result == DE_CAN_COMMAND_TIMEOUT_ERROR)
+            EtherCANErrorGroup error_group = errorGroup(ecan_result);
+            if (error_group == EtherCANErrorGroup::CommandTimeout)
             {
                 break;
             }

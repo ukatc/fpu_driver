@@ -498,13 +498,25 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
                                       count_protection, &fpuset);
     if (ecan_result != DE_OK)
     {
-        // We cancel the datum search altogether, so we can reset positions
-        // to old value
-        // Note: We do NOT check and return the _cancel_find_datum_hook()
-        // return value here, because the startFindDatum() return value above
-        // is far more important, and _cancel_find_datum_hook() isn't very 
-        // likely to fail anyway
-        _cancel_find_datum_hook(gs, fpuset, initial_positions);
+        // TODO: The following is adapted from the Python "except" statement,
+        // and takes the Python code's exception HIERARCHY into account (as
+        // defined in ethercanif.C -> BOOST_PYTHON_MODULE(ethercanif))
+        EtherCANErrorGroup error_group = errorGroup(ecan_result);
+        if ((error_group == EtherCANErrorGroup::InvalidParameter) ||
+            (error_group == EtherCANErrorGroup::Setup) ||
+            (error_group == EtherCANErrorGroup::InvalidWaveform) ||
+            (error_group == EtherCANErrorGroup::InvalidState) ||
+            (error_group == EtherCANErrorGroup::Protection) ||
+            (error_group == EtherCANErrorGroup::HardwareProtection))
+        {
+            // We cancel the datum search altogether, so we can reset positions
+            // to old value
+            // Note: We do NOT check and return the _cancel_find_datum_hook()
+            // return value here, because the startFindDatum() return value above
+            // is far more important, and _cancel_find_datum_hook() isn't very 
+            // likely to fail anyway
+            _cancel_find_datum_hook(gs, fpuset, initial_positions);
+        }
 
         return ecan_result;
     }
@@ -524,13 +536,16 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         bool wait_find_datum_finished = false;
         ecan_result = _gd->waitFindDatum(gs, time_interval,
                                          wait_find_datum_finished, &fpuset);
+
+        // Check for abort triggered (N.B. Set from
+        // gridDriverAbortDuringFindDatumOrExecuteMotion())
         if (abort_motion_pending)
         {
             abort_motion_pending = false;
             E_EtherCANErrCode abort_result = abortMotion(gs, fpuset);
             if (abort_result != DE_OK)
             {
-                return abort_result;
+                ecan_result = abort_result;
             }
             was_aborted = true;
             break;
@@ -546,7 +561,11 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         E_EtherCANErrCode ping_if_needed_result = pingIfNeeded(gs, fpuset);
         if (ping_if_needed_result != DE_OK)
         {
-            return ping_if_needed_result;
+            if (errorGroup(ping_if_needed_result) != 
+                EtherCANErrorGroup::CommandTimeout)
+            {
+                return ping_if_needed_result;
+            }
         }
     }
 
@@ -993,14 +1012,13 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 
     ecan_result = _gd->configMotion(wtable, gs, fpuset, allow_uninitialized,
                                     ruleset_version);
-    // N.B. If returns DE_NO_CONNECTION or DE_CAN_COMMAND_TIMEOUT_ERROR then
-    // would be a transmission failure. Here, it is possible that some FPUs
-    // have finished loading valid data, but the process was not finished
-    // for all FPUs.
-    // (N.B. DE_NO_CONNECTION is equivalent to the Python version's
-    // SocketFailure exception)
-    if ((ecan_result == DE_OK) || (ecan_result == DE_NO_CONNECTION) || 
-        (ecan_result == DE_CAN_COMMAND_TIMEOUT_ERROR))
+    EtherCANErrorGroup error_group = errorGroup(ecan_result);
+    // N.B. If error group is SocketFailure or CommandTimeout then would be a
+    // transmission failure. Here, it is possible that some FPUs have finished
+    // loading valid data, but the process was not finished for all FPUs.
+    if ((ecan_result == DE_OK) ||
+        (error_group == EtherCANErrorGroup::SocketFailure) ||
+        (error_group == EtherCANErrorGroup::CommandTimeout))
     {
         // TODO: Much of the following code is inefficient because iterates
         // through arrays/lists many times - but should work OK. This approach
@@ -1108,46 +1126,55 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     }
 
     double time_interval = 0.1;
-    bool is_ready = false;
     bool was_aborted = false;
     bool refresh_state = false;
-    // TODO: The ecan_result logic here might not be the same as the Python
-    // equivalent - check this
+
     abort_motion_pending = false;
-    while (!is_ready)
+    while (1)
     {
         bool wait_execute_motion_finished = false;
         ecan_result = _gd->waitExecuteMotion(gs, time_interval,
                                              wait_execute_motion_finished,
                                              fpuset);
-        if (abort_motion_pending)
-        {
-            abort_motion_pending = false;
-            E_EtherCANErrCode abort_result = abortMotion(gs, fpuset);
-            if (abort_result != DE_OK)
-            {
-                return abort_result;
-            }
-            was_aborted = true;
-            refresh_state = true;
-            break;
-        }
-        
-        // (The following check was brought in from 
+        // (N.B. The following check was brought in from 
         // ethercanif.C -> WrapEtherCANInterface::wrap_waitExecuteMotion())
-        if (!wait_execute_motion_finished && (ecan_result == DE_OK))
+        if ((ecan_result == DE_OK) && (!wait_execute_motion_finished))
         {
             ecan_result = DE_WAIT_TIMEOUT;
         }
 
-        is_ready = (ecan_result != DE_WAIT_TIMEOUT);
+        if (ecan_result != DE_WAIT_TIMEOUT)
+        {
+            break;
+        }
+
+        // Check for abort triggered (N.B. Set from
+        // gridDriverAbortDuringFindDatumOrExecuteMotion())
+        if (abort_motion_pending)
+        {
+            abort_motion_pending = false;
+            ecan_result = abortMotion(gs, fpuset);
+            was_aborted = true;
+            refresh_state = true;
+            break;
+        }
     }
 
-    // TODO: The following isMovementError() function is hopefully equivalent
-    // to the Python version's check for the MovementError exception, but check
-    // this further
-    if (isMovementError(ecan_result) ||
-        (ecan_result == DE_CAN_COMMAND_TIMEOUT_ERROR))
+    // Check for a movement error (N.B. any one of a number of error groups),
+    // or a command timeout.
+    // TODO: The movement error groups collated below are based upon the Python
+    // version's MovementError exception, which the exception hierarchy in
+    // BOOST_PYTHON_MODULE(ethercanif) in ethercanif.C shows has a number of
+    // sub-exceptions (see MovementErrorExceptionTypeObj) which correspond to
+    // the following error groups - check all of this.
+    EtherCANErrorGroup error_group = errorGroup(ecan_result);
+    if ((error_group == EtherCANErrorGroup::Collision) ||
+        (error_group == EtherCANErrorGroup::LimitBreach) ||
+        (error_group == EtherCANErrorGroup::AbortMotion) ||
+        (error_group == EtherCANErrorGroup::FirmwareTimeout) ||
+        (error_group == EtherCANErrorGroup::Timing) ||
+        (error_group == EtherCANErrorGroup::HardwareProtection) ||
+        (error_group == EtherCANErrorGroup::CommandTimeout))
     {
         refresh_state = true;
     }
@@ -1165,7 +1192,11 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
         E_EtherCANErrCode ping_if_needed_result = pingIfNeeded(gs, fpuset);
         if (ping_if_needed_result != DE_OK)
         {
-            return ping_if_needed_result;
+            if (errorGroup(ping_if_needed_result) != 
+                EtherCANErrorGroup::CommandTimeout)
+            {
+                return ping_if_needed_result;
+            }
         }
 
         // The following hook will narrow down the recorded intervals of
@@ -1184,40 +1215,6 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     }
 
     return ecan_result;
-}
-
-//------------------------------------------------------------------------------
-bool UnprotectedGridDriver::isMovementError(E_EtherCANErrCode ecan_result)
-{
-    // Indicates if ecan_result is one of the group of "movement errors",
-    // equivalent to the Python version's MovementError exception, which
-    // the exception hierarchy in BOOST_PYTHON_MODULE(ethercanif) in
-    // ethercanif.C shows has a number of sub-exceptions (see
-    // MovementErrorExceptionTypeObj) which correspond to the following
-    // DE_XXX error codes.
-    // TODO: This function woukd be better checking between a RANGE of
-    // DE_*** error codes - e.g. could define DE_MOVEMENTERR_BOTTOM and
-    // DE_MOVEMENTERR_TOP enum values in E_EtherCANErrCode for this,
-    // OR look for codes in the 600 range (but these ranges aren't properly
-    // defined anywhere yet)
-
-    static const E_EtherCANErrCode movementErrorCodes[] =
-    {
-        DE_NEW_COLLISION, DE_NEW_LIMIT_BREACH, DE_STEP_TIMING_ERROR,
-        DE_MOVEMENT_ABORTED, DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH,
-        DE_DATUM_COMMAND_HW_TIMEOUT, DE_INCONSISTENT_STEP_COUNT
-    };
-
-    for (int i = 0;
-         i < (sizeof(movementErrorCodes) / sizeof(movementErrorCodes[0]));
-         i++)
-    {
-        if (ecan_result == movementErrorCodes[i])
-        {
-            return true;
-        }
-    }
-    return false;
 }
 
 //------------------------------------------------------------------------------
