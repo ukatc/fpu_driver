@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Simple server that listens on ports 4700,4701, and 4702, prints input and  and echoes it back to the client.
+"""
+
+Simple server that listens on TCP ports 4700, 4701 and 4702 and simulates
+the MOONS fibre positioner communication protocol.
 
 Terminate using Ctrl-C.
 
@@ -33,7 +36,7 @@ DEFAULT_PORTS = [ 4700, 4701, 4702]
 
 DEBUG=int(os.environ.get("DEBUG","0"))
 
-if os.environ.has_key("NUM_FPUS"):
+if "NUM_FPUS" in os.environ:
     DEFAULT_NUM_FPUS=int(os.environ.get("NUM_FPUS"))
 else:
     DEFAULT_NUM_FPUS = len(DEFAULT_PORTS) * FPUS_PER_BUS * BUSES_PER_GATEWAY
@@ -115,28 +118,25 @@ def parse_args():
                         help="list of units which simulate a failure of the beta datum operation, sending a time-out response")
 
     args = parser.parse_args()
-
-    version_tuple = map(int, args.protocol_version.split("."))
+    version_tuple = tuple(map(int, args.protocol_version.split(".")))
 
     while len(version_tuple) < 3:
         version_tuple = version_tuple + [0]
         print("firmware version=", version_tuple)
-    args.fw_version = tuple(version_tuple)
+    args.fw_version = version_tuple
     print("firmware version :", args.fw_version)
 
     del args.protocol_version # delete for safety
 
-    args.fw_date = map(int, args.firmware_date.split("-"))
+    args.fw_date = tuple(map(int, args.firmware_date.split("-")))
 
     return args
-
 
 
 if __name__ == '__main__':
     ip = '127.0.0.1'
 
     args = parse_args()
-
 
     print("protocol_version:", args.fw_version)
     print("listening to ports:", args.ports)

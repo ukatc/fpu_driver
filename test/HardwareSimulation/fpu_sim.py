@@ -8,6 +8,7 @@ internal state
 
 from __future__ import print_function
 
+import os
 import numpy as np
 import random
 import time
@@ -19,6 +20,10 @@ import binascii
 
 from protocol_constants import *
 
+if "INTROOT" in os.environ:
+    CONFIG_DIR = os.path.join( os.environ.get("INTROOT"), "FPUSIM" )
+else:
+    CONFIG_DIR = "./sn"
 
 IDXA = 0
 IDXB = 1
@@ -147,7 +152,10 @@ class FPU:
         print("FPU %i initial offset: (%f, %f)" % (fpu_id, opts.alpha_start, opts.beta_start))
         self.aoff_steps = int(StepsPerDegreeAlpha * opts.alpha_start)
         self.boff_steps = int(StepsPerDegreeBeta * opts.beta_start)
-        fname = ".sn/_FPU-%04i.sn" % self.fpu_id
+
+        if not os.path.exists(CONFIG_DIR):
+            os.makedirs(CONFIG_DIR)
+        fname = os.path.join( CONFIG_DIR, "_FPU-%04i.sn" % self.fpu_id )
         try:
             with open(fname,"r") as f:
                 self.serial_number = f.readline().strip("\n")
