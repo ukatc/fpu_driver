@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 """
-This is a mock FPU grid controller which decodes and
+
+This is a FPU grid controller simulator which decodes and
 synthesizes a response.
 
 """
@@ -16,6 +17,7 @@ from fpu_sim import FPU, FPUGrid
 from gevent import sleep, spawn, spawn_later
 
 from protocol_constants import *
+
 
 def encode_and_send(msg, socket, verbose=False):
     confirmation = codec.encode(msg, verbose=verbose)
@@ -33,7 +35,6 @@ def fold_stepcount_alpha(val):
         val = low_limit + vrange
 
     # convert to unsigned 16-bit number
-
     if val < 0:
         val += (1 << 16)
 
@@ -47,8 +48,8 @@ def fold_stepcount_beta(val):
         val = low_limit
     if val > low_limit + vrange:
         val = low_limit + vrange
-    # convert to unsigned 16-bit number
 
+    # convert to unsigned 16-bit number
     if val < 0:
         val += (1 << 16)
 
@@ -85,7 +86,7 @@ def getStatus(fpu):
     if fpu.state == FPST_LOCKED:
         status |= STBT_FPU_LOCKED
 
-    # the following two fields are for recovery porposes - they
+    # The following two fields are for recovery purposes - they
     # don't have a meaningful value before the first movement
     # has started (we could use a third state, but this isn't worth the
     # extra bits which are expensive)
@@ -95,7 +96,7 @@ def getStatus(fpu):
     if fpu.beta_last_direction == DIRST_CLOCKWISE:
         status |=  beta_LAST_DIRECTION
 
-    # alpha and beta state are lumped together here -
+    # The alpha and beta state are lumped together here -
     # the common case, extra info goes in findDatum status code
     if fpu.was_initialized:
         status |=  STBT_IS_ZEROED
@@ -125,7 +126,6 @@ def create_gwheader(fpu_adr_bus, bus_adr, command_id):
     TH[2] = ((tx_canid >> 8) & 0xff)
 
     return TH
-
 
 
 HDR_SEQNUM = 1
@@ -159,7 +159,6 @@ def create_CANheader(command_id, fpu_id, seqnum, ecode=MCE_FPU_OK, fields=DEFAUL
     if fields & HDR_ECODE:
         TX[3] = TX[3] | (0xf0 & (ecode << 4))
 
-
     if fields & HDR_STEPCOUNTS:
         pos_alpha = fold_stepcount_alpha(FPUGrid[fpu_id].alpha_steps)
         TX[4] = count0 = pos_alpha & 0xff
@@ -170,6 +169,7 @@ def create_CANheader(command_id, fpu_id, seqnum, ecode=MCE_FPU_OK, fields=DEFAUL
         TX[7] = count3 = (pos_beta >> 8) & 0xff
 
     return TX
+
 
 def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbosity=0):
 
@@ -204,17 +204,14 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbosity=0):
     if verbosity > 3:
         print("FPU #%i command =%i , rx=%s" % (fpu_id, command_id, RX))
 
-
     errcode, wf_errcode = FPUGrid[fpu_id].addStep(first_entry, last_entry,
                                                   astep, apause, aclockwise,
                                                   bstep, bpause, bclockwise)
 
     print("addStep: result is %r" % ( (errcode, wf_errcode), ))
 
-
     if errcode in [ MCE_ERR_CAN_OVERFLOW_HW, MCE_ERR_CAN_OVERFLOW_SW ] :
         command_id = CMSG_WARN_CANOVERFLOW
-
 
     send_confirmation = (first_entry
                          or last_entry
@@ -235,8 +232,8 @@ def handle_configMotion(fpu_id, fpu_adr_bus, bus_adr, RX, verbosity=0):
         return None
 
 
-
 def handle_pingFPU(fpu_id, fpu_adr_bus, bus_adr, RX):
+
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
 
@@ -247,7 +244,6 @@ def handle_pingFPU(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 
 def handle_abortMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
-
 
     errcode = FPUGrid[fpu_id].abortMotion(fpu_id)
 
@@ -262,8 +258,7 @@ def handle_abortMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 def handle_freeBetaCollision(fpu_id, fpu_adr_bus, bus_adr, RX):
 
-
-    print("mock_controller: freeBetaCollision")
+    print("Mock_controller: freeBetaCollision")
     direction = RX[2]
     errcode = FPUGrid[fpu_id].freeBetaCollision(direction)
 
@@ -368,7 +363,6 @@ def handle_setTicksPerSegment(fpu_id, fpu_adr_bus, bus_adr, RX):
     return TH + TX
 
 
-
 def handle_readRegister(fpu_id, fpu_adr_bus, bus_adr, RX):
 
     seqnum = RX[0]
@@ -450,6 +444,7 @@ def handle_lockUnit(fpu_id, fpu_adr_bus, bus_adr, RX):
 
     return TH + TX
 
+
 def handle_unlockUnit(fpu_id, fpu_adr_bus, bus_adr, RX):
 
     errcode = FPUGrid[fpu_id].unlockUnit()
@@ -461,6 +456,7 @@ def handle_unlockUnit(fpu_id, fpu_adr_bus, bus_adr, RX):
 
     return TH + TX
 
+
 def handle_enableMove(fpu_id, fpu_adr_bus, bus_adr, RX):
 
     errcode = FPUGrid[fpu_id].enableMove()
@@ -471,6 +467,7 @@ def handle_enableMove(fpu_id, fpu_adr_bus, bus_adr, RX):
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
 
     return TH + TX
+
 
 def handle_checkIntegrity(fpu_id, fpu_adr_bus, bus_adr, RX):
 
@@ -503,7 +500,7 @@ def handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, RX):
 
 
 ##############################
-# the following two callback objects are passed as bound methods
+# The following two callback objects are passed as bound methods
 # to the FPUs executeMotion and findDatum methods so that FPUs can signal
 # collisions or limit switch breaks
 
@@ -528,6 +525,7 @@ class LimitCallback:
 
         limit_message =  TH + TX
         encode_and_send(limit_message, self.socket, verbose=self.verbose)
+
 
 class CollisionCallback:
     def __init__(self, fpu_id, fpu_adr_bus, bus_adr, socket, seqnum, verbose=False):
@@ -584,7 +582,6 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
     flag_anti_clockwise = (skip_flag & DATUM_MODE_ANTI_CLOCKWISE) > 0
     flag_disable_timeout = (skip_flag & DATUM_TIMEOUT_DISABLE) > 0
 
-
     fpu = FPUGrid[fpu_id]
     errcode = fpu.start_findDatum(flag_auto_datum)
 
@@ -622,8 +619,7 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
 
             TX = create_CANheader(command_id, fpu_id, seqnum, errcode, fields=header_fields)
 
-
-            # we create the message body as usual, with one difference: if
+            # We create the message body as usual, with one difference: if
             # an arm was datumed sucessfully, the transmitted step count
             # must be the datum residual error (datum aberration)
 
@@ -643,9 +639,7 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
             TX[6] = count2 = count_beta & 0xff
             TX[7] = count3 = (count_beta >> 8) & 0xff
 
-
             finish_message =  TH + TX
-
 
             #print("FPU %i: findDatum command finished" % fpu_id);
             encode_and_send(finish_message, socket, verbose=opts.debug)
@@ -654,13 +648,13 @@ def handle_findDatum(fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts):
         # - similar to a thread but not running in parallel.
         spawn_later(1, findDatum_func, fpu_id, fpu_adr_bus, bus_adr, RX, socket, opts)
 
-    # the new state goes into the header
+    # The new state goes into the header
     TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, errcode)
 
     status_word, fpustate = getStatus(FPUGrid[fpu_id])
 
-    ## send confirmation message
+    ## Send confirmation message
     #print("FPU %i: sending confirmation to findDatum command" % fpu_id);
     confirmation_message = TH + TX
 
@@ -681,7 +675,6 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
     seqnum = RX[0]
     command_id = RX[1] & 0x1f
 
-
     errcode = FPUGrid[fpu_id].start_executeMotion()
 
     if errcode == MCE_FPU_OK:
@@ -690,11 +683,11 @@ def handle_executeMotion(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False
 
         def executeMotion_func(fpu_id, fpu_adr_bus, bus_adr, RX, socket, verbose=False):
 
-            # instantiate callbacks
+            # Instantiate callbacks
             limit_callback = LimitCallback(fpu_id, fpu_adr_bus, bus_adr, socket, seqnum)
             collision_callback = CollisionCallback(fpu_id, fpu_adr_bus, bus_adr, socket, seqnum)
 
-            # simulate executeMotion FPU operation
+            # Simulate executeMotion FPU operation
             errcode = FPUGrid[fpu_id].executeMotion(sleep, limit_callback.call, collision_callback.call)
 
             print("FPU %i: executeMotion command finished with error code %i" % (fpu_id, errcode));
@@ -728,7 +721,6 @@ def handle_repeatMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
     TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, MCE_FPU_OK)
 
-
     return TH + TX
 
 
@@ -741,7 +733,6 @@ def handle_reverseMotion(fpu_id, fpu_adr_bus, bus_adr, RX):
 
     TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, MCE_FPU_OK)
-
 
     return TH + TX
 
@@ -763,6 +754,7 @@ def handle_readSerialNumber(fpu_id, fpu_adr_bus, bus_adr, RX):
 
     return TH + TX
 
+
 def handle_writeSerialNumber(fpu_id, fpu_adr_bus, bus_adr, RX):
 
     serial_number = ""
@@ -771,7 +763,6 @@ def handle_writeSerialNumber(fpu_id, fpu_adr_bus, bus_adr, RX):
         if c == 0:
             break
         serial_number += chr(c)
-
 
     try:
         FPUGrid[fpu_id].writeSerialNumber(serial_number)
@@ -785,8 +776,8 @@ def handle_writeSerialNumber(fpu_id, fpu_adr_bus, bus_adr, RX):
     TH = create_gwheader(fpu_adr_bus, bus_adr, command_id)
     TX = create_CANheader(command_id, fpu_id, seqnum, ecode)
 
-
     return TH + TX
+
 
 def handle_getFirmwareVersion(fpu_id, fpu_adr_bus, bus_adr, RX):
 
@@ -816,7 +807,7 @@ def handle_getFirmwareVersion(fpu_id, fpu_adr_bus, bus_adr, RX):
 def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args):
     verbose = args.debug
     if fpu_id >= args.NUM_FPUS:
-        print("Warning: command sent to non-existant FPU ID #%i (discarded)" % fpu_id)
+        print("Warning: command sent to non-existent FPU ID #%i (discarded)" % fpu_id)
         return
 
     if command_id == CCMD_PING_FPU                         :
@@ -893,7 +884,6 @@ def fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
     elif command_id == CCMD_RESET_STEPCOUNTER                :
         resp = handle_resetStepCounter(fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, verbose=verbose)
 
-
     else:
         resp = handle_invalidCommand(fpu_id, fpu_adr_bus, bus_adr, rx_bytes)
 
@@ -926,23 +916,33 @@ def command_handler(cmd, socket, args):
     gateway_id = gateway_map[socket.getsockname()]
     bus_adr = cmd[0]
     print("bus_adr = %i" % bus_adr)
+
     if bus_adr == MSG_TYPE_COB0:
+
         SYNC_CMD[0] = np.array([0, 0, 0] + cmd[3:].tolist())
         print("SYNC_CMD[0] set to %r" % SYNC_CMD[0])
         return
+
     elif bus_adr == MSG_TYPE_COB1:
+
         SYNC_CMD[1] = np.array([0, 0, 0] + cmd[3:].tolist())
         print("SYNC_CMD[1] set to %r" % SYNC_CMD[1])
         return
+
     elif bus_adr == MSG_TYPE_MSK0:
+
         SYNC_MASK[0] = cmd[3]
         print("SYNC_MASK[0] set to %s" % bin(SYNC_MASK[0]))
         return
+
     elif bus_adr == MSG_TYPE_MSK1:
+
         SYNC_MASK[1] = cmd[3]
         print("SYNC_MASK[1] set to %s" % bin(SYNC_MASK[0]))
         return
+
     elif bus_adr == MSG_TYPE_SYNC:
+
         # execute sync command, by calling
         # command_handler recursively for all sockets,
         # and for all activated buses
@@ -967,14 +967,12 @@ def command_handler(cmd, socket, args):
 
     rx_canid = cmd[1] + (cmd[2] << 8)
 
-
     if bus_adr == MSG_TYPE_DELY:
         rx_bytes = cmd[3:]
         delay = rx_bytes[0]
         if args.verbosity > 5:
             print("CAN gateway delay command [count %i] to gw %i, bus %i: delay %i ms"
                   % (gCountTotalCommands, gateway_id, bus_adr, delay))
-
 
     else:
         command_id = cmd[4]
@@ -988,7 +986,6 @@ def command_handler(cmd, socket, args):
             fpu_adr_bus = rx_canid & 0x7f # this is a one-based index
             fpu_id = (fpu_adr_bus-1) + bus_global_id * FPUS_PER_BUS
 
-
             if verbose:
                 print("CAN command [count %i] to gw %i, bus %i, fpu # %i (rx_priority %i), command id=%i"
                       % (gCountTotalCommands, gateway_id, bus_adr, fpu_adr_bus, rx_priority, command_id))
@@ -997,6 +994,7 @@ def command_handler(cmd, socket, args):
 
 
             fpu_handler(command_id, fpu_id, fpu_adr_bus,bus_adr, rx_bytes, socket, args)
+
         else:
             # broadcast message
             if verbose:
@@ -1012,7 +1010,5 @@ def command_handler(cmd, socket, args):
                     spawn(fpu_handler, command_id, fpu_id, fpu_adr_bus, bus_adr, rx_bytes, socket, args)
 
 
-
-
 if __name__ == "__main__":
-    print("run mock_gateway to use this module.")
+    print("Run mock_gateway.py to use this module.")

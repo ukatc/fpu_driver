@@ -1,16 +1,22 @@
 #!/usr/bin/env python
 """
 
-Simple server that listens on TCP ports 4700, 4701 and 4702 and simulates
-the MOONS fibre positioner communication protocol.
+Python script which starts a simple server that listens on TCP ports
+4700, 4701 and 4702 (see DEFAULT_PORTS) and simulates an EtherCAN
+device responding to the MOONS fibre positioner communication protocol.
+
+Example usage (for 3 FPUs and verbose mode):
+
+    python mock_gateway.py -N 3 [-v 2]
 
 Terminate using Ctrl-C.
 
 This test code uses the gevent library for asynchronous I/O in python.
 The reason for chosing gevent is that it is widely used and available
-on Python 2.7 as well as Python 3.4.  Future versions should probably
-use the curio library for more complex tasks, which uses Python3.5's
-coroutines.
+on Python 2.7 as well as Python 3.4.  Future versions could use the
+curio library for more complex tasks, which uses Python3.5's coroutines.
+
+See http://www.gevent.org/contents.html
 
 """
 from __future__ import print_function
@@ -25,23 +31,26 @@ import os
 import array
 
 import codec
-
 import fpu_sim
 import mock_controller as mock_controller
 from mock_controller import FPUS_PER_BUS, BUSES_PER_GATEWAY
-
 from mock_controller import command_handler
 
+# Default TCP ports devoted to mock controller.
 DEFAULT_PORTS = [ 4700, 4701, 4702]
 
+# Default debugging mode from environment variable DEBUG
 DEBUG=int(os.environ.get("DEBUG","0"))
 
+# Default number of FPUs, either from NUM_FPUS environment variable
+# or from the maximum number each gateway can support.
 if "NUM_FPUS" in os.environ:
     DEFAULT_NUM_FPUS=int(os.environ.get("NUM_FPUS"))
 else:
     DEFAULT_NUM_FPUS = len(DEFAULT_PORTS) * FPUS_PER_BUS * BUSES_PER_GATEWAY
 
-# this handler will be run for each incoming connection in a dedicated greenlet
+
+# This handler will be run for each incoming connection in a dedicated greenlet
 def gateway(socket, address, args):
     print('New connection from %s:%s' % address)
     # using a makefile because we want to use readline()
@@ -50,15 +59,15 @@ def gateway(socket, address, args):
 
     socket.setsockopt(IPPROTO_TCP, TCP_NODELAY, 1)
 
-    # append to list of sockets, for handling SYNC commands
+    # Append to list of sockets, for handling SYNC commands
     sockname = socket.getsockname()
-    print("appending socket '%r' for server address %s to socket list" % (socket, sockname))
+    print("Appending socket '%r' for server address %s to socket list" % (socket, sockname))
     mock_controller.gateway_socket_map[sockname] = socket
 
     while True:
         command = socket.recv(msg_len)
         if not command:
-            print("client disconnected")
+            print("Client disconnected")
             break
         prot.decode(command, command_handler, socket)
 
@@ -122,9 +131,9 @@ def parse_args():
 
     while len(version_tuple) < 3:
         version_tuple = version_tuple + [0]
-        print("firmware version=", version_tuple)
+        #print("Firmware version=", version_tuple)
     args.fw_version = version_tuple
-    print("firmware version :", args.fw_version)
+    #print("Firmware version :", args.fw_version)
 
     del args.protocol_version # delete for safety
 
@@ -138,20 +147,20 @@ if __name__ == '__main__':
 
     args = parse_args()
 
-    print("protocol_version:", args.fw_version)
-    print("listening to ports:", args.ports)
-    print("listening to ports:", args.ports)
-    print("number of FPUs    :", args.NUM_FPUS)
+    print("Protocol firmware version:", args.fw_version)
+    print("Listening to ports:", args.ports)
+    print("Number of FPUs    :", args.NUM_FPUS)
 
     fpu_sim.init_FPUGrid(args, args.NUM_FPUS)
     mock_controller.gateway_map = { (ip, args.ports[i]) : i for i in range(len(args.ports))  }
-    print("gateway map:", mock_controller.gateway_map)
+    print("Gateway map:", mock_controller.gateway_map)
     pool = Pool(10000)
 
     start_gateway = lambda socket, address: gateway(socket, address, args)
 
     servers = [ StreamServer((ip, p), start_gateway, spawn=pool) for p in args.ports]
-    # to start the servers asynchronously, we use its start() method;
+
+    # To start each server asynchronously, we use its start() method;
     # we use blocking serve_forever() for the third and last connection.
     print('Starting mock gateway on ports %s' % args.ports)
 

@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
 """
-This is a mock FPU which manages a bit of
-internal state
+
+This module contains a simulated FPU which reproduces the
+internal state model.
 
 """
 
@@ -99,7 +100,6 @@ StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
 ALPHA_SWITCH_WIDTH = 2.0
 
 
-
 # step counts where switches go on and off
 MIN_ALPHA_ON = int(ALPHA_LIMIT_MIN_RDEGREE  * StepsPerDegreeAlpha)
 MIN_ALPHA_OFF = int((ALPHA_LIMIT_MIN_RDEGREE - ALPHA_SWITCH_WIDTH) * StepsPerDegreeAlpha)
@@ -142,8 +142,11 @@ class BetaCollisionException(Exception):
 class CrashException(Exception):
     pass
 
+
+# ----------------------------------------------------------------------
 class FPU:
     fpu_count = 0 # Class variable which counts the number of FPUs
+
 
     def __init__(self, fpu_id, opts):
         FPU.fpu_count += 1
@@ -165,6 +168,7 @@ class FPU:
             print("***Failed to read %s (%s)" % (fname,str(e)))
             print("***FPU %i: serial number defaults to %r" % (self.fpu_id, self.serial_number))
 
+
     def initialize(self, fpu_id):
         self.fpu_id = fpu_id
         self.alpha_steps = 0
@@ -172,9 +176,9 @@ class FPU:
         self.alpha_deviation = 0
         self.beta_deviation = 0
         self.nwave_entries = 0
-        self.steps = np.zeros((256, 2), dtype=np.int)
-        self.pause = np.zeros((256, 2), dtype=np.bool)
-        self.clockwise = np.zeros((256, 2), dtype=np.bool)
+        self.steps = np.zeros((MAX_WAVE_ENTRIES, 2), dtype=np.int)
+        self.pause = np.zeros((MAX_WAVE_ENTRIES, 2), dtype=np.bool)
+        self.clockwise = np.zeros((MAX_WAVE_ENTRIES, 2), dtype=np.bool)
         self.is_collided = False
         self.alpha_limit_breach = False
         self.at_datum = False
@@ -198,14 +202,10 @@ class FPU:
         self.state = FPST_UNINITIALIZED
         self.ticks_per_segment = DEFAULT_TICKS_PER_SEGMENT
 
-
-
         fw_date = self.opts.fw_date
-
         print("firmware date=",fw_date)
 
         version_tuple = self.opts.fw_version
-
         self.firmware_major = version_tuple[0]
         self.firmware_minor = version_tuple[1]
         self.firmware_patch = version_tuple[2]
@@ -215,6 +215,7 @@ class FPU:
         self.fw_version_address_offset = 0x61
         if version_tuple < (1,4,4):
             self.fw_version_address_offset = 0x0
+
 
     def getRegister(self, register_address):
         fwa_offset = self.fw_version_address_offset
@@ -247,6 +248,7 @@ class FPU:
         else:
             return 0xff
 
+
     def writeSerialNumber(self, serial_number):
         print("FPU #%i: writing serial number '%s' to NVRAM" % (self.fpu_id, serial_number))
         assert(len(serial_number) <= LEN_SERIAL_NUMBER)
@@ -256,10 +258,10 @@ class FPU:
             f.write("%s\n" % self.serial_number)
 
 
-
     def readSerialNumber(self):
         print("FPU #%i: reading serial number '%s' from NVRAM" % (self.fpu_id, self.serial_number))
         return self.serial_number
+
 
     def getFirmwareVersion(self):
         t =  (self.firmware_major,
@@ -271,7 +273,6 @@ class FPU:
 
         print("FPU #%i: reading firmware version '%s' from NVRAM" % (self.fpu_id, t))
         return t
-
 
 
     def resetFPU(self, fpu_id, sleep):
@@ -314,6 +315,7 @@ class FPU:
 
         return MCE_FPU_OK
 
+
     def repeatMotion(self, fpu_id):
         if self.state in [ FPST_READY_FORWARD, FPST_LOCKED]:
             return MCE_NOTIFY_COMMAND_IGNORED
@@ -349,6 +351,7 @@ class FPU:
 
         return MCE_FPU_OK
 
+
     def setStepsPerSegment(self, min_steps, max_steps):
 
         if self.state != FPST_UNINITIALIZED:
@@ -361,6 +364,7 @@ class FPU:
         self.max_steps = max_steps
 
         return MCE_FPU_OK
+
 
     def setTicksPerSegment(self, nticks):
 
@@ -442,9 +446,7 @@ class FPU:
             self.state = FPST_RESTING
             return WAVEFORM_REJECTED, WAVEFORM_TOO_BIG
 
-
         nwave_entries = self.nwave_entries
-
 
         self.steps[n, IDXA] = asteps
         self.steps[n, IDXB] = bsteps
@@ -547,7 +549,6 @@ class FPU:
                 raise CrashException("An max alpha crash occured")
 
 
-
     def move_beta(self, newbeta, collision_callback):
         beta_offset = self.boff_steps
         self.beta_steps = newbeta
@@ -578,6 +579,7 @@ class FPU:
                 raise CrashException("An min beta crash occured")
             if (newbeta + beta_offset) > MAX_BETA_CRASH:
                 raise CrashException("An max beta crash occured")
+
 
     def start_findDatum(self, auto_datum):
         if self.state == FPST_LOCKED:
@@ -657,7 +659,6 @@ class FPU:
         print("FPU #%i: findDatum is now at (%i, %i) steps = (%7.2f, %7.2f) degree\n" % (
             self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
 
-
         last_beta_stepnum = self.beta_steps + beta_offset
         last_alpha_stepnum = self.alpha_steps + alpha_offset
 
@@ -707,8 +708,6 @@ class FPU:
                 self.at_datum = False
                 self.state = FPST_ABORTED
                 break
-
-
 
             try:
                 if not alpha_ready:
@@ -777,7 +776,6 @@ class FPU:
             print("FPU #%i: findDatum is now at (%i, %i) steps = (%7.2f, %7.2f) degree" % (
                 self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
 
-
         if alpha_datumed:
             self.alpha_steps = 0
             self.aoff_steps = 0
@@ -835,7 +833,6 @@ class FPU:
                 errcode = MCE_FPU_OK
 
         return errcode
-
 
 
     def abortMotion(self, sleep):
@@ -906,6 +903,7 @@ class FPU:
 
         return MCE_FPU_OK
 
+
     def enableBetaCollisionProtection(self):
         self.is_collided = False
         self.is_initialized = False
@@ -959,6 +957,7 @@ class FPU:
             print("FPU #%i: limit breach ongoing" % self.fpu_id)
 
         return MCE_FPU_OK
+
 
     def enableAlphaLimitBreachProtection(self):
         self.alpha_limit_breach = False
@@ -1135,6 +1134,7 @@ class FPU:
 
         return errcode
 
+
     def lockUnit(self):
         if self.state == FPST_LOCKED:
             return MCE_NOTIFY_COMMAND_IGNORED
@@ -1151,6 +1151,7 @@ class FPU:
         self.state = FPST_LOCKED
 
         return MCE_FPU_OK
+
 
     def unlockUnit(self):
 
@@ -1209,15 +1210,18 @@ class FPU:
         return crc32val, MCE_FPU_OK
 
 
-
-
+# ----------------------------------------------------------------------
 class SignalHandler(object):
-    """Context manager for handling a signal
+    """
+
+    Context manager for handling a signal
     while waiting for command completion.
+
     """
 
     def __init__(self, sig=signal.SIGINT):
         self.sig = sig
+
 
     def __enter__(self):
 
@@ -1230,28 +1234,32 @@ class SignalHandler(object):
             self.release()
             self.interrupted = True
 
-
         return self
+
 
 def reset_handler(signum, frame):
     print("resetting FPUs")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.resetFPU(fpu_id, time.sleep)
 
+
 def collision_handler(signum, frame):
     print("generating a collision")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.is_collided = True
+
 
 def limitbreach_handler(signum, frame):
     print("generating a limit breach")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.alpha_limit_breach = True
 
+
 def overflow_handler(signum, frame):
     print("generating a CAN overflow")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.can_overflow = True
+
 
 def colltest_handler(signum, frame):
     try:
@@ -1260,6 +1268,7 @@ def colltest_handler(signum, frame):
         FPUGrid[fpu_id].coll_test = True
     except:
         pass
+
 
 def init_FPUGrid(options, num_fpus):
     FPUGrid[:] = [FPU(i, options) for i in range(num_fpus) ]
