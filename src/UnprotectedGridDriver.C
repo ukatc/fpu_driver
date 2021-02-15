@@ -206,7 +206,7 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
         return DE_INTERFACE_ALREADY_INITIALIZED;
     }
 
-    if (config.num_fpus == 0)
+    if (config.num_fpus <= 0)
     {
         return DE_INVALID_FPU_ID;
     }
@@ -274,10 +274,18 @@ E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
+    // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here 
+
     // TODO: Also add gateway locking/unlocking code like the Python version
     // of this function does? (see below). If so then do NOT use my
     // DeviceLock.C/h WIP conversion from the Python-equivalent module
     // because too clunky - instead, use Linux named semaphores?
+    //   self.locked_gateways = [] # this del's and releases any previously acquired locks
+    //   for gw in address_list:
+    //      groupname = os.environ.get("MOONS_GATEWAY_ACCESS_GROUP","moons")
+    //      # acquire a unique inter-process lock for each gateway IP
+    //      dl = devicelock.DeviceLock('ethercan-gateway@%s:%i' % (gw.ip, gw.port), groupname)
+    //      self.locked_gateways.append(dl)
 
     E_EtherCANErrCode ecan_result = _gd->connect(ngateways, gateway_addresses);
     if (ecan_result == DE_OK)
@@ -285,21 +293,6 @@ E_EtherCANErrCode UnprotectedGridDriver::connect(int ngateways,
         ecan_result = _post_connect_hook();
     }
     return ecan_result;
-
-/*
-    Original Python version of function:
-    
-    with self.lock:
-        self.locked_gateways = [] # this del's and releases any previously acquired locks
-        for gw in address_list:
-            groupname = os.environ.get("MOONS_GATEWAY_ACCESS_GROUP","moons")
-            # acquire a unique inter-process lock for each gateway IP
-            dl = devicelock.DeviceLock('ethercan-gateway@%s:%i' % (gw.ip, gw.port), groupname)
-            self.locked_gateways.append(dl)
-        rv = self._gd.connect(address_list)
-        self._post_connect_hook(self.config)
-        return rv
-*/        
 }
 
 //------------------------------------------------------------------------------
@@ -527,9 +520,6 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
     bool was_aborted = false;
     bool finished_ok = false;
 
-    // TODO: In the Python equivalent code, has try/finally block - but
-    // is this required/useful/appropriate in this C++ code - are there 
-    // any exceptions to be caught?
     abort_motion_pending = false;
     while (!is_ready)
     {
@@ -656,24 +646,22 @@ E_EtherCANErrCode UnprotectedGridDriver::resetFPUs(t_grid_state &gs,
     
     ecan_result = _gd->resetFPUs(gs, fpuset);
 
-    // TODO: Only execute the remaining code below if ecan_result from the
-    // resetFPUs() call above returns DE_OK? (check WRT Python version, and
-    // other more recently-converted similar C++ functions, e.g.
-    // resetStepCounters() below)
-
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
-    // Clear FPU waveforms
-    for (size_t fpu_id = 0; fpu_id < fpus_data.size(); fpu_id++)
+    if (ecan_result == DE_OK)
     {
-        fpus_data[fpu_id].db.last_waveform.clear();
-    }
-    
-    // Wait for FPUs to become active (N.B. values adapted from original
-    // Python version of this function)
-    sleepSecs(0.1 * 24.0);
+        // Clear FPU waveforms
+        for (size_t fpu_id = 0; fpu_id < fpus_data.size(); fpu_id++)
+        {
+            fpus_data[fpu_id].db.last_waveform.clear();
+        }
+        
+        // Wait for FPUs to become active (N.B. values adapted from original
+        // Python version of this function)
+        sleepSecs(0.1 * 24.0);
 
-    ecan_result = _reset_hook(prev_gs, gs, fpuset);
+        ecan_result = _reset_hook(prev_gs, gs, fpuset);
+    }
 
     return ecan_result;
 }
@@ -876,10 +864,14 @@ E_EtherCANErrCode UnprotectedGridDriver::writeSerialNumber(int fpu_id,
         // Read FPU's modified serial number back into grid state, and verify
         // that is new serial number
         ecan_result = _gd->readSerialNumbers(gs, fpuset);
+    }
+
+    if (ecan_result == DE_OK)
+    {
         if (strncmp(gs.FPU_state[fpu_id].serial_number, serial_number,
                     LEN_SERIAL_NUMBER) != 0)
         {
-            return DE_WRITE_VERIFICATION_FAILED;
+            ecan_result = DE_WRITE_VERIFICATION_FAILED;
         }
     }
 
@@ -1112,16 +1104,20 @@ E_EtherCANErrCode UnprotectedGridDriver::executeMotion(t_grid_state &gs,
     sleepSecs(0.1);
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
+
     sleepSecs(0.1);
     ecan_result = _gd->startExecuteMotion(gs, fpuset, sync_command);
-    // TODO: The ecan_result logic here might not be the same as the Python
-    // equivalent - check this
     if (ecan_result != DE_OK)
     {
-        // Note: Do NOT want to return the _cancel_execute_motion_hook() return
-        // value here, because more interested in the startExecuteMotion()
-        // ecan_result value above
-        _cancel_execute_motion_hook(gs, fpuset, initial_positions);
+        EtherCANErrorGroup error_group = errorGroup(ecan_result);
+        if ((error_group == EtherCANErrorGroup::InvalidState) ||
+            (error_group == EtherCANErrorGroup::Protection))
+        {
+            // Note: Do NOT want to return the _cancel_execute_motion_hook()
+            // return value here, because more interested in the
+            // startExecuteMotion() ecan_result value above
+            _cancel_execute_motion_hook(gs, fpuset, initial_positions);
+        }
         return ecan_result;
     }
 
@@ -1270,15 +1266,12 @@ E_EtherCANErrCode UnprotectedGridDriver::freeBetaCollision(int fpu_id,
     createFpuSetForSingleFpu(fpu_id, fpuset);
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
-    E_EtherCANErrCode post_result = _post_free_beta_collision_hook(fpu_id,
-                                                                   direction,
-                                                                   gs);
-    // N.B. freeBetaCollision()'s return value is a priority
-    if (ecan_result != DE_OK)
+    if (ecan_result == DE_OK)
     {
-        return ecan_result;
+        ecan_result = _post_free_beta_collision_hook(fpu_id, direction, gs);
     }
-    return post_result;
+
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -1331,15 +1324,12 @@ E_EtherCANErrCode UnprotectedGridDriver::freeAlphaLimitBreach(int fpu_id,
     createFpuSetForSingleFpu(fpu_id, fpuset);
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
-    E_EtherCANErrCode post_result = _post_free_alpha_limit_breach_hook(fpu_id,
-                                                                       direction,
-                                                                       gs);
-    // N.B. freeAlphaLimitBreach()'s return value is a priority
-    if (ecan_result != DE_OK)
+    if (ecan_result == DE_OK)
     {
-        return ecan_result;
+        ecan_result = _post_free_alpha_limit_breach_hook(fpu_id, direction, gs);
     }
-    return post_result;
+
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -1402,14 +1392,12 @@ E_EtherCANErrCode UnprotectedGridDriver::reverseMotion(t_grid_state &gs,
 
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
-    E_EtherCANErrCode post_result = _post_reverse_motion_hook(wtable, gs,
-                                                              fpuset);
-    // Prioritise _gd->reverseMotion() return code
-    if (ecan_result != DE_OK)
+    if (ecan_result == DE_OK)
     {
-        return ecan_result;
+        ecan_result = _post_reverse_motion_hook(wtable, gs, fpuset);
     }
-    return post_result;
+
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -1451,14 +1439,12 @@ E_EtherCANErrCode UnprotectedGridDriver::repeatMotion(t_grid_state &gs,
 
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
-    E_EtherCANErrCode post_result = _post_repeat_motion_hook(wtable, gs,
-                                                             fpuset);
-    // Prioritise _gd->repeatMotion() return code
-    if (ecan_result != DE_OK)
+    if (ecan_result == DE_OK)
     {
-        return ecan_result;
+        ecan_result = _post_repeat_motion_hook(wtable, gs, fpuset);
     }
-    return post_result;
+
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -1520,6 +1506,8 @@ E_EtherCANErrCode UnprotectedGridDriver::countedAngles(t_grid_state &gs,
         return ecan_result;
     }
 
+    fpus_angles_ret.clear();
+
     t_grid_state prev_gs;
     _gd->getGridState(prev_gs);
 
@@ -1527,24 +1515,21 @@ E_EtherCANErrCode UnprotectedGridDriver::countedAngles(t_grid_state &gs,
 
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
-    if (ecan_result != DE_OK)
+    if (ecan_result == DE_OK)
     {
-        return ecan_result;
-    }
-
-    fpus_angles_ret.clear();
-    t_fpus_angles fpus_angles_temp;
-    list_angles(gs, config.num_fpus, fpus_angles_temp,
-                config.alpha_datum_offset);
-    for (size_t i = 0; i < fpus_angles_temp.size(); i++)
-    {
-        if (fpuset[fpus_angles_temp[i].first])
+        t_fpus_angles fpus_angles_temp;
+        list_angles(gs, config.num_fpus, fpus_angles_temp,
+                    config.alpha_datum_offset);
+        for (size_t i = 0; i < fpus_angles_temp.size(); i++)
         {
-            fpus_angles_ret.push_back(fpus_angles_temp[i]);
+            if (fpuset[fpus_angles_temp[i].first])
+            {
+                fpus_angles_ret.push_back(fpus_angles_temp[i]);
+            }
         }
     }
 
-    return DE_OK;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
