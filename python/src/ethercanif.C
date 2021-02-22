@@ -89,7 +89,7 @@ void translate_interface_error(EtherCANException const& e)
     EtherCANErrorGroup error_group = errorGroup(e.getErrCode());
 
     PyObject *exception_type = EtherCANExceptionTypeObj;
-    for (int i = 0; i < (sizeof(exception_defs) / sizeof(exception_defs[0])); i++)
+    for (size_t i = 0; i < (sizeof(exception_defs) / sizeof(exception_defs[0])); i++)
     {
         if (exception_defs[i].error_group == error_group)
         {
