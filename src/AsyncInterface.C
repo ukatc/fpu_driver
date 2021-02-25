@@ -8,6 +8,8 @@
 // jnix      2017-10-18  Created interface class using Pablo Guiterrez' CAN client sample
 // sbeard    2020-01-30  Give waveform an amnesty if they violate the maximum
 //                       speed by 1 Hz. TODO: Correct the rounding errors causing this.
+// sbeard    2021-02-25  Changed the waveform communication error code from
+//                       DE_INVALID_WAVEFORM to DE_INVALID_WAVEFORM_REJECTED.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2245,7 +2247,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 				    "waveform configuration rejected for for FPU #%i\n",
 				    ethercanif::get_realtime(),
 				    fpu_id);
-			return DE_INVALID_WAVEFORM;
+			return DE_INVALID_WAVEFORM_REJECTED;
 		}
 
                 if ((fpu_state.state != FPST_LOCKED)

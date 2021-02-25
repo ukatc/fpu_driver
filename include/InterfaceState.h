@@ -11,6 +11,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client sample
+// sbeard    2021-02-25  Added DE_INVALID_WAVEFORM_REJECTED return code
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -221,7 +222,6 @@ enum E_EtherCANErrCode
     // invalid waveforms.
     DE_INVALID_WAVEFORM = 500,
 
-
     // waveform has to many steps
     DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS = 501,
 
@@ -237,6 +237,9 @@ enum E_EtherCANErrCode
 
     // The tail of the waveform is incorrect.
     DE_INVALID_WAVEFORM_TAIL = 505,
+
+    // A waveform is rejected by the interface so loading state not achieved.
+    DE_INVALID_WAVEFORM_REJECTED = 506,
 
 
     /***************************************/

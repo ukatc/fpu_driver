@@ -5,6 +5,9 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
+// jnix      2017-10-18  Created interface class using Pablo Guiterrez' CAN client sample
+// sbeard    2021-02-25  Added DE_INVALID_WAVEFORM_REJECTED return code and
+//                       associated error message.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -489,6 +492,7 @@ void translate_interface_error(EtherCANException const& e)
         break;
 
     case DE_INVALID_WAVEFORM :
+    case DE_INVALID_WAVEFORM_REJECTED:
     case DE_INVALID_WAVEFORM_TAIL:
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:
     case DE_INVALID_WAVEFORM_RAGGED:
@@ -624,6 +628,11 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
     case DE_INVALID_WAVEFORM :
         throw EtherCANException("DE_INVALID_WAVEFORM: The passed waveform does not meet some general rule.",
                                 DE_INVALID_WAVEFORM);
+        break;
+
+    case DE_INVALID_WAVEFORM_REJECTED :
+        throw EtherCANException("DE_INVALID_WAVEFORM_REJECTED: The passed waveform was not properly communicated. FPU state did not change.",
+                                DE_INVALID_WAVEFORM_REJECTED);
         break;
 
     case DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS :
@@ -1591,6 +1600,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("DE_INTERFACE_STILL_CONNECTED",DE_INTERFACE_ALREADY_CONNECTED)
     .value("DE_ASSERTION_FAILED",DE_ASSERTION_FAILED)
     .value("DE_INVALID_WAVEFORM", DE_INVALID_WAVEFORM)
+    .value("DE_INVALID_WAVEFORM_REJECTED", DE_INVALID_WAVEFORM_REJECTED)
     .value("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS", DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS)
     .value("DE_INVALID_WAVEFORM_RAGGED", DE_INVALID_WAVEFORM_RAGGED)
     .value("DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE", DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE)
