@@ -2281,20 +2281,29 @@ E_EtherCANErrCode GridDriver::_post_free_beta_collision_hook(int fpu_id,
         db_cw_or_acw = FpuDbIntValType::BetaRetries_ACW;
     }
     
-    MdbResult mdb_result = MDB_PANIC;
-    auto txn = protection_db.createTransaction(mdb_result);
-    if (txn)
+    // The following code block is inside its own scope so that txn is
+    // automatically destroyed at the end of it - this is required because
+    // the subseqent _refresh_positions() call also creates its own
+    // internal transaction, and ProtectionDB/ProtectionDBTxn requires that
+    // there is only one transaction instance in existence at a time.
+    // TODO: This could instead be achieved by putting txn.reset() after this
+    // block?
     {
-        const char *serial_number = gs.FPU_state[fpu_id].serial_number;
-        if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
-                                       serial_number, count) != MDB_SUCCESS)
+        MdbResult mdb_result = MDB_PANIC;
+        auto txn = protection_db.createTransaction(mdb_result);
+        if (txn)
         {
-            return DE_DB_WRITE_FAILED;
+            const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+            if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
+                                        serial_number, count) != MDB_SUCCESS)
+            {
+                return DE_DB_WRITE_FAILED;
+            }
         }
-    }
-    else
-    {
-        return DE_DB_TRANSACTION_CREATION_FAILED;
+        else
+        {
+            return DE_DB_TRANSACTION_CREATION_FAILED;
+        }
     }
 
     // N.B. Old Johannes Python code here which he had commented out:
@@ -2390,20 +2399,29 @@ E_EtherCANErrCode GridDriver::_post_free_alpha_limit_breach_hook(int fpu_id,
         db_cw_or_acw = FpuDbIntValType::AlphaRetries_ACW;
     }
 
-    MdbResult mdb_result = MDB_PANIC;
-    auto txn = protection_db.createTransaction(mdb_result);
-    if (txn)
+    // The following code block is inside its own scope so that txn is
+    // automatically destroyed at the end of it - this is required because
+    // the subseqent _refresh_positions() call also creates its own
+    // internal transaction, and ProtectionDB/ProtectionDBTxn requires that
+    // there is only one transaction instance in existence at a time.
+    // TODO: This could instead be achieved by putting txn.reset() after this
+    // block?
     {
-        const char *serial_number = gs.FPU_state[fpu_id].serial_number;
-        if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
-                                       serial_number, count) != MDB_SUCCESS)
+        MdbResult mdb_result = MDB_PANIC;
+        auto txn = protection_db.createTransaction(mdb_result);
+        if (txn)
         {
-            return DE_DB_WRITE_FAILED;
+            const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+            if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
+                                        serial_number, count) != MDB_SUCCESS)
+            {
+                return DE_DB_WRITE_FAILED;
+            }
         }
-    }
-    else
-    {
-        return DE_DB_TRANSACTION_CREATION_FAILED;
+        else
+        {
+            return DE_DB_TRANSACTION_CREATION_FAILED;
+        }
     }
 
     // N.B. Old Johannes Python code here which he had commented out:
