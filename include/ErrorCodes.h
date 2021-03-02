@@ -8,6 +8,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2021-02-10  Created.
+// sbeard    2021-02-25  Added DE_INVALID_WAVEFORM_REJECTED return code
 //------------------------------------------------------------------------------
   
 ////////////////////////////////////////////////////////////////////////////////
@@ -197,6 +198,9 @@ enum E_EtherCANErrCode
 
     // The tail of the waveform is incorrect.
     DE_INVALID_WAVEFORM_TAIL = 505,
+
+    // A waveform is rejected by the interface so loading state not achieved.
+    DE_INVALID_WAVEFORM_REJECTED = 506,
 
     //..........................................................................
     // Errors which terminate movements

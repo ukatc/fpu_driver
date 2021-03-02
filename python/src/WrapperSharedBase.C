@@ -537,6 +537,11 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 DE_INVALID_WAVEFORM_TAIL);
         break;
 
+    case DE_INVALID_WAVEFORM_REJECTED :
+        throw EtherCANException("DE_INVALID_WAVEFORM_REJECTED: The passed waveform was not properly communicated. FPU state did not change.",
+                                DE_INVALID_WAVEFORM_REJECTED);
+        break;
+        
     //..........................................................................
     // Errors which terminate movements
 

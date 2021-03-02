@@ -5,7 +5,11 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 13/05/2020  Adapted to add new grid driver wrapper functions.
+// jnix      2017-10-18  Created interface class using Pablo Guiterrez' CAN
+//                       client sample
+// bwillemse 2020-05-13  Adapted to add new grid driver wrapper functions.
+// sbeard    2021-02-25  Added DE_INVALID_WAVEFORM_REJECTED return code and
+//                       associated error message.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -320,6 +324,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("DE_FIRMWARE_CAN_BUFFER_OVERFLOW", DE_FIRMWARE_CAN_BUFFER_OVERFLOW)
     // Invalid waveforms
     .value("DE_INVALID_WAVEFORM", DE_INVALID_WAVEFORM)
+    .value("DE_INVALID_WAVEFORM_REJECTED", DE_INVALID_WAVEFORM_REJECTED)
     .value("DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS", DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS)
     .value("DE_INVALID_WAVEFORM_RAGGED", DE_INVALID_WAVEFORM_RAGGED)
     .value("DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE", DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE)

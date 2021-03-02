@@ -101,6 +101,7 @@ EtherCANErrorGroup errorGroup(E_EtherCANErrCode ecan_result)
     case DE_INVALID_WAVEFORM_RAGGED:
     case DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:
     case DE_INVALID_WAVEFORM_CHANGE:
+    case DE_INVALID_WAVEFORM_REJECTED:
         return EtherCANErrorGroup::InvalidWaveform;
         break;
 
