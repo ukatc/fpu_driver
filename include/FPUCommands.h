@@ -39,8 +39,8 @@ void list_angles(const t_grid_state &gs, int num_fpus,
                  t_fpus_angles &fpus_angles_ret,
                  double alpha_datum_offset = ALPHA_DATUM_OFFSET,
                  bool show_uninitialized = false,
-                 double asteps_per_deg = StepsPerDegreeAlpha,
-                 double bsteps_per_deg = StepsPerDegreeBeta);
+                 double asteps_per_deg = STEPS_PER_DEGREE_ALPHA,
+                 double bsteps_per_deg = STEPS_PER_DEGREE_BETA);
 
 std::string doubleToString(double val);
 

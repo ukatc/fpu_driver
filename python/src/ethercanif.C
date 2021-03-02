@@ -497,7 +497,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .def("__init__", make_constructor(&WrappedGridDriver::initWrapper,
                                       bp::default_call_policies(),
          (bp::arg("nfpus") = DEFAULT_NUM_FPUS,
-          bp::arg("SocketTimeOutSeconds") = 20.0,
+          bp::arg("SocketTimeOutSeconds") = SOCKET_TIMEOUT_SECS,
           bp::arg("confirm_each_step") = false,
           bp::arg("waveform_upload_pause_us") = 0,
           bp::arg("configmotion_max_retry_count") = 5,
@@ -673,8 +673,8 @@ BOOST_PYTHON_MODULE(ethercanif)
          (bp::arg("grid_state"),
           bp::arg("alpha_datum_offset") = ALPHA_DATUM_OFFSET,
           bp::arg("show_uninitialized") = false,
-          bp::arg("asteps_per_deg") = StepsPerDegreeAlpha,
-          bp::arg("bsteps_per_deg") = StepsPerDegreeBeta))
+          bp::arg("asteps_per_deg") = STEPS_PER_DEGREE_ALPHA,
+          bp::arg("bsteps_per_deg") = STEPS_PER_DEGREE_BETA))
 
     .def("countedAngles", &WrappedGridDriver::wrapped_countedAngles,
          (bp::arg("grid_state"),

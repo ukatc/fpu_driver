@@ -18,8 +18,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DRIVER_CONSTANTS_H
-#define DRIVER_CONSTANTS_H
+#ifndef INTERFACECONSTANTS_H
+#define INTERFACECONSTANTS_H
 
 #include "ethercan/CAN_Constants.h"
 
@@ -33,6 +33,8 @@ namespace mpifps
 // Define default value for more convenient testing
 static const char DEFAULT_GATEWAY_IP[]= "192.168.0.10";
 static const int DEFAULT_GATEWAY_PORT = 4700;
+
+const double SOCKET_TIMEOUT_SECS = 20.0;
 
 // Number of gateways for the positioner grid
 const int MAX_NUM_GATEWAYS = 3;

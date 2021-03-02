@@ -317,7 +317,7 @@ double GridDriver::_alpha_angle(const t_fpu_state &fpu_state,
 
     alpha_underflow_ret = (fpu_state.alpha_steps == ALPHA_UNDERFLOW_COUNT);
     alpha_overflow_ret = (fpu_state.alpha_steps == ALPHA_OVERFLOW_COUNT);
-    return ( ((double)fpu_state.alpha_steps) / StepsPerDegreeAlpha) +
+    return ( ((double)fpu_state.alpha_steps) / STEPS_PER_DEGREE_ALPHA) +
            config.alpha_datum_offset;
 }
 
@@ -330,7 +330,7 @@ double GridDriver::_beta_angle(const t_fpu_state &fpu_state,
 
     beta_underflow_ret = (fpu_state.beta_steps == BETA_UNDERFLOW_COUNT);
     beta_overflow_ret = (fpu_state.beta_steps == BETA_OVERFLOW_COUNT);
-    return ((double)fpu_state.beta_steps) / StepsPerDegreeBeta;
+    return ((double)fpu_state.beta_steps) / STEPS_PER_DEGREE_BETA;
 }
 
 //------------------------------------------------------------------------------
@@ -1514,9 +1514,9 @@ E_EtherCANErrCode GridDriver::_check_and_register_wtable(const t_wtable &wtable,
             asteps += waveform_steps[step_index].alpha_steps * sign; 
             bsteps += waveform_steps[step_index].beta_steps * sign;
             Interval alpha_sect = alpha0 + 
-                                  (((double)asteps) / StepsPerDegreeAlpha);
+                                  (((double)asteps) / STEPS_PER_DEGREE_ALPHA);
             Interval beta_sect = beta0 +
-                                 (((double)bsteps) / StepsPerDegreeBeta); 
+                                 (((double)bsteps) / STEPS_PER_DEGREE_BETA);
 
             ecan_result = _check_allowed_range(fpu_id, step_index, "alpha",
                                                alimits, alpha_sect,
@@ -2239,7 +2239,7 @@ E_EtherCANErrCode GridDriver::_pre_free_beta_collision_hook(int fpu_id,
     }
 
     Interval bpos = fpu_data.db.bpos;
-    Interval new_bpos = bpos + (((double)diff) / StepsPerDegreeBeta);
+    Interval new_bpos = bpos + (((double)diff) / STEPS_PER_DEGREE_BETA);
 
     fpu_data.target_position = { fpu_data.db.apos, new_bpos };
 
@@ -2357,7 +2357,7 @@ E_EtherCANErrCode GridDriver::_pre_free_alpha_limit_breach_hook(int fpu_id,
     }
 
     Interval apos = fpu_data.db.apos;
-    Interval new_apos = apos + (((double)diff) / StepsPerDegreeAlpha);
+    Interval new_apos = apos + (((double)diff) / STEPS_PER_DEGREE_ALPHA);
 
     fpu_data.target_position = { new_apos, fpu_data.db.bpos };
 

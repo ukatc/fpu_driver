@@ -112,7 +112,7 @@ public:
 
     UnprotectedGridDriver(
         int nfpus = DEFAULT_NUM_FPUS,
-        double SocketTimeOutSeconds = 20.0,
+        double SocketTimeOutSeconds = SOCKET_TIMEOUT_SECS,
         bool confirm_each_step = false,
         long waveform_upload_pause_us = 0,
         int configmotion_max_retry_count = 5,
@@ -221,8 +221,8 @@ public:
     void listAngles(const t_grid_state &gs, t_fpus_angles &fpus_angles_ret,
                     double alpha_datum_offset = ALPHA_DATUM_OFFSET,
                     bool show_uninitialized = false,
-                    double asteps_per_deg = StepsPerDegreeAlpha,
-                    double bsteps_per_deg = StepsPerDegreeBeta);
+                    double asteps_per_deg = STEPS_PER_DEGREE_ALPHA,
+                    double bsteps_per_deg = STEPS_PER_DEGREE_BETA);
     E_EtherCANErrCode countedAngles(t_grid_state &gs, const t_fpuset &fpuset,
                                     t_fpus_angles &fpus_angles_ret,
                                     bool show_uninitialized = false);

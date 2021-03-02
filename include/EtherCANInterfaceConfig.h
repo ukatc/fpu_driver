@@ -22,6 +22,7 @@
 
 #include "E_LogLevel.h"
 #include "InterfaceConstants.h"
+#include "FPUConstants.h"
 
 namespace mpifps
 {
@@ -92,7 +93,7 @@ public:
         num_fpus = MAX_NUM_POSITIONERS;
 
         // Set default time-out values
-        SocketTimeOutSeconds = 20.0;
+        SocketTimeOutSeconds = SOCKET_TIMEOUT_SECS;
         TCP_IdleSeconds = 10;
         TCP_KeepaliveIntervalSeconds = 1;
 
@@ -115,10 +116,10 @@ public:
         fd_txlog = -1;
 
         alpha_datum_offset = ALPHA_DATUM_OFFSET;
-        motor_minimum_frequency = 500.0;
-        motor_maximum_frequency = 2000.0;
-        motor_max_start_frequency=550.0;
-        motor_max_rel_increase = 1.4;
+        motor_minimum_frequency = MOTOR_MIN_STEP_FREQUENCY;
+        motor_maximum_frequency = MOTOR_MAX_STEP_FREQUENCY;
+        motor_max_start_frequency = MOTOR_MAX_START_FREQUENCY;
+        motor_max_rel_increase = MAX_ACCELERATION_FACTOR;
         motor_max_step_difference = 100;
     };
 

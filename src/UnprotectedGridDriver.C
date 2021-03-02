@@ -693,9 +693,9 @@ E_EtherCANErrCode UnprotectedGridDriver::resetStepCounters(long new_alpha_steps,
         return ecan_result;
     }
 
-    double alpha_target = (((double)new_alpha_steps) / StepsPerDegreeAlpha) +
+    double alpha_target = (((double)new_alpha_steps) / STEPS_PER_DEGREE_ALPHA) +
                           config.alpha_datum_offset;
-    double beta_target = ((double)new_beta_steps) / StepsPerDegreeBeta;
+    double beta_target = ((double)new_beta_steps) / STEPS_PER_DEGREE_BETA;
 
     _reset_counter_hook(alpha_target, beta_target, prev_gs, gs, fpuset);
     return DE_OK;

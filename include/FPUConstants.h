@@ -27,25 +27,10 @@
 namespace mpifps
 {
 
-const double AlphaGearRatio = 2050.175633;   // Actual gear ratio
-const double BetaGearRatio = 1517.662482;    // actual gear ratio
-
-// There are 20 steps per revolution on the non-geared side, so:
-const double StepsPerRevolution = 20.0;
-const double DegreePerRevolution = 360.0;
-
-// Note that these numbers must not be confused with actual calibrated values!
-// TODO: The Python versions in fpu_constants.py have "float()" functions in
-// them - what is the purpose of this, and is the following C++ version OK?
-const double StepsPerDegreeAlpha =
-                (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution;
-const double StepsPerDegreeBeta =
-                (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution;
-
 const double ALPHA_MIN_DEGREE = -180.2;
 const double ALPHA_MAX_DEGREE = 159.0;
 const double BETA_MIN_DEGREE = -179.3;
-const double BETA_MAX_DEGREE = 140.0;
+const double BETA_MAX_DEGREE = 141.0;
 
 const double BETA_MIN_HWPROT_DEGREE = -179.4;
 const double BETA_MAX_HWPROT_DEGREE = 150.4;
@@ -61,7 +46,7 @@ const int FREE_ALPHA_STEPCOUNT = 11;
 
 // This constant factor is obsolete for newer waveform rulesets. For details,
 // see driver manual sections 6.5.8, 6.9.2 and 17.1.
- const double MAX_ACCELERATION_FACTOR = 1.4;
+const double MAX_ACCELERATION_FACTOR = 1.4;
 
 // Minimum stepper motor frequency
 const double MOTOR_MIN_STEP_FREQUENCY = 500.0;
