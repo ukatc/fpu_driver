@@ -23,7 +23,6 @@
 #include "E_LogLevel.h"
 #include "InterfaceConstants.h"
 
-
 namespace mpifps
 {
 
@@ -47,18 +46,19 @@ public:
     // Current logging level (see E_LogLevel.h)
     E_LogLevel logLevel;
 
-    // file descriptor for log of commands and results in the control context (CONTROL)
+    // File descriptor for log of commands and results in the control context
+    // (CONTROL)
     int fd_controllog;
 
-    // file descriptor for log of all transmitted CAN commands (TX)
+    // File descriptor for log of all transmitted CAN commands (TX)
     int fd_txlog;
 
-    // file descriptor for log of all received CAN responses (RX)
+    // File descriptor for log of all received CAN responses (RX)
     int fd_rxlog;
 
     int num_fpus;
 
-    // offset with which alpha arm angles are computed from step counts
+    // Offset with which alpha arm angles are computed from step counts
     double alpha_datum_offset;
 
     double motor_minimum_frequency;   // lower bound of stepper motor frequency
@@ -69,7 +69,7 @@ public:
                                          (which allows for a constant acceleration).
 					 Used in ruleset V5. */
 
-    // waveform upload parameters
+    // Waveform upload parameters
     long waveform_upload_pause_us; // wait time before a new waveform step is sent to the same FPU
     bool confirm_each_step; // request confirmation for each waveform step
 
@@ -91,8 +91,7 @@ public:
     {
         num_fpus = MAX_NUM_POSITIONERS;
 
-        // set default time-out values
-
+        // Set default time-out values
         SocketTimeOutSeconds = 20.0;
         TCP_IdleSeconds = 10;
         TCP_KeepaliveIntervalSeconds = 1;
@@ -107,7 +106,8 @@ public:
         configmotion_max_retry_count = 10;
         configmotion_max_resend_count = 5;
 
-        firmware_version_address_offset = 0x61; // new offset for v1.3.0, matching firmware version 1.4.4
+        // New offset for v1.3.0, matching firmware version 1.4.4
+        firmware_version_address_offset = 0x61;
 
         // Initialize log file descriptors
         fd_controllog = -1;

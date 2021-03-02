@@ -63,12 +63,11 @@ const int FREE_ALPHA_STEPCOUNT = 11;
 // see driver manual sections 6.5.8, 6.9.2 and 17.1.
  const double MAX_ACCELERATION_FACTOR = 1.4;
 
-// This should match the values in include/EtherCANInterfaceConfig.h
 // Minimum stepper motor frequency
 const double MOTOR_MIN_STEP_FREQUENCY = 500.0;
-// maximum stepper motor frequency
+// Maximum stepper motor frequency
 const double MOTOR_MAX_STEP_FREQUENCY = 2000.0;
-// Minimum start frequency
+// Maximum start frequency
 const double MOTOR_MAX_START_FREQUENCY = 550.0;
 // Maximum change in steps per segment between segments
 const int MAX_STEP_DIFFERENCE = 50;

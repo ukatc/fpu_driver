@@ -30,17 +30,14 @@
 namespace mpifps
 {
 
-
-// define default value for more convenient testing.
+// Define default value for more convenient testing
 static const char DEFAULT_GATEWAY_IP[]= "192.168.0.10";
 static const int DEFAULT_GATEWAY_PORT = 4700;
 
-
-
-// number of gateways for the positioner grid
+// Number of gateways for the positioner grid
 const int MAX_NUM_GATEWAYS = 3;
 
-// maximum number of fibre positioner units
+// Maximum number of fibre positioner units
 const int MAX_NUM_POSITIONERS = (MAX_NUM_GATEWAYS
                                  * ethercanif::BUSES_PER_GATEWAY
                                  * ethercanif::FPUS_PER_BUS);
@@ -50,35 +47,28 @@ const int MAX_FPUS_PER_GATEWAY = (ethercanif::BUSES_PER_GATEWAY
 
 const bool USE_REALTIME_SCHEDULING = false;
 
+// Design scaling of stepper motors.
+// From David Atkinson: These are the actual gear ratios that I use in my IDL
+// positional repeatability code. I was given these numbers by David
+// Montgomery:
+const double ALPHA_GEAR_RATIO = 2050.175633; // Actual gear ratio
+const double BETA_GEAR_RATIO = 1517.662482; // Actual gear ratio
 
-/* Design scaling of stepper motors.
- * From David Atkinson:
- *
- * These are the actual gear ratios that I use in my IDL positional repeatability code.
- * I was given these numbers by David Montgomery:
- *
- */
-
-const double ALPHA_GEAR_RATIO 	= 2050.175633;// actual gear ratio
-const double BETA_GEAR_RATIO 	= 1517.662482;// actual gear ratio
-
-/*
- * There are 20 steps per revolution on the non-geared side, so:
- *
- */
+// There are 20 steps per revolution on the non-geared side, so:
 const double STEPS_PER_REVOLUTION = 20.0;
 const double DEGREE_PER_REVOLUTION = 360.0;
 
-/*
- * Note that these numbers must not be confounded with actual calibrated values!
- */
-const double STEPS_PER_DEGREE_ALPHA = (STEPS_PER_REVOLUTION * ALPHA_GEAR_RATIO) / DEGREE_PER_REVOLUTION;
-const double STEPS_PER_DEGREE_BETA = (STEPS_PER_REVOLUTION * BETA_GEAR_RATIO) / DEGREE_PER_REVOLUTION;
+// Note that these numbers must not be confused with actual calibrated values!
+const double STEPS_PER_DEGREE_ALPHA =
+            (STEPS_PER_REVOLUTION * ALPHA_GEAR_RATIO) / DEGREE_PER_REVOLUTION;
+const double STEPS_PER_DEGREE_BETA =
+            (STEPS_PER_REVOLUTION * BETA_GEAR_RATIO) / DEGREE_PER_REVOLUTION;
 
 const double ALPHA_DATUM_OFFSET = -180.0;
 const double BETA_DATUM_OFFSET = 0.0;
 
-const double WAVEFORM_SEGMENT_DURATION_MS = 125; // duration of one segment of a waveform
+// Duration of one segment of a waveform
+const double WAVEFORM_SEGMENT_DURATION_MS = 125;
 
 const int DEFAULT_WAVEFORM_RULESET_VERSION = 5;
 }
