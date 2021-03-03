@@ -478,7 +478,7 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
 
     case DE_MAX_RETRIES_EXCEEDED:
         throw EtherCANException("DE_MAX_RETRIES_EXCEEDED: A command could not be"
-                                " send in spite of several retries", DE_MAX_RETRIES_EXCEEDED);
+                                " sent in spite of several retries", DE_MAX_RETRIES_EXCEEDED);
         break;
 
     case DE_CAN_COMMAND_TIMEOUT_ERROR:
