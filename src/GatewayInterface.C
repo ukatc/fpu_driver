@@ -76,9 +76,58 @@ GatewayInterface::GatewayInterface(const EtherCANInterfaceConfig &config_vals)
     DescriptorCommandEvent = 0;
     DescriptorCloseEvent = 0;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    // Clear the CAN mapping structures
+    memset(fpu_id_by_adr, 0, sizeof(fpu_id_by_adr));
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        // Initialise to non-valid values
+        // TODO: See how this would cause the code to handle an invalid FPU ID
+        // attempting to be used
+        address_map[fpu_id] = { 0xFF, 0xFF, 0xFF };
+    }
+
+    // Populate the FPU ID <-> CAN mapping structures from grid_can_map
+    // Important:
+    //   - The FPU ID and CAN routing values in grid_can_map must have been
+    //     fully checked and validated for value ranges and duplicates before
+    //     passing it into this constructor
+    //   - The reverse mapping needs to be defined for all FPUs which can in
+    //     theory respond to a broadcast, because the FPU IDs are registered
+    //     using reverse lookup
+    // ********** TODO: BW: Figure out what Johannes' reverse mapping comment
+    // above means, and how to cater for it
+    for (size_t i = 0; i < grid_can_map.size(); i++)
+    {
+        // Final check for valid value ranges to avoid any memory overruns when
+        // populating the mapping arrays
+        const int fpu_id = grid_can_map[i].first;
+        const FPUArray::t_bus_address &can_route = grid_can_map[i].second;
+        if ((fpu_id >= 0) && (fpu_id < MAX_NUM_POSITIONERS) &&
+            (can_route.gateway_id >= 0) &&
+            (can_route.gateway_id < MAX_NUM_GATEWAYS) &&
+            (can_route.bus_id >= 0) && (can_route.bus_id < BUSES_PER_GATEWAY) &&
+            (can_route.can_id >= 1) && (can_route.can_id <= FPUS_PER_BUS))
+        {
+            // Populate items into the forward and reverse mapping arrays
+            address_map[fpu_id] = { can_route.gateway_id, can_route.bus_id,
+                                    can_route.can_id };
+            fpu_id_by_adr[can_route.gateway_id][can_route.bus_id]
+                         [can_route.can_id] = (uint16_t)fpu_id;
+        }
+        else
+        {
+            // TODO: Error - what to do here? Can't return an error code
+            // in normal way because we're in a constructor here - could return
+            // via a function reference or pointer argument, but would have to
+            // pass up through the multiple class layers to UnprotectedGridDriver?
+            break;
+        }
+    }
+#else // NOT FLEXIBLE_CAN_MAPPING
     // initialize address map
     memset(fpu_id_by_adr, 0, sizeof(fpu_id_by_adr));
-    // assing default mapping and reverse mapping to
+    // Initialise default mapping and reverse mapping to
     // logical FPU ids.
     // Important: the reverse mapping needs to be defined
     // for all FPUs which can in theory respond to
@@ -96,8 +145,8 @@ GatewayInterface::GatewayInterface(const EtherCANInterfaceConfig &config_vals)
         address_map[fpuid] = bus_adr;
 
         fpu_id_by_adr[bus_adr.gateway_id][bus_adr.bus_id][bus_adr.can_id] = (uint16_t) fpuid;
-
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     exit_threads = false;
     shutdown_in_progress = false;
