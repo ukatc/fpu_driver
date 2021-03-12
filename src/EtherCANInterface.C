@@ -22,8 +22,14 @@
 namespace mpifps
 {
 
+#ifdef FLEXIBLE_CAN_MAPPING
+EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values,
+                                     const GridCanMap &grid_can_map)
+    : AsyncInterface(config_values, grid_can_map)
+#else // NOT FLEXIBLE_CAN_MAPPING
 EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values)
     : AsyncInterface(config_values)
+#endif // NOT FLEXIBLE_CAN_MAPPING
 {
     LOG_CONTROL(LOG_INFO, "%18.6f : starting driver version '%s' for %i FPUs\n",
                 ethercanif::get_realtime(), VERSION, config.num_fpus);

@@ -40,6 +40,8 @@ void GridDriverTester::doGridDriverUnitTests()
     static const int num_fpus = 10;
     GridDriver gd(num_fpus);
 
+    gd.initialize();
+
 
     //..........................................................................
     // Test UnprotectedGridDriver::wavetable_was_received()

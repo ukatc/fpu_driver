@@ -236,7 +236,24 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 
     E_EtherCANErrCode ecan_result;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+
+    //*****************
+    //  TODO: Temporary for testing
+    GridCanMap grid_can_map =
+    {
+        // FPU ID   gateway_id  bus_id  can_id
+
+        {  0,     { 0,          0,      1} },
+        {  1,     { 0,          0,      2} },
+        {  2,     { 0,          0,      3} }
+    };
+    //*****************
+
+    _gd = new (std::nothrow) EtherCANInterface(config, grid_can_map);
+#else // NOT FLEXIBLE_CAN_MAPPING
     _gd = new (std::nothrow) EtherCANInterface(config);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     if (_gd != nullptr)
     {
         ecan_result = _gd->initializeInterface();

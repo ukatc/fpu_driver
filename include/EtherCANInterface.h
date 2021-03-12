@@ -52,8 +52,12 @@ public:
     // number of retries for each action
     const int DEFAULT_NUM_RETRIES = 10;
 
-
+#ifdef FLEXIBLE_CAN_MAPPING
+    EtherCANInterface(const EtherCANInterfaceConfig config_values,
+                      const GridCanMap &grid_can_map);
+#else // NOT FLEXIBLE_CAN_MAPPING
     EtherCANInterface(const EtherCANInterfaceConfig config_values);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     ~EtherCANInterface()
     {

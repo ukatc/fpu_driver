@@ -22,8 +22,6 @@
 #ifndef GATEWAY_INTERFACE_H
 #define GATEWAY_INTERFACE_H
 
-
-
 #include <atomic>
 
 #include "../E_GridState.h"
@@ -44,11 +42,25 @@ namespace mpifps
 namespace ethercanif
 {
 
+//==============================================================================
 
 void* threadTxFun(void *arg);
 void* threadRxFun(void *arg);
 
+//==============================================================================
 
+//**********************************
+// Macro for enabling the new flexible grid CAN mapping functionality
+#define FLEXIBLE_CAN_MAPPING
+//**********************************
+
+#ifdef FLEXIBLE_CAN_MAPPING
+
+using GridCanMap = std::vector<std::pair<int, FPUArray::t_bus_address>>;
+
+#endif // FLEXIBLE_CAN_MAPPING
+
+//==============================================================================
 class GatewayInterface: private I_ResponseHandler
 {
 public:
@@ -65,11 +77,15 @@ public:
 
     // default timeout for polling read socket - 500 msec
     const timespec MAX_RX_TIMEOUT = { /* .tv_sec = */ 10,
-                                                      /* .tv_nsec = */ 500000000
+                                      /* .tv_nsec = */ 500000000
                                     };
 
-
+#ifdef FLEXIBLE_CAN_MAPPING
+    explicit GatewayInterface(const EtherCANInterfaceConfig &config_vals,
+                              const GridCanMap &grid_can_map);
+#else // NOT FLEXIBLE_CAN_MAPPING
     explicit GatewayInterface(const EtherCANInterfaceConfig &config_vals);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     ~GatewayInterface();
 
     E_EtherCANErrCode initialize();
@@ -102,8 +118,6 @@ public:
     E_GridState waitForState(E_WaitTarget target, t_grid_state& out_detailed_state,
                              double &max_wait_time, bool &cancelled) const;
 
-
-
     // provide a command instance with buffer space for
     // sending CAN parameters. This method is thread-safe
 
@@ -115,7 +129,6 @@ public:
 
     void updatePendingSets(unique_ptr<CAN_Command> &active_can_command,
                            int gateway_id, int busid);
-
 
     // send a CAN command to the gateway.
     // This method is thread-safe
@@ -132,9 +145,6 @@ public:
     // returns whether an FPU is currently marked as locked.
     bool isLocked(int fpu_id) const;
 
-
-
-
     // Send an abortMotion broadcast command to all gateways.
     //
     // (This is implemented at the CAN driver level because we need
@@ -142,9 +152,7 @@ public:
     // many collisions happen in a short time span.).
     E_EtherCANErrCode abortMotion(t_grid_state& grid_state,
                                   E_GridState& state_summary,
-				  bool sync_message=true);
-
-
+				                  bool sync_message=true);
 
     template<typename T> E_EtherCANErrCode broadcastMessage(bool sync_message=false)
     {
@@ -205,12 +213,10 @@ Exit:
         return DE_OK;
     }
 
-
     // the following two methods are actually internal -
     // they need to be visible in a non-member function.
     void* threadTxFun();
     void* threadRxFun();
-
 
 private:
 
@@ -243,7 +249,6 @@ private:
 
     CommandQueue commandQueue;
 
-
     // send a buffer (either pending data or new command)
     SBuffer::E_SocketStatus send_buffer(unique_ptr<CAN_Command> &active_can_command,
                                         int gateway_id);
@@ -251,11 +256,8 @@ private:
     // interface method which handles decoded CAN response messages
     virtual void handleFrame(int const gateway_id, const t_CAN_buffer& command_buffer, int const clen);
 
-
     void updatePendingCommand(int fpu_id,
                               std::unique_ptr<CAN_Command>& can_command);
-
-
 
     // read buffer (only to be accessed in reading thread)
     // write buffer (only to be accessed in writing thread)
@@ -267,9 +269,6 @@ private:
     std::atomic<bool> exit_threads;
     // this flag informs that a driver shutdown is in progress
     std::atomic<bool> shutdown_in_progress;
-
-
-
 
     // buffer class for encoded reads and writes to sockets
     SBuffer sbuffer[MAX_NUM_GATEWAYS];
@@ -288,32 +287,29 @@ private:
     TimeOutList timeOutList; // list of pending time-outs
 
     CommandPool command_pool; // memory pool for unused command objects
-
-
-
-
 };
 
+//==============================================================================
+
 // function to create sockets
-
 int make_socket(const EtherCANInterfaceConfig &config, const char *ip, uint16_t port);
-
 
 // functions for enabling / disabling real-time scheduling
 // for time-critical broadcast commands.
-
 void set_rt_priority(const EtherCANInterfaceConfig &config, int prio);
-
 void unset_rt_priority();
 
+//==============================================================================
 
 // real-time priority values for threads
 const int CONTROL_PRIORITY = 1;
 const int WRITER_PRIORITY = 2;
 const int READER_PRIORITY = 3;
 
-}
+//==============================================================================
 
-} // end of namespace
+} // namespace ethercanif
+
+} // namespace mpifps
 
 #endif

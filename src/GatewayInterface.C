@@ -48,8 +48,12 @@ namespace mpifps
 namespace ethercanif
 {
 
-
+#ifdef FLEXIBLE_CAN_MAPPING
+GatewayInterface::GatewayInterface(const EtherCANInterfaceConfig &config_vals,
+                                   const GridCanMap &grid_can_map)
+#else // NOT FLEXIBLE_CAN_MAPPING
 GatewayInterface::GatewayInterface(const EtherCANInterfaceConfig &config_vals)
+#endif // NOT FLEXIBLE_CAN_MAPPING
     : commandQueue(config_vals), config(config_vals),
       fpuArray(config_vals),
       command_pool(config_vals)

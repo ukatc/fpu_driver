@@ -59,8 +59,14 @@ public:
        motion before the driver will give up. */
     const int MAX_CONFIG_MOTION_RETRIES = 5;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    explicit AsyncInterface(const EtherCANInterfaceConfig &config_vals,
+                            const GridCanMap &grid_can_map)
+        : config(config_vals), gateway(config_vals, grid_can_map)
+#else // NOT FLEXIBLE_CAN_MAPPING
     explicit AsyncInterface(const EtherCANInterfaceConfig &config_vals)
         : config(config_vals), gateway(config_vals)
+#endif // NOT FLEXIBLE_CAN_MAPPING
     {
         num_gateways = 0;
         log_repeat_count = 0;
