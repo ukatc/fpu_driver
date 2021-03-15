@@ -27,20 +27,31 @@
 #include "ErrorCodes.h"
 #include "ProtectionDBTester.h"
 
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
 #define TESTING_MAX_NUM_FPUS    (5)
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
 namespace mpifps
 {
+
+#ifdef FLEXIBLE_CAN_MAPPING
+static const std::string test_can_map_path("/blah/blah/blah.csv");
+#endif // FLEXIBLE_CAN_MAPPING
 
 //------------------------------------------------------------------------------
 void GridDriverTester::doGridDriverUnitTests()
 {
     // Performs ad-hoc unit tests on a GridDriver instance
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    GridDriver gd;
+    gd.initialize(test_can_map_path);
+#else // NOT FLEXIBLE_CAN_MAPPING
     static const int num_fpus = 10;
     GridDriver gd(num_fpus);
 
     gd.initialize();
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
 
     //..........................................................................
@@ -48,7 +59,7 @@ void GridDriverTester::doGridDriverUnitTests()
 
     // Create a wavetable
     t_wtable wavetable;
-    static const t_waveform test_waveforms[TESTING_MAX_NUM_FPUS] =
+    const std::vector<t_waveform> test_waveforms =
     {
         {0, getWaveform(GeneratedWaveform::Steps_10_10) },
         {1, getWaveform(GeneratedWaveform::Steps_20_20) },
@@ -56,7 +67,7 @@ void GridDriverTester::doGridDriverUnitTests()
         {3, getWaveform(GeneratedWaveform::Steps_Minus89_Minus89) },
         {4, getWaveform(GeneratedWaveform::Steps_10_10) }
     };
-    for (int i = 0; i < num_fpus; i++)
+    for (size_t i = 0; i < test_waveforms.size(); i++)
     {
         wavetable.push_back(test_waveforms[i]);
     }
@@ -74,8 +85,9 @@ void GridDriverTester::doGridDriverUnitTests()
 
     //..........................................................................
     // Test GridDriver::getDuplicateSerialNumbers()
-    const char *test_snumbers[num_fpus] =   // NOTE: Must be 6 chars or less
-    {                                       // (LEN_SERIAL_NUMBER - 1)
+    const std::vector<std::string> test_snumbers =
+    {
+        // NOTE: Must be 6 chars or less (LEN_SERIAL_NUMBER - 1)
         "ab123",
         "ab12",
         "ab1234",
@@ -88,13 +100,13 @@ void GridDriverTester::doGridDriverUnitTests()
         "qwerty"
     };
     t_grid_state grid_state;
-    for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
+    for (size_t i = 0; i < test_snumbers.size(); i++)
     {
         // N.B. Using safer strncpy() (rather than strcpy()))
-        strncpy(grid_state.FPU_state[fpu_id].serial_number,
-                test_snumbers[fpu_id], LEN_SERIAL_NUMBER);
+        strncpy(grid_state.FPU_state[i].serial_number,
+                test_snumbers[i].c_str(), LEN_SERIAL_NUMBER);
         // Add guaranteed null-terminator at end of buffer
-        grid_state.FPU_state[fpu_id].serial_number[LEN_SERIAL_NUMBER - 1] = '\0';
+        grid_state.FPU_state[i].serial_number[LEN_SERIAL_NUMBER - 1] = '\0';
     }
 
 #ifdef ENABLE_PROTECTION_CODE
@@ -115,20 +127,32 @@ void GridDriverTester::doUnprotectedGridDriverFunctionalTesting()
     
     //********************************************
     // Set the required parameters here
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     const int num_fpus = 1;
-    const char *ip_address_str = "192.168.0.12";
+#endif // NOT FLEXIBLE_CAN_MAPPING
+    //const char *ip_address_str = "192.168.0.10";
+    const char *ip_address_str = "127.0.0.1";
     //********************************************
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    UnprotectedGridDriver ugd;
+    ecan_result = ugd.initialize(test_can_map_path);
+#else // NOT FLEXIBLE_CAN_MAPPING
     UnprotectedGridDriver ugd(num_fpus);
 
     ecan_result = ugd.initialize();
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     if (ecan_result == DE_OK)
     {
         const uint16_t port_number = 4700;
         const t_gateway_address gateway_address = { ip_address_str, port_number };
         const bool protection_on = false;
+#ifdef FLEXIBLE_CAN_MAPPING
+        testInitialisedGridDriver(ugd, gateway_address, protection_on);
+#else // NOT FLEXIBLE_CAN_MAPPING
         testInitialisedGridDriver(num_fpus, ugd, gateway_address, protection_on);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     }
 }
 
@@ -141,12 +165,18 @@ void GridDriverTester::doGridDriverFunctionalTesting()
 
     //********************************************
     // Set the required test parameters here
-    const int num_fpus = 1;
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
+    const int num_fpus = 3;
+#endif // NOT FLEXIBLE_CAN_MAPPING
     //const char *ip_address_str = "192.168.0.10"; // Good physical gateway
     const char *ip_address_str = "127.0.0.1";      // Local mock gateway
     const bool use_mockup_db = false;
     //********************************************
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    GridDriver gd;
+    ecan_result = gd.initialize(test_can_map_path);
+#else // NOT FLEXIBLE_CAN_MAPPING
 #ifdef USE_2ND_CANBUS
     GridDriver gd(NEXT_CANBUS_FPU_ID + 1);
 #else
@@ -154,6 +184,7 @@ void GridDriverTester::doGridDriverFunctionalTesting()
 #endif
 
     ecan_result = gd.initialize();
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     if (ecan_result == DE_OK)
     {
@@ -165,15 +196,25 @@ void GridDriverTester::doGridDriverFunctionalTesting()
         const uint16_t port_number = 4700;
         const t_gateway_address gateway_address = { ip_address_str, port_number };
         const bool protection_on = true;
+#ifdef FLEXIBLE_CAN_MAPPING
+        testInitialisedGridDriver(gd, gateway_address, protection_on);
+#else // NOT FLEXIBLE_CAN_MAPPING
         testInitialisedGridDriver(num_fpus, gd, gateway_address, protection_on);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     }
 }
 
 //------------------------------------------------------------------------------
+#ifdef FLEXIBLE_CAN_MAPPING
+void GridDriverTester::testInitialisedGridDriver(UnprotectedGridDriver &gd,
+                                       const t_gateway_address &gateway_address,
+                                                 bool protection_on)
+#else // NOT FLEXIBLE_CAN_MAPPING
 void GridDriverTester::testInitialisedGridDriver(int num_fpus,
                                                  UnprotectedGridDriver &gd,
                                        const t_gateway_address &gateway_address,
                                                  bool protection_on)
+#endif // NOT FLEXIBLE_CAN_MAPPING
 {
     // Performs basic functional testing of a pre-initialised 
     // UnprotectedGridDriver or GridDriver object, for up to 5 FPUs. Notes:
@@ -190,10 +231,12 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
 
     //..........................................................................
 
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     if (num_fpus > TESTING_MAX_NUM_FPUS)
     {
         return;
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     //..........................................................................
 
@@ -210,6 +253,15 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
     // is normally a safeguard.
     const E_DATUM_TIMEOUT_FLAG datum_timeout = DATUM_TIMEOUT_DISABLE;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    //******************************
+    // TODO: Temporary for now, just to get it building again -
+    // need to replace with fpuset derived from the CAN map file
+    // eventually
+    const int num_fpus = 3;
+    //******************************
+#endif // FLEXIBLE_CAN_MAPPING
+
     t_datum_search_flags search_modes;
     for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
     {
@@ -217,11 +269,16 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
     }
 
     t_fpuset fpuset;
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    UnprotectedGridDriver::createFpuSetForNumFpus(num_fpus, fpuset);
+#else // NOT FLEXIBLE_CAN_MAPPING
 #ifdef USE_2ND_CANBUS
     UnprotectedGridDriver::createFpuSetForSingleFpu(NEXT_CANBUS_FPU_ID, fpuset);
 #else
     UnprotectedGridDriver::createFpuSetForNumFpus(num_fpus, fpuset);
 #endif
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     //..........................................................................
     // Test connect()
@@ -281,6 +338,7 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
                                    support_uninitialized_auto, datum_timeout);
     }
 
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     //..........................................................................
     // Test enableMove()
     grid_state_result = gd.getGridState(gs);
@@ -309,6 +367,7 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
     }
     */ 
     //........................
+#endif // NOT FLEXIBLE_CAN_MAPPING
     
     //..........................................................................
     // Test configMotion() / executeMotion() - a positive motion followed by
@@ -459,6 +518,9 @@ const t_waveform_steps &GridDriverTester::getWaveform(GeneratedWaveform gen_wave
 }
 
 //------------------------------------------------------------------------------
+// TODO: Disabled because probably no longer needed - but keep for now
+#if 0
+//------------------------------------------------------------------------------
 bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus,
                                        const t_gateway_address &gateway_address,
                                             bool use_mockup_db)
@@ -499,8 +561,14 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus,
     
     //..........................................................................
     // Get grid FPU serial numbers using an UnprotectedGridDriver instance
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    UnprotectedGridDriver ugd;
+    ecan_result = ugd.initialize(test_can_map_path);
+#else // NOT FLEXIBLE_CAN_MAPPING
     UnprotectedGridDriver ugd(num_fpus);
     ecan_result = ugd.initialize();
+#endif // NOT FLEXIBLE_CAN_MAPPING
     if (ecan_result == DE_OK)
     {
         ecan_result = ugd.connect(1, &gateway_address);
@@ -567,6 +635,7 @@ bool GridDriverTester::writeGridFpusToFpuDb(int num_fpus,
 
     return result_ok;
 }
+#endif // 0
 
 //------------------------------------------------------------------------------
 bool GridDriverTester::writeDummyFpuItemsToFpuDb(bool use_mockup_db,
