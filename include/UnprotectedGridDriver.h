@@ -111,7 +111,9 @@ public:
     // within this
 
     UnprotectedGridDriver(
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
         int nfpus = DEFAULT_NUM_FPUS,
+#endif // NOT FLEXIBLE_CAN_MAPPING
         double SocketTimeOutSeconds = SOCKET_TIMEOUT_SECS,
         bool confirm_each_step = false,
         long waveform_upload_pause_us = 0,
@@ -132,6 +134,9 @@ public:
     virtual ~UnprotectedGridDriver();
 
     E_EtherCANErrCode initialize(
+#ifdef FLEXIBLE_CAN_MAPPING
+        const std::string &can_map_file_path,
+#endif // FLEXIBLE_CAN_MAPPING
         E_LogLevel logLevel = DEFAULT_LOGLEVEL,
         const std::string &log_dir = DEFAULT_LOGDIR,
         int firmware_version_address_offset = 0x61,

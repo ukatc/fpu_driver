@@ -140,7 +140,9 @@ void abortHandlerTest()
 
 //==============================================================================
 boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     int nfpus,
+#endif // NOT FLEXIBLE_CAN_MAPPING
     double SocketTimeOutSeconds,
     bool confirm_each_step,
     long waveform_upload_pause_us,
@@ -159,6 +161,7 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
     // further comments in abortHandlerTest()
     // abortHandlerTest();
 
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     if ((nfpus <= 0) || (nfpus > MAX_NUM_POSITIONERS))
     {
         std::cout << "*** ERROR ***: nfpus is <=0 or >MAX_NUM_POSITIONERS (" <<
@@ -166,6 +169,7 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
                      ") - GridDriver object created is not valid.\n";
         return boost::shared_ptr<WrappedGridDriver>(nullptr);
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     std::cout << "Grid driver object was successfully created (new C++ version).\n";
 
@@ -204,7 +208,9 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
     }
 
     return boost::shared_ptr<WrappedGridDriver>(new WrappedGridDriver(
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
         nfpus,
+#endif // NOT FLEXIBLE_CAN_MAPPING
         SocketTimeOutSeconds,
         confirm_each_step,
         waveform_upload_pause_us,
@@ -221,7 +227,11 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(E_LogLevel logLevel,
+E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(
+#ifdef FLEXIBLE_CAN_MAPPING
+                                        const std::string &can_map_file_path,
+#endif // FLEXIBLE_CAN_MAPPING
+                                        E_LogLevel logLevel,
                                         const std::string &log_dir,
                                         int firmware_version_address_offset,
                                         const std::string &protection_logfile,
@@ -235,9 +245,16 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(E_LogLevel logLevel,
 
     if (!initializedOk())   // Only initialise if not already done
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        ecode = initialize(can_map_file_path, logLevel, log_dir,
+                           firmware_version_address_offset, protection_logfile,
+                           control_logfile, tx_logfile, rx_logfile,
+                           start_timestamp);
+#else // NOT FLEXIBLE_CAN_MAPPING
         ecode = initialize(logLevel, log_dir, firmware_version_address_offset,
                            protection_logfile, control_logfile, tx_logfile,
                            rx_logfile, start_timestamp);
+#endif // NOT FLEXIBLE_CAN_MAPPING
         if (ecode == DE_OK)
         {
             ecode = initProtection(mockup);

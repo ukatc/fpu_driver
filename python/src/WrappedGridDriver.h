@@ -41,7 +41,9 @@ public:
     //}
 
     static boost::shared_ptr<WrappedGridDriver> initWrapper(
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
         int nfpus,
+#endif // NOT FLEXIBLE_CAN_MAPPING
         double SocketTimeOutSeconds,
         bool confirm_each_step,
         long waveform_upload_pause_us,
@@ -56,7 +58,11 @@ public:
         double motor_max_rel_increase,
         double motor_max_step_difference);
 
-    E_EtherCANErrCode wrapped_initialize(E_LogLevel logLevel,
+    E_EtherCANErrCode wrapped_initialize(
+#ifdef FLEXIBLE_CAN_MAPPING
+                                         const std::string &can_map_file_path,
+#endif // FLEXIBLE_CAN_MAPPING
+                                         E_LogLevel logLevel,
                                          const std::string &log_dir,
                                          int firmware_version_address_offset,
                                          const std::string &protection_logfile,

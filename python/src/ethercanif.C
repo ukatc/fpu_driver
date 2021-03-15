@@ -496,8 +496,12 @@ BOOST_PYTHON_MODULE(ethercanif)
         ("GridDriver", no_init)
     .def("__init__", make_constructor(&WrappedGridDriver::initWrapper,
                                       bp::default_call_policies(),
+#ifdef FLEXIBLE_CAN_MAPPING
+         (bp::arg("SocketTimeOutSeconds") = SOCKET_TIMEOUT_SECS,
+#else // NOT FLEXIBLE_CAN_MAPPING
          (bp::arg("nfpus") = DEFAULT_NUM_FPUS,
           bp::arg("SocketTimeOutSeconds") = SOCKET_TIMEOUT_SECS,
+#endif // NOT FLEXIBLE_CAN_MAPPING
           bp::arg("confirm_each_step") = false,
           bp::arg("waveform_upload_pause_us") = 0,
           bp::arg("configmotion_max_retry_count") = 5,
@@ -512,7 +516,12 @@ BOOST_PYTHON_MODULE(ethercanif)
           bp::arg("motor_max_step_difference") = MAX_STEP_DIFFERENCE)))
 
     .def("initialize", &WrappedGridDriver::wrapped_initialize,
+#ifdef FLEXIBLE_CAN_MAPPING
+         (bp::arg("canmapfile"),
+          bp::arg("logLevel") = DEFAULT_LOGLEVEL,
+#else // NOT FLEXIBLE_CAN_MAPPING
          (bp::arg("logLevel") = DEFAULT_LOGLEVEL,
+#endif // NOT FLEXIBLE_CAN_MAPPING
           bp::arg("log_dir") = DEFAULT_LOGDIR,
           bp::arg("firmware_version_address_offset") = 0x61,
           bp::arg("protection_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_protection.log",

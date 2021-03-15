@@ -121,7 +121,9 @@ void gridDriverAbortDuringFindDatumOrExecuteMotion(void)
 UnprotectedGridDriver::UnprotectedGridDriver(
     // NOTE: Boost.Python only allows up to 14 function arguments in
     // function wrappers, so need to keep number of arguments within this
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     int nfpus,
+#endif // NOT FLEXIBLE_CAN_MAPPING
     double SocketTimeOutSeconds,
     bool confirm_each_step,
     long waveform_upload_pause_us,
@@ -136,11 +138,23 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     double motor_max_rel_increase,
     double motor_max_step_difference)
 {
+#ifdef FLEXIBLE_CAN_MAPPING
+    fpus_data.resize(MAX_NUM_POSITIONERS);
+
+    //**********************************
+    // TODO: Temporary only - set num_fpus so that existing functionality
+    // should still work for now
+    config.num_fpus = 3;
+    //**********************************
+
+
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((nfpus > 0) && (nfpus <= MAX_NUM_POSITIONERS))
     {
         fpus_data.resize(nfpus);
         
         config.num_fpus = nfpus;
+#endif // NOT FLEXIBLE_CAN_MAPPING
         config.SocketTimeOutSeconds = SocketTimeOutSeconds;
         config.confirm_each_step = confirm_each_step;
         config.waveform_upload_pause_us = waveform_upload_pause_us;
@@ -154,11 +168,13 @@ UnprotectedGridDriver::UnprotectedGridDriver(
         config.motor_max_start_frequency = motor_max_start_frequency;
         config.motor_max_rel_increase = motor_max_rel_increase;
         config.motor_max_step_difference = motor_max_step_difference;
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     }
     else
     {
         config.num_fpus = 0;
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 }
 
 //------------------------------------------------------------------------------
@@ -176,6 +192,9 @@ UnprotectedGridDriver::~UnprotectedGridDriver()
 
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::initialize(
+#ifdef FLEXIBLE_CAN_MAPPING
+                                const std::string &can_map_file_path,
+#endif // FLEXIBLE_CAN_MAPPING
                                 E_LogLevel logLevel,
                                 const std::string &log_dir,
                                 int firmware_version_address_offset,
@@ -234,9 +253,16 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 
     //..........................................................................
 
-    E_EtherCANErrCode ecan_result;
+    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
 
 #ifdef FLEXIBLE_CAN_MAPPING
+
+    // TODO here: Try opening can_map_file_path:
+    //   - If opens OK then parse it, check for ranges/duplicates etc, and
+    //     populate grid_can_map from it
+    //   - If doesn't open OK then abort with appropriate error code - add
+    //     further DE_XXX error code(s) for errors relating to the CAN map
+    //     file?
 
     //*****************
     //  TODO: Temporary for testing
