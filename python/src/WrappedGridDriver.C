@@ -169,6 +169,18 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
 
     std::cout << "Grid driver object was successfully created (new C++ version).\n";
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    std::cout << "************************************************************\n";
+    std::cout << "************************************************************\n";
+    std::cout << "NOTE: The C++ FLEXIBLE_CAN_MAPPING macro is enabled in this\n";
+    std::cout << "build, so the new flexible CAN mapping functionality is\n";
+    std::cout << "enabled - need to specify the FPUs using a CSV file. The\n";
+    std::cout << "old num_fpus approach is not supported in this build.\n";
+    std::cout << "************************************************************\n";
+    std::cout << "************************************************************\n";
+    std::cout << std::endl;
+#endif // FLEXIBLE_CAN_MAPPING
+
 #ifndef ENABLE_PROTECTION_CODE  // NOT ENABLE_PROTECTION_CODE
     std::cout << "************************************************************\n";
     std::cout << "************************************************************\n";

@@ -27,6 +27,16 @@
 #include "T_GatewayAddress.h"
 #include "ProtectionDB.h"
 
+//************************************************
+//************************************************
+// TODO: Temporarily included for the FLEXIBLE_CAN_MAPPING
+// macro - remove this #include once this feature is
+// fully integrated into the grid driver software.
+#include "EtherCANInterface.h"
+//************************************************
+//************************************************
+
+
 namespace mpifps
 {
 

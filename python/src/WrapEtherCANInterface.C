@@ -19,6 +19,14 @@
 #include "WrapEtherCANInterface.h"
 
 
+//******************************************************************************
+// TODO: Note: This Boost.Python wrapper for the EtherCAN interface (which
+// provides the wrapper for the original Python grid driver in FpuGridDriver.py)
+// is not supported when the flexible CAN mapping is enabled, because the Python
+// grid driver won't be modified to support this feature
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
+//******************************************************************************
+
 //------------------------------------------------------------------------------
 const EtherCANInterfaceConfig &WrapEtherCANInterface::getConfig() const
 {
@@ -458,3 +466,8 @@ E_EtherCANErrCode WrapEtherCANInterface::wrap_enableAlphaLimitProtection(
 }
 
 //------------------------------------------------------------------------------
+
+//******************************************************************************
+#endif // NOT FLEXIBLE_CAN_MAPPING
+//******************************************************************************
+
