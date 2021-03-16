@@ -27,6 +27,18 @@
 #include <stdio.h>
 #endif
 
+//**********************************
+//**********************************
+// Macro for enabling the new flexible grid CAN mapping functionality
+// TODO: Is defined in this header file for now, because this file is ultimately
+// included into most files/projects.
+// Defining this macro here in the code is better than defining it separately
+// in all projects, because the projects ideally all need to have the flexible
+// CAN mapping enabled or disabled together.
+#define FLEXIBLE_CAN_MAPPING
+//**********************************
+//**********************************
+
 namespace mpifps
 {
 
