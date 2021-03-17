@@ -3266,7 +3266,7 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
 
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_state,
+E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock, t_grid_state& grid_state,
         E_GridState& state_summary)
 {
 
@@ -3285,7 +3285,7 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
         return DE_NO_CONNECTION;
     }
 
-    if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+    if ((fpu_id_to_lock >= config.num_fpus) || (fpu_id_to_lock < 0))
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -3294,7 +3294,7 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
     }
 
 
-    t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
+    t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id_to_lock];
     // we exclude moving FPUs and FPUs which are
     // searching datum.
     if ( (fpu_state.state == FPST_MOVING)
@@ -3308,7 +3308,7 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
 
         LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error DE_STILL_BUSY, "
                     "FPU # %i are still moving, if needed send abortMotion() first\n",
-                    ethercanif::get_realtime(), fpu_id);
+                    ethercanif::get_realtime(), fpu_id_to_lock);
         return DE_STILL_BUSY;
     }
 
@@ -3316,9 +3316,9 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
     unique_ptr<LockUnitCommand> can_command;
     can_command = gateway.provideInstance<LockUnitCommand>();
     const bool broadcast = false;
-    can_command->parametrize(fpu_id, broadcast);
+    can_command->parametrize(fpu_id_to_lock, broadcast);
     unique_ptr<CAN_Command> cmd(can_command.release());
-    gateway.sendCommand(fpu_id, cmd);
+    gateway.sendCommand(fpu_id_to_lock, cmd);
 
 
     unsigned int cnt_pending = 1;
@@ -3359,14 +3359,14 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id, t_grid_state& grid_st
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : lockFPU(): command successfully sent to FPU %i, is_locked = %i\n",
-                ethercanif::get_realtime(), fpu_id, grid_state.FPU_state[fpu_id].is_locked);
+                ethercanif::get_realtime(), fpu_id_to_lock, grid_state.FPU_state[fpu_id_to_lock].is_locked);
 
     return DE_OK;
 }
 
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_state,
+E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock, t_grid_state& grid_state,
         E_GridState& state_summary)
 {
 
@@ -3384,7 +3384,7 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
         return DE_NO_CONNECTION;
     }
 
-    if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+    if ((fpu_id_to_unlock >= config.num_fpus) || (fpu_id_to_unlock < 0))
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -3394,7 +3394,7 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
 
 
     // check state for being locked
-    t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
+    t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id_to_unlock];
 
     if (fpu_state.state != FPST_LOCKED)
     {
@@ -3402,7 +3402,7 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
 
         LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error DE_INVALID_FPU_STATE, "
                     "can't unlock FPU %i, it is not locked\n",
-                    ethercanif::get_realtime(), fpu_id);
+                    ethercanif::get_realtime(), fpu_id_to_unlock);
         return DE_INVALID_FPU_STATE;
     }
 
@@ -3410,9 +3410,9 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
     unique_ptr<UnlockUnitCommand> can_command;
     const bool broadcast = false;
     can_command = gateway.provideInstance<UnlockUnitCommand>();
-    can_command->parametrize(fpu_id, broadcast);
+    can_command->parametrize(fpu_id_to_unlock, broadcast);
     unique_ptr<CAN_Command> cmd(can_command.release());
-    gateway.sendCommand(fpu_id, cmd);
+    gateway.sendCommand(fpu_id_to_unlock, cmd);
 
 
     unsigned int cnt_pending = 1;
@@ -3453,7 +3453,7 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id, t_grid_state& grid_
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : unlockFPU(): command successfully sent to FPU %i, is_locked = %i\n",
-                ethercanif::get_realtime(), fpu_id, grid_state.FPU_state[fpu_id].is_locked);
+                ethercanif::get_realtime(), fpu_id_to_unlock, grid_state.FPU_state[fpu_id_to_unlock].is_locked);
 
     return DE_OK;
 }
@@ -3668,7 +3668,7 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
 
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id,
+E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
         E_REQUEST_DIRECTION request_dir,
         t_grid_state& grid_state,
         E_GridState& state_summary)
@@ -3687,7 +3687,7 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id,
         return DE_NO_CONNECTION;
     }
 
-    if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+    if ((fpu_id_to_free >= config.num_fpus) || (fpu_id_to_free < 0))
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -3732,9 +3732,9 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id,
 
     unique_ptr<FreeBetaCollisionCommand> can_command;
     can_command = gateway.provideInstance<FreeBetaCollisionCommand>();
-    can_command->parametrize(fpu_id, request_dir);
+    can_command->parametrize(fpu_id_to_free, request_dir);
     unique_ptr<CAN_Command> cmd(can_command.release());
-    gateway.sendCommand(fpu_id, cmd);
+    gateway.sendCommand(fpu_id_to_free, cmd);
 
 
     unsigned int cnt_pending = 1;
@@ -3775,7 +3775,7 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id,
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : freeBetaCollision(): command successfully sent to FPU %i\n",
-                ethercanif::get_realtime(), fpu_id);
+                ethercanif::get_realtime(), fpu_id_to_free);
 
     return DE_OK;
 }
@@ -4610,7 +4610,7 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
 
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char serial_number[],
+E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, const char serial_number[],
         t_grid_state& grid_state,
         E_GridState& state_summary)
 {
@@ -4628,7 +4628,7 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
         return DE_NO_CONNECTION;
     }
 
-    if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+    if ((fpu_id_to_write >= config.num_fpus) || (fpu_id_to_write < 0))
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -4708,7 +4708,7 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
     // the one we are flashing
     for (int i=0; i < config.num_fpus; i++)
     {
-        if (i == fpu_id)
+        if (i == fpu_id_to_write)
         {
             // we allow writing the same number again to the same FPU
             continue;
@@ -4728,9 +4728,9 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
 
     unique_ptr<WriteSerialNumberCommand> can_command;
     can_command = gateway.provideInstance<WriteSerialNumberCommand>();
-    can_command->parametrize(fpu_id, serial_number);
+    can_command->parametrize(fpu_id_to_write, serial_number);
     unique_ptr<CAN_Command> cmd(can_command.release());
-    gateway.sendCommand(fpu_id, cmd);
+    gateway.sendCommand(fpu_id_to_write, cmd);
 
 
     unsigned int cnt_pending = 1;
@@ -4770,14 +4770,14 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id, const char 
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : writeSerialNumber(): FPU %i: serial number '%s' successfully written to FPU\n",
-                ethercanif::get_realtime(), fpu_id, serial_number);
+                ethercanif::get_realtime(), fpu_id_to_write, serial_number);
 
     return DE_OK;
 }
 
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
+E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
         t_grid_state& grid_state,
         E_GridState& state_summary)
 {
@@ -4795,7 +4795,7 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
         return DE_NO_CONNECTION;
     }
 
-    if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+    if ((fpu_id_to_enable >= config.num_fpus) || (fpu_id_to_enable < 0))
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : enableMove():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -4839,9 +4839,9 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
     unique_ptr<EnableMoveCommand> can_command;
     can_command = gateway.provideInstance<EnableMoveCommand>();
     const bool broadcast = false;
-    can_command->parametrize(fpu_id, broadcast);
+    can_command->parametrize(fpu_id_to_enable, broadcast);
     unique_ptr<CAN_Command> cmd(can_command.release());
-    gateway.sendCommand(fpu_id, cmd);
+    gateway.sendCommand(fpu_id_to_enable, cmd);
 
 
     unsigned int cnt_pending = 1;
@@ -4883,7 +4883,7 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id,
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : enableMove(): command successfully sent to FPU %i\n",
-                ethercanif::get_realtime(), fpu_id);
+                ethercanif::get_realtime(), fpu_id_to_enable);
 
     return DE_OK;
 }
@@ -5126,7 +5126,7 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
 
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
+E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free, E_REQUEST_DIRECTION request_dir,
         t_grid_state& grid_state,
         E_GridState& state_summary)
 {
@@ -5144,7 +5144,7 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id, E_REQUES
         return DE_NO_CONNECTION;
     }
 
-    if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+    if ((fpu_id_to_free >= config.num_fpus) || (fpu_id_to_free < 0))
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : freeAlphaLimitBreach():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -5184,9 +5184,9 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id, E_REQUES
 
     unique_ptr<FreeAlphaLimitBreachCommand> can_command;
     can_command = gateway.provideInstance<FreeAlphaLimitBreachCommand>();
-    can_command->parametrize(fpu_id, request_dir);
+    can_command->parametrize(fpu_id_to_free, request_dir);
     unique_ptr<CAN_Command> cmd(can_command.release());
-    gateway.sendCommand(fpu_id, cmd);
+    gateway.sendCommand(fpu_id_to_free, cmd);
 
 
     unsigned int cnt_pending = 1;
@@ -5228,7 +5228,7 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id, E_REQUES
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : freeAlphaLimitBreach(): command successfully sent to FPU %i\n",
-                ethercanif::get_realtime(), fpu_id);
+                ethercanif::get_realtime(), fpu_id_to_free);
 
     return DE_OK;
 }

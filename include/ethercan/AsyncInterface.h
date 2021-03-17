@@ -166,13 +166,13 @@ public:
                                        t_fpuset const &fpuset,
 				       bool sync_message=true);
 
-    E_EtherCANErrCode enableMoveAsync(int fpu_id,
+    E_EtherCANErrCode enableMoveAsync(int fpu_id_to_enable,
                                       t_grid_state& grid_state,
                                       E_GridState& state_summary);
 
-    E_EtherCANErrCode lockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
+    E_EtherCANErrCode lockFPUAsync(int fpu_id_to_lock, t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_EtherCANErrCode unlockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
+    E_EtherCANErrCode unlockFPUAsync(int fpu_id_to_unlock, t_grid_state& grid_state, E_GridState& state_summary);
 
     // retrieve cached minimum firmware version
     void getCachedMinFirmwareVersion(t_fpuset const &fpuset,
@@ -189,11 +189,11 @@ public:
     E_EtherCANErrCode enableAlphaLimitProtectionAsync(t_grid_state& grid_state,
             E_GridState& state_summary);
 
-    E_EtherCANErrCode freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
+    E_EtherCANErrCode freeBetaCollisionAsync(int fpu_id_to_free, E_REQUEST_DIRECTION request_dir,
             t_grid_state& grid_state,
             E_GridState& state_summary);
 
-    E_EtherCANErrCode freeAlphaLimitBreachAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
+    E_EtherCANErrCode freeAlphaLimitBreachAsync(int fpu_id_to_free, E_REQUEST_DIRECTION request_dir,
             t_grid_state& grid_state,
             E_GridState& state_summary);
 
@@ -297,7 +297,7 @@ protected:
     E_EtherCANErrCode readSerialNumbersAsync(t_grid_state& grid_state,
             E_GridState& state_summary, t_fpuset const &fpuset);
 
-    E_EtherCANErrCode writeSerialNumberAsync(int fpu_id, const char serial_number[],
+    E_EtherCANErrCode writeSerialNumberAsync(int fpu_id_to_write, const char serial_number[],
             t_grid_state& grid_state,
             E_GridState& state_summary);
 private:
