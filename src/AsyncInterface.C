@@ -10,6 +10,7 @@
 //                       speed by 1 Hz. TODO: Correct the rounding errors causing this.
 // sbeard    2021-02-25  Changed the waveform communication error code from
 //                       DE_INVALID_WAVEFORM to DE_INVALID_WAVEFORM_REJECTED.
+// bwillemse 2021-03-18  Modified for flexible FPU ID and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3700,16 +3701,16 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
     {
         bool recoveryok=true;
         int moving_fpuid = -1;
-        for (int i=0; i < config.num_fpus; i++)
+        for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
         {
-            t_fpu_state& fpu_state = grid_state.FPU_state[i];
+            t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
             // we exclude moving FPUs and FPUs which are
             // searching datum.
             if ( (fpu_state.state == FPST_MOVING)
                     || (fpu_state.state == FPST_DATUM_SEARCH))
             {
                 recoveryok = false;
-                moving_fpuid = i;
+                moving_fpuid = fpu_id;
                 break;
             }
         }
@@ -4659,9 +4660,9 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, co
     }
 
     t_fpuset fpuset;
-    for(int i = 0; i < config.num_fpus; i++)
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
-        fpuset[i]=true;
+        fpuset[fpu_id] = true;
     }
     // get movement state
     E_EtherCANErrCode ecode = pingFPUsAsync(grid_state, state_summary, fpuset);
@@ -4706,14 +4707,14 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, co
 
     // make sure no other FPU in the grid has a serial number equal to
     // the one we are flashing
-    for (int i=0; i < config.num_fpus; i++)
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
-        if (i == fpu_id_to_write)
+        if (fpu_id == fpu_id_to_write)
         {
             // we allow writing the same number again to the same FPU
             continue;
         }
-        if ( strncmp(grid_state.FPU_state[i].serial_number,
+        if ( strncmp(grid_state.FPU_state[fpu_id].serial_number,
                      serial_number,
                      LEN_SERIAL_NUMBER) == 0)
         {
@@ -4807,16 +4808,16 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
     // make sure no FPU is moving or finding datum
     bool enableok=true;
     int fpuid_moving = -1;
-    for (int i=0; i < config.num_fpus; i++)
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
-        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs and FPUs which are
         // searching datum.
         if ( (fpu_state.state == FPST_MOVING)
                 || (fpu_state.state == FPST_DATUM_SEARCH))
         {
             enableok = false;
-            fpuid_moving = i;
+            fpuid_moving = fpu_id;
             break;
         }
     }
@@ -5155,9 +5156,9 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free, 
 
     // make sure no FPU is moving or finding datum
     bool recoveryok=true;
-    for (int i=0; i < config.num_fpus; i++)
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
     {
-        t_fpu_state& fpu_state = grid_state.FPU_state[i];
+        t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs and FPUs which are
         // searching datum.
         if ( (fpu_state.state == FPST_MOVING)
