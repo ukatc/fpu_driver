@@ -354,16 +354,20 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
                                       const t_fpuset &fpuset,
                                       t_fpuset &pingset_ret)
 {
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
     {
-        pingset_ret[i] = false;
+        pingset_ret[fpu_id] = false;
     }
-    
-    for (int i = 0; i < config.num_fpus; i++)
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
-        if (fpuset[i] && (!gs.FPU_state[i].ping_ok))
+        if (fpuset[fpu_id] && (!gs.FPU_state[fpu_id].ping_ok))
         {
-            pingset_ret[i] = true;
+            pingset_ret[fpu_id] = true;
         }
     }    
 }
@@ -502,7 +506,11 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         // We might need to disable the stepcount-based check if (and only
         // if) the step counter does not agree with the database.
         // Check whether a movement against the step count is needed.
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (fpuset[fpu_id] && 
                 (((search_modes[fpu_id] == SEARCH_CLOCKWISE) ||
@@ -629,7 +637,11 @@ E_EtherCANErrCode UnprotectedGridDriver::pingIfNeeded(t_grid_state &gs,
     need_ping(gs, fpuset, pingset);
 
     bool any_to_ping = false;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id] && pingset[fpu_id])
         {
@@ -795,7 +807,11 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
     // addresses and values are displayed in hex
 
     string_ret = "  RegName    RegAddress:";
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -805,7 +821,11 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
     string_ret += "\n";
 
     string_ret += "  --------   -----------";
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -823,7 +843,11 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
         {
             string_ret += std::string(reg_defs[i].name) + "        " +
                           std::to_string(reg_defs[i].address);
+#ifdef FLEXIBLE_CAN_MAPPING
+            for (int fpu_id : config.fpu_id_list)
+#else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
             {
                 if (fpuset[fpu_id])
                 {
@@ -1061,7 +1085,11 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         // data structure already defined.
 
         // Accept configured wavetable entries
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             // Check if wtable has an fpu_id entry
             bool wtable_contains_fpu_id = false;
@@ -1115,7 +1143,11 @@ void UnprotectedGridDriver::set_wtable_reversed(const t_fpuset &fpuset,
     // _post_repeat_motion_hook() / _post_reverse_motion_hook()? (or at least
     // in the original Python version)
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -1495,7 +1527,11 @@ void UnprotectedGridDriver::buildWtableFromLastWaveforms(const t_fpuset &fpuset,
                                                          t_wtable &wtable_ret)
 {
     wtable_ret.clear();
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_waveform_steps &last_waveform = fpus_data[fpu_id].db.last_waveform;
         if (fpuset[fpu_id] && (last_waveform.size() != 0))
@@ -1681,7 +1717,11 @@ void UnprotectedGridDriver::updateErrorCountersForFpuSet(const t_grid_state &pre
                                                          const t_fpuset &fpuset,
                                                          bool datum_cmd)
 {
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {

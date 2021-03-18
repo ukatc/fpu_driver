@@ -257,7 +257,11 @@ void AsyncInterface::getStateCount(const t_grid_state& grid_state, t_fpuset cons
 
     memset(counts, 0, sizeof(counts));
     const t_fpuset& fpuset = *pfpuset;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -308,7 +312,11 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
 
     unsigned int cnt_pending=0;
     unique_ptr<ResetFPUCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -393,7 +401,11 @@ void AsyncInterface::getFPUsetOpt(t_fpuset const * const fpuset_opt, t_fpuset &f
     }
     else
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             fpuset[fpu_id] = true;
         }
@@ -468,7 +480,11 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     t_datum_search_flags direction_flags;
     if (p_direction_flags == nullptr)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (fpuset[fpu_id])
             {
@@ -482,7 +498,11 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     }
     else
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (fpuset[fpu_id])
             {
@@ -495,7 +515,11 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
         }
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         // check search direction
     {
         if (! fpuset[fpu_id])
@@ -586,7 +610,11 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
 
     bool all_fpus_locked = true;
     // check no FPUs have ongoing collisions
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (! fpuset[fpu_id])
         {
@@ -656,7 +684,11 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     // check that beta arms are in allowed half-plane
     if ((arm_selection == DASEL_BETA) || (arm_selection == DASEL_BOTH))
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -702,7 +734,11 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     // until they hit the datum switch.
 
     unique_ptr<FindDatumCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         // FPUs which are not in the set are skipped
         if ((direction_flags[fpu_id] == SKIP_FPU) || (! fpuset[fpu_id]))
@@ -824,7 +860,11 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
         return DE_NO_CONNECTION;
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
 
         t_fpu_state fpu = grid_state.FPU_state[fpu_id];
@@ -879,7 +919,11 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
     } // Next FPU
 
     // we do this check in a new loop with the goal to give collision reports precedence
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
 
         t_fpu_state fpu = grid_state.FPU_state[fpu_id];
@@ -935,7 +979,11 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
     finished = (num_moving == 0) && (! cancelled);
 
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (! fpuset[fpu_id])
         {
@@ -1930,7 +1978,11 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
     // check no FPUs have ongoing collisions
     // and all have been initialized
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         {
             E_FPU_STATE fpu_status = grid_state.FPU_state[fpu_id].state;
@@ -2149,7 +2201,11 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
             // get current step number to track positions
             memset(alpha_cur,0,sizeof(alpha_cur));
             memset(beta_cur,0,sizeof(beta_cur));
+#ifdef FLEXIBLE_CAN_MAPPING
+            for (int fpu_id : config.fpu_id_list)
+#else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
             {
                 alpha_cur[fpu_id] = grid_state.FPU_state[fpu_id].alpha_steps;
                 beta_cur[fpu_id] = grid_state.FPU_state[fpu_id].beta_steps;
@@ -2417,7 +2473,11 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
     }
 
     // check no FPUs have ongoing collisions
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -2449,7 +2509,11 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
        This check intends to make sure that
        waveforms are not used when they have been involved
        in collision or abort. */
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -2537,7 +2601,11 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
         // send individual commands to FPUs which are not masked out or locked
         unique_ptr<ExecuteMotionCommand> can_command;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (fpuset[fpu_id])
             {
@@ -2593,7 +2661,11 @@ int AsyncInterface::countMoving(const t_grid_state &grid_state, t_fpuset const &
 
     if (ready_count >0)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             const t_fpu_state &fpu = grid_state.FPU_state[fpu_id];
             if ((fpu.state == FPST_READY_FORWARD)
@@ -2667,7 +2739,11 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
 
     if ((grid_state.Counts[FPST_OBSTACLE_ERROR] > 0) || (grid_state.Counts[FPST_ABORTED] > 0))
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
 
             const t_fpu_state& fpu = grid_state.FPU_state[fpu_id];
@@ -2801,7 +2877,11 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
     }
 
     // check no FPUs have ongoing collisions or are moving
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[fpu_id].state;
         if (fpu_status == FPST_OBSTACLE_ERROR)
@@ -2822,7 +2902,11 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
         }
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[fpu_id].state;
         if (fpu_status == FPST_MOVING)
@@ -2840,7 +2924,11 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
        waveforms are not used when they have been involved
        in collision or abort. */
     unsigned int count_movable = 0;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state fpu = grid_state.FPU_state[fpu_id];
         if (((fpu.state == FPST_READY_FORWARD)
@@ -2867,7 +2955,11 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
 
     unsigned int cnt_pending = 0;
     unique_ptr<RepeatMotionCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs.
@@ -2966,7 +3058,11 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
     }
 
     // check no FPUs have ongoing collisions or are moving
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[fpu_id].state;
         if (fpu_status == FPST_OBSTACLE_ERROR)
@@ -2987,7 +3083,11 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
         }
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         E_FPU_STATE fpu_status = grid_state.FPU_state[fpu_id].state;
         if (fpu_status == FPST_MOVING)
@@ -3005,7 +3105,11 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
        waveforms are not used when they have been involved
        in collision or abort. */
     unsigned int count_movable = 0;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state fpu = grid_state.FPU_state[fpu_id];
         if (((fpu.state == FPST_READY_FORWARD)
@@ -3032,7 +3136,11 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
 
     unsigned int cnt_pending = 0;
     unique_ptr<ReverseMotionCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         if (((fpu_state.state == FPST_READY_FORWARD)
@@ -3153,7 +3261,11 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
     // this is the case if no FPU is masked out in
     // the fpuset parameter
     bool use_broadcast = true;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -3182,7 +3294,11 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
         // send individual commands to FPUs which are not masked out
         unique_ptr<AbortMotionCommand> can_command;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (fpuset[fpu_id])
             {
@@ -3486,7 +3602,11 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
 
     unsigned int cnt_pending = 0;
     unique_ptr<PingFPUCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs, but include FPUs which are
@@ -3584,7 +3704,11 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
         // make sure no FPU is moving or finding datum
         bool recoveryok=true;
         int moving_fpuid = -1;
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
             // we exclude moving FPUs and FPUs which are
@@ -3612,7 +3736,11 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
 
 
     unique_ptr<EnableBetaCollisionProtectionCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         bool broadcast = false;
         can_command = gateway.provideInstance<EnableBetaCollisionProtectionCommand>();
@@ -3701,7 +3829,11 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
     {
         bool recoveryok=true;
         int moving_fpuid = -1;
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
             // we exclude moving FPUs and FPUs which are
@@ -3834,7 +3966,11 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
     }
 
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs and FPUs which are
@@ -3852,7 +3988,11 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
 
     unsigned int cnt_pending = 0;
     unique_ptr<SetUStepLevelCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -4036,7 +4176,11 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_
         bool extra_verbose = ((grid_state.Counts[FPST_OBSTACLE_ERROR] > 0)
                               || (grid_state.Counts[FPST_ABORTED] > 0));
 
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             logp = log_buffer;
             const t_fpu_state &fpu = grid_state.FPU_state[fpu_id];
@@ -4133,7 +4277,11 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
     const uint8_t address_low_part = read_address & 0xff;
     unique_ptr<ReadRegisterCommand> can_command;
     unsigned int num_pending = 0;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         // we exclude locked FPUs
         if ((! gateway.isLocked(fpu_id) ) && fpuset[fpu_id])
@@ -4204,7 +4352,11 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
     if (config.logLevel >= LOG_DEBUG)
     {
         double log_time = ethercanif::get_realtime();
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             LOG_CONTROL(LOG_INFO, "%18.6f : readregister: FPU # %4i, location 0X%04x = 0X%02x.\n",
                         log_time, fpu_id, read_address, grid_state.FPU_state[fpu_id].register_value);
@@ -4325,7 +4477,11 @@ void AsyncInterface::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
 
     was_retrieved = false;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -4377,7 +4533,11 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
 
     unique_ptr<GetFirmwareVersionCommand> can_command;
     unsigned int num_pending = 0;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         // we exclude locked FPUs
         if ((! gateway.isLocked(fpu_id) ) && fpuset[fpu_id])
@@ -4467,7 +4627,11 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
     // done because the firmware version usually needs to be known
     // before a command is executed, and we want to avoid duplicated
     // state retrievals.
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (! fpuset[fpu_id])
         {
@@ -4518,7 +4682,11 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
 
     int num_skipped = 0;
     unique_ptr<ReadSerialNumberCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -4660,7 +4828,11 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, co
     }
 
     t_fpuset fpuset;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         fpuset[fpu_id] = true;
     }
@@ -4707,7 +4879,11 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, co
 
     // make sure no other FPU in the grid has a serial number equal to
     // the one we are flashing
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpu_id == fpu_id_to_write)
         {
@@ -4808,7 +4984,11 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
     // make sure no FPU is moving or finding datum
     bool enableok=true;
     int fpuid_moving = -1;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs and FPUs which are
@@ -4931,7 +5111,11 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long 
 
     // make sure no FPU is moving or finding datum
     bool resetok=true;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (! fpuset[fpu_id])
         {
@@ -4960,7 +5144,11 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long 
 
     unsigned int cnt_pending=0;
     unique_ptr<ResetStepCounterCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -5044,7 +5232,11 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
 
     // make sure no FPU is moving or finding datum
     bool recoveryok=true;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs and FPUs which are
@@ -5069,7 +5261,11 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
 
 
     unique_ptr<EnableAlphaLimitProtectionCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         bool broadcast = false;
         can_command = gateway.provideInstance<EnableAlphaLimitProtectionCommand>();
@@ -5156,7 +5352,11 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free, 
 
     // make sure no FPU is moving or finding datum
     bool recoveryok=true;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs and FPUs which are
@@ -5266,7 +5466,11 @@ E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
     }
 
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs and FPUs which are
@@ -5284,7 +5488,11 @@ E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
 
     unsigned int cnt_pending = 0;
     unique_ptr<SetStepsPerSegmentCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -5384,7 +5592,11 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
     }
 
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs and FPUs which are
@@ -5402,7 +5614,11 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
 
     unsigned int cnt_pending = 0;
     unique_ptr<SetTicksPerSegmentCommand> can_command;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -5499,7 +5715,11 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
 					   | ( 1 << FPST_ABORTED                 )
 					   | ( 1 << FPST_OBSTACLE_ERROR          ));
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
         // we exclude moving FPUs, FPUs which are
@@ -5520,7 +5740,11 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
 
     unique_ptr<CheckIntegrityCommand> can_command;
     unsigned int num_pending = 0;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         // we exclude locked FPUs
         if ((! gateway.isLocked(fpu_id) ) && fpuset[fpu_id])
@@ -5592,7 +5816,11 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
     if (config.logLevel >= LOG_DEBUG)
     {
         double log_time = ethercanif::get_realtime();
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
 	    if (grid_state.FPU_state[fpu_id].last_status == MCE_FPU_OK)
 	    {

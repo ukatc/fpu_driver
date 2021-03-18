@@ -20,6 +20,7 @@
 #ifndef GRID_INTERFACE_CONFIG_H
 #define GRID_INTERFACE_CONFIG_H
 
+#include <vector>
 #include "E_LogLevel.h"
 #include "InterfaceConstants.h"
 #include "FPUConstants.h"
@@ -57,7 +58,11 @@ public:
     // File descriptor for log of all received CAN responses (RX)
     int fd_rxlog;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    std::vector<int> fpu_id_list;
+#else // NOT FLEXIBLE_CAN_MAPPING
     int num_fpus;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     // Offset with which alpha arm angles are computed from step counts
     double alpha_datum_offset;

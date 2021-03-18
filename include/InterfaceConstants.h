@@ -35,7 +35,9 @@
 // Defining this macro here in the code is better than defining it separately
 // in all projects, because the projects ideally all need to have the flexible
 // CAN mapping enabled or disabled together.
-#define FLEXIBLE_CAN_MAPPING
+
+// #define FLEXIBLE_CAN_MAPPING
+
 //**********************************
 //**********************************
 

@@ -193,7 +193,11 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     std::vector<FpuData> fpus_data_temp(config.num_fpus);
     if (ecan_result == DE_OK)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
 #ifdef USE_2ND_CANBUS
             if (!fpuset[fpu_id])
@@ -290,7 +294,11 @@ void GridDriver::getDuplicateSerialNumbers(t_grid_state &grid_state,
     std::set<std::string> snumbers_set;
 
     duplicate_snumbers_ret.clear();
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         // Get FPU serial number C string, add explicit null-terminator for
         // safety, and convert to std::string
@@ -360,7 +368,11 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
     ecan_result = readSerialNumbers(gs, fpuset);
     if (ecan_result == DE_OK)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -410,7 +422,11 @@ void GridDriver::_reset_counter_hook(double alpha_target, double beta_target,
     // Similar to reset_hook, but run after resetStepCounter() and only
     // updating the caloffsets
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -468,7 +484,11 @@ E_EtherCANErrCode GridDriver::_allow_find_datum_hook(t_grid_state &gs,
 
     const Interval acw_range(0.0, std::numeric_limits<double>::max());
     const Interval cw_range(-std::numeric_limits<double>::max(), 0.0);
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -592,7 +612,11 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
     auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -794,7 +818,11 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
     auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -1050,7 +1078,11 @@ E_EtherCANErrCode GridDriver::trackedAnglesVals(const t_grid_state &gs,
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
 
     positions_ret.clear();
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -1082,7 +1114,11 @@ E_EtherCANErrCode GridDriver::trackedAnglesString(const t_grid_state &gs,
 
     return_string.clear();
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -1247,7 +1283,11 @@ E_EtherCANErrCode GridDriver::_refresh_positions(const t_grid_state &grid_state,
     if (txn)
     {
         ecan_result = DE_OK;
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -1615,7 +1655,11 @@ E_EtherCANErrCode GridDriver::_save_wtable_direction(const t_fpuset &fpuset,
     auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -1940,7 +1984,11 @@ E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
     auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -2087,7 +2135,11 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
                 fpuset_refresh[fpu_id] = false;
             }
             bool refresh_required = false;
+#ifdef FLEXIBLE_CAN_MAPPING
+            for (int fpu_id : config.fpu_id_list)
+#else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
             {
                 if ((gs.FPU_state[fpu_id].state == FPST_MOVING) ||
                     (gs.FPU_state[fpu_id].state == FPST_DATUM_SEARCH))
@@ -2104,7 +2156,11 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
             // Add FPUs requiring ping to the set
             t_fpuset fpuset_ping_notok;
             need_ping(gs, fpuset, fpuset_ping_notok);
+#ifdef FLEXIBLE_CAN_MAPPING
+            for (int fpu_id : config.fpu_id_list)
+#else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
             {
                 if (fpuset_ping_notok[fpu_id])
                 {
@@ -2141,7 +2197,11 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     // positions, to continue tracking.
     // But, roll back the latter to the movement range for an FPU, if that FPU
     // is not yet at target.
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -2166,7 +2226,11 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.fpu_id_list)
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -2190,7 +2254,11 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     }
 
     // Clear wavetable spans for the addressed FPUs - they are no longer valid
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.fpu_id_list)
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -2283,7 +2351,7 @@ E_EtherCANErrCode GridDriver::_post_free_beta_collision_hook(int fpu_id,
     
     // The following code block is inside its own scope so that txn is
     // automatically destroyed at the end of it - this is required because
-    // the subseqent _refresh_positions() call also creates its own
+    // the subsequent _refresh_positions() call also creates its own
     // internal transaction, and ProtectionDB/ProtectionDBTxn requires that
     // there is only one transaction instance in existence at a time.
     // TODO: This could instead be achieved by putting txn.reset() after this
@@ -2401,7 +2469,7 @@ E_EtherCANErrCode GridDriver::_post_free_alpha_limit_breach_hook(int fpu_id,
 
     // The following code block is inside its own scope so that txn is
     // automatically destroyed at the end of it - this is required because
-    // the subseqent _refresh_positions() call also creates its own
+    // the subsequent _refresh_positions() call also creates its own
     // internal transaction, and ProtectionDB/ProtectionDBTxn requires that
     // there is only one transaction instance in existence at a time.
     // TODO: This could instead be achieved by putting txn.reset() after this
