@@ -53,10 +53,12 @@ EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values
                 ethercanif::get_realtime(), (config.confirm_each_step ? "True" : "False"));
 }
 
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
 int EtherCANInterface::getNumFPUs() const
 {
     return config.num_fpus;
 }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
 E_EtherCANErrCode EtherCANInterface::findDatum(t_grid_state& grid_state,
         E_DATUM_SEARCH_DIRECTION * p_direction_flags,

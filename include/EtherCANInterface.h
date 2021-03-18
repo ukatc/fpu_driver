@@ -100,8 +100,9 @@ public:
     EtherCANInterface& operator=(EtherCANInterface&& other) = delete;
 #endif
 
-
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     int getNumFPUs() const;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     E_EtherCANErrCode initializeGrid(t_grid_state& grid_state, t_fpuset const &fpuset);
 
