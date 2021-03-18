@@ -152,6 +152,10 @@ E_EtherCANErrCode AsyncInterface::connect(const int ngateways, const t_gateway_a
 
     // Make sure that the passed number of gateways can support the
     // configured number of FPUs.
+
+    // BW TODO: Replace the following with checking the CAN mapping table to
+    // see whether the number of gateways specified covers all of the specified
+    // FPUs' gateway numbers that they are allocated to
     if (ngateways < (config.num_fpus + MAX_FPUS_PER_GATEWAY-1) / MAX_FPUS_PER_GATEWAY)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::connect(): number of configured gateways is insufficient\n",

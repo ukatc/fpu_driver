@@ -1019,7 +1019,9 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     for (auto it = wtable.begin(); it != wtable.end(); )
     {
         if ((it->fpu_id >= 0) &&
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
             (it->fpu_id < config.num_fpus) &&
+#endif // NOT FLEXIBLE_CAN_MAPPING
             (it->fpu_id < MAX_NUM_POSITIONERS))   // Sanity checks
         {
             if (!fpuset[it->fpu_id])
@@ -1369,7 +1371,12 @@ E_EtherCANErrCode UnprotectedGridDriver::enableBetaCollisionProtection(
     E_EtherCANErrCode ecan_result = _gd->enableBetaCollisionProtection(gs);
 
     t_fpuset fpuset;
+#ifdef FLEXIBLE_CAN_MAPPING
+    createFpuSetForIdList(config.fpu_id_list, fpuset);
+#else // NOT FLEXIBLE_CAN_MAPPING
     createFpuSetForNumFpus(config.num_fpus, fpuset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
+
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
     return ecan_result;
@@ -1427,7 +1434,11 @@ E_EtherCANErrCode UnprotectedGridDriver::enableAlphaLimitProtection(
     E_EtherCANErrCode ecan_result = _gd->enableAlphaLimitProtection(gs);
 
     t_fpuset fpuset;
+#ifdef FLEXIBLE_CAN_MAPPING
+    createFpuSetForIdList(config.fpu_id_list, fpuset);
+#else // NOT FLEXIBLE_CAN_MAPPING
     createFpuSetForNumFpus(config.num_fpus, fpuset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
 
     return ecan_result;

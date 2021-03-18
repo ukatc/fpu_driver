@@ -253,25 +253,16 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
     // is normally a safeguard.
     const E_DATUM_TIMEOUT_FLAG datum_timeout = DATUM_TIMEOUT_DISABLE;
 
-#ifdef FLEXIBLE_CAN_MAPPING
-    //******************************
-    // TODO: Temporary for now, just to get it building again -
-    // need to replace with fpuset derived from the CAN map file
-    // eventually
-    const int num_fpus = 3;
-    //******************************
-#endif // FLEXIBLE_CAN_MAPPING
-
     t_datum_search_flags search_modes;
-    for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
     {
         search_modes[fpu_id] = SEARCH_CLOCKWISE;
     }
 
     t_fpuset fpuset;
-
 #ifdef FLEXIBLE_CAN_MAPPING
-    UnprotectedGridDriver::createFpuSetForNumFpus(num_fpus, fpuset);
+    const std::vector<int> &fpu_id_list = gd.getFpuIdList();
+    UnprotectedGridDriver::createFpuSetForIdList(fpu_id_list, fpuset);
 #else // NOT FLEXIBLE_CAN_MAPPING
 #ifdef USE_2ND_CANBUS
     UnprotectedGridDriver::createFpuSetForSingleFpu(NEXT_CANBUS_FPU_ID, fpuset);
