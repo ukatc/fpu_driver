@@ -163,7 +163,9 @@ public:
 
     E_GridState getGridState(t_grid_state &grid_state_ret);
 
-    int getNumFpus();
+#ifdef FLEXIBLE_CAN_MAPPING
+    std::vector<int> &getFpuIdList() const;
+#endif // FLEXIBLE_CAN_MAPPING
 
     E_EtherCANErrCode findDatum(t_grid_state &gs,
                         const t_datum_search_flags &search_modes,
@@ -241,7 +243,12 @@ public:
 
     // Static functions
     static void createFpuSetForSingleFpu(int fpu_id, t_fpuset &fpuset_ret);
+#ifdef FLEXIBLE_CAN_MAPPING
+    static void createFpuSetForIdList(const std::vector<int> &fpu_id_list,
+                                      t_fpuset &fpuset_ret);
+#else // NOT FLEXIBLE_CAN_MAPPING
     static void createFpuSetForNumFpus(int num_fpus, t_fpuset &fpuset_ret);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     //..........................................................................
 protected:

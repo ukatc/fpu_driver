@@ -48,7 +48,11 @@ GridDriver::~GridDriver()
     getGridState(grid_state);
 
     t_fpuset fpuset;
+#ifdef FLEXIBLE_CAN_MAPPING
+    createFpuSetForIdList(config.fpu_id_list, fpuset);
+#else // NOT FLEXIBLE_CAN_MAPPING
     createFpuSetForNumFpus(config.num_fpus, fpuset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     if (grid_state.interface_state == DS_CONNECTED)
     {
@@ -169,11 +173,15 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     getGridState(grid_state);
 
     t_fpuset fpuset;
+#ifdef FLEXIBLE_CAN_MAPPING
+    createFpuSetForIdList(config.fpu_id_list, fpuset);
+#else // NOT FLEXIBLE_CAN_MAPPING
 #ifdef USE_2ND_CANBUS
     createFpuSetForSingleFpu(NEXT_CANBUS_FPU_ID, fpuset);
 #else
     createFpuSetForNumFpus(config.num_fpus, fpuset);
 #endif
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     // Read serial numbers from grid FPUs, and check for duplicates
     ecan_result = readSerialNumbers(grid_state, fpuset);

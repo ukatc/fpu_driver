@@ -140,14 +140,6 @@ UnprotectedGridDriver::UnprotectedGridDriver(
 {
 #ifdef FLEXIBLE_CAN_MAPPING
     fpus_data.resize(MAX_NUM_POSITIONERS);
-
-    //**********************************
-    // TODO: Temporary only - set num_fpus so that existing functionality
-    // should still work for now
-    config.num_fpus = 3;
-    //**********************************
-
-
 #else // NOT FLEXIBLE_CAN_MAPPING
     if ((nfpus > 0) && (nfpus <= MAX_NUM_POSITIONERS))
     {
@@ -225,10 +217,12 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
         return DE_INTERFACE_ALREADY_INITIALIZED;
     }
 
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     if (config.num_fpus <= 0)
     {
         return DE_INVALID_FPU_ID;
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     config.logLevel = logLevel;
     config.firmware_version_address_offset = firmware_version_address_offset;
@@ -260,6 +254,8 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     // TODO here: Try opening can_map_file_path:
     //   - If opens OK then parse it, check for ranges/duplicates etc, and
     //     populate grid_can_map from it
+    //   - Any need to sort it into FPU ID order? Any advantage to this? (I
+    //     don't think so?)
     //   - If doesn't open OK then abort with appropriate error code - add
     //     further DE_XXX error code(s) for errors relating to the CAN map
     //     file?
@@ -275,6 +271,13 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
         {  2,     { 0,          0,      3} }
     };
     //*****************
+
+
+    // Populate the FPU ID list in the config
+    for (size_t i = 0; i < grid_can_map.size(); i++)
+    {
+        config.fpu_id_list.push_back(grid_can_map[i].first);
+    }
 
     _gd = new (std::nothrow) EtherCANInterface(config, grid_can_map);
 #else // NOT FLEXIBLE_CAN_MAPPING
@@ -426,11 +429,13 @@ E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
     return _gd->getGridState(grid_state_ret);
 }
 
+#ifdef FLEXIBLE_CAN_MAPPING
 //------------------------------------------------------------------------------
-int UnprotectedGridDriver::getNumFpus()
+std::vector<int> &UnprotectedGridDriver::getFpuIdList() const
 {
-    return config.num_fpus;
+    return const_cast<std::vector<int> &>(config.fpu_id_list);
 }
+#endif // FLEXIBLE_CAN_MAPPING
 
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs, 
@@ -1742,6 +1747,24 @@ void UnprotectedGridDriver::sleepSecs(double seconds)
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 {
+#ifdef FLEXIBLE_CAN_MAPPING
+    // Checks that all of the FPUs specified in fpuset are part of the list
+    // specified in the config.
+
+    t_fpuset config_fpuset;
+    this->createFpuSetForIdList(config.fpu_id_list, config_fpuset);
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        if (fpuset[fpu_id] && (!config_fpuset[fpu_id]))
+        {
+            // TODO: Any better error return code for this? DE_INVALID_CONFIG?
+            return DE_INVALID_FPU_ID;
+        }
+    }
+
+    return DE_OK;
+
+#else // NOT FLEXIBLE_CAN_MAPPING
     // Check that config.num_fpus is within range
     if ((config.num_fpus < 0) || (config.num_fpus >= MAX_NUM_POSITIONERS))
     {
@@ -1759,6 +1782,8 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
     }
 
     return DE_OK;
+
+#endif // NOT FLEXIBLE_CAN_MAPPING
 }
 
 //------------------------------------------------------------------------------
@@ -1775,6 +1800,32 @@ void UnprotectedGridDriver::createFpuSetForSingleFpu(int fpu_id,
     }
 }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+//------------------------------------------------------------------------------
+void UnprotectedGridDriver::createFpuSetForIdList(const std::vector<int> &fpu_id_list,
+                                                  t_fpuset &fpuset_ret)
+{
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        fpuset_ret[fpu_id] = false;
+    }
+
+    for (int fpu_id : fpu_id_list)
+    {
+        if ((fpu_id >= 0) &&
+            (fpu_id < MAX_NUM_POSITIONERS))  // Buffer bounds check
+        {
+            fpuset_ret[fpu_id] = true;
+        }
+        else
+        {
+            // TODO: Error - but should never happen here because fpu_id_list
+            // validity should always have been checked elsewhere already
+        }
+    }
+}
+
+#else // NOT FLEXIBLE_CAN_MAPPING
 //------------------------------------------------------------------------------
 void UnprotectedGridDriver::createFpuSetForNumFpus(int num_fpus,
                                                    t_fpuset &fpuset_ret)
@@ -1793,6 +1844,7 @@ void UnprotectedGridDriver::createFpuSetForNumFpus(int num_fpus,
         fpuset_ret[i] = true;
     }
 }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
 //==============================================================================
 
