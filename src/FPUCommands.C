@@ -25,7 +25,11 @@ namespace mpifps
 {
 
 //------------------------------------------------------------------------------
-void list_angles(const t_grid_state &gs, int num_fpus, 
+#ifdef FLEXIBLE_CAN_MAPPING
+void list_angles(const t_grid_state &gs, const t_fpuset &fpuset,
+#else // NOT FLEXIBLE_CAN_MAPPING
+void list_angles(const t_grid_state &gs, int num_fpus,
+#endif // NOT FLEXIBLE_CAN_MAPPING
                  t_fpus_angles &fpus_angles_ret, double alpha_datum_offset,
                  bool show_uninitialized, double asteps_per_deg,
                  double bsteps_per_deg)
@@ -48,8 +52,18 @@ void list_angles(const t_grid_state &gs, int num_fpus,
     };
 
     fpus_angles_ret.clear();
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        if (!fpuset[fpu_id])
+        {
+            continue;
+        }
+
+#else // NOT FLEXIBLE_CAN_MAPPING
     for (int fpu_id = 0; fpu_id < num_fpus; fpu_id++)
     {
+#endif // NOT FLEXIBLE_CAN_MAPPING
         const t_fpu_state &fpu_state = gs.FPU_state[fpu_id];
         double alpha_angle = 
             ((((double)fpu_state.alpha_steps) / asteps_per_deg) + alpha_datum_offset) *

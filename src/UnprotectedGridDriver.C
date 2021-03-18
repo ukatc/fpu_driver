@@ -1555,11 +1555,17 @@ void UnprotectedGridDriver::listAngles(const t_grid_state &gs,
                                        double bsteps_per_deg)
 {
     // Thin member function wrapper for the separate standalone list_angles()
-    // function, to support an easy Boost,Python wrapper function to be created.
+    // function, to support an easy Boost.Python wrapper function to be created.
     // See the list_angles() comments.
-
+#ifdef FLEXIBLE_CAN_MAPPING
+    t_fpuset fpuset;
+    createFpuSetForIdList(config.fpu_id_list, fpuset);
+    list_angles(gs, fpuset, fpus_angles_ret, alpha_datum_offset,
+                show_uninitialized, asteps_per_deg, bsteps_per_deg);
+#else // NOT FLEXIBLE_CAN_MAPPING
     list_angles(gs, config.num_fpus, fpus_angles_ret, alpha_datum_offset,
                 show_uninitialized, asteps_per_deg, bsteps_per_deg);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 }
 
 //------------------------------------------------------------------------------
@@ -1602,8 +1608,12 @@ E_EtherCANErrCode UnprotectedGridDriver::countedAngles(t_grid_state &gs,
     if (ecan_result == DE_OK)
     {
         t_fpus_angles fpus_angles_temp;
+#ifdef FLEXIBLE_CAN_MAPPING
+        list_angles(gs, fpuset, fpus_angles_temp, config.alpha_datum_offset);
+#else // NOT FLEXIBLE_CAN_MAPPING
         list_angles(gs, config.num_fpus, fpus_angles_temp,
                     config.alpha_datum_offset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
         for (size_t i = 0; i < fpus_angles_temp.size(); i++)
         {
             if (fpuset[fpus_angles_temp[i].first])
