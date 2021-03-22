@@ -61,8 +61,6 @@
 #include "ethercan/cancommandsv2/UnlockUnitCommand.h"
 #include "ethercan/cancommandsv2/WriteSerialNumberCommand.h"
 
-
-
 namespace mpifps
 {
 
@@ -93,7 +91,6 @@ E_EtherCANErrCode AsyncInterface::initializeInterface()
                 ethercanif::get_realtime());
     return gateway.initialize();
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::deInitializeInterface()
@@ -178,7 +175,6 @@ E_EtherCANErrCode AsyncInterface::connect(const int ngateways, const t_gateway_a
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::disconnect()
 {
-
     switch (gateway.getInterfaceState())
     {
     case DS_UNINITIALIZED:
@@ -200,7 +196,6 @@ E_EtherCANErrCode AsyncInterface::disconnect()
     LOG_CONTROL(LOG_DEBUG, "%18.6f : AsyncInterface::disconnect(): disconnecting interface\n",
                 ethercanif::get_realtime());
 
-
     E_EtherCANErrCode err_code = gateway.disconnect();
 
     if (err_code == DE_OK)
@@ -208,13 +203,10 @@ E_EtherCANErrCode AsyncInterface::disconnect()
         num_gateways = 0;
         LOG_CONTROL(LOG_DEBUG, "%18.6f : disconnect(): OK\n",
                     ethercanif::get_realtime());
-
     }
 
     return err_code;
-
 }
-
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -226,7 +218,6 @@ E_EtherCANErrCode AsyncInterface::initializeGridAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         t_fpuset const &fpuset)
 {
-
     state_summary = GS_UNKNOWN;
     grid_state.interface_state = DS_ASSERTION_FAILED;
 
@@ -247,11 +238,9 @@ E_EtherCANErrCode AsyncInterface::initializeGridAsync(t_grid_state& grid_state,
 }
 #pragma GCC diagnostic pop
 
-
 /* ---------------------------------------------------------------------------*/
 void AsyncInterface::getStateCount(const t_grid_state& grid_state, t_fpuset const * const pfpuset, t_counts &counts)
 {
-
     if (pfpuset == nullptr)
     {
         // the state count is already in the grid_state struct
@@ -274,14 +263,12 @@ void AsyncInterface::getStateCount(const t_grid_state& grid_state, t_fpuset cons
     }
 }
 
-
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         t_fpuset const &fpuset,
         const bool include_locked_fpus)
 {
-
     LOG_CONTROL(LOG_INFO, "%18.6f : resetting FPUs\n",
                 ethercanif::get_realtime());
 
@@ -312,7 +299,6 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
                     ethercanif::get_realtime());
         return DE_STILL_BUSY;
     }
-
 
     unsigned int cnt_pending=0;
     unique_ptr<ResetFPUCommand> can_command;
@@ -349,7 +335,6 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
         cnt_pending++;
     }
 
-
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
         double max_wait_time = -1;
@@ -359,7 +344,6 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
 
         cnt_pending = (grid_state.count_pending + grid_state.num_queued);
     }
-
 
     if (grid_state.interface_state != DS_CONNECTED)
     {
@@ -392,9 +376,7 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
     logGridState(config.logLevel, grid_state);
 
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 void AsyncInterface::getFPUsetOpt(t_fpuset const * const fpuset_opt, t_fpuset &fpuset) const
@@ -416,7 +398,6 @@ void AsyncInterface::getFPUsetOpt(t_fpuset const * const fpuset_opt, t_fpuset &f
     }
 }
 
-
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
@@ -426,12 +407,10 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
         bool count_protection,
         t_fpuset const * const fpuset_opt)
 {
-
     t_fpuset fpuset;
     getFPUsetOpt(fpuset_opt, fpuset);
 
     {
-
         const char * to_string;
         switch (timeout_flag)
         {
@@ -446,7 +425,6 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
                         ethercanif::get_realtime());
             return DE_INVALID_PAR_VALUE;
         }
-
 
         const char * as_string;
         switch (arm_selection)
@@ -653,7 +631,6 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
             return DE_INVALID_FPU_STATE;
         }
 
-
         if ( (fpu.alpha_datum_switch_active) && ((arm_selection == DASEL_ALPHA) || (arm_selection == DASEL_BOTH)))
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : FPU #%i has active alpha datum/limit switch"
@@ -678,7 +655,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
 	}
     } // Next FPU
 
-    if(all_fpus_locked)
+    if (all_fpus_locked)
     {
 	LOG_CONTROL(LOG_INFO, "%18.6f : findDAtum(): All addressed FPUs are locked, datum command ignored.\n",
 		    ethercanif::get_realtime());
@@ -758,17 +735,14 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
                                          | (1 << FPST_READY_REVERSE)
                                          | (1 << FPST_RESTING))) != 0)
         {
-
             bool broadcast = false;
             can_command = gateway.provideInstance<FindDatumCommand>();
 
             can_command->parametrize(fpu_id, broadcast, direction_flags[fpu_id], arm_selection, timeout_flag);
             unique_ptr<CAN_Command> cmd(can_command.release());
             gateway.sendCommand(fpu_id, cmd);
-
         }
     } // Next FPU
-
 
     // It is important to compare for inequality here, because
     // count_timeout is an unsigned value which can intentionally wrap
@@ -787,15 +761,12 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     LOG_CONTROL(LOG_INFO, "%18.6f : findDatum(): command successfully sent\n",
                 ethercanif::get_realtime());
 
     log_repeat_count =0; // adjust frequency of logging
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 // helper function which limits amount of logging during wait for
@@ -824,9 +795,7 @@ bool p_repeat_log(unsigned int &log_repeat_count)
     {
         return (lrc % 100) == 0;
     }
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_state,
@@ -843,9 +812,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
         return DE_NO_CONNECTION;
     }
 
-
     bool cancelled = false;
-
 
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
@@ -870,7 +837,6 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
     {
-
         t_fpu_state fpu = grid_state.FPU_state[fpu_id];
         E_FPU_STATE fpu_status = fpu.state;
 
@@ -897,7 +863,6 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
         }
         else if (fpu_status == FPST_ABORTED)
         {
-
 	    LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU movement was aborted for FPU %i\n",
 			ethercanif::get_realtime(), fpu_id);
 	    logGridState(config.logLevel, grid_state);
@@ -929,7 +894,6 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
     {
-
         t_fpu_state fpu = grid_state.FPU_state[fpu_id];
         E_FPU_STATE fpu_status = fpu.state;
 
@@ -942,9 +906,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
 
             return DE_HW_ALPHA_ARM_ON_LIMIT_SWITCH;
         }
-
     }
-
 
     if (state_summary == GS_COLLISION)
     {
@@ -979,9 +941,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     finished = (num_moving == 0) && (! cancelled);
-
 
 #ifdef FLEXIBLE_CAN_MAPPING
     for (int fpu_id : config.fpu_id_list)
@@ -1001,7 +961,6 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
             return DE_PROTECTION_ERROR;
         }
     }
-
 
     if (finished)
     {
@@ -1028,13 +987,10 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
 
         return DE_WAIT_TIMEOUT;
     }
-
-
 }
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-overflow"
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
@@ -1044,7 +1000,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
         const unsigned int MAX_NUM_SECTIONS,
         const double MAX_INCREASE_FACTOR) const
 {
-
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V1)\n",
                 ethercanif::get_realtime());
     //printf("validateWaveformsV1: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
@@ -1052,7 +1007,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
 
     const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
-
 
     if (MIN_STEPS > MAX_STEPS)
     {
@@ -1083,7 +1037,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
         return DE_INVALID_CONFIG;
     }
 
-
     if (num_steps > MAX_NUM_SECTIONS)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:"
@@ -1112,17 +1065,15 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
             return DE_INVALID_WAVEFORM_RAGGED;
         }
 
-
         const t_waveform& wform = waveforms[fpu_index];
 
-        for(int chan_idx=0; chan_idx < 2; chan_idx++)
+        for (int chan_idx=0; chan_idx < 2; chan_idx++)
         {
             int xa_last = 0;
             int x_last_sign = 0;
 
             for (unsigned int sidx=0; sidx<num_steps; sidx++)
             {
-
                 const t_step_pair& step = wform.steps[sidx];
 
                 const int xs = (chan_idx == 0) ?
@@ -1148,7 +1099,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
                                 fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
                     return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
                 }
-
 
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
@@ -1214,7 +1164,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
     return DE_OK;
 }
 
-
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
         const int MIN_STEPS,
@@ -1223,7 +1172,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
         const unsigned int MAX_NUM_SECTIONS,
         const double MAX_INCREASE_FACTOR) const
 {
-
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V2)\n",
                 ethercanif::get_realtime());
     //printf("validateWaveformsV2: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
@@ -1261,7 +1209,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
         return DE_INVALID_CONFIG;
     }
 
-
     if (num_steps > MAX_NUM_SECTIONS)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:"
@@ -1290,7 +1237,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
             return DE_INVALID_WAVEFORM_RAGGED;
         }
 
-
         const t_waveform& wform = waveforms[fpu_index];
 
         for(int chan_idx=0; chan_idx < 2; chan_idx++)
@@ -1300,7 +1246,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
 
             for (unsigned int sidx=0; sidx<num_steps; sidx++)
             {
-
                 const t_step_pair& step = wform.steps[sidx];
 
                 const int xs = (chan_idx == 0) ?
@@ -1321,7 +1266,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
                                 fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
                     return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
                 }
-
 
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
@@ -1394,7 +1338,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
     return DE_OK;
 }
 
-
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
         const int MIN_STEPS,
@@ -1403,7 +1346,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
         const unsigned int MAX_NUM_SECTIONS,
         const double MAX_INCREASE_FACTOR) const
 {
-
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V2)\n",
                 ethercanif::get_realtime());
     //printf("validateWaveformsV3: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
@@ -1441,7 +1383,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
         return DE_INVALID_CONFIG;
     }
 
-
     if (num_steps > MAX_NUM_SECTIONS)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:"
@@ -1470,7 +1411,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
             return DE_INVALID_WAVEFORM_RAGGED;
         }
 
-
         const t_waveform& wform = waveforms[fpu_index];
 
         for(int chan_idx=0; chan_idx < 2; chan_idx++)
@@ -1480,7 +1420,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
 
             for (unsigned int sidx=0; sidx<num_steps; sidx++)
             {
-
                 const t_step_pair& step = wform.steps[sidx];
 
                 const int xs = (chan_idx == 0) ?
@@ -1493,7 +1432,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
 
                 //printf("fpu %i: channel=%i, step=%i, xs=%i, xa=%i\n", fpu_id, chan_idx, sidx, xs, xa);
 
-
                 if (xa > MAX_STEPS+1) // Only trigger the exception is more than 1Hz different.
                 {
                     LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:"
@@ -1502,7 +1440,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
                                 fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
                     return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
                 }
-
 
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
@@ -1579,7 +1516,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
     return DE_OK;
 }
 
-
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
         const int MIN_STEPS,
@@ -1588,7 +1524,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
         const unsigned int MAX_NUM_SECTIONS,
         const double MAX_INCREASE_FACTOR) const
 {
-
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V4)\n",
                 ethercanif::get_realtime());
     //printf("validateWaveformsV4: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
@@ -1627,7 +1562,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
         return DE_INVALID_CONFIG;
     }
 
-
     if (num_steps > MAX_NUM_SECTIONS)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:"
@@ -1656,7 +1590,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
             return DE_INVALID_WAVEFORM_RAGGED;
         }
 
-
         const t_waveform& wform = waveforms[fpu_index];
 
         for(int chan_idx=0; chan_idx < 2; chan_idx++)
@@ -1666,7 +1599,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
 
             for (unsigned int sidx=0; sidx<num_steps; sidx++)
             {
-
                 const t_step_pair& step = wform.steps[sidx];
 
                 const int xs = (chan_idx == 0) ?
@@ -1692,7 +1624,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
                                 fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
                     return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
                 }
-
 
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
@@ -1763,7 +1694,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
     return DE_OK;
 }
 
-
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
         const int MIN_STEPS,
@@ -1772,7 +1702,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
         const unsigned int MAX_NUM_SECTIONS,
         const int MAX_STEP_DIFFERENCE) const
 {
-
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: validating waveforms (ruleset V5, using an absolute maximum step difference)\n",
                 ethercanif::get_realtime());
     //printf("validateWaveformsV5: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_STEP_DIFFERENCE=%i\n",
@@ -1811,7 +1740,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
         return DE_INVALID_CONFIG;
     }
 
-
     if (num_steps > MAX_NUM_SECTIONS)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS:"
@@ -1840,7 +1768,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
             return DE_INVALID_WAVEFORM_RAGGED;
         }
 
-
         const t_waveform& wform = waveforms[fpu_index];
 
         for(int chan_idx=0; chan_idx < 2; chan_idx++)
@@ -1850,7 +1777,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
 
             for (unsigned int sidx=0; sidx<num_steps; sidx++)
             {
-
                 const t_step_pair& step = wform.steps[sidx];
 
                 const int xs = (chan_idx == 0) ?
@@ -1876,7 +1802,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
                                 fpu_id, chan_idx == 0 ? "alpha" : "beta", sidx);
                     return DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE;
                 }
-
 
                 const int xa_small = std::min(xa_last, xa);
                 const int xa_large = std::max(xa_last, xa);
@@ -1953,9 +1878,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
     return DE_OK;
 }
 
-
 #pragma GCC diagnostic pop
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
@@ -1965,14 +1888,11 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         bool allow_uninitialized,
         int ruleset_version)
 {
-
     LOG_CONTROL(LOG_INFO, "%18.6f : AsyncInterface: calling configMotion()\n",
                 ethercanif::get_realtime());
 
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
-
-
 
     const int min_stepcount = int(floor(config.motor_minimum_frequency
                                         * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
@@ -2008,7 +1928,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                             ethercanif::get_realtime(), fpu_id);
                 return DE_IN_ABORTED_STATE;
             }
-
 
 	    switch (fpu_status){
 	    case FPST_AT_DATUM:
@@ -2083,9 +2002,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 	return DE_FPUS_LOCKED;
     }
 
-
     {
-
         const int max_stepcount = int(ceil(config.motor_maximum_frequency
                                            * WAVEFORM_SEGMENT_DURATION_MS  / 1000));
         const int max_start_stepcount = int(ceil(config.motor_max_start_frequency
@@ -2126,8 +2043,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                           max_start_stepcount,
                                           ConfigureMotionCommand::MAX_NUM_SECTIONS,
                                           max_rel_increase);
-
             break;
+
         case 4:
             vwecode = validateWaveformsV4(waveforms,
                                           min_stepcount,
@@ -2135,8 +2052,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                           max_start_stepcount,
                                           ConfigureMotionCommand::MAX_NUM_SECTIONS,
                                           max_rel_increase);
-
             break;
+
         case 5:
             vwecode = validateWaveformsV5(waveforms,
                                           min_stepcount,
@@ -2144,22 +2061,18 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                           max_start_stepcount,
                                           ConfigureMotionCommand::MAX_NUM_SECTIONS,
                                           max_step_difference);
-
             break;
+
         default:
             return DE_INVALID_PAR_VALUE;
-
         }
-
 
         if (vwecode != DE_OK)
         {
             // validity check failed
             return vwecode;
         }
-
     }
-
 
     // assure that interface is connected
     if (grid_state.interface_state != DS_CONNECTED)
@@ -2216,10 +2129,8 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
             }
         }
 
-
         for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
         {
-
             if ((fpu_index == 0)
                     && (step_index != 0)
                     && (config.waveform_upload_pause_us > 0))
@@ -2395,7 +2306,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         logGridState(config.logLevel, grid_state);
     }
 
-
     if (old_count_can_overflow != grid_state.count_can_overflow)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: firmware CAN buffer overflow\n",
@@ -2404,7 +2314,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         logGridState(config.logLevel, grid_state);
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-
 
     for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
     {
@@ -2433,7 +2342,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     return DE_OK;
 }
 
-
 /* ---------------------------------------------------------------------------*/
 #if 0
 // TODO: this method is currently implemented in Python, so that input
@@ -2455,14 +2363,12 @@ E_EtherCANErrCode AsyncInterface::configPathsAsync(t_grid_state& grid_state,
 }
 #endif
 
-
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         t_fpuset const &fpuset,
 	bool sync_message)
 {
-
     LOG_CONTROL(LOG_VERBOSE, "%18.6f : AsyncInterface: starting executeMotion()\n",
                 ethercanif::get_realtime());
 
@@ -2501,9 +2407,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
                         ethercanif::get_realtime(), fpu_id);
             return DE_IN_ABORTED_STATE;
         }
-
     }
-
 
     unsigned int num_moving = 0; // Number of FPUs which will move
     bool use_broadcast = true; // flag whether we can use a fast broadcast command
@@ -2563,7 +2467,6 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
 	}
     } // Next FPU
 
-
     if (num_moving == 0)
     {
 	if (num_locked > 0)
@@ -2590,7 +2493,6 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
     {
         set_rt_priority(config, CONTROL_PRIORITY);
     }
-
 
     E_EtherCANErrCode ecode = DE_OK;
 
@@ -2645,9 +2547,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
     // adjust frequency of log entries
     log_repeat_count = 0;
     return ecode;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 // counts the number of FPUs which are moving or will move with the given fpuset mask
@@ -2685,15 +2585,11 @@ int AsyncInterface::countMoving(const t_grid_state &grid_state, t_fpuset const &
                     break;
                 }
             }
-
         }
     }
 
-
     return num_moving;
 }
-
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_state,
@@ -2711,20 +2607,16 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
     const unsigned long old_count_timeout = grid_state.count_timeout;
     const unsigned long old_count_can_overflow = grid_state.count_can_overflow;
 
-
     LOG_CONTROL(LOG_VERBOSE, "%18.6f : waitExecuteMotion() - waiting for movement to complete\n",
                 ethercanif::get_realtime());
 
     if ( (num_moving > 0)
             && (grid_state.interface_state == DS_CONNECTED))
     {
-
-
         // this waits for finishing all pending messages,
         // all movement commands and leaving the READY_* states.
         state_summary = gateway.waitForState(TGT_NO_MORE_MOVING,
                                              grid_state, max_wait_time, cancelled);
-
 
         // We need to include the "ready" counts too because they
         // might take a moment to pick up the command.
@@ -2740,7 +2632,6 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
         return DE_NO_CONNECTION;
     }
 
-
     if ((grid_state.Counts[FPST_OBSTACLE_ERROR] > 0) || (grid_state.Counts[FPST_ABORTED] > 0))
     {
 #ifdef FLEXIBLE_CAN_MAPPING
@@ -2749,7 +2640,6 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
         {
-
             const t_fpu_state& fpu = grid_state.FPU_state[fpu_id];
             E_FPU_STATE fpu_status = fpu.state;
 
@@ -2791,7 +2681,6 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
                 return DE_STEP_TIMING_ERROR;
             }
 
-
             if (fpu_status == FPST_ABORTED)
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : waitExecuteMotion(): error: FPST_ABORTED state"
@@ -2831,7 +2720,6 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     if (finished)
     {
         logGridState(config.logLevel, grid_state);
@@ -2860,12 +2748,10 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
     return DE_OK;
 }
 
-
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary, t_fpuset const &fpuset)
 {
-
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
 
@@ -2954,7 +2840,6 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
         return DE_NO_MOVABLE_FPUS;
     }
 
-
     // All fpus which are in RESTING or READY_FORWARD state get a repeatMotion message.
 
     unsigned int cnt_pending = 0;
@@ -2988,7 +2873,6 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
         }
     }
 
-
     // wait until all generated messages have been responded to
     // or have timed out.
     // Keep in mind this command does not starts a new movement -
@@ -3003,7 +2887,6 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
         cnt_pending = (grid_state.count_pending
                        + grid_state.num_queued);
     }
-
 
     if (grid_state.interface_state != DS_CONNECTED)
     {
@@ -3038,15 +2921,12 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
     logGridState(config.logLevel, grid_state);
 
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
         E_GridState& state_summary, t_fpuset const &fpuset)
 {
-
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
 
@@ -3135,7 +3015,6 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
         return DE_NO_MOVABLE_FPUS;
     }
 
-
     // All fpus which are in RESTING or READY_FORWARD state get a reverseMotion message.
 
     unsigned int cnt_pending = 0;
@@ -3168,7 +3047,6 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
         }
     }
 
-
     // wait until all generated messages have been responded to
     // or have timed out. Note this does not starts a movement,
     // it only reverses the waveform tables logically.
@@ -3182,7 +3060,6 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
         cnt_pending = (grid_state.count_pending
                        + grid_state.num_queued);
     }
-
 
     if (grid_state.interface_state != DS_CONNECTED)
     {
@@ -3209,16 +3086,13 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : reverseMotion: command successfully sent OK\n",
                 ethercanif::get_realtime());
 
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mutex,
@@ -3227,7 +3101,6 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
         t_fpuset const &fpuset,
 	bool sync_message)
 {
-
     // NOTE: This command runs its first part without keeping
     // the command mutex, this enables it to interrupt
     // and preempt ongoing movements.
@@ -3245,7 +3118,6 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
         return DE_NO_CONNECTION;
     }
 
-
     // acquire real-time priority so that consecutive broadcasts to
     // the different gateways are really sent in the same few
     // milliseconds.  (A lag of more than 10 - 20 milliseconds, for
@@ -3259,7 +3131,6 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
     // this sends the abortMotion command directly.  It is implemented
     // as a gateway method so that lower layers have access to the
     // command when needed.
-
 
     // check whether we can use a fast broadcast command
     // this is the case if no FPU is masked out in
@@ -3319,7 +3190,6 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
     // This prevents other commands from starting.
     pthread_mutex_lock(&command_mutex);
 
-
     // Give up real-time priority (this is important when the caller
     // thread later enters, for example, an endless loop).
     if (USE_REALTIME_SCHEDULING)
@@ -3356,7 +3226,6 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
         return DE_NO_CONNECTION;
     }
 
-
     if (grid_state.count_timeout != old_count_timeout)
     {
         logGridState(config.logLevel, grid_state);
@@ -3375,23 +3244,17 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : abortMotion(): command successfully sent\n",
                 ethercanif::get_realtime());
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock, t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-
-
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
 
@@ -3414,7 +3277,6 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock, t_grid_state&
         return DE_INVALID_FPU_ID;
     }
 
-
     t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id_to_lock];
     // we exclude moving FPUs and FPUs which are
     // searching datum.
@@ -3433,14 +3295,12 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock, t_grid_state&
         return DE_STILL_BUSY;
     }
 
-
     unique_ptr<LockUnitCommand> can_command;
     can_command = gateway.provideInstance<LockUnitCommand>();
     const bool broadcast = false;
     can_command->parametrize(fpu_id_to_lock, broadcast);
     unique_ptr<CAN_Command> cmd(can_command.release());
     gateway.sendCommand(fpu_id_to_lock, cmd);
-
 
     unsigned int cnt_pending = 1;
 
@@ -3476,7 +3336,6 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock, t_grid_state&
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : lockFPU(): command successfully sent to FPU %i, is_locked = %i\n",
@@ -3485,12 +3344,10 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock, t_grid_state&
     return DE_OK;
 }
 
-
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock, t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
 
@@ -3513,7 +3370,6 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock, t_grid_st
         return DE_INVALID_FPU_ID;
     }
 
-
     // check state for being locked
     t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id_to_unlock];
 
@@ -3527,14 +3383,12 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock, t_grid_st
         return DE_INVALID_FPU_STATE;
     }
 
-
     unique_ptr<UnlockUnitCommand> can_command;
     const bool broadcast = false;
     can_command = gateway.provideInstance<UnlockUnitCommand>();
     can_command->parametrize(fpu_id_to_unlock, broadcast);
     unique_ptr<CAN_Command> cmd(can_command.release());
     gateway.sendCommand(fpu_id_to_unlock, cmd);
-
 
     unsigned int cnt_pending = 1;
 
@@ -3570,7 +3424,6 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock, t_grid_st
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : unlockFPU(): command successfully sent to FPU %i, is_locked = %i\n",
@@ -3584,7 +3437,6 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock, t_grid_st
 E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
         E_GridState& state_summary, t_fpuset const &fpuset)
 {
-
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
@@ -3597,7 +3449,6 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
-
 
     // All fpus which are not moving are pinged.
 
@@ -3673,16 +3524,12 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
-
     LOG_CONTROL(LOG_INFO, "%18.6f : pingFPUs(): command successfully completed\n",
                 ethercanif::get_realtime());
 
     logGridState(config.logLevel, grid_state);
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_state& grid_state,
@@ -3738,7 +3585,6 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
         }
     }
 
-
     unique_ptr<EnableBetaCollisionProtectionCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
     for (int fpu_id : config.fpu_id_list)
@@ -3791,14 +3637,12 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : enableBetaCollisionProtection(): command successfully sent to grid\n",
                 ethercanif::get_realtime());
     return DE_OK;
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
@@ -3827,7 +3671,6 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
                     ethercanif::get_realtime());
         return DE_INVALID_FPU_ID;
     }
-
 
     // make sure no FPU is moving or finding datum
     {
@@ -3866,13 +3709,11 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
         }
     }
 
-
     unique_ptr<FreeBetaCollisionCommand> can_command;
     can_command = gateway.provideInstance<FreeBetaCollisionCommand>();
     can_command->parametrize(fpu_id_to_free, request_dir);
     unique_ptr<CAN_Command> cmd(can_command.release());
     gateway.sendCommand(fpu_id_to_free, cmd);
-
 
     unsigned int cnt_pending = 1;
 
@@ -3908,7 +3749,6 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : freeBetaCollision(): command successfully sent to FPU %i\n",
@@ -3916,7 +3756,6 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
 
     return DE_OK;
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_GridState AsyncInterface::getGridState(t_grid_state& out_state) const
@@ -3926,14 +3765,12 @@ E_GridState AsyncInterface::getGridState(t_grid_state& out_state) const
     return state_summary;
 }
 
-
 /* ---------------------------------------------------------------------------*/
 E_GridState AsyncInterface::waitForState(E_WaitTarget target,
         t_grid_state& out_detailed_state, double &max_wait_time, bool &cancelled) const
 {
     return gateway.waitForState(target, out_detailed_state, max_wait_time, cancelled);
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
@@ -3969,7 +3806,6 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
         return DE_INVALID_PAR_VALUE;
     }
 
-
 #ifdef FLEXIBLE_CAN_MAPPING
     for (int fpu_id : config.fpu_id_list)
 #else
@@ -3988,7 +3824,6 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
             return DE_INVALID_FPU_STATE;
         }
     }
-
 
     unsigned int cnt_pending = 0;
     unique_ptr<SetUStepLevelCommand> can_command;
@@ -4055,16 +3890,13 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : setUStepLevel(): command successfully sent, ustep_level set to %i\n",
                 ethercanif::get_realtime(), ustep_level);
 
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 const char * str_interface_state(const E_InterfaceState interface_state)
@@ -4089,11 +3921,9 @@ const char * str_interface_state(const E_InterfaceState interface_state)
     return "undefined";
 }
 
-
 /* ---------------------------------------------------------------------------*/
 const char * str_fpu_state(const E_FPU_STATE state)
 {
-
     switch (state)
     {
     case FPST_UNKNOWN       :
@@ -4139,7 +3969,6 @@ const char * str_fpu_state(const E_FPU_STATE state)
     return "undefined";
 }
 
-
 /* ---------------------------------------------------------------------------*/
 void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_state) const
 {
@@ -4174,7 +4003,6 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_
                     log_buffer);
     }
 
-
     if (logLevel >= LOG_GRIDSTATE)
     {
         bool extra_verbose = ((grid_state.Counts[FPST_OBSTACLE_ERROR] > 0)
@@ -4208,7 +4036,6 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_
                             last_upd,
                             fpu.timeout_count);
 
-
             if ((logLevel >= LOG_VERBOSE) || extra_verbose)
             {
                 logp += sprintf(logp, ", pingok=%1u, mvcomplt=%1u, alimit=%1u, "
@@ -4236,7 +4063,6 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_
             LOG_CONTROL(LOG_GRIDSTATE, "%18.6f : %s \n",
                         cur_time,
                         log_buffer);
-
         }
     }
 
@@ -4251,9 +4077,7 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_
     LOG_CONTROL(LOG_INFO, "%18.6f : %s \n",
                 cur_time,
                 log_buffer);
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
@@ -4261,7 +4085,6 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
         E_GridState& state_summary,
         t_fpuset const &fpuset)
 {
-
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
@@ -4274,8 +4097,6 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
-
-
 
     const uint8_t bank = (read_address >> 8) & 0xff;
     const uint8_t address_low_part = read_address & 0xff;
@@ -4305,7 +4126,6 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
         }
     }
 
-
     // fpus are now responding in parallel.
     //
     // As long as any fpus need to respond, wait for
@@ -4327,7 +4147,6 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
         // the Tx thread might not have had opportunity
         // to send all the commands.
         num_pending = (grid_state.count_pending + grid_state.num_queued);
-
     }
 
     if (grid_state.interface_state != DS_CONNECTED)
@@ -4351,7 +4170,6 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     // log result if in debug mode
     if (config.logLevel >= LOG_DEBUG)
     {
@@ -4364,7 +4182,6 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
         {
             LOG_CONTROL(LOG_INFO, "%18.6f : readregister: FPU # %4i, location 0X%04x = 0X%02x.\n",
                         log_time, fpu_id, read_address, grid_state.FPU_state[fpu_id].register_value);
-
         }
     }
 
@@ -4372,9 +4189,7 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
                 ethercanif::get_realtime());
 
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 // get minimum firmware version value, using cache when valid
@@ -4385,7 +4200,6 @@ E_EtherCANErrCode AsyncInterface::assureMinFirmwareVersion(const int req_fw_majo
         t_fpuset const &fpuset,
         t_grid_state& grid_state)
 {
-
     E_GridState state_summary;
     uint8_t min_firmware_version[3];
     int min_firmware_fpu;
@@ -4398,7 +4212,6 @@ E_EtherCANErrCode AsyncInterface::assureMinFirmwareVersion(const int req_fw_majo
                     ethercanif::get_realtime(), caller_name, ecode);
         return ecode;
     }
-
 
     {
         if ( (min_firmware_version[0] < req_fw_major)
@@ -4415,12 +4228,10 @@ E_EtherCANErrCode AsyncInterface::assureMinFirmwareVersion(const int req_fw_majo
                         min_firmware_version[0], min_firmware_version[1], min_firmware_version[2], min_firmware_fpu);
             return DE_FIRMWARE_UNIMPLEMENTED;
         }
-
     }
 
     return DE_OK;
 }
-
 
 /* ---------------------------------------------------------------------------*/
 // get minimum firmware version value, using cache when valid, otherwise query FPUs
@@ -4430,7 +4241,6 @@ E_EtherCANErrCode AsyncInterface::getMinFirmwareVersionAsync(t_fpuset const &fpu
         t_grid_state& grid_state,
         E_GridState& state_summary)
 {
-
     min_firmware_fpu=-1;
     bool successfully_retrieved = false;
 
@@ -4468,14 +4278,12 @@ E_EtherCANErrCode AsyncInterface::getMinFirmwareVersionAsync(t_fpuset const &fpu
     return DE_OK;
 }
 
-
 /* ---------------------------------------------------------------------------*/
 void AsyncInterface::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
         bool &was_retrieved,
         uint8_t (&min_firmware_version)[3],
         int &min_firmware_fpu) const
 {
-
     min_firmware_fpu = 0;
     memset(min_firmware_version, FIRMWARE_NOT_RETRIEVED, sizeof(min_firmware_version));
 
@@ -4511,16 +4319,13 @@ void AsyncInterface::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
             was_retrieved = true;
         }
     } // Next FPU
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_state,
         E_GridState& state_summary,
         t_fpuset const &fpuset)
 {
-
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
@@ -4533,7 +4338,6 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
-
 
     unique_ptr<GetFirmwareVersionCommand> can_command;
     unsigned int num_pending = 0;
@@ -4557,10 +4361,8 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
             qstate = gateway.sendCommand(fpu_id, cmd);
             assert(qstate == CommandQueue::QS_OK);
             num_pending++;
-
         }
     }
-
 
     // fpus are now responding in parallel.
     //
@@ -4583,8 +4385,6 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
         // the Tx thread might not have had opportunity
         // to send all the commands.
         num_pending = (grid_state.count_pending + grid_state.num_queued);
-
-
     }
 
     if (grid_state.interface_state != DS_CONNECTED)
@@ -4608,7 +4408,6 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     // log result if in debug mode
     if (config.logLevel >= LOG_INFO)
     {
@@ -4625,7 +4424,6 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
 
     LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion(): values were retrieved successfully.\n",
                 ethercanif::get_realtime());
-
 
     // copy data from grid_state structure to internal cache.  This is
     // done because the firmware version usually needs to be known
@@ -4651,15 +4449,12 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
                 ethercanif::get_realtime());
 
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_state,
         E_GridState& state_summary, t_fpuset const &fpuset)
 {
-
     // first, get current state of the grid
     state_summary = gateway.getGridState(grid_state);
     const unsigned long old_count_timeout = grid_state.count_timeout;
@@ -4682,7 +4477,6 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
     {
         return ecode;
     }
-
 
     int num_skipped = 0;
     unique_ptr<ReadSerialNumberCommand> can_command;
@@ -4707,7 +4501,6 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
         unique_ptr<CAN_Command> cmd(can_command.release());
         qstate = gateway.sendCommand(fpu_id, cmd);
         assert(qstate == CommandQueue::QS_OK);
-
     }
 
     // We do not expect the locked FPUs to respond.
@@ -4743,7 +4536,6 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
         return DE_NO_CONNECTION;
     }
 
-
     if (grid_state.count_timeout != old_count_timeout)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : readSerialNumbers():  error DE_CAN_COMMAND_TIMEOUT_ERROR\n",
@@ -4763,7 +4555,6 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : readSerialNumbers(): retrieved serial numbers\n",
@@ -4778,9 +4569,7 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
         }
     }
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, const char serial_number[],
@@ -4854,7 +4643,6 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, co
     int min_firmware_fpu = -1;
     ecode = getMinFirmwareVersionAsync(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
-
     // get all existing numbers
     ecode = readSerialNumbersAsync(grid_state, state_summary, fpuset);
 
@@ -4906,13 +4694,11 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, co
         }
     }
 
-
     unique_ptr<WriteSerialNumberCommand> can_command;
     can_command = gateway.provideInstance<WriteSerialNumberCommand>();
     can_command->parametrize(fpu_id_to_write, serial_number);
     unique_ptr<CAN_Command> cmd(can_command.release());
     gateway.sendCommand(fpu_id_to_write, cmd);
-
 
     unsigned int cnt_pending = 1;
 
@@ -4947,7 +4733,6 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, co
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : writeSerialNumber(): FPU %i: serial number '%s' successfully written to FPU\n",
@@ -4955,7 +4740,6 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, co
 
     return DE_OK;
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
@@ -4983,7 +4767,6 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
                     ethercanif::get_realtime());
         return DE_INVALID_FPU_ID;
     }
-
 
     // make sure no FPU is moving or finding datum
     bool enableok=true;
@@ -5020,14 +4803,12 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
         return DE_STILL_BUSY;
     }
 
-
     unique_ptr<EnableMoveCommand> can_command;
     can_command = gateway.provideInstance<EnableMoveCommand>();
     const bool broadcast = false;
     can_command->parametrize(fpu_id_to_enable, broadcast);
     unique_ptr<CAN_Command> cmd(can_command.release());
     gateway.sendCommand(fpu_id_to_enable, cmd);
-
 
     unsigned int cnt_pending = 1;
 
@@ -5063,8 +4844,6 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : enableMove(): command successfully sent to FPU %i\n",
@@ -5072,8 +4851,6 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
 
     return DE_OK;
 }
-
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long beta_steps,
@@ -5145,7 +4922,6 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long 
         return DE_STILL_BUSY;
     }
 
-
     unsigned int cnt_pending=0;
     unique_ptr<ResetStepCounterCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
@@ -5166,7 +4942,6 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long 
         cnt_pending++;
     }
 
-
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
         double max_wait_time = -1;
@@ -5176,7 +4951,6 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long 
 
         cnt_pending = (grid_state.count_pending + grid_state.num_queued);
     }
-
 
     if (grid_state.interface_state != DS_CONNECTED)
     {
@@ -5209,9 +4983,7 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long 
     logGridState(config.logLevel, grid_state);
 
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& grid_state,
@@ -5232,7 +5004,6 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
                     ethercanif::get_realtime());
         return DE_NO_CONNECTION;
     }
-
 
     // make sure no FPU is moving or finding datum
     bool recoveryok=true;
@@ -5262,7 +5033,6 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
                     ethercanif::get_realtime());
         return DE_STILL_BUSY;
     }
-
 
     unique_ptr<EnableAlphaLimitProtectionCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
@@ -5316,15 +5086,12 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : enableAlphaLimitProtection(): command successfully sent to grid\n",
                 ethercanif::get_realtime());
     return DE_OK;
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free, E_REQUEST_DIRECTION request_dir,
@@ -5352,7 +5119,6 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free, 
                     ethercanif::get_realtime());
         return DE_INVALID_FPU_ID;
     }
-
 
     // make sure no FPU is moving or finding datum
     bool recoveryok=true;
@@ -5386,13 +5152,11 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free, 
         return DE_STILL_BUSY;
     }
 
-
     unique_ptr<FreeAlphaLimitBreachCommand> can_command;
     can_command = gateway.provideInstance<FreeAlphaLimitBreachCommand>();
     can_command->parametrize(fpu_id_to_free, request_dir);
     unique_ptr<CAN_Command> cmd(can_command.release());
     gateway.sendCommand(fpu_id_to_free, cmd);
-
 
     unsigned int cnt_pending = 1;
 
@@ -5428,8 +5192,6 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free, 
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : freeAlphaLimitBreach(): command successfully sent to FPU %i\n",
@@ -5437,8 +5199,6 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free, 
 
     return DE_OK;
 }
-
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
@@ -5469,7 +5229,6 @@ E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
         return DE_INVALID_PAR_VALUE;
     }
 
-
 #ifdef FLEXIBLE_CAN_MAPPING
     for (int fpu_id : config.fpu_id_list)
 #else
@@ -5488,7 +5247,6 @@ E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
             return DE_INVALID_FPU_STATE;
         }
     }
-
 
     unsigned int cnt_pending = 0;
     unique_ptr<SetStepsPerSegmentCommand> can_command;
@@ -5562,9 +5320,7 @@ E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
                 ethercanif::get_realtime(), minsteps, maxsteps);
 
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
@@ -5595,7 +5351,6 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
         return DE_INVALID_PAR_VALUE;
     }
 
-
 #ifdef FLEXIBLE_CAN_MAPPING
     for (int fpu_id : config.fpu_id_list)
 #else
@@ -5614,7 +5369,6 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
             return DE_INVALID_FPU_STATE;
         }
     }
-
 
     unsigned int cnt_pending = 0;
     unique_ptr<SetTicksPerSegmentCommand> can_command;
@@ -5681,16 +5435,13 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : setTicksPerSegment(): command successfully sent, ticks per segment set to %lu",
                 ethercanif::get_realtime(), ticks);
 
     return DE_OK;
-
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
@@ -5741,7 +5492,6 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
         }
     }
 
-
     unique_ptr<CheckIntegrityCommand> can_command;
     unsigned int num_pending = 0;
 #ifdef FLEXIBLE_CAN_MAPPING
@@ -5768,7 +5518,6 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
         }
     }
 
-
     // fpus are now responding in parallel. This command might take a while.
     //
     // As long as any fpus need to respond, wait for
@@ -5790,8 +5539,6 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
         // the Tx thread might not have had opportunity
         // to send all the commands.
         num_pending = (grid_state.count_pending + grid_state.num_queued);
-
-
     }
 
     if (grid_state.interface_state != DS_CONNECTED)
@@ -5814,7 +5561,6 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
                     ethercanif::get_realtime());
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-
 
     // log result if in debug mode
     if (config.logLevel >= LOG_DEBUG)
@@ -5844,9 +5590,7 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
                 ethercanif::get_realtime());
 
     return DE_OK;
-
 }
-
 
 }
 
