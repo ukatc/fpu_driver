@@ -123,7 +123,8 @@ E_EtherCANErrCode AsyncInterface::deInitializeInterface()
 }
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::connect(const int ngateways, const t_gateway_address gateway_addresses[])
+E_EtherCANErrCode AsyncInterface::connect(const int ngateways,
+                                 const t_gateway_address gateway_addresses[])
 {
     switch (gateway.getInterfaceState())
     {
@@ -239,7 +240,9 @@ E_EtherCANErrCode AsyncInterface::initializeGridAsync(t_grid_state& grid_state,
 #pragma GCC diagnostic pop
 
 /* ---------------------------------------------------------------------------*/
-void AsyncInterface::getStateCount(const t_grid_state& grid_state, t_fpuset const * const pfpuset, t_counts &counts)
+void AsyncInterface::getStateCount(const t_grid_state& grid_state,
+                                   t_fpuset const * const pfpuset,
+                                   t_counts &counts)
 {
     if (pfpuset == nullptr)
     {
@@ -379,7 +382,8 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
 }
 
 /* ---------------------------------------------------------------------------*/
-void AsyncInterface::getFPUsetOpt(t_fpuset const * const fpuset_opt, t_fpuset &fpuset) const
+void AsyncInterface::getFPUsetOpt(t_fpuset const * const fpuset_opt,
+                                  t_fpuset &fpuset) const
 {
     if (fpuset_opt != nullptr)
     {
@@ -544,7 +548,8 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     } // Next FPU
 
 
-    E_EtherCANErrCode ecode = assureMinFirmwareVersion(2, 0, 0, "findDatum()", fpuset, grid_state);
+    E_EtherCANErrCode ecode = assureMinFirmwareVersion(2, 0, 0, "findDatum()",
+                                                       fpuset, grid_state);
     if (ecode != DE_OK)
     {
         return ecode;
@@ -610,6 +615,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
                         ethercanif::get_realtime(), fpu_id);
             return DE_UNRESOLVED_COLLISION;
         }
+
         if (fpu_status == FPST_ABORTED)
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : FPU #%i is in aborted state - cancelling findDatum()operation.\n",
@@ -649,17 +655,17 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
             LOG_CONSOLE(LOG_INFO, "%18.6f : skipping findDAtum(): FPU #%i is locked and will not be moved.\n",
                         ethercanif::get_realtime(), fpu_id);
         }
-	else
-	{
-	    all_fpus_locked = false;
-	}
+        else
+        {
+            all_fpus_locked = false;
+        }
     } // Next FPU
 
     if (all_fpus_locked)
     {
-	LOG_CONTROL(LOG_INFO, "%18.6f : findDAtum(): All addressed FPUs are locked, datum command ignored.\n",
-		    ethercanif::get_realtime());
-	return DE_FPUS_LOCKED;
+        LOG_CONTROL(LOG_INFO, "%18.6f : findDAtum(): All addressed FPUs are locked, datum command ignored.\n",
+                ethercanif::get_realtime());
+        return DE_FPUS_LOCKED;
     }
 
     // check that beta arms are in allowed half-plane
@@ -738,7 +744,8 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
             bool broadcast = false;
             can_command = gateway.provideInstance<FindDatumCommand>();
 
-            can_command->parametrize(fpu_id, broadcast, direction_flags[fpu_id], arm_selection, timeout_flag);
+            can_command->parametrize(fpu_id, broadcast, direction_flags[fpu_id],
+                                     arm_selection, timeout_flag);
             unique_ptr<CAN_Command> cmd(can_command.release());
             gateway.sendCommand(fpu_id, cmd);
         }
@@ -799,8 +806,8 @@ bool p_repeat_log(unsigned int &log_repeat_count)
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_state,
-        E_GridState& state_summary,
-        double &max_wait_time, bool &finished, t_fpuset const * const fpuset_opt)
+        E_GridState& state_summary, double &max_wait_time, bool &finished,
+        t_fpuset const * const fpuset_opt)
 {
     t_fpuset fpuset;
     getFPUsetOpt(fpuset_opt, fpuset);
@@ -863,16 +870,16 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
         }
         else if (fpu_status == FPST_ABORTED)
         {
-	    LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU movement was aborted for FPU %i\n",
-			ethercanif::get_realtime(), fpu_id);
-	    logGridState(config.logLevel, grid_state);
-	    fsync(config.fd_controllog);
+            LOG_CONTROL(LOG_ERROR, "%18.6f : waitFindDatum(): error: FPU movement was aborted for FPU %i\n",
+                        ethercanif::get_realtime(), fpu_id);
+            logGridState(config.logLevel, grid_state);
+            fsync(config.fd_controllog);
 
-	    return DE_MOVEMENT_ABORTED;
+            return DE_MOVEMENT_ABORTED;
         }
         else if (fpu_status == FPST_UNINITIALIZED)
         {
-	    // this fpu_status can also result if only one arm is datumed, which is no error
+	        // this fpu_status can also result if only one arm is datumed, which is no error
 
             if (fpu.last_status == MCE_ERR_DATUM_TIME_OUT)
             {
@@ -1239,7 +1246,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
 
         const t_waveform& wform = waveforms[fpu_index];
 
-        for(int chan_idx=0; chan_idx < 2; chan_idx++)
+        for (int chan_idx=0; chan_idx < 2; chan_idx++)
         {
             int xa_last = 0;
             int x_last_sign = 0;
@@ -1592,7 +1599,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
 
         const t_waveform& wform = waveforms[fpu_index];
 
-        for(int chan_idx=0; chan_idx < 2; chan_idx++)
+        for (int chan_idx=0; chan_idx < 2; chan_idx++)
         {
             int xa_last = 0;
             int x_last_sign = 0;
@@ -1770,7 +1777,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
 
         const t_waveform& wform = waveforms[fpu_index];
 
-        for(int chan_idx=0; chan_idx < 2; chan_idx++)
+        for (int chan_idx=0; chan_idx < 2; chan_idx++)
         {
             int xa_last = 0;
             int x_last_sign = 0;
@@ -1929,23 +1936,24 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 return DE_IN_ABORTED_STATE;
             }
 
-	    switch (fpu_status){
-	    case FPST_AT_DATUM:
-	    case FPST_LOADING:
-	    case FPST_READY_FORWARD:
-	    case FPST_READY_REVERSE:
-	    case FPST_RESTING:
-		break;
+            switch (fpu_status)
+            {
+            case FPST_AT_DATUM:
+            case FPST_LOADING:
+            case FPST_READY_FORWARD:
+            case FPST_READY_REVERSE:
+            case FPST_RESTING:
+            break;
 
-	    default:
-		{
-		    LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_INVALID_FPU_STATE"
-				" - FPU %i is in state %s, no movement configuration allowed. "
-				"Use enableMove() command to bypass check.\n",
-				ethercanif::get_realtime(), fpu_id, str_fpu_state(fpu_status));
-		    return DE_INVALID_FPU_STATE;
-		}
-	    }
+            default:
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error DE_INVALID_FPU_STATE"
+                    " - FPU %i is in state %s, no movement configuration allowed. "
+                    "Use enableMove() command to bypass check.\n",
+                    ethercanif::get_realtime(), fpu_id, str_fpu_state(fpu_status));
+                return DE_INVALID_FPU_STATE;
+            }
+	        }
         }
 
         if (!allow_uninitialized)
@@ -1958,9 +1966,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                             ethercanif::get_realtime(), fpu_id);
                 return DE_FPUS_NOT_CALIBRATED;
             }
-
         }
-
     } // Next FPU
 
     bool some_fpus_locked=false;
@@ -1968,38 +1974,37 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
     for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
     {
+        const int fpu_id = waveforms[fpu_index].fpu_id;
+        if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+        {
+            // the FPU id is out of range
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::configMotion(): FPU id '%i' is out of range"
+                        "needs to be between 0 and %i\n",
+                        ethercanif::get_realtime(),
+                        fpu_id, (config.num_fpus - 1));
+            return DE_INVALID_FPU_ID;
+        }
 
-	const int fpu_id = waveforms[fpu_index].fpu_id;
-	if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
-	{
-	    // the FPU id is out of range
-	    LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::configMotion(): FPU id '%i' is out of range"
-			"needs to be between 0 and %i\n",
-			ethercanif::get_realtime(),
-			fpu_id, (config.num_fpus - 1));
-	    return DE_INVALID_FPU_ID;
-	}
+        if (! fpuset[fpu_id])
+        {
+            continue;
+        }
 
-	if (! fpuset[fpu_id])
-	{
-	    continue;
-	}
+        t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
+        if (fpu_state.state == FPST_LOCKED)
+        {
+            LOG_CONTROL(LOG_INFO, "%18.6f : configMotion(): FPU #%i is locked, skipping. Unlock first to move.\n",
+                ethercanif::get_realtime(), fpu_id);
+            LOG_CONSOLE(LOG_INFO, "%18.6f : configMotion(): FPU #%i is locked, skipping. Unlock first to move.\n",
+                ethercanif::get_realtime(), fpu_id);
 
-	t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
-	if (fpu_state.state == FPST_LOCKED)
-	{
-	    LOG_CONTROL(LOG_INFO, "%18.6f : configMotion(): FPU #%i is locked, skipping. Unlock first to move.\n",
-			ethercanif::get_realtime(), fpu_id);
-	    LOG_CONSOLE(LOG_INFO, "%18.6f : configMotion(): FPU #%i is locked, skipping. Unlock first to move.\n",
-			ethercanif::get_realtime(), fpu_id);
-
-	    some_fpus_locked = true;
-	}
+            some_fpus_locked = true;
+        }
     } // Next FPU
 
     if (some_fpus_locked)
     {
-	return DE_FPUS_LOCKED;
+        return DE_FPUS_LOCKED;
     }
 
     {
@@ -2196,11 +2201,10 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): error: interface is not connected\n",
                             ethercanif::get_realtime());
 
-
                 return DE_NO_CONNECTION;
             }
             bool do_retry = false;
-	    bool max_retries_exceeded = false;
+	        bool max_retries_exceeded = false;
             //int num_loading =  waveforms.size();
             for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
             {
@@ -2215,14 +2219,14 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 // we retry if an FPU which we tried to configure and is
                 // not locked did not change to FPST_LOADING state.
 
-		if (fpu_state.waveform_status !=  WAVEFORM_OK){
-
-			LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
-				    "waveform configuration rejected for for FPU #%i\n",
-				    ethercanif::get_realtime(),
-				    fpu_id);
-			return DE_INVALID_WAVEFORM_REJECTED;
-		}
+                if (fpu_state.waveform_status !=  WAVEFORM_OK)
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
+                                "waveform configuration rejected for for FPU #%i\n",
+                                ethercanif::get_realtime(),
+                                fpu_id);
+                    return DE_INVALID_WAVEFORM_REJECTED;
+                }
 
                 if ((fpu_state.state != FPST_LOCKED)
                         && ( ((first_segment && (! last_segment))
@@ -2233,22 +2237,21 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 {
                     if (resend_downcount <= 0)
                     {
-			LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
-				    "loading/ready state or number of waveform segments not confirmed for FPU #%i"
-				    " (%i retries left)\n",
-				    ethercanif::get_realtime(),
-				    fpu_id,
-				    resend_downcount);
-			LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): warning: "
-				    "loading/ready state or number of waveform segments not confirmed for FPU #%i"
-				    " (%i retries left)\n",
-				    ethercanif::get_realtime(),
-				    fpu_id,
-				    resend_downcount);
+                        LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
+                                    "loading/ready state or number of waveform segments not confirmed for FPU #%i"
+                                    " (%i retries left)\n",
+                                    ethercanif::get_realtime(),
+                                    fpu_id,
+                                    resend_downcount);
+                        LOG_CONSOLE(LOG_ERROR, "%18.6f : configMotion(): warning: "
+                                    "loading/ready state or number of waveform segments not confirmed for FPU #%i"
+                                    " (%i retries left)\n",
+                                    ethercanif::get_realtime(),
+                                    fpu_id,
+                                    resend_downcount);
 
-			max_retries_exceeded = true;
-			continue;
-
+                        max_retries_exceeded = true;
+                        continue;
                     }
                     do_retry = true;
                     LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
@@ -2266,21 +2269,22 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                 resend_downcount);
                 }
             } // Next FPU
-	    if (max_retries_exceeded)
-	    {
-		return DE_MAX_RETRIES_EXCEEDED;
-	    }
+
+            if (max_retries_exceeded)
+            {
+                return DE_MAX_RETRIES_EXCEEDED;
+            }
+
             if (do_retry)
             {
                 // we start again with loading the first step
-		// (re-sending data for all FPUs).
+		        // (re-sending data for all FPUs).
                 step_index = 0;
                 resend_downcount--;
-		// squelch time-out error
-		old_count_timeout = grid_state.count_timeout;
-		continue;
+                // squelch time-out error
+                old_count_timeout = grid_state.count_timeout;
+                continue;
             }
-
         }
         step_index++;
     } // Next step index
@@ -2427,21 +2431,20 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
         {
             // we need to send the command individually
             use_broadcast = false;
-	    if (sync_message)
-	    {
-		sync_message = false;
-		LOG_CONTROL(LOG_INFO, "%18.6f : executeMotion(): WARNING: ignoring SYNC flag, "
-			    "FPU %i is not included in addresed set\n",
-			    ethercanif::get_realtime(), fpu_id);
-		LOG_CONSOLE(LOG_INFO, "%18.6f : executeMotion(): WARNING: ignoring SYNC flag, "
-			    "FPU %i is not included in addresed set\n",
-			    ethercanif::get_realtime(), fpu_id);
-		// In the final ICS software, this should probably be
-		// reported as a fatal error, because not using the
-		// SYNC message can cause collisions due to lack of
-		// exact synchronisation.
-
-	    }
+            if (sync_message)
+            {
+                sync_message = false;
+                LOG_CONTROL(LOG_INFO, "%18.6f : executeMotion(): WARNING: ignoring SYNC flag, "
+                            "FPU %i is not included in addresed set\n",
+                            ethercanif::get_realtime(), fpu_id);
+                LOG_CONSOLE(LOG_INFO, "%18.6f : executeMotion(): WARNING: ignoring SYNC flag, "
+                            "FPU %i is not included in addresed set\n",
+                            ethercanif::get_realtime(), fpu_id);
+                // In the final ICS software, this should probably be
+                // reported as a fatal error, because not using the
+                // SYNC message can cause collisions due to lack of
+                // exact synchronisation.
+            }
             continue;
         }
 
@@ -2459,28 +2462,28 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
 
             num_moving++;
         }
-	else if (fpu_status == FPST_LOCKED)
-	{
-	    LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): FPU %i is locked, will skip movement command\n",
-			ethercanif::get_realtime(), fpu_id);
-	    num_locked++;
-	}
+        else if (fpu_status == FPST_LOCKED)
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): FPU %i is locked, will skip movement command\n",
+                        ethercanif::get_realtime(), fpu_id);
+            num_locked++;
+        }
     } // Next FPU
 
     if (num_moving == 0)
     {
-	if (num_locked > 0)
-	{
-	    LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_FPUS_LOCKED: No FPUs ready to move, some are locked\n",
-			ethercanif::get_realtime());
-	    return DE_FPUS_LOCKED;
-	}
-	else
-	{
-	    LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_NO_MOVABLE_FPUS: no FPUs present which can move\n",
-			ethercanif::get_realtime());
-	    return DE_NO_MOVABLE_FPUS;
-	}
+        if (num_locked > 0)
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_FPUS_LOCKED: No FPUs ready to move, some are locked\n",
+                        ethercanif::get_realtime());
+            return DE_FPUS_LOCKED;
+        }
+        else
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : executeMotion(): error DE_NO_MOVABLE_FPUS: no FPUs present which can move\n",
+                        ethercanif::get_realtime());
+            return DE_NO_MOVABLE_FPUS;
+        }
     }
 
     // Optionally, acquire real-time priority so that consecutive broadcasts to
@@ -2632,7 +2635,8 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
         return DE_NO_CONNECTION;
     }
 
-    if ((grid_state.Counts[FPST_OBSTACLE_ERROR] > 0) || (grid_state.Counts[FPST_ABORTED] > 0))
+    if ((grid_state.Counts[FPST_OBSTACLE_ERROR] > 0) ||
+        (grid_state.Counts[FPST_ABORTED] > 0))
     {
 #ifdef FLEXIBLE_CAN_MAPPING
         for (int fpu_id : config.fpu_id_list)
@@ -2869,7 +2873,6 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
             unique_ptr<CAN_Command> cmd(can_command.release());
             gateway.sendCommand(fpu_id, cmd);
             cnt_pending++;
-
         }
     }
 
@@ -2913,7 +2916,6 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
         logGridState(config.logLevel, grid_state);
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
-
 
     LOG_CONTROL(LOG_INFO, "%18.6f : repeatMotion(): command successfully sent OK\n",
                 ethercanif::get_realtime());
@@ -3031,7 +3033,6 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
                 && fpu_state.waveform_valid
                 && fpuset[fpu_id])
         {
-
             // We use a non-broadcast instance. The advantage of
             // this is that he CAN protocol is able to reliably
             // detect whether this command was received - for
@@ -3043,7 +3044,6 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
             unique_ptr<CAN_Command> cmd(can_command.release());
             gateway.sendCommand(fpu_id, cmd);
             cnt_pending++;
-
         }
     }
 
@@ -3252,8 +3252,9 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
 }
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock, t_grid_state& grid_state,
-        E_GridState& state_summary)
+E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock,
+                                               t_grid_state& grid_state,
+                                               E_GridState& state_summary)
 {
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
@@ -3339,14 +3340,16 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock, t_grid_state&
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : lockFPU(): command successfully sent to FPU %i, is_locked = %i\n",
-                ethercanif::get_realtime(), fpu_id_to_lock, grid_state.FPU_state[fpu_id_to_lock].is_locked);
+                ethercanif::get_realtime(), fpu_id_to_lock,
+                grid_state.FPU_state[fpu_id_to_lock].is_locked);
 
     return DE_OK;
 }
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock, t_grid_state& grid_state,
-        E_GridState& state_summary)
+E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock,
+                                                 t_grid_state& grid_state,
+                                                 E_GridState& state_summary)
 {
     // first, get current state and time-out count of the grid
     state_summary = gateway.getGridState(grid_state);
@@ -3427,11 +3430,11 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock, t_grid_st
     logGridState(config.logLevel, grid_state);
 
     LOG_CONTROL(LOG_INFO, "%18.6f : unlockFPU(): command successfully sent to FPU %i, is_locked = %i\n",
-                ethercanif::get_realtime(), fpu_id_to_unlock, grid_state.FPU_state[fpu_id_to_unlock].is_locked);
+                ethercanif::get_realtime(), fpu_id_to_unlock,
+                grid_state.FPU_state[fpu_id_to_unlock].is_locked);
 
     return DE_OK;
 }
-
 
 /* ---------------------------------------------------------------------------*/
 E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
@@ -3970,7 +3973,8 @@ const char * str_fpu_state(const E_FPU_STATE state)
 }
 
 /* ---------------------------------------------------------------------------*/
-void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_state) const
+void AsyncInterface::logGridState(const E_LogLevel logLevel,
+                                  t_grid_state& grid_state) const
 {
     char log_buffer[1024];
     char * logp = log_buffer;
@@ -4306,15 +4310,17 @@ void AsyncInterface::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
             if (fpu_firmware_version[fpu_id][k] == FIRMWARE_NOT_RETRIEVED)
             {
                 was_retrieved = false;
-                memset(min_firmware_version, FIRMWARE_NOT_RETRIEVED, sizeof(min_firmware_version));
+                memset(min_firmware_version, FIRMWARE_NOT_RETRIEVED,
+                       sizeof(min_firmware_version));
                 return;
             }
-            is_smaller = is_smaller || (min_firmware_version[k] >  fpu_firmware_version[fpu_id][k]);
+            is_smaller = is_smaller || (min_firmware_version[k] > fpu_firmware_version[fpu_id][k]);
         }
 
         if (is_smaller)
         {
-            memcpy(min_firmware_version, fpu_firmware_version[fpu_id], sizeof(min_firmware_version));
+            memcpy(min_firmware_version, fpu_firmware_version[fpu_id],
+                   sizeof(min_firmware_version));
             min_firmware_fpu = fpu_id;
             was_retrieved = true;
         }
@@ -4471,7 +4477,8 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
     uint8_t min_firmware_version[3] = {0,0,0};
     int min_firmware_fpu = -1;
 
-    E_EtherCANErrCode ecode = getMinFirmwareVersionAsync(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
+    E_EtherCANErrCode ecode = getMinFirmwareVersionAsync(fpuset,
+        min_firmware_version, min_firmware_fpu, grid_state, state_summary);
 
     if (ecode != DE_OK)
     {
@@ -4572,7 +4579,8 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
 }
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, const char serial_number[],
+E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write,
+        const char serial_number[],
         t_grid_state& grid_state,
         E_GridState& state_summary)
 {
@@ -4641,7 +4649,9 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write, co
 
     uint8_t min_firmware_version[3] = {0,0,0};
     int min_firmware_fpu = -1;
-    ecode = getMinFirmwareVersionAsync(fpuset, min_firmware_version, min_firmware_fpu, grid_state, state_summary);
+    ecode = getMinFirmwareVersionAsync(fpuset, min_firmware_version,
+                                       min_firmware_fpu, grid_state,
+                                       state_summary);
 
     // get all existing numbers
     ecode = readSerialNumbersAsync(grid_state, state_summary, fpuset);
@@ -4853,8 +4863,8 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
 }
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long beta_steps,
-							t_grid_state& grid_state,
+E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps,
+                            long beta_steps, t_grid_state& grid_state,
 							E_GridState& state_summary, t_fpuset const &fpuset)
 {
 
@@ -4878,13 +4888,13 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps, long 
 	||(beta_steps < (- (1l << 24))))
 
     {
-	LOG_CONTROL(LOG_ERROR, "%18.6f : resetStepCounter():  error DE_INVALID_PAR_VALUE,"
-		    "new step counters need to be valid signed 24 bit values, passed values are"
-		    "(%li, %li) = (0x%0lx, 0x%0lx)\n",
-		    ethercanif::get_realtime(),
-		    alpha_steps, beta_steps,
-		    alpha_steps, beta_steps);
-	return DE_INVALID_PAR_VALUE;
+        LOG_CONTROL(LOG_ERROR, "%18.6f : resetStepCounter():  error DE_INVALID_PAR_VALUE,"
+                    "new step counters need to be valid signed 24 bit values, passed values are"
+                    "(%li, %li) = (0x%0lx, 0x%0lx)\n",
+                    ethercanif::get_realtime(),
+                    alpha_steps, beta_steps,
+                    alpha_steps, beta_steps);
+        return DE_INVALID_PAR_VALUE;
     }
 
     LOG_CONTROL(LOG_INFO, "%18.6f : resetting FPU stepcounters to (%li, %li)\n",
@@ -5094,7 +5104,8 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
 }
 
 /* ---------------------------------------------------------------------------*/
-E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free, E_REQUEST_DIRECTION request_dir,
+E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free,
+        E_REQUEST_DIRECTION request_dir,
         t_grid_state& grid_state,
         E_GridState& state_summary)
 {
@@ -5572,17 +5583,17 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
         {
-	    if (grid_state.FPU_state[fpu_id].last_status == MCE_FPU_OK)
-	    {
-		LOG_CONTROL(LOG_INFO, "%18.6f : checkIntegrity: FPU # %4i : CRC32 checksum 0X%04x.\n",
-			    log_time, fpu_id, grid_state.FPU_state[fpu_id].crc32);
-	    }
-	    else
-	    {
-		LOG_CONTROL(LOG_INFO, "%18.6f : checkIntegrity: FPU # %4i : status response error code %i.\n",
-			    log_time, fpu_id, grid_state.FPU_state[fpu_id].last_status);
-	    }
-
+            if (grid_state.FPU_state[fpu_id].last_status == MCE_FPU_OK)
+            {
+                LOG_CONTROL(LOG_INFO, "%18.6f : checkIntegrity: FPU # %4i : CRC32 checksum 0X%04x.\n",
+                            log_time, fpu_id, grid_state.FPU_state[fpu_id].crc32);
+            }
+            else
+            {
+                LOG_CONTROL(LOG_INFO, "%18.6f : checkIntegrity: FPU # %4i : status response error code %i.\n",
+                            log_time, fpu_id,
+                            grid_state.FPU_state[fpu_id].last_status);
+            }
         }
     }
 
@@ -5592,6 +5603,6 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
     return DE_OK;
 }
 
-}
+} // namespace ethercanif
 
-} // end of namespace
+} // namespace mpifps
