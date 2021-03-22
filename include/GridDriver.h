@@ -21,22 +21,6 @@
 #ifndef GRIDDRIVER_H
 #define GRIDDRIVER_H
 
-//******************************
-// TODO: For testing only - enable to try an FPU (with first DIP switch set
-// and the others off) on the 2nd CAN bus on the EtherCAN box (labelled as "1",
-// where the first one is labelled as "0"), and with the FPU already set up in
-// the FPU database.
-// N.B. This FPU would normally work when its fpu ID is 0 on CAN bus 0, but
-// when connect backplane to EtherCAN box's CAN bus 1 then its fpu ID will be
-// 76 (because 2 backplanes on each CAN bus, with 38 FPUs on each backplane)
-//#define USE_2ND_CANBUS
-#ifdef USE_2ND_CANBUS
-#define NEXT_CANBUS_FPU_ID (76)
-#endif
-//******************************
-
-
-
 // TODO: ENABLE_PROTECTION_CODE macro - remove once done with it
 // Define this macro in a project's global predefined symbols to enable the
 // protection code work-in-progress, or disable it so that can continue to use

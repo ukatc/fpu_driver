@@ -177,11 +177,7 @@ void GridDriverTester::doGridDriverFunctionalTesting()
     GridDriver gd;
     ecan_result = gd.initialize(test_can_map_path);
 #else // NOT FLEXIBLE_CAN_MAPPING
-#ifdef USE_2ND_CANBUS
-    GridDriver gd(NEXT_CANBUS_FPU_ID + 1);
-#else
     GridDriver gd(num_fpus);
-#endif
 
     ecan_result = gd.initialize();
 #endif // NOT FLEXIBLE_CAN_MAPPING
@@ -264,11 +260,7 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
     const std::vector<int> &fpu_id_list = gd.getFpuIdList();
     UnprotectedGridDriver::createFpuSetForIdList(fpu_id_list, fpuset);
 #else // NOT FLEXIBLE_CAN_MAPPING
-#ifdef USE_2ND_CANBUS
-    UnprotectedGridDriver::createFpuSetForSingleFpu(NEXT_CANBUS_FPU_ID, fpuset);
-#else
     UnprotectedGridDriver::createFpuSetForNumFpus(num_fpus, fpuset);
-#endif
 #endif // NOT FLEXIBLE_CAN_MAPPING
 
     //..........................................................................
@@ -314,14 +306,6 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
     // Test findDatum()
     if (ecan_result == DE_OK)
     {
-#ifdef USE_2ND_CANBUS
-        t_datum_search_flags search_modes;
-        for (int fpu_id = 0; fpu_id < NEXT_CANBUS_FPU_ID + 1; fpu_id++)
-        {
-            search_modes[fpu_id] = SEARCH_CLOCKWISE;
-        }
-#endif
-
         grid_state_result = gd.getGridState(gs);
 
         ecan_result = gd.findDatum(gs, search_modes, DASEL_BOTH, fpuset,
