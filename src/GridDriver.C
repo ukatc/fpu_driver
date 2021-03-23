@@ -44,25 +44,28 @@ GridDriver::~GridDriver()
 
     // TODO: Put C++ equivalent of the Python "with self.lock:" here
 
-    t_grid_state grid_state;
-    getGridState(grid_state);
+    if (_gd != nullptr)
+    {
+        t_grid_state grid_state;
+        getGridState(grid_state);
 
-    t_fpuset fpuset;
 #ifdef FLEXIBLE_CAN_MAPPING
-    createFpuSetForIdList(config.fpu_id_list, fpuset);
+        const t_fpuset &fpuset = config.getFpuSet();
 #else // NOT FLEXIBLE_CAN_MAPPING
-    createFpuSetForNumFpus(config.num_fpus, fpuset);
+        t_fpuset fpuset;
+        createFpuSetForNumFpus(config.num_fpus, fpuset);
 #endif // NOT FLEXIBLE_CAN_MAPPING
 
-    if (grid_state.interface_state == DS_CONNECTED)
-    {
-        // Fetch current positions
-        _pingFPUs(grid_state, fpuset);
-    }
+        if (grid_state.interface_state == DS_CONNECTED)
+        {
+            // Fetch current positions
+            _pingFPUs(grid_state, fpuset);
+        }
 
 #ifdef ENABLE_PROTECTION_CODE
-    _refresh_positions(grid_state, true, fpuset);
+        _refresh_positions(grid_state, true, fpuset);
 #endif
+    }
 }
 
 //------------------------------------------------------------------------------

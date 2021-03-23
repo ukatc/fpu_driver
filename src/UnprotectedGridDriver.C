@@ -272,14 +272,22 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     };
     //*****************
 
-
-    // Populate the FPU ID list in the config
+    // Create fpu_id_list and populate it from the FPU IDs in grid_can_map
+    std::vector<int> fpu_id_list;
     for (size_t i = 0; i < grid_can_map.size(); i++)
     {
-        config.fpu_id_list.push_back(grid_can_map[i].first);
+        fpu_id_list.push_back(grid_can_map[i].first);
     }
 
-    _gd = new (std::nothrow) EtherCANInterface(config, grid_can_map);
+    ecan_result = config.initFpuIdList(fpu_id_list);
+    if (ecan_result == DE_OK)
+    {
+        _gd = new (std::nothrow) EtherCANInterface(config, grid_can_map);
+    }
+    else
+    {
+        return ecan_result;
+    }
 #else // NOT FLEXIBLE_CAN_MAPPING
     _gd = new (std::nothrow) EtherCANInterface(config);
 #endif // NOT FLEXIBLE_CAN_MAPPING
@@ -294,6 +302,7 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
         else
         {
             delete _gd;
+            _gd = nullptr;
         }
     }
     else
