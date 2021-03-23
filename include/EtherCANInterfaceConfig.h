@@ -33,9 +33,12 @@
 namespace mpifps
 {
 
-#ifdef FLEXIBLE_CAN_MAPPING
+// TODO: Move t_fpuset definition and clearFpuSet() to a different file 
+// eventually?
 typedef bool t_fpuset[MAX_NUM_POSITIONERS];
-#endif // FLEXIBLE_CAN_MAPPING
+
+void clearFpuSet(t_fpuset &fpuset_to_clear);
+
 
 //==============================================================================
 struct EtherCANInterfaceConfig
@@ -105,10 +108,7 @@ public:
         : logLevel(LOG_TRACE_CAN_MESSAGES)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-        {
-            fpuset[fpu_id] = false;
-        }
+        clearFpuSet(fpuset);
 #else  // NOT FLEXIBLE_CAN_MAPPING
         num_fpus = MAX_NUM_POSITIONERS;
 #endif // NOT FLEXIBLE_CAN_MAPPING

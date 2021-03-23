@@ -128,10 +128,7 @@ void WrapperSharedBase::convertWavetable(const bp::dict &dict_waveforms,
 //------------------------------------------------------------------------------
 void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) const
 {
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-    {
-        fpuset[i] = false;
-    }
+    clearFpuSet(fpuset);
 
     if (bp::len(fpu_list) == 0)
     {

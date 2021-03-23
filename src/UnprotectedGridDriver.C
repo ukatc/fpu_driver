@@ -366,10 +366,7 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
                                       const t_fpuset &fpuset,
                                       t_fpuset &pingset_ret)
 {
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        pingset_ret[fpu_id] = false;
-    }
+    clearFpuSet(pingset_ret);
 
 #ifdef FLEXIBLE_CAN_MAPPING
     for (int fpu_id : config.getFpuIdList())
@@ -1808,10 +1805,7 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 void UnprotectedGridDriver::createFpuSetForSingleFpu(int fpu_id,
                                                      t_fpuset &fpuset_ret)
 {
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-    {
-        fpuset_ret[i] = false;
-    }
+    clearFpuSet(fpuset_ret);
     if ((fpu_id >= 0) && (fpu_id < MAX_NUM_POSITIONERS))
     {
         fpuset_ret[fpu_id] = true;
@@ -1823,11 +1817,7 @@ void UnprotectedGridDriver::createFpuSetForSingleFpu(int fpu_id,
 void UnprotectedGridDriver::createFpuSetForIdList(const std::vector<int> &fpu_id_list,
                                                   t_fpuset &fpuset_ret)
 {
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        fpuset_ret[fpu_id] = false;
-    }
-
+    clearFpuSet(fpuset_ret);
     for (int fpu_id : fpu_id_list)
     {
         if ((fpu_id >= 0) &&
@@ -1853,10 +1843,7 @@ void UnprotectedGridDriver::createFpuSetForNumFpus(int num_fpus,
         num_fpus = MAX_NUM_POSITIONERS;
     }
 
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-    {
-        fpuset_ret[i] = false;
-    }
+    clearFpuSet(fpuset_ret);
     for (int i = 0; i < num_fpus; i++)
     {
         fpuset_ret[i] = true;

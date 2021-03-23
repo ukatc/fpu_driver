@@ -22,18 +22,24 @@
 namespace mpifps
 {
 
-#ifdef FLEXIBLE_CAN_MAPPING
+// TODO: Move clearFpuSet() to another file eventually?
 //------------------------------------------------------------------------------
+void clearFpuSet(t_fpuset &fpuset_to_clear)
+{
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        fpuset_to_clear[fpu_id] = false;
+    }
+}
+
+#ifdef FLEXIBLE_CAN_MAPPING
+//==============================================================================
 E_EtherCANErrCode EtherCANInterfaceConfig::initFpuIdList(
                                     const std::vector<int> &fpu_id_list_init)
 {
     E_EtherCANErrCode ecan_result = DE_OK;
 
-    // Clear fpuset
-    for (size_t fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        fpuset[fpu_id] = false;
-    }
+    clearFpuSet(fpuset);
 
     // Populate fpuset from fpu_id_list_init
     for (int fpu_id : fpu_id_list_init)
@@ -56,11 +62,7 @@ E_EtherCANErrCode EtherCANInterfaceConfig::initFpuIdList(
     }
     else
     {
-        // Clear fpuset
-        for (size_t fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-        {
-            fpuset[fpu_id] = false;
-        }
+        clearFpuSet(fpuset);
     }
 
     return ecan_result;
@@ -102,7 +104,7 @@ const t_fpuset &EtherCANInterfaceConfig::getFpuSet() const
     return fpuset;
 }
 
-//------------------------------------------------------------------------------
+//==============================================================================
 #endif // FLEXIBLE_CAN_MAPPING
 
 } // namespace mpifps

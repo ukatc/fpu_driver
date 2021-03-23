@@ -1711,10 +1711,7 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
 
     // Create fpuset_wtable
     t_fpuset fpuset_wtable;
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        fpuset_wtable[fpu_id] = false;
-    }
+    clearFpuSet(fpuset_wtable);
     for (size_t i = 0; i < wtable.size(); i++)
     {
         if (wtable[i].fpu_id < config.num_fpus)
@@ -1815,10 +1812,7 @@ E_EtherCANErrCode GridDriver::_post_repeat_reverse_motion_hook(
     // Update ranges that become valid once executeMotion is started
 
     t_fpuset fpuset_to_save;
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        fpuset_to_save[fpu_id] = false;
-    }
+    clearFpuSet(fpuset_to_save);
 
     for (const auto &it : configuring_ranges)
     {
@@ -2129,10 +2123,7 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
             // Build set of FPUs requiring refresh based upon their current
             // state
             t_fpuset fpuset_refresh;
-            for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-            {
-                fpuset_refresh[fpu_id] = false;
-            }
+            clearFpuSet(fpuset_refresh);
             bool refresh_required = false;
 #ifdef FLEXIBLE_CAN_MAPPING
             for (int fpu_id : config.getFpuIdList())

@@ -47,10 +47,6 @@ typedef struct
 
 typedef std::vector<t_waveform> t_wtable;
 
-#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
-typedef bool t_fpuset[MAX_NUM_POSITIONERS];
-#endif // NOT FLEXIBLE_CAN_MAPPING
-
 typedef E_DATUM_SEARCH_DIRECTION t_datum_search_flags[MAX_NUM_POSITIONERS];
 
 
