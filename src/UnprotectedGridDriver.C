@@ -363,7 +363,7 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
     }
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -428,14 +428,6 @@ E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
 
     return _gd->getGridState(grid_state_ret);
 }
-
-#ifdef FLEXIBLE_CAN_MAPPING
-//------------------------------------------------------------------------------
-std::vector<int> &UnprotectedGridDriver::getFpuIdList() const
-{
-    return const_cast<std::vector<int> &>(config.fpu_id_list);
-}
-#endif // FLEXIBLE_CAN_MAPPING
 
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs, 
@@ -512,7 +504,7 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         // if) the step counter does not agree with the database.
         // Check whether a movement against the step count is needed.
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -643,7 +635,7 @@ E_EtherCANErrCode UnprotectedGridDriver::pingIfNeeded(t_grid_state &gs,
 
     bool any_to_ping = false;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -813,7 +805,7 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
 
     string_ret = "  RegName    RegAddress:";
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -827,7 +819,7 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
 
     string_ret += "  --------   -----------";
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -849,7 +841,7 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
             string_ret += std::string(reg_defs[i].name) + "        " +
                           std::to_string(reg_defs[i].address);
 #ifdef FLEXIBLE_CAN_MAPPING
-            for (int fpu_id : config.fpu_id_list)
+            for (int fpu_id : config.getFpuIdList())
 #else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1093,7 +1085,7 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
 
         // Accept configured wavetable entries
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1151,7 +1143,7 @@ void UnprotectedGridDriver::set_wtable_reversed(const t_fpuset &fpuset,
     // in the original Python version)
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1370,14 +1362,13 @@ E_EtherCANErrCode UnprotectedGridDriver::enableBetaCollisionProtection(
 
     E_EtherCANErrCode ecan_result = _gd->enableBetaCollisionProtection(gs);
 
-    t_fpuset fpuset;
 #ifdef FLEXIBLE_CAN_MAPPING
-    createFpuSetForIdList(config.fpu_id_list, fpuset);
+    updateErrorCountersForFpuSet(prev_gs, gs, config.getFpuSet());
 #else // NOT FLEXIBLE_CAN_MAPPING
+    t_fpuset fpuset;
     createFpuSetForNumFpus(config.num_fpus, fpuset);
-#endif // NOT FLEXIBLE_CAN_MAPPING
-
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     return ecan_result;
 }
@@ -1433,13 +1424,13 @@ E_EtherCANErrCode UnprotectedGridDriver::enableAlphaLimitProtection(
 
     E_EtherCANErrCode ecan_result = _gd->enableAlphaLimitProtection(gs);
 
-    t_fpuset fpuset;
 #ifdef FLEXIBLE_CAN_MAPPING
-    createFpuSetForIdList(config.fpu_id_list, fpuset);
+    updateErrorCountersForFpuSet(prev_gs, gs, config.getFpuSet());
 #else // NOT FLEXIBLE_CAN_MAPPING
+    t_fpuset fpuset;
     createFpuSetForNumFpus(config.num_fpus, fpuset);
-#endif // NOT FLEXIBLE_CAN_MAPPING
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     return ecan_result;
 }
@@ -1544,7 +1535,7 @@ void UnprotectedGridDriver::buildWtableFromLastWaveforms(const t_fpuset &fpuset,
 {
     wtable_ret.clear();
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1569,9 +1560,7 @@ void UnprotectedGridDriver::listAngles(const t_grid_state &gs,
     // function, to support an easy Boost.Python wrapper function to be created.
     // See the list_angles() comments.
 #ifdef FLEXIBLE_CAN_MAPPING
-    t_fpuset fpuset;
-    createFpuSetForIdList(config.fpu_id_list, fpuset);
-    list_angles(gs, fpuset, fpus_angles_ret, alpha_datum_offset,
+    list_angles(gs, config.getFpuSet(), fpus_angles_ret, alpha_datum_offset,
                 show_uninitialized, asteps_per_deg, bsteps_per_deg);
 #else // NOT FLEXIBLE_CAN_MAPPING
     list_angles(gs, config.num_fpus, fpus_angles_ret, alpha_datum_offset,
@@ -1744,7 +1733,7 @@ void UnprotectedGridDriver::updateErrorCountersForFpuSet(const t_grid_state &pre
                                                          bool datum_cmd)
 {
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1772,8 +1761,7 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
     // Checks that all of the FPUs specified in fpuset are part of the list
     // specified in the config.
 
-    t_fpuset config_fpuset;
-    this->createFpuSetForIdList(config.fpu_id_list, config_fpuset);
+    const t_fpuset &config_fpuset = config.getFpuSet();
     for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
     {
         if (fpuset[fpu_id] && (!config_fpuset[fpu_id]))

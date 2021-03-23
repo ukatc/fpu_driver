@@ -254,7 +254,7 @@ void AsyncInterface::getStateCount(const t_grid_state& grid_state,
     memset(counts, 0, sizeof(counts));
     const t_fpuset& fpuset = *pfpuset;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -306,7 +306,7 @@ E_EtherCANErrCode AsyncInterface::resetFPUsAsync(t_grid_state& grid_state,
     unsigned int cnt_pending=0;
     unique_ptr<ResetFPUCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -392,7 +392,7 @@ void AsyncInterface::getFPUsetOpt(t_fpuset const * const fpuset_opt,
     else
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -467,7 +467,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     if (p_direction_flags == nullptr)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -485,7 +485,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     else
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -502,7 +502,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     }
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -598,7 +598,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     bool all_fpus_locked = true;
     // check no FPUs have ongoing collisions
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -672,7 +672,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
     if ((arm_selection == DASEL_BETA) || (arm_selection == DASEL_BOTH))
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -722,7 +722,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
 
     unique_ptr<FindDatumCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -839,7 +839,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
     }
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -896,7 +896,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
 
     // we do this check in a new loop with the goal to give collision reports precedence
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -951,7 +951,7 @@ E_EtherCANErrCode AsyncInterface::waitAutoFindDatumAsync(t_grid_state& grid_stat
     finished = (num_moving == 0) && (! cancelled);
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1012,7 +1012,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
     //printf("validateWaveformsV1: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
     //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
 
-    const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
 
     if (MIN_STEPS > MAX_STEPS)
@@ -1052,10 +1051,14 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
         return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
     }
 
-    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    for (size_t fpu_index=0; fpu_index < waveforms.size(); fpu_index++)
     {
         const int fpu_id = waveforms[fpu_index].fpu_id;
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
                         " FPU ID %i in waveform table is out of range\n",
@@ -1184,7 +1187,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
     //printf("validateWaveformsV2: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
     //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
 
-    const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
 
     if (MIN_STEPS > MAX_STEPS)
@@ -1224,10 +1226,14 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
         return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
     }
 
-    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    for (size_t fpu_index=0; fpu_index < waveforms.size(); fpu_index++)
     {
         const int fpu_id = waveforms[fpu_index].fpu_id;
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
                         " FPU ID %i in waveform table is out of range\n",
@@ -1358,7 +1364,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
     //printf("validateWaveformsV3: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
     //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
 
-    const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
 
     if (MIN_STEPS > MAX_STEPS)
@@ -1398,10 +1403,14 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
         return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
     }
 
-    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    for (size_t fpu_index=0; fpu_index < waveforms.size(); fpu_index++)
     {
         const int fpu_id = waveforms[fpu_index].fpu_id;
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
                         " FPU ID %i in waveform table is out of range\n",
@@ -1537,7 +1546,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
     //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
 
     const int MAX_DCHANGE_STEPS = 120;
-    const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
 
     if (MIN_STEPS > MAX_STEPS)
@@ -1577,10 +1585,14 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
         return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
     }
 
-    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    for (size_t fpu_index=0; fpu_index < waveforms.size(); fpu_index++)
     {
         const int fpu_id = waveforms[fpu_index].fpu_id;
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
                         " FPU ID %i in waveform table is out of range\n",
@@ -1715,7 +1727,6 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
     //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_STEP_DIFFERENCE);
 
     const int MAX_DCHANGE_STEPS = 120;
-    const int num_loading =  waveforms.size();
     const unsigned int num_steps = waveforms[0].steps.size();
 
     if (MIN_STEPS > MAX_STEPS)
@@ -1755,10 +1766,14 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
         return DE_INVALID_WAVEFORM_TOO_MANY_SECTIONS;
     }
 
-    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    for (size_t fpu_index=0; fpu_index < waveforms.size(); fpu_index++)
     {
         const int fpu_id = waveforms[fpu_index].fpu_id;
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
                         " FPU ID %i in waveform table is out of range\n",
@@ -1910,7 +1925,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     // check no FPUs have ongoing collisions
     // and all have been initialized
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1970,12 +1985,15 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
     } // Next FPU
 
     bool some_fpus_locked=false;
-    const int num_loading =  waveforms.size();
 
-    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    for (size_t fpu_index=0; fpu_index < waveforms.size(); fpu_index++)
     {
         const int fpu_id = waveforms[fpu_index].fpu_id;
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             // the FPU id is out of range
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::configMotion(): FPU id '%i' is out of range"
@@ -2124,7 +2142,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
             memset(alpha_cur,0,sizeof(alpha_cur));
             memset(beta_cur,0,sizeof(beta_cur));
 #ifdef FLEXIBLE_CAN_MAPPING
-            for (int fpu_id : config.fpu_id_list)
+            for (int fpu_id : config.getFpuIdList())
 #else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2134,7 +2152,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
             }
         }
 
-        for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+        for (size_t fpu_index=0; fpu_index < waveforms.size(); fpu_index++)
         {
             if ((fpu_index == 0)
                     && (step_index != 0)
@@ -2205,8 +2223,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
             }
             bool do_retry = false;
 	        bool max_retries_exceeded = false;
-            //int num_loading =  waveforms.size();
-            for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+            for (size_t fpu_index=0; fpu_index < waveforms.size(); fpu_index++)
             {
                 int fpu_id = waveforms[fpu_index].fpu_id;
 
@@ -2319,7 +2336,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         return DE_FIRMWARE_CAN_BUFFER_OVERFLOW;
     }
 
-    for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
+    for (size_t fpu_index=0; fpu_index < waveforms.size(); fpu_index++)
     {
         int fpu_id = waveforms[fpu_index].fpu_id;
 
@@ -2388,7 +2405,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
 
     // check no FPUs have ongoing collisions
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2422,7 +2439,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
        waveforms are not used when they have been involved
        in collision or abort. */
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2511,7 +2528,7 @@ E_EtherCANErrCode AsyncInterface::startExecuteMotionAsync(t_grid_state& grid_sta
         unique_ptr<ExecuteMotionCommand> can_command;
 
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2569,7 +2586,7 @@ int AsyncInterface::countMoving(const t_grid_state &grid_state, t_fpuset const &
     if (ready_count >0)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2639,7 +2656,7 @@ E_EtherCANErrCode AsyncInterface::waitExecuteMotionAsync(t_grid_state& grid_stat
         (grid_state.Counts[FPST_ABORTED] > 0))
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2772,7 +2789,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
 
     // check no FPUs have ongoing collisions or are moving
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2797,7 +2814,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
     }
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2819,7 +2836,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
        in collision or abort. */
     unsigned int count_movable = 0;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2849,7 +2866,7 @@ E_EtherCANErrCode AsyncInterface::repeatMotionAsync(t_grid_state& grid_state,
     unsigned int cnt_pending = 0;
     unique_ptr<RepeatMotionCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2945,7 +2962,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
 
     // check no FPUs have ongoing collisions or are moving
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2970,7 +2987,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
     }
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2992,7 +3009,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
        in collision or abort. */
     unsigned int count_movable = 0;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -3022,7 +3039,7 @@ E_EtherCANErrCode AsyncInterface::reverseMotionAsync(t_grid_state& grid_state,
     unsigned int cnt_pending = 0;
     unique_ptr<ReverseMotionCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -3137,7 +3154,7 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
     // the fpuset parameter
     bool use_broadcast = true;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -3170,7 +3187,7 @@ E_EtherCANErrCode AsyncInterface::abortMotionAsync(pthread_mutex_t & command_mut
         unique_ptr<AbortMotionCommand> can_command;
 
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -3270,7 +3287,11 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock,
         return DE_NO_CONNECTION;
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (!config.isValidFpuId(fpu_id_to_lock))
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((fpu_id_to_lock >= config.num_fpus) || (fpu_id_to_lock < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -3365,7 +3386,11 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock,
         return DE_NO_CONNECTION;
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (!config.isValidFpuId(fpu_id_to_unlock))
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((fpu_id_to_unlock >= config.num_fpus) || (fpu_id_to_unlock < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -3461,7 +3486,7 @@ E_EtherCANErrCode AsyncInterface::pingFPUsAsync(t_grid_state& grid_state,
     unsigned int cnt_pending = 0;
     unique_ptr<PingFPUCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -3559,7 +3584,7 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
         bool recoveryok=true;
         int moving_fpuid = -1;
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -3590,7 +3615,7 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
 
     unique_ptr<EnableBetaCollisionProtectionCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -3667,7 +3692,11 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
         return DE_NO_CONNECTION;
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (!config.isValidFpuId(fpu_id_to_free))
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((fpu_id_to_free >= config.num_fpus) || (fpu_id_to_free < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -3680,7 +3709,7 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
         bool recoveryok=true;
         int moving_fpuid = -1;
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -3810,7 +3839,7 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
     }
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -3831,7 +3860,7 @@ E_EtherCANErrCode AsyncInterface::setUStepLevelAsync(int ustep_level,
     unsigned int cnt_pending = 0;
     unique_ptr<SetUStepLevelCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4013,7 +4042,7 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel,
                               || (grid_state.Counts[FPST_ABORTED] > 0));
 
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4107,7 +4136,7 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
     unique_ptr<ReadRegisterCommand> can_command;
     unsigned int num_pending = 0;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4179,7 +4208,7 @@ E_EtherCANErrCode AsyncInterface::readRegisterAsync(uint16_t read_address,
     {
         double log_time = ethercanif::get_realtime();
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4294,7 +4323,7 @@ void AsyncInterface::getCachedMinFirmwareVersion(t_fpuset const &fpuset,
     was_retrieved = false;
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4348,7 +4377,7 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
     unique_ptr<GetFirmwareVersionCommand> can_command;
     unsigned int num_pending = 0;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4418,7 +4447,11 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
     if (config.logLevel >= LOG_INFO)
     {
         double log_time = ethercanif::get_realtime();
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             LOG_CONTROL(LOG_INFO, "%18.6f : getFirmwareVersion: FPU # %4i, retrieved firmware version = %i.%i.%i.\n",
                         log_time, fpu_id,
@@ -4436,7 +4469,7 @@ E_EtherCANErrCode AsyncInterface::getFirmwareVersionAsync(t_grid_state& grid_sta
     // before a command is executed, and we want to avoid duplicated
     // state retrievals.
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4488,7 +4521,7 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
     int num_skipped = 0;
     unique_ptr<ReadSerialNumberCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4566,7 +4599,11 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
 
     LOG_CONTROL(LOG_INFO, "%18.6f : readSerialNumbers(): retrieved serial numbers\n",
                 ethercanif::get_realtime());
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         const double t = ethercanif::get_realtime();
         if (fpuset[fpu_id])
@@ -4598,7 +4635,11 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write,
         return DE_NO_CONNECTION;
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (!config.isValidFpuId(fpu_id_to_write))
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((fpu_id_to_write >= config.num_fpus) || (fpu_id_to_write < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -4630,7 +4671,7 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write,
 
     t_fpuset fpuset;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4682,7 +4723,7 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write,
     // make sure no other FPU in the grid has a serial number equal to
     // the one we are flashing
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4770,7 +4811,11 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
         return DE_NO_CONNECTION;
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (!config.isValidFpuId(fpu_id_to_enable))
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((fpu_id_to_enable >= config.num_fpus) || (fpu_id_to_enable < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : enableMove():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -4782,7 +4827,7 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
     bool enableok=true;
     int fpuid_moving = -1;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4903,7 +4948,7 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps,
     // make sure no FPU is moving or finding datum
     bool resetok=true;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -4935,7 +4980,7 @@ E_EtherCANErrCode AsyncInterface::resetStepCountersAsync(long alpha_steps,
     unsigned int cnt_pending=0;
     unique_ptr<ResetStepCounterCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -5018,7 +5063,7 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
     // make sure no FPU is moving or finding datum
     bool recoveryok=true;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -5046,7 +5091,7 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
 
     unique_ptr<EnableAlphaLimitProtectionCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -5123,7 +5168,11 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free,
         return DE_NO_CONNECTION;
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (!config.isValidFpuId(fpu_id_to_free))
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((fpu_id_to_free >= config.num_fpus) || (fpu_id_to_free < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
     {
         // the FPU id is out of range
         LOG_CONTROL(LOG_ERROR, "%18.6f : freeAlphaLimitBreach():  error DE_INVALID_FPU_ID, FPU id out of range\n",
@@ -5134,7 +5183,7 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free,
     // make sure no FPU is moving or finding datum
     bool recoveryok=true;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -5241,7 +5290,7 @@ E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
     }
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -5262,7 +5311,7 @@ E_EtherCANErrCode AsyncInterface::setStepsPerSegmentAsync(int minsteps,
     unsigned int cnt_pending = 0;
     unique_ptr<SetStepsPerSegmentCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -5363,7 +5412,7 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
     }
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -5384,7 +5433,7 @@ E_EtherCANErrCode AsyncInterface::setTicksPerSegmentAsync(unsigned
     unsigned int cnt_pending = 0;
     unique_ptr<SetTicksPerSegmentCommand> can_command;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -5482,7 +5531,7 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
 					   | ( 1 << FPST_OBSTACLE_ERROR          ));
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -5506,7 +5555,7 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
     unique_ptr<CheckIntegrityCommand> can_command;
     unsigned int num_pending = 0;
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -5578,7 +5627,7 @@ E_EtherCANErrCode AsyncInterface::checkIntegrityAsync(t_grid_state& grid_state,
     {
         double log_time = ethercanif::get_realtime();
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif

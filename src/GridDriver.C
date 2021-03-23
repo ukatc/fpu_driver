@@ -172,10 +172,10 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     t_grid_state grid_state;
     getGridState(grid_state);
 
-    t_fpuset fpuset;
 #ifdef FLEXIBLE_CAN_MAPPING
-    createFpuSetForIdList(config.fpu_id_list, fpuset);
+    const t_fpuset &fpuset = config.getFpuSet();
 #else // NOT FLEXIBLE_CAN_MAPPING
+    t_fpuset fpuset;
     createFpuSetForNumFpus(config.num_fpus, fpuset);
 #endif // NOT FLEXIBLE_CAN_MAPPING
 
@@ -196,7 +196,7 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     if (ecan_result == DE_OK)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -291,7 +291,7 @@ void GridDriver::getDuplicateSerialNumbers(t_grid_state &grid_state,
 
     duplicate_snumbers_ret.clear();
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -365,7 +365,7 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
     if (ecan_result == DE_OK)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -419,7 +419,7 @@ void GridDriver::_reset_counter_hook(double alpha_target, double beta_target,
     // updating the caloffsets
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -481,7 +481,7 @@ E_EtherCANErrCode GridDriver::_allow_find_datum_hook(t_grid_state &gs,
     const Interval acw_range(0.0, std::numeric_limits<double>::max());
     const Interval cw_range(-std::numeric_limits<double>::max(), 0.0);
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -609,7 +609,7 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
     if (txn)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -815,7 +815,7 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
     if (txn)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1075,7 +1075,7 @@ E_EtherCANErrCode GridDriver::trackedAnglesVals(const t_grid_state &gs,
 
     positions_ret.clear();
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1111,7 +1111,7 @@ E_EtherCANErrCode GridDriver::trackedAnglesString(const t_grid_state &gs,
     return_string.clear();
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1280,7 +1280,7 @@ E_EtherCANErrCode GridDriver::_refresh_positions(const t_grid_state &grid_state,
     {
         ecan_result = DE_OK;
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1652,7 +1652,7 @@ E_EtherCANErrCode GridDriver::_save_wtable_direction(const t_fpuset &fpuset,
     if (txn)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -1981,7 +1981,7 @@ E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
     if (txn)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2132,7 +2132,7 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
             }
             bool refresh_required = false;
 #ifdef FLEXIBLE_CAN_MAPPING
-            for (int fpu_id : config.fpu_id_list)
+            for (int fpu_id : config.getFpuIdList())
 #else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2153,7 +2153,7 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
             t_fpuset fpuset_ping_notok;
             need_ping(gs, fpuset, fpuset_ping_notok);
 #ifdef FLEXIBLE_CAN_MAPPING
-            for (int fpu_id : config.fpu_id_list)
+            for (int fpu_id : config.getFpuIdList())
 #else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2194,7 +2194,7 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     // But, roll back the latter to the movement range for an FPU, if that FPU
     // is not yet at target.
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2223,7 +2223,7 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     if (txn)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        for (int fpu_id : config.fpu_id_list)
+        for (int fpu_id : config.getFpuIdList())
 #else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif
@@ -2251,7 +2251,7 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
 
     // Clear wavetable spans for the addressed FPUs - they are no longer valid
 #ifdef FLEXIBLE_CAN_MAPPING
-    for (int fpu_id : config.fpu_id_list)
+    for (int fpu_id : config.getFpuIdList())
 #else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
 #endif

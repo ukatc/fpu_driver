@@ -1044,9 +1044,13 @@ void GatewayInterface::updatePendingSets(unique_ptr<CAN_Command> &active_can_com
     {
         // set pending command for all FPUs
         // (will ignore if state is locked).
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
-	    updatePendingCommand(fpu_id, active_can_command);
+	        updatePendingCommand(fpu_id, active_can_command);
         }
     }
     else if (active_can_command->doBroadcast())

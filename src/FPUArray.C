@@ -536,7 +536,7 @@ void FPUArray::setLastCommand(int fpu_id, E_CAN_COMMAND last_cmd)
 // timeout value that is equal or smaller than
 // the cur_time value.
 //
-// The count of timeouts is correspongly
+// The count of timeouts is correspondingly
 // increased. After finishing the search,
 // the cond_state_change condition variable
 // is signalled if any timeout was found.

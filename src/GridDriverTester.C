@@ -257,7 +257,7 @@ void GridDriverTester::testInitialisedGridDriver(int num_fpus,
 
     t_fpuset fpuset;
 #ifdef FLEXIBLE_CAN_MAPPING
-    const std::vector<int> &fpu_id_list = gd.getFpuIdList();
+    const std::vector<int> &fpu_id_list = gd.config.getFpuIdList();
     UnprotectedGridDriver::createFpuSetForIdList(fpu_id_list, fpuset);
 #else // NOT FLEXIBLE_CAN_MAPPING
     UnprotectedGridDriver::createFpuSetForNumFpus(num_fpus, fpuset);

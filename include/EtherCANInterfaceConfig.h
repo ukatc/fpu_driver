@@ -13,7 +13,9 @@
 // NAME EtherCANInterfaceConfig.h
 //
 // This file defines a POD structure with pre-set configuration values
-//
+// TODO: BW: This structure isn't POD because it has a constructor (and now also
+// contains a std::vector), so change the above comment? BUT also check that it
+// doesn't actually need to be POD.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -24,9 +26,16 @@
 #include "E_LogLevel.h"
 #include "InterfaceConstants.h"
 #include "FPUConstants.h"
+#ifdef FLEXIBLE_CAN_MAPPING
+#include "ErrorCodes.h"
+#endif // FLEXIBLE_CAN_MAPPING
 
 namespace mpifps
 {
+
+#ifdef FLEXIBLE_CAN_MAPPING
+typedef bool t_fpuset[MAX_NUM_POSITIONERS];
+#endif // FLEXIBLE_CAN_MAPPING
 
 struct EtherCANInterfaceConfig
 {
@@ -58,9 +67,7 @@ public:
     // File descriptor for log of all received CAN responses (RX)
     int fd_rxlog;
 
-#ifdef FLEXIBLE_CAN_MAPPING
-    std::vector<int> fpu_id_list;
-#else // NOT FLEXIBLE_CAN_MAPPING
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     int num_fpus;
 #endif // NOT FLEXIBLE_CAN_MAPPING
 
@@ -92,10 +99,18 @@ public:
 				       // will be resent silently on a
 				       // low level.
 
+    //--------------------------------------------------------------------------
     EtherCANInterfaceConfig()
         : logLevel(LOG_TRACE_CAN_MESSAGES)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+        {
+            fpuset[fpu_id] = false;
+        }
+#else  // NOT FLEXIBLE_CAN_MAPPING
         num_fpus = MAX_NUM_POSITIONERS;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
         // Set default time-out values
         SocketTimeOutSeconds = SOCKET_TIMEOUT_SECS;
@@ -127,6 +142,93 @@ public:
         motor_max_rel_increase = MAX_ACCELERATION_FACTOR;
         motor_max_step_difference = 100;
     };
+
+    //--------------------------------------------------------------------------
+#ifdef FLEXIBLE_CAN_MAPPING
+    E_EtherCANErrCode initFpuIdList(const std::vector<int> &fpu_id_list_init)
+    {
+        E_EtherCANErrCode ecan_result = DE_OK;
+
+        // Clear fpuset
+        for (size_t fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+        {
+            fpuset[fpu_id] = false;
+        }
+
+        // Populate fpuset from fpu_id_list_init
+        for (int fpu_id : fpu_id_list_init)
+        {
+            if ((fpu_id >= 0) && (fpu_id < MAX_NUM_POSITIONERS))
+            {
+                fpuset[fpu_id] = true;
+            }
+            else
+            {
+                ecan_result = DE_INVALID_FPU_ID;
+                break;
+            }
+        }
+
+        if (ecan_result == DE_OK)
+        {
+            // Store fpu_id_list_init
+            fpu_id_list = fpu_id_list_init;
+        }
+        else
+        {
+            // Clear fpuset
+            for (size_t fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+            {
+                fpuset[fpu_id] = false;
+            }
+        }
+
+        return ecan_result;
+    }
+
+    //--------------------------------------------------------------------------
+    bool isValidFpuId(int fpu_id) const
+    {
+        // Checks if fpu_id is one of the valid FPU IDs which was specified in
+        // the initFpuIdList() call.
+
+        // First check for valid range - also, needs to be done before indexing
+        // into config_fpuset below
+        if ((fpu_id < 0) || (fpu_id >= MAX_NUM_POSITIONERS))
+        {
+            return false;
+        }
+
+        // Check if fpu_id is a valid configured ID
+        if (fpuset[fpu_id])
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    const std::vector<int> &getFpuIdList() const
+    {
+        return fpu_id_list;
+    }
+
+    //--------------------------------------------------------------------------
+    const t_fpuset &getFpuSet() const
+    {
+        return fpuset;
+    }
+
+    //--------------------------------------------------------------------------
+
+private:
+    std::vector<int> fpu_id_list;
+    t_fpuset fpuset;
+
+#endif // FLEXIBLE_CAN_MAPPING
 
 };
 

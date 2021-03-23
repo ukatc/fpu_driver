@@ -163,10 +163,6 @@ public:
 
     E_GridState getGridState(t_grid_state &grid_state_ret);
 
-#ifdef FLEXIBLE_CAN_MAPPING
-    std::vector<int> &getFpuIdList() const;
-#endif // FLEXIBLE_CAN_MAPPING
-
     E_EtherCANErrCode findDatum(t_grid_state &gs,
                         const t_datum_search_flags &search_modes,
                         enum E_DATUM_SELECTION selected_arm,
