@@ -42,6 +42,7 @@ g++ -shared -std=c++11 -fPIC -DVERSION=\"v0.0.1\" -DENABLE_PROTECTION_CODE -g -W
     ../../src/decode_CAN_response.C \
     ../../src/DeviceLock.C \
     ../../src/EtherCANInterface.C \
+    ../../src/EtherCANInterfaceConfig.C \
     ../../src/ErrorCodes.C \
     ../../src/FPUArray.C \
     ../../src/FPUCommands.C \
