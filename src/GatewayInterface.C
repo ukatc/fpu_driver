@@ -7,7 +7,6 @@
 // Pablo Gutierrez 2017-07-22  created CAN client sample
 // jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client samplepn
 
-
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +28,6 @@
 #include <sched.h> // sched_setscheduler()
 #include <math.h>
 
-
 #include <arpa/inet.h>		/// inet_addr //
 #include <netinet/tcp.h>	/// TCP_NODELAY
 #include <pthread.h>
@@ -40,7 +38,6 @@
 #include "ethercan/cancommandsv2/AbortMotionCommand.h"
 #include "ethercan/cancommandsv2/ExecuteMotionCommand.h"
 #include "ethercan/SBuffer.h"
-
 
 namespace mpifps
 {
@@ -58,7 +55,6 @@ GatewayInterface::GatewayInterface(const EtherCANInterfaceConfig &config_vals)
       fpuArray(config_vals),
       command_pool(config_vals)
 {
-
     assert(config.num_fpus <= MAX_NUM_POSITIONERS);
 
     // pass config parameters to sbuffer instances.  This is a bit
@@ -186,8 +182,6 @@ E_EtherCANErrCode GatewayInterface::initialize()
     fpuArray.setInterfaceState(DS_UNCONNECTED);
 
     return DE_OK;
-
-
 }
 
 
@@ -215,7 +209,6 @@ E_EtherCANErrCode GatewayInterface::deInitialize()
         return DE_INTERFACE_NOT_INITIALIZED;
     }
 
-
     status = command_pool.deInitialize();
 
     if (status != DE_OK)
@@ -240,16 +233,12 @@ E_EtherCANErrCode GatewayInterface::deInitialize()
     fpuArray.setInterfaceState(DS_UNINITIALIZED);
 
     return DE_OK;
-
-
 }
-
 
 bool GatewayInterface::isLocked(int fpu_id) const
 {
     return fpuArray.isLocked(fpu_id);
 }
-
 
 int make_socket(const EtherCANInterfaceConfig &config, const char *ip, uint16_t port)
 {
@@ -300,11 +289,9 @@ int make_socket(const EtherCANInterfaceConfig &config, const char *ip, uint16_t 
         return -1;
     }
 
-
     if (config.SocketTimeOutSeconds > 0)
     {
         // set TCP keepalive parameters and time-outs
-
         if (config.TCP_KeepaliveIntervalSeconds > 0)
         {
             /* configure keepalive probing of the connection. After
@@ -373,7 +360,6 @@ int make_socket(const EtherCANInterfaceConfig &config, const char *ip, uint16_t 
             close(sck);
             return -1;
         }
-
     }
 
     return sck;
@@ -403,7 +389,6 @@ void set_rt_priority(const EtherCANInterfaceConfig &config, int prio)
         int rv = sched_setscheduler(pid, SCHED_FIFO, &sparam);
         if (rv == 0)
         {
-
             // allocate reserve pages and lock memory to avoid paging latency
             const size_t MEM_RESERVE_BYTES = 1024 * 1024 * 5;
             char mem_reserve[MEM_RESERVE_BYTES];
@@ -420,7 +405,6 @@ void set_rt_priority(const EtherCANInterfaceConfig &config, int prio)
             LOG_CONTROL(LOG_DEBUG, "Warning: real-time scheduling not active, occasional large latencies are possible.\n");
         }
     }
-
 }
 
 void unset_rt_priority()
@@ -555,10 +539,8 @@ E_EtherCANErrCode GatewayInterface::send_sync_command(CAN_Command &can_command,
     int buf_len2 = 0;
     memset((void*) &can_buffer2, 0, sizeof(can_buffer2));
 
-
     // set mask to activate all buses for each gateway
     const uint8_t channel_mask = (uint8_t) ((1u << buses_per_gateway) - 1u);
-
 
     can_command.SerializeToBuffer(msgid_sync_data,
 				  can_identifier,
@@ -587,13 +569,12 @@ E_EtherCANErrCode GatewayInterface::send_sync_command(CAN_Command &can_command,
     }
 
     return DE_OK;
-
 }
 
 
 
-E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
-
+E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways)
+{
     E_EtherCANErrCode rval = DE_OK;
 
     bool const broadcast = true;
@@ -627,9 +608,6 @@ E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
 
     }
 
-
-
-
     LOG_CONTROL(LOG_INFO, "%18.6f : GatewayInterface::connect()"
 		" - setting up SYNC config for executeMotion command\n",
 		ethercanif::get_realtime());
@@ -658,7 +636,6 @@ E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways){
 E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
         const t_gateway_address gateway_addresses[])
 {
-
     assert(ngateways <= MAX_NUM_GATEWAYS);
     assert(ngateways >= 0);
 
@@ -730,7 +707,6 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
         }
     }
 
-
     // open sockets
     for (int i = 0; i < ngateways; i++)
     {
@@ -770,7 +746,6 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
 
     set_rt_priority(config, CONTROL_PRIORITY);
 
-
     // new block for locals
     {
         // finally, create threads
@@ -778,7 +753,6 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
         /* Initialize and set thread joinable attribute */
         pthread_attr_init(&attr);
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
 
         // we create one thread for reading and one for writing.
         exit_threads = false; // assure flag is cleared
@@ -807,12 +781,10 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
         }
         else
         {
-
             err = pthread_create(&tx_thread, &attr, &threadTxEntryFun,
                                  (void *) this);
             if (err != 0)
             {
-
                 fprintf(stderr, "\ncan't create thread :[%s]", strerror(err));
 
                 LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
@@ -837,8 +809,6 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
 
 		    ecode = DE_ASSERTION_FAILED;
 		}
-
-
                 // wait for rx thread to terminate
                 pthread_join(rx_thread, NULL);
 
@@ -846,16 +816,13 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
         }
 
         pthread_attr_destroy(&attr);
-
     }
 
     if (ecode != DE_OK)
     {
-
         LOG_CONTROL(LOG_DEBUG, "%18.6f : error: GridDriver::connect() : "
                     "GatewayInterface::connect() - error exit, freeing any open resources ",
                     ethercanif::get_realtime());
-
 
 close_sockets:
         for(int k = (num_initialized_sockets -1); k >= 0; k--)
@@ -880,14 +847,11 @@ error_exit:
 
     unset_rt_priority();
 
-
     return ecode;
-
 }
 
 E_EtherCANErrCode GatewayInterface::disconnect()
 {
-
     E_InterfaceState dstate = fpuArray.getInterfaceState();
 
     if ( (dstate == DS_UNCONNECTED) || (dstate == DS_UNINITIALIZED))
@@ -924,7 +888,6 @@ E_EtherCANErrCode GatewayInterface::disconnect()
         {
             shutdown(SocketID[i], SHUT_RDWR);
         }
-
     }
     else
     {
@@ -946,7 +909,6 @@ E_EtherCANErrCode GatewayInterface::disconnect()
 	LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface::disconnect() - System error: event notification failed, errno=%i\n",
 		    ethercanif::get_realtime(), errno);
     }
-
 
     // (both threads have to exit now!)
     // need to be read with
@@ -990,19 +952,14 @@ E_EtherCANErrCode GatewayInterface::disconnect()
                 get_realtime());
 
     return DE_OK;
-
 }
-
 
 
 void GatewayInterface::updatePendingCommand(int fpu_id,
         std::unique_ptr<CAN_Command>& can_command)
 {
-
-
     if (can_command->expectsResponse())
     {
-
         // we set the time out
         // for this command
         // - get current monotonous time
@@ -1150,12 +1107,10 @@ SBuffer::E_SocketStatus GatewayInterface::send_buffer(unique_ptr<CAN_Command> &a
             status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
                       message_len, can_buffer.bytes, busid,
                       canid);
-
         }
     }
     return status;
 }
-
 
 
 void GatewayInterface::incSending()
@@ -1165,7 +1120,6 @@ void GatewayInterface::incSending()
 
 void* GatewayInterface::threadTxFun()
 {
-
     LOG_TX(LOG_GRIDSTATE, "%18.6f : starting TX loop\n",
            get_realtime());
 
@@ -1202,12 +1156,10 @@ void* GatewayInterface::threadTxFun()
 
     unique_ptr<CAN_Command> active_can_command[MAX_NUM_GATEWAYS];
 
-
     set_rt_priority(config, WRITER_PRIORITY);
 
     while (true)
     {
-
         // update poll mask so that only sockets
         // for which commands are queued will be
         // polled.
@@ -1241,7 +1193,6 @@ void* GatewayInterface::threadTxFun()
                 pfd[gateway_id].events = 0;
             }
         }
-
 
         // this waits for a short time for sending data
         // (we could shorten the timeout if no command was pending)
@@ -1279,7 +1230,6 @@ void* GatewayInterface::threadTxFun()
         }
         while (retry);
 
-
         if ((retval > 0 ) && (pfd[idx_cmd_event].revents & POLLIN))
         {
             // we need to read the descriptor to clear the event.
@@ -1292,7 +1242,6 @@ void* GatewayInterface::threadTxFun()
 		LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface::ThreadTXfun(): clearing event notification failed, errno=%i\n",
 			    ethercanif::get_realtime(), errno);
 	    }
-
         }
 
         // check all writable file descriptors for readiness
@@ -1304,7 +1253,6 @@ void* GatewayInterface::threadTxFun()
 
             if ((retval > 0 ) && (pfd[gateway_id].revents & POLLOUT))
             {
-
                 // gets command and sends buffer
                 status = send_buffer(active_can_command[gateway_id],
                                      gateway_id);
@@ -1340,7 +1288,6 @@ void* GatewayInterface::threadTxFun()
                         fpuArray.setInterfaceState(DS_ASSERTION_FAILED);
                         break;
                     }
-
                 }
             }
             exitFlag = exitFlag || exit_threads.load(std::memory_order_acquire);
@@ -1356,7 +1303,6 @@ void* GatewayInterface::threadTxFun()
         {
             break; // break main loop and terminate thread
         }
-
     }
 
     LOG_TX(LOG_GRIDSTATE, "%18.6f : exited TX loop\n",
@@ -1392,7 +1338,6 @@ inline void print_time(char* label, struct timespec tm)
 
 void* GatewayInterface::threadRxFun()
 {
-
     struct pollfd pfd[MAX_NUM_GATEWAYS+1];
 
     //int poll_timeout_ms = int(poll_timeout_sec * 1000);
@@ -1403,13 +1348,11 @@ void* GatewayInterface::threadRxFun()
     LOG_RX(LOG_GRIDSTATE, "%18.6f : starting RX loop\n",
            get_realtime());
 
-
     for (int i=0; i < num_gateways; i++)
     {
         pfd[i].fd = SocketID[i];
         pfd[i].events = POLLIN;
     }
-
 
     // add eventfd for closing connection
     pfd[num_gateways].fd = DescriptorCloseEvent;
@@ -1422,7 +1365,6 @@ void* GatewayInterface::threadRxFun()
 
     set_rt_priority(config, READER_PRIORITY);
 
-
     while (true)
     {
         bool exitFlag = false;
@@ -1432,17 +1374,13 @@ void* GatewayInterface::threadRxFun()
         get_monotonic_time(cur_time);
 
         // compute a bounded absolute time
-
-
         timespec next_timeout = timeOutList.getNextTimeOut();
-
 
         timespec max_rx_tmout = time_add(cur_time, MAX_RX_TIMEOUT);
         if (time_smaller(max_rx_tmout, next_timeout))
         {
             next_timeout = max_rx_tmout;
         }
-
 
         timespec max_wait = time_to_wait(cur_time, next_timeout);
 
@@ -1492,7 +1430,6 @@ void* GatewayInterface::threadRxFun()
                 // for receiving, we listen to all descriptors at once
                 if (pfd[gateway_id].revents | POLLIN)
                 {
-
                     SBuffer::E_SocketStatus status = sbuffer[gateway_id].decode_and_process(SocketID[gateway_id], gateway_id, this);
 
                     if (status != SBuffer::ST_OK)
@@ -1502,7 +1439,6 @@ void* GatewayInterface::threadRxFun()
 
                         if (! shutdown_in_progress.load(std::memory_order_acquire))
                         {
-
                             LOG_RX(LOG_ERROR, "%18.6f : RX: read error from socket, exiting read loop\n",
                                    get_realtime());
                             printf("RX thread fatal error: sbuffer socket status = %i, exiting\n",
@@ -1542,7 +1478,6 @@ void* GatewayInterface::threadRxFun()
 // FPUs which did respond.
 void GatewayInterface::handleFrame(int const gateway_id, const t_CAN_buffer& can_msg, int const clen)
 {
-
     // do basic filtering for correctness, and
     // call fpu-secific handler.
     if (clen < 3)
@@ -1588,7 +1523,6 @@ E_GridState GatewayInterface::waitForState(E_WaitTarget target, t_grid_state& ou
 
 CommandQueue::E_QueueState GatewayInterface::sendCommand(const int fpu_id, unique_ptr<CAN_Command>& new_command)
 {
-
     assert(fpu_id < config.num_fpus);
     // get corresponding gateway id. If it is a SYNC command, the
     // id is gateway zero, which is defined as the SYNC master.
@@ -1646,7 +1580,6 @@ E_EtherCANErrCode GatewayInterface::abortMotion(t_grid_state& grid_state,
         return DE_NO_CONNECTION;
     }
 
-
     // Flush all queued commands from queue to command pool,
     // so that abort message is sent without delay.
     commandQueue.flushToPool(command_pool);
@@ -1657,9 +1590,7 @@ E_EtherCANErrCode GatewayInterface::abortMotion(t_grid_state& grid_state,
     E_EtherCANErrCode ecode =  broadcastMessage<AbortMotionCommand>(sync_message);
 
     return ecode;
-
 }
-
 
 }
 
