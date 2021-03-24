@@ -32,7 +32,11 @@ EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values
 #endif // NOT FLEXIBLE_CAN_MAPPING
 {
     LOG_CONTROL(LOG_INFO, "%18.6f : starting driver version '%s' for %i FPUs\n",
+#ifdef FLEXIBLE_CAN_MAPPING
+                ethercanif::get_realtime(), VERSION, config.getFpuIdList().size());
+#else // NOT FLEXIBLE_CAN_MAPPING
                 ethercanif::get_realtime(), VERSION, config.num_fpus);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     LOG_CONTROL(LOG_INFO, "%18.6f : waveform_upload_pause_us = %lu\n",
                 ethercanif::get_realtime(), config.waveform_upload_pause_us);
@@ -207,8 +211,16 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
                 it--)
         {
             int fpu_id = it->fpu_id;
+
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (!config.isValidFpuId(fpu_id))
+            {
+                assert(false);
+            }
+#else // NOT FLEXIBLE_CAN_MAPPING
             assert(fpu_id >= 0);
             assert(fpu_id < config.num_fpus);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
             const t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
 

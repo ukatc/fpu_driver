@@ -55,7 +55,9 @@ GatewayInterface::GatewayInterface(const EtherCANInterfaceConfig &config_vals)
       fpuArray(config_vals),
       command_pool(config_vals)
 {
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     assert(config.num_fpus <= MAX_NUM_POSITIONERS);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     // pass config parameters to sbuffer instances.  This is a bit
     // ugly as config needs to be kept const, but sbuffer being an
@@ -1021,7 +1023,11 @@ void GatewayInterface::updatePendingSets(unique_ptr<CAN_Command> &active_can_com
         for (int bus_adr=1; bus_adr < (1 + FPUS_PER_BUS); bus_adr++)
         {
             const int fpu_id = fpu_id_by_adr[gateway_id][busid][bus_adr];
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
             if ((fpu_id < config.num_fpus) && (fpu_id >= 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
             {
                 updatePendingCommand(fpu_id, active_can_command);
             }
@@ -1524,7 +1530,14 @@ E_GridState GatewayInterface::waitForState(E_WaitTarget target, t_grid_state& ou
 
 CommandQueue::E_QueueState GatewayInterface::sendCommand(const int fpu_id, unique_ptr<CAN_Command>& new_command)
 {
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (!config.isValidFpuId(fpu_id))
+    {
+        assert(false);
+    }
+#else // NOT FLEXIBLE_CAN_MAPPING
     assert(fpu_id < config.num_fpus);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     // get corresponding gateway id. If it is a SYNC command, the
     // id is gateway zero, which is defined as the SYNC master.
     const int gateway_id = new_command->doSync() ? 0 : address_map[fpu_id].gateway_id;

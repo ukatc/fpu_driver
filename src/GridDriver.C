@@ -195,7 +195,11 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     }
 
     // Read data from FPU database for all grid FPUs
+#ifdef FLEXIBLE_CAN_MAPPING
+    std::vector<FpuData> fpus_data_temp(MAX_NUM_POSITIONERS);
+#else // NOT FLEXIBLE_CAN_MAPPING
     std::vector<FpuData> fpus_data_temp(config.num_fpus);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     if (ecan_result == DE_OK)
     {
 #ifdef FLEXIBLE_CAN_MAPPING
@@ -728,7 +732,11 @@ E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
         for (const auto &it : initial_positions)
         {
             const int fpu_id = it.first;
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
             if (fpu_id >= config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
             {
                 return DE_INVALID_FPU_ID;
             }
@@ -783,6 +791,22 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
     // TODO: Johannes' comment: "FIXME: check if the next block is still needed"
     t_fpuset fpuset_refresh;
     bool refresh_pending = false;
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    clearFpuSet(fpuset_refresh);
+    for (int fpu_id : config.getFpuIdList())
+    {
+        const t_fpu_state &fpu_state = datum_gs.FPU_state[fpu_id];
+        if (((fpu_state.state == FPST_MOVING) ||
+             (fpu_state.state == FPST_DATUM_SEARCH)) ||
+            (!fpu_state.ping_ok))
+        {
+            fpuset_refresh[fpu_id] = true;
+            refresh_pending = true;
+        }
+    }
+
+#else // NOT FLEXIBLE_CAN_MAPPING
     for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
     {
         if (fpu_id < config.num_fpus)
@@ -801,6 +825,8 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
             fpuset_refresh[fpu_id] = false;
         }
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
+
     if (refresh_pending)
     {
         sleepSecs(0.1);
@@ -1691,7 +1717,11 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
     for (const auto &it : configuring_ranges)
     {
         int fpu_id = it.first;
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if (fpu_id >= config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             return DE_INVALID_FPU_ID;
         }
@@ -1714,7 +1744,11 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
     clearFpuSet(fpuset_wtable);
     for (size_t i = 0; i < wtable.size(); i++)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (config.isValidFpuId(wtable[i].fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if (wtable[i].fpu_id < config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             fpuset_wtable[wtable[i].fpu_id] = true;
         }
@@ -1740,7 +1774,11 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
         for (size_t i = 0; i < wtable.size(); i++)
         {
             int fpu_id = wtable[i].fpu_id;
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
             if (fpu_id < config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
             {
                 if (txn->fpuDbTransferWaveform(DbTransferType::Write,
                         gs.FPU_state[fpu_id].serial_number,
@@ -1817,7 +1855,11 @@ E_EtherCANErrCode GridDriver::_post_repeat_reverse_motion_hook(
     for (const auto &it : configuring_ranges)
     {
         int fpu_id = it.first;
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if (fpu_id >= config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             return DE_INVALID_FPU_ID;
         }
@@ -1846,7 +1888,11 @@ void GridDriver::_update_counters_execute_motion(int fpu_id,
                                                  bool is_reversed,
                                                  bool cancel)
 {
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((fpu_id < 0) || (fpu_id >= config.num_fpus))
+#endif // NOT FLEXIBLE_CAN_MAPPING
     {
         return;
     }
@@ -2051,7 +2097,11 @@ E_EtherCANErrCode GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
         for (const auto &it : initial_positions)
         {
             const int fpu_id = it.first;
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
             if (fpu_id >= config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
             {
                 return DE_INVALID_FPU_ID;
             }

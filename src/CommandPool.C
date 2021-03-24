@@ -66,8 +66,14 @@ namespace ethercanif
 
 E_EtherCANErrCode CommandPool::initialize()
 {
-
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (config.getFpuIdList().size() == 0)
+    {
+        assert(false);
+    }
+#else // NOT FLEXIBLE_CAN_MAPPING
     assert(config.num_fpus > 0);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     pthread_mutex_lock(&pool_mutex);
     bool allocation_error = false;
     try
@@ -76,9 +82,14 @@ E_EtherCANErrCode CommandPool::initialize()
         // actual command.
         for (int i = 1; i < NUM_CAN_COMMANDS; i++)
         {
-            int capacity=0;
+            int capacity = 0;
+#ifdef FLEXIBLE_CAN_MAPPING
+            const int cap_individual = config.getFpuIdList().size() * 10;
+            const int cap_wform = config.getFpuIdList().size() * MAX_SUB_COMMANDS;
+#else // NOT FLEXIBLE_CAN_MAPPING
             const int cap_individual = config.num_fpus * 10;
             const int cap_wform = config.num_fpus * MAX_SUB_COMMANDS;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 	        const int cap_sync = 10;
 
             switch (i)
@@ -293,8 +304,14 @@ E_EtherCANErrCode CommandPool::initialize()
 
 E_EtherCANErrCode CommandPool::deInitialize()
 {
-
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (config.getFpuIdList().size() == 0)
+    {
+        assert(false);
+    }
+#else // NOT FLEXIBLE_CAN_MAPPING
     assert(config.num_fpus > 0);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     bool allocation_error = false;
     try
     {

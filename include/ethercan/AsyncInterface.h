@@ -69,10 +69,24 @@ public:
         num_gateways = 0;
         log_repeat_count = 0;
 
-        // initialize known firmware versions to zero
-
-
+        // Initialise known firmware versions to zero
         memset(fpu_firmware_version, FIRMWARE_NOT_RETRIEVED, sizeof(fpu_firmware_version));
+
+#ifdef FLEXIBLE_CAN_MAPPING
+        // Determine how many gateways are needed for the given grid_can_map,
+        // TODO: This is a count for now (starting from gateway ID of 0), but
+        // could eventually be a selection of individual non-contiguous
+        // gateway IDs not necessarily including gateway #0
+        num_gateways_needed = 0;
+        for (size_t i = 0; i < grid_can_map.size(); i++)
+        {
+            int gateway_id = grid_can_map[i].second.gateway_id;
+            if ((gateway_id + 1) > num_gateways_needed)
+            {
+                num_gateways_needed = gateway_id + 1;
+            }
+        }
+#endif // FLEXIBLE_CAN_MAPPING
 
 #if CAN_PROTOCOL_VERSION == 1
         // initialize field which records last arm selection
@@ -301,6 +315,9 @@ protected:
 private:
 
     int num_gateways;
+#ifdef FLEXIBLE_CAN_MAPPING
+    int num_gateways_needed = 0;
+#endif // FLEXIBLE_CAN_MAPPING
 
     // cached firmware version of each FPU
     uint8_t fpu_firmware_version[MAX_NUM_POSITIONERS][3];

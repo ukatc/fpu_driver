@@ -62,7 +62,11 @@ FPUArray::FPUArray(const EtherCANInterfaceConfig &config_vals):
            sizeof(FPUGridState.Counts));
 
     // for the beginning, we don't know the FPU states
+#ifdef FLEXIBLE_CAN_MAPPING
+    FPUGridState.Counts[FPST_UNKNOWN] = config.getFpuIdList().size();
+#else // NOT FLEXIBLE_CAN_MAPPING
     FPUGridState.Counts[FPST_UNKNOWN] = config.num_fpus;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     for (int i=0; i < MAX_NUM_POSITIONERS; i++)
     {
@@ -149,6 +153,29 @@ E_GridState FPUArray::getGridState(t_grid_state& out_state) const
 
 // function that checks whether all FPUs have an refreshed status
 // timestamp.
+#ifdef FLEXIBLE_CAN_MAPPING
+bool check_all_fpus_updated(const std::vector<int> &fpu_ids_to_check,
+                            t_grid_state &old_grid_state,
+                            const t_grid_state &grid_state)
+{
+    bool all_updated = true;
+    for (int fpu_id : fpu_ids_to_check)
+    {
+        if (grid_state.FPU_state[fpu_id].state != FPST_LOCKED)
+        {
+            timespec new_timestamp = grid_state.FPU_state[fpu_id].last_updated;
+            timespec old_timestamp = old_grid_state.FPU_state[fpu_id].last_updated;
+            if (time_equal(old_timestamp, new_timestamp))
+            {
+                all_updated = false;
+                break;
+            }
+        }
+    }
+    return all_updated;
+}
+
+#else // NOT FLEXIBLE_CAN_MAPPING
 bool check_all_fpus_updated(int num_fpus,
                             t_grid_state& old_grid_state,
                             const t_grid_state& grid_state)
@@ -170,6 +197,7 @@ bool check_all_fpus_updated(int num_fpus,
     }
     return all_updated;
 }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
 
 void FPUArray::incSending()
@@ -312,9 +340,15 @@ E_GridState FPUArray::waitForState(E_WaitTarget target, t_grid_state& reference_
         // If all FPUs have been updated, that might be
         // enough.
         const bool all_updated = ((target & GS_ALL_UPDATED) &&
+#ifdef FLEXIBLE_CAN_MAPPING
+                                  check_all_fpus_updated(config.getFpuIdList(),
+                                                         reference_state,
+                                                         FPUGridState));
+#else // NOT FLEXIBLE_CAN_MAPPING
                                   check_all_fpus_updated(config.num_fpus,
                                           reference_state,
                                           FPUGridState));
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
         const bool target_reached = inTargetState(sum_state, target);
 
@@ -573,7 +607,14 @@ void FPUArray::processTimeouts(timespec cur_time, TimeOutList& tout_list)
             break;
         }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(toentry.id))
+        {
+            assert(false);
+        }
+#else // NOT FLEXIBLE_CAN_MAPPING
         assert(toentry.id < config.num_fpus);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
         int fpu_id = toentry.id;
 
@@ -756,6 +797,30 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
     // fpu_busid uses a one-based index here, this is
     // deliberate and reflected in the array size.
     int fpu_id = fpu_id_by_adr[gateway_id][bus_id][fpu_busid];
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (!config.isValidFpuId(fpu_id))
+    {
+        static bool has_warned = false;
+        if (! has_warned)
+        {
+            fprintf(stderr, "WARNING (once): fpu_id is invalid (%i), ignored\n", fpu_id);
+            has_warned = true;
+        }
+
+        // Log responses from nonexistent FPUs, but only once every 10 seconds
+        static double last_warn = 0.0;
+        double cur_wtime = ethercanif::get_realtime();
+        if (cur_wtime > last_warn + 10.0)
+        {
+            LOG_RX(LOG_ERROR, "%18.6f : RX WARNING :"
+                   " Received fpu_id (%i) is invalid, ignored\n", cur_wtime, fpu_id);
+            last_warn = cur_wtime;
+        }
+        return;
+    }
+
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((fpu_id >= config.num_fpus) || (fpu_id > MAX_NUM_POSITIONERS))
     {
         static bool has_warned = false;
@@ -766,12 +831,12 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         }
 
         // log responses from nonexistent FPUs, but only once every 10 seconds
-        static double last_warn;
+        static double last_warn = 0.0;
         double cur_wtime = ethercanif::get_realtime();
         if (cur_wtime > last_warn + 10.0)
         {
             LOG_RX(LOG_ERROR, "%18.6f : RX WARNING :"
-                   " received fpu_id (%i) larger than config.num_fpus (%i), ignored\n",
+                   " Received fpu_id (%i) larger than config.num_fpus (%i), ignored\n",
                    cur_wtime,
                    fpu_id,
                    config.num_fpus);
@@ -779,7 +844,7 @@ void FPUArray::dispatchResponse(const t_address_map& fpu_id_by_adr,
         }
         return;
     }
-
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     pthread_mutex_lock(&grid_state_mutex);
 

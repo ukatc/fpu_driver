@@ -1772,7 +1772,6 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
     {
         if (fpuset[fpu_id] && (!config_fpuset[fpu_id]))
         {
-            // TODO: Any better error return code for this? DE_INVALID_CONFIG?
             return DE_INVALID_FPU_ID;
         }
     }
@@ -1783,7 +1782,6 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
     // Check that config.num_fpus is within range
     if ((config.num_fpus < 0) || (config.num_fpus >= MAX_NUM_POSITIONERS))
     {
-        // TODO: Any better error return code for this? DE_INVALID_CONFIG?
         return DE_INVALID_FPU_ID;
     }
 

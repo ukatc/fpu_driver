@@ -241,9 +241,15 @@ timespec expire_pending(const EtherCANInterfaceConfig &config,
 
 
 // helper functions
+#ifdef FLEXIBLE_CAN_MAPPING
+bool check_all_fpus_updated(const std::vector<int> &fpu_ids_to_check,
+                            t_grid_state &old_grid_state,
+                            const t_grid_state &grid_state);
+#else // NOT FLEXIBLE_CAN_MAPPING
 bool check_all_fpus_updated(int num_fpus,
                             t_grid_state& old_grid_state,
                             const t_grid_state& grid_state);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
 timespec get_min_pending(const t_fpu_state& fpu);
 

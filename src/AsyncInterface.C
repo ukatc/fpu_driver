@@ -151,15 +151,22 @@ E_EtherCANErrCode AsyncInterface::connect(const int ngateways,
     // Make sure that the passed number of gateways can support the
     // configured number of FPUs.
 
-    // BW TODO: Replace the following with checking the CAN mapping table to
-    // see whether the number of gateways specified covers all of the specified
-    // FPUs' gateway numbers that they are allocated to
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (ngateways < num_gateways_needed)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::connect(): Number of "
+                    "gateways specified is insufficient to cover those specified "
+                    "in the FPU CAN bus mappings\n", ethercanif::get_realtime());
+        return DE_INSUFFICENT_NUM_GATEWAYS;
+    }
+#else // NOT FLEXIBLE_CAN_MAPPING
     if (ngateways < (config.num_fpus + MAX_FPUS_PER_GATEWAY-1) / MAX_FPUS_PER_GATEWAY)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::connect(): number of configured gateways is insufficient\n",
                     ethercanif::get_realtime());
         return DE_INSUFFICENT_NUM_GATEWAYS;
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     E_EtherCANErrCode err_code =  gateway.connect(ngateways, gateway_addresses);
     if (err_code == DE_OK)
@@ -1991,9 +1998,13 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
         const int fpu_id = waveforms[fpu_index].fpu_id;
 #ifdef FLEXIBLE_CAN_MAPPING
         if (!config.isValidFpuId(fpu_id))
+        {
+            LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::configMotion(): FPU id '%i' is invalid\n",
+                        ethercanif::get_realtime(), fpu_id);
+            return DE_INVALID_FPU_ID;
+        }
 #else // NOT FLEXIBLE_CAN_MAPPING
         if ((fpu_id >= config.num_fpus) || (fpu_id < 0))
-#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             // the FPU id is out of range
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface::configMotion(): FPU id '%i' is out of range"
@@ -2002,6 +2013,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                         fpu_id, (config.num_fpus - 1));
             return DE_INVALID_FPU_ID;
         }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
         if (! fpuset[fpu_id])
         {
@@ -3627,7 +3639,11 @@ E_EtherCANErrCode AsyncInterface::enableBetaCollisionProtectionAsync(t_grid_stat
         gateway.sendCommand(fpu_id, cmd);
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    unsigned int cnt_pending = config.getFpuIdList().size();
+#else // NOT FLEXIBLE_CAN_MAPPING
     unsigned int cnt_pending = config.num_fpus;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
@@ -4544,7 +4560,12 @@ E_EtherCANErrCode AsyncInterface::readSerialNumbersAsync(t_grid_state& grid_stat
     }
 
     // We do not expect the locked FPUs to respond.
+#ifdef FLEXIBLE_CAN_MAPPING
+    int num_pending = config.getFpuIdList().size() -
+                      grid_state.Counts[FPST_LOCKED] - num_skipped;
+#else // NOT FLEXIBLE_CAN_MAPPING
     int num_pending = config.num_fpus - grid_state.Counts[FPST_LOCKED] - num_skipped;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     // fpus are now responding in parallel.
     //
@@ -5103,7 +5124,11 @@ E_EtherCANErrCode AsyncInterface::enableAlphaLimitProtectionAsync(t_grid_state& 
         gateway.sendCommand(fpu_id, cmd);
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    unsigned int cnt_pending = config.getFpuIdList().size();
+#else // NOT FLEXIBLE_CAN_MAPPING
     unsigned int cnt_pending = config.num_fpus;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     while ( (cnt_pending > 0) && ((grid_state.interface_state == DS_CONNECTED)))
     {
