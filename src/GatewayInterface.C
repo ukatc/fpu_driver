@@ -60,7 +60,7 @@ GatewayInterface::GatewayInterface(const EtherCANInterfaceConfig &config_vals)
     // pass config parameters to sbuffer instances.  This is a bit
     // ugly as config needs to be kept const, but sbuffer being an
     // array, we unfortunately cannot set it in the initializer list.
-    for(int i=0; i < MAX_NUM_GATEWAYS; i++)
+    for (int i = 0; i < MAX_NUM_GATEWAYS; i++)
     {
         sbuffer[i].setConfig(config_vals);
     }
@@ -196,7 +196,6 @@ E_EtherCANErrCode GatewayInterface::deInitialize()
         break;
 
     case DS_CONNECTED:
-
         LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::deInitialize() : "
                     "GatewayInterface::deInitialize() - driver is still connected",
                     ethercanif::get_realtime());
@@ -452,19 +451,21 @@ E_EtherCANErrCode GatewayInterface::send_config(int gateway_id,
     // we use the normal function for sending CAN packets
     // for sending the configuration data.
 
-    SBuffer::E_SocketStatus status  = sbuffer[gateway_id].encode_and_send(SocketID[gateway_id],
-									  buf_len, bytes, msgid,
-									  can_identifier);
-
-    if (status != SBuffer::E_SocketStatus::ST_OK){
-	return DE_SYNC_CONFIG_FAILED;
+    SBuffer::E_SocketStatus status =
+            sbuffer[gateway_id].encode_and_send(SocketID[gateway_id], buf_len,
+                                                bytes, msgid, can_identifier);
+    if (status != SBuffer::E_SocketStatus::ST_OK)
+    {
+	    return DE_SYNC_CONFIG_FAILED;
     }
 
     // because the socket is configured to be non-blocking, we have to
     // check and possibly retry to make sure that all bytes are
     // actually transmitted.
-    const struct timespec MAX_SYNC_TIMEOUT = { /* .tv_sec = */ 10,
-					       /* .tv_nsec = */ 0
+    const struct timespec MAX_SYNC_TIMEOUT =
+    {
+        10,     // .tv_sec
+		0       // .tv_nsec
     };
 
     int const NUM_FDS = 1;
@@ -472,41 +473,46 @@ E_EtherCANErrCode GatewayInterface::send_config(int gateway_id,
     pfd[0].fd = SocketID[gateway_id];
     pfd[0].events = POLLOUT;
 
-    while (true) {
+    while (true)
+    {
+        bool const is_finished = (sbuffer[gateway_id].numUnsentBytes() == 0);
+        if (is_finished)
+        {
+            break;
+        }
 
-	bool const is_finished = (sbuffer[gateway_id].numUnsentBytes() == 0);
-
-	if (is_finished) {
-	    break;
-	}
-
-	int retval =  ppoll(pfd, NUM_FDS, &MAX_SYNC_TIMEOUT, 0);
-	if (retval == 0){
-	    return DE_SYNC_CONFIG_FAILED; // time-out
-	}
-	if (retval < 0){
-	    int err_code = errno;
-	    if (err_code == EINTR){
-		continue; // an interrupt occurred
-	    } else {
-		LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
-			    "GatewayInterface::connect() - error on configuring SYNC messages, "
-			    "ppoll() returned errno=%i when configuring gateway %i\n",
-			    ethercanif::get_realtime(),
-			    err_code,
-			    gateway_id);
-		LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
-			    " (check for correct TCP connection and that gateway is actually running)\n",
-			    ethercanif::get_realtime());
-		return DE_SYNC_CONFIG_FAILED; // other error
+        int retval =  ppoll(pfd, NUM_FDS, &MAX_SYNC_TIMEOUT, 0);
+        if (retval == 0)
+        {
+            return DE_SYNC_CONFIG_FAILED; // time-out
+        }
+        if (retval < 0)
+        {
+            int err_code = errno;
+            if (err_code == EINTR)
+            {
+                continue; // an interrupt occurred
+            }
+            else
+            {
+                LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                            "GatewayInterface::connect() - error on configuring SYNC messages, "
+                            "ppoll() returned errno=%i when configuring gateway %i\n",
+                            ethercanif::get_realtime(),
+                            err_code,
+                            gateway_id);
+                LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                            " (check for correct TCP connection and that gateway is actually running)\n",
+                            ethercanif::get_realtime());
+                return DE_SYNC_CONFIG_FAILED; // other error
+            }
 	    }
-	}
-	status = sbuffer[gateway_id].send_pending(SocketID[gateway_id]);
 
-	if (status != SBuffer::E_SocketStatus::ST_OK){
-	    return DE_SYNC_CONFIG_FAILED;
-	}
-
+        status = sbuffer[gateway_id].send_pending(SocketID[gateway_id]);
+        if (status != SBuffer::E_SocketStatus::ST_OK)
+        {
+            return DE_SYNC_CONFIG_FAILED;
+        }
     }
 
     return DE_OK;
@@ -542,11 +548,8 @@ E_EtherCANErrCode GatewayInterface::send_sync_command(CAN_Command &can_command,
     // set mask to activate all buses for each gateway
     const uint8_t channel_mask = (uint8_t) ((1u << buses_per_gateway) - 1u);
 
-    can_command.SerializeToBuffer(msgid_sync_data,
-				  can_identifier,
-				  buf_len1,
-				  can_buffer1,
-				  SYNC_SEQUENCE_NUMBER);
+    can_command.SerializeToBuffer(msgid_sync_data, can_identifier, buf_len1,
+                                  can_buffer1, SYNC_SEQUENCE_NUMBER);
 
     set_sync_mask_message(can_buffer2, buf_len2,
 			  msgid_sync_mask, channel_mask);
@@ -554,23 +557,26 @@ E_EtherCANErrCode GatewayInterface::send_sync_command(CAN_Command &can_command,
     // both messages need to be send to each gateway
     for (int gateway_id=0; gateway_id < ngateways; gateway_id++)
     {
-	E_EtherCANErrCode err_code = send_config(gateway_id, buf_len1, can_buffer1.bytes, msgid_sync_data, can_identifier);
+        E_EtherCANErrCode err_code = send_config(gateway_id, buf_len1,
+                                                 can_buffer1.bytes,
+                                                 msgid_sync_data,
+                                                 can_identifier);
+        if (err_code != DE_OK)
+        {
+            return err_code;
+        }
 
-	if (err_code != DE_OK){
-	    return err_code;
-	}
+        err_code = send_config(gateway_id, buf_len2, can_buffer2.bytes,
+                               msgid_sync_mask, can_identifier);
 
-	err_code = send_config(gateway_id, buf_len2, can_buffer2.bytes, msgid_sync_mask, can_identifier);
-
-	if (err_code != DE_OK){
-	    return err_code;
-	}
-
+        if (err_code != DE_OK)
+        {
+            return err_code;
+        }
     }
 
     return DE_OK;
 }
-
 
 
 E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways)
@@ -591,38 +597,35 @@ E_EtherCANErrCode GatewayInterface::configSyncCommands(const int ngateways)
     // For more information, see the EtherCAN gateway documentation.
 
     LOG_CONTROL(LOG_INFO, "%18.6f : GatewayInterface::connect()"
-		" - setting up SYNC config for abortMotion command\n",
-		ethercanif::get_realtime());
+                " - setting up SYNC config for abortMotion command\n",
+                ethercanif::get_realtime());
 
     {
-	AbortMotionCommand abort_motion_command;
-	abort_motion_command.parametrize(0, broadcast);
-	rval = send_sync_command(abort_motion_command,
-				 ngateways,
-				 BUSES_PER_GATEWAY,
-				 GW_MSG_TYPE_COB0,
-				 GW_MSG_TYPE_MSK0);
-	if (rval != DE_OK){
-	    return rval;
-	}
-
+        AbortMotionCommand abort_motion_command;
+        abort_motion_command.parametrize(0, broadcast);
+        rval = send_sync_command(abort_motion_command, ngateways,
+                                 BUSES_PER_GATEWAY, GW_MSG_TYPE_COB0,
+                                 GW_MSG_TYPE_MSK0);
+        if (rval != DE_OK)
+        {
+            return rval;
+        }
     }
 
     LOG_CONTROL(LOG_INFO, "%18.6f : GatewayInterface::connect()"
-		" - setting up SYNC config for executeMotion command\n",
-		ethercanif::get_realtime());
-    {
-	ExecuteMotionCommand execute_motion_command;
-	execute_motion_command.parametrize(0, broadcast);
-	rval = send_sync_command(execute_motion_command,
-				 ngateways,
-				 BUSES_PER_GATEWAY,
-				 GW_MSG_TYPE_COB1,
-				 GW_MSG_TYPE_MSK1);
+                " - setting up SYNC config for executeMotion command\n",
+                ethercanif::get_realtime());
 
-	if (rval != DE_OK){
-	    return rval;
-	}
+    {
+        ExecuteMotionCommand execute_motion_command;
+        execute_motion_command.parametrize(0, broadcast);
+        rval = send_sync_command(execute_motion_command, ngateways,
+                                 BUSES_PER_GATEWAY, GW_MSG_TYPE_COB1,
+                                 GW_MSG_TYPE_MSK1);
+        if (rval != DE_OK)
+        {
+            return rval;
+        }
     }
 
     return DE_OK;
@@ -656,7 +659,6 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
         LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
                     "GatewayInterface::connect() - driver is already connected",
                     ethercanif::get_realtime());
-
         return DE_INTERFACE_ALREADY_CONNECTED;
 
     default:
@@ -729,16 +731,17 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
 
     ecode = configSyncCommands(ngateways);
 
-    if (ecode != DE_OK){
-	LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
-		    "GatewayInterface::connect() - could not configure SYNC commands",
-		    ethercanif::get_realtime());
+    if (ecode != DE_OK)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                "GatewayInterface::connect() - could not configure SYNC commands",
+                ethercanif::get_realtime());
 
-	LOG_CONSOLE(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
-		    "GatewayInterface::connect() - could not configure SYNC commands",
-		    ethercanif::get_realtime());
+        LOG_CONSOLE(LOG_ERROR, "%18.6f : error: GridDriver::connect() : "
+                "GatewayInterface::connect() - could not configure SYNC commands",
+                ethercanif::get_realtime());
 
-	goto close_sockets;
+        goto close_sockets;
     }
 
     // If configured, try to set real-time process scheduling policy
@@ -800,18 +803,17 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
                 // also signal termination via eventfd, to inform epoll()
                 uint64_t val = 2;
                 int rv = write(DescriptorCloseEvent, &val, sizeof(val));
-		if (rv != sizeof(val))
-		{
-		    LOG_CONTROL(LOG_ERROR, "%18.6f : GatewayInterface - System error: disconnect event notification failed, errno=%i\n",
-				ethercanif::get_realtime(), errno);
-		    LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface - System error: disconnect event notification failed, errno=%i\n",
-				ethercanif::get_realtime(), errno);
+                if (rv != sizeof(val))
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : GatewayInterface - System error: disconnect event notification failed, errno=%i\n",
+                        ethercanif::get_realtime(), errno);
+                    LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface - System error: disconnect event notification failed, errno=%i\n",
+                        ethercanif::get_realtime(), errno);
 
-		    ecode = DE_ASSERTION_FAILED;
-		}
+                    ecode = DE_ASSERTION_FAILED;
+                }
                 // wait for rx thread to terminate
                 pthread_join(rx_thread, NULL);
-
             }
         }
 
@@ -825,14 +827,16 @@ E_EtherCANErrCode GatewayInterface::connect(const int ngateways,
                     ethercanif::get_realtime());
 
 close_sockets:
-        for(int k = (num_initialized_sockets -1); k >= 0; k--)
+        for (int k = (num_initialized_sockets -1); k >= 0; k--)
         {
             shutdown(SocketID[k], SHUT_RDWR);
             close(SocketID[k]);
         }
         command_pool.deInitialize();
+
 close_CloseEventDescriptor:
         close(DescriptorCloseEvent);
+
 close_CommandEventDescriptor:
         close(DescriptorCommandEvent);
 
@@ -904,10 +908,10 @@ E_EtherCANErrCode GatewayInterface::disconnect()
     int rv = write(DescriptorCloseEvent, &val, sizeof(val));
     if (rv != sizeof(val))
     {
-	LOG_CONTROL(LOG_ERROR, "%18.6f : GatewayInterface::disconnect() - System error: event notification failed, errno=%i\n",
-		    ethercanif::get_realtime(), errno);
-	LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface::disconnect() - System error: event notification failed, errno=%i\n",
-		    ethercanif::get_realtime(), errno);
+        LOG_CONTROL(LOG_ERROR, "%18.6f : GatewayInterface::disconnect() - System error: event notification failed, errno=%i\n",
+                    ethercanif::get_realtime(), errno);
+        LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface::disconnect() - System error: event notification failed, errno=%i\n",
+                    ethercanif::get_realtime(), errno);
     }
 
     // (both threads have to exit now!)
@@ -1071,7 +1075,8 @@ SBuffer::E_SocketStatus GatewayInterface::send_buffer(unique_ptr<CAN_Command> &a
             const uint16_t busid = address_map[fpu_id].bus_id;
             const uint8_t fpu_canid = address_map[fpu_id].can_id;
             const bool broadcast = active_can_command->doBroadcast();
-	    const bool do_sync = active_can_command->doSync();
+	        const bool do_sync = active_can_command->doSync();
+
             // serialize data
             const uint8_t sequence_number = fpuArray.countSequenceNumber(fpu_id,
 									 active_can_command->expectsResponse(),
@@ -1224,7 +1229,6 @@ void* GatewayInterface::threadTxFun()
                 default:
                     // unknown return code
                     assert(false);
-
                 }
             }
         }
@@ -1235,13 +1239,13 @@ void* GatewayInterface::threadTxFun()
             // we need to read the descriptor to clear the event.
             uint64_t val;
             int rv = read(DescriptorCommandEvent, &val, sizeof(val));
-	    if (rv != sizeof(val))
-	    {
-		LOG_TX(LOG_ERROR, "%18.6f : GatewayInterface::ThreadTXfun(): clearing event notification failed, errno=%i\n",
-			    ethercanif::get_realtime(), errno);
-		LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface::ThreadTXfun(): clearing event notification failed, errno=%i\n",
-			    ethercanif::get_realtime(), errno);
-	    }
+            if (rv != sizeof(val))
+            {
+                LOG_TX(LOG_ERROR, "%18.6f : GatewayInterface::ThreadTXfun(): clearing event notification failed, errno=%i\n",
+                       ethercanif::get_realtime(), errno);
+                LOG_CONSOLE(LOG_ERROR, "%18.6f : GatewayInterface::ThreadTXfun(): clearing event notification failed, errno=%i\n",
+                            ethercanif::get_realtime(), errno);
+            }
         }
 
         // check all writable file descriptors for readiness
@@ -1249,9 +1253,9 @@ void* GatewayInterface::threadTxFun()
         for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
         {
             // FIXME: possibly, split this long method into smaller ones
-	    // for better readability.
+	        // for better readability.
 
-            if ((retval > 0 ) && (pfd[gateway_id].revents & POLLOUT))
+            if ((retval > 0) && (pfd[gateway_id].revents & POLLOUT))
             {
                 // gets command and sends buffer
                 status = send_buffer(active_can_command[gateway_id],
@@ -1260,7 +1264,6 @@ void* GatewayInterface::threadTxFun()
                 if ( (sbuffer[gateway_id].numUnsentBytes() == 0)
                         && ( active_can_command[gateway_id]))
                 {
-
                     // return CAN command instance to memory pool
                     command_pool.recycleInstance(active_can_command[gateway_id]);
                 }
@@ -1333,7 +1336,6 @@ inline void print_time(char* label, struct timespec tm)
     fflush(stdout);
 }
 #endif
-
 
 
 void* GatewayInterface::threadRxFun()
@@ -1409,7 +1411,6 @@ void* GatewayInterface::threadRxFun()
                 default:
                     // unknown return code
                     assert(false);
-
                 }
             }
         }
@@ -1592,6 +1593,7 @@ E_EtherCANErrCode GatewayInterface::abortMotion(t_grid_state& grid_state,
     return ecode;
 }
 
-}
+} // namespace ethercanif
 
-} // end of namespace
+} // namespace mpifps
+

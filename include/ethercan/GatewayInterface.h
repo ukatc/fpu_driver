@@ -60,20 +60,30 @@ class GatewayInterface: private I_ResponseHandler
 {
 public:
 
+    // TODO: BW: Noticed that for 2 of the timespecs below, the times mentioned
+    // in the comments don't seem to match the actual time values?
+
     // timeout for reading from command FIFO if nothing is
     // pending - 500 ms
-    const struct timespec COMMAND_WAIT_TIME = { /* .tv_sec = */ 0,
-              /* .tv_nsec = */ 10000000
+    const struct timespec COMMAND_WAIT_TIME = 
+    {
+        0,          // .tv_sec
+        10000000    // .tv_nsec
     };
+
     // timeout for polling write socket - 500 ms
-    const struct timespec MAX_TX_TIMEOUT = { /* .tv_sec = */ 0,
-              /* .tv_nsec = */ 500000000
+    const struct timespec MAX_TX_TIMEOUT =
+    {
+        0,          // .tv_sec
+        500000000   // .tv_nsec
     };
 
     // default timeout for polling read socket - 500 msec
-    const timespec MAX_RX_TIMEOUT = { /* .tv_sec = */ 10,
-                                      /* .tv_nsec = */ 500000000
-                                    };
+    const timespec MAX_RX_TIMEOUT =
+    {
+        10,         // .tv_sec
+        500000000   // .tv_nsec
+    };
 
 #ifdef FLEXIBLE_CAN_MAPPING
     explicit GatewayInterface(const EtherCANInterfaceConfig &config_vals,
@@ -88,11 +98,12 @@ public:
     E_EtherCANErrCode deInitialize();
 
     static void set_sync_mask_message(t_CAN_buffer& can_buffer, int& buflen,
-				      const uint8_t msgid, uint8_t sync_mask);
+				                      const uint8_t msgid, uint8_t sync_mask);
 
     E_EtherCANErrCode configSyncCommands(const int ngateways);
 
-    E_EtherCANErrCode connect(const int ngateways, const t_gateway_address gateway_addresses[]);
+    E_EtherCANErrCode connect(const int ngateways,
+                              const t_gateway_address gateway_addresses[]);
 
     // disconnect socket, and re-add any pending commands to
     // the command queue. (If pending commands should be
@@ -127,7 +138,8 @@ public:
 
     // send a CAN command to the gateway.
     // This method is thread-safe
-    CommandQueue::E_QueueState sendCommand(const int fpu_id, unique_ptr<CAN_Command>& new_command);
+    CommandQueue::E_QueueState sendCommand(const int fpu_id,
+                                     unique_ptr<CAN_Command>& new_command);
 
     // returns id which needs to be set as fpu id for broadcast command
     int getBroadcastID(const int gateway_id, const int busid);
@@ -151,59 +163,59 @@ public:
 
     template<typename T> E_EtherCANErrCode broadcastMessage(bool sync_message=false)
     {
+        if (sync_message && (T::sync_code != SYNC_NOSYNC))
+        {
+            // a SYNC message is only sent once to a single gateway,
+            // the 'master' gateway. This gateway will sent the
+            // message as broadcast messages to all buses, and forward
+            // it to the other gateways.
+            //
+            // Electronics will ensure that all gateways broadcast the
+            // message in a synchronized way (thus the name).
+            unique_ptr<SyncCommand> sync_command;
 
-	if (sync_message && (T::sync_code != SYNC_NOSYNC)){
-	    // a SYNC message is only sent once to a single gateway,
-	    // the 'master' gateway. This gateway will sent the
-	    // message as broadcast messages to all buses, and forward
-	    // it to the other gateways.
-	    //
-	    // Electronics will ensure that all gateways broadcast the
-	    // message in a synchronized way (thus the name).
-	    unique_ptr<SyncCommand> sync_command;
+            sync_command = provideInstance<SyncCommand>();
 
-	    sync_command = provideInstance<SyncCommand>();
+            if (sync_command == nullptr)
+            {
+                return DE_ASSERTION_FAILED;
+            }
+            const int broadcast_id = 0; // gateway number zero is SYNC master
 
-	    if (sync_command == nullptr)
-	    {
-		return DE_ASSERTION_FAILED;
-	    }
-	    const int broadcast_id = 0; // gateway number zero is SYNC master
+            // broadcast_id is an fpu id which makes sure
+            // the message goes to the requested bus.
+            sync_command->parametrize(T::sync_code);
+            unique_ptr<CAN_Command> cmd(sync_command.release());
+            sendCommand(broadcast_id, cmd);
+        }
+        else
+        {
+            unique_ptr<T> can_command;
 
-	    // broadcast_id is an fpu id which makes sure
-	    // the message goes to the requested bus.
-	    sync_command->parametrize(T::sync_code);
-	    unique_ptr<CAN_Command> cmd(sync_command.release());
-	    sendCommand(broadcast_id, cmd);
-	}
-	else
-	{
-	    unique_ptr<T> can_command;
+            for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
+            {
+                for (int busid = 0; busid < BUSES_PER_GATEWAY; busid++)
+                {
+                    const int broadcast_id = getBroadcastID(gateway_id, busid);
+                    if (broadcast_id >= config.num_fpus)
+                    {
+                        goto Exit;
+                    }
+                    can_command = provideInstance<T>();
 
-	    for (int gateway_id=0; gateway_id < num_gateways; gateway_id++)
-	    {
-		for(int busid=0; busid < BUSES_PER_GATEWAY; busid++)
-		{
-		    const int broadcast_id = getBroadcastID(gateway_id, busid);
-		    if (broadcast_id >= config.num_fpus)
-		    {
-			goto Exit;
-		    }
- 		    can_command = provideInstance<T>();
-
-		    if (can_command == nullptr)
-		    {
-			return DE_ASSERTION_FAILED;
-		    }
-		    const bool do_broadcast = true;
-		    // broadcast_id is an fpu id which makes sure
-		    // the message goes to the requested bus.
-		    can_command->parametrize(broadcast_id, do_broadcast);
-		    unique_ptr<CAN_Command> cmd(can_command.release());
-		    sendCommand(broadcast_id, cmd);
-		}
-	    }
-	}
+                    if (can_command == nullptr)
+                    {
+                        return DE_ASSERTION_FAILED;
+                    }
+                    const bool do_broadcast = true;
+                    // broadcast_id is an fpu id which makes sure
+                    // the message goes to the requested bus.
+                    can_command->parametrize(broadcast_id, do_broadcast);
+                    unique_ptr<CAN_Command> cmd(can_command.release());
+                    sendCommand(broadcast_id, cmd);
+                }
+            }
+        }
 Exit:
         return DE_OK;
     }
@@ -223,10 +235,10 @@ private:
     // send a specific CAN command as SYNC configuration
     // to all gateways.
     E_EtherCANErrCode send_sync_command(CAN_Command &can_command,
-					const int ngateways,
-					const int buses_per_gateway,
-					uint8_t msgid_sync_data,
-					uint8_t msgid_sync_mask);
+                                        const int ngateways,
+                                        const int buses_per_gateway,
+                                        uint8_t msgid_sync_data,
+                                        uint8_t msgid_sync_mask);
 
     // send a single gateway message for SYNC configuration,
     // waiting until sending is finished
@@ -258,8 +270,8 @@ private:
     // write buffer (only to be accessed in writing thread)
 
     // two POSIX threads for sending and receiving data
-    pthread_t    tx_thread;
-    pthread_t    rx_thread;
+    pthread_t tx_thread = 0;
+    pthread_t rx_thread = 0;
     // this atomic flag serves to signal both threads to exit
     std::atomic<bool> exit_threads;
     // this flag informs that a driver shutdown is in progress
