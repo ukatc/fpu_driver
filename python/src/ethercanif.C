@@ -701,7 +701,9 @@ BOOST_PYTHON_MODULE(ethercanif)
     //--------------------------------------------------------------------------
     // EtherCANInterfaceConfig wrapper definitions
     class_<EtherCANInterfaceConfig>("EtherCANInterfaceConfig", init<>())
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     .def_readwrite("num_fpus", &EtherCANInterfaceConfig::num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
     .def_readwrite("alpha_datum_offset", &EtherCANInterfaceConfig::alpha_datum_offset)
     .def_readwrite("motor_minimum_frequency", &EtherCANInterfaceConfig::motor_minimum_frequency)
     .def_readwrite("motor_maximum_frequency", &EtherCANInterfaceConfig::motor_maximum_frequency)

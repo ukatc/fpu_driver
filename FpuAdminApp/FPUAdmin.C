@@ -188,7 +188,18 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
 
     // Connect to grid
     UnprotectedGridDriver ugd(fpu_id + 1);
+#ifdef FLEXIBLE_CAN_MAPPING
+    //*********************************
+    //*********************************
+    // TODO: Dummy file path string for now - need to get it working with a
+    // proper path
+    //*********************************
+    //*********************************
+    const std::string csv_file_path("dummy_csv_file_path");
+    ugd.initialize(csv_file_path);
+#else // NOT FLEXIBLE_CAN_MAPPING
     ugd.initialize();
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     std::cout << "Connecting to grid..." << std::endl;
     E_EtherCANErrCode ecan_result = ugd.connect(num_gateways,
@@ -196,11 +207,22 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
     t_grid_state grid_state;
     t_fpuset fpuset;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    //*********************************
+    //*********************************
+    // TODO: Will this work OK? It should do, once the non-contiguous FPU ID / CAN
+    // mapping functionality works OK?
+    clearFpuSet(fpuset);
+    fpuset[fpu_id] = true;
+    //*********************************
+    //*********************************
+#else // NOT FLEXIBLE_CAN_MAPPING
     // TODO: Currently pings and reads the serial numbers for all FPUs up to
     // fpu_id (which is the equivalent functionality to that in the original
     // Python flash_FPU() function in fpu-admin), but might only need to do
     // this for the single FPU?
     UnprotectedGridDriver::createFpuSetForNumFpus(fpu_id + 1, fpuset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     if (ecan_result == DE_OK)
     {

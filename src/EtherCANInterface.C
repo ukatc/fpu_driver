@@ -33,7 +33,8 @@ EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values
 {
     LOG_CONTROL(LOG_INFO, "%18.6f : starting driver version '%s' for %i FPUs\n",
 #ifdef FLEXIBLE_CAN_MAPPING
-                ethercanif::get_realtime(), VERSION, config.getFpuIdList().size());
+                ethercanif::get_realtime(), VERSION,
+                (int)config.getFpuIdList().size());
 #else // NOT FLEXIBLE_CAN_MAPPING
                 ethercanif::get_realtime(), VERSION, config.num_fpus);
 #endif // NOT FLEXIBLE_CAN_MAPPING

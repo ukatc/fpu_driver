@@ -132,17 +132,35 @@ void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) co
 
     if (bp::len(fpu_list) == 0)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : getConfig().getFpuIdList())
+        {
+            fpuset[fpu_id] = true;
+        }
+#else // NOT FLEXIBLE_CAN_MAPPING
         for (int i = 0; ((i < getConfig().num_fpus) && (i < MAX_NUM_POSITIONERS));
              i++)
         {
             fpuset[i] = true;
         }
+#endif // NOT FLEXIBLE_CAN_MAPPING
     }
     else
     {
         for (int i = 0; i < bp::len(fpu_list); i++)
         {
             int fpu_id = bp::extract<int>(fpu_list[i]);
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (getConfig().isValidFpuId(fpu_id))
+            {
+                fpuset[fpu_id] = true;
+            }
+            else
+            {
+                throw EtherCANException("DE_INVALID_FPU_ID: Parameter contains invalid FPU IDs.",
+                                        DE_INVALID_FPU_ID);
+            }
+#else // NOT FLEXIBLE_CAN_MAPPING
             if ((fpu_id < 0) ||
                 (fpu_id >= MAX_NUM_POSITIONERS) ||
                 (fpu_id >= getConfig().num_fpus))
@@ -154,6 +172,7 @@ void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) co
             {
                 fpuset[fpu_id] = true;
             }
+#endif // NOT FLEXIBLE_CAN_MAPPING
         }
     }
 }
@@ -188,7 +207,11 @@ void WrapperSharedBase::getDatumFlags(bp::dict &dict_search_modes,
             direction_flags[i] = SKIP_FPU;
         }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+        const int num_fpus = getConfig().getFpuIdList().size();
+#else // NOT FLEXIBLE_CAN_MAPPING
         const int num_fpus = getConfig().num_fpus;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
         if (num_keys > num_fpus)
         {
@@ -201,7 +224,11 @@ void WrapperSharedBase::getDatumFlags(bp::dict &dict_search_modes,
             object fpu_key = fpu_id_list[i];
             int fpu_id = bp::extract<int>(fpu_key);
 
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (!getConfig().isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
             if ((fpu_id >= num_fpus) || (fpu_id < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
             {
                 throw EtherCANException("DE_INVALID_FPU_ID: Parameter contains invalid FPU IDs.",
                                         DE_INVALID_FPU_ID);
