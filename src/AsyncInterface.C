@@ -10,7 +10,7 @@
 //                       speed by 1 Hz. TODO: Correct the rounding errors causing this.
 // sbeard    2021-02-25  Changed the waveform communication error code from
 //                       DE_INVALID_WAVEFORM to DE_INVALID_WAVEFORM_REJECTED.
-// bwillemse 2021-03-18  Modified for flexible FPU ID and CAN mapping.
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -7,6 +7,9 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2020-07-29  Adapted so can work alongside new grid driver wrapper.
+// bwillemse 2021-03-26  Due to the new flexible CAN mapping feature, this
+//                       Boost.Python wrapper for the EtherCAN layer will no
+//                       longer be supported.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -9,6 +9,7 @@
 // --------  ----------  -------------------------------------------------------
 // Pablo Gutierrez 2017-07-22  created CAN client sample
 // jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client sample
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////

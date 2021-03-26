@@ -9,6 +9,7 @@
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2020-05-13  Separated this shared functionality out from
 //                       original EtherCAN wrapper code.
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////

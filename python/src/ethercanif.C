@@ -10,6 +10,7 @@
 // bwillemse 2020-05-13  Adapted to add new grid driver wrapper functions.
 // sbeard    2021-02-25  Added DE_INVALID_WAVEFORM_REJECTED return code and
 //                       associated error message.
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
