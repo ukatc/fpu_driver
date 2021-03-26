@@ -180,7 +180,13 @@ public:
             {
                 return DE_ASSERTION_FAILED;
             }
+
+#ifdef FLEXIBLE_CAN_MAPPING
+            // Gateway number zero is SYNC master
+            const int broadcast_id = fpu_id_broadcast_base;
+#else // NOT FLEXIBLE_CAN_MAPPING
             const int broadcast_id = 0; // gateway number zero is SYNC master
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
             // broadcast_id is an fpu id which makes sure
             // the message goes to the requested bus.
@@ -197,10 +203,12 @@ public:
                 for (int busid = 0; busid < BUSES_PER_GATEWAY; busid++)
                 {
                     const int broadcast_id = getBroadcastID(gateway_id, busid);
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
                     if (broadcast_id >= config.num_fpus)
                     {
                         goto Exit;
                     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
                     can_command = provideInstance<T>();
 
                     if (can_command == nullptr)
@@ -216,7 +224,9 @@ public:
                 }
             }
         }
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
 Exit:
+#endif // NOT FLEXIBLE_CAN_MAPPING
         return DE_OK;
     }
 
@@ -294,6 +304,11 @@ private:
     TimeOutList timeOutList; // list of pending time-outs
 
     CommandPool command_pool; // memory pool for unused command objects
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    const int fpu_id_broadcast_base = MAX_NUM_POSITIONERS -
+                                      (MAX_NUM_GATEWAYS * BUSES_PER_GATEWAY);
+#endif // FLEXIBLE_CAN_MAPPING
 };
 
 //==============================================================================
