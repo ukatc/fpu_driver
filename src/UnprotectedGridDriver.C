@@ -33,7 +33,8 @@
 #include <algorithm>
 #include <unistd.h>
 #include <new>
-#include <string.h>
+#include <string>
+#include <fstream>
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
 #include "ethercan/FPUArray.h"
@@ -115,6 +116,78 @@ void gridDriverAbortDuringFindDatumOrExecuteMotion(void)
     // variable is used.
     abort_motion_pending = true;
 }
+
+#ifdef FLEXIBLE_CAN_MAPPING
+//------------------------------------------------------------------------------
+E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
+                                              GridCanMap &grid_can_map_ret)
+{
+    // Reads the CAN map from a grid driver CAN map CSV file.
+    // Notes:
+    //   - csv_file_path must be of the general form e.g. "/moons/test_jig.csv"
+
+    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
+
+    grid_can_map_ret.clear();
+
+    // TOOD: Check that file exists, and check that have sufficient access
+    // privileges
+
+    std::ifstream csv_file_stream;
+    csv_file_stream.open(csv_file_path); // ************ TODO: What happens if fails - need to catch exception?
+
+    // TODOs:
+    //   - See good example code at https://www.gormanalysis.com/blog/reading-and-writing-csv-files-with-cpp/
+    //   - See what CSV file output format is produced by Excel
+
+    std::string blah_str;
+
+    std::string line_str;
+    while (std::getline(csv_file_stream, line_str))
+    {
+        if (line_str.empty())
+        {
+            continue;
+        }
+
+        // Use Boost to split the line? e.g. see https://thispointer.com/how-to-read-data-from-a-csv-file-in-c/
+
+        std::stringstream line_stream(line_str);
+
+        std::string line_item_str;
+        std::vector<std::string> line_item_strs;
+        while (line_stream >> line_item_str)
+        {
+            line_item_strs.push_back(line_item_str);
+        }
+
+        if (line_item_strs.size() == 4)
+        {
+            int fpu_id = std::stoi(line_item_strs[0]);
+            FPUArray::t_bus_address can_route;
+            can_route.gateway_id = std::stoi(line_item_strs[1]);
+            can_route.bus_id = std::stoi(line_item_strs[2]);
+            can_route.can_id = std::stoi(line_item_strs[3]);
+
+            std::pair<int, FPUArray::t_bus_address> fpu_can_route;
+            fpu_can_route.first = fpu_id;
+            fpu_can_route.second = can_route;
+            grid_can_map_ret.push_back(fpu_can_route);
+        }
+        else
+        {
+            // TODO: ERROR
+        }
+
+    }
+
+    csv_file_stream.close();
+
+    return ecan_result;
+}
+
+//------------------------------------------------------------------------------
+#endif // FLEXIBLE_CAN_MAPPING
 
 
 //==============================================================================

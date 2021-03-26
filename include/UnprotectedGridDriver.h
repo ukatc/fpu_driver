@@ -91,6 +91,11 @@ struct t_fpu_position
 };
 using t_fpu_positions = std::map<int, t_fpu_position>; // Keys are fpu_id's
 
+#ifdef FLEXIBLE_CAN_MAPPING
+E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
+                                              GridCanMap &grid_can_map_ret);
+#endif // FLEXIBLE_CAN_MAPPING
+
 
 //==============================================================================
 

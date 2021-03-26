@@ -45,15 +45,26 @@ void GridDriverTester::doGridDriverUnitTests()
     // Performs ad-hoc unit tests on a GridDriver instance
 
 #ifdef FLEXIBLE_CAN_MAPPING
+    //..........................................................................
+    // Test CAN map CSV file reading
+    std::string csv_file_path("/home/bartw/BartsStuff/test_can_map.csv");
+    GridCanMap grid_can_map;
+    E_EtherCANErrCode ecan_result = 
+                    gridDriverReadCanMapCsvFile(csv_file_path, grid_can_map);
+
+    //..........................................................................
+    // Test creating and initialising a GridDriver instance
+
     GridDriver gd;
     gd.initialize(test_can_map_path);
+
 #else // NOT FLEXIBLE_CAN_MAPPING
     static const int num_fpus = 10;
     GridDriver gd(num_fpus);
 
     gd.initialize();
-#endif // NOT FLEXIBLE_CAN_MAPPING
 
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     //..........................................................................
     // Test UnprotectedGridDriver::wavetable_was_received()
