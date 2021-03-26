@@ -484,7 +484,7 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
     // Invalid command parameters
 
     case DE_INVALID_FPU_ID:
-        throw EtherCANException("DE_INVALID_FPU_ID: A passed FPU id is out of range.",
+        throw EtherCANException("DE_INVALID_FPU_ID: A passed FPU id is invalid.",
                                 DE_INVALID_FPU_ID);
         break;
 

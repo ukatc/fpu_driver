@@ -1068,7 +1068,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
 #endif // NOT FLEXIBLE_CAN_MAPPING
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
-                        " FPU ID %i in waveform table is out of range\n",
+                        " FPU ID %i in waveform table is invalid\n",
                         ethercanif::get_realtime(), fpu_id);
             return DE_INVALID_FPU_ID;
         }
@@ -1243,7 +1243,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
 #endif // NOT FLEXIBLE_CAN_MAPPING
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
-                        " FPU ID %i in waveform table is out of range\n",
+                        " FPU ID %i in waveform table is invalid\n",
                         ethercanif::get_realtime(), fpu_id);
             return DE_INVALID_FPU_ID;
         }
@@ -1420,7 +1420,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
 #endif // NOT FLEXIBLE_CAN_MAPPING
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
-                        " FPU ID %i in waveform table is out of range\n",
+                        " FPU ID %i in waveform table is invalid\n",
                         ethercanif::get_realtime(), fpu_id);
             return DE_INVALID_FPU_ID;
         }
@@ -1602,7 +1602,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
 #endif // NOT FLEXIBLE_CAN_MAPPING
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
-                        " FPU ID %i in waveform table is out of range\n",
+                        " FPU ID %i in waveform table is invalid\n",
                         ethercanif::get_realtime(), fpu_id);
             return DE_INVALID_FPU_ID;
         }
@@ -1783,7 +1783,7 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
 #endif // NOT FLEXIBLE_CAN_MAPPING
         {
             LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: waveform error DE_INVALID_FPU_ID:"
-                        " FPU ID %i in waveform table is out of range\n",
+                        " FPU ID %i in waveform table is invalid\n",
                         ethercanif::get_realtime(), fpu_id);
             return DE_INVALID_FPU_ID;
         }
@@ -3305,8 +3305,8 @@ E_EtherCANErrCode AsyncInterface::lockFPUAsync(int fpu_id_to_lock,
     if ((fpu_id_to_lock >= config.num_fpus) || (fpu_id_to_lock < 0))
 #endif // NOT FLEXIBLE_CAN_MAPPING
     {
-        // the FPU id is out of range
-        LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error DE_INVALID_FPU_ID, FPU id out of range\n",
+        // the FPU id is invalid
+        LOG_CONTROL(LOG_ERROR, "%18.6f : lockFPU():  error DE_INVALID_FPU_ID, FPU id is invalid\n",
                     ethercanif::get_realtime());
         return DE_INVALID_FPU_ID;
     }
@@ -3404,8 +3404,8 @@ E_EtherCANErrCode AsyncInterface::unlockFPUAsync(int fpu_id_to_unlock,
     if ((fpu_id_to_unlock >= config.num_fpus) || (fpu_id_to_unlock < 0))
 #endif // NOT FLEXIBLE_CAN_MAPPING
     {
-        // the FPU id is out of range
-        LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error DE_INVALID_FPU_ID, FPU id out of range\n",
+        // the FPU id is invalid
+        LOG_CONTROL(LOG_ERROR, "%18.6f : unlockFPU():  error DE_INVALID_FPU_ID, FPU id is invalid\n",
                     ethercanif::get_realtime());
         return DE_INVALID_FPU_ID;
     }
@@ -3714,8 +3714,8 @@ E_EtherCANErrCode AsyncInterface::freeBetaCollisionAsync(int fpu_id_to_free,
     if ((fpu_id_to_free >= config.num_fpus) || (fpu_id_to_free < 0))
 #endif // NOT FLEXIBLE_CAN_MAPPING
     {
-        // the FPU id is out of range
-        LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error DE_INVALID_FPU_ID, FPU id out of range\n",
+        // the FPU id is invalid
+        LOG_CONTROL(LOG_ERROR, "%18.6f : freeBetaCollision():  error DE_INVALID_FPU_ID, FPU id is invalid\n",
                     ethercanif::get_realtime());
         return DE_INVALID_FPU_ID;
     }
@@ -4662,8 +4662,8 @@ E_EtherCANErrCode AsyncInterface::writeSerialNumberAsync(int fpu_id_to_write,
     if ((fpu_id_to_write >= config.num_fpus) || (fpu_id_to_write < 0))
 #endif // NOT FLEXIBLE_CAN_MAPPING
     {
-        // the FPU id is out of range
-        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_INVALID_FPU_ID, FPU id out of range\n",
+        // the FPU id is invalid
+        LOG_CONTROL(LOG_ERROR, "%18.6f : writeSerialNumber():  error DE_INVALID_FPU_ID, FPU id is invalid\n",
                     ethercanif::get_realtime());
         return DE_INVALID_FPU_ID;
     }
@@ -4838,8 +4838,8 @@ E_EtherCANErrCode AsyncInterface::enableMoveAsync(int fpu_id_to_enable,
     if ((fpu_id_to_enable >= config.num_fpus) || (fpu_id_to_enable < 0))
 #endif // NOT FLEXIBLE_CAN_MAPPING
     {
-        // the FPU id is out of range
-        LOG_CONTROL(LOG_ERROR, "%18.6f : enableMove():  error DE_INVALID_FPU_ID, FPU id out of range\n",
+        // the FPU id is invalid
+        LOG_CONTROL(LOG_ERROR, "%18.6f : enableMove():  error DE_INVALID_FPU_ID, FPU id is invalid\n",
                     ethercanif::get_realtime());
         return DE_INVALID_FPU_ID;
     }
@@ -5199,8 +5199,8 @@ E_EtherCANErrCode AsyncInterface::freeAlphaLimitBreachAsync(int fpu_id_to_free,
     if ((fpu_id_to_free >= config.num_fpus) || (fpu_id_to_free < 0))
 #endif // NOT FLEXIBLE_CAN_MAPPING
     {
-        // the FPU id is out of range
-        LOG_CONTROL(LOG_ERROR, "%18.6f : freeAlphaLimitBreach():  error DE_INVALID_FPU_ID, FPU id out of range\n",
+        // the FPU id is invalid
+        LOG_CONTROL(LOG_ERROR, "%18.6f : freeAlphaLimitBreach():  error DE_INVALID_FPU_ID, FPU id is invalid\n",
                     ethercanif::get_realtime());
         return DE_INVALID_FPU_ID;
     }
