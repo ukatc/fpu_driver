@@ -172,27 +172,34 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
     }
 #endif // NOT FLEXIBLE_CAN_MAPPING
 
-    std::cout << "Grid driver object was successfully created (new C++ version).\n";
+    std::cout << "*****************************************************************\n";
+    std::cout << "Grid driver object was successfully created (new C++ version) -\n";
+    std::cout << "now need to call initialize().\n";
+    std::cout << "*****************************************************************";
+    std::cout << std::endl;
 
 #ifdef FLEXIBLE_CAN_MAPPING
-    std::cout << "************************************************************\n";
-    std::cout << "************************************************************\n";
-    std::cout << "NOTE: The C++ FLEXIBLE_CAN_MAPPING macro is enabled in this\n";
-    std::cout << "build, so the new flexible CAN mapping functionality is\n";
-    std::cout << "enabled - need to specify the FPUs using a CSV file. The\n";
-    std::cout << "old num_fpus approach is not supported in this build.\n";
-    std::cout << "************************************************************\n";
-    std::cout << "************************************************************\n";
+    std::cout << "Note: The C++ FLEXIBLE_CAN_MAPPING macro is enabled in this\n";
+    std::cout << "build, so need to provide an FPU definition CSV file path when\n";
+    std::cout << "calling initialize(). The old num_fpus approach is no longer\n";
+    std::cout << "supported in this build.\n";
     std::cout << std::endl;
+
+    // Check/warn if user is accidentally trying to set the old num_fpus argument
+    if (SocketTimeOutSeconds != SOCKET_TIMEOUT_SECS)
+    {
+        std::cout << "*** WARNING ***: The first argument (SocketTimeOutSeconds,\n";
+        std::cout << "formerly num_fpus) has been set - was this intentional? (the\n";
+        std::cout << "old num_fpus argument has now been removed).\n";
+        std::cout << std::endl;
+    }
 #endif // FLEXIBLE_CAN_MAPPING
 
 #ifndef ENABLE_PROTECTION_CODE  // NOT ENABLE_PROTECTION_CODE
-    std::cout << "************************************************************\n";
-    std::cout << "************************************************************\n";
+    std::cout << "*****************************************************************\n";
     std::cout << "NOTE: The C++ ENABLE_PROTECTION_CODE macro is disabled in\n";
     std::cout << "this build, so the soft protection is not functional.\n";
-    std::cout << "************************************************************\n";
-    std::cout << "************************************************************\n";
+    std::cout << "*****************************************************************\n";
     std::cout << std::endl;
 #endif // NOT ENABLE_PROTECTION_CODE
 
