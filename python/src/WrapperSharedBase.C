@@ -498,6 +498,28 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 DE_DUPLICATE_SERIAL_NUMBER);
         break;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    case DE_INVALID_GATEWAY_ID:
+        throw EtherCANException("DE_INVALID_GATEWAY_ID: A specified EtherCAN gateway ID is invalid.",
+                                DE_INVALID_GATEWAY_ID);
+        break;
+
+    case DE_INVALID_CAN_BUS_ID:
+        throw EtherCANException("DE_INVALID_CAN_BUS_ID: A specified CAN bus ID is invalid.",
+                                DE_INVALID_CAN_BUS_ID);
+        break;
+
+    case DE_INVALID_CAN_ID:
+        throw EtherCANException("DE_INVALID_CAN_ID: A specified CAN ID is invalid.",
+                                DE_INVALID_CAN_ID);
+        break;
+
+    case DE_INVALID_NUM_PARAMS:
+        throw EtherCANException("DE_INVALID_NUM_PARAMS: Invalid number of parameters.",
+                                DE_INVALID_NUM_PARAMS);
+        break;
+#endif // FLEXIBLE_CAN_MAPPING
+
     //..........................................................................
     // Connection failures
 

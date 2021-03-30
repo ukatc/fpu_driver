@@ -21,6 +21,11 @@
 #ifndef ERRORCODES_H
 #define ERRORCODES_H
 
+// TODO: InterfaceConstants.h is only included here for the FLEXIBLE_CAN_MAPPING
+// macro - remove this #include when the FLEXIBLE_CAN_MAPPING macro is
+// eventually removed
+#include "InterfaceConstants.h"
+
 namespace mpifps
 {
 
@@ -137,10 +142,9 @@ enum E_EtherCANErrCode
     DE_WRITE_VERIFICATION_FAILED = 204,
 
     //..........................................................................
-    // Invalid command parameters
+    // Invalid parameter values
 
-    // An FPU id which was passed as a parameter is invalid because it is
-    // larger than the maximum number of FPUs.
+    // An FPU ID is invalid
     DE_INVALID_FPU_ID = 301,
 
     // Passed parameter value is invalid
@@ -148,6 +152,21 @@ enum E_EtherCANErrCode
 
     // Duplicate serial number
     DE_DUPLICATE_SERIAL_NUMBER = 303,
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    // Invalid gateway ID
+    DE_INVALID_GATEWAY_ID = 304,
+
+    // Invalid CAN bus ID
+    DE_INVALID_CAN_BUS_ID = 305,
+
+    // Invalid CAN ID
+    DE_INVALID_CAN_ID = 306,
+
+    // Invalid number of parameters
+    DE_INVALID_NUM_PARAMS = 307,
+
+#endif // FLEXIBLE_CAN_MAPPING
 
     //..........................................................................
     // Connection failures

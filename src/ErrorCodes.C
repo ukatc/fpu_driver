@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <ErrorCodes.h>
+#include "ErrorCodes.h"
 
 
 namespace mpifps
@@ -74,6 +74,12 @@ EtherCANErrorGroup errorGroup(E_EtherCANErrCode ecan_result)
     case DE_INVALID_FPU_ID:
     case DE_INVALID_PAR_VALUE:
     case DE_DUPLICATE_SERIAL_NUMBER:
+#ifdef FLEXIBLE_CAN_MAPPING
+    case DE_INVALID_GATEWAY_ID:
+    case DE_INVALID_CAN_BUS_ID:
+    case DE_INVALID_CAN_ID:
+    case DE_INVALID_NUM_PARAMS:
+#endif // FLEXIBLE_CAN_MAPPING
         return EtherCANErrorGroup::InvalidParameter;
         break;
 
