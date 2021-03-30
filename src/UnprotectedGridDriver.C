@@ -119,41 +119,51 @@ void gridDriverAbortDuringFindDatumOrExecuteMotion(void)
 
 #ifdef FLEXIBLE_CAN_MAPPING
 //------------------------------------------------------------------------------
-E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
-                                              GridCanMap &grid_can_map_ret)
+void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
+                                 GridCanMap &grid_can_map_ret,
+                                 CanMapCsvFileResultInfo &result_info_ret)
 {
-    // Reads the CAN map from a grid driver CAN map CSV file.
-    // Notes:
-    //   - csv_file_path must be of the general form e.g. "/moons/test_jig.csv"
-
-    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
+    // Reads the FPU ID and CAN map data from a grid driver CAN map CSV file.
+    // Arguments / return values:
+    //   - csv_file_path: Must be of the general form e.g. "/moons/test_jig.csv"
+    //   - grid_can_map_ret: Returns the FPU ID and CAN mapping data if
+    //     successful
+    //   - result_info_ret: Returns further information about the parsing
+    //     results
 
     grid_can_map_ret.clear();
 
-    // TOOD: Check that file exists, and check that have sufficient access
-    // privileges
+    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
 
+    // Attempt to open file
     std::ifstream csv_file_stream;
-    csv_file_stream.open(csv_file_path); // ************ TODO: What happens if fails - need to catch exception?
+    csv_file_stream.open(csv_file_path);
+    if (csv_file_stream.good())
+    {
+        ecan_result = DE_OK;
+    }
+    else
+    {
+        result_info_ret.ecan_result = DE_RESOURCE_ERROR;
+        return;
+    }
 
-    // TODOs:
-    //   - See good example code at https://www.gormanalysis.com/blog/reading-and-writing-csv-files-with-cpp/
-    //   - See what CSV file output format is produced by Excel
-
-    std::string blah_str;
-
+    int current_line_num = 0;
     std::string line_str;
     while (std::getline(csv_file_stream, line_str))
     {
+        current_line_num++;
+
         if (line_str.empty())
         {
             continue;
         }
 
-        // Use Boost to split the line? e.g. see https://thispointer.com/how-to-read-data-from-a-csv-file-in-c/
-
         std::stringstream line_stream(line_str);
 
+        // Get the line's items into a vector of strings
+        // TODO: Improve this to support the required delimiter(s) - spaces,
+        // tabs, commas?
         std::string line_item_str;
         std::vector<std::string> line_item_strs;
         while (line_stream >> line_item_str)
@@ -163,27 +173,76 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
 
         if (line_item_strs.size() == 4)
         {
+
+            // TODO: How to detect when an stoi() call fails - triggers exception?
+
             int fpu_id = std::stoi(line_item_strs[0]);
             FPUArray::t_bus_address can_route;
             can_route.gateway_id = std::stoi(line_item_strs[1]);
             can_route.bus_id = std::stoi(line_item_strs[2]);
             can_route.can_id = std::stoi(line_item_strs[3]);
 
-            std::pair<int, FPUArray::t_bus_address> fpu_can_route;
-            fpu_can_route.first = fpu_id;
-            fpu_can_route.second = can_route;
-            grid_can_map_ret.push_back(fpu_can_route);
+            if (ecan_result == DE_OK)
+            {
+                if ((fpu_id < 0) || (fpu_id >= FPU_ID_BROADCAST_BASE))
+                {
+                    ecan_result = DE_INVALID_FPU_ID;
+                    result_info_ret.invalid_fpu_id_val = fpu_id;
+                }
+                else if ((can_route.gateway_id < 0) ||
+                         (can_route.gateway_id >= MAX_NUM_GATEWAYS))
+                {
+                    ecan_result = DE_INVALID_GATEWAY_ID;
+                    result_info_ret.invalid_gateway_id_val = can_route.gateway_id;
+                }
+                else if ((can_route.bus_id < 0) ||
+                         (can_route.bus_id >= BUSES_PER_GATEWAY))
+                {
+                    ecan_result = DE_INVALID_CAN_BUS_ID;
+                    result_info_ret.invalid_can_bus_id_val = can_route.bus_id;
+                }
+                else if ((can_route.can_id < 1) ||
+                         (can_route.can_id > FPUS_PER_BUS))
+                {
+                    ecan_result = DE_INVALID_CAN_ID;
+                    result_info_ret.invalid_can_id_val = can_route.can_id;
+                }
+            }
+
+            if (ecan_result == DE_OK)
+            {
+                std::pair<int, FPUArray::t_bus_address> fpu_can_route;
+                fpu_can_route.first = fpu_id;
+                fpu_can_route.second = can_route;
+                grid_can_map_ret.push_back(fpu_can_route);
+            }
         }
         else
         {
-            // TODO: ERROR
+            ecan_result = DE_INVALID_NUM_PARAMS;
         }
 
+        if (ecan_result != DE_OK)
+        {
+            result_info_ret.bad_line_number = current_line_num;
+            break;
+        }
     }
 
+    if (grid_can_map_ret.size() == 0)
+    {
+        // ************ TODO: Error
+    }
+
+    if (ecan_result != DE_OK)
+    {
+        grid_can_map_ret.clear();
+    }
+
+    // ************ TODO: Check if csv_file_stream is actually open before close it below?
     csv_file_stream.close();
 
-    return ecan_result;
+    result_info_ret.ecan_result = ecan_result;
 }
 
 //------------------------------------------------------------------------------
@@ -340,9 +399,9 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     {
         // FPU ID   gateway_id  bus_id  can_id
 
-        {  0,     { 0,          0,      1} },
-        {  1,     { 0,          0,      2} },
-        {  2,     { 0,          0,      3} }
+        {  28,     { 0,          0,      1} },
+        //{  1,     { 0,          0,      2} },  **************************
+        {  45,     { 0,          0,      3} }
     };
     //*****************
 
