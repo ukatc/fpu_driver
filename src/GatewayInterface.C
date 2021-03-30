@@ -89,14 +89,14 @@ GatewayInterface::GatewayInterface(const EtherCANInterfaceConfig &config_vals)
 
     //..........................................................................
     // Populate the 15 (MAX_NUM_GATEWAYS * BUSES_PER_GATEWAY) address_map[]
-    // entries from fpu_id_broadcast_base up to (MAX_NUM_POSITIONERS - 1) -
+    // entries from FPU_ID_BROADCAST_BASE up to (MAX_NUM_POSITIONERS - 1) -
     // these are used for providing broadcast CAN routes for internal code use
     // (see also the getBroadcastID() function)
     for (uint8_t gateway_id = 0; gateway_id < MAX_NUM_GATEWAYS; gateway_id++)
     {
         for (uint8_t bus_id = 0; bus_id < BUSES_PER_GATEWAY; bus_id++)
         {
-            int fpu_id = fpu_id_broadcast_base +
+            int fpu_id = FPU_ID_BROADCAST_BASE +
                          (gateway_id * BUSES_PER_GATEWAY) + bus_id;
             if (fpu_id < MAX_NUM_POSITIONERS)  // Bounds-check
             {
@@ -123,9 +123,9 @@ GatewayInterface::GatewayInterface(const EtherCANInterfaceConfig &config_vals)
 
         // Check for valid value ranges (to avoid buffer overruns) and populate
         // items into the forward and reverse mapping arrays
-        // N.B. The index range from fpu_id_broadcast_base upwards is reserved
+        // N.B. The index range from FPU_ID_BROADCAST_BASE upwards is reserved
         // for internal broadcast routing usage
-        if ((fpu_id >= 0) && (fpu_id < fpu_id_broadcast_base) &&
+        if ((fpu_id >= 0) && (fpu_id < FPU_ID_BROADCAST_BASE) &&
             (can_route.gateway_id >= 0) &&
             (can_route.gateway_id < MAX_NUM_GATEWAYS) &&
             (can_route.bus_id >= 0) && (can_route.bus_id < BUSES_PER_GATEWAY) &&
@@ -1568,10 +1568,10 @@ CommandQueue::E_QueueState GatewayInterface::sendCommand(const int fpu_id,
 {
 #ifdef FLEXIBLE_CAN_MAPPING
     // Check FPU ID - in this code layer, the FPU IDs from
-    // fpu_id_broadcast_base and upwards are also valid, because they provide
+    // FPU_ID_BROADCAST_BASE and upwards are also valid, because they provide
     // the broadcast CAN mapping routes
     if ((!config.isValidFpuId(fpu_id)) &&
-        (!((fpu_id >= fpu_id_broadcast_base) && (fpu_id < MAX_NUM_POSITIONERS))))
+        (!((fpu_id >= FPU_ID_BROADCAST_BASE) && (fpu_id < MAX_NUM_POSITIONERS))))
     {
         assert(false);
     }
@@ -1600,7 +1600,7 @@ int GatewayInterface::getBroadcastID(const int gateway_id, const int busid)
     // Determines the fpu_id index into the address_map[] array to provide a
     // gateway id / bus id / can id routing combination for sending a broadcast
     // command on a particular CAN bus
-    const int fpu_id = fpu_id_broadcast_base + 
+    const int fpu_id = FPU_ID_BROADCAST_BASE + 
                        ((gateway_id * BUSES_PER_GATEWAY) + busid);
     if ((fpu_id >= 0) &&
         (fpu_id < MAX_NUM_POSITIONERS)) // Bounds check
@@ -1610,7 +1610,7 @@ int GatewayInterface::getBroadcastID(const int gateway_id, const int busid)
     else
     {
         // TODO: Error: But should never happen?
-        return fpu_id_broadcast_base;
+        return FPU_ID_BROADCAST_BASE;
     }
 #else // NOT FLEXIBLE_CAN_MAPPING
     // get the id of fpu number one for this bus on this gateway.

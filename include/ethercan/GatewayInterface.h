@@ -54,6 +54,13 @@ void* threadRxFun(void *arg);
 
 using GridCanMap = std::vector<std::pair<int, FPUArray::t_bus_address>>;
 
+// FPU_ID_BROADCAST_BASE: Defines a base index for indexing into the upper 15
+// entries (MAX_NUM_GATEWAYS * BUSES_PER_GATEWAY) of the address_map[] array -
+// these slots are used for providing broadcast CAN routes for internal code
+// use (see also the getBroadcastID() function)
+#define FPU_ID_BROADCAST_BASE   (MAX_NUM_POSITIONERS - \
+                                    (MAX_NUM_GATEWAYS * BUSES_PER_GATEWAY))
+
 #endif // FLEXIBLE_CAN_MAPPING
 
 //==============================================================================
@@ -173,7 +180,7 @@ public:
 
 #ifdef FLEXIBLE_CAN_MAPPING
             // Gateway number zero is SYNC master
-            const int broadcast_id = fpu_id_broadcast_base;
+            const int broadcast_id = FPU_ID_BROADCAST_BASE;
 #else // NOT FLEXIBLE_CAN_MAPPING
             const int broadcast_id = 0; // gateway number zero is SYNC master
 #endif // NOT FLEXIBLE_CAN_MAPPING
@@ -284,8 +291,13 @@ private:
     SBuffer sbuffer[MAX_NUM_GATEWAYS];
 
     // Mapping of FPU IDs to physical addresses (can be made configurable if
-    // required)
-    FPUArray::t_bus_address_map  address_map;
+    // required).
+#ifdef FLEXIBLE_CAN_MAPPING
+    // NOTE: For the new flexible FPU ID / CAN addressing functionality, the
+    // top 15 slots of this array are used for the CAN bus broadcast
+    // addresses - see FPU_ID_BROADCAST_BASE
+#endif // FLEXIBLE_CAN_MAPPING
+    FPUArray::t_bus_address_map address_map;
 
     // Reverse map of addresses to FPU id - from can bus addresses to fpu id
     FPUArray::t_address_map fpu_id_by_adr; 
@@ -300,11 +312,6 @@ private:
 
     // Memory pool for unused command objects
     CommandPool command_pool;
-
-#ifdef FLEXIBLE_CAN_MAPPING
-    const int fpu_id_broadcast_base = MAX_NUM_POSITIONERS -
-                                      (MAX_NUM_GATEWAYS * BUSES_PER_GATEWAY);
-#endif // FLEXIBLE_CAN_MAPPING
 };
 
 //==============================================================================
