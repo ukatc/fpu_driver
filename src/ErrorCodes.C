@@ -68,6 +68,9 @@ EtherCANErrorGroup errorGroup(E_EtherCANErrCode ecan_result)
     case DE_INVALID_CONFIG:
     case DE_SYNC_CONFIG_FAILED:
     case DE_WRITE_VERIFICATION_FAILED:
+#ifdef FLEXIBLE_CAN_MAPPING
+    case DE_NO_FPUS_DEFINED:
+#endif // FLEXIBLE_CAN_MAPPING
         return EtherCANErrorGroup::Setup;
         break;
 
@@ -79,6 +82,8 @@ EtherCANErrorGroup errorGroup(E_EtherCANErrCode ecan_result)
     case DE_INVALID_CAN_BUS_ID:
     case DE_INVALID_CAN_ID:
     case DE_INVALID_NUM_PARAMS:
+    case DE_DUPLICATE_FPU_ID:
+    case DE_DUPLICATE_CAN_ROUTE:
 #endif // FLEXIBLE_CAN_MAPPING
         return EtherCANErrorGroup::InvalidParameter;
         break;

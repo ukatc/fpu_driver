@@ -141,6 +141,11 @@ enum E_EtherCANErrCode
     // A write to an FPU did not read back the same value
     DE_WRITE_VERIFICATION_FAILED = 204,
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    // No FPUs are defined
+    DE_NO_FPUS_DEFINED = 205,
+#endif // FLEXIBLE_CAN_MAPPING
+
     //..........................................................................
     // Invalid parameter values
 
@@ -165,6 +170,12 @@ enum E_EtherCANErrCode
 
     // Invalid number of parameters
     DE_INVALID_NUM_PARAMS = 307,
+
+    // Duplicate FPU ID
+    DE_DUPLICATE_FPU_ID = 308,
+
+    // Duplicate CAN route
+    DE_DUPLICATE_CAN_ROUTE = 309,
 
 #endif // FLEXIBLE_CAN_MAPPING
 

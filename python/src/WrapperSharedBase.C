@@ -480,6 +480,13 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 DE_WRITE_VERIFICATION_FAILED);
         break;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    case DE_NO_FPUS_DEFINED:
+        throw EtherCANException("DE_NO_FPUS_DEFINED: No FPUs have been defined",
+                                DE_NO_FPUS_DEFINED);
+        break;
+#endif // FLEXIBLE_CAN_MAPPING
+
     //..........................................................................
     // Invalid command parameters
 
@@ -518,6 +525,17 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
         throw EtherCANException("DE_INVALID_NUM_PARAMS: Invalid number of parameters.",
                                 DE_INVALID_NUM_PARAMS);
         break;
+
+    case DE_DUPLICATE_FPU_ID:
+        throw EtherCANException("DE_DUPLICATE_FPU_ID: A duplicate FPU ID was found.",
+                                DE_DUPLICATE_FPU_ID);
+        break;
+
+    case DE_DUPLICATE_CAN_ROUTE:
+        throw EtherCANException("DE_DUPLICATE_CAN_ROUTE: A duplicate CAN bus route was found.",
+                                DE_DUPLICATE_CAN_ROUTE);
+        break;
+
 #endif // FLEXIBLE_CAN_MAPPING
 
     //..........................................................................
