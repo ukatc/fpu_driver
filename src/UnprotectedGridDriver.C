@@ -36,6 +36,7 @@
 #include <string>
 #include <fstream>
 #include <set>
+#include <cstring>
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
 #include "ethercan/FPUArray.h"
@@ -125,15 +126,31 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
                                       CanMapCsvFileErrorInfo &error_info_ret)
 {
     // Reads the FPU ID and CAN map data from a grid driver CAN map CSV file.
-    // Arguments / return values:
+    // The CSV file contents need to be of the following form:
+    //   - 4 columns of numeric values as follows:
+    //       - FPU ID: 0 to 1124 (FPU_ID_BROADCAST_BASE - 1)
+    //       - Gateway ID: 0 to 2 (MAX_NUM_GATEWAYS - 1)
+    //       - CAN bus ID: 0 to 4 (BUSES_PER_GATEWAY - 1)
+    //       - CAN ID: 1 to 76 (FPUS_PER_BUS)
+    //   - No column headers
+    //   - Columns separated by spaces, tabs, commas, or a mixture of these -
+    //     all of these padding/delimiter characters are just ignored
+    //
+    // Checking and validation done in this function:
+    //   - Checks for valid text-to-number conversion success
+    //   - Checks for correct number of fields (as above) in each line
+    //   - Checks all of the value ranges above
+    //   - Checks for duplicate FPU IDs and duplicate CAN routes
+    //
+    // Function arguments / return values:
     //   - csv_file_path: Must be of the general form e.g. "/moons/test_jig.csv"
     //   - If the CSV file was successfully parsed then returns DE_OK, and
-    //     grid_can_map_ret will contain the FPU ID and CAN mapping list
-    //   - If an error occurs then one of the following error codes is
+    //     grid_can_map_ret will contain the FPU ID / CAN mapping list
+    //   - If an error occurs, then one of the following error codes is
     //     returned, grid_can_map_ret will be of size 0, and the values in
     //     error_info_ret will give more information for the particular error
-    //     wherever relevant (including the line number of the error in the
-    //     CSV file):
+    //     wherever relevant (including the CSV file line number for the
+    //     error):
     //       - DE_RESOURCE_ERROR if the CSV file couldn't be opened for some
     //         reason
     //       - DE_INVALID_NUM_PARAMS if incorrect number of fields on a line
@@ -145,7 +162,7 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
     //         DE_INVALID_CAN_BUS_ID / DE_INVALID_CAN_ID if an out-of-range
     //         invalid value is found
     //       - DE_DUPLICATE_FPU_ID / DE_DUPLICATE_CAN_ROUTE if a duplicate
-    //         one of these is found
+    //         FPU ID or CAN route is found
 
     grid_can_map_ret.clear();
 
@@ -178,17 +195,61 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
             continue;
         }
 
+#if 1
+        // Copy line string to a raw C line buffer
+        const int line_buf_size = 100;
+        char line_buf[line_buf_size];
+        memset(line_buf, '\0', line_buf_size);
+        strncpy(line_buf, line_str.c_str(),
+                std::min(line_buf_size, (int)line_str.size()));
+        line_buf[line_buf_size - 1] = '\0';
+
+        // Change the various padding and delimiter characters to nulls
+        // TODO: NOTE: If these characters are inside strings then they will
+        // still be nulled, so this approach isn't good if want to eventually
+        // also support the extraction of strings (possibly surrounded by
+        // quotes) which have any of these characters inside them
+        for (int i = 0; i < line_buf_size; i++)
+        {
+            if ((line_buf[i] == ' ') || (line_buf[i] == ',') ||
+                (line_buf[i] == '\t') || (line_buf[i] == '\n') ||
+                (line_buf[i] == '\r'))
+            {
+                line_buf[i] = '\0';
+            }
+        }
+
+        // Extract the fields into a string list
+        std::vector<std::string> line_item_strs;
+        bool between_fields = true;
+        for (int i = 0; i < line_buf_size; i++)
+        {
+            if (line_buf[i] == '\0')
+            {
+                between_fields = true;
+            }
+            if (between_fields && (line_buf[i] != '\0'))
+            {
+                line_item_strs.push_back(&line_buf[i]);
+                between_fields = false;
+            }
+        }
+
+        //std::regex re(" \t,");
+        //N.B. The '-1' is what makes the regex split (-1 := what was not matched)
+        //std::sregex_token_iterator first{line_str.begin(), line_str.end(), re, -1}, last;
+        //std::vector<std::string> line_item_strs{first, last};
+#else
         std::stringstream line_stream(line_str);
 
         // Get the line's items into a vector of strings
-        // ***************** TODO: Improve this to support the required delimiter(s) - spaces,
-        // tabs, commas?
         std::string line_item_str;
         std::vector<std::string> line_item_strs;
         while (line_stream >> line_item_str)
         {
             line_item_strs.push_back(line_item_str);
         }
+#endif
 
         int fpu_id = 0;
         FPUArray::t_bus_address can_route = { 0, 0, 0 };
