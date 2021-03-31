@@ -93,7 +93,7 @@ using t_fpu_positions = std::map<int, t_fpu_position>; // Keys are fpu_id's
 
 #ifdef FLEXIBLE_CAN_MAPPING
 
-typedef struct CanMapCsvFileResultInfo
+struct CanMapCsvFileResultInfo
 {
     E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
     int bad_line_number = 0;

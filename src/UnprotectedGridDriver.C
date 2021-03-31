@@ -35,6 +35,7 @@
 #include <new>
 #include <string>
 #include <fstream>
+#include <set>
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
 #include "ethercan/FPUArray.h"
@@ -150,6 +151,10 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
 
     int current_line_num = 0;
     std::string line_str;
+    std::set<int> fpu_ids_temp;
+    std::set<uint32_t> can_routes_uints_temp;
+
+    // Parse and check each line's data items and add to FPU ID / CAN route list
     while (std::getline(csv_file_stream, line_str))
     {
         current_line_num++;
@@ -162,7 +167,7 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
         std::stringstream line_stream(line_str);
 
         // Get the line's items into a vector of strings
-        // TODO: Improve this to support the required delimiter(s) - spaces,
+        // ***************** TODO: Improve this to support the required delimiter(s) - spaces,
         // tabs, commas?
         std::string line_item_str;
         std::vector<std::string> line_item_strs;
@@ -173,15 +178,25 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
 
         if (line_item_strs.size() == 4)
         {
-
-            // TODO: How to detect when an stoi() call fails - triggers exception?
-
-            int fpu_id = std::stoi(line_item_strs[0]);
+            //..................................................................
+            // Extract the line's fields
+            int fpu_id;
             FPUArray::t_bus_address can_route;
-            can_route.gateway_id = std::stoi(line_item_strs[1]);
-            can_route.bus_id = std::stoi(line_item_strs[2]);
-            can_route.can_id = std::stoi(line_item_strs[3]);
+            try
+            {
+                fpu_id = std::stoi(line_item_strs[0]);
+                can_route.gateway_id = std::stoi(line_item_strs[1]);
+                can_route.bus_id = std::stoi(line_item_strs[2]);
+                can_route.can_id = std::stoi(line_item_strs[3]);
+            }
+            catch(const std::exception &e)
+            {
+                // Error - could not convert a field for some reason
+                ecan_result = DE_INVALID_PAR_VALUE;
+            }
 
+            //..................................................................
+            // Check the field values' ranges
             if (ecan_result == DE_OK)
             {
                 if ((fpu_id < 0) || (fpu_id >= FPU_ID_BROADCAST_BASE))
@@ -209,13 +224,34 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
                 }
             }
 
+            //..................................................................
+            // If fpu_id and CAN route are not duplicates then add the FPU ID/
+            // CAN route item
             if (ecan_result == DE_OK)
             {
-                std::pair<int, FPUArray::t_bus_address> fpu_can_route;
-                fpu_can_route.first = fpu_id;
-                fpu_can_route.second = can_route;
-                grid_can_map_ret.push_back(fpu_can_route);
+                uint32_t can_route_uint =
+                                (((uint32_t)can_route.gateway_id) << 16) |
+                                (((uint32_t)can_route.bus_id) << 8) |
+                                ((uint32_t)can_route.can_id);
+                if (!fpu_ids_temp.insert(fpu_id).second)
+                {
+                    ecan_result = DE_DUPLICATE_FPU_ID;
+                }
+                else if (!can_routes_uints_temp.insert(can_route_uint).second)
+                {
+                    ecan_result = DE_DUPLICATE_CAN_ROUTE;
+                }
+                else
+                {
+                    // Add the FPU ID/ CAN route item
+                    std::pair<int, FPUArray::t_bus_address> fpu_can_route;
+                    fpu_can_route.first = fpu_id;
+                    fpu_can_route.second = can_route;
+                    grid_can_map_ret.push_back(fpu_can_route);
+                }
             }
+
+            //..................................................................
         }
         else
         {
@@ -231,7 +267,7 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
 
     if (grid_can_map_ret.size() == 0)
     {
-        // ************ TODO: Error
+        ecan_result = DE_NO_FPUS_DEFINED;
     }
 
     if (ecan_result != DE_OK)
