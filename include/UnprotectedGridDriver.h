@@ -93,19 +93,16 @@ using t_fpu_positions = std::map<int, t_fpu_position>; // Keys are fpu_id's
 
 #ifdef FLEXIBLE_CAN_MAPPING
 
-struct CanMapCsvFileResultInfo
+struct CanMapCsvFileErrorInfo
 {
-    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
-    int bad_line_number = 0;
-    int invalid_fpu_id_val;         // If DE_INVALID_FPU_ID
-    int invalid_gateway_id_val;     // If DE_INVALID_GATEWAY_ID
-    int invalid_can_bus_id_val;     // If DE_INVALID_CAN_BUS_ID
-    int invalid_can_id_val;         // If DE_INVALID_CAN_ID
+    int line_number = 0;
+    int fpu_id = 0;
+    FPUArray::t_bus_address can_route = { 0, 0, 0 };
 };
 
-void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
-                                 GridCanMap &grid_can_map_ret,
-                                 CanMapCsvFileResultInfo &result_info_ret);
+E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
+                                              GridCanMap &grid_can_map_ret,
+                                      CanMapCsvFileErrorInfo &error_info_ret);
 #endif // FLEXIBLE_CAN_MAPPING
 
 

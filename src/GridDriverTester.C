@@ -44,14 +44,16 @@ void GridDriverTester::doGridDriverUnitTests()
 {
     // Performs ad-hoc unit tests on a GridDriver instance
 
+    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
+
 #ifdef FLEXIBLE_CAN_MAPPING
     //..........................................................................
     // Test CAN map CSV file reading
     std::string csv_file_path("/home/bartw/BartsStuff/test_can_map.csv");
     GridCanMap grid_can_map;
-    CanMapCsvFileResultInfo csv_file_result_info;
-    gridDriverReadCanMapCsvFile(csv_file_path, grid_can_map,
-                                csv_file_result_info);
+    CanMapCsvFileErrorInfo csv_file_error_info;
+    ecan_result = gridDriverReadCanMapCsvFile(csv_file_path, grid_can_map,
+                                              csv_file_error_info);
 
     //..........................................................................
     // Test creating and initialising a GridDriver instance

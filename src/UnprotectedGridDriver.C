@@ -120,17 +120,32 @@ void gridDriverAbortDuringFindDatumOrExecuteMotion(void)
 
 #ifdef FLEXIBLE_CAN_MAPPING
 //------------------------------------------------------------------------------
-void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
-                                 GridCanMap &grid_can_map_ret,
-                                 CanMapCsvFileResultInfo &result_info_ret)
+E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
+                                              GridCanMap &grid_can_map_ret,
+                                      CanMapCsvFileErrorInfo &error_info_ret)
 {
     // Reads the FPU ID and CAN map data from a grid driver CAN map CSV file.
     // Arguments / return values:
     //   - csv_file_path: Must be of the general form e.g. "/moons/test_jig.csv"
-    //   - grid_can_map_ret: Returns the FPU ID and CAN mapping data if
-    //     successful
-    //   - result_info_ret: Returns further information about the parsing
-    //     results
+    //   - If the CSV file was successfully parsed then returns DE_OK, and
+    //     grid_can_map_ret will contain the FPU ID and CAN mapping list
+    //   - If an error occurs then one of the following error codes is
+    //     returned, grid_can_map_ret will be of size 0, and the values in
+    //     error_info_ret will give more information for the particular error
+    //     wherever relevant (including the line number of the error in the
+    //     CSV file):
+    //       - DE_RESOURCE_ERROR if the CSV file couldn't be opened for some
+    //         reason
+    //       - DE_INVALID_NUM_PARAMS if incorrect number of fields on a line
+    //       - DE_INVALID_PAR_VALUE if any of the fields on a line couldn't be
+    //         converted to their required type
+    //       - DE_NO_FPUS_DEFINED if no FPU ID / CAN route lines were
+    //         successfully found
+    //       - DE_INVALID_FPU_ID / DE_INVALID_GATEWAY_ID /
+    //         DE_INVALID_CAN_BUS_ID / DE_INVALID_CAN_ID if an out-of-range
+    //         invalid value is found
+    //       - DE_DUPLICATE_FPU_ID / DE_DUPLICATE_CAN_ROUTE if a duplicate
+    //         one of these is found
 
     grid_can_map_ret.clear();
 
@@ -145,14 +160,13 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
     }
     else
     {
-        result_info_ret.ecan_result = DE_RESOURCE_ERROR;
-        return;
+        return DE_RESOURCE_ERROR;
     }
 
     int current_line_num = 0;
     std::string line_str;
-    std::set<int> fpu_ids_temp;
-    std::set<uint32_t> can_routes_uints_temp;
+    std::set<int> fpu_ids_temp;                 // | Temporary sets used for
+    std::set<uint32_t> can_routes_uints_temp;   // | duplicate checking
 
     // Parse and check each line's data items and add to FPU ID / CAN route list
     while (std::getline(csv_file_stream, line_str))
@@ -176,12 +190,12 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
             line_item_strs.push_back(line_item_str);
         }
 
+        int fpu_id = 0;
+        FPUArray::t_bus_address can_route = { 0, 0, 0 };
         if (line_item_strs.size() == 4)
         {
             //..................................................................
             // Extract the line's fields
-            int fpu_id;
-            FPUArray::t_bus_address can_route;
             try
             {
                 fpu_id = std::stoi(line_item_strs[0]);
@@ -202,31 +216,27 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
                 if ((fpu_id < 0) || (fpu_id >= FPU_ID_BROADCAST_BASE))
                 {
                     ecan_result = DE_INVALID_FPU_ID;
-                    result_info_ret.invalid_fpu_id_val = fpu_id;
                 }
                 else if ((can_route.gateway_id < 0) ||
                          (can_route.gateway_id >= MAX_NUM_GATEWAYS))
                 {
                     ecan_result = DE_INVALID_GATEWAY_ID;
-                    result_info_ret.invalid_gateway_id_val = can_route.gateway_id;
                 }
                 else if ((can_route.bus_id < 0) ||
                          (can_route.bus_id >= BUSES_PER_GATEWAY))
                 {
                     ecan_result = DE_INVALID_CAN_BUS_ID;
-                    result_info_ret.invalid_can_bus_id_val = can_route.bus_id;
                 }
                 else if ((can_route.can_id < 1) ||
                          (can_route.can_id > FPUS_PER_BUS))
                 {
                     ecan_result = DE_INVALID_CAN_ID;
-                    result_info_ret.invalid_can_id_val = can_route.can_id;
                 }
             }
 
             //..................................................................
-            // If fpu_id and CAN route are not duplicates then add the FPU ID/
-            // CAN route item
+            // If fpu_id and CAN route are not duplicates then add the FPU ID /
+            // CAN route item to the list
             if (ecan_result == DE_OK)
             {
                 uint32_t can_route_uint =
@@ -243,7 +253,7 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
                 }
                 else
                 {
-                    // Add the FPU ID/ CAN route item
+                    // Add the FPU ID / CAN route item to the list
                     std::pair<int, FPUArray::t_bus_address> fpu_can_route;
                     fpu_can_route.first = fpu_id;
                     fpu_can_route.second = can_route;
@@ -260,7 +270,9 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
 
         if (ecan_result != DE_OK)
         {
-            result_info_ret.bad_line_number = current_line_num;
+            error_info_ret.line_number = current_line_num;
+            error_info_ret.fpu_id = fpu_id;
+            error_info_ret.can_route = can_route;
             break;
         }
     }
@@ -275,10 +287,12 @@ void gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
         grid_can_map_ret.clear();
     }
 
-    // ************ TODO: Check if csv_file_stream is actually open before close it below?
-    csv_file_stream.close();
+    if (csv_file_stream.is_open())
+    {
+        csv_file_stream.close();
+    }
 
-    result_info_ret.ecan_result = ecan_result;
+    return ecan_result;
 }
 
 //------------------------------------------------------------------------------
