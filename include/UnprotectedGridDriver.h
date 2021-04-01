@@ -103,6 +103,10 @@ struct CanMapCsvFileErrorInfo
 E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
                                               GridCanMap &grid_can_map_ret,
                                       CanMapCsvFileErrorInfo &error_info_ret);
+void gridDriverConvertCsvFileErrorInfoToString(const std::string &csv_file_path,
+                                               E_EtherCANErrCode error_code,
+                                      const CanMapCsvFileErrorInfo &error_info,
+                                               std::string &error_string_ret);
 #endif // FLEXIBLE_CAN_MAPPING
 
 
@@ -150,7 +154,7 @@ public:
 
     E_EtherCANErrCode initialize(
 #ifdef FLEXIBLE_CAN_MAPPING
-        const std::string &can_map_file_path,
+        const GridCanMap &grid_can_map,
 #endif // FLEXIBLE_CAN_MAPPING
         E_LogLevel logLevel = DEFAULT_LOGLEVEL,
         const std::string &log_dir = DEFAULT_LOGDIR,

@@ -61,7 +61,7 @@ public:
 
     E_EtherCANErrCode wrapped_initialize(
 #ifdef FLEXIBLE_CAN_MAPPING
-                                         const std::string &can_map_file_path,
+                                         const std::string &can_map_csv_file_path,
 #endif // FLEXIBLE_CAN_MAPPING
                                          E_LogLevel logLevel,
                                          const std::string &log_dir,

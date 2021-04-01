@@ -491,7 +491,7 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
     // Invalid command parameters
 
     case DE_INVALID_FPU_ID:
-        throw EtherCANException("DE_INVALID_FPU_ID: A passed FPU id is invalid.",
+        throw EtherCANException("DE_INVALID_FPU_ID: Invalid FPU ID.",
                                 DE_INVALID_FPU_ID);
         break;
 
@@ -507,17 +507,17 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
 
 #ifdef FLEXIBLE_CAN_MAPPING
     case DE_INVALID_GATEWAY_ID:
-        throw EtherCANException("DE_INVALID_GATEWAY_ID: A specified EtherCAN gateway ID is invalid.",
+        throw EtherCANException("DE_INVALID_GATEWAY_ID: Invalid EtherCAN gateway ID.",
                                 DE_INVALID_GATEWAY_ID);
         break;
 
     case DE_INVALID_CAN_BUS_ID:
-        throw EtherCANException("DE_INVALID_CAN_BUS_ID: A specified CAN bus ID is invalid.",
+        throw EtherCANException("DE_INVALID_CAN_BUS_ID: Invalid CAN bus ID.",
                                 DE_INVALID_CAN_BUS_ID);
         break;
 
     case DE_INVALID_CAN_ID:
-        throw EtherCANException("DE_INVALID_CAN_ID: A specified CAN ID is invalid.",
+        throw EtherCANException("DE_INVALID_CAN_ID: Invalid CAN ID.",
                                 DE_INVALID_CAN_ID);
         break;
 

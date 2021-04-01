@@ -237,7 +237,7 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
 //------------------------------------------------------------------------------
 E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(
 #ifdef FLEXIBLE_CAN_MAPPING
-                                        const std::string &can_map_file_path,
+                                        const std::string &can_map_csv_file_path,
 #endif // FLEXIBLE_CAN_MAPPING
                                         E_LogLevel logLevel,
                                         const std::string &log_dir,
@@ -254,7 +254,32 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(
     if (!initializedOk())   // Only initialise if not already done
     {
 #ifdef FLEXIBLE_CAN_MAPPING
-        ecode = initialize(can_map_file_path, logLevel, log_dir,
+        GridCanMap grid_can_map;
+        CanMapCsvFileErrorInfo csv_file_error_info;
+        ecode = gridDriverReadCanMapCsvFile(can_map_csv_file_path,
+                                            grid_can_map, csv_file_error_info);
+        if (ecode == DE_OK)
+        {
+            std::cout << "Grid CAN map CSV file was successfully read - ";
+            std::cout << std::to_string(grid_can_map.size()) << " x FPUs were found.";
+            std::cout << std::endl;
+        }
+        else
+        {
+            std::cout << "*** ERROR ***: Grid CAN map CSV file opening, reading "
+                         "or parsing failed during the initialize() command\n";
+            std::string error_info_string; 
+            gridDriverConvertCsvFileErrorInfoToString(can_map_csv_file_path,
+                                                      ecode,
+                                                      csv_file_error_info,
+                                                      error_info_string);
+            std::cout << error_info_string;
+            std::cout << std::endl;
+            checkInterfaceError(ecode);
+            return ecode;
+        }
+
+        ecode = initialize(grid_can_map, logLevel, log_dir,
                            firmware_version_address_offset, protection_logfile,
                            control_logfile, tx_logfile, rx_logfile,
                            start_timestamp);
@@ -269,13 +294,13 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(
             if (ecode != DE_OK)
             {
                 std::cout << "*** ERROR ***: initProtection() call failed "
-                             "during the initialize command" << std::endl;
+                             "during the initialize() command" << std::endl;
             }
         }
         else
         {
             std::cout << "*** ERROR ***: initialize() call failed during "
-                         "the initialize command" << std::endl;
+                         "the initialize() command" << std::endl;
         }
     }
     else

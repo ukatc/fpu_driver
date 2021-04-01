@@ -146,11 +146,13 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
     //   - csv_file_path: Must be of the general form e.g. "/moons/test_jig.csv"
     //   - If the CSV file was successfully parsed then returns DE_OK, and
     //     grid_can_map_ret will contain the FPU ID / CAN mapping list
-    //   - If an error occurs, then one of the following error codes is
+    //   - If an error occurs then one of the following error codes is
     //     returned, grid_can_map_ret will be of size 0, and the values in
     //     error_info_ret will give more information for the particular error
     //     wherever relevant (including the CSV file line number for the
-    //     error):
+    //     error). N.B. A tidy error message for this error_info data can be 
+    //     produced using gridDriverConvertCsvFileErrorInfoToString(). The
+    //     error codes are as follows:
     //       - DE_RESOURCE_ERROR if the CSV file couldn't be opened for some
     //         reason
     //       - DE_INVALID_NUM_PARAMS if incorrect number of fields on a line
@@ -326,7 +328,7 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
         }
     }
 
-    if (grid_can_map_ret.size() == 0)
+    if ((ecan_result == DE_OK) && (grid_can_map_ret.size() == 0))
     {
         ecan_result = DE_NO_FPUS_DEFINED;
     }
@@ -345,6 +347,29 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
 }
 
 //------------------------------------------------------------------------------
+void gridDriverConvertCsvFileErrorInfoToString(const std::string &csv_file_path,
+                                               E_EtherCANErrCode error_code,
+                                      const CanMapCsvFileErrorInfo &error_info,
+                                               std::string &error_string_ret)
+{
+
+    // TODO: Add error code text to the resultant string eventually - currently
+    // can't do this because the code-to-text conversion functionality isn't
+    // yet fully separately implemented in C++ (just in the Boost.Python layer
+    // at the moment - see checkInterfaceError() in WrapperSharedBase.C)
+
+    error_string_ret =
+        std::string("CSV file path specified: ") + csv_file_path + 
+                    "\nFurther error info: Line number = " +
+        std::to_string(error_info.line_number) + ", FPU ID = " +
+        std::to_string(error_info.fpu_id) + ", gateway ID = " +
+        std::to_string(error_info.can_route.gateway_id) + ", bus ID = " +
+        std::to_string(error_info.can_route.bus_id) + ", CAN ID = " +
+        std::to_string(error_info.can_route.can_id) + "\n";
+}
+
+//------------------------------------------------------------------------------
+
 #endif // FLEXIBLE_CAN_MAPPING
 
 
@@ -417,7 +442,7 @@ UnprotectedGridDriver::~UnprotectedGridDriver()
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::initialize(
 #ifdef FLEXIBLE_CAN_MAPPING
-                                const std::string &can_map_file_path,
+                                const GridCanMap &grid_can_map,
 #endif // FLEXIBLE_CAN_MAPPING
                                 E_LogLevel logLevel,
                                 const std::string &log_dir,
@@ -428,11 +453,17 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
                                 const std::string &rx_logfile,
                                 const std::string &start_timestamp)
 {
-    // This function performs further initialisations. It is required to
-    // be separate from the constructor for supporting Boost.Python wrapping,
-    // because Boost.Python only supports up to 14 function arguments, so
-    // can't supply all of the 20-plus required initialisation arguments via
-    // the constructor alone.
+    // This function performs further initialisations.
+    // *** IMPORTANT ***: grid_can_map must have been been fully checked for
+    // value ranges and FPU ID / CAN route duplicates before being passed into
+    // this function (N.B. gridDriverReadCanMapCsvFile() performs these checks
+    // when it reads the file) - this function assumes that it contains only
+    // valid entries, and only performs minimal safety checks on them.
+
+    // N.B. This function is required to be separate from the constructor for
+    // supporting Boost.Python wrapping, because Boost.Python only supports up
+    // to 14 function arguments, so can't supply all of the 20-plus required
+    // initialisation arguments via the constructor alone.
 
     //................................
     // TODO: Temporary for now, to prevent build warnings
@@ -483,32 +514,19 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 
 #ifdef FLEXIBLE_CAN_MAPPING
 
-    // TODO here: Try opening can_map_file_path:
-    //   - If opens OK then parse it, check for ranges/duplicates etc, and
-    //     populate grid_can_map from it
-    //   - Any need to sort it into FPU ID order? Any advantage to this? (I
-    //     don't think so?)
-    //   - If doesn't open OK then abort with appropriate error code - add
-    //     further DE_XXX error code(s) for errors relating to the CAN map
-    //     file?
-
-    //*****************
-    //  TODO: Temporary for testing
-    GridCanMap grid_can_map =
-    {
-        // FPU ID   gateway_id  bus_id  can_id
-
-        {  28,     { 0,          0,      1} },
-        //{  1,     { 0,          0,      2} },  **************************
-        {  45,     { 0,          0,      3} }
-    };
-    //*****************
-
     // Create fpu_id_list and populate it from the FPU IDs in grid_can_map
     std::vector<int> fpu_id_list;
     for (size_t i = 0; i < grid_can_map.size(); i++)
     {
-        fpu_id_list.push_back(grid_can_map[i].first);
+        int fpu_id = grid_can_map[i].first;
+        if ((fpu_id >= 0) && (fpu_id < FPU_ID_BROADCAST_BASE))
+        {
+            fpu_id_list.push_back(fpu_id);
+        }
+        else
+        {
+            return DE_INVALID_FPU_ID;
+        }
     }
 
     ecan_result = config.initFpuIdList(fpu_id_list);

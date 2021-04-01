@@ -48,18 +48,38 @@ void GridDriverTester::doGridDriverUnitTests()
 
 #ifdef FLEXIBLE_CAN_MAPPING
     //..........................................................................
-    // Test CAN map CSV file reading
-    std::string csv_file_path("/home/bartw/BartsStuff/test_can_map.csv");
-    GridCanMap grid_can_map;
-    CanMapCsvFileErrorInfo csv_file_error_info;
-    ecan_result = gridDriverReadCanMapCsvFile(csv_file_path, grid_can_map,
-                                              csv_file_error_info);
+    // Test CAN map CSV file reading and error string generation
+    { // N.B. Inside own scope
+        std::string csv_file_path("/home/bartw/BartsStuff/grid_can_map_3fpus.csv");
+        GridCanMap grid_can_map_test;
+        CanMapCsvFileErrorInfo csv_file_error_info;
+        ecan_result = gridDriverReadCanMapCsvFile(csv_file_path,
+                                                  grid_can_map_test,
+                                                  csv_file_error_info);
+        if (ecan_result != DE_OK)
+        {
+            std::string error_info_string; 
+            gridDriverConvertCsvFileErrorInfoToString(csv_file_path,
+                                                      ecan_result,
+                                                      csv_file_error_info,
+                                                      error_info_string);
+        }
+    }
 
     //..........................................................................
     // Test creating and initialising a GridDriver instance
 
     GridDriver gd;
-    gd.initialize(test_can_map_path);
+
+    GridCanMap grid_can_map =
+    {
+        // FPU ID    gateway_id  bus_id  can_id
+        {  276,     { 0,          2,      29 } },
+        {  558,     { 1,          3,      58 } },
+        {  900,     { 2,          4,      71 } }
+    };
+
+    gd.initialize(grid_can_map);
 
 #else // NOT FLEXIBLE_CAN_MAPPING
     static const int num_fpus = 10;
@@ -151,7 +171,16 @@ void GridDriverTester::doUnprotectedGridDriverFunctionalTesting()
 
 #ifdef FLEXIBLE_CAN_MAPPING
     UnprotectedGridDriver ugd;
-    ecan_result = ugd.initialize(test_can_map_path);
+
+    GridCanMap grid_can_map =
+    {
+        // FPU ID   gateway_id  bus_id  can_id
+        {  0,     { 0,          0,      1 } },
+        {  1,     { 0,          0,      2 } },
+        {  2,     { 0,          0,      3 } }
+    };
+
+    ecan_result = ugd.initialize(grid_can_map);
 #else // NOT FLEXIBLE_CAN_MAPPING
     UnprotectedGridDriver ugd(num_fpus);
 
@@ -190,7 +219,16 @@ void GridDriverTester::doGridDriverFunctionalTesting()
 
 #ifdef FLEXIBLE_CAN_MAPPING
     GridDriver gd;
-    ecan_result = gd.initialize(test_can_map_path);
+
+    GridCanMap grid_can_map =
+    {
+        // FPU ID   gateway_id  bus_id  can_id
+        {  0,     { 0,          0,      1 } },
+        {  1,     { 0,          0,      2 } },
+        {  2,     { 0,          0,      3 } }
+    };
+
+    ecan_result = gd.initialize(grid_can_map);
 #else // NOT FLEXIBLE_CAN_MAPPING
     GridDriver gd(num_fpus);
 
