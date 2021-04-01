@@ -195,7 +195,6 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
             continue;
         }
 
-#if 1
         // Copy line string to a raw C line buffer
         const int line_buf_size = 100;
         char line_buf[line_buf_size];
@@ -205,6 +204,11 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
         line_buf[line_buf_size - 1] = '\0';
 
         // Change the various padding and delimiter characters to nulls
+        // IMPORTANT: For files generated in Windows (e.g. exported from Excel
+        // in Windows), the different Windows line endings will result in an
+        // extra \r at the end of the line - this will be removed OK by the
+        // following code.
+        //
         // TODO: NOTE: If these characters are inside strings then they will
         // still be nulled, so this approach isn't good if want to eventually
         // also support the extraction of strings (possibly surrounded by
@@ -234,22 +238,6 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
                 between_fields = false;
             }
         }
-
-        //std::regex re(" \t,");
-        //N.B. The '-1' is what makes the regex split (-1 := what was not matched)
-        //std::sregex_token_iterator first{line_str.begin(), line_str.end(), re, -1}, last;
-        //std::vector<std::string> line_item_strs{first, last};
-#else
-        std::stringstream line_stream(line_str);
-
-        // Get the line's items into a vector of strings
-        std::string line_item_str;
-        std::vector<std::string> line_item_strs;
-        while (line_stream >> line_item_str)
-        {
-            line_item_strs.push_back(line_item_str);
-        }
-#endif
 
         int fpu_id = 0;
         FPUArray::t_bus_address can_route = { 0, 0, 0 };
@@ -296,8 +284,8 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
             }
 
             //..................................................................
-            // If fpu_id and CAN route are not duplicates then add the FPU ID /
-            // CAN route item to the list
+            // Check that fpu_id and CAN route are not duplicates, then add
+            // them to the list
             if (ecan_result == DE_OK)
             {
                 uint32_t can_route_uint =
