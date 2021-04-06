@@ -180,7 +180,7 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
 
 #ifdef FLEXIBLE_CAN_MAPPING
     std::cout << "Note: The C++ FLEXIBLE_CAN_MAPPING macro is enabled in this\n";
-    std::cout << "build, so need to provide an FPU definition CSV file path when\n";
+    std::cout << "build, so need to provide an FPU CAN map definition file path when\n";
     std::cout << "calling initialize(). The old num_fpus approach is no longer\n";
     std::cout << "supported in this build.\n";
     std::cout << std::endl;
@@ -237,7 +237,7 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
 //------------------------------------------------------------------------------
 E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(
 #ifdef FLEXIBLE_CAN_MAPPING
-                                        const std::string &can_map_csv_file_path,
+                                        const std::string &canmap_file_path,
 #endif // FLEXIBLE_CAN_MAPPING
                                         E_LogLevel logLevel,
                                         const std::string &log_dir,
@@ -255,24 +255,24 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(
     {
 #ifdef FLEXIBLE_CAN_MAPPING
         GridCanMap grid_can_map;
-        CanMapCsvFileErrorInfo csv_file_error_info;
-        ecode = gridDriverReadCanMapCsvFile(can_map_csv_file_path,
-                                            grid_can_map, csv_file_error_info);
+        CanMapFileErrorInfo canmap_file_error_info;
+        ecode = gridDriverReadCanMapFile(canmap_file_path, grid_can_map,
+                                         canmap_file_error_info);
         if (ecode == DE_OK)
         {
-            std::cout << "Grid CAN map CSV file was successfully read - ";
+            std::cout << "Grid CAN map file was successfully read - ";
             std::cout << std::to_string(grid_can_map.size()) << " x FPUs were found.";
             std::cout << std::endl;
         }
         else
         {
-            std::cout << "*** ERROR ***: Grid CAN map CSV file opening, reading "
+            std::cout << "*** ERROR ***: Grid CAN map file opening, reading "
                          "or parsing failed during the initialize() command\n";
             std::string error_info_string; 
-            gridDriverConvertCsvFileErrorInfoToString(can_map_csv_file_path,
-                                                      ecode,
-                                                      csv_file_error_info,
-                                                      error_info_string);
+            gridDriverConvertCanMapFileErrorInfoToString(canmap_file_path,
+                                                         ecode,
+                                                         canmap_file_error_info,
+                                                         error_info_string);
             std::cout << error_info_string;
             std::cout << std::endl;
             checkInterfaceError(ecode);

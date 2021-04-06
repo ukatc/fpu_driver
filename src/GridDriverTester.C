@@ -48,21 +48,21 @@ void GridDriverTester::doGridDriverUnitTests()
 
 #ifdef FLEXIBLE_CAN_MAPPING
     //..........................................................................
-    // Test CAN map CSV file reading and error string generation
+    // Test CAN map file reading and error string generation
     { // N.B. Inside own scope
-        std::string csv_file_path("/home/bartw/BartsStuff/grid_can_map_3fpus.csv");
+        std::string canmap_file_path("/home/bartw/BartsStuff/grid_can_map_3fpus.csv");
         GridCanMap grid_can_map_test;
-        CanMapCsvFileErrorInfo csv_file_error_info;
-        ecan_result = gridDriverReadCanMapCsvFile(csv_file_path,
-                                                  grid_can_map_test,
-                                                  csv_file_error_info);
+        CanMapFileErrorInfo canmap_file_error_info;
+        ecan_result = gridDriverReadCanMapFile(canmap_file_path, 
+                                               grid_can_map_test,
+                                               canmap_file_error_info);
         if (ecan_result != DE_OK)
         {
-            std::string error_info_string; 
-            gridDriverConvertCsvFileErrorInfoToString(csv_file_path,
-                                                      ecan_result,
-                                                      csv_file_error_info,
-                                                      error_info_string);
+            std::string error_info_string;
+            gridDriverConvertCanMapFileErrorInfoToString(canmap_file_path,
+                                                         ecan_result,
+                                                         canmap_file_error_info,
+                                                         error_info_string);
         }
     }
 

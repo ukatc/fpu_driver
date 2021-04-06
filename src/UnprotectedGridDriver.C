@@ -121,12 +121,12 @@ void gridDriverAbortDuringFindDatumOrExecuteMotion(void)
 
 #ifdef FLEXIBLE_CAN_MAPPING
 //------------------------------------------------------------------------------
-E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
-                                              GridCanMap &grid_can_map_ret,
-                                      CanMapCsvFileErrorInfo &error_info_ret)
+E_EtherCANErrCode gridDriverReadCanMapFile(const std::string &canmap_file_path,
+                                           GridCanMap &grid_can_map_ret,
+                                      CanMapFileErrorInfo &error_info_ret)
 {
-    // Reads the FPU ID and CAN map data from a grid driver CAN map CSV file.
-    // The CSV file contents need to be of the following form:
+    // Reads the FPU ID and CAN map data from a grid driver CAN map file.
+    // The CAN map CSV-style file contents need to be of the following form:
     //   - 4 columns of numeric values as follows:
     //       - FPU ID: 0 to 1124 (FPU_ID_BROADCAST_BASE - 1)
     //       - Gateway ID: 0 to 2 (MAX_NUM_GATEWAYS - 1)
@@ -143,17 +143,17 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
     //   - Checks for duplicate FPU IDs and duplicate CAN routes
     //
     // Function arguments / return values:
-    //   - csv_file_path: Must be of the general form e.g. "/moons/test_jig.csv"
-    //   - If the CSV file was successfully parsed then returns DE_OK, and
+    //   - canamp_file_path: Must be of the general form e.g. "/moons/test_jig.csv"
+    //   - If the CAN map file was successfully parsed then returns DE_OK, and
     //     grid_can_map_ret will contain the FPU ID / CAN mapping list
     //   - If an error occurs then one of the following error codes is
     //     returned, grid_can_map_ret will be of size 0, and the values in
     //     error_info_ret will give more information for the particular error
-    //     wherever relevant (including the CSV file line number for the
+    //     wherever relevant (including the CAN map file line number for the
     //     error). N.B. A tidy error message for this error_info data can be 
-    //     produced using gridDriverConvertCsvFileErrorInfoToString(). The
+    //     produced using gridDriverConvertCanMapFileErrorInfoToString(). The
     //     error codes are as follows:
-    //       - DE_RESOURCE_ERROR if the CSV file couldn't be opened for some
+    //       - DE_RESOURCE_ERROR if the CAN map file couldn't be opened for some
     //         reason
     //       - DE_INVALID_NUM_PARAMS if incorrect number of fields on a line
     //       - DE_INVALID_PAR_VALUE if any of the fields on a line couldn't be
@@ -171,9 +171,9 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
     E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
 
     // Attempt to open file
-    std::ifstream csv_file_stream;
-    csv_file_stream.open(csv_file_path);
-    if (csv_file_stream.good())
+    std::ifstream canmap_file_stream;
+    canmap_file_stream.open(canmap_file_path);
+    if (canmap_file_stream.good())
     {
         ecan_result = DE_OK;
     }
@@ -188,7 +188,7 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
     std::set<uint32_t> can_routes_uints_temp;   // | duplicate checking
 
     // Parse and check each line's data items and add to FPU ID / CAN route list
-    while (std::getline(csv_file_stream, line_str))
+    while (std::getline(canmap_file_stream, line_str))
     {
         current_line_num++;
 
@@ -338,19 +338,19 @@ E_EtherCANErrCode gridDriverReadCanMapCsvFile(const std::string &csv_file_path,
         grid_can_map_ret.clear();
     }
 
-    if (csv_file_stream.is_open())
+    if (canmap_file_stream.is_open())
     {
-        csv_file_stream.close();
+        canmap_file_stream.close();
     }
 
     return ecan_result;
 }
 
 //------------------------------------------------------------------------------
-void gridDriverConvertCsvFileErrorInfoToString(const std::string &csv_file_path,
-                                               E_EtherCANErrCode error_code,
-                                      const CanMapCsvFileErrorInfo &error_info,
-                                               std::string &error_string_ret)
+void gridDriverConvertCanMapFileErrorInfoToString(const std::string &canmap_file_path,
+                                                  E_EtherCANErrCode error_code,
+                                                  const CanMapFileErrorInfo &error_info,
+                                                  std::string &error_string_ret)
 {
 
     // TODO: Add error code text to the resultant string eventually - currently
@@ -359,7 +359,7 @@ void gridDriverConvertCsvFileErrorInfoToString(const std::string &csv_file_path,
     // at the moment - see checkInterfaceError() in WrapperSharedBase.C)
 
     error_string_ret =
-        std::string("CSV file path specified: ") + csv_file_path + 
+        std::string("CAN map file path specified: ") + canmap_file_path + 
                     "\nFurther error info: Line number = " +
         std::to_string(error_info.line_number) + ", FPU ID = " +
         std::to_string(error_info.fpu_id) + ", gateway ID = " +
@@ -456,14 +456,14 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
     // This function performs further initialisations.
     // *** IMPORTANT ***: grid_can_map must have been been fully checked for
     // value ranges and FPU ID / CAN route duplicates before being passed into
-    // this function (N.B. gridDriverReadCanMapCsvFile() performs these checks
+    // this function (N.B. gridDriverReadCanMapFile() performs these checks
     // when it reads the file) - this function assumes that it contains only
     // valid entries, and only performs minimal safety checks on them.
 
-    // N.B. This function is required to be separate from the constructor for
-    // supporting Boost.Python wrapping, because Boost.Python only supports up
-    // to 14 function arguments, so can't supply all of the 20-plus required
-    // initialisation arguments via the constructor alone.
+    // N.B. This function is required to be separate from the constructor in
+    // order to support Boost.Python wrapping, because Boost.Python only
+    // supports up to 14 function arguments, so can't supply all of the 20-plus
+    // required initialisation arguments via the constructor alone.
 
     //................................
     // TODO: Temporary for now, to prevent build warnings
