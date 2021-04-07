@@ -6,6 +6,11 @@
 # New version of initialiseGrid script, which uses the new C++ / Boost.Python-
 # wrapped version of the grid driver functionality.
 #
+# NOTE: This script was modified for the new flexible CAN mapping functionality.
+# TODO: Have put the text "FLEXIBLE_CAN_MAPPING" here temporarily, so that
+# helps with searching for flexible CAN mapping changes across the codebase -
+# remove this comment eventually. 
+#
 ################################################################################
 
 """
@@ -17,17 +22,20 @@ and pinging the FPUs, then it hands over to the user.
 
 The script can be started by the command
 
-    python -i initialiseGrid.py -N <number of FPUs> --gateway_address <IP address>
+    python -i initialiseGrid_NEW.py -F <CAN map file path> --gateway_address <IP address>
 
-For example (for 3 FPUs)
+where the CAN map file path points to the CAN map text file which defines the list
+of FPU IDs and their CAN routes, in 4 columns of numbers (without headings):
+        <FPU ID> <Gateway ID> <Bus ID> <CAN ID>
 
-    python -i initialiseGrid.py -N 3 --gateway_address 192.168.0.10
-    python -i initialiseGrid.py -N 3 --gateway_address 192.168.0.11
+For example:
+
+    python -i initialiseGrid_NEW.py -F /moons/canmap1.csv --gateway_address 192.168.0.10
 
 If EtherCAN hardware is not available, the script can communicate with the EtherCAN
 simulator (mock gateway) with the command:
 
-    python -i initialiseGrid.py -N <number of FPUs> --mockup
+    python -i initialiseGrid_NEW.py -F <CAN map file path> --mockup
 
 The mock gateway must be started first.
 
@@ -86,8 +94,8 @@ then ping the FPUs. Use python -i initialiseGrid.py for interactive mode.
     parser.add_argument('--gateway_address', metavar='GATEWAY_ADDRESS', type=str, default="192.168.0.10",
                         help='EtherCAN gateway IP address or hostname (default: %(default)r)')
 
-    parser.add_argument('-N', '--NUM_FPUS',  metavar='NUM_FPUS', dest='N', type=int, default=NUM_FPUS,
-                        help='Number of adressed FPUs (default: %(default)s).')
+    parser.add_argument('-F', '--can_map_file',  metavar='CAN_MAP_FILE',
+                        dest='F', type=str, help='Path of CAN map file')
 
     args = parser.parse_args()
     return args
@@ -95,9 +103,9 @@ then ping the FPUs. Use python -i initialiseGrid.py for interactive mode.
 #-------------------------------------------------------------------------------
 def initialize_FPU(args):
     # Execute the common sequence of commands to initialize the FPU grid.
-    gd = ethercanif.GridDriver(nfpus = args.N)
+    gd = ethercanif.GridDriver()
 
-    gd.initialize(mockup = args.mockup)
+    gd.initialize(canmapfile = args.F, mockup = args.mockup)
 
     if args.mockup:
         gateway_address = [ ethercanif.GatewayAddress("127.0.0.1", p)
@@ -146,7 +154,7 @@ def check_status( gs ):
     # Print a summary of the important status fields for each FPU.
     strg =  " ID    FPU       State           asteps bsteps adatum bdatum  aref  bref alimit bcollision wfstatus wfvalid\n"
     strg += "---- ------ -------------------- ------ ------ ------ ------ ----- ----- ------ ---------- -------- -------\n"
-    for fpu_id in range(0, len(gs.FPU)):
+    for fpu_id in gd.getFpuIdList():
        fpu = gs.FPU[fpu_id]
        strg += "%4d " % fpu_id
        strg += "%6s " % str(fpu.serial_number)
@@ -187,8 +195,8 @@ if __name__ == '__main__':
     print("Tracked positions:")
     gd.trackedAngles(grid_state)
 
-    clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
-    acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(args.N)])
+    clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in gd.getFpuIdList()])
+    acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in gd.getFpuIdList()])
 
     print("""If none of the FPUs are in an error state, you can issue now:
 

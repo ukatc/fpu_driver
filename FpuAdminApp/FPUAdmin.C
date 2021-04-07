@@ -226,10 +226,10 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
     // Check if specified FPU ID is in CAN map file, and if so then initialise
     // the grid driver for it
     UnprotectedGridDriver ugd;
-    FPUArray::t_bus_address can_route = { 0, 0, 0 };
     if (ecan_result == DE_OK)
     {
         GridCanMap can_map_for_single_fpu;
+        FPUArray::t_bus_address can_route = { 0, 0, 0 };
         for (const auto &it : grid_can_map)
         {
             if (it.first == fpu_id)
