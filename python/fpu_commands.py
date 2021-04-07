@@ -669,11 +669,15 @@ def gen_wf(fpu_angles_list,
     FPU_ID_BROADCAST_BASE = 1125
 
     # Perform some checks on fpu_angles_list
+    fpu_ids_without_duplicates = set()
     for fpu_angles in fpu_angles_list:
         fpu_angles = asarray(fpu_angles)
         assert(fpu_angles.ndim == 1)
         assert(fpu_angles.size == 3)
         assert(fpu_angles[0] >= 0 and fpu_angles[0] < FPU_ID_BROADCAST_BASE)
+        fpu_ids_without_duplicates.add(fpu_angles[0])
+    if len(fpu_angles_list) != len(fpu_ids_without_duplicates):
+        raise ValueError("ERROR: Duplicate FPU IDs have been specified.")
 
     # Generate a waveform for each specified FPU
     slists = dict( (fpu_angles[0],
