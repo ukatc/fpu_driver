@@ -181,6 +181,10 @@ public:
                                          t_grid_state &gs,
                                          const t_fpuset &fpuset);
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    E_EtherCANErrCode getFpuIdList(std::vector<int> &fpu_id_list_ret);
+#endif // FLEXIBLE_CAN_MAPPING
+
     E_GridState getGridState(t_grid_state &grid_state_ret);
 
     E_EtherCANErrCode findDatum(t_grid_state &gs,

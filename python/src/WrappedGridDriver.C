@@ -314,6 +314,36 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(
     return ecode;
 }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+//------------------------------------------------------------------------------
+bp::list WrappedGridDriver::wrapped_getFpuIdList()
+{
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    std::vector<int> fpu_id_list;
+    bp::list bp_fpu_id_list;
+    if (checkAndMessageIfInitializedOk())
+    {
+        ecode = getFpuIdList(fpu_id_list);
+        if (ecode == DE_OK)
+        {
+            for (const auto &it : fpu_id_list)
+            {
+                bp_fpu_id_list.append(it);
+            }
+        }
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    checkInterfaceError(ecode);
+
+    return bp_fpu_id_list;
+}
+#endif // FLEXIBLE_CAN_MAPPING
+
 //------------------------------------------------------------------------------
 WrapGridState WrappedGridDriver::wrapped_getGridState()
 {

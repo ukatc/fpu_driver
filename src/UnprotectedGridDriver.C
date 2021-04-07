@@ -674,6 +674,22 @@ E_EtherCANErrCode UnprotectedGridDriver::setStepsPerSegment(int min_steps,
     return _gd->setStepsPerSegment(min_steps, max_steps, gs, fpuset);
 }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::getFpuIdList(
+                                            std::vector<int> &fpu_id_list_ret)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    fpu_id_list_ret = config.getFpuIdList();
+    return DE_OK;
+}
+
+#endif // FLEXIBLE_CAN_MAPPING
+
 //------------------------------------------------------------------------------
 E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
 {

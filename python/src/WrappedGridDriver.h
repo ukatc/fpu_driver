@@ -72,6 +72,9 @@ public:
                                          const std::string &rx_logfile,
                                          const std::string &start_timestamp,
                                          bool mockup);
+#ifdef FLEXIBLE_CAN_MAPPING
+    bp::list wrapped_getFpuIdList();
+#endif // FLEXIBLE_CAN_MAPPING
     WrapGridState wrapped_getGridState();
     E_EtherCANErrCode wrapped_connect(bp::list &list_gateway_addresses);
     E_EtherCANErrCode wrapped_disconnect();

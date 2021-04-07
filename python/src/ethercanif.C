@@ -543,6 +543,10 @@ BOOST_PYTHON_MODULE(ethercanif)
           bp::arg("start_timestamp") = DEFAULT_START_TIMESTAMP,
           bp::arg("mockup") = false))
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    .def("getFpuIdList", &WrappedGridDriver::wrapped_getFpuIdList)
+#endif // FLEXIBLE_CAN_MAPPING
+
     .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
 
     .def("connect", &WrappedGridDriver::wrapped_connect,
