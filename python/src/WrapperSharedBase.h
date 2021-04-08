@@ -251,7 +251,7 @@ public:
         // the valid FPU ID list in the config structure. Another approach
         // would be to add an "isValidFpu" boolean flag to the t_fpu_state FPU
         // state structure, which could be read here?
-        int count_fpus = MAX_NUM_POSITIONERS;
+        int count_fpus = FPU_ID_BROADCAST_BASE;
 #else // NOT FLEXIBLE_CAN_MAPPING
         int count_fpus = 0;
         for (int k = 0; k < NUM_FPU_STATES; k++)

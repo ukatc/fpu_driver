@@ -123,7 +123,7 @@ void gridDriverAbortDuringFindDatumOrExecuteMotion(void)
 //------------------------------------------------------------------------------
 E_EtherCANErrCode gridDriverReadCanMapFile(const std::string &canmap_file_path,
                                            GridCanMap &grid_can_map_ret,
-                                      CanMapFileErrorInfo &error_info_ret)
+                                           CanMapFileErrorInfo &error_info_ret)
 {
     // Reads the FPU ID and CAN map data from a grid driver CAN map file.
     // The CAN map CSV-style file contents need to be of the following form:
@@ -1282,11 +1282,13 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     // std::vector elements from the middle - but will work OK
     for (auto it = wtable.begin(); it != wtable.end(); )
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (config.isValidFpuId(it->fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if ((it->fpu_id >= 0) &&
-#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
             (it->fpu_id < config.num_fpus) &&
-#endif // NOT FLEXIBLE_CAN_MAPPING
             (it->fpu_id < MAX_NUM_POSITIONERS))   // Sanity checks
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             if (!fpuset[it->fpu_id])
             {
@@ -1305,6 +1307,11 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
             // Error: Bad FPU ID found in wavetable
             return DE_INVALID_FPU_ID;
         }
+    }
+
+    if (wtable.size() == 0)
+    {
+        return DE_NO_WAVEFORMS;
     }
 
     // Check whether wavetable is safe, and if so, register it
@@ -2030,15 +2037,18 @@ void UnprotectedGridDriver::sleepSecs(double seconds)
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 {
 #ifdef FLEXIBLE_CAN_MAPPING
-    // Checks that all of the FPUs specified in fpuset are part of the list
-    // specified in the config.
+    // Checks that all of the FPUs specified in fpuset are part of the FPU ID
+    // list specified in the config, and are within the allowed range.
 
     const t_fpuset &config_fpuset = config.getFpuSet();
     for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
     {
-        if (fpuset[fpu_id] && (!config_fpuset[fpu_id]))
+        if (fpuset[fpu_id])
         {
-            return DE_INVALID_FPU_ID;
+            if ((!config_fpuset[fpu_id]) || (fpu_id >= FPU_ID_BROADCAST_BASE))
+            {
+                return DE_INVALID_FPU_ID;
+            }
         }
     }
 

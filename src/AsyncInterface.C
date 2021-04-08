@@ -1019,6 +1019,14 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV1(const t_wtable& waveforms,
     //printf("validateWaveformsV1: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
     //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
 
+    if (waveforms.size() == 0)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_NO_WAVEFORMS:"
+                    "  no waveform(s) defined for specified FPU(s)\n",
+                    ethercanif::get_realtime());
+        return DE_NO_WAVEFORMS;
+    }
+
     const unsigned int num_steps = waveforms[0].steps.size();
 
     if (MIN_STEPS > MAX_STEPS)
@@ -1193,6 +1201,14 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV2(const t_wtable& waveforms,
                 ethercanif::get_realtime());
     //printf("validateWaveformsV2: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
     //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
+
+    if (waveforms.size() == 0)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_NO_WAVEFORMS:"
+                    "  no waveform(s) defined for specified FPU(s)\n",
+                    ethercanif::get_realtime());
+        return DE_NO_WAVEFORMS;
+    }
 
     const unsigned int num_steps = waveforms[0].steps.size();
 
@@ -1370,6 +1386,14 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV3(const t_wtable& waveforms,
                 ethercanif::get_realtime());
     //printf("validateWaveformsV3: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
     //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
+
+    if (waveforms.size() == 0)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_NO_WAVEFORMS:"
+                    "  no waveform(s) defined for specified FPU(s)\n",
+                    ethercanif::get_realtime());
+        return DE_NO_WAVEFORMS;
+    }
 
     const unsigned int num_steps = waveforms[0].steps.size();
 
@@ -1552,6 +1576,14 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV4(const t_wtable& waveforms,
     //printf("validateWaveformsV4: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_INCREASE_FACTOR=%f\n",
     //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_INCREASE_FACTOR);
 
+    if (waveforms.size() == 0)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_NO_WAVEFORMS:"
+                    "  no waveform(s) defined for specified FPU(s)\n",
+                    ethercanif::get_realtime());
+        return DE_NO_WAVEFORMS;
+    }
+
     const int MAX_DCHANGE_STEPS = 120;
     const unsigned int num_steps = waveforms[0].steps.size();
 
@@ -1732,6 +1764,14 @@ E_EtherCANErrCode AsyncInterface::validateWaveformsV5(const t_wtable& waveforms,
                 ethercanif::get_realtime());
     //printf("validateWaveformsV5: MIN_STEPS=%i, MAX_STEPS=%i, MAX_START_STEPS=%i, MAX_NUM_SECTIONS=%i, MAX_STEP_DIFFERENCE=%i\n",
     //           MIN_STEPS, MAX_STEPS, MAX_START_STEPS, MAX_NUM_SECTIONS, MAX_STEP_DIFFERENCE);
+
+    if (waveforms.size() == 0)
+    {
+        LOG_CONTROL(LOG_ERROR, "%18.6f : AsyncInterface: error DE_NO_WAVEFORMS:"
+                    "  no waveform(s) defined for specified FPU(s)\n",
+                    ethercanif::get_realtime());
+        return DE_NO_WAVEFORMS;
+    }
 
     const int MAX_DCHANGE_STEPS = 120;
     const unsigned int num_steps = waveforms[0].steps.size();
