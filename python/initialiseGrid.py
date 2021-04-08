@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
 ################################################################################
-# initialiseGrid_NEW.py
+# initialiseGrid.py
 #
-# New version of initialiseGrid script, which uses the new C++ / Boost.Python-
-# wrapped version of the grid driver functionality.
+# New version of initialiseGrid script which uses the new C++ / Boost.Python-
+# wrapped version of the grid driver functionality, including the new flexible
+# FPU CAN mapping functionality.
 #
-# NOTE: This script was modified for the new flexible CAN mapping functionality.
-# TODO: Have put the text "FLEXIBLE_CAN_MAPPING" here temporarily, so that
-# helps with searching for flexible CAN mapping changes across the codebase -
-# remove this comment eventually. 
+# TODO: Have put the following text here temporarily: FLEXIBLE_CAN_MAPPING - so
+# that helps with searching for flexible CAN mapping changes across the
+# codebase - remove this comment eventually. 
 #
 ################################################################################
 
@@ -22,7 +22,7 @@ and pinging the FPUs, then it hands over to the user.
 
 The script can be started by the command
 
-    python -i initialiseGrid_NEW.py -F <CAN map file path> --gateway_address <IP address>
+    python -i initialiseGrid.py -F <CAN map file path> --gateway_address <IP address>
 
 where the CAN map file path points to the CAN map text file which defines the list
 of FPU IDs and their CAN routes, in 4 columns of numbers (without headings):
@@ -30,12 +30,12 @@ of FPU IDs and their CAN routes, in 4 columns of numbers (without headings):
 
 For example:
 
-    python -i initialiseGrid_NEW.py -F /moons/canmap1.csv --gateway_address 192.168.0.10
+    python -i initialiseGrid.py -F /moons/canmap1.csv --gateway_address 192.168.0.10
 
 If EtherCAN hardware is not available, the script can communicate with the EtherCAN
 simulator (mock gateway) with the command:
 
-    python -i initialiseGrid_NEW.py -F <CAN map file path> --mockup
+    python -i initialiseGrid.py -F <CAN map file path> --mockup
 
 The mock gateway must be started first.
 

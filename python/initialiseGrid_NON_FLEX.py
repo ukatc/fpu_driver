@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 
 ################################################################################
-# initialiseGrid_NEW.py
+# initialiseGrid_NON_FLEX.py
 #
-# New version of initialiseGrid script, which uses the new C++ / Boost.Python-
-# wrapped version of the grid driver functionality.
+# New version of initialiseGrid script which uses the new C++ / Boost.Python-
+# wrapped version of the grid driver functionality, **** BUT DOES NOT SUPPORT
+# THE FPU CAN mapping functionality **** (i.e. with the FLEXIBLE_CAN_MAPPING
+# macro in the C++ code DISABLED).
+#
+# TODO: This legacy script has only been kept so can go back to it temporarily
+# if required for testing / comparison. It eventually needs to be deleted.
 #
 ################################################################################
 
@@ -17,17 +22,17 @@ and pinging the FPUs, then it hands over to the user.
 
 The script can be started by the command
 
-    python -i initialiseGrid.py -N <number of FPUs> --gateway_address <IP address>
+    python -i initialiseGrid_NON_FLEX.py -N <number of FPUs> --gateway_address <IP address>
 
 For example (for 3 FPUs)
 
-    python -i initialiseGrid.py -N 3 --gateway_address 192.168.0.10
-    python -i initialiseGrid.py -N 3 --gateway_address 192.168.0.11
+    python -i initialiseGrid_NON_FLEX.py -N 3 --gateway_address 192.168.0.10
+    python -i initialiseGrid_NON_FLEX.py -N 3 --gateway_address 192.168.0.11
 
 If EtherCAN hardware is not available, the script can communicate with the EtherCAN
 simulator (mock gateway) with the command:
 
-    python -i initialiseGrid.py -N <number of FPUs> --mockup
+    python -i initialiseGrid_NON_FLEX.py -N <number of FPUs> --mockup
 
 The mock gateway must be started first.
 
