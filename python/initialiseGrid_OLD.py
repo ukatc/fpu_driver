@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 
+#*******************************************************************************
+#*******************************************************************************
+# 8/4/2021 BW: This script is now legacy - it's been replaced by the new version
+# of the initialiseGrid.py script, which supports the new flexible FPU CAN
+# mapping functionality.
+#*******************************************************************************
+#*******************************************************************************
+
 """
 
 This Python script provides an interactive interface where an expert user can
