@@ -496,7 +496,7 @@ void printHelp()
         "      This command aborts if a database already exists in the directory.\n"
         "\n"
 #ifdef FLEXIBLE_CAN_MAPPING
-        "flash [--reuse_sn] <canmap_file_path> <fpu_id> <serial_number>\n"
+        "flash [--reuse_sn] <canmap_file_path> <fpu_id> <serial_number> --gateway_address <gateway ip>\n"
         "    - Flashes serial number to the FPU with ID of <fpu_id>, as specified in the\n"
         "      CAN map file. The file path must not contain spaces. FPU must be connected.\n"
 #else // NOT FLEXIBLE_CAN_MAPPING

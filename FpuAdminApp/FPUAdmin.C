@@ -192,6 +192,13 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
         }
         else
         {
+#if 1
+            // TODO: Interim for now - need to revisit fpu-admin gateway IP
+            // specification/handling, mockup flag etc in future
+            std::cout << "Error: Gateway IP address was not specified."
+                      << std::endl;
+            return AppReturnError;
+#else
             // ************ TODO: Get GATEWAY0_ADDRESS from Linux environment
             // variable of the same name - see the Python definition of
             // GATEWAY0_ADDRESS
@@ -199,6 +206,7 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
             //gateway_addresses[0] = { GATEWAY0_ADDRESS, 4700 };
             gateway_addresses[0] = { dummy_gateway0_address, 4700 };
             num_gateways = 1;
+#endif
         }
     }
 
