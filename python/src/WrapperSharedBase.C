@@ -536,6 +536,11 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 DE_DUPLICATE_CAN_ROUTE);
         break;
 
+    case DE_NO_WAVEFORMS:
+        throw EtherCANException("DE_NO_WAVEFORMS: No waveform(s) defined for specified FPU(s).",
+                                DE_NO_WAVEFORMS);
+        break;
+
 #endif // FLEXIBLE_CAN_MAPPING
 
     //..........................................................................

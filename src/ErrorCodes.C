@@ -85,6 +85,7 @@ EtherCANErrorGroup errorGroup(E_EtherCANErrCode ecan_result)
     case DE_DUPLICATE_FPU_ID:
     case DE_DUPLICATE_CAN_ROUTE:
 #endif // FLEXIBLE_CAN_MAPPING
+    case DE_NO_WAVEFORMS:
         return EtherCANErrorGroup::InvalidParameter;
         break;
 

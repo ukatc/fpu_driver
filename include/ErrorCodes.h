@@ -176,8 +176,10 @@ enum E_EtherCANErrCode
 
     // Duplicate CAN route
     DE_DUPLICATE_CAN_ROUTE = 309,
-
 #endif // FLEXIBLE_CAN_MAPPING
+
+    // No waveform(s) defined for specified FPU(s)
+    DE_NO_WAVEFORMS = 310,
 
     //..........................................................................
     // Connection failures
