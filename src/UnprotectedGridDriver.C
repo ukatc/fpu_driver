@@ -24,7 +24,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-
 // ********** TODO: NOTE: This file (along with GridDriver.C) is Bart's work in
 // progress for converting the classes and functions in FPUGridDriver.py from
 // Python to C++.
