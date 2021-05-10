@@ -10,7 +10,6 @@
 //                       speed by 1 Hz. TODO: Correct the rounding errors causing this.
 // sbeard    2021-02-25  Changed the waveform communication error code from
 //                       DE_INVALID_WAVEFORM to DE_INVALID_WAVEFORM_REJECTED.
-//                       Also waveform status is now reported.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2038,7 +2037,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
 
         E_EtherCANErrCode vwecode = DE_OK;
 
-        // TODO: Remove unnecessary complication. Only rules 0 and 5 are now used.
         switch (ruleset_version)
         {
         case 0:
@@ -2228,7 +2226,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 return DE_NO_CONNECTION;
             }
             bool do_retry = false;
-            bool max_retries_exceeded = false;
+	    bool max_retries_exceeded = false;
             //int num_loading =  waveforms.size();
             for (int fpu_index=0; fpu_index < num_loading; fpu_index++)
             {
@@ -2243,14 +2241,14 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                 // we retry if an FPU which we tried to configure and is
                 // not locked did not change to FPST_LOADING state.
 
-               if (fpu_state.waveform_status !=  WAVEFORM_OK)
-               {
-                   LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
-                               "waveform configuration rejected for FPU #%i (waveform status=%i)\n",
-                               ethercanif::get_realtime(),
-                               fpu_id, fpu_state.waveform_status);
-                   return DE_INVALID_WAVEFORM_REJECTED;
-                }
+		if (fpu_state.waveform_status !=  WAVEFORM_OK){
+
+			LOG_CONTROL(LOG_ERROR, "%18.6f : configMotion(): warning: "
+				    "waveform configuration rejected for for FPU #%i\n",
+				    ethercanif::get_realtime(),
+				    fpu_id);
+			return DE_INVALID_WAVEFORM_REJECTED;
+		}
 
                 if ((fpu_state.state != FPST_LOCKED)
                         && ( ((first_segment && (! last_segment))
@@ -2294,7 +2292,6 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                                 resend_downcount);
                 }
             } // Next FPU
-
 	    if (max_retries_exceeded)
 	    {
 		return DE_MAX_RETRIES_EXCEEDED;
