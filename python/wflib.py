@@ -64,8 +64,13 @@ def load_paths(filename, canmap_fname="canmap.cfg", reverse=False):
 #        path_dict[fpu_id] = (alpha_path, beta_path)
 #    return path_dict
 
-    return { idmap[str(cellid)] : (alpha_path, beta_path)
-             for cellid, alpha_path, beta_path in paths }
+    try:
+        return { idmap[str(cellid)] : (alpha_path, beta_path)
+                 for cellid, alpha_path, beta_path in paths }
+    except KeyError as e:
+        strg = "Canmap file \'%s\' does not include all FPUs. No mapping for cell-id %s" % \
+            (canmap_fname, str(e))
+        raise KeyError(strg)
 
 
 def load_waveform(filename, canmap_fname="canmap.cfg", reverse=False):
