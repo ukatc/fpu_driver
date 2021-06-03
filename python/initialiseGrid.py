@@ -36,6 +36,14 @@ sequence
 >>> gd.executeMotion( gs )
 >>> gd.findDatum( gs )
 
+The following command will display a tabular summary of the current state of the grid
+
+>>> check_status( gs )
+
+The following command can be used to execute and reverse a path
+
+>>> test_path( gd, gs, path_file, canmap_file, fpuset=[] )
+
 """
 
 from __future__ import print_function, division
@@ -58,6 +66,8 @@ from fpu_commands import *
 
 NUM_FPUS = int(os.environ.get("NUM_FPUS","10"))
 
+def show_help():
+    print(__doc__)
 
 def parse_args():
     global help_text
@@ -131,6 +141,7 @@ def test_path( gd, gs, path_file, canmap_file, fpuset=[] ):
     gd.executeMotion(gs)
     print("Reversing path...")
     gd.reverseMotion(gs)
+    gd.executeMotion(gs)
 
 
 def check_status( gs ):
@@ -186,4 +197,4 @@ if __name__ == '__main__':
     gd.executeMotion(grid_state)   # Only needed when FPU positions are not close to (-180,0)
     gd.findDatum(grid_state)
 
-    to move the FPUs to datum and initialise the grid. Ctrl/D to exit.""")
+    to move FPUs to datum and initialise the grid. show_help() for more help. Ctrl/D to exit.""")

@@ -14,27 +14,41 @@ from fpu_constants import (ALPHA_DATUM_OFFSET, BETA_DATUM_OFFSET,
 from fpu_commands import path_to_steps
 
 def is_comment(s):
-    """returns True if string s is a comment line
+    """
+
+    Returns True if string s is a comment line, i.e. a line
+    beginning with a "#".
+
     """
     return s.strip()[0] == '#'
 
 
-    
-
 def load_paths(filename, canmap_fname="canmap.cfg", reverse=False):
 
-    """Reads a PATHS file created by the path generator and
+    """
+
+    Reads a PATHS file created by the path generator and
     returns a structure which can passed into the FPU driver's
     configPath() method.
 
     A configuration file (canmap_fname) provides the mapping
-    between fibre positioner ID and FPU device driver ID.
-
+    between fibre positioner cell ID and FPU device driver ID.
+    The canmap file is of the form:
+    {  "<cell-id>" :  <fpu-id>,
+       "<cell-id>" :  <fpu-id>,
+       etc...
+    }
+    
     Caveat: Unlike those in the path file, the angle units
-    in the returned results are in radians."""
+    in the returned results are in radians.
+
+    """
     
     paths = read_path_file(filename)
 
+    # Extract a dictionary from the canmap file by removing the
+    # the comments and parsing it as a Python statement.
+    # In the resulting dictionary, idmap["cell-id"] = fpu-id.
     idmap = literal_eval("".join(filter(lambda x: not is_comment(x),
                                         open(canmap_fname).readlines())))
 
@@ -43,8 +57,15 @@ def load_paths(filename, canmap_fname="canmap.cfg", reverse=False):
        strg += "\n\tThere are %d mappings in the configuration but %d paths." % (len(idmap), len(paths))
        raise ValueError(strg)
 
+# The code in the return statement is a compressed version of the following.
+#    path_dict = {}
+#    for cellid, alpha_path, beta_path in paths:
+#        fpu_id = idmap[str(cellid)]
+#        path_dict[fpu_id] = (alpha_path, beta_path)
+#    return path_dict
+
     return { idmap[str(cellid)] : (alpha_path, beta_path)
-             for cellid, alpha_path, beta_path  in paths }
+             for cellid, alpha_path, beta_path in paths }
 
 
 def load_waveform(filename, canmap_fname="canmap.cfg", reverse=False):
