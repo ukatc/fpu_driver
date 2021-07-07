@@ -234,17 +234,19 @@ def open_database_env(mockup=False):
     else:
         # a good value is "/var/lib/fpudb"
         database_file_name = os.environ.get("FPU_DATABASE", "")
-        print("Opening (real) database file:", database_file_name )
+        print("Opening (real) database file: %s" % database_file_name )
 
     if database_file_name != "":
         # needs 64 bit (large file support) for normal database size
         if platform.architecture()[0] == "64bit":
             dbsize = 5*1024*1024*1024
         else:
-            dbsize = 5*1024*1024        
+            dbsize = 5*1024*1024
+        if not os.path.exists(database_file_name):
+            print("WARNING: Database file does not exist! An empty one will be created.")
         env = lmdb.open(database_file_name, max_dbs=10, map_size=dbsize)
     else:
-        print("No FPU database configured, can only run unprotected driver")
+        print("WARNING: No FPU database configured, can only run unprotected driver.")
         env = None
 
     return env
