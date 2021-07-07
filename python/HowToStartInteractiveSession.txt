@@ -5,4 +5,5 @@ python -i initialiseGrid.py -N 12 --gateway_address 192.168.0.10
 python -i initialiseGrid.py -N 3 --gateway_address 192.168.0.11
 
 # Connecting to the FPU simulator with 3 FPUs (simulator must be started first)
+export FPU_DATABASE=/home/jnix/DATABASES/fpudb_mockup
 python -i initialiseGrid.py -N 3 --mockup

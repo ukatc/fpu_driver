@@ -42,7 +42,7 @@ The following command will display a tabular summary of the current state of the
 
 The following command can be used to execute and reverse a path
 
->>> test_path( gd, gs, path_file, canmap_file, fpuset=[] )
+>>> test_path( gd, gs, path_file, canmap_file, fpuset=[], filter_scales=[] )
 
 """
 
@@ -121,10 +121,13 @@ def initialize_FPU(args):
     return gd, grid_state
 
 
-def test_path( gd, gs, path_file, canmap_file, fpuset=[] ):
+def test_path( gd, gs, path_file, canmap_file, fpuset=[], filter_scales=[13,5] ):
     # Execute a sequence of commands to test the paths contained in a
     # path file. Only valid if the wflib library has been imported.
     assert wflib is not None
+
+    # TODO: Verify that all alpha and beta angles are similar, or all beta angles are near zero
+    # which indicates that a move to zero is safe to execute.
 
     # First move to the starting position
     print("Moving FPUs to starting position...")
@@ -133,8 +136,18 @@ def test_path( gd, gs, path_file, canmap_file, fpuset=[] ):
 
     # Now load the paths
     print("Configuring FPUs: %s" % str(fpuset))
-    p = wflib.load_paths( path_file, canmap_file )
-    gd.configPaths(p, gs, fpuset=fpuset )
+    if filter_scales:
+        # Filter the waveforms and use configMotion.
+        w = wflib.load_waveform( path_file, canmap_file )
+        for scale in filter_scales:
+           print("Filtering waveform at scale length %d" % scale )
+           fw = wflib.filter_waveform( w, scale=scale )
+           w = fw
+        gd.configMotion(w, gs, fpuset=fpuset )
+    else:
+        # No filtering. Use configPaths
+        p = wflib.load_paths( path_file, canmap_file )
+        gd.configPaths(p, gs, fpuset=fpuset )
 
     # If the paths have been loaded they can be executed and reversed
     print("Moving forwards along path...")

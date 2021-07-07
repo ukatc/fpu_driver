@@ -24,7 +24,6 @@ def is_comment(s):
 
 
 def load_paths(filename, canmap_fname="canmap.cfg", reverse=False):
-
     """
 
     Reads a PATHS file created by the path generator and
@@ -43,7 +42,6 @@ def load_paths(filename, canmap_fname="canmap.cfg", reverse=False):
     in the returned results are in radians.
 
     """
-    
     paths = read_path_file(filename)
 
     # Extract a dictionary from the canmap file by removing the
@@ -74,12 +72,14 @@ def load_paths(filename, canmap_fname="canmap.cfg", reverse=False):
 
 
 def load_waveform(filename, canmap_fname="canmap.cfg", reverse=False):
+    """
 
-    """Reads a PATHS file created by the path generator and
+    Reads a PATHS file created by the path generator and
     returns a structure which can passed into the FPU driver's
     configMotion() method.
-    The returned results are in motor steps."""
+    The returned results are in motor steps.
 
+    """
     paths = load_paths(filename, canmap_fname)
 
     waveform = {}
@@ -97,11 +97,101 @@ def load_waveform(filename, canmap_fname="canmap.cfg", reverse=False):
     
     return waveform
 
+def filter_array( values, scale=5):
+    """
+
+    Filter a single array of motor step values.
+    Patterns of the form 0 +N 0 -N 0 will be replaced by 0 0 0 0 0.
+
+    """
+    oldsum = sum(values)
+
+    # Step through the array looking for segements of the give scale length
+    # which begin and end in a zero.
+    first_element = scale
+    last_element = len(values) - scale
+    element = first_element
+
+    while ( element < last_element ):
+        #print("Testing element %d" % element )
+        endsegment = element + scale - 1
+        if values[element] == 0 and values[endsegment] == 0:
+            # Both ends are zero. Look for the 0 +N 0 -N 0 pattern
+            # and filter it out.
+            #print("Elements %d and %d are both zero." % (element, endsegment))
+            total = 0.0
+            for ii in range(element+1, endsegment):
+                total += values[ii]
+
+            if total == 0:
+                #print("Central section also zero. Filtering.")
+                for ii in range(element+1, endsegment):
+                    #print("[%d]: Replacing %d with 0" % (ii, values[ii]))
+                    values[ii] = 0
+            element += scale  # Skip to the next segment
+        else:
+            element += 1      # No pattern found. Try the next element.
+
+    newsum = sum(values)
+    # The total length of the path in steps must not change
+    assert newsum == oldsum, "***ERROR: Waveform length changed during filtering."
+    return values
+
+
+def filter_waveform_pos(wfpos, scale=5):
+    """
+
+    Filter the waveform for a single positioner.
+    See filter_waveform function for details.
+
+    """
+    # Deconstruct the waveform into a separate alpha and beta arrays.
+    alpha = []
+    beta = []
+    for s in wfpos:
+        alpha.append( s[0])
+        beta.append( s[1] )
+
+    # Filter each array in turn.
+    newalpha = filter_array( alpha, scale=scale)
+    newbeta = filter_array( beta, scale=scale)
+
+    # Now reconstruct the waveform data structure and return it.
+    newwfpos = []
+    for a, b in zip(newalpha, newbeta):
+        newwfpos.append( (a, b) )
+    return newwfpos
+
+
+def filter_waveform(wf, scale=5):
+    """
+
+    Filter a waveform by looking for repeated patterns that make no
+    progress and can be eliminated without violating speed and
+    acceleration requirements. For example (for scale=5):
+
+    [...0, +N, 0, -N, 0...] --> [...0, 0, 0, 0, 0...]
+
+    The best filtering can be achieved by filtering first at a scale
+    length of 13 and filtering again at a scale length of 5.
+
+    """
+    newwf = {}
+    for idkw in list(wf.keys()):
+        # Filter each waveform in turn and add the new waveform
+        # to the new dictionary.
+        newwf[idkw] = filter_waveform_pos( wf[idkw], scale=scale )
+    return newwf
+
 
 def print_waveform(wf, columns=True):
-    """Prints the contents of a waveform in a human-readable form.
+    """
+
+    Prints the contents of a waveform in a human-readable form.
     The columns flag determines whether steps are printed in
-    rows or columns"""
+    rows or columns.
+
+    """
     for id, w in wf.items():
         print("-" * 30)
         print("fpu_id", id)
@@ -116,7 +206,7 @@ def print_waveform(wf, columns=True):
                 strg2 += "%5i, " % s[1]
             print( "alpha: " + strg1 )
             print( "beta: " + strg2 )
-            
+
 
 if __name__ == '__main__':
     print("""Run this script with
@@ -125,9 +215,11 @@ if __name__ == '__main__':
 
 and use commands such as
 
-   p = load_paths( filename )
-   w = load_waveform( filename )
+   p = load_paths( filename, canmap )
+   w = load_waveform( filename, canmap )
+   f = filter_waveform( w )
    print_waveform( w )
 
-to test the reading of path analysis PATH files.
+to test the reading of path analysis PATH files
+and processing of waveforms.
    """)
