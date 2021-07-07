@@ -1,8 +1,14 @@
 # Connecting to the plate with 12 FPUs
+export FPU_DATABASE=/home/jnix/DATABASES/fpudb_vfrig
 python -i initialiseGrid.py -N 12 --gateway_address 192.168.0.10
 
 # Connecting to the FPU verification rig with 3 FPUs
+export FPU_DATABASE=/home/jnix/DATABASES/fpudb_vfrig
 python -i initialiseGrid.py -N 3 --gateway_address 192.168.0.11
 
 # Connecting to the FPU simulator with 3 FPUs (simulator must be started first)
+# Uses FPU_DATABASE_MOCKUP or adds "_mockup" to FPU_DATABASE.
+export FPU_DATABASE=/home/jnix/DATABASES/fpudb
+# or
+export FPU_DATABASE_MOCKUP=/home/jnix/DATABASES/fpudb_mockup
 python -i initialiseGrid.py -N 3 --mockup
