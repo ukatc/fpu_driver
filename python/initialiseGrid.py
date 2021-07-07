@@ -44,6 +44,11 @@ The following command can be used to execute and reverse a path
 
 >>> test_path( gd, gs, path_file, canmap_file, fpuset=[] )
 
+The following command can be used to dump the current FPU locations to a target
+status file which can be given to the path analysis software.
+
+>>> save_state_to_file( gd, gs, status_file, config_file, canmap_file, fpuset=[] )
+
 """
 
 from __future__ import print_function, division
@@ -62,6 +67,8 @@ try:
    import wflib
 except:
    wflib = None
+
+from fpu_constants import RADIAN_TO_DEGREE
 from fpu_commands import *
 
 NUM_FPUS = int(os.environ.get("NUM_FPUS","10"))
@@ -142,6 +149,49 @@ def test_path( gd, gs, path_file, canmap_file, fpuset=[] ):
     print("Reversing path...")
     gd.reverseMotion(gs)
     gd.executeMotion(gs)
+
+def get_arm_angles( gd, gs, fpuset=[] ):
+    # Get the current arm angles in degrees
+    arm_angles = []
+    tracked = gd.trackedAngles(gs, fpuset=fpuset, retrieve=True)
+
+    if fpuset:
+        fpurange = fpuset
+    else:
+        fpurange = range(0, len(tracked) )
+
+    ii = 0
+    for track in tracked:
+        fpuid = fpurange[ii]
+        ii += 1
+        # Extract the alpha and beta angles from Interval objects
+        ainterval, binterval = track
+
+        try:
+            # OK as long as the alpha angle is not uncertain
+            alpha_deg = float(ainterval.as_scalar())
+        except AssertionError:
+            print("WARNING: FPU %d alpha angle is uncertain, %s. Using first value." % (fpuid,str(ainterval)))
+            alpha_deg = float(ainterval.iv[0]) 
+        try:
+            # OK as long as the beta angle is not uncertain
+            beta_deg = float(binterval.as_scalar())
+        except AssertionError:
+            print("WARNING: FPU %d beta angle is uncertain, %s. Using first value." % (fpuid,str(binterval))) 
+            beta_deg = float(binterval.iv[0]) 
+            
+        arm_angles.append( [fpuid, alpha_deg, beta_deg] )
+    return arm_angles
+
+def save_state_to_file( gd, gs, status_file, config_file, canmap_file="canmap.cfg",
+                        fpuset=[] ): 
+
+    # Retrieve the arm angles in degrees
+    arm_angles = get_arm_angles( gd, gs, fpuset=fpuset )
+
+    # Save those angles as target locations for the given configuration file
+    wflib.save_angles_to_file( arm_angles, status_file, config_file,
+                               canmap_file )
 
 
 def check_status( gs ):
