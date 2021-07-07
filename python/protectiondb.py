@@ -230,7 +230,7 @@ def open_database_env(mockup=False):
         database_file_name = os.environ.get("FPU_DATABASE_MOCKUP", "")
         if database_file_name == "":
             database_file_name = os.environ.get("FPU_DATABASE", "") + "_mockup"
-        print("Opening (mockup) database file:", database_file_name )
+        print("Opening (mockup) database file: %s" % database_file_name )
     else:
         # a good value is "/var/lib/fpudb"
         database_file_name = os.environ.get("FPU_DATABASE", "")
