@@ -1,13 +1,15 @@
 #!/usr/bin/python
 
 """
-This is a mock FPU which manages a bit of
-internal state
+
+This module contains a simulated FPU which reproduces the
+internal state model.
 
 """
 
 from __future__ import print_function
 
+import os
 import numpy as np
 import random
 import time
@@ -19,6 +21,12 @@ import binascii
 
 from protocol_constants import *
 
+# Define the location of the configuration files containing the FPU serial numbers,
+# which may be found either in "$INTROOT/FPUSIM/" or "./sn"
+if "INTROOT" in os.environ:
+    CONFIG_DIR = os.path.join( os.environ.get("INTROOT"), "FPUSIM" )
+else:
+    CONFIG_DIR = "./sn"
 
 IDXA = 0
 IDXB = 1
@@ -33,7 +41,7 @@ FPUGrid = []
 # INS_POS_LOW2      = -180.000  # Lower travel limit of positioner beta arm (deg)
 # INS_POS_HIGH2     =  150.000  # Upper travel limit of positioner beta arm (deg)
 
-# offset between displayed angles (which are always
+# Offset between displayed angles (which are always
 # instrument coordinates) and angle relative to datum positions.
 
 ALPHA_DATUM_OFFSET=-180.0
@@ -48,10 +56,12 @@ ALPHA_MAX_DEGREE = +165.0
 ALPHA_MIN_HARDSTOP_DEGREE = -183.2
 ALPHA_MAX_HARDSTOP_DEGREE = +168.8
 
-BETA_MIN_DEGREE = -185.2 # angles at which collision is triggered
+# Beta angles at which collision is triggered
+BETA_MIN_DEGREE = -185.2
 BETA_MAX_DEGREE = 142.0
 
-BETA_MIN_HWPROT_DEGREE = -188.0 # angles at which crash exception will be thrown
+# Beta angles at which crash exception will be thrown
+BETA_MIN_HWPROT_DEGREE = -188.0
 BETA_MAX_HWPROT_DEGREE = 145.0
 
 assert(BETA_MIN_HWPROT_DEGREE < BETA_MIN_DEGREE)
@@ -64,7 +74,8 @@ ALPHA_MAX_RDEGREE = ALPHA_MAX_DEGREE - ALPHA_DATUM_OFFSET - ALPHA_BUFFER
 BETA_DATUM_SWITCH_MAX_RDEGREE = -0.2
 BETA_DATUM_SWITCH_MIN_RDEGREE = -5
 
-ALPHA_LIMIT_MIN_RDEGREE = ALPHA_MIN_DEGREE - ALPHA_DATUM_OFFSET # this is the actual relative datum switch point
+# These angles are the actual relative datum switch point
+ALPHA_LIMIT_MIN_RDEGREE = ALPHA_MIN_DEGREE - ALPHA_DATUM_OFFSET
 ALPHA_LIMIT_MAX_RDEGREE = ALPHA_MAX_DEGREE - ALPHA_DATUM_OFFSET
 
 BETA_BUFFER = 0.2
@@ -87,42 +98,40 @@ StepsPerRevolution = 20.0
 DegreePerRevolution = 360.0
 
 # Note that these numbers must not be confounded with actual calibrated values!
-
 StepsPerDegreeAlpha = (StepsPerRevolution * AlphaGearRatio) / DegreePerRevolution
 StepsPerDegreeBeta = (StepsPerRevolution * BetaGearRatio) / DegreePerRevolution
 
 ALPHA_SWITCH_WIDTH = 2.0
 
 
-
-# step counts where switches go on and off
+# Step counts where switches go on and off
 MIN_ALPHA_ON = int(ALPHA_LIMIT_MIN_RDEGREE  * StepsPerDegreeAlpha)
 MIN_ALPHA_OFF = int((ALPHA_LIMIT_MIN_RDEGREE - ALPHA_SWITCH_WIDTH) * StepsPerDegreeAlpha)
 
 MAX_ALPHA_ON = int(ALPHA_LIMIT_MAX_RDEGREE  * StepsPerDegreeAlpha)
 MAX_ALPHA_OFF = int((ALPHA_LIMIT_MAX_RDEGREE + ALPHA_SWITCH_WIDTH) * StepsPerDegreeAlpha)
 
-# point where collision detection is triggered by reeaching beta range limit
+# The point where collision detection is triggered by reaching the beta range limit
 MIN_BETA = int(BETA_LIMIT_MIN_RDEGREE * StepsPerDegreeBeta)
 MAX_BETA = int(BETA_LIMIT_MAX_RDEGREE * StepsPerDegreeBeta)
 
-# step counts where alpha hardware limits kick in
+# Step counts where alpha hardware limits kick in
 MIN_ALPHA_CRASH = int((ALPHA_MIN_HARDSTOP_DEGREE - ALPHA_DATUM_OFFSET) * StepsPerDegreeAlpha)
 MAX_ALPHA_CRASH = int((ALPHA_MAX_HARDSTOP_DEGREE - ALPHA_DATUM_OFFSET) * StepsPerDegreeAlpha)
 
-# verification rig test simulation parameters
-BETA_CTEST_DEGREE = 70 # this is defined by the rig setup
+# Verification rig test simulation parameters
+BETA_CTEST_DEGREE = 70 # This is defined by the rig setup
 BETA_CTEST = int(BETA_CTEST_DEGREE * StepsPerDegreeBeta)
 
-# point where beta arm would crash
+# The point where the beta arm would crash
 MIN_BETA_CRASH = int(BETA_MIN_HWPROT_DEGREE * StepsPerDegreeBeta)
 MAX_BETA_CRASH = int(BETA_MAX_HWPROT_DEGREE * StepsPerDegreeBeta)
 
 
-# E_REQUEST_DIRECTION
-
+# E_REQUEST_DIRECTION codes
 REQD_ANTI_CLOCKWISE = 0
 REQD_CLOCKWISE      = 1
+
 
 def printtime():
     print(time.strftime("%a, %d %b %Y %H:%M:%S +0000 (%Z)", time.gmtime()))
@@ -137,36 +146,61 @@ class BetaCollisionException(Exception):
 class CrashException(Exception):
     pass
 
+
+# ----------------------------------------------------------------------
 class FPU:
     fpu_count = 0 # Class variable which counts the number of FPUs
 
+
     def __init__(self, fpu_id, opts):
+        """
+
+        Create a simulated FPU object with the given ID and parameters.
+
+        The FPU serial number can be defined in a configuration file
+        called "_FPU-<fpuid>.sn". If the configuration file cannot be
+        found, a default serial number of "MP<fpuid>" is assumed.
+
+        """
         FPU.fpu_count += 1
         self.opts = opts
         self.initialize(fpu_id)
-        print("FPU %i initial offset: (%f, %f)" % (fpu_id, opts.alpha_start, opts.beta_start))
+        if self.opts.verbosity >= LOG_VERBOSE:
+            print("FPU %i: Initial offset (deg): (%f, %f)" % (fpu_id, opts.alpha_start, opts.beta_start))
         self.aoff_steps = int(StepsPerDegreeAlpha * opts.alpha_start)
         self.boff_steps = int(StepsPerDegreeBeta * opts.beta_start)
-        fname = ".sn/_FPU-%04i.sn" % self.fpu_id
+
+        if not os.path.exists(CONFIG_DIR):
+            os.makedirs(CONFIG_DIR)
+        fname = os.path.join( CONFIG_DIR, "_FPU-%04i.sn" % self.fpu_id )
         try:
             with open(fname,"r") as f:
                 self.serial_number = f.readline().strip("\n")
-                print("FPU %i: serial number set to %r" % (self.fpu_id, self.serial_number))
+                if self.opts.verbosity >= LOG_INFO:
+                    print("FPU %i: Serial number defined from configuration file (%s) as %r" % \
+                          (self.fpu_id, fname, self.serial_number))
         except Exception as e:
-            self.serial_number = "UNKWN" + str(FPU.fpu_count)
-            print("***Failed to read %s (%s)" % (fname,str(e)))
-            print("***FPU %i: serial number defaults to %r" % (self.fpu_id, self.serial_number))
+            self.serial_number = "MP%03i" % FPU.fpu_count
+            if self.opts.verbosity >= LOG_INFO:
+                #print("***Failed to read %s (%s)" % (fname,str(e)))
+                print("FPU %i: Serial number defaults to %r" % (self.fpu_id, self.serial_number))
+
 
     def initialize(self, fpu_id):
+        """
+
+        Initialise the simulated FPU.
+
+        """
         self.fpu_id = fpu_id
         self.alpha_steps = 0
         self.beta_steps = 0
         self.alpha_deviation = 0
         self.beta_deviation = 0
         self.nwave_entries = 0
-        self.steps = np.zeros((256, 2), dtype=np.int)
-        self.pause = np.zeros((256, 2), dtype=np.bool)
-        self.clockwise = np.zeros((256, 2), dtype=np.bool)
+        self.steps = np.zeros((MAX_WAVE_ENTRIES, 2), dtype=np.int)
+        self.pause = np.zeros((MAX_WAVE_ENTRIES, 2), dtype=np.bool)
+        self.clockwise = np.zeros((MAX_WAVE_ENTRIES, 2), dtype=np.bool)
         self.is_collided = False
         self.alpha_limit_breach = False
         self.at_datum = False
@@ -190,14 +224,10 @@ class FPU:
         self.state = FPST_UNINITIALIZED
         self.ticks_per_segment = DEFAULT_TICKS_PER_SEGMENT
 
-
-
         fw_date = self.opts.fw_date
-
-        print("firmware date=",fw_date)
-
         version_tuple = self.opts.fw_version
-
+        if self.opts.verbosity >= LOG_INFO:
+            print("FPU %i: Firmware date=%s and version=%s" % ((self.fpu_id),str(fw_date), str(version_tuple)))
         self.firmware_major = version_tuple[0]
         self.firmware_minor = version_tuple[1]
         self.firmware_patch = version_tuple[2]
@@ -207,6 +237,7 @@ class FPU:
         self.fw_version_address_offset = 0x61
         if version_tuple < (1,4,4):
             self.fw_version_address_offset = 0x0
+
 
     def getRegister(self, register_address):
         fwa_offset = self.fw_version_address_offset
@@ -239,8 +270,10 @@ class FPU:
         else:
             return 0xff
 
+
     def writeSerialNumber(self, serial_number):
-        print("FPU #%i: writing serial number '%s' to NVRAM" % (self.fpu_id, serial_number))
+        if self.opts.verbosity >= LOG_VERBOSE:
+            print("FPU %i: Writing serial number '%s' to NVRAM" % (self.fpu_id, serial_number))
         assert(len(serial_number) <= LEN_SERIAL_NUMBER)
         self.serial_number = serial_number
         fname = ".sn/_FPU-%04i.sn" % self.fpu_id
@@ -248,10 +281,11 @@ class FPU:
             f.write("%s\n" % self.serial_number)
 
 
-
     def readSerialNumber(self):
-        print("FPU #%i: reading serial number '%s' from NVRAM" % (self.fpu_id, self.serial_number))
+        if self.opts.verbosity >= LOG_VERBOSE:
+            print("FPU %i: Reading serial number '%s' from NVRAM" % (self.fpu_id, self.serial_number))
         return self.serial_number
+
 
     def getFirmwareVersion(self):
         t =  (self.firmware_major,
@@ -261,14 +295,16 @@ class FPU:
               self.firmware_month,
               self.firmware_day)
 
-        print("FPU #%i: reading firmware version '%s' from NVRAM" % (self.fpu_id, t))
+        if self.opts.verbosity >= LOG_VERBOSE:
+            print("FPU %i: Reading firmware version '%s' from NVRAM" % (self.fpu_id, t))
         return t
 
 
-
     def resetFPU(self, fpu_id, sleep):
-        printtime()
-        print("resetting FPU #%i..." % fpu_id)
+        if self.opts.verbosity >= LOG_DEBUG:
+            printtime()
+        if self.opts.verbosity >= LOG_VERBOSE:
+            print("Resetting FPU %i..." % fpu_id)
         dtime_mu = 0.1
         dtime_sigma = 1.0
         dtime_sec = min(max(random.gauss(dtime_mu, dtime_sigma), 0.1), 2)
@@ -276,10 +312,11 @@ class FPU:
         alpha_steps = self.alpha_steps
         beta_steps = self.beta_steps
         self.initialize(fpu_id)
-        # if the FPU is not at datum, enlarge the step mismatch re physical position
+        # If the FPU is not at datum, enlarge the step mismatch re physical position
         self.aoff_steps += alpha_steps
         self.boff_steps += beta_steps
-        print("resetting FPU #%i... ready" % fpu_id)
+        if self.opts.verbosity >= LOG_VERBOSE:
+            print("Resetting FPU %i... ready" % fpu_id)
 
 
     def resetStepCounter(self, new_alpha_steps, new_beta_steps):
@@ -291,8 +328,10 @@ class FPU:
         if self.state in [ FPST_MOVING, FPST_DATUM_SEARCH]:
             return MCE_ERR_INVALID_COMMAND
 
-        printtime()
-        print("resetting FPU #%i stepcounters to (%i, %i)" % (self.fpu_id, new_alpha_steps, new_beta_steps))
+        if self.opts.verbosity >= LOG_DEBUG:
+            printtime()
+        if self.opts.verbosity >= LOG_VERBOSE:
+            print("Resetting FPU %i step counters to (%i, %i)" % (self.fpu_id, new_alpha_steps, new_beta_steps))
         old_alpha_steps = self.alpha_steps
         old_beta_steps = self.beta_steps
         self.alpha_steps = new_alpha_steps
@@ -306,6 +345,7 @@ class FPU:
 
         return MCE_FPU_OK
 
+
     def repeatMotion(self, fpu_id):
         if self.state in [ FPST_READY_FORWARD, FPST_LOCKED]:
             return MCE_NOTIFY_COMMAND_IGNORED
@@ -313,8 +353,8 @@ class FPU:
         if self.state not in [FPST_READY_FORWARD, FPST_READY_REVERSE, FPST_RESTING]:
             return MCE_ERR_INVALID_COMMAND
 
-
-        print("reversing wavetable of FPU #%i..." % fpu_id)
+        if self.opts.verbosity >= LOG_DEBUG:
+            print("Reversing wavetable of FPU %i..." % fpu_id)
         if not (self.wave_valid):
             return MCE_ERR_WAVEFORM_NOT_READY
 
@@ -336,17 +376,20 @@ class FPU:
         if ustep_level not in [1,2,4,8]:
             return MCE_ERR_INVALID_PARAMETER
 
-        print("setting UStepLevel for fpu # %i to %i" % (self.fpu_id, ustep_level))
+        if self.opts.verbosity >= LOG_DEBUG:
+            print("Setting UStepLevel for FPU %i to %i" % (self.fpu_id, ustep_level))
         self.ustep_level = ustep_level
 
         return MCE_FPU_OK
+
 
     def setStepsPerSegment(self, min_steps, max_steps):
 
         if self.state != FPST_UNINITIALIZED:
             return MCE_NOTIFY_COMMAND_IGNORED
 
-        print("setting stepsPerSegment for fpu # %i to %i .. %i" % (self.fpu_id, min_steps, max_steps))
+        if self.opts.verbosity >= LOG_DEBUG:
+            print("Setting stepsPerSegment for FPU %i to %i .. %i" % (self.fpu_id, min_steps, max_steps))
 
         # for now, this is without consequences and not used
         self.min_steps = min_steps
@@ -354,12 +397,14 @@ class FPU:
 
         return MCE_FPU_OK
 
+
     def setTicksPerSegment(self, nticks):
 
         if self.state != FPST_UNINITIALIZED:
             return MCE_NOTIFY_COMMAND_IGNORED
 
-        print("setting ticks per segment for fpu # %i to %i" % (self.fpu_id, nticks))
+        if self.opts.verbosity >= LOG_DEBUG:
+            print("Setting ticks per segment for FPU %i to %i" % (self.fpu_id, nticks))
 
         self.ticks_per_segment = nticks
 
@@ -373,8 +418,8 @@ class FPU:
         if self.state not in [FPST_READY_FORWARD, FPST_READY_REVERSE, FPST_RESTING]:
             return MCE_ERR_INVALID_COMMAND
 
-
-        print("reversing wavetable of FPU #%i..." % fpu_id)
+        if self.opts.verbosity >= LOG_DEBUG:
+            print("Reversing wavetable of FPU %i..." % fpu_id)
         if not (self.wave_valid):
             return MCE_ERR_WAVEFORM_NOT_READY
 
@@ -388,8 +433,6 @@ class FPU:
     def addStep(self, first, last,
                 asteps, apause, aclockwise,
                 bsteps, bpause, bclockwise):
-
-        verbose = self.opts.verbosity > 4
 
         ovflag = self.can_overflow
         if ovflag:                     # this might having been set
@@ -417,8 +460,6 @@ class FPU:
         if (self.nwave_entries == 0) and (not first):
             return WAVEFORM_REJECTED, WAVEFORM_SEQUENCE
 
-        verbose = self.opts.verbosity > 9
-
         if first:
             self.nwave_entries = 0
             self.wave_ready = False
@@ -434,9 +475,7 @@ class FPU:
             self.state = FPST_RESTING
             return WAVEFORM_REJECTED, WAVEFORM_TOO_BIG
 
-
         nwave_entries = self.nwave_entries
-
 
         self.steps[n, IDXA] = asteps
         self.steps[n, IDXB] = bsteps
@@ -453,12 +492,11 @@ class FPU:
             self.wave_valid = True
             n = self.nwave_entries
             self.state = FPST_READY_FORWARD
-            if verbose:
-                print("fpu #%i: wavetable ready, n=%i, content=%s" % (
-
+            if self.opts.verbosity >= LOG_TRACE:
+                print("FPU %i: wavetable ready, n=%i, content=%s" % (
                     self.fpu_id, n, (self.steps[0:n], self.pause[0:n], self.clockwise[0:n])))
-            else:
-                print("fpu #%i: wavetable ready (%i sections)" % (self.fpu_id, n))
+            elif self.opts.verbosity >= LOG_VERBOSE:
+                print("FPU %i: wavetable ready (%i sections)" % (self.fpu_id, n))
 
         return MCE_FPU_OK, WAVEFORM_OK
 
@@ -511,17 +549,19 @@ class FPU:
             self.was_initialized = False
             self.wave_ready = False
             self.wave_valid = False
-            print("LIMIT BREACH detected: last pos = %i, new pos =%i, "
-                  "alpha move: old switch = %r, new switch=%r, "
-                  "last_direction = %i, cur_direction=%i"
-                  % (old_alpha, new_alpha,
-                     old_switch, new_switch,
-                     alpha_last_direction, cur_direction))
+            if self.opts.verbosity >= LOG_MINIMAL:
+                print("!!LIMIT BREACH detected: last pos = %i, new pos =%i, "
+                      "alpha move: old switch = %r, new switch=%r, "
+                      "last_direction = %i, cur_direction=%i"
+                      % (old_alpha, new_alpha,
+                        old_switch, new_switch,
+                        alpha_last_direction, cur_direction))
 
             if limit_callback is not None:
                 limit_callback(self)
             else:
-                print("skipping alpha limit brach callback (no callback defined)")
+                if self.opts.verbosity >= LOG_VERBOSE:
+                    print("Skipping alpha limit brach callback (no callback defined)")
 
             if (new_alpha + alpha_offset) < MIN_ALPHA_OFF:
                 self.alpha_steps = MIN_ALPHA_OFF
@@ -537,7 +577,6 @@ class FPU:
                       ", alpha_soffset=", alpha_offset,
                       ", MAX_ALPHA_CRASH=", MAX_ALPHA_CRASH)
                 raise CrashException("An max alpha crash occured")
-
 
 
     def move_beta(self, newbeta, collision_callback):
@@ -570,6 +609,7 @@ class FPU:
                 raise CrashException("An min beta crash occured")
             if (newbeta + beta_offset) > MAX_BETA_CRASH:
                 raise CrashException("An max beta crash occured")
+
 
     def start_findDatum(self, auto_datum):
         if self.state == FPST_LOCKED:
@@ -608,8 +648,8 @@ class FPU:
                   auto_datum=False, anti_clockwise=False,
                   disable_timeout=False):
 
-
-        printtime()
+        if self.opts.verbosity >= LOG_DEBUG:
+            printtime()
         wait_interval_sec = 0.1
         alpha_speed = -25.0 # steps per time interval
         beta_speed = -25.0 # steps per interval
@@ -625,10 +665,11 @@ class FPU:
         else:
             beta_sign = 1
 
-        print(("FPU #%i: searching datum, skip_alpha=%r,skip_beta=%r, "
-               + "auto_datum=%r, anti_clockwise=%r, beta sign = %i") % (
-                   self.fpu_id, skip_alpha, skip_beta, auto_datum, anti_clockwise,
-                   beta_sign))
+        if self.opts.verbosity >= LOG_VERBOSE:
+            print(("FPU %i: searching datum, skip_alpha=%r,skip_beta=%r, "
+                   + "auto_datum=%r, anti_clockwise=%r, beta sign = %i") % (
+                       self.fpu_id, skip_alpha, skip_beta, auto_datum, anti_clockwise,
+                       beta_sign))
 
         def random_deviation():
             deviation_mu = 0
@@ -646,9 +687,9 @@ class FPU:
         alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
         beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
 
-        print("FPU #%i: findDatum is now at (%i, %i) steps = (%7.2f, %7.2f) degree\n" % (
-            self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
-
+        if self.opts.verbosity >= LOG_DEBUG:
+            print("FPU %i: findDatum is now at (%i, %i) steps = (%7.2f, %7.2f) degree\n" % (
+                self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
 
         last_beta_stepnum = self.beta_steps + beta_offset
         last_alpha_stepnum = self.alpha_steps + alpha_offset
@@ -663,7 +704,8 @@ class FPU:
         alpha_datumed = False
         beta_datumed = False
         use_timeout = self.opts.fw_version >= (1, 4, 0) and (not disable_timeout)
-        print("FPU %i : timeouts enabled: %r" % (self.fpu_id, use_timeout))
+        if self.opts.verbosity >= LOG_DEBUG:
+            print("FPU %i : timeouts enabled: %r" % (self.fpu_id, use_timeout))
         self.state = FPST_DATUM_SEARCH
 
         simulate_failure_alpha = self.fpu_id in self.opts.fail_datum_alpha
@@ -695,12 +737,10 @@ class FPU:
             sleep(wait_interval_sec)
 
             if self.abort_wave:
-                print("ABORTING DATUM SEARCH FOR FPU", self.fpu_id);
+                print("!!ABORTING DATUM SEARCH FOR FPU", self.fpu_id);
                 self.at_datum = False
                 self.state = FPST_ABORTED
                 break
-
-
 
             try:
                 if not alpha_ready:
@@ -719,7 +759,7 @@ class FPU:
 
             try:
                 if self.is_collided:
-                    print("Beta collision for FPU  %i still active" % self.fpu_id)
+                    print("Beta collision for FPU %i still active" % self.fpu_id)
                     self.abort_wave = True
                     self.is_collided = True
                     self.state = FPST_OBSTACLE_ERROR
@@ -737,7 +777,7 @@ class FPU:
                     new_beta = self.beta_steps
 
             except BetaCollisionException:
-                print("Beta collision for FPU  %i" % self.fpu_id)
+                print("Beta collision for FPU %i" % self.fpu_id)
                 self.abort_wave = True
                 self.is_collided = True
                 self.state = FPST_OBSTACLE_ERROR
@@ -746,7 +786,7 @@ class FPU:
             alpha_timeout = use_timeout and (abs(new_alpha - start_alpha_steps) >= alpha_timeout_limit)
 
             if alpha_timeout:
-                print("FPU %i: step number exceeds alpha time-out step count of %i, aborting" % (self.fpu_id, alpha_timeout_limit))
+                print("FPU %i: Step number exceeds alpha time-out step count of %i, aborting" % (self.fpu_id, alpha_timeout_limit))
                 self.datum_timeout = True
                 alpha_datumed = alpha_ready and (not skip_alpha) and (not simulate_failure_alpha)
                 beta_datumed = beta_ready and (not skip_beta) and (not simulate_failure_beta)
@@ -755,7 +795,7 @@ class FPU:
             beta_timeout = use_timeout and (abs(new_beta - start_beta_steps) >= beta_timeout_limit)
 
             if beta_timeout:
-                print("FPU %i: step number exceeds beta time-out step count of %i, aborting" % (self.fpu_id, beta_timeout_limit))
+                print("FPU %i: Step number exceeds beta time-out step count of %i, aborting" % (self.fpu_id, beta_timeout_limit))
                 self.abort_wave = True
                 self.datum_timeout = True
                 alpha_datumed = alpha_ready and (not skip_alpha) and (not simulate_failure_alpha)
@@ -766,24 +806,27 @@ class FPU:
             alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
             beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
 
-            print("FPU #%i: findDatum is now at (%i, %i) steps = (%7.2f, %7.2f) degree" % (
-                self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
-
+            if self.opts.verbosity >= LOG_DEBUG:
+                print("FPU %i: findDatum is now at (%i, %i) steps = (%7.2f, %7.2f) degree" % (
+                    self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
 
         if alpha_datumed:
             self.alpha_steps = 0
             self.aoff_steps = 0
             if skip_beta:
-                print("FPU #%i: alpha datum reached" % self.fpu_id)
+                if self.opts.verbosity >= LOG_DEBUG:
+                    print("FPU %i: alpha datum reached" % self.fpu_id)
 
         if beta_datumed:
             self.beta_steps = 0
             self.boff_steps = 0
             if skip_alpha:
-                print("FPU #%i: beta datum reached" % self.fpu_id)
+                if self.opts.verbosity >= LOG_DEBUG:
+                    print("FPU %i: beta datum reached" % self.fpu_id)
 
         if alpha_datumed and beta_datumed:
-            print("FPU #%i: alpha and beta datum reached" % self.fpu_id)
+            if self.opts.verbosity >= LOG_DEBUG:
+                print("FPU %i: alpha and beta datum reached" % self.fpu_id)
             self.state = FPST_AT_DATUM
             self.was_initialized = True
         else:
@@ -797,17 +840,21 @@ class FPU:
             if not (skip_alpha or skip_beta):
                 self.at_datum = True
                 self.was_initialized = True
-                print("FPU #%i: datum found" % self.fpu_id)
+                if self.opts.verbosity >= LOG_VERBOSE:
+                    print("FPU %i: datum found" % self.fpu_id)
             else:
-                print("FPU #%i: partial datum operation finished" % self.fpu_id)
+                if self.opts.verbosity >= LOG_VERBOSE:
+                    print("FPU %i: partial datum operation finished" % self.fpu_id)
 
         alpha_real_deg =  (self.alpha_steps + self.aoff_steps) / StepsPerDegreeAlpha + d_offset
         beta_real_deg =  (self.beta_steps + self.boff_steps) / StepsPerDegreeBeta
 
-        print("FPU #%i: findDatum stopped at (%i, %i) steps = (%7.2f, %7.2f) degree" % (
-            self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
+        if self.opts.verbosity >= LOG_INFO:
+            print("FPU %i: findDatum stopped at (%i, %i) steps = (%7.2f, %7.2f) degree" % (
+                self.fpu_id, self.alpha_steps, self.beta_steps, alpha_real_deg, beta_real_deg))
 
-        printtime()
+        if self.opts.verbosity >= LOG_DEBUG:
+            printtime()
 
         if self.is_collided:
                 # only send an error message
@@ -827,7 +874,6 @@ class FPU:
                 errcode = MCE_FPU_OK
 
         return errcode
-
 
 
     def abortMotion(self, sleep):
@@ -883,20 +929,24 @@ class FPU:
         alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
         beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
 
-        print("freeBetaCollsion: moving FPU # %i from (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg" % (
-            self.fpu_id, self.alpha_steps, old_beta_steps,
-            self.alpha_steps, self.beta_steps,
-            alpha_real_deg, beta_real_deg))
+        if self.opts.verbosity >= LOG_INFO:
+            print("freeBetaCollsion: moving FPU %i from (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg" % (
+                self.fpu_id, self.alpha_steps, old_beta_steps,
+                self.alpha_steps, self.beta_steps,
+                alpha_real_deg, beta_real_deg))
 
         if ((self.beta_steps + beta_offset) >= MAX_BETA) or (
                 (self.beta_steps + beta_offset) <= MIN_BETA):
             self.is_collided = True
-            print("FPU #%i: collision ongoing" % self.fpu_id)
+            if self.opts.verbosity >= LOG_INFO:
+                print("FPU %i: collision ongoing" % self.fpu_id)
         else:
             self.is_collided = False
-            print("FPU #%i: collision resolved" % self.fpu_id)
+            if self.opts.verbosity >= LOG_INFO:
+                print("FPU %i: collision resolved" % self.fpu_id)
 
         return MCE_FPU_OK
+
 
     def enableBetaCollisionProtection(self):
         self.is_collided = False
@@ -936,21 +986,25 @@ class FPU:
         alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
         beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
 
-        print("freeAlphaLimitBreach: moving FPU # %i from (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg" % (
-            self.fpu_id, old_alpha_steps, self.beta_steps,
-            self.alpha_steps, self.beta_steps,
-            alpha_real_deg, beta_real_deg))
+        if self.opts.verbosity >= LOG_INFO:
+            print("freeAlphaLimitBreach: moving FPU %i from (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg" % (
+                self.fpu_id, old_alpha_steps, self.beta_steps,
+                self.alpha_steps, self.beta_steps,
+                alpha_real_deg, beta_real_deg))
 
         if self.alpha_switch_on(self.alpha_steps):
             self.alpha_limit_breach = False
-            print("FPU #%i: limit breach resolved" % self.fpu_id)
+            if self.opts.verbosity >= LOG_INFO:
+                print("FPU %i: limit breach resolved" % self.fpu_id)
         else:
             if ((self.alpha_steps + alpha_offset) >= MAX_ALPHA_OFF) or (
                     (self.alpha_steps + alpha_offset) <= MIN_ALPHA_OFF):
                 self.alpha_limit_breach = True
-            print("FPU #%i: limit breach ongoing" % self.fpu_id)
+            if self.opts.verbosity >= LOG_INFO:
+                print("FPU %i: limit breach ongoing" % self.fpu_id)
 
         return MCE_FPU_OK
+
 
     def enableAlphaLimitBreachProtection(self):
         self.alpha_limit_breach = False
@@ -975,11 +1029,13 @@ class FPU:
             self.state = FPST_OBSTACLE_ERROR
         elif not self.wave_ready:
             # wavetable is not ready
-            print("FPU #", self.fpu_id, ": wave table is not ready, sending response code", MCE_ERR_WAVEFORM_NOT_READY)
+            if self.opts.verbosity >= LOG_VERBOSE:
+                print("FPU ", self.fpu_id, ": wave table is not ready, sending response code", MCE_ERR_WAVEFORM_NOT_READY)
             errcode =  MCE_ERR_WAVEFORM_NOT_READY
         elif not self.wave_valid:
             # wavetable is not valid
-            print("FPU #", self.fpu_id, ": wave table is not valid, sending response code", MCE_WAVEFORM_BADVALUE)
+            if self.opts.verbosity >= LOG_VERBOSE:
+                print("FPU ", self.fpu_id, ": wave table is not valid, sending response code", MCE_WAVEFORM_BADVALUE)
             errcode =  MCE_WAVEFORM_BADVALUE
         elif self.running_wave:
             # FPU already moving
@@ -994,7 +1050,8 @@ class FPU:
 
 
     def executeMotion(self, sleep, limit_callback, collision_callback):
-        printtime()
+        if self.opts.verbosity >= LOG_DEBUG:
+            printtime()
         if self.running_wave :
             raise RuntimeError("FPU is already moving")
 
@@ -1017,7 +1074,8 @@ class FPU:
         sleep(latency_secs)
 
         frame_time = SEGMENT_LENGTH_BASE_UNIT * self.ticks_per_segment
-        print("using a frame time of %5.1f milliseconds" % (frame_time * 1000))
+        if self.opts.verbosity >= LOG_DEBUG:
+            print("Using a frame time of %5.1f milliseconds" % (frame_time * 1000))
         alpha_limit_breach = False
         section = -1
         for k in range(self.nwave_entries):
@@ -1052,9 +1110,10 @@ class FPU:
 
             if self.opts.verbosity > 0:
                 alpha_swon = self.alpha_switch_on(new_alpha)
-                print("section %i: moving FPU %i by (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg, alpha_switch_on=%r" % (
-                    n, self.fpu_id, delta_alpha, delta_beta, new_alpha, new_beta,
-                    alpha_real_deg, beta_real_deg, alpha_swon))
+                if self.opts.verbosity >= LOG_DEBUG:
+                    print("Section %i: moving FPU %i by (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg, alpha_switch_on=%r" % (
+                        n, self.fpu_id, delta_alpha, delta_beta, new_alpha, new_beta,
+                        alpha_real_deg, beta_real_deg, alpha_swon))
 
             sleep(frame_time)
             if self.abort_wave:
@@ -1073,16 +1132,17 @@ class FPU:
                 self.move_alpha(new_alpha, limit_callback)
             except LimitBreachException:
                 alpha_limit_breach = True
-                print("Alpha limit breach for FPU  %i" % self.fpu_id)
+                print("Alpha limit breach for FPU %i" % self.fpu_id)
                 break
 
             try:
                 self.move_beta(new_beta, collision_callback)
             except BetaCollisionException:
-                print("Beta collision for FPU  %i" % self.fpu_id)
+                print("Beta collision for FPU %i" % self.fpu_id)
                 break
 
-        printtime()
+        if self.opts.verbosity >= LOG_DEBUG:
+            printtime()
         if self.abort_wave:
             print("FPU %i, section %i: MOVEMENT ABORTED at (%i, %i)" % (self.fpu_id, section,
                                                             new_alpha, new_beta))
@@ -1096,8 +1156,9 @@ class FPU:
             print("FPU %i, section %i: step timing error, movement cancelled at (%i, %i)" % (self.fpu_id, section,
                                                                                 self.alpha_steps, self.beta_steps))
         else:
-            print("FPU %i, section %i: movement finished at (%i, %i)" % (self.fpu_id, section,
-                                                             new_alpha, new_beta))
+            if self.opts.verbosity >= LOG_VERBOSE:
+                print("FPU %i, section %i: movement finished at (%i, %i)" % (self.fpu_id, section,
+                                                                             new_alpha, new_beta))
         self.running_wave = False
         self.wave_ready = False
 
@@ -1127,6 +1188,7 @@ class FPU:
 
         return errcode
 
+
     def lockUnit(self):
         if self.state == FPST_LOCKED:
             return MCE_NOTIFY_COMMAND_IGNORED
@@ -1143,6 +1205,7 @@ class FPU:
         self.state = FPST_LOCKED
 
         return MCE_FPU_OK
+
 
     def unlockUnit(self):
 
@@ -1183,7 +1246,9 @@ class FPU:
                               FPST_READY_FORWARD, FPST_READY_REVERSE]:
             # (if locked, needs unlocking first)
             return MCE_NOTIFY_COMMAND_IGNORED
-        print("FPU # %i: setting state to FPST_RESTING" % self.fpu_id)
+
+        if self.opts.verbosity >= LOG_VERBOSE:
+            print("FPU %i: Setting state to FPST_RESTING" % self.fpu_id)
         self.state = FPST_RESTING
         self.abort_wave = True
 
@@ -1196,20 +1261,24 @@ class FPU:
         # returns CRC32 checksum of 'firmware' (here, the class source code)
         source_string = "".join(inspect.getsourcelines(FPU)[0])
         crc32val= binascii.crc32(source_string) & 0xffffffff
-        print("CRC32 for FPU # %i = %s" % (self.fpu_id, hex(crc32val)))
+        if self.opts.verbosity >= LOG_DEBUG:
+            print("CRC32 for FPU %i = %s" % (self.fpu_id, hex(crc32val)))
         # ok
         return crc32val, MCE_FPU_OK
 
 
-
-
+# ----------------------------------------------------------------------
 class SignalHandler(object):
-    """Context manager for handling a signal
+    """
+
+    Context manager for handling a signal
     while waiting for command completion.
+
     """
 
     def __init__(self, sig=signal.SIGINT):
         self.sig = sig
+
 
     def __enter__(self):
 
@@ -1222,36 +1291,41 @@ class SignalHandler(object):
             self.release()
             self.interrupted = True
 
-
         return self
 
+
 def reset_handler(signum, frame):
-    print("resetting FPUs")
+    print("Resetting FPUs")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.resetFPU(fpu_id, time.sleep)
 
+
 def collision_handler(signum, frame):
-    print("generating a collision")
+    print("Generating a collision")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.is_collided = True
 
+
 def limitbreach_handler(signum, frame):
-    print("generating a limit breach")
+    print("Generating a limit breach")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.alpha_limit_breach = True
 
+
 def overflow_handler(signum, frame):
-    print("generating a CAN overflow")
+    print("Generating a CAN overflow")
     for fpu_id, fpu in enumerate(FPUGrid):
         fpu.can_overflow = True
+
 
 def colltest_handler(signum, frame):
     try:
         fpu_id = int(open("/var/tmp/colltest.fpuid").readline())
-        print("setting collision test flag for FPU # %i" % fpu_id)
+        print("Setting collision test flag for FPU %i" % fpu_id)
         FPUGrid[fpu_id].coll_test = True
     except:
         pass
+
 
 def init_FPUGrid(options, num_fpus):
     FPUGrid[:] = [FPU(i, options) for i in range(num_fpus) ]
