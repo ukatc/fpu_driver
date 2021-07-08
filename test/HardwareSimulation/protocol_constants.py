@@ -1,6 +1,14 @@
 #!/usr/bin/python
 from numpy import round
 
+# Output verbosity levels
+LOG_SILENT = 0
+LOG_MINIMAL = 1
+LOG_INFO = 2
+LOG_VERBOSE = 3
+LOG_DEBUG = 4
+LOG_TRACE = 5
+
 # constants of the CAN protocol to control fibre positioner units
 
 #  number of buses on one gateway
