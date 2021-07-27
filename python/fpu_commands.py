@@ -23,8 +23,12 @@ from ethercanif import getGridStateSummary as gGSS
 
 
 def list_positions(gs, num_fpus=None, show_zeroed=True):
-    """Show positions for each FPU in the grid. The optional second argument
-       is the number of FPUs shown."""
+    """
+    
+    Show positions for each FPU in the grid. The optional second argument
+    is the number of FPUs shown.
+    
+    """
     if num_fpus == None:
         num_fpus = len(gs.FPU)
     if show_zeroed:
@@ -42,9 +46,13 @@ def list_angles(gs,
                 show_uninitialized=False,
                 alpha_datum_offset=-180.0,
                 num_fpus=None):
-    """Show approximate angular positions for each FPU in the grid.
-       The optional second and third argument are the scaling factors,
-       and the fourth argument is the number of FPUs shown."""
+    """
+    
+    Show approximate angular positions for each FPU in the grid.
+    The optional second and third argument are the scaling factors,
+    and the fourth argument is the number of FPUs shown.
+       
+    """
     if num_fpus == None:
         num_fpus = len(gs.FPU)
 
@@ -56,29 +64,45 @@ def list_angles(gs,
 
 
 def list_deviations(gs, num_fpus=None):
-    """Show datum deviations for each FPU in the grid. The optional second argument
-       is the number of FPUs shown."""
+    """
+    
+    Show datum deviations for each FPU in the grid. The optional second argument
+    is the number of FPUs shown.
+    
+    """
     if num_fpus == None:
         num_fpus = len(gs.FPU)
     return [ (gs.FPU[i].alpha_deviation, gs.FPU[i].beta_deviation) for i in range(num_fpus)]
 
 def list_timeouts(gs, num_fpus=None):
-    """List counts of timeouts for each FPU in the grid. The optional second argument
-       is the number of FPUs shown."""
+    """
+    
+       List counts of timeouts for each FPU in the grid. The optional second argument
+       is the number of FPUs shown.
+    
+    """
     if num_fpus == None:
         num_fpus = len(gs.FPU)
     return [ gs.FPU[i].timeout_count for i in range(num_fpus)]
 
 def list_states(gs, num_fpus=None):
-    """List state for each FPU in the grid. The optional second argument
-       is the number of FPUs shown."""
+    """
+    
+       List state for each FPU in the grid. The optional second argument
+       is the number of FPUs shown.
+    
+    """
     if num_fpus == None:
         num_fpus = len(gs.FPU)
     return [ gs.FPU[i].state for i in range(num_fpus)]
 
 def list_serial_numbers(gs, num_fpus=None):
-    """List serial number for each FPU in the grid. The optional second argument
-       is the number of FPUs shown."""
+    """
+    
+       List serial number for each FPU in the grid. The optional second argument
+       is the number of FPUs shown.
+    
+    """
     if num_fpus == None:
         num_fpus = len(gs.FPU)
     return [ gs.FPU[i].serial_number for i in range(num_fpus)]
@@ -94,8 +118,12 @@ STEPS_UPPER_LIMIT=int(ceil(MOTOR_MAX_STEP_FREQUENCY * WAVEFORM_SEGMENT_LENGTH_MS
 
 def step_list_slow(nsteps, min_steps=STEPS_LOWER_LIMIT,):
 
-    """Generate alpha or beta angles in slow mode.
-       This function is almost never used.
+    """
+    
+       Generate alpha or beta angles in slow mode.
+    
+       *** THIS FUNCTION IS NO LONGER USED ***
+       
     """
 
     full_segments = int(math.floor(nsteps / min_steps))
@@ -122,10 +150,15 @@ def step_list_slow(nsteps, min_steps=STEPS_LOWER_LIMIT,):
 def step_list_fast(nsteps, max_change=1.4,
                    min_steps=STEPS_LOWER_LIMIT, max_steps=STEPS_UPPER_LIMIT):
 
-    """Generate alpha or beta angles in fast mode.
+    """
+    
+       Generate alpha or beta angles in fast mode.
        This function implements an old waveform generation mode. Whether it
        is faster than linacc mode depends on the values for the max_change
        and max_acceleration parameters.
+    
+       *** OBSOLETE FUNCTION - NO LONGER NEEDED ***
+    
     """
 
     remaining_steps = nsteps
@@ -179,14 +212,17 @@ def step_list_fast(nsteps, max_change=1.4,
     return steps_accelerate
 
 
-def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
-                     max_deceleration=MOTOR_MAX_DECELERATION,
-                     min_steps=STEPS_LOWER_LIMIT,
-                     min_stop_steps=STEPS_LOWER_LIMIT,
-                     max_steps=STEPS_UPPER_LIMIT,
-                     insert_rest_accelerate=None):
+def step_list_limacc(nsteps,                                  # Total number of steps to move
+                     max_acceleration=MOTOR_MAX_ACCELERATION, # Max acceleration
+                     max_deceleration=MOTOR_MAX_DECELERATION, # Max deceleration
+                     min_steps=STEPS_LOWER_LIMIT,             # Minimum speed
+                     min_stop_steps=STEPS_LOWER_LIMIT,        # Minimum stop speed
+                     max_steps=STEPS_UPPER_LIMIT,             # Maximum speed
+                     insert_rest_accelerate=None):            # *** NO LONGER NEEDED: Where to pad the waveform
 
-    """Generate alpha or beta angles in limacc (constant acceleration) mode.
+    """
+    
+       Generate alpha or beta angles in limacc (constant acceleration) mode.
 
        The function constructs an acceleration waveform and a deceleration
        waveform and joins them back to back to make the complete profile.
@@ -202,6 +238,11 @@ def step_list_limacc(nsteps, max_acceleration=MOTOR_MAX_ACCELERATION,
        TODO: SMB Can this function be simplified? The lengths of the phases
        ought to be predictable, rather than having them built in while loops
        with specific exit conditions.
+       
+       *** THIS FUNCTION IS NEEDED BUT OVER COMPLICATED. SIMPLIFY. ***
+       
+       *** Max acceleration is always the same as max deceleration.
+       *** insert_rest_accelerate is always None. Other options not needed.
 
     """
     # Initialise the step lists for the acceleration and deceleration phases
@@ -400,6 +441,7 @@ def step_list_count(slist):
     return (nsteps, maxchange)
 
 def step_list_pad(slist, target_len):
+    # Lengthen a step list by padding the end section with zeros.
     slist = list(slist)
     if len(slist) >= target_len:
         return slist
@@ -411,30 +453,40 @@ def step_list_pad(slist, target_len):
     return slist
 
 
-def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
-              mode=None, units="degree",
+def gen_slist(adegree,                     # Alpha angle to move
+              bdegree,                     # Beta angle to move
+              asteps_per_deg=None,         # Steps to degree conversion factor
+              bsteps_per_deg=None,         # Steps to degree conversion factor
+              mode=None,                   # *** NO LONGER NEEDED: Waveform mode
+              units="degree",              # *** OVER-COMPLICATED: Units of adegree, bdegree
               max_change_alpha=None,
-              max_acceleration_alpha=None,
-              max_deceleration_alpha=None,
-              min_steps_alpha=None,
-              min_stop_steps_alpha=None,
-              max_steps_alpha=None,
-              max_change_beta=None,
-              max_acceleration_beta=None,
-              max_deceleration_beta=None,
-              min_steps_beta=None,
-              min_stop_steps_beta=None,
-              max_steps_beta=None,
-              max_change=1.4,
-              max_acceleration=MOTOR_MAX_ACCELERATION,
-              max_deceleration=MOTOR_MAX_DECELERATION,
-              min_steps=STEPS_LOWER_LIMIT,
-              min_stop_steps=None,
-              max_steps=STEPS_UPPER_LIMIT,
-              insert_rest_accelerate=None):
-    """Generate alpha and beta angles for one FPU.
-       See the gen_wf() function for a description of the function parameters.
+              max_acceleration_alpha=None, # Maximum acceleration alpha
+              max_deceleration_alpha=None, # *** NO LONGER NEEDED: Maximum deceleration alpha
+              min_steps_alpha=None,        # Minimum speed alpha
+              min_stop_steps_alpha=None,   # Minimum stop speed alpha
+              max_steps_alpha=None,        # Maximum speed alpha
+              max_change_beta=None,        # *** NO LONGER NEEDED: obsolete parameter
+              max_acceleration_beta=None,  # Maximum acceleration beta
+              max_deceleration_beta=None,  # *** NO LONGER NEEDED: Maximum deceleration beta
+              min_steps_beta=None,         # Minimum speed beta
+              min_stop_steps_beta=None,    # Minimum stop speed beta
+              max_steps_beta=None,         # Maximum speed alpha
+              max_change=1.4,              # *** NO LONGER NEEDED: obsolete parameter
+              max_acceleration=MOTOR_MAX_ACCELERATION,  # *** OVER-COMPLICATED. Default.
+              max_deceleration=MOTOR_MAX_DECELERATION,  # *** OVER-COMPLICATED. Default
+              min_steps=STEPS_LOWER_LIMIT, # *** OVER-COMPLICATED. Default.
+              min_stop_steps=None,         # *** OVER-COMPLICATED. Default.
+              max_steps=STEPS_UPPER_LIMIT, # *** OVER-COMPLICATED. Default.
+              insert_rest_accelerate=None):# *** NO LONGER NEEDED: obsolete parameter
     """
+       Generate alpha and beta angles for one FPU.
+       See the gen_wf() function for a description of the function parameters.
+       
+    """
+    # Sort out default values for parameters not included.
+    # TODO: *** REMOVE THIS OVER-COMPLICATED CODE.
+    # The default values should be defined in the function specification,
+    # if at all.
     if min_steps_alpha is None:
         min_steps_alpha = min_steps
     if min_stop_steps_alpha is None:
@@ -462,13 +514,18 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
         max_deceleration_beta = max_deceleration
 
 
+    # TODO: *** REMOVE FROM C++ VERSION.
     # assert we don't deal with NaNs
     assert( (adegree == adegree) and (bdegree == bdegree))
     # (if the above code confuses you, read https://en.wikipedia.org/wiki/NaN
     # and https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html )
+    
+    # TODO: *** REMOVE. mode not needed.
     if not (mode in ['fast', 'slow', 'slowpar', 'limacc']):
             raise ValueError("mode needs to be one of 'slow', 'slowpar', 'fast', 'limacc'")
 
+    # TODO: *** REMOVE. This function would be more modular if it always
+    # operated in steps and units were managed by the caller.
     if units == "degree":
         asteps = int(round(adegree * asteps_per_deg))
         bsteps = int(round(bdegree * bsteps_per_deg))
@@ -478,12 +535,15 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
     else:
         raise ValueError("The unit needs to be 'steps' or 'degree'")
 
+    # Return +/- 1.0 depending on the sign of asteps or bsteps
     asign = int(math.copysign(1.0, asteps))
     bsign = int(math.copysign(1.0, bsteps))
-    asteps *= asign
-    bsteps *= bsign
+    asteps *= asign # Result always positive. TODO: Would be easier to use abs()
+    bsteps *= bsign # Result always positive. TODO: Would be easier to use abs()
 
+    # TODO: *** REMOVE THIS TEST - MODE IS ALWAYS LINACC
     if mode in ['slow', 'slowpar']:
+        # TODO: ***  REMOVE
         alist = step_list_slow(asteps, min_steps=min_steps_alpha)
         blist = step_list_slow(bsteps, min_steps=min_steps_beta)
 
@@ -494,6 +554,7 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
                   for astep, bstep in zip(alist, blist) ]
 
     elif mode == 'fast':
+        # TODO: ***  REMOVE
         alist = step_list_fast(asteps,
                                max_change=max_change_alpha,
                                min_steps=min_steps_alpha,
@@ -510,6 +571,7 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
         slist = [ (astep * asign, bstep * bsign)
                   for astep, bstep in zip(alist, blist) ]
     else:
+        # TODO: KEEP THIS SECTION ONLY
         alist = step_list_limacc(asteps,
                                  max_acceleration=max_acceleration_alpha,
                                  max_deceleration=max_deceleration_alpha,
@@ -526,6 +588,7 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
                                  max_steps=max_steps_beta,
                                  insert_rest_accelerate=insert_rest_accelerate)
 
+        # Pad the waveforms to the same length.
         max_len = max(len(alist), len(blist))
         alist = step_list_pad(alist, max_len)
         blist = step_list_pad(blist, max_len)
@@ -541,17 +604,20 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
     return slist
 
 
-def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
-           bsteps_per_deg=StepsPerDegreeBeta,
-           units='degree',
-           mode='limacc',
-           max_change=1.4,
-           max_acceleration=MOTOR_MAX_ACCELERATION,
-           max_deceleration=MOTOR_MAX_DECELERATION,
-           min_steps=STEPS_LOWER_LIMIT,
-           max_steps=STEPS_UPPER_LIMIT,
+def gen_wf(aangle,                                  # Alpha angle in degrees.
+           bangle,                                  # Beta angle in degrees.
+           asteps_per_deg=StepsPerDegreeAlpha,      # Steps to degree conversion
+           bsteps_per_deg=StepsPerDegreeBeta,       # Steps to degree conversion
+           units='degree',                          # TODO: Over-complication?
+           mode='limacc',                           # TODO: *** REMOVE. NOT NEEDED.
+           max_change=1.4,                          # TODO: *** REMOVE. NOT NEEDED.
+           max_acceleration=MOTOR_MAX_ACCELERATION, # Maximum acceleration in steps/s/element
+           max_deceleration=MOTOR_MAX_DECELERATION, # TODO: NOT NEEDED. Acceleration = deceleration
+           min_steps=STEPS_LOWER_LIMIT,             # Min speed in steps/s
+           max_steps=STEPS_UPPER_LIMIT,             # Max speed in steps/s
            **kwargs):
     """
+    
     Generate a waveform which moves the alpha arm by an angle of
     adegree and the beta arm by bdegree. asteps_per_deg and bsteps_er_deg
     are approximate calibration factors. The mode parameter can be:
@@ -572,9 +638,11 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
     returns a dictionary where slist[N] contains [alphasteps, betasteps] for
     FPU index N. alphasteps and betasteps are lists of alpha and beta step
     counts.
+    
     """
 #    print("gen_wf: min_steps=%d, max_steps=%d, min_acceleration=%d, max_acceleration=%d" % \
 #          (min_steps, max_steps, max_acceleration, max_deceleration) )
+    # TODO: ALL MODES ARE OBSOLETE EXCEPT LINACC
     if mode == 'slow':
         warnings.warn("'slow' mode is obsolete, it does not match the waveform protocol, mapped to 'slowpar'.")
 

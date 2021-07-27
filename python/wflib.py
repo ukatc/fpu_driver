@@ -75,7 +75,9 @@ def load_paths(filename, canmap_fname="canmap.cfg", reverse=False):
 
 def load_waveform(filename, canmap_fname="canmap.cfg", reverse=False):
 
-    """Reads a PATHS file created by the path generator and
+    """
+    
+    Reads a PATHS file created by the path generator and
     returns a structure which can passed into the FPU driver's
     configMotion() method.
     The returned results are in motor steps."""
@@ -94,14 +96,17 @@ def load_waveform(filename, canmap_fname="canmap.cfg", reverse=False):
             tseries.reverse()
         waveform[fpu_id] = tseries
         
-    
     return waveform
 
 
 def print_waveform(wf, columns=True):
-    """Prints the contents of a waveform in a human-readable form.
+    """
+    
+    Prints the contents of a waveform in a human-readable form.
     The columns flag determines whether steps are printed in
-    rows or columns"""
+    rows or columns
+    
+    """
     for id, w in wf.items():
         print("-" * 30)
         print("fpu_id", id)
