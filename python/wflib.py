@@ -5,7 +5,7 @@ from numpy import array, pi, round
 
 # This module depends on the mocpath library, obtained from the
 # MOONS software SVN repository.
-from mocpath.path.path_generator import read_path_file, save_targets_from_angles
+from mocpath.path.path_generator import read_path_file
 
 from fpu_constants import (ALPHA_DATUM_OFFSET, BETA_DATUM_OFFSET,
                            StepsPerDegreeAlpha, StepsPerDegreeBeta,
@@ -43,6 +43,7 @@ def load_paths(filename, canmap_fname="canmap.cfg", reverse=False):
     in the returned results are in radians.
 
     """
+    
     paths = read_path_file(filename)
 
     # Extract a dictionary from the canmap file by removing the
@@ -79,9 +80,8 @@ def load_waveform(filename, canmap_fname="canmap.cfg", reverse=False):
     Reads a PATHS file created by the path generator and
     returns a structure which can passed into the FPU driver's
     configMotion() method.
-    The returned results are in motor steps.
-    
-    """
+    The returned results are in motor steps."""
+
     paths = load_paths(filename, canmap_fname)
 
     waveform = {}
@@ -96,7 +96,6 @@ def load_waveform(filename, canmap_fname="canmap.cfg", reverse=False):
             tseries.reverse()
         waveform[fpu_id] = tseries
         
-    
     return waveform
 
 
@@ -105,7 +104,7 @@ def print_waveform(wf, columns=True):
     
     Prints the contents of a waveform in a human-readable form.
     The columns flag determines whether steps are printed in
-    rows or columns.
+    rows or columns
     
     """
     for id, w in wf.items():
@@ -122,37 +121,8 @@ def print_waveform(wf, columns=True):
                 strg2 += "%5i, " % s[1]
             print( "alpha: " + strg1 )
             print( "beta: " + strg2 )
+            
 
-def save_angles_to_file( arm_angles, status_file, config_file,
-                         canmap_fname="canmap.cfg" ): 
-
-    # Extract a dictionary from the canmap file by removing the
-    # the comments and parsing it as a Python statement.
-    # In the resulting dictionary, idmap["cell-id"] = fpu-id.
-    idmap = literal_eval("".join(filter(lambda x: not is_comment(x),
-                                        open(canmap_fname).readlines())))
-
-    if len(idmap) < len(arm_angles):
-       strg = "ID mapping file %s is not long enough to define all the mappings needed." % canmap_fname
-       strg += "\n\tThere are %d mappings in the configuration but %d arm angles." % (len(idmap), len(arm_angles))
-       raise ValueError(strg)
-
-    def fpuid_to_cellid( fid ):
-        for index in list(idmap.keys()):
-            if fid == idmap[index]:
-                return int(index)
-
-    # Translate the arm angles and convert to radians.
-    arm_angles_rad = []
-    for fpuid, alpha_deg, beta_deg in arm_angles:
-        cell_id = fpuid_to_cellid( fpuid )
-        arm_angles_rad.append( [cell_id,
-                                alpha_deg/RADIAN_TO_DEGREE,
-                                beta_deg/RADIAN_TO_DEGREE])
-
-    # Save those angles as target locations for the given configuration file
-    save_targets_from_angles( status_file, config_file, arm_angles_rad )
-        
 if __name__ == '__main__':
     print("""Run this script with
 
