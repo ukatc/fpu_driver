@@ -2809,6 +2809,9 @@ class GridDriver(UnprotectedGridDriver):
 
         nfaults = 0
         nrecovered = 0
+        # TODO: Recover collided FPUs in parallel rather than in sequence.
+        # TODO: After a recovery, move the FPUs a little further in the same
+        #       direction, to prevent vibration from reactivating the fault.
         for fpu_id in fpuset:
             #print("\nChecking FPU %i" % fpu_id)
             #print("\t%s" % str(grid_state.FPU[fpu_id]))
@@ -2826,14 +2829,14 @@ class GridDriver(UnprotectedGridDriver):
             fpu_beta_direction = grid_state.FPU[fpu_id].direction_beta
 
             if fpu_alpha_direction == DIRST_CLOCKWISE or fpu_alpha_direction == DIRST_RESTING_LAST_CW:
-               free_alpha_dir = REDQ_ANTI_CLOCKWISE
+               free_alpha_dir = REQD_ANTI_CLOCKWISE
             elif fpu_alpha_direction == DIRST_ANTI_CLOCKWISE or fpu_alpha_direction == DIRST_RESTING_LAST_ACW:
                free_alpha_dir = REQD_CLOCKWISE
             else:
                free_alpha_dir = None
 
             if fpu_beta_direction == DIRST_CLOCKWISE or fpu_beta_direction == DIRST_RESTING_LAST_CW:
-               free_beta_dir = REDQ_ANTI_CLOCKWISE
+               free_beta_dir = REQD_ANTI_CLOCKWISE
             elif fpu_beta_direction == DIRST_ANTI_CLOCKWISE or fpu_beta_direction == DIRST_RESTING_LAST_ACW:
                free_beta_dir = REQD_CLOCKWISE
             else:
