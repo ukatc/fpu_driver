@@ -61,7 +61,8 @@ import FpuGridDriver
 from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     SEARCH_CLOCKWISE, SEARCH_ANTI_CLOCKWISE, SEARCH_AUTO, SKIP_FPU, \
     REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE, REQD_NEGATIVE, REQD_POSITIVE, \
-    DATUM_TIMEOUT_DISABLE
+    DATUM_TIMEOUT_DISABLE, DIRST_CLOCKWISE, DIRST_ANTI_CLOCKWISE, \
+    DIRST_RESTING_LAST_CW, DIRST_RESTING_LAST_ACW
 
 try:
    import wflib
@@ -193,11 +194,52 @@ def save_state_to_file( gd, gs, status_file, config_file, canmap_file="canmap.cf
     wflib.save_angles_to_file( arm_angles, status_file, config_file,
                                canmap_file )
 
+def dir_to_strg( direction ):
+   # Helper function to convert a direction value into a string
+   strg = "%1d=" % direction
+   if direction == DIRST_CLOCKWISE:
+      strg += "-CW"
+   elif direction == DIRST_RESTING_LAST_CW:
+      strg += "RCW"
+   elif direction == DIRST_ANTI_CLOCKWISE:
+      strg += "+AC"
+   elif direction == DIRST_RESTING_LAST_ACW:
+      strg += "RAC"
+   else:
+      strg += "???"
+   return strg
 
+#-------------------------------------------------------------------------------
 def check_status( gs ):
     # Print a summary of the important status fields for each FPU.
-    strg =  " ID    FPU       State           asteps bsteps adatum bdatum  aref  bref alimit bcollision wfstatus wfvalid\n"
-    strg += "---- ------ -------------------- ------ ------ ------ ------ ----- ----- ------ ---------- -------- -------\n"
+    strg =  " ID    FPU       State           asteps bsteps adir  bdir  adatum bdatum aref  bref  alimit bcollision wfstatus wfvalid\n"
+    strg += "---- ------ -------------------- ------ ------ ----- ----- ------ ------ ----- ----- ------ ---------- -------- -------\n"
+#    for fpu_id in gd.getFpuIdList():
+    for fpu_id in range(0, len(gs.FPU)):
+       fpu = gs.FPU[fpu_id]
+       strg += "%4d " % fpu_id
+       strg += "%6s " % str(fpu.serial_number)
+       strg += "%20s " % str(fpu.state)
+       strg += "%6d " % int(fpu.alpha_steps)
+       strg += "%6d " % int(fpu.beta_steps)
+       strg += "%5s " % dir_to_strg(fpu.direction_alpha)
+       strg += "%5s " % dir_to_strg(fpu.direction_beta)
+       strg += "%5s  " % str(fpu.alpha_datum_switch_active)
+       strg += "%5s  " % str(fpu.beta_datum_switch_active)
+       strg += "%5s " % str(fpu.alpha_was_referenced)
+       strg += "%5s  " % str(fpu.beta_was_referenced)
+       strg += "%5s      " % str(fpu.at_alpha_limit)
+       strg += "%5s     " % str(fpu.beta_collision)
+       strg += "%4d   " % int(fpu.waveform_status)
+       strg += "%5s  " % str(fpu.waveform_valid)
+       strg += "\n"
+    print(strg)
+
+
+def check_status_old( gs ):
+    # Print a summary of the important status fields for each FPU.
+    strg =  " ID    FPU       State           asteps bsteps adir bdir adatum bdatum  aref  bref alimit bcollision wfstatus wfvalid\n"
+    strg += "---- ------ -------------------- ------ ------ ---- ---- ------ ------ ----- ----- ------ ---------- -------- -------\n"
     for fpu_id in range(0, len(gs.FPU)):
        fpu = gs.FPU[fpu_id]
        strg += "%4d " % fpu_id
@@ -205,6 +247,20 @@ def check_status( gs ):
        strg += "%20s " % str(fpu.state)
        strg += "%6d " % int(fpu.alpha_steps)
        strg += "%6d  " % int(fpu.beta_steps)
+
+       if (fpu.direction_alpha == DIRST_CLOCKWISE) or (fpu.direction_alpha == DIRST_RESTING_LAST_CW):
+           strg += " -C "
+       elif (fpu.direction_alpha == DIRST_ANTI_CLOCKWISE) or (fpu.direction_alpha == DIRST_RESTING_LAST_ACW):
+           strg += "+AC "
+       else:
+           strg += "??? "
+       if (fpu.direction_beta == DIRST_CLOCKWISE) or (fpu.direction_beta == DIRST_RESTING_LAST_CW):
+           strg += " -C "
+       elif (fpu.direction_beta == DIRST_ANTI_CLOCKWISE) or (fpu.direction_beta == DIRST_RESTING_LAST_ACW):
+           strg += "+AC "
+       else:
+           strg += " ??? "
+
        strg += "%5s  " % str(fpu.alpha_datum_switch_active)
        strg += "%5s " % str(fpu.beta_datum_switch_active)
        strg += "%5s " % str(fpu.alpha_was_referenced)
