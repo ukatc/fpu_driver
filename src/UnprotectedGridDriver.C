@@ -8,6 +8,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2020-04-28  Created (translated from Python FpuGridDriver.py).
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,7 +24,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-
 // ********** TODO: NOTE: This file (along with GridDriver.C) is Bart's work in
 // progress for converting the classes and functions in FPUGridDriver.py from
 // Python to C++.
@@ -32,7 +32,10 @@
 #include <algorithm>
 #include <unistd.h>
 #include <new>
-#include <string.h>
+#include <string>
+#include <fstream>
+#include <set>
+#include <cstring>
 #include "UnprotectedGridDriver.h"
 #include "DeviceLock.h"
 #include "ethercan/FPUArray.h"
@@ -115,13 +118,268 @@ void gridDriverAbortDuringFindDatumOrExecuteMotion(void)
     abort_motion_pending = true;
 }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+//------------------------------------------------------------------------------
+E_EtherCANErrCode gridDriverReadCanMapFile(const std::string &canmap_file_path,
+                                           GridCanMap &grid_can_map_ret,
+                                           CanMapFileErrorInfo &error_info_ret)
+{
+    // Reads the FPU ID and CAN map data from a grid driver CAN map file.
+    // The CAN map CSV-style file contents need to be of the following form:
+    //   - 4 columns of numeric values as follows:
+    //       - FPU ID: 0 to 1124 (FPU_ID_BROADCAST_BASE - 1)
+    //       - Gateway ID: 0 to 2 (MAX_NUM_GATEWAYS - 1)
+    //       - CAN bus ID: 0 to 4 (BUSES_PER_GATEWAY - 1)
+    //       - CAN ID: 1 to 76 (FPUS_PER_BUS)
+    //   - No column headers
+    //   - Columns separated by spaces, tabs, commas, or a mixture of these -
+    //     all of these padding/delimiter characters are just ignored
+    //
+    // Checking and validation done in this function:
+    //   - Checks for valid text-to-number conversion success
+    //   - Checks for correct number of fields (as above) in each line
+    //   - Checks all of the value ranges above
+    //   - Checks for duplicate FPU IDs and duplicate CAN routes
+    //
+    // Function arguments / return values:
+    //   - canamp_file_path: Must be of the general form e.g. "/moons/test_jig.csv"
+    //   - If the CAN map file was successfully parsed then returns DE_OK, and
+    //     grid_can_map_ret will contain the FPU ID / CAN mapping list
+    //   - If an error occurs then one of the following error codes is
+    //     returned, grid_can_map_ret will be of size 0, and the values in
+    //     error_info_ret will give more information for the particular error
+    //     wherever relevant (including the CAN map file line number for the
+    //     error). N.B. A tidy error message for this error_info data can be 
+    //     produced using gridDriverConvertCanMapFileErrorInfoToString(). The
+    //     error codes are as follows:
+    //       - DE_RESOURCE_ERROR if the CAN map file couldn't be opened for some
+    //         reason
+    //       - DE_INVALID_NUM_PARAMS if incorrect number of fields on a line
+    //       - DE_INVALID_PAR_VALUE if any of the fields on a line couldn't be
+    //         converted to their required type
+    //       - DE_NO_FPUS_DEFINED if no FPU ID / CAN route lines were
+    //         successfully found
+    //       - DE_INVALID_FPU_ID / DE_INVALID_GATEWAY_ID /
+    //         DE_INVALID_CAN_BUS_ID / DE_INVALID_CAN_ID if an out-of-range
+    //         invalid value is found
+    //       - DE_DUPLICATE_FPU_ID / DE_DUPLICATE_CAN_ROUTE if a duplicate
+    //         FPU ID or CAN route is found
+
+    grid_can_map_ret.clear();
+
+    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
+
+    // Attempt to open file
+    std::ifstream canmap_file_stream;
+    canmap_file_stream.open(canmap_file_path);
+    if (canmap_file_stream.good())
+    {
+        ecan_result = DE_OK;
+    }
+    else
+    {
+        return DE_RESOURCE_ERROR;
+    }
+
+    int current_line_num = 0;
+    std::string line_str;
+    std::set<int> fpu_ids_temp;                 // | Temporary sets used for
+    std::set<uint32_t> can_routes_uints_temp;   // | duplicate checking
+
+    // Parse and check each line's data items and add to FPU ID / CAN route list
+    while (std::getline(canmap_file_stream, line_str))
+    {
+        current_line_num++;
+
+        if (line_str.empty())
+        {
+            continue;
+        }
+
+        // Copy line string to a raw C line buffer
+        const int line_buf_size = 100;
+        char line_buf[line_buf_size];
+        memset(line_buf, '\0', line_buf_size);
+        strncpy(line_buf, line_str.c_str(),
+                std::min(line_buf_size, (int)line_str.size()));
+        line_buf[line_buf_size - 1] = '\0';
+
+        // Change the various padding and delimiter characters to nulls
+        // IMPORTANT: For files generated in Windows (e.g. exported from Excel
+        // in Windows), the different Windows line endings will result in an
+        // extra \r at the end of the line - this will be removed OK by the
+        // following code.
+        //
+        // TODO: NOTE: If these characters are inside strings then they will
+        // still be nulled, so this approach isn't good if want to eventually
+        // also support the extraction of strings (possibly surrounded by
+        // quotes) which have any of these characters inside them
+        for (int i = 0; i < line_buf_size; i++)
+        {
+            if ((line_buf[i] == ' ') || (line_buf[i] == ',') ||
+                (line_buf[i] == '\t') || (line_buf[i] == '\n') ||
+                (line_buf[i] == '\r'))
+            {
+                line_buf[i] = '\0';
+            }
+        }
+
+        // Extract the fields into a string list
+        std::vector<std::string> line_item_strs;
+        bool between_fields = true;
+        for (int i = 0; i < line_buf_size; i++)
+        {
+            if (line_buf[i] == '\0')
+            {
+                between_fields = true;
+            }
+            if (between_fields && (line_buf[i] != '\0'))
+            {
+                line_item_strs.push_back(&line_buf[i]);
+                between_fields = false;
+            }
+        }
+
+        int fpu_id = 0;
+        FPUArray::t_bus_address can_route = { 0, 0, 0 };
+        if (line_item_strs.size() == 4)
+        {
+            //..................................................................
+            // Extract the line's fields
+            try
+            {
+                fpu_id = std::stoi(line_item_strs[0]);
+                can_route.gateway_id = std::stoi(line_item_strs[1]);
+                can_route.bus_id = std::stoi(line_item_strs[2]);
+                can_route.can_id = std::stoi(line_item_strs[3]);
+            }
+            catch(const std::exception &e)
+            {
+                // Error - could not convert a field for some reason
+                ecan_result = DE_INVALID_PAR_VALUE;
+            }
+
+            //..................................................................
+            // Check the field values' ranges
+            if (ecan_result == DE_OK)
+            {
+                if ((fpu_id < 0) || (fpu_id >= FPU_ID_BROADCAST_BASE))
+                {
+                    ecan_result = DE_INVALID_FPU_ID;
+                }
+                else if ((can_route.gateway_id < 0) ||
+                         (can_route.gateway_id >= MAX_NUM_GATEWAYS))
+                {
+                    ecan_result = DE_INVALID_GATEWAY_ID;
+                }
+                else if ((can_route.bus_id < 0) ||
+                         (can_route.bus_id >= BUSES_PER_GATEWAY))
+                {
+                    ecan_result = DE_INVALID_CAN_BUS_ID;
+                }
+                else if ((can_route.can_id < 1) ||
+                         (can_route.can_id > FPUS_PER_BUS))
+                {
+                    ecan_result = DE_INVALID_CAN_ID;
+                }
+            }
+
+            //..................................................................
+            // Check that fpu_id and CAN route are not duplicates, then add
+            // them to the list
+            if (ecan_result == DE_OK)
+            {
+                uint32_t can_route_uint =
+                                (((uint32_t)can_route.gateway_id) << 16) |
+                                (((uint32_t)can_route.bus_id) << 8) |
+                                ((uint32_t)can_route.can_id);
+                if (!fpu_ids_temp.insert(fpu_id).second)
+                {
+                    ecan_result = DE_DUPLICATE_FPU_ID;
+                }
+                else if (!can_routes_uints_temp.insert(can_route_uint).second)
+                {
+                    ecan_result = DE_DUPLICATE_CAN_ROUTE;
+                }
+                else
+                {
+                    // Add the FPU ID / CAN route item to the list
+                    std::pair<int, FPUArray::t_bus_address> fpu_can_route;
+                    fpu_can_route.first = fpu_id;
+                    fpu_can_route.second = can_route;
+                    grid_can_map_ret.push_back(fpu_can_route);
+                }
+            }
+
+            //..................................................................
+        }
+        else
+        {
+            ecan_result = DE_INVALID_NUM_PARAMS;
+        }
+
+        if (ecan_result != DE_OK)
+        {
+            error_info_ret.line_number = current_line_num;
+            error_info_ret.fpu_id = fpu_id;
+            error_info_ret.can_route = can_route;
+            break;
+        }
+    }
+
+    if ((ecan_result == DE_OK) && (grid_can_map_ret.size() == 0))
+    {
+        ecan_result = DE_NO_FPUS_DEFINED;
+    }
+
+    if (ecan_result != DE_OK)
+    {
+        grid_can_map_ret.clear();
+    }
+
+    if (canmap_file_stream.is_open())
+    {
+        canmap_file_stream.close();
+    }
+
+    return ecan_result;
+}
+
+//------------------------------------------------------------------------------
+void gridDriverConvertCanMapFileErrorInfoToString(const std::string &canmap_file_path,
+                                                  E_EtherCANErrCode error_code,
+                                                  const CanMapFileErrorInfo &error_info,
+                                                  std::string &error_string_ret)
+{
+
+    // TODO: Add error code text to the resultant string eventually - currently
+    // can't do this because the code-to-text conversion functionality isn't
+    // yet fully separately implemented in C++ (just in the Boost.Python layer
+    // at the moment - see checkInterfaceError() in WrapperSharedBase.C)
+
+    error_string_ret =
+        std::string("CAN map file path specified: ") + canmap_file_path + 
+                    "\nFurther error info: Line number = " +
+        std::to_string(error_info.line_number) + ", FPU ID = " +
+        std::to_string(error_info.fpu_id) + ", gateway ID = " +
+        std::to_string(error_info.can_route.gateway_id) + ", bus ID = " +
+        std::to_string(error_info.can_route.bus_id) + ", CAN ID = " +
+        std::to_string(error_info.can_route.can_id) + "\n";
+}
+
+//------------------------------------------------------------------------------
+
+#endif // FLEXIBLE_CAN_MAPPING
+
 
 //==============================================================================
 
 UnprotectedGridDriver::UnprotectedGridDriver(
     // NOTE: Boost.Python only allows up to 14 function arguments in
     // function wrappers, so need to keep number of arguments within this
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     int nfpus,
+#endif // NOT FLEXIBLE_CAN_MAPPING
     double SocketTimeOutSeconds,
     bool confirm_each_step,
     long waveform_upload_pause_us,
@@ -136,11 +394,15 @@ UnprotectedGridDriver::UnprotectedGridDriver(
     double motor_max_rel_increase,
     double motor_max_step_difference)
 {
+#ifdef FLEXIBLE_CAN_MAPPING
+    fpus_data.resize(MAX_NUM_POSITIONERS);
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((nfpus > 0) && (nfpus <= MAX_NUM_POSITIONERS))
     {
         fpus_data.resize(nfpus);
         
         config.num_fpus = nfpus;
+#endif // NOT FLEXIBLE_CAN_MAPPING
         config.SocketTimeOutSeconds = SocketTimeOutSeconds;
         config.confirm_each_step = confirm_each_step;
         config.waveform_upload_pause_us = waveform_upload_pause_us;
@@ -154,11 +416,13 @@ UnprotectedGridDriver::UnprotectedGridDriver(
         config.motor_max_start_frequency = motor_max_start_frequency;
         config.motor_max_rel_increase = motor_max_rel_increase;
         config.motor_max_step_difference = motor_max_step_difference;
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     }
     else
     {
         config.num_fpus = 0;
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 }
 
 //------------------------------------------------------------------------------
@@ -176,6 +440,9 @@ UnprotectedGridDriver::~UnprotectedGridDriver()
 
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::initialize(
+#ifdef FLEXIBLE_CAN_MAPPING
+                                const GridCanMap &grid_can_map,
+#endif // FLEXIBLE_CAN_MAPPING
                                 E_LogLevel logLevel,
                                 const std::string &log_dir,
                                 int firmware_version_address_offset,
@@ -185,11 +452,17 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
                                 const std::string &rx_logfile,
                                 const std::string &start_timestamp)
 {
-    // This function performs further initialisations. It is required to
-    // be separate from the constructor for supporting Boost.Python wrapping,
-    // because Boost.Python only supports up to 14 function arguments, so
-    // can't supply all of the 20-plus required initialisation arguments via
-    // the constructor alone.
+    // This function performs further initialisations.
+    // *** IMPORTANT ***: grid_can_map must have been been fully checked for
+    // value ranges and FPU ID / CAN route duplicates before being passed into
+    // this function (N.B. gridDriverReadCanMapFile() performs these checks
+    // when it reads the file) - this function assumes that it contains only
+    // valid entries, and only performs minimal safety checks on them.
+
+    // N.B. This function is required to be separate from the constructor in
+    // order to support Boost.Python wrapping, because Boost.Python only
+    // supports up to 14 function arguments, so can't supply all of the 20-plus
+    // required initialisation arguments via the constructor alone.
 
     //................................
     // TODO: Temporary for now, to prevent build warnings
@@ -206,10 +479,12 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
         return DE_INTERFACE_ALREADY_INITIALIZED;
     }
 
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     if (config.num_fpus <= 0)
     {
         return DE_INVALID_FPU_ID;
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     config.logLevel = logLevel;
     config.firmware_version_address_offset = firmware_version_address_offset;
@@ -234,9 +509,37 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
 
     //..........................................................................
 
-    E_EtherCANErrCode ecan_result;
+    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+
+    // Create fpu_id_list and populate it from the FPU IDs in grid_can_map
+    std::vector<int> fpu_id_list;
+    for (size_t i = 0; i < grid_can_map.size(); i++)
+    {
+        int fpu_id = grid_can_map[i].first;
+        if ((fpu_id >= 0) && (fpu_id < FPU_ID_BROADCAST_BASE))
+        {
+            fpu_id_list.push_back(fpu_id);
+        }
+        else
+        {
+            return DE_INVALID_FPU_ID;
+        }
+    }
+
+    ecan_result = config.initFpuIdList(fpu_id_list);
+    if (ecan_result == DE_OK)
+    {
+        _gd = new (std::nothrow) EtherCANInterface(config, grid_can_map);
+    }
+    else
+    {
+        return ecan_result;
+    }
+#else // NOT FLEXIBLE_CAN_MAPPING
     _gd = new (std::nothrow) EtherCANInterface(config);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     if (_gd != nullptr)
     {
         ecan_result = _gd->initializeInterface();
@@ -248,6 +551,7 @@ E_EtherCANErrCode UnprotectedGridDriver::initialize(
         else
         {
             delete _gd;
+            _gd = nullptr;
         }
     }
     else
@@ -311,16 +615,17 @@ void UnprotectedGridDriver::need_ping(const t_grid_state &gs,
                                       const t_fpuset &fpuset,
                                       t_fpuset &pingset_ret)
 {
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
+    clearFpuSet(pingset_ret);
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
+    for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
-        pingset_ret[i] = false;
-    }
-    
-    for (int i = 0; i < config.num_fpus; i++)
-    {
-        if (fpuset[i] && (!gs.FPU_state[i].ping_ok))
+        if (fpuset[fpu_id] && (!gs.FPU_state[fpu_id].ping_ok))
         {
-            pingset_ret[i] = true;
+            pingset_ret[fpu_id] = true;
         }
     }    
 }
@@ -368,6 +673,22 @@ E_EtherCANErrCode UnprotectedGridDriver::setStepsPerSegment(int min_steps,
     return _gd->setStepsPerSegment(min_steps, max_steps, gs, fpuset);
 }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+//------------------------------------------------------------------------------
+E_EtherCANErrCode UnprotectedGridDriver::getFpuIdList(
+                                            std::vector<int> &fpu_id_list_ret)
+{
+    if (!initializedOk())
+    {
+        return DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    fpu_id_list_ret = config.getFpuIdList();
+    return DE_OK;
+}
+
+#endif // FLEXIBLE_CAN_MAPPING
+
 //------------------------------------------------------------------------------
 E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
 {
@@ -377,12 +698,6 @@ E_GridState UnprotectedGridDriver::getGridState(t_grid_state &grid_state_ret)
     }
 
     return _gd->getGridState(grid_state_ret);
-}
-
-//------------------------------------------------------------------------------
-int UnprotectedGridDriver::getNumFpus()
-{
-    return config.num_fpus;
 }
 
 //------------------------------------------------------------------------------
@@ -459,7 +774,11 @@ E_EtherCANErrCode UnprotectedGridDriver::findDatum(t_grid_state &gs,
         // We might need to disable the stepcount-based check if (and only
         // if) the step counter does not agree with the database.
         // Check whether a movement against the step count is needed.
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (fpuset[fpu_id] && 
                 (((search_modes[fpu_id] == SEARCH_CLOCKWISE) ||
@@ -586,7 +905,11 @@ E_EtherCANErrCode UnprotectedGridDriver::pingIfNeeded(t_grid_state &gs,
     need_ping(gs, fpuset, pingset);
 
     bool any_to_ping = false;
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id] && pingset[fpu_id])
         {
@@ -693,9 +1016,9 @@ E_EtherCANErrCode UnprotectedGridDriver::resetStepCounters(long new_alpha_steps,
         return ecan_result;
     }
 
-    double alpha_target = (((double)new_alpha_steps) / StepsPerDegreeAlpha) +
+    double alpha_target = (((double)new_alpha_steps) / STEPS_PER_DEGREE_ALPHA) +
                           config.alpha_datum_offset;
-    double beta_target = ((double)new_beta_steps) / StepsPerDegreeBeta;
+    double beta_target = ((double)new_beta_steps) / STEPS_PER_DEGREE_BETA;
 
     _reset_counter_hook(alpha_target, beta_target, prev_gs, gs, fpuset);
     return DE_OK;
@@ -752,7 +1075,11 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
     // addresses and values are displayed in hex
 
     string_ret = "  RegName    RegAddress:";
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -762,7 +1089,11 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
     string_ret += "\n";
 
     string_ret += "  --------   -----------";
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -780,7 +1111,11 @@ E_EtherCANErrCode UnprotectedGridDriver:: getDiagnostics(t_grid_state &gs,
         {
             string_ret += std::string(reg_defs[i].name) + "        " +
                           std::to_string(reg_defs[i].address);
+#ifdef FLEXIBLE_CAN_MAPPING
+            for (int fpu_id : config.getFpuIdList())
+#else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
             {
                 if (fpuset[fpu_id])
                 {
@@ -946,9 +1281,13 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
     // std::vector elements from the middle - but will work OK
     for (auto it = wtable.begin(); it != wtable.end(); )
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (config.isValidFpuId(it->fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if ((it->fpu_id >= 0) &&
             (it->fpu_id < config.num_fpus) &&
             (it->fpu_id < MAX_NUM_POSITIONERS))   // Sanity checks
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             if (!fpuset[it->fpu_id])
             {
@@ -967,6 +1306,11 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
             // Error: Bad FPU ID found in wavetable
             return DE_INVALID_FPU_ID;
         }
+    }
+
+    if (wtable.size() == 0)
+    {
+        return DE_NO_WAVEFORMS;
     }
 
     // Check whether wavetable is safe, and if so, register it
@@ -1018,7 +1362,11 @@ E_EtherCANErrCode UnprotectedGridDriver::configMotion(const t_wtable &wavetable,
         // data structure already defined.
 
         // Accept configured wavetable entries
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             // Check if wtable has an fpu_id entry
             bool wtable_contains_fpu_id = false;
@@ -1072,7 +1420,11 @@ void UnprotectedGridDriver::set_wtable_reversed(const t_fpuset &fpuset,
     // _post_repeat_motion_hook() / _post_reverse_motion_hook()? (or at least
     // in the original Python version)
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -1288,9 +1640,13 @@ E_EtherCANErrCode UnprotectedGridDriver::enableBetaCollisionProtection(
 
     E_EtherCANErrCode ecan_result = _gd->enableBetaCollisionProtection(gs);
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    updateErrorCountersForFpuSet(prev_gs, gs, config.getFpuSet());
+#else // NOT FLEXIBLE_CAN_MAPPING
     t_fpuset fpuset;
     createFpuSetForNumFpus(config.num_fpus, fpuset);
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     return ecan_result;
 }
@@ -1346,9 +1702,13 @@ E_EtherCANErrCode UnprotectedGridDriver::enableAlphaLimitProtection(
 
     E_EtherCANErrCode ecan_result = _gd->enableAlphaLimitProtection(gs);
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    updateErrorCountersForFpuSet(prev_gs, gs, config.getFpuSet());
+#else // NOT FLEXIBLE_CAN_MAPPING
     t_fpuset fpuset;
     createFpuSetForNumFpus(config.num_fpus, fpuset);
     updateErrorCountersForFpuSet(prev_gs, gs, fpuset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     return ecan_result;
 }
@@ -1452,7 +1812,11 @@ void UnprotectedGridDriver::buildWtableFromLastWaveforms(const t_fpuset &fpuset,
                                                          t_wtable &wtable_ret)
 {
     wtable_ret.clear();
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         t_waveform_steps &last_waveform = fpus_data[fpu_id].db.last_waveform;
         if (fpuset[fpu_id] && (last_waveform.size() != 0))
@@ -1471,11 +1835,15 @@ void UnprotectedGridDriver::listAngles(const t_grid_state &gs,
                                        double bsteps_per_deg)
 {
     // Thin member function wrapper for the separate standalone list_angles()
-    // function, to support an easy Boost,Python wrapper function to be created.
+    // function, to support an easy Boost.Python wrapper function to be created.
     // See the list_angles() comments.
-
+#ifdef FLEXIBLE_CAN_MAPPING
+    list_angles(gs, config.getFpuSet(), fpus_angles_ret, alpha_datum_offset,
+                show_uninitialized, asteps_per_deg, bsteps_per_deg);
+#else // NOT FLEXIBLE_CAN_MAPPING
     list_angles(gs, config.num_fpus, fpus_angles_ret, alpha_datum_offset,
                 show_uninitialized, asteps_per_deg, bsteps_per_deg);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 }
 
 //------------------------------------------------------------------------------
@@ -1518,8 +1886,12 @@ E_EtherCANErrCode UnprotectedGridDriver::countedAngles(t_grid_state &gs,
     if (ecan_result == DE_OK)
     {
         t_fpus_angles fpus_angles_temp;
+#ifdef FLEXIBLE_CAN_MAPPING
+        list_angles(gs, fpuset, fpus_angles_temp, config.alpha_datum_offset);
+#else // NOT FLEXIBLE_CAN_MAPPING
         list_angles(gs, config.num_fpus, fpus_angles_temp,
                     config.alpha_datum_offset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
         for (size_t i = 0; i < fpus_angles_temp.size(); i++)
         {
             if (fpuset[fpus_angles_temp[i].first])
@@ -1638,7 +2010,11 @@ void UnprotectedGridDriver::updateErrorCountersForFpuSet(const t_grid_state &pre
                                                          const t_fpuset &fpuset,
                                                          bool datum_cmd)
 {
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -1659,10 +2035,28 @@ void UnprotectedGridDriver::sleepSecs(double seconds)
 //------------------------------------------------------------------------------
 E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
 {
+#ifdef FLEXIBLE_CAN_MAPPING
+    // Checks that all of the FPUs specified in fpuset are part of the FPU ID
+    // list specified in the config, and are within the allowed range.
+
+    const t_fpuset &config_fpuset = config.getFpuSet();
+    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
+    {
+        if (fpuset[fpu_id])
+        {
+            if ((!config_fpuset[fpu_id]) || (fpu_id >= FPU_ID_BROADCAST_BASE))
+            {
+                return DE_INVALID_FPU_ID;
+            }
+        }
+    }
+
+    return DE_OK;
+
+#else // NOT FLEXIBLE_CAN_MAPPING
     // Check that config.num_fpus is within range
     if ((config.num_fpus < 0) || (config.num_fpus >= MAX_NUM_POSITIONERS))
     {
-        // TODO: Any better error return code for this? DE_INVALID_CONFIG?
         return DE_INVALID_FPU_ID;
     }
 
@@ -1676,22 +2070,43 @@ E_EtherCANErrCode UnprotectedGridDriver::check_fpuset(const t_fpuset &fpuset)
     }
 
     return DE_OK;
+
+#endif // NOT FLEXIBLE_CAN_MAPPING
 }
 
 //------------------------------------------------------------------------------
 void UnprotectedGridDriver::createFpuSetForSingleFpu(int fpu_id,
                                                      t_fpuset &fpuset_ret)
 {
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-    {
-        fpuset_ret[i] = false;
-    }
+    clearFpuSet(fpuset_ret);
     if ((fpu_id >= 0) && (fpu_id < MAX_NUM_POSITIONERS))
     {
         fpuset_ret[fpu_id] = true;
     }
 }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+//------------------------------------------------------------------------------
+void UnprotectedGridDriver::createFpuSetForIdList(const std::vector<int> &fpu_id_list,
+                                                  t_fpuset &fpuset_ret)
+{
+    clearFpuSet(fpuset_ret);
+    for (int fpu_id : fpu_id_list)
+    {
+        if ((fpu_id >= 0) &&
+            (fpu_id < MAX_NUM_POSITIONERS))  // Buffer bounds check
+        {
+            fpuset_ret[fpu_id] = true;
+        }
+        else
+        {
+            // TODO: Error - but should never happen here because fpu_id_list
+            // validity should always have been checked elsewhere already
+        }
+    }
+}
+
+#else // NOT FLEXIBLE_CAN_MAPPING
 //------------------------------------------------------------------------------
 void UnprotectedGridDriver::createFpuSetForNumFpus(int num_fpus,
                                                    t_fpuset &fpuset_ret)
@@ -1701,15 +2116,13 @@ void UnprotectedGridDriver::createFpuSetForNumFpus(int num_fpus,
         num_fpus = MAX_NUM_POSITIONERS;
     }
 
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-    {
-        fpuset_ret[i] = false;
-    }
+    clearFpuSet(fpuset_ret);
     for (int i = 0; i < num_fpus; i++)
     {
         fpuset_ret[i] = true;
     }
 }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
 //==============================================================================
 

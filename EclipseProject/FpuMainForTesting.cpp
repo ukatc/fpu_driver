@@ -66,11 +66,11 @@ int main(int argc, char** argv)
                                                                  "PT19");
 #endif // 0
     
-    //testGridDriver();
+    testGridDriver();
 
     //testFpuCounters();
 
-    testProtectionDB();
+    //testProtectionDB();
     
     return 0;
 }
@@ -86,12 +86,14 @@ static void testGridDriver()
     bool result_ok = gd_tester.writeGridFpusToFpuDb(num_fpus, use_mockup_db);
 */
 
-    // gd_tester.doGridDriverUnitTests();
-    
+    gd_tester.doGridDriverUnitTests();
+
+#if 0
 #if 0
     gd_tester.doUnprotectedGridDriverFunctionalTesting();
 #else
     gd_tester.doGridDriverFunctionalTesting();
+#endif
 #endif
 }
 

@@ -7,6 +7,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client sample
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,8 +53,12 @@ public:
     // number of retries for each action
     const int DEFAULT_NUM_RETRIES = 10;
 
-
+#ifdef FLEXIBLE_CAN_MAPPING
+    EtherCANInterface(const EtherCANInterfaceConfig config_values,
+                      const GridCanMap &grid_can_map);
+#else // NOT FLEXIBLE_CAN_MAPPING
     EtherCANInterface(const EtherCANInterfaceConfig config_values);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     ~EtherCANInterface()
     {
@@ -96,8 +101,9 @@ public:
     EtherCANInterface& operator=(EtherCANInterface&& other) = delete;
 #endif
 
-
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     int getNumFPUs() const;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     E_EtherCANErrCode initializeGrid(t_grid_state& grid_state, t_fpuset const &fpuset);
 

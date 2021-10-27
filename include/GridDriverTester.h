@@ -39,9 +39,11 @@ public:
 
     void doUnprotectedGridDriverFunctionalTesting();
     void doGridDriverFunctionalTesting();
+#if 0
     bool writeGridFpusToFpuDb(int num_fpus,
                               const t_gateway_address &gateway_address,
                               bool use_mockup_db);
+#endif // 0
     static bool writeDummyFpuItemsToFpuDb(bool use_mockup_db,   // N.B. static
                                           const char *serial_number);
 
@@ -54,9 +56,15 @@ private:
         Steps_90_90,
         Steps_Minus89_Minus89
     };
+#ifdef FLEXIBLE_CAN_MAPPING
+    void testInitialisedGridDriver(UnprotectedGridDriver &gd,
+                                   const t_gateway_address &gateway_address,
+                                   bool protection_on);
+#else // NOT FLEXIBLE_CAN_MAPPING
     void testInitialisedGridDriver(int num_fpus, UnprotectedGridDriver &gd,
                                    const t_gateway_address &gateway_address,
                                    bool protection_on);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     const t_waveform_steps &getWaveform(GeneratedWaveform gen_waveform);
 };
 

@@ -97,6 +97,10 @@ static MDB_dbi healthlog_dbi = 0;
 // TODO: Is "verification" sub-database database needed?
 // static MDB_dbi verificationdb_dbi = 0;
 
+// ProtectionDbTxn counter allowing it to check if attempting to create more
+// than one transaction instance at a time (which is not allowed)
+int ProtectionDbTxn::num_existing_transaction_instances = 0;
+
 
 //==============================================================================
 FpuDbData::FpuDbData()
@@ -463,7 +467,17 @@ MdbResult ProtectionDB::openOrCreate(const std::string &dir_str,
 //------------------------------------------------------------------------------
 ProtectionDbTxnPtr ProtectionDB::createTransaction(MdbResult &mdb_result_ret)
 {
-    // Creates a protection database transaction. Return values:
+    // Creates a protection database transaction.
+    // NOTE: Must only have a single transaction instance in existence at a
+    // time, so need to ensure that an existing one is destroyed (e.g. by it
+    // going out of scope) before creating a new one. See LMDB mdb_txn_begin()
+    // web documentation: "A thread may only have a single transaction at a
+    // time". This is checked by the ProtectionDbTxn instance being created,
+    // and produces MDB_CREATING_MORE_THAN_ONE_TRANSACTION_OBJECT in
+    // mdb_result_ret if it occurs. This is a useful check because the LMDB
+    // library otherwise indefinitely hangs on a mutex if this is attempted.
+    //
+    // Return values:
     //   - If successful then the returned ProtectionDbTxnPtr contains a valid
     //     pointer, and mdb_result_ret will contain MDB_SUCCESS
     //   - If not successful then the returned ProtectionDBTxnPtr contains a
@@ -567,6 +581,14 @@ std::string ProtectionDB::getResultString(MdbResult mdb_result)
         {
             MDB_HEALTHLOG_SUBDB_MISSING,
             "MDB_HEALTHLOG_SUBDB_MISSING: The health log sub-database is missing from the database"
+        },
+        {
+            MDB_CREATING_MORE_THAN_ONE_TRANSACTION_OBJECT,
+            "MDB_CREATING_MORE_THAN_ONE_TRANSACTION_OBJECT: Only one transaction object should exist at a time"
+        },
+        {
+            MDB_INVALID_TRANSACTION_BEING_USED,
+            "MDB_INVALID_TRANSACTION_BEING_USED: An invalid transaction object is being used (error during its creation?)"
         }
     };
 
@@ -604,9 +626,22 @@ std::string ProtectionDB::getResultString(MdbResult mdb_result)
 ProtectionDbTxn::ProtectionDbTxn(MDB_env *protectiondb_mdb_env_ptr,
                                  MdbResult &mdb_result_ret)
 {
-    env_ptr = protectiondb_mdb_env_ptr;
-
-    mdb_result_ret = mdb_txn_begin(env_ptr, nullptr, 0x0, &txn_ptr);
+    // N.B. A maximum of only one transaction object instance must exist at a
+    // time - see comments in ProtectionDB::createTransaction()
+    if (num_existing_transaction_instances == 0)
+    {
+        env_ptr = protectiondb_mdb_env_ptr;
+        mdb_result_ret = mdb_txn_begin(env_ptr, nullptr, 0x0, &txn_ptr);
+        if (mdb_result_ret == MDB_SUCCESS)
+        {
+            txn_object_is_valid = true;
+        }
+    }
+    else
+    {
+        mdb_result_ret = MDB_CREATING_MORE_THAN_ONE_TRANSACTION_OBJECT;
+    }
+    num_existing_transaction_instances++;
 }
 
 //------------------------------------------------------------------------------
@@ -619,6 +654,11 @@ MdbResult ProtectionDbTxn::fpuDbTransferFpu(DbTransferType transfer_type,
     // NOTE: For a read transfer, specifying DbTransferType::Read versus
     // DbTransferType::ReadRaw will affect how the interval values (apos/bpos/
     // alimits/blimits) are read - see the comments in fpuDbTransferInterval().
+
+    if (!txn_object_is_valid)
+    {
+        return MDB_INVALID_TRANSACTION_BEING_USED;
+    }
 
     //..........................................................................
     // Serial-number-used flag
@@ -764,6 +804,11 @@ MdbResult ProtectionDbTxn::fpuDbTransferInterval(DbTransferType transfer_type,
     // with the offset they refer to. So we store the datum offsets along with
     // each position interval (this allows to reconfigure the zero point later).
 
+    if (!txn_object_is_valid)
+    {
+        return MDB_INVALID_TRANSACTION_BEING_USED;
+    }
+
     MdbResult mdb_result = MDB_PANIC;
 
     static const struct
@@ -854,6 +899,11 @@ MdbResult ProtectionDbTxn::fpuDbTransferCounters(DbTransferType transfer_type,
 {
     // Reads or writes a set of FPU counters.
 
+    if (!txn_object_is_valid)
+    {
+        return MDB_INVALID_TRANSACTION_BEING_USED;
+    }
+
     MdbResult mdb_result = MDB_PANIC;
 
     if (transfer_type == DbTransferType::Write)
@@ -891,6 +941,11 @@ MdbResult ProtectionDbTxn::fpuDbTransferWaveform(DbTransferType transfer_type,
                                                  t_waveform_steps &waveform)
 {
     // Reads or writes a forward or reversed waveform.
+
+    if (!txn_object_is_valid)
+    {
+        return MDB_INVALID_TRANSACTION_BEING_USED;
+    }
 
     MdbResult mdb_result = MDB_PANIC;
 
@@ -956,6 +1011,11 @@ MdbResult ProtectionDbTxn::fpuDbTransferInt64Val(DbTransferType transfer_type,
                                                  int64_t &int64_val)
 {
     // Reads or writes an int64_t value.
+
+    if (!txn_object_is_valid)
+    {
+        return MDB_INVALID_TRANSACTION_BEING_USED;
+    }
 
     MdbResult mdb_result = MDB_PANIC;
 
@@ -1023,6 +1083,11 @@ MdbResult ProtectionDbTxn::fpuDbTransferWfReversedFlag(DbTransferType transfer_t
 {
     // Reads or writes the waveform-reversed bool flag.
 
+    if (!txn_object_is_valid)
+    {
+        return MDB_INVALID_TRANSACTION_BEING_USED;
+    }
+
     MdbResult mdb_result = MDB_PANIC;
 
     if (transfer_type == DbTransferType::Write)
@@ -1079,6 +1144,11 @@ MdbResult ProtectionDbTxn::fpuDbWriteItem(const char serial_number[],
     // Writes the specified item. If an item with the same serial_number/subkey
     // combination already exists then it is overwritten.
     
+    if (!txn_object_is_valid)
+    {
+        return MDB_INVALID_TRANSACTION_BEING_USED;
+    }
+
     MDB_val key_val = fpuDbCreateKeyVal(serial_number, subkey);
     MDB_val data_val = { (size_t)num_bytes, data_ptr };
     return mdb_put(txn_ptr, fpu_dbi, &key_val, &data_val, 0x0);
@@ -1092,6 +1162,11 @@ MdbResult ProtectionDbTxn::fpuDbGetItemDataPtrAndSize(const char serial_number[]
 {
     // For the specified item, gets a pointer to its data and gets its size -
     // this is possible because this is an in-memory database.
+
+    if (!txn_object_is_valid)
+    {
+        return MDB_INVALID_TRANSACTION_BEING_USED;
+    }
 
     MdbResult mdb_result = MDB_PANIC;
 
@@ -1116,6 +1191,11 @@ MdbResult ProtectionDbTxn::fpuDbGetItemDataPtrAndSize(const char serial_number[]
 MdbResult ProtectionDbTxn::fpuDbGetAllSerialNumbers(
                                 std::vector<std::string> &serial_numbers_ret)
 {
+    if (!txn_object_is_valid)
+    {
+        return MDB_INVALID_TRANSACTION_BEING_USED;
+    }
+
     MDB_cursor *cursor_ptr;
     MdbResult mdb_result = MDB_PANIC;
 
@@ -1245,8 +1325,15 @@ bool ProtectionDbTxn::fpuDbGetSerialNumFromKeyVal(const MDB_val &key_val,
 //------------------------------------------------------------------------------
 ProtectionDbTxn::~ProtectionDbTxn()
 {
-    mdb_txn_commit(txn_ptr);
-    
+    if (txn_object_is_valid)
+    {
+        mdb_txn_commit(txn_ptr);
+    }
+
+    if (num_existing_transaction_instances > 0)
+    {
+        num_existing_transaction_instances--;
+    }
    
     // TODO: Where to call mdb_env_sync() to flush to disk? Or is this done
     // automatically due to the LMDB config macros / settings?

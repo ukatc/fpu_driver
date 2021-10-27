@@ -44,8 +44,13 @@ class FPUAdmin
 {
 public:
     static AppReturnVal createEmptyDb(const std::string &dir_str);
+#ifdef FLEXIBLE_CAN_MAPPING
+    static AppReturnVal flash(bool mockup, const std::string &canmap_file_path,
+                              int fpu_id, const char *new_serial_number,
+#else // NOT FLEXIBLE_CAN_MAPPING
     static AppReturnVal flash(bool mockup, int fpu_id,
                               const char *new_serial_number,
+#endif // NOT FLEXIBLE_CAN_MAPPING
                               bool reuse_snum,
                               const t_gateway_address *gateway_address_ptr);
     static AppReturnVal init(bool use_mockup_db, const char *serial_number,

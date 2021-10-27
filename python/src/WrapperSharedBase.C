@@ -9,6 +9,7 @@
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2020-05-13  Separated this shared functionality out from
 //                       original EtherCAN wrapper code.
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -128,24 +129,39 @@ void WrapperSharedBase::convertWavetable(const bp::dict &dict_waveforms,
 //------------------------------------------------------------------------------
 void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) const
 {
-    for (int i = 0; i < MAX_NUM_POSITIONERS; i++)
-    {
-        fpuset[i] = false;
-    }
+    clearFpuSet(fpuset);
 
     if (bp::len(fpu_list) == 0)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : getConfig().getFpuIdList())
+        {
+            fpuset[fpu_id] = true;
+        }
+#else // NOT FLEXIBLE_CAN_MAPPING
         for (int i = 0; ((i < getConfig().num_fpus) && (i < MAX_NUM_POSITIONERS));
              i++)
         {
             fpuset[i] = true;
         }
+#endif // NOT FLEXIBLE_CAN_MAPPING
     }
     else
     {
         for (int i = 0; i < bp::len(fpu_list); i++)
         {
             int fpu_id = bp::extract<int>(fpu_list[i]);
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (getConfig().isValidFpuId(fpu_id))
+            {
+                fpuset[fpu_id] = true;
+            }
+            else
+            {
+                throw EtherCANException("DE_INVALID_FPU_ID: Parameter contains invalid FPU IDs.",
+                                        DE_INVALID_FPU_ID);
+            }
+#else // NOT FLEXIBLE_CAN_MAPPING
             if ((fpu_id < 0) ||
                 (fpu_id >= MAX_NUM_POSITIONERS) ||
                 (fpu_id >= getConfig().num_fpus))
@@ -157,6 +173,7 @@ void WrapperSharedBase::getFPUSet(const bp::list &fpu_list, t_fpuset &fpuset) co
             {
                 fpuset[fpu_id] = true;
             }
+#endif // NOT FLEXIBLE_CAN_MAPPING
         }
     }
 }
@@ -191,7 +208,11 @@ void WrapperSharedBase::getDatumFlags(bp::dict &dict_search_modes,
             direction_flags[i] = SKIP_FPU;
         }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+        const int num_fpus = getConfig().getFpuIdList().size();
+#else // NOT FLEXIBLE_CAN_MAPPING
         const int num_fpus = getConfig().num_fpus;
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
         if (num_keys > num_fpus)
         {
@@ -204,7 +225,11 @@ void WrapperSharedBase::getDatumFlags(bp::dict &dict_search_modes,
             object fpu_key = fpu_id_list[i];
             int fpu_id = bp::extract<int>(fpu_key);
 
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (!getConfig().isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
             if ((fpu_id >= num_fpus) || (fpu_id < 0))
+#endif // NOT FLEXIBLE_CAN_MAPPING
             {
                 throw EtherCANException("DE_INVALID_FPU_ID: Parameter contains invalid FPU IDs.",
                                         DE_INVALID_FPU_ID);
@@ -455,11 +480,18 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 DE_WRITE_VERIFICATION_FAILED);
         break;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    case DE_NO_FPUS_DEFINED:
+        throw EtherCANException("DE_NO_FPUS_DEFINED: No FPUs have been defined",
+                                DE_NO_FPUS_DEFINED);
+        break;
+#endif // FLEXIBLE_CAN_MAPPING
+
     //..........................................................................
     // Invalid command parameters
 
     case DE_INVALID_FPU_ID:
-        throw EtherCANException("DE_INVALID_FPU_ID: A passed FPU id is out of range.",
+        throw EtherCANException("DE_INVALID_FPU_ID: Invalid FPU ID.",
                                 DE_INVALID_FPU_ID);
         break;
 
@@ -473,12 +505,50 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 DE_DUPLICATE_SERIAL_NUMBER);
         break;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    case DE_INVALID_GATEWAY_ID:
+        throw EtherCANException("DE_INVALID_GATEWAY_ID: Invalid EtherCAN gateway ID.",
+                                DE_INVALID_GATEWAY_ID);
+        break;
+
+    case DE_INVALID_CAN_BUS_ID:
+        throw EtherCANException("DE_INVALID_CAN_BUS_ID: Invalid CAN bus ID.",
+                                DE_INVALID_CAN_BUS_ID);
+        break;
+
+    case DE_INVALID_CAN_ID:
+        throw EtherCANException("DE_INVALID_CAN_ID: Invalid CAN ID.",
+                                DE_INVALID_CAN_ID);
+        break;
+
+    case DE_INVALID_NUM_PARAMS:
+        throw EtherCANException("DE_INVALID_NUM_PARAMS: Invalid number of parameters.",
+                                DE_INVALID_NUM_PARAMS);
+        break;
+
+    case DE_DUPLICATE_FPU_ID:
+        throw EtherCANException("DE_DUPLICATE_FPU_ID: A duplicate FPU ID was found.",
+                                DE_DUPLICATE_FPU_ID);
+        break;
+
+    case DE_DUPLICATE_CAN_ROUTE:
+        throw EtherCANException("DE_DUPLICATE_CAN_ROUTE: A duplicate CAN bus route was found.",
+                                DE_DUPLICATE_CAN_ROUTE);
+        break;
+
+    case DE_NO_WAVEFORMS:
+        throw EtherCANException("DE_NO_WAVEFORMS: No waveform(s) defined for specified FPU(s).",
+                                DE_NO_WAVEFORMS);
+        break;
+
+#endif // FLEXIBLE_CAN_MAPPING
+
     //..........................................................................
     // Connection failures
 
     case DE_MAX_RETRIES_EXCEEDED:
         throw EtherCANException("DE_MAX_RETRIES_EXCEEDED: A command could not be"
-                                " send in spite of several retries", DE_MAX_RETRIES_EXCEEDED);
+                                " sent in spite of several retries", DE_MAX_RETRIES_EXCEEDED);
         break;
 
     case DE_CAN_COMMAND_TIMEOUT_ERROR:
@@ -537,6 +607,11 @@ void checkInterfaceError(E_EtherCANErrCode ecode)
                                 DE_INVALID_WAVEFORM_TAIL);
         break;
 
+    case DE_INVALID_WAVEFORM_REJECTED :
+        throw EtherCANException("DE_INVALID_WAVEFORM_REJECTED: The passed waveform was not properly communicated. FPU state did not change.",
+                                DE_INVALID_WAVEFORM_REJECTED);
+        break;
+        
     //..........................................................................
     // Errors which terminate movements
 

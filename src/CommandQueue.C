@@ -6,7 +6,8 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client sample
+// jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client
+//                       sample
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,7 +40,6 @@ CommandQueue::CommandQueue(const EtherCANInterfaceConfig &config_values):
 
 E_EtherCANErrCode CommandQueue::initialize()
 {
-
     if (condition_init_monotonic(cond_queue_append) != 0)
     {
         LOG_CONTROL(LOG_ERROR, "%18.6f : initializeDriver() CommandQueue::initialize()- assertion "
@@ -79,21 +79,17 @@ CommandQueue::t_command_mask CommandQueue::checkForCommand() const
     }
     pthread_mutex_unlock(&queue_mutex);
 
-
     return rmask;
-
 }
 
 CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
 {
-
     t_command_mask rmask = 0;
     pthread_mutex_lock(&queue_mutex);
     timespec cur_time;
     get_monotonic_time(cur_time);
 
     timespec max_abs_time = time_add(cur_time, timeout);
-
 
     int rval = 0;
     while ((rmask == 0) and (rval != ETIMEDOUT))
@@ -109,8 +105,8 @@ CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
         if (rmask == 0)
         {
             // Note that, in difference to select() and poll(),
-            // pthread_cond_timedwait() takes an
-            // *absolute* time value as time-out.
+            // pthread_cond_timedwait() takes an *absolute* time value as
+            // time-out.
             rval = pthread_cond_timedwait(&cond_queue_append,
                                           &queue_mutex,
                                           &max_abs_time);
@@ -121,8 +117,6 @@ CommandQueue::t_command_mask CommandQueue::waitForCommand(timespec timeout)
     pthread_mutex_unlock(&queue_mutex);
 
     return rmask;
-
-
 }
 
 void CommandQueue::setEventDescriptor(int fd)
@@ -130,11 +124,9 @@ void CommandQueue::setEventDescriptor(int fd)
     EventDescriptorNewCommand = fd;
 }
 
-
 CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
         unique_ptr<CAN_Command>& new_command)
 {
-
     assert(gateway_id < MAX_NUM_GATEWAYS);
     assert(gateway_id >= 0);
 
@@ -150,31 +142,30 @@ CommandQueue::E_QueueState CommandQueue::enqueue(int gateway_id,
 
         fifos[gateway_id].push_back(new_command);
 
-        // If we just changed from an empty queue to a non-empty one,
-        // signal an event to notify any waiting poll.
+        // If we just changed from an empty queue to a non-empty one, signal an
+        // event to notify any waiting poll.
         if (was_empty)
-	{
-	    pthread_cond_broadcast(&cond_queue_append);
+        {
+            pthread_cond_broadcast(&cond_queue_append);
 
-	    if (EventDescriptorNewCommand >= 0)
-	    {
-		uint64_t val = 1;
+            if (EventDescriptorNewCommand >= 0)
+            {
+                uint64_t val = 1;
 
-		int rv = write(EventDescriptorNewCommand, &val, sizeof(val));
-		if (rv != sizeof(val))
-		{
-		    LOG_CONTROL(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error:"
-				" command queue event notification failed, errno=%i\n",
-				ethercanif::get_realtime(), errno);
-		    LOG_CONSOLE(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error:"
-				" command queue event notification failed, errno =%i\n",
-				ethercanif::get_realtime(), errno);
-		}
-	    }
-	}
+                int rv = write(EventDescriptorNewCommand, &val, sizeof(val));
+                if (rv != sizeof(val))
+                {
+                    LOG_CONTROL(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error:"
+                                " command queue event notification failed, errno=%i\n",
+                                ethercanif::get_realtime(), errno);
+                    LOG_CONSOLE(LOG_ERROR, "%18.6f : CommandQueue::enqueue() - System error:"
+                                " command queue event notification failed, errno =%i\n",
+                                ethercanif::get_realtime(), errno);
+                }
+            }
+        }
 
-	pthread_mutex_unlock(&queue_mutex);
-
+        pthread_mutex_unlock(&queue_mutex);
     }
 
 	return QS_OK;
@@ -199,13 +190,11 @@ unique_ptr<CAN_Command> CommandQueue::dequeue(int gateway_id)
 }
 
 
-// This should be used if a command which has
-// been dequeued cannot be sent, and is added
-// again to the head / front of the queue.
+// This should be used if a command which has been dequeued cannot be sent,
+// and is added again to the head / front of the queue.
 CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
-        unique_ptr<CAN_Command> new_command)
+                                     unique_ptr<CAN_Command> new_command)
 {
-
     assert(gateway_id < MAX_NUM_GATEWAYS);
     assert(gateway_id >= 0);
 
@@ -224,18 +213,15 @@ CommandQueue::E_QueueState CommandQueue::requeue(int gateway_id,
         pthread_mutex_unlock(&queue_mutex);
     }
     return QS_OK;
-
 }
 
 
-// Get command instances back from the command queue to the message
-// pool.
+// Get command instances back from the command queue to the message pool.
 //
-// IMPORTANT NOTE: This should ONLY be called from the control
-// thread. Specifically, the memory pool also has a protective lock
-// (it is accessed from control thread and TX thread), and flushing
-// the CommandQueue content to the pool acquires that lock - *MAKE
-// SURE TO NOT TRIGGER DEADLOCK*.
+// IMPORTANT NOTE: This should ONLY be called from the control thread.
+// Specifically, the memory pool also has a protective lock (it is accessed
+// from control thread and TX thread), and flushing the CommandQueue content
+// to the pool acquires that lock - *MAKE SURE TO NOT TRIGGER DEADLOCK*.
 
 void CommandQueue::flushToPool(CommandPool& memory_pool)
 {
@@ -243,7 +229,7 @@ void CommandQueue::flushToPool(CommandPool& memory_pool)
 
     pthread_mutex_lock(&queue_mutex);
 
-    for(int i=0; i < ngateways; i++)
+    for (int i=0; i < ngateways; i++)
     {
         while (! fifos[i].empty())
         {
@@ -256,7 +242,6 @@ void CommandQueue::flushToPool(CommandPool& memory_pool)
 }
 
 
+} // namespace ethercanif
 
-}
-
-}
+} // namespace mpifps

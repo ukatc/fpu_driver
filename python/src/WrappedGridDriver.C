@@ -7,6 +7,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2020-11-05  Split these functions out from WrappedGridDriver.h.
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,7 +141,9 @@ void abortHandlerTest()
 
 //==============================================================================
 boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     int nfpus,
+#endif // NOT FLEXIBLE_CAN_MAPPING
     double SocketTimeOutSeconds,
     bool confirm_each_step,
     long waveform_upload_pause_us,
@@ -159,6 +162,7 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
     // further comments in abortHandlerTest()
     // abortHandlerTest();
 
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     if ((nfpus <= 0) || (nfpus > MAX_NUM_POSITIONERS))
     {
         std::cout << "*** ERROR ***: nfpus is <=0 or >MAX_NUM_POSITIONERS (" <<
@@ -166,16 +170,36 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
                      ") - GridDriver object created is not valid.\n";
         return boost::shared_ptr<WrappedGridDriver>(nullptr);
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
-    std::cout << "Grid driver object was successfully created (new C++ version).\n";
+    std::cout << "*****************************************************************\n";
+    std::cout << "Grid driver object was successfully created (new C++ version) -\n";
+    std::cout << "now need to call initialize().\n";
+    std::cout << "*****************************************************************";
+    std::cout << std::endl;
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    std::cout << "Note: The C++ FLEXIBLE_CAN_MAPPING macro is enabled in this\n";
+    std::cout << "build, so need to provide an FPU CAN map definition file path when\n";
+    std::cout << "calling initialize(). The old num_fpus approach is no longer\n";
+    std::cout << "supported in this build.\n";
+    std::cout << std::endl;
+
+    // Check/warn if user is accidentally trying to set the old num_fpus argument
+    if (SocketTimeOutSeconds != SOCKET_TIMEOUT_SECS)
+    {
+        std::cout << "*** WARNING ***: The first argument (SocketTimeOutSeconds,\n";
+        std::cout << "formerly num_fpus) has been set - was this intentional? (the\n";
+        std::cout << "old num_fpus argument has now been removed).\n";
+        std::cout << std::endl;
+    }
+#endif // FLEXIBLE_CAN_MAPPING
 
 #ifndef ENABLE_PROTECTION_CODE  // NOT ENABLE_PROTECTION_CODE
-    std::cout << "************************************************************\n";
-    std::cout << "************************************************************\n";
+    std::cout << "*****************************************************************\n";
     std::cout << "NOTE: The C++ ENABLE_PROTECTION_CODE macro is disabled in\n";
     std::cout << "this build, so the soft protection is not functional.\n";
-    std::cout << "************************************************************\n";
-    std::cout << "************************************************************\n";
+    std::cout << "*****************************************************************\n";
     std::cout << std::endl;
 #endif // NOT ENABLE_PROTECTION_CODE
 
@@ -192,7 +216,9 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
     }
 
     return boost::shared_ptr<WrappedGridDriver>(new WrappedGridDriver(
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
         nfpus,
+#endif // NOT FLEXIBLE_CAN_MAPPING
         SocketTimeOutSeconds,
         confirm_each_step,
         waveform_upload_pause_us,
@@ -209,7 +235,11 @@ boost::shared_ptr<WrappedGridDriver> WrappedGridDriver::initWrapper(
 }
 
 //------------------------------------------------------------------------------
-E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(E_LogLevel logLevel,
+E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(
+#ifdef FLEXIBLE_CAN_MAPPING
+                                        const std::string &canmap_file_path,
+#endif // FLEXIBLE_CAN_MAPPING
+                                        E_LogLevel logLevel,
                                         const std::string &log_dir,
                                         int firmware_version_address_offset,
                                         const std::string &protection_logfile,
@@ -223,22 +253,54 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(E_LogLevel logLevel,
 
     if (!initializedOk())   // Only initialise if not already done
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        GridCanMap grid_can_map;
+        CanMapFileErrorInfo canmap_file_error_info;
+        ecode = gridDriverReadCanMapFile(canmap_file_path, grid_can_map,
+                                         canmap_file_error_info);
+        if (ecode == DE_OK)
+        {
+            std::cout << "Grid CAN map file was successfully read - ";
+            std::cout << std::to_string(grid_can_map.size()) << " x FPUs were found.";
+            std::cout << std::endl;
+        }
+        else
+        {
+            std::cout << "*** ERROR ***: Grid CAN map file opening, reading "
+                         "or parsing failed during the initialize() command\n";
+            std::string error_info_string; 
+            gridDriverConvertCanMapFileErrorInfoToString(canmap_file_path,
+                                                         ecode,
+                                                         canmap_file_error_info,
+                                                         error_info_string);
+            std::cout << error_info_string;
+            std::cout << std::endl;
+            checkInterfaceError(ecode);
+            return ecode;
+        }
+
+        ecode = initialize(grid_can_map, logLevel, log_dir,
+                           firmware_version_address_offset, protection_logfile,
+                           control_logfile, tx_logfile, rx_logfile,
+                           start_timestamp);
+#else // NOT FLEXIBLE_CAN_MAPPING
         ecode = initialize(logLevel, log_dir, firmware_version_address_offset,
                            protection_logfile, control_logfile, tx_logfile,
                            rx_logfile, start_timestamp);
+#endif // NOT FLEXIBLE_CAN_MAPPING
         if (ecode == DE_OK)
         {
             ecode = initProtection(mockup);
             if (ecode != DE_OK)
             {
                 std::cout << "*** ERROR ***: initProtection() call failed "
-                             "during the initialize command" << std::endl;
+                             "during the initialize() command" << std::endl;
             }
         }
         else
         {
             std::cout << "*** ERROR ***: initialize() call failed during "
-                         "the initialize command" << std::endl;
+                         "the initialize() command" << std::endl;
         }
     }
     else
@@ -251,6 +313,36 @@ E_EtherCANErrCode WrappedGridDriver::wrapped_initialize(E_LogLevel logLevel,
     checkInterfaceError(ecode);
     return ecode;
 }
+
+#ifdef FLEXIBLE_CAN_MAPPING
+//------------------------------------------------------------------------------
+bp::list WrappedGridDriver::wrapped_getFpuIdList()
+{
+    E_EtherCANErrCode ecode = DE_ERROR_UNKNOWN;
+
+    std::vector<int> fpu_id_list;
+    bp::list bp_fpu_id_list;
+    if (checkAndMessageIfInitializedOk())
+    {
+        ecode = getFpuIdList(fpu_id_list);
+        if (ecode == DE_OK)
+        {
+            for (const auto &it : fpu_id_list)
+            {
+                bp_fpu_id_list.append(it);
+            }
+        }
+    }
+    else
+    {
+        ecode = DE_INTERFACE_NOT_INITIALIZED;
+    }
+
+    checkInterfaceError(ecode);
+
+    return bp_fpu_id_list;
+}
+#endif // FLEXIBLE_CAN_MAPPING
 
 //------------------------------------------------------------------------------
 WrapGridState WrappedGridDriver::wrapped_getGridState()

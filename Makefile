@@ -96,7 +96,8 @@ _DEPS = InterfaceState.h ErrorCodes.h E_GridState.h FPUState.h EtherCANInterface
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS)) Makefile
 
-_OBJ = EtherCANInterface.o AsyncInterface.o ErrorCodes.o FPUArray.o GridState.o \
+_OBJ = EtherCANInterface.o EtherCANInterfaceConfig.o AsyncInterface.o \
+    ErrorCodes.o FPUArray.o GridState.o \
 	CommandPool.o GatewayInterface.o TimeOutList.o CommandQueue.o \
 	time_utils.o sync_utils.o SBuffer.o handleFPUResponse.o \
 	handleTimeout.o FPUState.o decode_CAN_response.o \
@@ -129,7 +130,8 @@ _OBJ = EtherCANInterface.o AsyncInterface.o ErrorCodes.o FPUArray.o GridState.o 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 _SRC = AsyncInterface.C CommandPool.C CommandQueue.C \
-	decode_CAN_response.C ErrorCodes.C EtherCANInterface.C FPUArray.C \
+	decode_CAN_response.C ErrorCodes.C EtherCANInterface.C \
+	EtherCANInterfaceConfig.C FPUArray.C \
 	FPUState.C GatewayInterface.C GridState.C \
 	handle_AbortMotion_response.C \
 	handle_CheckIntegrity_response.C \

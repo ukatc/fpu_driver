@@ -6,6 +6,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client sample
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,11 +23,22 @@
 namespace mpifps
 {
 
+#ifdef FLEXIBLE_CAN_MAPPING
+EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values,
+                                     const GridCanMap &grid_can_map)
+    : AsyncInterface(config_values, grid_can_map)
+#else // NOT FLEXIBLE_CAN_MAPPING
 EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values)
     : AsyncInterface(config_values)
+#endif // NOT FLEXIBLE_CAN_MAPPING
 {
     LOG_CONTROL(LOG_INFO, "%18.6f : starting driver version '%s' for %i FPUs\n",
+#ifdef FLEXIBLE_CAN_MAPPING
+                ethercanif::get_realtime(), VERSION,
+                (int)config.getFpuIdList().size());
+#else // NOT FLEXIBLE_CAN_MAPPING
                 ethercanif::get_realtime(), VERSION, config.num_fpus);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     LOG_CONTROL(LOG_INFO, "%18.6f : waveform_upload_pause_us = %lu\n",
                 ethercanif::get_realtime(), config.waveform_upload_pause_us);
@@ -47,10 +59,12 @@ EtherCANInterface::EtherCANInterface(const EtherCANInterfaceConfig config_values
                 ethercanif::get_realtime(), (config.confirm_each_step ? "True" : "False"));
 }
 
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
 int EtherCANInterface::getNumFPUs() const
 {
     return config.num_fpus;
 }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
 E_EtherCANErrCode EtherCANInterface::findDatum(t_grid_state& grid_state,
         E_DATUM_SEARCH_DIRECTION * p_direction_flags,
@@ -199,8 +213,16 @@ E_EtherCANErrCode EtherCANInterface::configMotion(const t_wtable& waveforms, t_g
                 it--)
         {
             int fpu_id = it->fpu_id;
+
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (!config.isValidFpuId(fpu_id))
+            {
+                assert(false);
+            }
+#else // NOT FLEXIBLE_CAN_MAPPING
             assert(fpu_id >= 0);
             assert(fpu_id < config.num_fpus);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
             const t_fpu_state& fpu_state = grid_state.FPU_state[fpu_id];
 

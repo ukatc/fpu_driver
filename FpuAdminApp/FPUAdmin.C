@@ -8,6 +8,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2020-11-16  Created (adapted from Python fpu-admin script).
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,8 +71,13 @@ AppReturnVal FPUAdmin::createEmptyDb(const std::string &dir_str)
 }
 
 //------------------------------------------------------------------------------
+#ifdef FLEXIBLE_CAN_MAPPING
+AppReturnVal FPUAdmin::flash(bool mockup, const std::string &canmap_file_path,
+                             int fpu_id, const char *new_serial_number,
+#else // NOT FLEXIBLE_CAN_MAPPING
 AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
                              const char *new_serial_number,
+#endif // FLEXIBLE_CAN_MAPPING
                              bool reuse_snum,
                              const t_gateway_address *gateway_address_ptr)
 {
@@ -95,13 +101,23 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
         args_are_ok = false;
     }
 
-    if ((fpu_id < 0) || (fpu_id > (MAX_NUM_POSITIONERS - 1)))
+#ifdef FLEXIBLE_CAN_MAPPING
+    if ((fpu_id < 0) || (fpu_id >= FPU_ID_BROADCAST_BASE))
+    {
+        std::cout << "Error: fpu_id must be in the range 0 to " <<
+                     std::to_string((int)(FPU_ID_BROADCAST_BASE - 1)) <<
+                     "." << std::endl;
+        args_are_ok = false;
+    }
+#else // NOT FLEXIBLE_CAN_MAPPING
+    if ((fpu_id < 0) || (fpu_id >= MAX_NUM_POSITIONERS))
     {
         std::cout << "Error: fpu_id must be in the range 0 to " <<
                      std::to_string((int)(MAX_NUM_POSITIONERS - 1)) <<
                      "." << std::endl;
         args_are_ok = false;
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     if (!args_are_ok)
     {
@@ -129,13 +145,15 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
         }
         else
         {
-            std::cout << "Error: Serial number is already in use, AND its in-use flag value is incorrect" << std::endl;
+            std::cout << "Error: Serial number is already in use, AND its "
+                         "in-use flag value is incorrect" << std::endl;
             return AppReturnError;
         }
     }
     else if (mdb_result == MDB_NOTFOUND)
     {
         // Serial number is not in use yet - add it to database
+        std::cout << "Adding FPU serial number to database..." << std::endl;
         snum_flag_used_val = SNUM_USED_CHECK_VAL;
         mdb_result = txn->fpuDbTransferInt64Val(DbTransferType::Write,
                                         FpuDbIntValType::SnumUsedFlag,
@@ -154,8 +172,6 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
     }
 
     //..........................................................................
-    // Connect to grid and write serial number to FPU
-
     // Create gateway address list
     t_gateway_address gateway_addresses[MAX_NUM_GATEWAYS];
     int num_gateways;
@@ -176,6 +192,13 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
         }
         else
         {
+#if 1
+            // TODO: Interim for now - need to revisit fpu-admin gateway IP
+            // specification/handling, mockup flag etc in future
+            std::cout << "Error: Gateway IP address was not specified."
+                      << std::endl;
+            return AppReturnError;
+#else
             // ************ TODO: Get GATEWAY0_ADDRESS from Linux environment
             // variable of the same name - see the Python definition of
             // GATEWAY0_ADDRESS
@@ -183,28 +206,106 @@ AppReturnVal FPUAdmin::flash(bool mockup, int fpu_id,
             //gateway_addresses[0] = { GATEWAY0_ADDRESS, 4700 };
             gateway_addresses[0] = { dummy_gateway0_address, 4700 };
             num_gateways = 1;
+#endif
         }
     }
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    //..........................................................................
+    // Read CAN map file
+    E_EtherCANErrCode ecan_result = DE_ERROR_UNKNOWN;
+    GridCanMap grid_can_map;
+    CanMapFileErrorInfo canmap_file_error_info;
+    ecan_result = gridDriverReadCanMapFile(canmap_file_path, grid_can_map,
+                                           canmap_file_error_info);
+    if (ecan_result != DE_OK)
+    {
+        std::cout << "Error: Grid CAN map file opening, reading or parsing failed\n";
+        std::string error_info_string; 
+        gridDriverConvertCanMapFileErrorInfoToString(canmap_file_path,
+                                                     ecan_result,
+                                                     canmap_file_error_info,
+                                                     error_info_string);
+        std::cout << error_info_string;
+        std::cout << std::endl;
+    }
+
+    //..........................................................................
+    // Check if specified FPU ID is in CAN map file, and if so then initialise
+    // the grid driver for it
+    UnprotectedGridDriver ugd;
+    if (ecan_result == DE_OK)
+    {
+        GridCanMap can_map_for_single_fpu;
+        FPUArray::t_bus_address can_route = { 0, 0, 0 };
+        for (const auto &it : grid_can_map)
+        {
+            if (it.first == fpu_id)
+            {
+                can_map_for_single_fpu.push_back(it);
+                can_route = it.second;
+                break;
+            }
+        }
+
+        if (can_map_for_single_fpu.size() > 0)
+        {
+            std::cout << "FPU ID " << std::to_string(fpu_id) <<
+                         " successfully found in CAN map file: Gateway ID = " <<
+                         std::to_string(can_route.gateway_id) <<
+                         ", bus ID = " << std::to_string(can_route.bus_id) <<
+                         ", CAN ID = " << std::to_string(can_route.can_id) <<
+                         std::endl;
+            ecan_result = ugd.initialize(can_map_for_single_fpu);
+        }
+        else
+        {
+            std::cout << "Error: FPU ID " << std::to_string(fpu_id) <<
+                         " could not be found in the CAN map file." << std::endl;
+            ecan_result = DE_INVALID_FPU_ID;
+        }
+    }
+
+    //..........................................................................
+    // Connect to grid
+    if (ecan_result == DE_OK)
+    {
+        std::cout << "Connecting to grid..." << std::endl;
+        ecan_result = ugd.connect(num_gateways, gateway_addresses);
+    }
+
+#else // NOT FLEXIBLE_CAN_MAPPING
+    //..........................................................................
     // Connect to grid
     UnprotectedGridDriver ugd(fpu_id + 1);
+
     ugd.initialize();
 
     std::cout << "Connecting to grid..." << std::endl;
     E_EtherCANErrCode ecan_result = ugd.connect(num_gateways,
                                                 gateway_addresses);
+
+#endif // NOT FLEXIBLE_CAN_MAPPING
+
+    //..........................................................................
+    // Write serial number to FPU
     t_grid_state grid_state;
     t_fpuset fpuset;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    clearFpuSet(fpuset);
+    fpuset[fpu_id] = true;
+#else // NOT FLEXIBLE_CAN_MAPPING
     // TODO: Currently pings and reads the serial numbers for all FPUs up to
     // fpu_id (which is the equivalent functionality to that in the original
     // Python flash_FPU() function in fpu-admin), but might only need to do
     // this for the single FPU?
     UnprotectedGridDriver::createFpuSetForNumFpus(fpu_id + 1, fpuset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     if (ecan_result == DE_OK)
     {
-        std::cout << "Pinging FPUs..." << std::endl;
+        std::cout << "Pinging FPU..." << std::endl;
         ugd.getGridState(grid_state);
         ecan_result = ugd.pingFPUs(grid_state, fpuset);
     }

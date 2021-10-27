@@ -6,6 +6,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // jnix      2017-10-18  Created driver class using Pablo Guiterrez' CAN client sample
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -47,8 +48,6 @@ typedef struct
 
 typedef std::vector<t_waveform> t_wtable;
 
-typedef bool t_fpuset[MAX_NUM_POSITIONERS];
-
 typedef E_DATUM_SEARCH_DIRECTION t_datum_search_flags[MAX_NUM_POSITIONERS];
 
 
@@ -59,16 +58,36 @@ public:
        motion before the driver will give up. */
     const int MAX_CONFIG_MOTION_RETRIES = 5;
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    explicit AsyncInterface(const EtherCANInterfaceConfig &config_vals,
+                            const GridCanMap &grid_can_map)
+        : config(config_vals), gateway(config_vals, grid_can_map)
+#else // NOT FLEXIBLE_CAN_MAPPING
     explicit AsyncInterface(const EtherCANInterfaceConfig &config_vals)
         : config(config_vals), gateway(config_vals)
+#endif // NOT FLEXIBLE_CAN_MAPPING
     {
         num_gateways = 0;
         log_repeat_count = 0;
 
-        // initialize known firmware versions to zero
-
-
+        // Initialise known firmware versions to zero
         memset(fpu_firmware_version, FIRMWARE_NOT_RETRIEVED, sizeof(fpu_firmware_version));
+
+#ifdef FLEXIBLE_CAN_MAPPING
+        // Determine how many gateways are needed for the given grid_can_map,
+        // TODO: This is a count for now (starting from gateway ID of 0), but
+        // could eventually be a selection of individual non-contiguous
+        // gateway IDs not necessarily including gateway #0
+        num_gateways_needed = 0;
+        for (size_t i = 0; i < grid_can_map.size(); i++)
+        {
+            int gateway_id = grid_can_map[i].second.gateway_id;
+            if ((gateway_id + 1) > num_gateways_needed)
+            {
+                num_gateways_needed = gateway_id + 1;
+            }
+        }
+#endif // FLEXIBLE_CAN_MAPPING
 
 #if CAN_PROTOCOL_VERSION == 1
         // initialize field which records last arm selection
@@ -160,13 +179,13 @@ public:
                                        t_fpuset const &fpuset,
 				       bool sync_message=true);
 
-    E_EtherCANErrCode enableMoveAsync(int fpu_id,
+    E_EtherCANErrCode enableMoveAsync(int fpu_id_to_enable,
                                       t_grid_state& grid_state,
                                       E_GridState& state_summary);
 
-    E_EtherCANErrCode lockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
+    E_EtherCANErrCode lockFPUAsync(int fpu_id_to_lock, t_grid_state& grid_state, E_GridState& state_summary);
 
-    E_EtherCANErrCode unlockFPUAsync(int fpu_id, t_grid_state& grid_state, E_GridState& state_summary);
+    E_EtherCANErrCode unlockFPUAsync(int fpu_id_to_unlock, t_grid_state& grid_state, E_GridState& state_summary);
 
     // retrieve cached minimum firmware version
     void getCachedMinFirmwareVersion(t_fpuset const &fpuset,
@@ -183,11 +202,11 @@ public:
     E_EtherCANErrCode enableAlphaLimitProtectionAsync(t_grid_state& grid_state,
             E_GridState& state_summary);
 
-    E_EtherCANErrCode freeBetaCollisionAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
+    E_EtherCANErrCode freeBetaCollisionAsync(int fpu_id_to_free, E_REQUEST_DIRECTION request_dir,
             t_grid_state& grid_state,
             E_GridState& state_summary);
 
-    E_EtherCANErrCode freeAlphaLimitBreachAsync(int fpu_id, E_REQUEST_DIRECTION request_dir,
+    E_EtherCANErrCode freeAlphaLimitBreachAsync(int fpu_id_to_free, E_REQUEST_DIRECTION request_dir,
             t_grid_state& grid_state,
             E_GridState& state_summary);
 
@@ -291,12 +310,15 @@ protected:
     E_EtherCANErrCode readSerialNumbersAsync(t_grid_state& grid_state,
             E_GridState& state_summary, t_fpuset const &fpuset);
 
-    E_EtherCANErrCode writeSerialNumberAsync(int fpu_id, const char serial_number[],
+    E_EtherCANErrCode writeSerialNumberAsync(int fpu_id_to_write, const char serial_number[],
             t_grid_state& grid_state,
             E_GridState& state_summary);
 private:
 
     int num_gateways;
+#ifdef FLEXIBLE_CAN_MAPPING
+    int num_gateways_needed = 0;
+#endif // FLEXIBLE_CAN_MAPPING
 
     // cached firmware version of each FPU
     uint8_t fpu_firmware_version[MAX_NUM_POSITIONERS][3];

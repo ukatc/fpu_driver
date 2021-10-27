@@ -5,7 +5,12 @@
 //
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
-// bwillemse 13/05/2020  Adapted to add new grid driver wrapper functions.
+// jnix      2017-10-18  Created interface class using Pablo Guiterrez' CAN
+//                       client sample
+// bwillemse 2020-05-13  Adapted to add new grid driver wrapper functions.
+// sbeard    2021-02-25  Added DE_INVALID_WAVEFORM_REJECTED return code and
+//                       associated error message.
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -309,10 +314,22 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("DE_INVALID_CONFIG", DE_INVALID_CONFIG)
     .value("DE_SYNC_CONFIG_FAILED", DE_SYNC_CONFIG_FAILED)
     .value("DE_WRITE_VERIFICATION_FAILED", DE_WRITE_VERIFICATION_FAILED)
-    // Invalid command parameters
+#ifdef FLEXIBLE_CAN_MAPPING
+    .value("DE_NO_FPUS_DEFINED", DE_NO_FPUS_DEFINED)
+#endif // FLEXIBLE_CAN_MAPPING
+    // Invalid parameters
     .value("DE_INVALID_FPU_ID", DE_INVALID_FPU_ID)
     .value("DE_INVALID_PAR_VALUE", DE_INVALID_PAR_VALUE)
     .value("DE_DUPLICATE_SERIAL_NUMBER", DE_DUPLICATE_SERIAL_NUMBER)
+#ifdef FLEXIBLE_CAN_MAPPING
+    .value("DE_INVALID_GATEWAY_ID", DE_INVALID_GATEWAY_ID)
+    .value("DE_INVALID_CAN_BUS_ID", DE_INVALID_CAN_BUS_ID)
+    .value("DE_INVALID_CAN_ID", DE_INVALID_CAN_ID)
+    .value("DE_INVALID_NUM_PARAMS", DE_INVALID_NUM_PARAMS)
+    .value("DE_DUPLICATE_FPU_ID", DE_DUPLICATE_FPU_ID)
+    .value("DE_DUPLICATE_CAN_ROUTE", DE_DUPLICATE_CAN_ROUTE)
+#endif // FLEXIBLE_CAN_MAPPING
+    .value("DE_NO_WAVEFORMS", DE_NO_WAVEFORMS)
     // Connection failures
     .value("DE_MAX_RETRIES_EXCEEDED", DE_MAX_RETRIES_EXCEEDED)
     .value("DE_CAN_COMMAND_TIMEOUT_ERROR", DE_CAN_COMMAND_TIMEOUT_ERROR)
@@ -325,6 +342,7 @@ BOOST_PYTHON_MODULE(ethercanif)
     .value("DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE", DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE)
     .value("DE_INVALID_WAVEFORM_CHANGE", DE_INVALID_WAVEFORM_CHANGE)
     .value("DE_INVALID_WAVEFORM_TAIL", DE_INVALID_WAVEFORM_TAIL)
+    .value("DE_INVALID_WAVEFORM_REJECTED", DE_INVALID_WAVEFORM_REJECTED)
     // Errors which terminate movements
     .value("DE_NEW_COLLISION", DE_NEW_COLLISION)
     .value("DE_NEW_LIMIT_BREACH", DE_NEW_LIMIT_BREACH)
@@ -491,8 +509,12 @@ BOOST_PYTHON_MODULE(ethercanif)
         ("GridDriver", no_init)
     .def("__init__", make_constructor(&WrappedGridDriver::initWrapper,
                                       bp::default_call_policies(),
+#ifdef FLEXIBLE_CAN_MAPPING
+         (bp::arg("SocketTimeOutSeconds") = SOCKET_TIMEOUT_SECS,
+#else // NOT FLEXIBLE_CAN_MAPPING
          (bp::arg("nfpus") = DEFAULT_NUM_FPUS,
-          bp::arg("SocketTimeOutSeconds") = 20.0,
+          bp::arg("SocketTimeOutSeconds") = SOCKET_TIMEOUT_SECS,
+#endif // NOT FLEXIBLE_CAN_MAPPING
           bp::arg("confirm_each_step") = false,
           bp::arg("waveform_upload_pause_us") = 0,
           bp::arg("configmotion_max_retry_count") = 5,
@@ -507,7 +529,12 @@ BOOST_PYTHON_MODULE(ethercanif)
           bp::arg("motor_max_step_difference") = MAX_STEP_DIFFERENCE)))
 
     .def("initialize", &WrappedGridDriver::wrapped_initialize,
+#ifdef FLEXIBLE_CAN_MAPPING
+         (bp::arg("canmapfile"),
+          bp::arg("logLevel") = DEFAULT_LOGLEVEL,
+#else // NOT FLEXIBLE_CAN_MAPPING
          (bp::arg("logLevel") = DEFAULT_LOGLEVEL,
+#endif // NOT FLEXIBLE_CAN_MAPPING
           bp::arg("log_dir") = DEFAULT_LOGDIR,
           bp::arg("firmware_version_address_offset") = 0x61,
           bp::arg("protection_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_protection.log",
@@ -516,6 +543,10 @@ BOOST_PYTHON_MODULE(ethercanif)
           bp::arg("rx_logfile") = "_" DEFAULT_START_TIMESTAMP "-fpu_rx.log",
           bp::arg("start_timestamp") = DEFAULT_START_TIMESTAMP,
           bp::arg("mockup") = false))
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    .def("getFpuIdList", &WrappedGridDriver::wrapped_getFpuIdList)
+#endif // FLEXIBLE_CAN_MAPPING
 
     .def("getGridState", &WrappedGridDriver::wrapped_getGridState)
 
@@ -668,8 +699,8 @@ BOOST_PYTHON_MODULE(ethercanif)
          (bp::arg("grid_state"),
           bp::arg("alpha_datum_offset") = ALPHA_DATUM_OFFSET,
           bp::arg("show_uninitialized") = false,
-          bp::arg("asteps_per_deg") = StepsPerDegreeAlpha,
-          bp::arg("bsteps_per_deg") = StepsPerDegreeBeta))
+          bp::arg("asteps_per_deg") = STEPS_PER_DEGREE_ALPHA,
+          bp::arg("bsteps_per_deg") = STEPS_PER_DEGREE_BETA))
 
     .def("countedAngles", &WrappedGridDriver::wrapped_countedAngles,
          (bp::arg("grid_state"),
@@ -687,7 +718,9 @@ BOOST_PYTHON_MODULE(ethercanif)
     //--------------------------------------------------------------------------
     // EtherCANInterfaceConfig wrapper definitions
     class_<EtherCANInterfaceConfig>("EtherCANInterfaceConfig", init<>())
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
     .def_readwrite("num_fpus", &EtherCANInterfaceConfig::num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
     .def_readwrite("alpha_datum_offset", &EtherCANInterfaceConfig::alpha_datum_offset)
     .def_readwrite("motor_minimum_frequency", &EtherCANInterfaceConfig::motor_minimum_frequency)
     .def_readwrite("motor_maximum_frequency", &EtherCANInterfaceConfig::motor_maximum_frequency)
@@ -714,6 +747,15 @@ BOOST_PYTHON_MODULE(ethercanif)
     ;
 
     //--------------------------------------------------------------------------
+
+//******************************************************************************
+// TODO: Note: This Boost.Python wrapper for the EtherCAN interface (which
+// provides the wrapper for the original Python grid driver in FpuGridDriver.py)
+// is not supported when the flexible CAN mapping is enabled, because the Python
+// grid driver won't be modified to support this feature
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
+//******************************************************************************
+
     // WrapEtherCANInterface wrapper definitions
     class_<WrapEtherCANInterface, boost::noncopyable>("EtherCANInterface", init<EtherCANInterfaceConfig>())
     .def("getNumFPUs", &WrapEtherCANInterface::getNumFPUs)
@@ -756,6 +798,10 @@ BOOST_PYTHON_MODULE(ethercanif)
     ;
 
     //--------------------------------------------------------------------------
+
+//******************************************************************************
+#endif // NOT FLEXIBLE_CAN_MAPPING
+//******************************************************************************
 }
 
 //==============================================================================

@@ -7,6 +7,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2020-07-29  Created.
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,7 +42,9 @@ public:
     //}
 
     static boost::shared_ptr<WrappedGridDriver> initWrapper(
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
         int nfpus,
+#endif // NOT FLEXIBLE_CAN_MAPPING
         double SocketTimeOutSeconds,
         bool confirm_each_step,
         long waveform_upload_pause_us,
@@ -56,7 +59,11 @@ public:
         double motor_max_rel_increase,
         double motor_max_step_difference);
 
-    E_EtherCANErrCode wrapped_initialize(E_LogLevel logLevel,
+    E_EtherCANErrCode wrapped_initialize(
+#ifdef FLEXIBLE_CAN_MAPPING
+                                         const std::string &canmap_file_path,
+#endif // FLEXIBLE_CAN_MAPPING
+                                         E_LogLevel logLevel,
                                          const std::string &log_dir,
                                          int firmware_version_address_offset,
                                          const std::string &protection_logfile,
@@ -65,6 +72,9 @@ public:
                                          const std::string &rx_logfile,
                                          const std::string &start_timestamp,
                                          bool mockup);
+#ifdef FLEXIBLE_CAN_MAPPING
+    bp::list wrapped_getFpuIdList();
+#endif // FLEXIBLE_CAN_MAPPING
     WrapGridState wrapped_getGridState();
     E_EtherCANErrCode wrapped_connect(bp::list &list_gateway_addresses);
     E_EtherCANErrCode wrapped_disconnect();

@@ -9,7 +9,11 @@ from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     REQD_CLOCKWISE, REQD_ANTI_CLOCKWISE, DATUM_TIMEOUT_DISABLE
 
 from fpu_commands import *
-from fpu_constants import *
+#from fpu_constants import *
+from fpu_constants import MOTOR_MIN_STEP_FREQUENCY, MOTOR_MAX_STEP_FREQUENCY, \
+    MOTOR_MAX_START_FREQUENCY, MAX_STEP_DIFFERENCE, MOTOR_MAX_ACCELERATION, \
+    MOTOR_MAX_DECELERATION, MAX_ACCELERATION_FACTOR, WAVEFORM_SEGMENT_LENGTH_MS
+    
 from wflib import load_waveform
 
 NUM_FPUS = int(os.environ.get("NUM_FPUS","7"))
@@ -17,6 +21,12 @@ NUM_FPUS = int(os.environ.get("NUM_FPUS","7"))
 
 def parse_args():
     parser = argparse.ArgumentParser(description='set up grid to upload waveform from path generator')
+
+    parser.add_argument('--path_file', metavar='PATH_FILE', type=str, default="targets_7fp_case_2_1_PATHS.paths",
+                        help='Name of file containing paths')
+    parser.add_argument('--canmap_file', metavar='CANMAP_FILE', type=str, default="canmap.cfg",
+                        help='Name of file containing CAN map')
+        
     parser.add_argument('--mockup',   default=False, action='store_true',
                         help='set gateway address to use mock-up gateway and FPU')
 
@@ -107,12 +117,20 @@ if __name__ == '__main__':
     gd.pingFPUs(grid_state)
 
     print("Tracked positions:")
-
     gd.trackedAngles(grid_state)
 
+    gd.findDatum(gs, timeout=DATUM_TIMEOUT_DISABLE)
 
+    gd.configZero(gs)
+    gd.executeMotion(gs)
 
+    gd.trackedAngles(gs)
+    list_positions(gs)
 
+    wf = load_waveform(args.path_file, canmap_fname=args.canmap_file)
+    gd.configMotion(wf, gs)
+    gd.executeMotion(gs)
+
+    gd.trackedAngles(gs)
+    list_positions(gs)
     
-
-

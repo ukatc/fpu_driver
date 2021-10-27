@@ -184,6 +184,25 @@ int main(int argc, char**argv)
     //..........................................................................
     else if (cmd_str == "flash")
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (arg_strs.size() == 4)
+        {
+            const std::string &canmap_file_path = arg_strs[1];
+            int fpu_id = 9999;
+            if (stringToInt(arg_strs[2], fpu_id))
+            {
+                const char *serial_number = arg_strs[3].c_str();
+                return FPUAdmin::flash(mockup, canmap_file_path, fpu_id,
+                                       serial_number, reuse_sn,
+                                       gateway_address_ptr);
+            }
+            else
+            {
+                std::cout << bad_numerical_format_str << std::endl;
+                return AppReturnError;
+            }
+        }
+#else // NOT FLEXIBLE_CAN_MAPPING
         if (arg_strs.size() == 3)
         {
             const char *serial_number = arg_strs[1].c_str();
@@ -199,6 +218,7 @@ int main(int argc, char**argv)
                 return AppReturnError;
             }
         }
+#endif // NOT FLEXIBLE_CAN_MAPPING
         else
         {
             std::cout << bad_num_args_str << std::endl;
@@ -475,10 +495,16 @@ void printHelp()
         "      permissions.\n"
         "      This command aborts if a database already exists in the directory.\n"
         "\n"
+#ifdef FLEXIBLE_CAN_MAPPING
+        "flash [--reuse_sn] <canmap_file_path> <fpu_id> <serial_number> --gateway_address <gateway ip>\n"
+        "    - Flashes serial number to the FPU with ID of <fpu_id>, as specified in the\n"
+        "      CAN map file. The file path must not contain spaces. FPU must be connected.\n"
+#else // NOT FLEXIBLE_CAN_MAPPING
         "flash [--reuse_sn] <serial_number> <fpu_id>\n"
         "    - Flashes serial number to FPU with ID <fpu_id>. FPU must be connected.\n"
-        "      If the --reuse_sn flag is set, it is allowed to\n"
-        "      use a serial number which was used before.\n"
+#endif // FLEXIBLE_CAN_MAPPING
+        "      If the --reuse_sn flag is set, it is allowed to use a serial number\n"
+        "      which was used before.\n"
         "\n"
         "init [--reinitialize] <serial_number> <alpha_pos> <beta_pos> [<adatum_offset>]\n"
         "    - Initializes FPU data in protection database, passing the initial alpha\n"

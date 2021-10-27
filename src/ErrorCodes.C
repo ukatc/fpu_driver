@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <ErrorCodes.h>
+#include "ErrorCodes.h"
 
 
 namespace mpifps
@@ -68,12 +68,24 @@ EtherCANErrorGroup errorGroup(E_EtherCANErrCode ecan_result)
     case DE_INVALID_CONFIG:
     case DE_SYNC_CONFIG_FAILED:
     case DE_WRITE_VERIFICATION_FAILED:
+#ifdef FLEXIBLE_CAN_MAPPING
+    case DE_NO_FPUS_DEFINED:
+#endif // FLEXIBLE_CAN_MAPPING
         return EtherCANErrorGroup::Setup;
         break;
 
     case DE_INVALID_FPU_ID:
     case DE_INVALID_PAR_VALUE:
     case DE_DUPLICATE_SERIAL_NUMBER:
+#ifdef FLEXIBLE_CAN_MAPPING
+    case DE_INVALID_GATEWAY_ID:
+    case DE_INVALID_CAN_BUS_ID:
+    case DE_INVALID_CAN_ID:
+    case DE_INVALID_NUM_PARAMS:
+    case DE_DUPLICATE_FPU_ID:
+    case DE_DUPLICATE_CAN_ROUTE:
+#endif // FLEXIBLE_CAN_MAPPING
+    case DE_NO_WAVEFORMS:
         return EtherCANErrorGroup::InvalidParameter;
         break;
 
@@ -101,6 +113,7 @@ EtherCANErrorGroup errorGroup(E_EtherCANErrCode ecan_result)
     case DE_INVALID_WAVEFORM_RAGGED:
     case DE_INVALID_WAVEFORM_STEPCOUNT_TOO_LARGE:
     case DE_INVALID_WAVEFORM_CHANGE:
+    case DE_INVALID_WAVEFORM_REJECTED:
         return EtherCANErrorGroup::InvalidWaveform;
         break;
 

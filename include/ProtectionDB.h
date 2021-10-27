@@ -106,14 +106,20 @@ enum
     MDB_EXTRA_RESULT_CODES_LOWER = -25000, 
 
     // Further result codes to use
-    // ***NOTE***: These also need corresponding entries in ProtectionDB::
-    // getResultString()
+
+    // ********************** NOTE: *************************
+    // These enum definitions also need corresponding entries
+    // in ProtectionDB::getResultString()
     MDB_VERIFY_FAILED,
     MDB_INCORRECT_SNUM_USED_FLAG_VAL,
     MDB_DB_ALREADY_EXISTS,
     MDB_OLD_INCOMPATIBLE_DB_FORMAT,
     MDB_FPU_SUBDB_MISSING,
     MDB_HEALTHLOG_SUBDB_MISSING,
+    MDB_CREATING_MORE_THAN_ONE_TRANSACTION_OBJECT,
+    MDB_INVALID_TRANSACTION_BEING_USED,
+
+    // **************** SEE NOTE ABOVE *********************
 
     // Boundary - do not use or change
     MDB_EXTRA_RESULT_CODES_UPPER
@@ -232,6 +238,8 @@ private:
 
     MDB_env *env_ptr = nullptr;
     MDB_txn *txn_ptr = nullptr;
+    bool txn_object_is_valid = false;
+    static int num_existing_transaction_instances;  // N.B. Static
 };
 
 //==============================================================================

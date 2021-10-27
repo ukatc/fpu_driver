@@ -242,12 +242,24 @@ class WrapGridState : public t_grid_state
 public:
     std::vector<WrapFPUState>getStateVec()
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        // Because the FPU IDs can now be non-contiguous, just allow the full
+        // index range of FPUs.
+        // TODO: Ideally need means of detecting and displaying whether an
+        // FPU ID is valid (i.e. specified by the FPU ID / CAN map) or not,
+        // but this is  not easily possible here because don't have access to
+        // the valid FPU ID list in the config structure. Another approach
+        // would be to add an "isValidFpu" boolean flag to the t_fpu_state FPU
+        // state structure, which could be read here?
+        int count_fpus = FPU_ID_BROADCAST_BASE;
+#else // NOT FLEXIBLE_CAN_MAPPING
         int count_fpus = 0;
         for (int k = 0; k < NUM_FPU_STATES; k++)
         {
             count_fpus += Counts[k];
         }
         assert(count_fpus <= MAX_NUM_POSITIONERS);
+#endif // NOT FLEXIBLE_CAN_MAPPING
         std::vector<WrapFPUState> state_vec;
         for (int i = 0; i < count_fpus; i++)
         {

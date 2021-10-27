@@ -8,6 +8,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2020-06-15  Created (translated from Python FpuGridDriver.py).
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,21 +45,28 @@ GridDriver::~GridDriver()
 
     // TODO: Put C++ equivalent of the Python "with self.lock:" here
 
-    t_grid_state grid_state;
-    getGridState(grid_state);
-
-    t_fpuset fpuset;
-    createFpuSetForNumFpus(config.num_fpus, fpuset);
-
-    if (grid_state.interface_state == DS_CONNECTED)
+    if (_gd != nullptr)
     {
-        // Fetch current positions
-        _pingFPUs(grid_state, fpuset);
-    }
+        t_grid_state grid_state;
+        getGridState(grid_state);
+
+#ifdef FLEXIBLE_CAN_MAPPING
+        const t_fpuset &fpuset = config.getFpuSet();
+#else // NOT FLEXIBLE_CAN_MAPPING
+        t_fpuset fpuset;
+        createFpuSetForNumFpus(config.num_fpus, fpuset);
+#endif // NOT FLEXIBLE_CAN_MAPPING
+
+        if (grid_state.interface_state == DS_CONNECTED)
+        {
+            // Fetch current positions
+            _pingFPUs(grid_state, fpuset);
+        }
 
 #ifdef ENABLE_PROTECTION_CODE
-    _refresh_positions(grid_state, true, fpuset);
+        _refresh_positions(grid_state, true, fpuset);
 #endif
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -168,12 +176,12 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     t_grid_state grid_state;
     getGridState(grid_state);
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    const t_fpuset &fpuset = config.getFpuSet();
+#else // NOT FLEXIBLE_CAN_MAPPING
     t_fpuset fpuset;
-#ifdef USE_2ND_CANBUS
-    createFpuSetForSingleFpu(NEXT_CANBUS_FPU_ID, fpuset);
-#else
     createFpuSetForNumFpus(config.num_fpus, fpuset);
-#endif
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     // Read serial numbers from grid FPUs, and check for duplicates
     ecan_result = readSerialNumbers(grid_state, fpuset);
@@ -181,26 +189,26 @@ E_EtherCANErrCode GridDriver::_post_connect_hook()
     {
         std::vector<std::string> duplicate_snumbers;
         getDuplicateSerialNumbers(grid_state, duplicate_snumbers);
-#ifndef USE_2ND_CANBUS // NOT USE_2ND_CANBUS
         if (duplicate_snumbers.size() != 0)
         {
             return DE_DUPLICATE_SERIAL_NUMBER;
         }
-#endif // NOT USE_2ND_CANBUS
     }
 
     // Read data from FPU database for all grid FPUs
+#ifdef FLEXIBLE_CAN_MAPPING
+    std::vector<FpuData> fpus_data_temp(MAX_NUM_POSITIONERS);
+#else // NOT FLEXIBLE_CAN_MAPPING
     std::vector<FpuData> fpus_data_temp(config.num_fpus);
+#endif // NOT FLEXIBLE_CAN_MAPPING
     if (ecan_result == DE_OK)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
-        {
-#ifdef USE_2ND_CANBUS
-            if (!fpuset[fpu_id])
-            {
-                continue;
-            }
 #endif
+        {
             MdbResult mdb_result = MDB_PANIC;
             auto txn = protection_db.createTransaction(mdb_result);
             if (txn)
@@ -290,7 +298,11 @@ void GridDriver::getDuplicateSerialNumbers(t_grid_state &grid_state,
     std::set<std::string> snumbers_set;
 
     duplicate_snumbers_ret.clear();
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         // Get FPU serial number C string, add explicit null-terminator for
         // safety, and convert to std::string
@@ -317,7 +329,7 @@ double GridDriver::_alpha_angle(const t_fpu_state &fpu_state,
 
     alpha_underflow_ret = (fpu_state.alpha_steps == ALPHA_UNDERFLOW_COUNT);
     alpha_overflow_ret = (fpu_state.alpha_steps == ALPHA_OVERFLOW_COUNT);
-    return ( ((double)fpu_state.alpha_steps) / StepsPerDegreeAlpha) +
+    return ( ((double)fpu_state.alpha_steps) / STEPS_PER_DEGREE_ALPHA) +
            config.alpha_datum_offset;
 }
 
@@ -330,7 +342,7 @@ double GridDriver::_beta_angle(const t_fpu_state &fpu_state,
 
     beta_underflow_ret = (fpu_state.beta_steps == BETA_UNDERFLOW_COUNT);
     beta_overflow_ret = (fpu_state.beta_steps == BETA_OVERFLOW_COUNT);
-    return ((double)fpu_state.beta_steps) / StepsPerDegreeBeta;
+    return ((double)fpu_state.beta_steps) / STEPS_PER_DEGREE_BETA;
 }
 
 //------------------------------------------------------------------------------
@@ -360,7 +372,11 @@ E_EtherCANErrCode GridDriver::_reset_hook(t_grid_state &old_state,
     ecan_result = readSerialNumbers(gs, fpuset);
     if (ecan_result == DE_OK)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -410,7 +426,11 @@ void GridDriver::_reset_counter_hook(double alpha_target, double beta_target,
     // Similar to reset_hook, but run after resetStepCounter() and only
     // updating the caloffsets
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -468,7 +488,11 @@ E_EtherCANErrCode GridDriver::_allow_find_datum_hook(t_grid_state &gs,
 
     const Interval acw_range(0.0, std::numeric_limits<double>::max());
     const Interval cw_range(-std::numeric_limits<double>::max(), 0.0);
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -592,7 +616,11 @@ E_EtherCANErrCode GridDriver::_start_find_datum_hook(t_grid_state &gs,
     auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -705,7 +733,11 @@ E_EtherCANErrCode GridDriver::_cancel_find_datum_hook(t_grid_state &gs,
         for (const auto &it : initial_positions)
         {
             const int fpu_id = it.first;
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
             if (fpu_id >= config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
             {
                 return DE_INVALID_FPU_ID;
             }
@@ -760,6 +792,22 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
     // TODO: Johannes' comment: "FIXME: check if the next block is still needed"
     t_fpuset fpuset_refresh;
     bool refresh_pending = false;
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    clearFpuSet(fpuset_refresh);
+    for (int fpu_id : config.getFpuIdList())
+    {
+        const t_fpu_state &fpu_state = datum_gs.FPU_state[fpu_id];
+        if (((fpu_state.state == FPST_MOVING) ||
+             (fpu_state.state == FPST_DATUM_SEARCH)) ||
+            (!fpu_state.ping_ok))
+        {
+            fpuset_refresh[fpu_id] = true;
+            refresh_pending = true;
+        }
+    }
+
+#else // NOT FLEXIBLE_CAN_MAPPING
     for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
     {
         if (fpu_id < config.num_fpus)
@@ -778,6 +826,8 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
             fpuset_refresh[fpu_id] = false;
         }
     }
+#endif // NOT FLEXIBLE_CAN_MAPPING
+
     if (refresh_pending)
     {
         sleepSecs(0.1);
@@ -794,7 +844,11 @@ E_EtherCANErrCode GridDriver::_finished_find_datum_hook(
     auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -1050,7 +1104,11 @@ E_EtherCANErrCode GridDriver::trackedAnglesVals(const t_grid_state &gs,
     // TODO: Add C++/Linux equivalent of Python version's "with self.lock" here
 
     positions_ret.clear();
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -1082,7 +1140,11 @@ E_EtherCANErrCode GridDriver::trackedAnglesString(const t_grid_state &gs,
 
     return_string.clear();
 
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -1247,7 +1309,11 @@ E_EtherCANErrCode GridDriver::_refresh_positions(const t_grid_state &grid_state,
     if (txn)
     {
         ecan_result = DE_OK;
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -1514,9 +1580,9 @@ E_EtherCANErrCode GridDriver::_check_and_register_wtable(const t_wtable &wtable,
             asteps += waveform_steps[step_index].alpha_steps * sign; 
             bsteps += waveform_steps[step_index].beta_steps * sign;
             Interval alpha_sect = alpha0 + 
-                                  (((double)asteps) / StepsPerDegreeAlpha);
+                                  (((double)asteps) / STEPS_PER_DEGREE_ALPHA);
             Interval beta_sect = beta0 +
-                                 (((double)bsteps) / StepsPerDegreeBeta); 
+                                 (((double)bsteps) / STEPS_PER_DEGREE_BETA);
 
             ecan_result = _check_allowed_range(fpu_id, step_index, "alpha",
                                                alimits, alpha_sect,
@@ -1615,7 +1681,11 @@ E_EtherCANErrCode GridDriver::_save_wtable_direction(const t_fpuset &fpuset,
     auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -1648,7 +1718,11 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
     for (const auto &it : configuring_ranges)
     {
         int fpu_id = it.first;
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if (fpu_id >= config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             return DE_INVALID_FPU_ID;
         }
@@ -1668,13 +1742,14 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
 
     // Create fpuset_wtable
     t_fpuset fpuset_wtable;
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        fpuset_wtable[fpu_id] = false;
-    }
+    clearFpuSet(fpuset_wtable);
     for (size_t i = 0; i < wtable.size(); i++)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (config.isValidFpuId(wtable[i].fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if (wtable[i].fpu_id < config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             fpuset_wtable[wtable[i].fpu_id] = true;
         }
@@ -1700,7 +1775,11 @@ E_EtherCANErrCode GridDriver::_post_config_motion_hook(const t_wtable &wtable,
         for (size_t i = 0; i < wtable.size(); i++)
         {
             int fpu_id = wtable[i].fpu_id;
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
             if (fpu_id < config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
             {
                 if (txn->fpuDbTransferWaveform(DbTransferType::Write,
                         gs.FPU_state[fpu_id].serial_number,
@@ -1772,15 +1851,16 @@ E_EtherCANErrCode GridDriver::_post_repeat_reverse_motion_hook(
     // Update ranges that become valid once executeMotion is started
 
     t_fpuset fpuset_to_save;
-    for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-    {
-        fpuset_to_save[fpu_id] = false;
-    }
+    clearFpuSet(fpuset_to_save);
 
     for (const auto &it : configuring_ranges)
     {
         int fpu_id = it.first;
+#ifdef FLEXIBLE_CAN_MAPPING
+        if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
         if (fpu_id >= config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
         {
             return DE_INVALID_FPU_ID;
         }
@@ -1809,7 +1889,11 @@ void GridDriver::_update_counters_execute_motion(int fpu_id,
                                                  bool is_reversed,
                                                  bool cancel)
 {
+#ifdef FLEXIBLE_CAN_MAPPING
+    if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
     if ((fpu_id < 0) || (fpu_id >= config.num_fpus))
+#endif // NOT FLEXIBLE_CAN_MAPPING
     {
         return;
     }
@@ -1940,7 +2024,11 @@ E_EtherCANErrCode GridDriver::_start_execute_motion_hook(t_grid_state &gs,
     auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -2010,7 +2098,11 @@ E_EtherCANErrCode GridDriver::_cancel_execute_motion_hook(t_grid_state &gs,
         for (const auto &it : initial_positions)
         {
             const int fpu_id = it.first;
+#ifdef FLEXIBLE_CAN_MAPPING
+            if (!config.isValidFpuId(fpu_id))
+#else // NOT FLEXIBLE_CAN_MAPPING
             if (fpu_id >= config.num_fpus)
+#endif // NOT FLEXIBLE_CAN_MAPPING
             {
                 return DE_INVALID_FPU_ID;
             }
@@ -2082,12 +2174,13 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
             // Build set of FPUs requiring refresh based upon their current
             // state
             t_fpuset fpuset_refresh;
-            for (int fpu_id = 0; fpu_id < MAX_NUM_POSITIONERS; fpu_id++)
-            {
-                fpuset_refresh[fpu_id] = false;
-            }
+            clearFpuSet(fpuset_refresh);
             bool refresh_required = false;
+#ifdef FLEXIBLE_CAN_MAPPING
+            for (int fpu_id : config.getFpuIdList())
+#else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
             {
                 if ((gs.FPU_state[fpu_id].state == FPST_MOVING) ||
                     (gs.FPU_state[fpu_id].state == FPST_DATUM_SEARCH))
@@ -2104,7 +2197,11 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
             // Add FPUs requiring ping to the set
             t_fpuset fpuset_ping_notok;
             need_ping(gs, fpuset, fpuset_ping_notok);
+#ifdef FLEXIBLE_CAN_MAPPING
+            for (int fpu_id : config.getFpuIdList())
+#else
             for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
             {
                 if (fpuset_ping_notok[fpu_id])
                 {
@@ -2141,7 +2238,11 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     // positions, to continue tracking.
     // But, roll back the latter to the movement range for an FPU, if that FPU
     // is not yet at target.
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (!fpuset[fpu_id])
         {
@@ -2166,7 +2267,11 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     auto txn = protection_db.createTransaction(mdb_result);
     if (txn)
     {
+#ifdef FLEXIBLE_CAN_MAPPING
+        for (int fpu_id : config.getFpuIdList())
+#else
         for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
         {
             if (!fpuset[fpu_id])
             {
@@ -2190,7 +2295,11 @@ E_EtherCANErrCode GridDriver::_post_execute_motion_hook(t_grid_state &gs,
     }
 
     // Clear wavetable spans for the addressed FPUs - they are no longer valid
+#ifdef FLEXIBLE_CAN_MAPPING
+    for (int fpu_id : config.getFpuIdList())
+#else
     for (int fpu_id = 0; fpu_id < config.num_fpus; fpu_id++)
+#endif
     {
         if (fpuset[fpu_id])
         {
@@ -2239,7 +2348,7 @@ E_EtherCANErrCode GridDriver::_pre_free_beta_collision_hook(int fpu_id,
     }
 
     Interval bpos = fpu_data.db.bpos;
-    Interval new_bpos = bpos + (((double)diff) / StepsPerDegreeBeta);
+    Interval new_bpos = bpos + (((double)diff) / STEPS_PER_DEGREE_BETA);
 
     fpu_data.target_position = { fpu_data.db.apos, new_bpos };
 
@@ -2281,20 +2390,29 @@ E_EtherCANErrCode GridDriver::_post_free_beta_collision_hook(int fpu_id,
         db_cw_or_acw = FpuDbIntValType::BetaRetries_ACW;
     }
     
-    MdbResult mdb_result = MDB_PANIC;
-    auto txn = protection_db.createTransaction(mdb_result);
-    if (txn)
+    // The following code block is inside its own scope so that txn is
+    // automatically destroyed at the end of it - this is required because
+    // the subsequent _refresh_positions() call also creates its own
+    // internal transaction, and ProtectionDB/ProtectionDBTxn requires that
+    // there is only one transaction instance in existence at a time.
+    // TODO: This could instead be achieved by putting txn.reset() after this
+    // block?
     {
-        const char *serial_number = gs.FPU_state[fpu_id].serial_number;
-        if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
-                                       serial_number, count) != MDB_SUCCESS)
+        MdbResult mdb_result = MDB_PANIC;
+        auto txn = protection_db.createTransaction(mdb_result);
+        if (txn)
         {
-            return DE_DB_WRITE_FAILED;
+            const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+            if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
+                                        serial_number, count) != MDB_SUCCESS)
+            {
+                return DE_DB_WRITE_FAILED;
+            }
         }
-    }
-    else
-    {
-        return DE_DB_TRANSACTION_CREATION_FAILED;
+        else
+        {
+            return DE_DB_TRANSACTION_CREATION_FAILED;
+        }
     }
 
     // N.B. Old Johannes Python code here which he had commented out:
@@ -2348,7 +2466,7 @@ E_EtherCANErrCode GridDriver::_pre_free_alpha_limit_breach_hook(int fpu_id,
     }
 
     Interval apos = fpu_data.db.apos;
-    Interval new_apos = apos + (((double)diff) / StepsPerDegreeAlpha);
+    Interval new_apos = apos + (((double)diff) / STEPS_PER_DEGREE_ALPHA);
 
     fpu_data.target_position = { new_apos, fpu_data.db.bpos };
 
@@ -2390,20 +2508,29 @@ E_EtherCANErrCode GridDriver::_post_free_alpha_limit_breach_hook(int fpu_id,
         db_cw_or_acw = FpuDbIntValType::AlphaRetries_ACW;
     }
 
-    MdbResult mdb_result = MDB_PANIC;
-    auto txn = protection_db.createTransaction(mdb_result);
-    if (txn)
+    // The following code block is inside its own scope so that txn is
+    // automatically destroyed at the end of it - this is required because
+    // the subsequent _refresh_positions() call also creates its own
+    // internal transaction, and ProtectionDB/ProtectionDBTxn requires that
+    // there is only one transaction instance in existence at a time.
+    // TODO: This could instead be achieved by putting txn.reset() after this
+    // block?
     {
-        const char *serial_number = gs.FPU_state[fpu_id].serial_number;
-        if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
-                                       serial_number, count) != MDB_SUCCESS)
+        MdbResult mdb_result = MDB_PANIC;
+        auto txn = protection_db.createTransaction(mdb_result);
+        if (txn)
         {
-            return DE_DB_WRITE_FAILED;
+            const char *serial_number = gs.FPU_state[fpu_id].serial_number;
+            if (txn->fpuDbTransferInt64Val(DbTransferType::Write, db_cw_or_acw,
+                                        serial_number, count) != MDB_SUCCESS)
+            {
+                return DE_DB_WRITE_FAILED;
+            }
         }
-    }
-    else
-    {
-        return DE_DB_TRANSACTION_CREATION_FAILED;
+        else
+        {
+            return DE_DB_TRANSACTION_CREATION_FAILED;
+        }
     }
 
     // N.B. Old Johannes Python code here which he had commented out:

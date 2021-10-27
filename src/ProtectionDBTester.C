@@ -790,7 +790,43 @@ void ProtectionDBTester::testDbOpeningScenarios()
     // TODO: This function is WIP - will come back to once have better
     // ProtectionDB / ProtectionDBTxn return codes in place
 
+    // N.B. Tests are each inside their own local scopes so that their objects
+    // are automatically destroyed each time when they go out of scope
 
+    MdbResult mdb_result = MDB_PANIC;
+
+    //..........................................................................
+    // Test that creating more than one ProtectionDbTxn instance at a time
+    // generates an error. NOTE: Requires that a valid database is present
+    // and can be opened.
+    {
+        mdb_result = MDB_PANIC;
+        ProtectionDbTxnPtr txn_1;  // | Volatile so not optimised away
+        ProtectionDbTxnPtr txn_2;  // |
+
+        ProtectionDB protectiondb;
+        const bool use_mockup_db = false;
+        std::string dir_str = ProtectionDB::getDirFromLinuxEnv(use_mockup_db);
+        mdb_result = protectiondb.open(dir_str);
+        if (mdb_result == MDB_SUCCESS)
+        {
+            txn_1 = protectiondb.createTransaction(mdb_result);
+            if ((txn_1 != nullptr) && (mdb_result == MDB_SUCCESS))
+            {
+                // Now, the following line should fail with the error code
+                // MDB_CREATING_MORE_THAN_ONE_TRANSACTION_OBJECT in mdb_result
+
+                txn_2 = protectiondb.createTransaction(mdb_result);
+            }
+
+            // Extra dummy operations to hold the transaction pointers in scope
+            // so can see results of above in debugger
+            txn_1.reset();
+            txn_2.reset();
+        }
+    }
+
+    //..........................................................................
     // Ad-hoc testing of ProtectionDB::open(), to check behaviour with a few of
     // the following scenarios:
     //   - Specified directory exists or doesn't exist
@@ -800,9 +836,9 @@ void ProtectionDBTester::testDbOpeningScenarios()
     // Note: Each protectiondb instance is tried in its own code scope, so that
     // it's automatically closed again once it goes out of scope
 
-    MdbResult mdb_result = MDB_PANIC;
-
     {
+        mdb_result = MDB_PANIC;
+
         // Test for when directory, files and sub-databases all exist - N.B.
         // they need to all be present for this test to pass
         ProtectionDB protectiondb;
@@ -855,6 +891,9 @@ void ProtectionDBTester::testDbOpeningScenarios()
         std::string dir_str = "/moonsdata/shouldnt_exist";
         mdb_result = protectiondb.open(dir_str);
     }
+
+    //..........................................................................
+
 
 }
 

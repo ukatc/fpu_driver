@@ -8,6 +8,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2020-04-28  Created (translated from Python FpuGridDriver.py).
+// bwillemse 2021-03-26  Modified for new non-contiguous FPU IDs and CAN mapping.
 //------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -90,6 +91,25 @@ struct t_fpu_position
 };
 using t_fpu_positions = std::map<int, t_fpu_position>; // Keys are fpu_id's
 
+#ifdef FLEXIBLE_CAN_MAPPING
+
+struct CanMapFileErrorInfo
+{
+    int line_number = 0;
+    int fpu_id = 0;
+    FPUArray::t_bus_address can_route = { 0, 0, 0 };
+};
+
+E_EtherCANErrCode gridDriverReadCanMapFile(const std::string &canmap_file_path,
+                                           GridCanMap &grid_can_map_ret,
+                                           CanMapFileErrorInfo &error_info_ret);
+void gridDriverConvertCanMapFileErrorInfoToString(
+                                        const std::string &canmap_file_path,
+                                        E_EtherCANErrCode error_code,
+                                        const CanMapFileErrorInfo &error_info,
+                                        std::string &error_string_ret);
+#endif // FLEXIBLE_CAN_MAPPING
+
 
 //==============================================================================
 
@@ -111,8 +131,10 @@ public:
     // within this
 
     UnprotectedGridDriver(
+#ifndef FLEXIBLE_CAN_MAPPING // NOT FLEXIBLE_CAN_MAPPING
         int nfpus = DEFAULT_NUM_FPUS,
-        double SocketTimeOutSeconds = 20.0,
+#endif // NOT FLEXIBLE_CAN_MAPPING
+        double SocketTimeOutSeconds = SOCKET_TIMEOUT_SECS,
         bool confirm_each_step = false,
         long waveform_upload_pause_us = 0,
         int configmotion_max_retry_count = 5,
@@ -132,6 +154,9 @@ public:
     virtual ~UnprotectedGridDriver();
 
     E_EtherCANErrCode initialize(
+#ifdef FLEXIBLE_CAN_MAPPING
+        const GridCanMap &grid_can_map,
+#endif // FLEXIBLE_CAN_MAPPING
         E_LogLevel logLevel = DEFAULT_LOGLEVEL,
         const std::string &log_dir = DEFAULT_LOGDIR,
         int firmware_version_address_offset = 0x61,
@@ -156,9 +181,11 @@ public:
                                          t_grid_state &gs,
                                          const t_fpuset &fpuset);
 
-    E_GridState getGridState(t_grid_state &grid_state_ret);
+#ifdef FLEXIBLE_CAN_MAPPING
+    E_EtherCANErrCode getFpuIdList(std::vector<int> &fpu_id_list_ret);
+#endif // FLEXIBLE_CAN_MAPPING
 
-    int getNumFpus();
+    E_GridState getGridState(t_grid_state &grid_state_ret);
 
     E_EtherCANErrCode findDatum(t_grid_state &gs,
                         const t_datum_search_flags &search_modes,
@@ -221,8 +248,8 @@ public:
     void listAngles(const t_grid_state &gs, t_fpus_angles &fpus_angles_ret,
                     double alpha_datum_offset = ALPHA_DATUM_OFFSET,
                     bool show_uninitialized = false,
-                    double asteps_per_deg = StepsPerDegreeAlpha,
-                    double bsteps_per_deg = StepsPerDegreeBeta);
+                    double asteps_per_deg = STEPS_PER_DEGREE_ALPHA,
+                    double bsteps_per_deg = STEPS_PER_DEGREE_BETA);
     E_EtherCANErrCode countedAngles(t_grid_state &gs, const t_fpuset &fpuset,
                                     t_fpus_angles &fpus_angles_ret,
                                     bool show_uninitialized = false);
@@ -236,7 +263,12 @@ public:
 
     // Static functions
     static void createFpuSetForSingleFpu(int fpu_id, t_fpuset &fpuset_ret);
+#ifdef FLEXIBLE_CAN_MAPPING
+    static void createFpuSetForIdList(const std::vector<int> &fpu_id_list,
+                                      t_fpuset &fpuset_ret);
+#else // NOT FLEXIBLE_CAN_MAPPING
     static void createFpuSetForNumFpus(int num_fpus, t_fpuset &fpuset_ret);
+#endif // NOT FLEXIBLE_CAN_MAPPING
 
     //..........................................................................
 protected:

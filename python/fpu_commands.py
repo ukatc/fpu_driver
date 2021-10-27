@@ -540,8 +540,10 @@ def gen_slist(adegree, bdegree, asteps_per_deg=None, bsteps_per_deg=None,
 
     return slist
 
-
-def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
+#*******************************************************************************
+# TODO: OLD version of gen_wf() - kept for now to provide legacy comparison
+# if required
+def gen_wf_OLD(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
            bsteps_per_deg=StepsPerDegreeBeta,
            units='degree',
            mode='limacc',
@@ -551,6 +553,7 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
            min_steps=STEPS_LOWER_LIMIT,
            max_steps=STEPS_UPPER_LIMIT,
            **kwargs):
+# ******** OLD gen_wf() version
     """
     Generate a waveform which moves the alpha arm by an angle of
     adegree and the beta arm by bdegree. asteps_per_deg and bsteps_er_deg
@@ -573,6 +576,8 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
     FPU index N. alphasteps and betasteps are lists of alpha and beta step
     counts.
     """
+# ******** OLD gen_wf() version
+
 #    print("gen_wf: min_steps=%d, max_steps=%d, min_acceleration=%d, max_acceleration=%d" % \
 #          (min_steps, max_steps, max_acceleration, max_deceleration) )
     if mode == 'slow':
@@ -582,6 +587,8 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
     aangle = asarray(aangle)
     bangle = asarray(bangle)
 
+# ******** OLD gen_wf() version
+
     if aangle.ndim == 0:
         aangle.shape = 1
 
@@ -590,6 +597,8 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
 
     assert(aangle.ndim <= 1)
 
+# ******** OLD gen_wf() version
+
     # Generate a waveform for each FPU, i.
     slists = dict( (i, gen_slist(aangle[i], bangle[i], asteps_per_deg, bsteps_per_deg,
                                  mode=mode, units=units, max_change=max_change,
@@ -597,6 +606,89 @@ def gen_wf(aangle, bangle, asteps_per_deg=StepsPerDegreeAlpha,
                  for i in range(len(aangle)))
 
     # extend waveform to common maximum length
+    maxlen = max(map(len, slists.values()))
+
+# ******** OLD gen_wf() version
+
+    for v in slists.values():
+        shortfall = maxlen - len(v)
+        if shortfall > 0:
+            v.reverse()
+            v.extend([(0, 0)] * shortfall)
+            v.reverse()
+
+    return slists
+
+# ******** OLD gen_wf() version
+#*******************************************************************************
+
+"""
+NOTE: The following gen_wf() function is the new version modified for the new
+flexible CAN mapping functionality.
+TODO: Have put the text "FLEXIBLE_CAN_MAPPING" text here temporarily, so that
+helps with searching for flexible CAN mapping changes across the codebase -
+remove this comment eventually. 
+"""
+
+def gen_wf(fpu_angles_list, 
+           asteps_per_deg=StepsPerDegreeAlpha,
+           bsteps_per_deg=StepsPerDegreeBeta,
+           units='degree', mode='limacc', max_change=1.4,
+           max_acceleration=MOTOR_MAX_ACCELERATION,
+           max_deceleration=MOTOR_MAX_DECELERATION,
+           min_steps=STEPS_LOWER_LIMIT,
+           max_steps=STEPS_UPPER_LIMIT,
+           **kwargs):
+    """
+    Generates a list of FPU waveforms which move the FPUs' alpha and beta arms
+    by the specified angles. Arguments:
+      - fpu_angles_list: Must be a 2-dimensional list of the form:
+           [[fpu_id, alpha_angle, beta_angle], [fpu_id, alpha_angle, beta_angle], ...]
+      - asteps_per_deg and bsteps_per_deg: Approximate calibration factors
+      - mode: Can be:
+          - 'limacc' to generate a movement with constant acceleration/deceleration
+          - 'fast' to generate a movement with an exponential growth in speed
+          - 'slow' or'slowpar' to generate a slow movement where alpha and beta
+             are moved in parallel. (The former 'slow' mode is obsolete,
+             it does not match the protocol and capabilities of the current
+             firmware)
+
+    No range checking of movements is done.
+
+    Returns a list of waveforms for the specified FPUs and their movement
+    angles, in the form of a dictionary where slist[N] contains
+    [alphasteps, betasteps] for FPU index N. alphasteps and betasteps are lists
+    of alpha and beta step counts.
+    """
+#    print("gen_wf: min_steps=%d, max_steps=%d, min_acceleration=%d, max_acceleration=%d" % \
+#          (min_steps, max_steps, max_acceleration, max_deceleration) )
+    if mode == 'slow':
+        warnings.warn("'slow' mode is obsolete, it does not match the waveform protocol, mapped to 'slowpar'.")
+
+    # Define top limit of FPU IDs (N.B. Name corresponds to macro in the C++ code)
+    FPU_ID_BROADCAST_BASE = 1125
+
+    # Perform some checks on fpu_angles_list
+    fpu_ids_without_duplicates = set()
+    for fpu_angles in fpu_angles_list:
+        fpu_angles = asarray(fpu_angles)
+        assert(fpu_angles.ndim == 1)
+        assert(fpu_angles.size == 3)
+        assert(fpu_angles[0] >= 0 and fpu_angles[0] < FPU_ID_BROADCAST_BASE)
+        fpu_ids_without_duplicates.add(fpu_angles[0])
+    if len(fpu_angles_list) != len(fpu_ids_without_duplicates):
+        raise ValueError("ERROR: Duplicate FPU IDs have been specified.")
+
+    # Generate a waveform for each specified FPU
+    slists = dict( (fpu_angles[0],
+                    gen_slist(fpu_angles[1], fpu_angles[2], 
+                              asteps_per_deg, bsteps_per_deg,
+                              mode=mode, units=units, max_change=max_change,
+                              min_steps=min_steps, max_steps=max_steps,
+                              **kwargs))
+        for fpu_angles in fpu_angles_list)
+
+    # Extend waveform to common maximum length
     maxlen = max(map(len, slists.values()))
 
     for v in slists.values():

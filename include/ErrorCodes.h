@@ -8,6 +8,7 @@
 // Who       When        What
 // --------  ----------  -------------------------------------------------------
 // bwillemse 2021-02-10  Created.
+// sbeard    2021-02-25  Added DE_INVALID_WAVEFORM_REJECTED return code
 //------------------------------------------------------------------------------
   
 ////////////////////////////////////////////////////////////////////////////////
@@ -19,6 +20,11 @@
 
 #ifndef ERRORCODES_H
 #define ERRORCODES_H
+
+// TODO: InterfaceConstants.h is only included here for the FLEXIBLE_CAN_MAPPING
+// macro - remove this #include when the FLEXIBLE_CAN_MAPPING macro is
+// eventually removed
+#include "InterfaceConstants.h"
 
 namespace mpifps
 {
@@ -135,11 +141,15 @@ enum E_EtherCANErrCode
     // A write to an FPU did not read back the same value
     DE_WRITE_VERIFICATION_FAILED = 204,
 
-    //..........................................................................
-    // Invalid command parameters
+#ifdef FLEXIBLE_CAN_MAPPING
+    // No FPUs are defined
+    DE_NO_FPUS_DEFINED = 205,
+#endif // FLEXIBLE_CAN_MAPPING
 
-    // An FPU id which was passed as a parameter is invalid because it is
-    // larger than the maximum number of FPUs.
+    //..........................................................................
+    // Invalid parameter values
+
+    // An FPU ID is invalid
     DE_INVALID_FPU_ID = 301,
 
     // Passed parameter value is invalid
@@ -147,6 +157,29 @@ enum E_EtherCANErrCode
 
     // Duplicate serial number
     DE_DUPLICATE_SERIAL_NUMBER = 303,
+
+#ifdef FLEXIBLE_CAN_MAPPING
+    // Invalid gateway ID
+    DE_INVALID_GATEWAY_ID = 304,
+
+    // Invalid CAN bus ID
+    DE_INVALID_CAN_BUS_ID = 305,
+
+    // Invalid CAN ID
+    DE_INVALID_CAN_ID = 306,
+
+    // Invalid number of parameters
+    DE_INVALID_NUM_PARAMS = 307,
+
+    // Duplicate FPU ID
+    DE_DUPLICATE_FPU_ID = 308,
+
+    // Duplicate CAN route
+    DE_DUPLICATE_CAN_ROUTE = 309,
+#endif // FLEXIBLE_CAN_MAPPING
+
+    // No waveform(s) defined for specified FPU(s)
+    DE_NO_WAVEFORMS = 310,
 
     //..........................................................................
     // Connection failures
@@ -197,6 +230,9 @@ enum E_EtherCANErrCode
 
     // The tail of the waveform is incorrect.
     DE_INVALID_WAVEFORM_TAIL = 505,
+
+    // A waveform is rejected by the interface so loading state not achieved.
+    DE_INVALID_WAVEFORM_REJECTED = 506,
 
     //..........................................................................
     // Errors which terminate movements
