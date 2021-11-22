@@ -1,0 +1,7 @@
+>>> # Saving the state of the FPU grid for recovery
+>>> save_state_to_file( gd, gs, output_file, config_file, canmap_file, fpuset=[] )
+>>>
+>>> # For example
+>>> save_state_to_file( gd, gs, "testfile.txt", "/home/jnix/config_19fp_cases.cfg", "canmap.cfg", fpuset=[] )
+
+Then use "testfile.txt" as a starting file for the path analysis software.

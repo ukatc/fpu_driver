@@ -1,0 +1,5 @@
+>>> # Execute the path contained in the given file forwards and backwards.
+>>> test_path( gd, gs, path_file, canmap_file )
+>>>
+>>> # For example
+>>> test_path( gd, gs, "/home/jnix/FPU6TestsOct2021/fpu6_1000_10arcsec_PATHS.paths", "canmap6.cfg" )
