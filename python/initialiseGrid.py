@@ -129,6 +129,30 @@ def initialize_FPU(args):
     return gd, grid_state
 
 
+def move_to( fpu, alpha_deg, beta_deg, calibrated=True ):
+    strg = """
+	*** NOTE: Calibrated movements can only be made from the verification software.
+	*** Datum the fibre positioners and change to the vfrig Python shell.
+
+	>>> gd.configDatum(gs)
+	>>> gd.executeMotion(gs)
+	>>> gd.findDatum(gs)
+	>>> exit
+
+	$ cd ~/FPUVerification
+	$ python -i vfrigInitialiseGrid -N <number of FPUs> --gateway_address <IP address>
+	>>> move_to( fpu, alpha_deg, beta_deg, True )
+	>>> move_all_to( alpha_deg, beta_deg, True )
+
+"""
+    print(strg)
+    return
+
+def move_all_to( alpha_deg, beta_deg, calibrated=True ):
+   move_to( 0, alpha_deg, beta_deg, calibrated=calibrated )
+   return
+
+
 def test_path( gd, gs, path_file, canmap_file, fpuset=[] ):
     # Execute a sequence of commands to test the paths contained in a
     # path file. Only valid if the wflib library has been imported.

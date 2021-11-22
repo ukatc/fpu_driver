@@ -1,0 +1,9 @@
+NOTE: Calibrated movements need to be run from the verification software,
+since that software manages the gearbox calibration. This requires a
+special version of the initialiseGrid.py script. For example:
+
+cd ~/FPUVerification 
+python -i vfrigInitialiseGrid.py -N 6 --gateway_address 134.171.196.147
+
+>>> move_fpu_to( fpuid, alpha_angle_deg, beta_angle_deg, calibrated=True/False )
+>>> move_all_to( alpha_angle_deg, beta_angle_deg, calibrated=True/False )
