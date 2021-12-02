@@ -1,5 +1,11 @@
+python -i initialiseGrid.py -N 6 --gateway_address 134.171.196.147
+
 >>> # Execute the path contained in the given file forwards and backwards.
 >>> test_path( gd, gs, path_file, canmap_file )
 >>>
 >>> # For example
->>> test_path( gd, gs, "/home/jnix/FPU6TestsOct2021/fpu6_1000_10arcsec_PATHS.paths", "canmap6.cfg" )
+>>> test_path( gd, gs, "/home/jnix/FPU6TestsNov2021/fpu6_3000_30arcsec_PATHS.paths", "canmap6.cfg" )
+>>> test_path( gd, gs, "/home/jnix/FPU6TestsDec2021/fpu6_difficult_01_PATHS.paths", "canmap6.cfg" )
+>>>
+>>># In the event of a collision
+>>> gd.recoverFaults(gs, fpuset=None, verbose=False)
