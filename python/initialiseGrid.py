@@ -44,6 +44,10 @@ The following command can be used to execute and reverse a path
 
 >>> test_path( gd, gs, path_file, canmap_file, fpuset=[] )
 
+The following command can be used to recover from a fault or collision
+
+>>> recover_faults( gd, gs, fpuset=[], verbose=False, distance=1.0)
+
 The following command can be used to dump the current FPU locations to a target
 status file which can be given to the path analysis software.
 
@@ -113,7 +117,19 @@ def initialize_FPU(args):
     else:
         gateway_address = [ FpuGridDriver.GatewayAddress(args.gateway_address, args.gateway_port) ]
 
-    print("Connecting grid:", gd.connect(address_list=gateway_address))
+    try:
+       print("Connecting grid:", gd.connect(address_list=gateway_address))
+    except Exception as e:
+       strg = "Could not connect to the gateways:\n\t%s\n" % str(e)
+       if args.mockup:
+           strg += "Have you started the mock gateway process? "
+           strg += "Is the mock gateway simulating enough FPUs?"
+       else:
+           strg += "Are the gateways powered on? "
+           strg += "Is there a network connection to the gateways?\n"
+           strg += "Are there enough FPUs connected to the gateways? "
+           strg += "Are the gateways being used by someone else?"
+       raise Exception(strg)
 
 
     # We monitor the FPU grid by a variable which is
@@ -218,6 +234,38 @@ def save_state_to_file( gd, gs, status_file, config_file, canmap_file="canmap.cf
     wflib.save_angles_to_file( arm_angles, status_file, config_file,
                                canmap_file )
 
+def recover_faults( gd, gs, fpuset=None, verbose=False, distance=1.0):
+    # Execute a series of fault recovery procedures to try to bring the grid into a safe state
+    import time
+
+    nfaults = gd.countFaults( gs, fpuset=fpuset )
+    if nfaults == 0:
+        print("There are no faults to be recovered. No changes made.")
+        return
+    
+    # First attempt to recover the faults
+    print("Recovering faults...")
+    (nfaults, last_pos, directions) = gd.recoverFaults(gs, fpuset=fpuset, verbose=verbose)
+    
+    # Check that the faults really have been recovered and don't spontaneously reappear
+    # because the FPUs are too close.
+    time.sleep(1)
+    nfaults = gd.countFaults( gs, fpuset=fpuset )
+    if nfaults > 0:
+        print("%d faults still remain. Recovering faults again...")
+        (nfaults, last_pos, directions) = gd.recoverFaults(gs, fpuset=fpuset, verbose=verbose,
+                                                          last_position=last_pos,
+                                                          direction_needed=directions)
+        
+    # If the faults have been recovered, move the FPUs a little further apart
+    time.sleep(1)
+    nfaults = gd.countFaults( gs, fpuset=fpuset )
+    if nfaults == 0:
+        print("All faults recovered. Moving the FPUs %.3f (deg) apart" % distance)
+        gd.configMoveDir( gs, directions, distance=distance)
+        gd.executeMotion( gs )
+    
+
 def dir_to_strg( direction ):
    # Helper function to convert a direction value into a string
    strg = "%1d=" % direction
@@ -259,42 +307,6 @@ def check_status( gs ):
        strg += "\n"
     print(strg)
 
-
-def check_status_old( gs ):
-    # Print a summary of the important status fields for each FPU.
-    strg =  " ID    FPU       State           asteps bsteps adir bdir adatum bdatum  aref  bref alimit bcollision wfstatus wfvalid\n"
-    strg += "---- ------ -------------------- ------ ------ ---- ---- ------ ------ ----- ----- ------ ---------- -------- -------\n"
-    for fpu_id in range(0, len(gs.FPU)):
-       fpu = gs.FPU[fpu_id]
-       strg += "%4d " % fpu_id
-       strg += "%6s " % str(fpu.serial_number)
-       strg += "%20s " % str(fpu.state)
-       strg += "%6d " % int(fpu.alpha_steps)
-       strg += "%6d  " % int(fpu.beta_steps)
-
-       if (fpu.direction_alpha == DIRST_CLOCKWISE) or (fpu.direction_alpha == DIRST_RESTING_LAST_CW):
-           strg += " -C "
-       elif (fpu.direction_alpha == DIRST_ANTI_CLOCKWISE) or (fpu.direction_alpha == DIRST_RESTING_LAST_ACW):
-           strg += "+AC "
-       else:
-           strg += "??? "
-       if (fpu.direction_beta == DIRST_CLOCKWISE) or (fpu.direction_beta == DIRST_RESTING_LAST_CW):
-           strg += " -C "
-       elif (fpu.direction_beta == DIRST_ANTI_CLOCKWISE) or (fpu.direction_beta == DIRST_RESTING_LAST_ACW):
-           strg += "+AC "
-       else:
-           strg += " ??? "
-
-       strg += "%5s  " % str(fpu.alpha_datum_switch_active)
-       strg += "%5s " % str(fpu.beta_datum_switch_active)
-       strg += "%5s " % str(fpu.alpha_was_referenced)
-       strg += "%5s  " % str(fpu.beta_was_referenced)
-       strg += "%5s      " % str(fpu.at_alpha_limit)
-       strg += "%5s     " % str(fpu.beta_collision)
-       strg += "%4d   " % int(fpu.waveform_status)
-       strg += "%5s  " % str(fpu.waveform_valid)
-       strg += "\n"
-    print(strg)
 
 
 if __name__ == '__main__':
