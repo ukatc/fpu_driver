@@ -164,6 +164,7 @@ def move_to( fpu, alpha_deg, beta_deg, calibrated=True ):
     print(strg)
     return
 
+
 def move_all_to( alpha_deg, beta_deg, calibrated=True ):
    move_to( 0, alpha_deg, beta_deg, calibrated=calibrated )
    return
@@ -191,10 +192,34 @@ def test_path( gd, gs, path_file, canmap_file, fpuset=[] ):
     gd.reverseMotion(gs)
     gd.executeMotion(gs)
 
+
 def get_arm_angles( gd, gs, fpuset=[] ):
-    # Get the current arm angles in degrees
+    # Get the current arm angles in degrees.
+    #
+    # The function will try to use the tracked angles, which are based on the
+    # motion history. If the interval returned by tracked angles contains a
+    # scalar value, then the software and electronics are in agreement. The
+    # angle is acceptable.
+    #
+    # If the tracked angles returns an interval containing a range of angles,
+    # then the software's history is uncertain, but the angle is likely to be
+    # within the interval returned. This is likely to happen after a collision
+    # or emergency stop. If the motor step count contains an angle within the
+    # expected interval, then the software and electronics are consistent. A
+    # message is printed and the angle derived from the motor step count is
+    # used.
+    #
+    # If the motor step count is not consistent with the range of angles
+    # tracked by the software then the angle is unreliable. This might happen
+    # if the electronics has been switched off. In this situation a warning
+    # is issued and a metrology measurement can be used to derive better angles.
+    #
     arm_angles = []
+    
+    # Get both the tracked version of the angles (base on motion history)
+    # and the counted version of the angles (based on motor step count).
     tracked = gd.trackedAngles(gs, fpuset=fpuset, retrieve=True)
+    counted = gd.countedAngles(gs, fpuset=fpuset, show_uninitialized=True)
 
     if fpuset:
         fpurange = fpuset
@@ -202,27 +227,46 @@ def get_arm_angles( gd, gs, fpuset=[] ):
         fpurange = range(0, len(tracked) )
 
     ii = 0
-    for track in tracked:
+    for track, angle_pair in zip(tracked, counted):
         fpuid = fpurange[ii]
         ii += 1
         # Extract the alpha and beta angles from Interval objects
         ainterval, binterval = track
+        # Extract the counted angles
+        alpha_counted, beta_counted = angle_pair
 
         try:
-            # OK as long as the alpha angle is not uncertain
+            # The tracked angles are OK as long as the alpha angle is not uncertain
             alpha_deg = float(ainterval.as_scalar())
         except AssertionError:
-            print("WARNING: FPU %d alpha angle is uncertain, %s. Using first value." % (fpuid,str(ainterval)))
-            alpha_deg = float(ainterval.iv[0]) 
+            # If the alpha range is uncertain, use the counted angle if consistent
+            if alpha_counted >= ainterval.min() and alpha_counted <= ainterval.max():
+                print("NOTE: FPU %d alpha angle is uncertain, %s, but motor step angle %s is valid." % (fpuid,str(ainterval),alpha_counted))
+                alpha_deg = float(alpha_counted)
+            else:
+                strg = "WARNING: FPU %d alpha angle is uncertain, % " % (fpuid,str(ainterval))
+                strg += "and motor step angle %s is invalid! " % alpha_counted
+                strg += "Using average value."
+                print(strg)
+                alpha_deg = (ainterval.min() + ainterval.max())/2.0 # Or return NaN?
         try:
-            # OK as long as the beta angle is not uncertain
+            # The tracked angles are OK as long as the beta angle is not uncertain
             beta_deg = float(binterval.as_scalar())
         except AssertionError:
-            print("WARNING: FPU %d beta angle is uncertain, %s. Using first value." % (fpuid,str(binterval))) 
-            beta_deg = float(binterval.iv[0]) 
+            # If the beta range is uncertain, use the counted angle if consistent
+            if beta_counted >= binterval.min() and beta_counted <= binterval.max():
+                print("NOTE: FPU %d beta angle is uncertain, %s, but motor step angle %s is valid." % (fpuid,str(binterval),beta_counted))
+                beta_deg = float(beta_counted)
+            else:
+                strg = "WARNING: FPU %d beta angle is uncertain, % " % (fpuid,str(binterval))
+                strg += "and motor step angle %s is invalid! " % beta_counted
+                strg += "Using average value."
+                print(strg)
+                beta_deg = (binterval.min() + binterval.max())/2.0 # Or return NaN?
             
         arm_angles.append( [fpuid, alpha_deg, beta_deg] )
     return arm_angles
+
 
 def save_state_to_file( gd, gs, status_file, config_file, canmap_file="canmap.cfg",
                         fpuset=[] ): 
@@ -233,6 +277,7 @@ def save_state_to_file( gd, gs, status_file, config_file, canmap_file="canmap.cf
     # Save those angles as target locations for the given configuration file
     wflib.save_angles_to_file( arm_angles, status_file, config_file,
                                canmap_file )
+
 
 def recover_faults( gd, gs, fpuset=None, verbose=False, distance=1.0):
     # Execute a series of fault recovery procedures to try to bring the grid into a safe state
@@ -280,6 +325,7 @@ def dir_to_strg( direction ):
    else:
       strg += "???"
    return strg
+
 
 #-------------------------------------------------------------------------------
 def check_status( gs ):
