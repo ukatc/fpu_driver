@@ -151,11 +151,11 @@ class ProtectionDB:
         cls.putInterval(txn, fpu.serial_number, cls.alpha_positions, apos, aoffset)
         
     @classmethod
-    def put_beta_position(cls, txn, fpu, bpos):
+    def put_beta_position(cls, txn, fpu, bpos, boffset):
         # store the datum offsets along with each position
         # (this allows to reconfigure the zero point later)
 
-        cls.putInterval(txn, fpu.serial_number, cls.beta_positions, bpos, 0)
+        cls.putInterval(txn, fpu.serial_number, cls.beta_positions, bpos, boffset)
 
     @classmethod
     def store_reversed(cls, txn, fpu, is_reversed):
