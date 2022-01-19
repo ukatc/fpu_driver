@@ -659,7 +659,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
             {
                 continue;
             }
-            const int BETA_DATUM_LIMIT = -5 * STEPS_PER_DEGREE_BETA;
+            const int BETA_DATUM_LIMIT = (BETA_DATUM_OFFSET - 5.0) * STEPS_PER_DEGREE_BETA;
             int beta_steps = grid_state.FPU_state[i].beta_steps;
             bool beta_initialized = grid_state.FPU_state[i].beta_was_referenced;
 
@@ -668,7 +668,7 @@ E_EtherCANErrCode AsyncInterface::startAutoFindDatumAsync(t_grid_state& grid_sta
             if (count_protection && (beta_steps < BETA_DATUM_LIMIT) && (beta_mode == SEARCH_CLOCKWISE))
             {
                 LOG_CONTROL(LOG_ERROR, "%18.6f : findDatum():"
-                            " FPU %i: beta arm appears to be in unsafe negative position < -5 degree"
+                            " FPU %i: beta arm appears to be in unsafe negative position < datum-5 degree"
                             "and mode is SEARCH_CLOCKWISE - aborting findDatum() operation \n",
                             ethercanif::get_realtime(), i);
                 return DE_PROTECTION_ERROR;
@@ -2198,7 +2198,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                             ethercanif::get_realtime(),
                             step_index, fpu_id, step.alpha_steps, step.beta_steps,
                             (alpha_cur[fpu_id] / STEPS_PER_DEGREE_ALPHA) + config.alpha_datum_offset,
-                            beta_cur[fpu_id] / STEPS_PER_DEGREE_BETA);
+                            (beta_cur[fpu_id] / STEPS_PER_DEGREE_BETA) + config.beta_datum_offset );
 
                 gateway.sendCommand(fpu_id, cmd);
             }
@@ -2359,7 +2359,7 @@ E_EtherCANErrCode AsyncInterface::configMotionAsync(t_grid_state& grid_state,
                     alpha_cur[fpu_id],
                     beta_cur[fpu_id],
                     (alpha_cur[fpu_id] / STEPS_PER_DEGREE_ALPHA) + config.alpha_datum_offset,
-                    beta_cur[fpu_id] / STEPS_PER_DEGREE_BETA);
+                    (beta_cur[fpu_id] / STEPS_PER_DEGREE_BETA) + config.beta_datum_offset );
     }
 
     LOG_CONTROL(LOG_INFO, "%18.6f : configMotion(): waveforms successfully sent OK\n",
@@ -4048,7 +4048,7 @@ void AsyncInterface::logGridState(const E_LogLevel logLevel, t_grid_state& grid_
                             fpu.alpha_steps,
                             fpu.beta_steps,
                             (fpu.alpha_steps / STEPS_PER_DEGREE_ALPHA) + config.alpha_datum_offset,
-                            fpu.beta_steps / STEPS_PER_DEGREE_BETA,
+                            (fpu.beta_steps / STEPS_PER_DEGREE_BETA) + config.beta_datum_offset,
                             fpu.alpha_was_referenced,
                             fpu.beta_was_referenced,
                             fpu.waveform_valid,

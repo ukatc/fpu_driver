@@ -45,6 +45,7 @@ def list_angles(gs,
                 bsteps_per_deg=StepsPerDegreeBeta,
                 show_uninitialized=False,
                 alpha_datum_offset=-180.0,
+                beta_datum_offset=-6.5,
                 num_fpus=None):
     """
     
@@ -59,8 +60,8 @@ def list_angles(gs,
     nan = float('NaN')
     tvalid = lambda zeroed : 1.0 if (zeroed or show_uninitialized) else nan
     # the following line uses Python3 float division
-    return [ ((gs.FPU[i].alpha_steps / asteps_per_deg + alpha_datum_offset)* tvalid(gs.FPU[i].alpha_was_referenced),
-              gs.FPU[i].beta_steps / bsteps_per_deg * tvalid(gs.FPU[i].beta_was_referenced)) for i in range(num_fpus)]
+    return [ ((gs.FPU[i].alpha_steps / asteps_per_deg + alpha_datum_offset) * tvalid(gs.FPU[i].alpha_was_referenced),
+              (gs.FPU[i].beta_steps / bsteps_per_deg + beta_datum_offset) * tvalid(gs.FPU[i].beta_was_referenced)) for i in range(num_fpus)]
 
 
 def list_deviations(gs, num_fpus=None):

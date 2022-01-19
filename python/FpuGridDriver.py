@@ -208,6 +208,7 @@ class UnprotectedGridDriver (object):
                  min_bus_repeat_delay_ms = 0,
 	             min_fpu_repeat_delay_ms = 1,
                  alpha_datum_offset=ALPHA_DATUM_OFFSET,
+                 beta_datum_offset=BETA_DATUM_OFFSET,
                  logLevel=DEFAULT_LOGLEVEL,
                  log_dir=DEFAULT_LOGDIR,
                  motor_minimum_frequency=MOTOR_MIN_STEP_FREQUENCY,
@@ -237,6 +238,7 @@ class UnprotectedGridDriver (object):
         config.num_fpus = nfpus
         config.SocketTimeOutSeconds = SocketTimeOutSeconds
         config.alpha_datum_offset = alpha_datum_offset
+        config.beta_datum_offset = beta_datum_offset
         config.motor_minimum_frequency = motor_minimum_frequency
         config.motor_maximum_frequency = motor_maximum_frequency
         config.motor_max_start_frequency= motor_max_start_frequency
@@ -678,7 +680,7 @@ class UnprotectedGridDriver (object):
                         self._update_error_counters(self.counters[fpu_id], old_state.FPU[fpu_id], fpu)
 
             alpha_target = new_alpha_steps / StepsPerDegreeAlpha + self.config.alpha_datum_offset
-            beta_target = new_beta_steps / StepsPerDegreeBeta
+            beta_target = new_beta_steps / StepsPerDegreeBeta + self.config.beta_datum_offset
 
             self._reset_counter_hook(alpha_target, beta_target, old_state, gs, fpuset=fpuset)
 
@@ -1335,7 +1337,8 @@ class UnprotectedGridDriver (object):
 
 
         angles = fpu_commands.list_angles(gs, show_uninitialized=show_uninitialized,
-                                          alpha_datum_offset=self.config.alpha_datum_offset)
+                                          alpha_datum_offset=self.config.alpha_datum_offset,
+                                          beta_datum_offset=self.config.beta_datum_offset)
         return [angles[k] for k in fpuset ]
 
 
@@ -1492,6 +1495,7 @@ class GridDriver(UnprotectedGridDriver):
         b_caloffsets = []
 
         alpha_datum_offset=config.alpha_datum_offset
+        beta_datum_offset=config.beta_datum_offset
 
         for fpu_id, fpu in enumerate(grid_state.FPU):
             a_caloffsets.append(Interval(0.0))
@@ -1520,6 +1524,8 @@ class GridDriver(UnprotectedGridDriver):
                     else:
                         if subkey in [ProtectionDB.alpha_positions, ProtectionDB.alpha_limits]:
                             in_dicts[subkey][fpu_id] = val + alpha_datum_offset
+                        elif subkey in [ProtectionDB.beta_positions, ProtectionDB.beta_limits]:
+                            in_dicts[subkey][fpu_id] = val + beta_datum_offset
                         else:
                             in_dicts[subkey][fpu_id] = val
 
@@ -1565,7 +1571,7 @@ class GridDriver(UnprotectedGridDriver):
     def _beta_angle(self, fpu):
         beta_underflow = (fpu.beta_steps == BETA_UNDERFLOW_COUNT)
         beta_overflow = (fpu.beta_steps == BETA_OVERFLOW_COUNT)
-        return (fpu.beta_steps / StepsPerDegreeBeta,
+        return (fpu.beta_steps / StepsPerDegreeBeta + self.config.beta_datum_offset,
                 beta_underflow,
                 beta_overflow)
 
@@ -1725,7 +1731,7 @@ class GridDriver(UnprotectedGridDriver):
     def _update_bpos(self, txn, fpu, fpu_id, new_bpos, store=True):
         self.bpositions[fpu_id] = new_bpos
         if store:
-            ProtectionDB.put_beta_position(txn, fpu, new_bpos)
+            ProtectionDB.put_beta_position(txn, fpu, new_bpos, self.config.beta_datum_offset)
 
 
 
@@ -2446,7 +2452,7 @@ class GridDriver(UnprotectedGridDriver):
 
                 if (datum_fpu.beta_was_referenced) and (datum_fpu.beta_steps == 0):
                     self.b_caloffsets[fpu_id] = Interval(0)
-                    self._update_bpos(txn, datum_fpu, fpu_id,  Interval(0.0))
+                    self._update_bpos(txn, datum_fpu, fpu_id,  Interval(0.0) + self.config.beta_datum_offset)
 
                     if self.bretries_acw[fpu_id] > 0:
                         #print("Resetting retry count for anti-clockwise freeBetaCollision movements.")
@@ -2560,7 +2566,7 @@ class GridDriver(UnprotectedGridDriver):
                 if selected_arm in [DASEL_BETA, DASEL_BOTH]:
                     bpos = self.bpositions[fpu_id]
                     if soft_protection:
-                        new_bpos = bpos.extend(0.0)
+                        new_bpos = bpos.extend(0.0 + self.config.beta_datum_offset)
                         self._update_bpos(txn, fpu, fpu_id,  new_bpos)
                     else:
 

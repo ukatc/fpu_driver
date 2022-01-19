@@ -108,7 +108,11 @@ def parse_args():
 
     parser.add_argument('-O', '--alpha-datum-offset',  type=float, dest='alpha_datum_offset',
                         default=-180.0,
-                        help=("""Conventional angle of datum position."""))
+                        help=("""Conventional angle of alpha datum position."""))
+
+    parser.add_argument('-O', '--beta-datum-offset',  type=float, dest='beta_datum_offset',
+                        default=-6.5,
+                        help=("""Conventional angle of beta datum position."""))
 
     parser.add_argument('-A', '--alpha-start',  type=float, dest='alpha_start',
                         default=0.0,

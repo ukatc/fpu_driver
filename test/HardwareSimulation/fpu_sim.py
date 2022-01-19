@@ -45,7 +45,7 @@ FPUGrid = []
 # instrument coordinates) and angle relative to datum positions.
 
 ALPHA_DATUM_OFFSET=-180.0
-BETA_DATUM_OFFSET=0.0
+BETA_DATUM_OFFSET=-6.5
 
 # The alpha RDEGREE values below are relative from the datum switch
 # (datum=zero).  (For displayed alpha angles, the conventional angle
@@ -71,16 +71,16 @@ assert(BETA_MAX_DEGREE < BETA_MAX_HWPROT_DEGREE)
 ALPHA_BUFFER = 0.2
 ALPHA_MIN_RDEGREE = ALPHA_MIN_DEGREE - ALPHA_DATUM_OFFSET + ALPHA_BUFFER
 ALPHA_MAX_RDEGREE = ALPHA_MAX_DEGREE - ALPHA_DATUM_OFFSET - ALPHA_BUFFER
-BETA_DATUM_SWITCH_MAX_RDEGREE = -0.2
-BETA_DATUM_SWITCH_MIN_RDEGREE = -5
+BETA_DATUM_SWITCH_MAX_RDEGREE = BETA_DATUM_OFFSET - 0.2
+BETA_DATUM_SWITCH_MIN_RDEGREE = BETA_DATUM_OFFSET - 5.0
 
 # These angles are the actual relative datum switch point
 ALPHA_LIMIT_MIN_RDEGREE = ALPHA_MIN_DEGREE - ALPHA_DATUM_OFFSET
 ALPHA_LIMIT_MAX_RDEGREE = ALPHA_MAX_DEGREE - ALPHA_DATUM_OFFSET
 
 BETA_BUFFER = 0.2
-BETA_LIMIT_MIN_RDEGREE  = BETA_MIN_DEGREE - BETA_BUFFER
-BETA_LIMIT_MAX_RDEGREE  = BETA_MAX_DEGREE + BETA_BUFFER
+BETA_LIMIT_MIN_RDEGREE  = BETA_MIN_DEGREE - BETA_DATUM_OFFSET - BETA_BUFFER
+BETA_LIMIT_MAX_RDEGREE  = BETA_MAX_DEGREE - BETA_DATUM_OFFSET + BETA_BUFFER
 
 assert(ALPHA_MIN_RDEGREE < ALPHA_MAX_RDEGREE)
 assert(ALPHA_LIMIT_MIN_RDEGREE < ALPHA_MIN_RDEGREE)
@@ -124,8 +124,8 @@ BETA_CTEST_DEGREE = 70 # This is defined by the rig setup
 BETA_CTEST = int(BETA_CTEST_DEGREE * StepsPerDegreeBeta)
 
 # The point where the beta arm would crash
-MIN_BETA_CRASH = int(BETA_MIN_HWPROT_DEGREE * StepsPerDegreeBeta)
-MAX_BETA_CRASH = int(BETA_MAX_HWPROT_DEGREE * StepsPerDegreeBeta)
+MIN_BETA_CRASH = int((BETA_MIN_HWPROT_DEGREE - BETA_DATUM_OFFSET) * StepsPerDegreeBeta)
+MAX_BETA_CRASH = int((BETA_MAX_HWPROT_DEGREE- BETA_DATUM_OFFSET) * StepsPerDegreeBeta)
 
 
 # E_REQUEST_DIRECTION codes
@@ -683,9 +683,10 @@ class FPU:
         beta_offset = self.boff_steps
         alpha_offset = self.aoff_steps
 
-        d_offset = self.opts.alpha_datum_offset
-        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
-        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
+        da_offset = self.opts.alpha_datum_offset
+        db_offset = self.opts.beta_datum_offset
+        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + da_offset
+        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta + db_offset
 
         if self.opts.verbosity >= LOG_DEBUG:
             print("FPU %i: findDatum is now at (%i, %i) steps = (%7.2f, %7.2f) degree\n" % (
@@ -803,8 +804,8 @@ class FPU:
                 break
 
 
-            alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
-            beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
+            alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + da_offset
+            beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta + db_offset
 
             if self.opts.verbosity >= LOG_DEBUG:
                 print("FPU %i: findDatum is now at (%i, %i) steps = (%7.2f, %7.2f) degree" % (
@@ -846,8 +847,8 @@ class FPU:
                 if self.opts.verbosity >= LOG_VERBOSE:
                     print("FPU %i: partial datum operation finished" % self.fpu_id)
 
-        alpha_real_deg =  (self.alpha_steps + self.aoff_steps) / StepsPerDegreeAlpha + d_offset
-        beta_real_deg =  (self.beta_steps + self.boff_steps) / StepsPerDegreeBeta
+        alpha_real_deg =  (self.alpha_steps + self.aoff_steps) / StepsPerDegreeAlpha + da_offset
+        beta_real_deg =  (self.beta_steps + self.boff_steps) / StepsPerDegreeBeta + db_offset
 
         if self.opts.verbosity >= LOG_INFO:
             print("FPU %i: findDatum stopped at (%i, %i) steps = (%7.2f, %7.2f) degree" % (
@@ -925,9 +926,10 @@ class FPU:
         else:
             self.beta_steps += UNTANGLE_STEPS
 
-        d_offset = self.opts.alpha_datum_offset
-        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
-        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
+        da_offset = self.opts.alpha_datum_offset
+        db_offset = self.opts.beta_datum_offset
+        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + da_offset
+        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta + db_offset
 
         if self.opts.verbosity >= LOG_INFO:
             print("freeBetaCollsion: moving FPU %i from (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg" % (
@@ -981,10 +983,10 @@ class FPU:
         else:
             self.alpha_steps += UNTANGLE_STEPS
 
-        d_offset = self.opts.alpha_datum_offset
-
-        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + d_offset
-        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta
+        da_offset = self.opts.alpha_datum_offset
+        db_offset = self.opts.beta_datum_offset
+        alpha_real_deg =  (self.alpha_steps + alpha_offset) / StepsPerDegreeAlpha + da_offset
+        beta_real_deg =  (self.beta_steps + beta_offset) / StepsPerDegreeBeta + db_offset
 
         if self.opts.verbosity >= LOG_INFO:
             print("freeAlphaLimitBreach: moving FPU %i from (%i,%i) to (%i, %i) = real (%5.2f, %5.2f) deg" % (
@@ -1104,9 +1106,10 @@ class FPU:
 
             alpha_offset = self.aoff_steps
             beta_offset = self.boff_steps
-            d_offset = self.opts.alpha_datum_offset # conventional angle at datum position
-            alpha_real_deg =  (new_alpha + alpha_offset) / StepsPerDegreeAlpha + d_offset
-            beta_real_deg =  (new_beta + beta_offset) / StepsPerDegreeBeta
+            da_offset = self.opts.alpha_datum_offset # conventional angle at datum position
+            db_offset = self.opts.beta_datum_offset # conventional angle at datum position
+            alpha_real_deg =  (new_alpha + alpha_offset) / StepsPerDegreeAlpha + da_offset
+            beta_real_deg =  (new_beta + beta_offset) / StepsPerDegreeBeta + db_offset
 
             if self.opts.verbosity > 0:
                 alpha_swon = self.alpha_switch_on(new_alpha)

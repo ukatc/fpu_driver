@@ -58,8 +58,9 @@ public:
 
     int num_fpus;
 
-    // offset with which alpha arm angles are computed from step counts
+    // offset with which alpha and beta arm angles are computed from step counts
     double alpha_datum_offset;
+    double beta_datum_offset;
 
     double motor_minimum_frequency;   // lower bound of stepper motor frequency
     double motor_maximum_frequency;   // upper bound of stepper motor frequency
@@ -115,6 +116,7 @@ public:
         fd_txlog = -1;
 
         alpha_datum_offset = ALPHA_DATUM_OFFSET;
+        beta_datum_offset = BETA_DATUM_OFFSET;
         motor_minimum_frequency = 500.0;
         motor_maximum_frequency = 2000.0;
         motor_max_start_frequency=550.0;
