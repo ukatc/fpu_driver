@@ -3,6 +3,7 @@
 #       modified:   python/FpuGridDriver.py
 #       modified:   python/fpu_commands.py
 #       modified:   python/fpu_constants.py
+#       modified:   python/protectiondb.py
 #       modified:   python/src/ethercanif.C
 #       modified:   src/AsyncInterface.C
 #       modified:   test/HardwareSimulation/fpu_sim.py
