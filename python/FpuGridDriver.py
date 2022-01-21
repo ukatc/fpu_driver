@@ -2971,8 +2971,9 @@ class GridDriver(UnprotectedGridDriver):
         return nfaults
 
     # ........................................................................
-    def recoverFaults(self, grid_state, fpuset=None, verbose=False,
-                      last_position=None, direction_needed=None):
+    def recoverFaults(self, grid_state, fpuset=None, 
+                      last_position=None, direction_needed=None,
+                      move_alpha=True, move_beta=True, verbose=False):
         """
 
         This method attempts to automatically recover a set of FPUs from a
@@ -2982,7 +2983,7 @@ class GridDriver(UnprotectedGridDriver):
         NOTE: Sometimes a limit breach is not fully recovered and
         this method may need to be repeated while moving the FPUs
         closer to their safe zone.
-        
+                
         Returns: (nfaults, last_position, direction_needed)
 
         """
@@ -2998,9 +2999,14 @@ class GridDriver(UnprotectedGridDriver):
         # position and direction of movement. This information needs to
         # be preserved. The recoverFaults function can also be run a second time
         # using the information preserved from the first run.
+        # The individual tests on last_position and direction_needed allow
+        # one of the dictionaries to be preserved if it is explicitly
+        # specified.
         if last_position is None or direction_needed is None:
-            last_position = {}    # Last position before recovery dictionary
-            direction_needed = {} # Recovery direction dictionary
+            if last_position is None:
+                last_position = {}    # Last position before recovery dictionary
+            if direction_needed is None:
+               direction_needed = {} # Recovery direction dictionary
             self.pingFPUs(grid_state)
             for fpu_id in fpuset:
                 # Obtain the status of this FPU
@@ -3008,10 +3014,12 @@ class GridDriver(UnprotectedGridDriver):
                 fpu = grid_state.FPU[fpu_id]
     
                 if verbose:
-                    print("\nPass 1: Checking FPU %i" % fpu_id)
+                    print("\nPass 1 (save state): Checking FPU %i" % fpu_id)
                     print("\t%s" % str(fpu))
     
                 # Last known direction of movement
+                # CAUTION: The DIRST_RESTING_LAST directions do not seem to be reliable!
+                # It would be better to provide this function with a list of direction to use.
                 if fpu.direction_alpha == DIRST_CLOCKWISE or fpu.direction_alpha == DIRST_RESTING_LAST_CW:
                     free_alpha_dir = REQD_ANTI_CLOCKWISE
                 elif fpu.direction_alpha == DIRST_ANTI_CLOCKWISE or fpu.direction_alpha == DIRST_RESTING_LAST_ACW:
@@ -3026,13 +3034,15 @@ class GridDriver(UnprotectedGridDriver):
                 else:
                     free_beta_dir = None
             
-                # Create a dictionary entry for this FPU.
-                direction_needed[fpu_id] = (free_alpha_dir, free_beta_dir)
-                # Last known position
-                current_angles = self.countedAngles( grid_state, fpuset=[fpu_id], show_uninitialized=True )
-                alpha_angle = current_angles[0][0]
-                beta_angle = current_angles[0][1]
-                last_position[fpu_id] = (alpha_angle, beta_angle)
+                # Create a dictionary entry for this FPU (if there isn't already an entry)
+                if not (fpu_id in direction_needed):
+                    direction_needed[fpu_id] = (free_alpha_dir, free_beta_dir)
+                # Last known position for this FPU (if there isn't already an entry)
+                if not (fpu_id in last_position):
+                    current_angles = self.countedAngles( grid_state, fpuset=[fpu_id], show_uninitialized=True )
+                    alpha_angle = current_angles[0][0]
+                    beta_angle = current_angles[0][1]
+                    last_position[fpu_id] = (alpha_angle, beta_angle)
                 if verbose:
                     print("\tFPU %d: Direction needed to reverse (%s,%s)." % (fpu_id, str(free_alpha_dir), str(free_beta_dir)))
                     print("\tLast position: (%.3f, %.3f) (deg)" % (alpha_angle, beta_angle) )
@@ -3056,7 +3066,7 @@ class GridDriver(UnprotectedGridDriver):
             fpu = grid_state.FPU[fpu_id]
 
             if verbose:
-                print("\nPass 2: Checking FPU %i" % fpu_id)
+                print("\nPass 2 (fault check): Checking FPU %i" % fpu_id)
                 print("\t%s" % str(fpu))
 
             # Is there an alpha limit breach or beta collision detection?
@@ -3084,7 +3094,7 @@ class GridDriver(UnprotectedGridDriver):
             fpu = grid_state.FPU[fpu_id]
 
             if verbose:
-                print("\nPass 3: Checking FPU %i" % fpu_id)
+                print("\nPass 3 (limit breach recovery): Checking FPU %i" % fpu_id)
                 print("\t%s" % str(fpu))
 
             # Count the number of faults on this FPU (both its motors might
@@ -3117,7 +3127,7 @@ class GridDriver(UnprotectedGridDriver):
             # can change the state of the whole grid. Just check the state of the individual flags.
             #if fpu.state == FPST_OBSTACLE_ERROR:
             if True:
-                if fpu.at_alpha_limit:
+                if fpu.at_alpha_limit and move_alpha:
                     strg = "FPU %i: Alpha limit breach." % fpu_id
                     if free_alpha_dir == REQD_CLOCKWISE:
                         strg += " Clockwise (negative) movement needed."
@@ -3148,7 +3158,7 @@ class GridDriver(UnprotectedGridDriver):
                     # A genuine collision will be corrected on the next pass.
                     pass
 
-                elif fpu.beta_collision:
+                elif fpu.beta_collision and move_beta:
                     # A beta limit breach/
                     strg = "FPU %i: Beta limit breach." % fpu_id
                     if free_beta_dir == REQD_CLOCKWISE:
@@ -3200,7 +3210,7 @@ class GridDriver(UnprotectedGridDriver):
             print("All faults cleared.")
             return (nfaults, last_position, direction_needed)
         else:
-            print("After pass 2, %d FPUs still have a fault condition: %s" % (nfaults, fpus_with_fault))
+            print("After pass 3, %d FPUs still have a fault condition: %s" % (nfaults, fpus_with_fault))
 
         # Make a third pass through the FPUs with a fault and correct the
         # beta collisions. This time small corrections are made to each
@@ -3213,7 +3223,7 @@ class GridDriver(UnprotectedGridDriver):
                 fpu = grid_state.FPU[fpu_id]
 
                 if verbose:
-                    print("\nPass 3 step %s: Checking FPU %i" % (t, fpu_id))
+                    print("\nPass 4 (collision recovery) step %s: Checking FPU %i" % (t, fpu_id))
                     print("\t%s" % str(fpu))
 
                 # Recall the recovery direction
@@ -3250,9 +3260,9 @@ class GridDriver(UnprotectedGridDriver):
                         # NOTE: The FPU might be moving tangentially to another FPU
                         # but by reversing all the FPUs by a small amount in rotation
                         # the collision will eventually be freed.
-                        self.freeBetaCollision( fpu_id, free_beta_dir, grid_state, soft_protection=False )
-                        self.freeBetaCollision( fpu_id, free_beta_dir, grid_state, soft_protection=False )
-                        if free_alpha_dir is not None:
+                        if (free_beta_dir is not None) and move_beta:
+                            self.freeBetaCollision( fpu_id, free_beta_dir, grid_state, soft_protection=False )
+                        if (free_alpha_dir is not None) and move_alpha:
                             self.freeAlphaLimitBreach( fpu_id, free_alpha_dir, grid_state, soft_protection=False )
                         self.enableBetaCollisionProtection( grid_state )
                         #self.pingFPUs(grid_state, [fpu_id])
@@ -3261,7 +3271,10 @@ class GridDriver(UnprotectedGridDriver):
                             print("FPU %i: Beta collision recovered." % fpu_id)
                             # Move a little bit further from the collision
                             for k in range(0, 3):
-                                self.freeBetaCollision( fpu_id, free_beta_dir, grid_state, soft_protection=False )
+                                if (free_beta_dir is not None) and move_beta:
+                                    self.freeBetaCollision( fpu_id, free_beta_dir, grid_state, soft_protection=False )
+                                if (free_alpha_dir is not None) and move_alpha:
+                                    self.freeAlphaLimitBreach( fpu_id, free_alpha_dir, grid_state, soft_protection=False )
                             self.enableBetaCollisionProtection( grid_state )
                             # The fault has been recovered
                             print("FPU %d: Collision recovered - removing" % fpu_id)
