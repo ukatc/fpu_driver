@@ -46,7 +46,7 @@ The following command can be used to execute and reverse a path
 
 The following command can be used to recover from a fault or collision
 
->>> recover_faults( gd, gs, fpuset=[], verbose=False, distance=1.0)
+>>> recover_faults( gd, gs, fpuset=[], move_alpha=True, move_beta=True, distance=1.0, verbose=False)
 
 The following command can be used to dump the current FPU locations to a target
 status file which can be given to the path analysis software.
@@ -279,7 +279,8 @@ def save_state_to_file( gd, gs, status_file, config_file, canmap_file="canmap.cf
                                canmap_file )
 
 
-def recover_faults( gd, gs, fpuset=None, verbose=False, distance=1.0):
+def recover_faults( gd, gs, fpuset=None, move_alpha=True, move_beta=True,
+                    distance=1.0, verbose=False):
     # Execute a series of fault recovery procedures to try to bring the grid into a safe state
     import time
 
@@ -290,17 +291,24 @@ def recover_faults( gd, gs, fpuset=None, verbose=False, distance=1.0):
     
     # First attempt to recover the faults
     print("Recovering faults...")
-    (nfaults, last_pos, directions) = gd.recoverFaults(gs, fpuset=fpuset, verbose=verbose)
+    (nfaults, last_pos, directions) = gd.recoverFaults(gs, fpuset=fpuset,
+                                                       move_alpha=move_alpha,
+                                                       move_beta=move_beta,
+                                                       verbose=verbose)
     
-    # Check that the faults really have been recovered and don't spontaneously reappear
-    # because the FPUs are too close.
+    # Check that the faults really have been recovered and don't spontaneously
+    # reappear because the FPUs are too close.
+    # NOTE: Two attempts at recovering the faults is probably enough.
     time.sleep(1)
     nfaults = gd.countFaults( gs, fpuset=fpuset )
     if nfaults > 0:
-        print("%d faults still remain. Recovering faults again...")
-        (nfaults, last_pos, directions) = gd.recoverFaults(gs, fpuset=fpuset, verbose=verbose,
+        print("%d faults still remain. Recovering faults again..." % nfaults)
+        (nfaults, last_pos, directions) = gd.recoverFaults(gs, fpuset=fpuset,
                                                           last_position=last_pos,
-                                                          direction_needed=directions)
+                                                          direction_needed=directions,
+                                                          move_alpha=move_alpha,
+                                                          move_beta=move_beta,
+                                                          verbose=verbose)
         
     # If the faults have been recovered, move the FPUs a little further apart
     time.sleep(1)
