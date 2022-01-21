@@ -44,8 +44,8 @@ FPUGrid = []
 # Offset between displayed angles (which are always
 # instrument coordinates) and angle relative to datum positions.
 
-ALPHA_DATUM_OFFSET=-180.0
-BETA_DATUM_OFFSET=-6.5
+ALPHA_DATUM_OFFSET = -180.0
+BETA_DATUM_OFFSET = 6.5
 
 # The alpha RDEGREE values below are relative from the datum switch
 # (datum=zero).  (For displayed alpha angles, the conventional angle

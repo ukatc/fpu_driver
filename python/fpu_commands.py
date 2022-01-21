@@ -44,8 +44,8 @@ def list_angles(gs,
                 asteps_per_deg=StepsPerDegreeAlpha,
                 bsteps_per_deg=StepsPerDegreeBeta,
                 show_uninitialized=False,
-                alpha_datum_offset=-180.0,
-                beta_datum_offset=-6.5,
+                alpha_datum_offset=ALPHA_DATUM_OFFSET,
+                beta_datum_offset=BETA_DATUM_OFFSET,
                 num_fpus=None):
     """
     

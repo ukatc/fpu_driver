@@ -36,6 +36,8 @@ import mock_controller as mock_controller
 from mock_controller import FPUS_PER_BUS, BUSES_PER_GATEWAY
 from mock_controller import command_handler
 
+from fpu_constants import ALPHA_DATUM_OFFSET, BETA_DATUM_OFFSET
+
 # Default TCP ports devoted to mock controller.
 DEFAULT_PORTS = [ 4700, 4701, 4702]
 
@@ -107,11 +109,11 @@ def parse_args():
                         help='number of simulated FPUs')
 
     parser.add_argument('-O', '--alpha-datum-offset',  type=float, dest='alpha_datum_offset',
-                        default=-180.0,
+                        default=ALPHA_DATUM_OFFSET,
                         help=("""Conventional angle of alpha datum position."""))
 
     parser.add_argument('-P', '--beta-datum-offset',  type=float, dest='beta_datum_offset',
-                        default=-6.5,
+                        default=BETA_DATUM_OFFSET,
                         help=("""Conventional angle of beta datum position."""))
 
     parser.add_argument('-A', '--alpha-start',  type=float, dest='alpha_start',
