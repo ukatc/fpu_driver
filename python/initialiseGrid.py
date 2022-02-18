@@ -75,11 +75,6 @@ from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     DIRST_RESTING_LAST_CW, DIRST_RESTING_LAST_ACW
 
 try:
-   import geometry as geo
-except:
-   geo = None
-
-try:
    import wflib
 except:
    wflib = None
@@ -293,9 +288,9 @@ def save_state_to_file( gd, gs, status_file, config_file, canmap_file="canmap.cf
 
 def plot_status( gd, gs, config_file, canmap_fname):
     # Plot the current grid status
-    if geo is not None:
+    if wflib is not None:
         arm_angles = get_arm_angles( gd, gs, convert_to_radians=True)
-        geo.plot_geometry( config_file, canmap_fname, arm_angles )
+        wflib.plot_geometry( config_file, canmap_fname, arm_angles )
     else:
         print("No geometry functions available.")
 
@@ -310,11 +305,11 @@ def recover_faults( gd, gs, config_file, canmap_fname, fpuset=None,
         print("There are no faults to be recovered. No changes made.")
         return
 
-    if (config_file is not None) and (geo is not None):
+    if (config_file is not None) and (wflib is not None):
         print("Analyzing geometry...")
         arm_angles = get_arm_angles( gd, gs, fpuset=fpuset,
                                      convert_to_radians=True)
-        directions = geo.recovery_directions(
+        directions = wflib.recovery_directions(
                                     config_file, canmap_fname,
                                     arm_angles, max_steps=max_steps,
                                     verbose=verbose )
