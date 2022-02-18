@@ -320,7 +320,7 @@ def recover_faults( gd, gs, config_file, canmap_fname, fpuset=None,
                                     verbose=verbose )
         for fpuid in list(directions.keys()):
             this_dir = directions[fpuid]
-            print("FPU %d: alpha direction %s, beta direction %s" % \
+            print("FPU %d: From geometry, alpha,beta directions are %s,%s" % \
                   (fpuid, this_dir[0], this_dir[2]))
     else:
         # If there are no mocpath directions, at least use the firmware directions

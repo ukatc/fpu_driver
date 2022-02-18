@@ -122,7 +122,7 @@ def recovery_directions( config_file, canmap_fname, arm_angles, max_steps=6,
     
     directions = pg.recovery_directions( positioner_grid, new_arm_angles,
                                          max_steps=max_steps, verbose=verbose )
-    print("directions:", directions)
+    #print("directions:", directions)
     
     # Convert the cell IDs contained in the mocpath instructions back
     # into CAN IDs and convert the direction names into integer
@@ -134,7 +134,7 @@ def recovery_directions( config_file, canmap_fname, arm_angles, max_steps=6,
         alpha_dir = direction_to_value(new_dir[0])
         beta_dir = direction_to_value(new_dir[2])
         new_directions[fpuid] =  (alpha_dir, new_dir[1], beta_dir, new_dir[3], new_dir[4] )
-    print("new_directions:", new_directions)
+    #print("new_directions:", new_directions)
     return new_directions 
 
 

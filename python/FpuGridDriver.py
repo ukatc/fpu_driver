@@ -3361,8 +3361,9 @@ class GridDriver(UnprotectedGridDriver):
             # FIXME: fpu.beta_collision is coming back True even for FPUs which have not collided!
             if fpu.state == FPST_OBSTACLE_ERROR or fpu.state == FPST_ABORTED:
                 #   or fpu.at_alpha_limit or fpu.beta_collision: # <-- beta_collision flag incorrectly set
-                print("FPU %d has a fault condition. state=%s, alpha_limit=%s, beta_collision=%s" % \
-                   (fpu_id, str(fpu.state), str(fpu.at_alpha_limit), str(fpu.beta_collision)) )
+                if verbose:
+                    print("FPU %d has a fault condition. state=%s, alpha_limit=%s, beta_collision=%s" % \
+                          (fpu_id, str(fpu.state), str(fpu.at_alpha_limit), str(fpu.beta_collision)) )
                 fpus_with_fault.append(fpu_id)
         # Next FPU
         
@@ -3610,8 +3611,6 @@ class GridDriver(UnprotectedGridDriver):
                           last_position, directions, firmware_direction,
                           use_firmware_directions=False, verbose=False):
         import copy
-        print("collision recovery: given directions:", directions,
-              "firmware_directions:", firmware_direction)
         # Initialise the movement counter dictionaries
         moved_alpha = {}
         moved_beta = {}
@@ -3636,13 +3635,13 @@ class GridDriver(UnprotectedGridDriver):
 
                 # Recall the recovery directions
                 (firmware_alpha_dir, firmware_beta_dir) = firmware_direction[fpu_id]
-                print("FPU %d has firmware=(%s,%s)" % \
+                print("FPU %d has firmware directions=(%s,%s)" % \
                       (fpu_id, str(firmware_alpha_dir), str(firmware_beta_dir)))
                 
                 if (directions is not None) and (fpu_id in directions):
                     (given_alpha_dir, num_alpha, given_beta_dir, num_beta, weight) = \
                         directions[fpu_id]
-                    print("FPU %d has directions=(%s,%s)" % \
+                    print("FPU %d has given directions=(%s,%s)" % \
                           (fpu_id, str(given_alpha_dir), str(given_beta_dir)))
 
                     if use_firmware_directions:
@@ -3662,7 +3661,7 @@ class GridDriver(UnprotectedGridDriver):
                         free_alpha_dir = given_alpha_dir
                         free_beta_dir = given_beta_dir
                 else:
-                    print("FPU %d not found in directions" % fpu_id)
+                    print("FPU %d not found in directions dictionary" % fpu_id)
                     # Only the firmware directions are available
                     if use_firmware_directions:
                         free_alpha_dir = firmware_alpha_dir
@@ -3791,8 +3790,7 @@ class GridDriver(UnprotectedGridDriver):
 
 
         """
-        #import copy
-        print("recoverFaults. given directions:", directions)
+        #print("recoverFaults. given directions:", directions)
         
         # Process the fpuset. An empty or null list means all valid FPUs.
         if fpuset is None:
@@ -3806,10 +3804,14 @@ class GridDriver(UnprotectedGridDriver):
         # This information needs to be remembered.
         (last_position, firmware_direction) = \
             self.recoveryState(grid_state, fpuset=fpuset, verbose=verbose)
-        print("recoverFaults. firmware directions:", firmware_direction)
 
         # Now identify all the FPUs which have a fault.
         fpus_with_fault = self.identifyFaults(grid_state)
+
+        # Make a second pass through the FPUs with a fault and correct any
+        # limit breaches.
+        fpus_with_fault = self.recoverLimitBreaches(grid_state, fpus_with_fault,
+                              last_position, firmware_direction, verbose=verbose)
 
         nfaults = len(fpus_with_fault)
         if nfaults == 0:
@@ -3823,9 +3825,9 @@ class GridDriver(UnprotectedGridDriver):
         # beta collisions. This time small corrections are made to each
         # FPU in turn until the collisions are freed.
         fpus_with_fault = self.recoverCollisions(grid_state, fpus_with_fault,
-                          last_position, directions, firmware_direction,
-                          use_firmware_directions=use_firmware_directions,
-                          verbose=verbose)
+                              last_position, directions, firmware_direction,
+                              use_firmware_directions=use_firmware_directions,
+                              verbose=verbose)
 
         nfaults = len(fpus_with_fault)
         if nfaults > 0:
