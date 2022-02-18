@@ -1,11 +1,19 @@
 python -i initialiseGrid.py -N 6 --gateway_address 134.171.196.147
 
+>>> # Go to the start position
+>>> gd.configZero(gs)
+>>> gd.executeMotion(gs)
+>>> # Load a path directly and execute it once.
+>>> p = wflib.load_paths( "/home/jnix/FPU6TestsJan2022/fpu6_difficult_03_PATHS.paths", "canmap6.cfg" )
+>>> gd.configPaths(p, gs)
+>>> gd.executeMotion(gs) 
+
 >>> # Execute the path contained in the given file forwards and backwards.
 >>> test_path( gd, gs, path_file, canmap_file )
 >>>
 >>> # For example
 >>> test_path( gd, gs, "/home/jnix/FPU6TestsNov2021/fpu6_3000_30arcsec_PATHS.paths", "canmap6.cfg" )
->>> test_path( gd, gs, "/home/jnix/FPU6TestsDec2021/fpu6_difficult_01_PATHS.paths", "canmap6.cfg" )
+>>> test_path( gd, gs, "/home/jnix/FPU6TestsJan2022/fpu6_difficult_01_PATHS.paths", "canmap6.cfg" )
 >>>
 >>># In the event of a collision
->>> gd.recoverFaults(gs, fpuset=None, verbose=False)
+>>> recover_faults(gd, gs, config_file, canmap_fname, fpuset=None, verbose=False)

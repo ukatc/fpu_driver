@@ -44,10 +44,16 @@ The following command can be used to execute and reverse a path
 
 >>> test_path( gd, gs, path_file, canmap_file, fpuset=[] )
 
+The following commands will display the state of the FPU grid
+
+>>> plot_status( gd, gs, config_file, canmap_fname)
+
 The following command can be used to recover from a fault or collision
 
->>> recover_faults( gd, gs, fpuset=[], move_alpha=True, move_beta=True, distance=1.0, verbose=False)
-
+>>> recover_faults( gd, gs, config_file, canmap_fname, fpuset=[]
+                    use_firmware_directions=False, max_steps=6, distance=1.0,
+                    verbose=False)
+                    
 The following command can be used to dump the current FPU locations to a target
 status file which can be given to the path analysis software.
 
@@ -69,11 +75,16 @@ from FpuGridDriver import  DASEL_BOTH, DASEL_ALPHA, DASEL_BETA, \
     DIRST_RESTING_LAST_CW, DIRST_RESTING_LAST_ACW
 
 try:
+   import geometry as geo
+except:
+   geo = None
+
+try:
    import wflib
 except:
    wflib = None
 
-from fpu_constants import RADIAN_TO_DEGREE
+from fpu_constants import RADIAN_TO_DEGREE, DEGREE_TO_RADIAN
 from fpu_commands import *
 
 NUM_FPUS = int(os.environ.get("NUM_FPUS","10"))
@@ -193,8 +204,8 @@ def test_path( gd, gs, path_file, canmap_file, fpuset=[] ):
     gd.executeMotion(gs)
 
 
-def get_arm_angles( gd, gs, fpuset=[] ):
-    # Get the current arm angles in degrees.
+def get_arm_angles( gd, gs, fpuset=[], convert_to_radians=False ):
+    # Get the current arm angles in degrees or radians.
     #
     # The function will try to use the tracked angles, which are based on the
     # motion history. If the interval returned by tracked angles contains a
@@ -263,8 +274,10 @@ def get_arm_angles( gd, gs, fpuset=[] ):
                 strg += "Using average value."
                 print(strg)
                 beta_deg = (binterval.min() + binterval.max())/2.0 # Or return NaN?
-            
-        arm_angles.append( [fpuid, alpha_deg, beta_deg] )
+        if convert_to_radians:
+            arm_angles.append( [fpuid, alpha_deg * DEGREE_TO_RADIAN, beta_deg * DEGREE_TO_RADIAN] )
+        else:
+            arm_angles.append( [fpuid, alpha_deg, beta_deg] )
     return arm_angles
 
 
@@ -278,9 +291,17 @@ def save_state_to_file( gd, gs, status_file, config_file, canmap_file="canmap.cf
     wflib.save_angles_to_file( arm_angles, status_file, config_file,
                                canmap_file )
 
+def plot_status( gd, gs, config_file, canmap_fname):
+    # Plot the current grid status
+    if geo is not None:
+        arm_angles = get_arm_angles( gd, gs, convert_to_radians=True)
+        geo.plot_geometry( config_file, canmap_fname, arm_angles )
+    else:
+        print("No geometry functions available.")
 
-def recover_faults( gd, gs, fpuset=None, move_alpha=True, move_beta=True,
-                    distance=1.0, verbose=False):
+def recover_faults( gd, gs, config_file, canmap_fname, fpuset=None,
+                    use_firmware_directions=False, max_steps=6,
+                    max_attempts=2, distance=0.5, verbose=False):
     # Execute a series of fault recovery procedures to try to bring the grid into a safe state
     import time
 
@@ -288,34 +309,53 @@ def recover_faults( gd, gs, fpuset=None, move_alpha=True, move_beta=True,
     if nfaults == 0:
         print("There are no faults to be recovered. No changes made.")
         return
-    
+
+    if (config_file is not None) and (geo is not None):
+        print("Analyzing geometry...")
+        arm_angles = get_arm_angles( gd, gs, fpuset=fpuset,
+                                     convert_to_radians=True)
+        directions = geo.recovery_directions(
+                                    config_file, canmap_fname,
+                                    arm_angles, max_steps=max_steps,
+                                    verbose=verbose )
+        for fpuid in list(directions.keys()):
+            this_dir = directions[fpuid]
+            print("FPU %d: alpha direction %s, beta direction %s" % \
+                  (fpuid, this_dir[0], this_dir[2]))
+    else:
+        # If there are no mocpath directions, at least use the firmware directions
+        print("WARNING: Geometry not available. Can only use info from firmware")
+        use_firmware_directions = True
+        directions = None
+
     # First attempt to recover the faults
     print("Recovering faults...")
-    (nfaults, last_pos, directions) = gd.recoverFaults(gs, fpuset=fpuset,
-                                                       move_alpha=move_alpha,
-                                                       move_beta=move_beta,
-                                                       verbose=verbose)
+    nattempts = 1
+    (nfaults, last_pos) = gd.recoverFaults(
+                            gs, directions, fpuset=fpuset,
+                            use_firmware_directions=use_firmware_directions,
+                            verbose=verbose )
     
     # Check that the faults really have been recovered and don't spontaneously
     # reappear because the FPUs are too close.
     # NOTE: Two attempts at recovering the faults is probably enough.
     time.sleep(1)
     nfaults = gd.countFaults( gs, fpuset=fpuset )
-    if nfaults > 0:
+    while (nattempts < max_attempts) and (nfaults > 0):
+        nattempts += 1
         print("%d faults still remain. Recovering faults again..." % nfaults)
-        (nfaults, last_pos, directions) = gd.recoverFaults(gs, fpuset=fpuset,
-                                                          last_position=last_pos,
-                                                          direction_needed=directions,
-                                                          move_alpha=move_alpha,
-                                                          move_beta=move_beta,
-                                                          verbose=verbose)
+        (nfaults, last_pos) = gd.recoverFaults(grid_state,
+                                directions, fpuset=fpuset,
+                                use_firmware_directions=use_firmware_directions,
+                                verbose=verbose)
         
     # If the faults have been recovered, move the FPUs a little further apart
     time.sleep(1)
     nfaults = gd.countFaults( gs, fpuset=fpuset )
-    if nfaults == 0:
+    if nfaults == 0 and directions is not None:
         print("All faults recovered. Moving the FPUs %.3f (deg) apart" % distance)
-        gd.configMoveDir( gs, directions, distance=distance)
+        gd.configMoveDir( gs, directions, distance=distance,
+                          allow_uninitialized=True, use_step_counts=True)
         gd.executeMotion( gs )
     
 
@@ -364,6 +404,9 @@ def check_status( gs ):
 
 
 if __name__ == '__main__':
+    # Begin with default configuration file and canmap file names
+    config_file = "/home/jnix/FPU6TestsJan2022/mpmcfgINSfps_6_ORIENT.cfg"
+    canmap_fname = "canmap6.cfg"
 
     print("Module version is:", FpuGridDriver.__version__, ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
 

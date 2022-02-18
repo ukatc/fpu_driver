@@ -4,6 +4,7 @@ from math import pi
 from numpy import rad2deg, deg2rad
 
 RADIAN_TO_DEGREE = 180.0 / pi # conversion factor
+DEGREE_TO_RADIAN = pi / 180.0 # conversion factor
 
 
 AlphaGearRatio 	= 2050.175633 # actual gear ratio
