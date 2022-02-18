@@ -6,7 +6,9 @@ from numpy import array, pi, round
 # This module depends on the mocpath library, obtained from the
 # MOONS software SVN repository.
 import mocpath.util as util
+import mocpath.path.pa_parameters as params
 import mocpath.path.path_generator as pg
+from mocpath.path.pa_dnf import analyse_dnf
 
 from fpu_constants import (ALPHA_DATUM_OFFSET, BETA_DATUM_OFFSET,
                            StepsPerDegreeAlpha, StepsPerDegreeBeta,
@@ -37,6 +39,7 @@ def direction_to_value( direction_name ):
     else:
         direction_value = None
     return direction_value
+
 
 def plot_geometry( config_file, canmap_fname, arm_angles ):
     """
@@ -79,6 +82,78 @@ def plot_geometry( config_file, canmap_fname, arm_angles ):
         pass
     
     return
+
+
+def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
+                         verbose=False, plot=False ):
+    """
+    
+    Generate a path that will move the fibre positioners to safe
+    locations.
+    
+    """
+    # Extract a dictionary from the canmap file by removing the
+    # the comments and parsing it as a Python statement.
+    # In the resulting dictionary, idmap["cell-id"] = fpu-id.
+    idmap = literal_eval("".join(filter(lambda x: not is_comment(x),
+                                        open(canmap_fname).readlines())))
+    # Reverse the dictionary so that reversemap["fpu-id"] = cell-id
+    reversemap = {}
+    for fpuid in list(idmap.keys()):
+        cellid = idmap[fpuid]
+        reversemap[str(cellid)] = int(fpuid)
+
+    # Use the canmap dictionary to process the IDs within arm_angles
+    new_arm_angles = []
+    for arms in arm_angles:
+        fpuid = arms[0]
+        cellid = reversemap[str(fpuid)]
+        #print(fpuid, "-->", cellid)
+        new_arm_angles.append( (cellid, arms[1], arms[2]))
+
+    #---------------------------------------------------------------------
+    # Create a fibre positioner grid based on the configuration information.
+    #---------------------------------------------------------------------
+    positioner_grid = pg.create_positioner_grid( config_file )
+    pg.define_arm_angles( new_arm_angles, positioner_grid )
+    
+    # Generate a set of default targets
+    default_targets = pg.generate_default_targets( positioner_grid )
+    
+    # Start plotting the path from this location
+    pg.start_from_here( positioner_grid )
+
+    if target.upper() == 'SAFE':
+        # Alpha arms avoid other positioners and beta arms tuck in.
+        goto = [params.NO_TARGET, params.GOTO_ZERO]
+        repulsion_factor = 4.0
+
+    elif target.upper() == 'SPACE':
+        # Both arms avoid other positioners.
+        goto = [params.NO_TARGET, params.NO_TARGET]
+        repulsion_factor = 10.0
+        
+    else:
+        # Move to DEFAULT. Alpha and beta targets both active.
+        goto = [params.GOTO_TARGET, params.GOTO_TARGET]
+        repulsion_factor = 4.0
+
+    # Use the DNF algorithm to plot a path to safety
+    (actual_target_list, positioner_paths) = \
+            analyse_dnf(default_targets, positioner_grid, safe_start=False,
+                        generate_paths=True, goto=goto,
+                        repulsion_factor=repulsion_factor )
+
+    if plot:
+        # If required, plot the final initial situation.
+        strg = "Fibre positioner paths: %s" % config_file
+        try:
+            positioner_grid.plot(description=strg, targetlist=[], withpath=True)
+        except:
+            # Ignore exceptions thrown by the plotting.
+            pass
+
+    return positioner_paths
 
 
 def recovery_directions( config_file, canmap_fname, arm_angles, max_steps=6,

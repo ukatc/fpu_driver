@@ -294,6 +294,30 @@ def plot_status( gd, gs, config_file, canmap_fname):
     else:
         print("No geometry functions available.")
 
+def make_safe( gd, gs, config_file, canmap_fname, fpuset=None,
+               target="SAFE", verbose=False):
+    # Move the fibre positioners to a safe location after a fault
+    if (config_file is not None) and (wflib is not None):
+        print("Analyzing geometry...")
+        arm_angles = get_arm_angles( gd, gs, fpuset=fpuset,
+                                     convert_to_radians=True)
+        safe_paths = wflib.generate_safe_paths( config_file,
+                                                canmap_fname,
+                                                arm_angles, 
+                                                target=target )
+        # Convert the paths into grid driver format.
+        new_paths = wflib.convert_paths( safe_paths,
+                                         canmap_fname=canmap_fname)
+
+        # Load the new paths into the grid driver and execute them
+        gd.configPath(new_paths, gs, allow_uninitialized=True)
+        gd.executeMotion(gs)
+        
+    else:
+        # Paths cannot be generated without wflib
+        print("ERROR: wflib functions not available. Paths cannot be generated.")
+        return None
+
 def recover_faults( gd, gs, config_file, canmap_fname, fpuset=None,
                     use_firmware_directions=False, max_steps=6,
                     max_attempts=2, distance=0.5, verbose=False):
