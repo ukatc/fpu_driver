@@ -295,23 +295,46 @@ def plot_status( gd, gs, config_file, canmap_fname):
         print("No geometry functions available.")
 
 def make_safe( gd, gs, config_file, canmap_fname, fpuset=None,
-               target="SAFE", verbose=False):
+               targets=["SPACE","DEFAULT","DEFAULT","SAFE","DEFAULT"], bf=[64,64,256,128,256], verbose=False):
+    # The target parameter must be a string or a list
+    if isinstance( targets, str):
+        targets = [targets]
+    if len(targets[0]) < 1:
+        targets=["DEFAULT"]
+    if isinstance( bf, int):
+        bf = [bf] * len(targets)
+ 
     # Move the fibre positioners to a safe location after a fault
     if (config_file is not None) and (wflib is not None):
-        print("Analyzing geometry...")
-        arm_angles = get_arm_angles( gd, gs, fpuset=fpuset,
-                                     convert_to_radians=True)
-        safe_paths = wflib.generate_safe_paths( config_file,
-                                                canmap_fname,
-                                                arm_angles, 
-                                                target=target )
-        # Convert the paths into grid driver format.
-        new_paths = wflib.convert_paths( safe_paths,
-                                         canmap_fname=canmap_fname)
+        ii = 1
+        for target, b in zip( targets, bf ):
+            print("Pass %d for target %s (bf=%d). Analyzing geometry..." % \
+                (ii, target, b))
+            arm_angles = get_arm_angles( gd, gs, fpuset=fpuset,
+                                         convert_to_radians=True)
+            safe_paths = wflib.generate_safe_paths( config_file,
+                                                    canmap_fname,
+                                                    arm_angles, 
+                                                    target=target,
+                                                    brute_force_elements=b )
+            if safe_paths is not None:
+                # Convert the paths into grid driver format.
+                new_paths = wflib.convert_paths( safe_paths,
+                                                 canmap_fname=canmap_fname)
 
-        # Load the new paths into the grid driver and execute them
-        gd.configPath(new_paths, gs, allow_uninitialized=True)
-        gd.executeMotion(gs)
+                # Load the new paths into the grid driver and execute them
+                if target == "SPACE":
+                    print("Moving positioners apart...")
+                elif b < 128:
+                    print("Moving safely to %s..." % target)
+                else:
+                    print("Moving directly to %s..." % target)
+
+                gd.configPaths(new_paths, gs, allow_uninitialized=True)
+                gd.executeMotion(gs)
+            else:
+                print("ERROR: Could not generate safe paths.")
+            ii += 1
         
     else:
         # Paths cannot be generated without wflib

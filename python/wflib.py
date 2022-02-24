@@ -85,13 +85,16 @@ def plot_geometry( config_file, canmap_fname, arm_angles ):
 
 
 def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
-                         verbose=False, plot=False ):
+                         brute_force_elements=None, verbose=False, plot=False ):
     """
     
     Generate a path that will move the fibre positioners to safe
     locations.
     
     """
+    if brute_force_elements is None:
+        brute_force_elements = params.BRUTE_FORCE_ELEMENTS_DEFAULT
+
     # Extract a dictionary from the canmap file by removing the
     # the comments and parsing it as a Python statement.
     # In the resulting dictionary, idmap["cell-id"] = fpu-id.
@@ -114,14 +117,26 @@ def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
     #---------------------------------------------------------------------
     # Create a fibre positioner grid based on the configuration information.
     #---------------------------------------------------------------------
-    positioner_grid = pg.create_positioner_grid( config_file )
+    positioner_grid = pg.create_positioner_grid( config_file,
+                                                 compress_limits=True )
+
+    # Start plotting the path from this location
     pg.define_arm_angles( new_arm_angles, positioner_grid )
     
     # Generate a set of default targets
-    default_targets = pg.generate_default_targets( positioner_grid )
-    
-    # Start plotting the path from this location
-    pg.start_from_here( positioner_grid )
+    if target == "LOW":
+        default_targets = pg.generate_low_targets( positioner_grid )
+    else:
+        default_targets = pg.generate_default_targets( positioner_grid )
+
+#     # Plot the initial situation.
+#     if plot:
+#         strg = "Initial situation: %s" % config_file
+#         try:
+#             positioner_grid.plot(description=strg, targetlist=[])
+#         except:
+#             # Ignore exceptions thrown by the plotting.
+#             pass
 
     if target.upper() == 'SAFE':
         # Alpha arms avoid other positioners and beta arms tuck in.
@@ -134,19 +149,20 @@ def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
         repulsion_factor = 10.0
         
     else:
-        # Move to DEFAULT. Alpha and beta targets both active.
+        # Move to DEFAULT or LOW. Alpha and beta targets both active.
         goto = [params.GOTO_TARGET, params.GOTO_TARGET]
         repulsion_factor = 4.0
 
-    # Use the DNF algorithm to plot a path to safety
+    # Use the DNF or BRUTEFORCE algorithm to plot a path to safety
     (actual_target_list, positioner_paths) = \
             analyse_dnf(default_targets, positioner_grid, safe_start=False,
                         generate_paths=True, goto=goto,
+                        brute_force_elements=brute_force_elements,
                         repulsion_factor=repulsion_factor )
 
     if plot:
         # If required, plot the final initial situation.
-        strg = "Fibre positioner paths: %s" % config_file
+        strg = "Fibre positioners with safe paths: %s" % config_file
         try:
             positioner_grid.plot(description=strg, targetlist=[], withpath=True)
         except:
