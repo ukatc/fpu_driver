@@ -1,0 +1,31 @@
+$ python -i initialiseGrid.py -N 6 --mockup
+>>> config_file = "/home/jnix/FPU6TestsJan2022/mpmcfgINSfps_6_ORIENT.cfg"
+>>> canmap_fname = "canmap6.cfg"
+
+>>> gd.findDatum(gs)
+
+# Move to the starting position and execute difficult path number 03.
+>>> gd.configZero(gs)
+>>> gd.executeMotion(gs)
+>>> p = wflib.load_paths( "/home/jnix/FPU6TestsJan2022/fpu6_difficult_03_PATHS.paths", canmap_fname)
+>>> gd.configPaths(p, gs)
+
+# Simulate a collision near the end of the path. (The trick here is waiting long enough before sending the SIGUSR1 signal.
+>>> gd.executeMotion(gs)
+
+# Plot the fibre positioner configuration. NOTE: A new command! See attached plot.
+>>> plot_status(gd, gs, config_file, canmap_fname)
+
+# Recover from the collision
+>>> recover_faults(gd, gs, config_file, canmap_fname)
+
+# Move to safety
+>>> make_safe( gd, gs, config_file, canmap_fname)
+
+# In more detail...
+>>> arm_angles = get_arm_angles( gd, gs, convert_to_radians=True )
+>>> safe_paths = wflib.generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE" )
+>>> new_paths = wflib.convert_paths( safe_paths, canmap_fname=canmap_fname)
+>>> gd.configPaths(new_paths, gs, allow_uninitialized=True)
+>>> gd.executeMotion(gs)
+
