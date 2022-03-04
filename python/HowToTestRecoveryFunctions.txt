@@ -5,13 +5,15 @@ $ python -i initialiseGrid.py -N 6 --mockup
 >>> gd.findDatum(gs)
 
 # Move to the starting position and execute difficult path number 03.
->>> gd.configZero(gs)
->>> gd.executeMotion(gs)
->>> p = wflib.load_paths( "/home/jnix/FPU6TestsJan2022/fpu6_difficult_03_PATHS.paths", canmap_fname)
->>> gd.configPaths(p, gs)
+>>> move_to_zero( gd, gs )
+	>>> gd.configZero(gs)
+	>>> gd.executeMotion(gs)
 
+>>> move_path( gd, gs, "/home/jnix/FPU6TestsJan2022/fpu6_difficult_03_PATHS.paths", canmap_fname )
+	>>> p = wflib.load_paths( "/home/jnix/FPU6TestsJan2022/fpu6_difficult_03_PATHS.paths", canmap_fname)
+	>>> gd.configPaths(p, gs)
+	>>> gd.executeMotion(gs)
 # Simulate a collision near the end of the path. (The trick here is waiting long enough before sending the SIGUSR1 signal.
->>> gd.executeMotion(gs)
 
 # Plot the fibre positioner configuration. NOTE: A new command! See attached plot.
 >>> plot_status(gd, gs, config_file, canmap_fname)
@@ -22,10 +24,15 @@ $ python -i initialiseGrid.py -N 6 --mockup
 # Move to safety
 >>> make_safe( gd, gs, config_file, canmap_fname)
 
-# In more detail...
->>> arm_angles = get_arm_angles( gd, gs, convert_to_radians=True )
->>> safe_paths = wflib.generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE" )
->>> new_paths = wflib.convert_paths( safe_paths, canmap_fname=canmap_fname)
->>> gd.configPaths(new_paths, gs, allow_uninitialized=True)
->>> gd.executeMotion(gs)
+# Move to a specific named target ("SPACE", "DEFAULT", "SAFE", "LOW")
+>>> move_to_target( gd, gs, config_file, canmap_fname, "SAFE" )
+	>>> arm_angles = get_arm_angles( gd, gs, convert_to_radians=True )
+	>>> (target_status, safe_paths) = wflib.generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE", verbose=False, plot=False )
+	>>> new_paths = wflib.convert_paths( safe_paths, canmap_fname=canmap_fname)
+	>>> gd.configPaths(new_paths, gs, allow_uninitialized=True)
+	>>> gd.executeMotion(gs)
+
+# Find the datum switch after recovery
+>>> move_to_datum( gd, gs )
+>>> gd.findDatum( gs )
 

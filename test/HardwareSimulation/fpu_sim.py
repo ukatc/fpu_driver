@@ -45,7 +45,7 @@ FPUGrid = []
 # instrument coordinates) and angle relative to datum positions.
 
 ALPHA_DATUM_OFFSET = -180.0
-BETA_DATUM_OFFSET = 6.5
+BETA_DATUM_OFFSET = -6.5
 
 # The alpha RDEGREE values below are relative from the datum switch
 # (datum=zero).  (For displayed alpha angles, the conventional angle
@@ -57,7 +57,7 @@ ALPHA_MIN_HARDSTOP_DEGREE = -183.2
 ALPHA_MAX_HARDSTOP_DEGREE = +168.8
 
 # Beta angles at which collision is triggered
-BETA_MIN_DEGREE = -185.2
+BETA_MIN_DEGREE = -185.8
 BETA_MAX_DEGREE = 142.0
 
 # Beta angles at which crash exception will be thrown

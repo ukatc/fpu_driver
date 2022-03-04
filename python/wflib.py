@@ -8,7 +8,7 @@ from numpy import array, pi, round
 import mocpath.util as util
 import mocpath.path.pa_parameters as params
 import mocpath.path.path_generator as pg
-from mocpath.path.pa_dnf import analyse_dnf
+from mocpath.path.pa_dnf import analyse_dnf, target_efficiency, paths_to_string
 
 from fpu_constants import (ALPHA_DATUM_OFFSET, BETA_DATUM_OFFSET,
                            StepsPerDegreeAlpha, StepsPerDegreeBeta,
@@ -159,9 +159,13 @@ def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
                         generate_paths=True, goto=goto,
                         brute_force_elements=brute_force_elements,
                         repulsion_factor=repulsion_factor )
+    target_status = target_efficiency( actual_target_list )
+
+    if verbose:
+        print(paths_to_string( positioner_paths ))
 
     if plot:
-        # If required, plot the final initial situation.
+        # If required, plot the final situation.
         strg = "Fibre positioners with safe paths: %s" % config_file
         try:
             positioner_grid.plot(description=strg, targetlist=[], withpath=True)
@@ -169,7 +173,7 @@ def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
             # Ignore exceptions thrown by the plotting.
             pass
 
-    return positioner_paths
+    return (target_status, positioner_paths)
 
 
 def recovery_directions( config_file, canmap_fname, arm_angles, max_steps=6,

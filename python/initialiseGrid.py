@@ -199,7 +199,8 @@ def test_path( gd, gs, path_file, canmap_file, fpuset=[] ):
     gd.executeMotion(gs)
 
 
-def get_arm_angles( gd, gs, fpuset=[], convert_to_radians=False ):
+def get_arm_angles( gd, gs, fpuset=[], use_step_counts=False,
+                    convert_to_radians=False ):
     # Get the current arm angles in degrees or radians.
     #
     # The function will try to use the tracked angles, which are based on the
@@ -241,34 +242,40 @@ def get_arm_angles( gd, gs, fpuset=[], convert_to_radians=False ):
         # Extract the counted angles
         alpha_counted, beta_counted = angle_pair
 
-        try:
-            # The tracked angles are OK as long as the alpha angle is not uncertain
-            alpha_deg = float(ainterval.as_scalar())
-        except AssertionError:
-            # If the alpha range is uncertain, use the counted angle if consistent
-            if alpha_counted >= ainterval.min() and alpha_counted <= ainterval.max():
-                print("NOTE: FPU %d alpha angle is uncertain, %s, but motor step angle %s is valid." % (fpuid,str(ainterval),alpha_counted))
-                alpha_deg = float(alpha_counted)
-            else:
-                strg = "WARNING: FPU %d alpha angle is uncertain, % " % (fpuid,str(ainterval))
-                strg += "and motor step angle %s is invalid! " % alpha_counted
-                strg += "Using average value."
-                print(strg)
-                alpha_deg = (ainterval.min() + ainterval.max())/2.0 # Or return NaN?
-        try:
-            # The tracked angles are OK as long as the beta angle is not uncertain
-            beta_deg = float(binterval.as_scalar())
-        except AssertionError:
-            # If the beta range is uncertain, use the counted angle if consistent
-            if beta_counted >= binterval.min() and beta_counted <= binterval.max():
-                print("NOTE: FPU %d beta angle is uncertain, %s, but motor step angle %s is valid." % (fpuid,str(binterval),beta_counted))
-                beta_deg = float(beta_counted)
-            else:
-                strg = "WARNING: FPU %d beta angle is uncertain, % " % (fpuid,str(binterval))
-                strg += "and motor step angle %s is invalid! " % beta_counted
-                strg += "Using average value."
-                print(strg)
-                beta_deg = (binterval.min() + binterval.max())/2.0 # Or return NaN?
+        if use_step_counts:
+            # Just use the step counts reported by the firmware and ignore
+            # the tracked angles.
+            alpha_deg = float(alpha_counted)
+            beta_deg = float(beta_counted)
+        else:
+            try:
+                # The tracked angles are OK as long as the alpha angle is not uncertain
+                alpha_deg = float(ainterval.as_scalar())
+            except AssertionError:
+                # If the alpha range is uncertain, use the counted angle if consistent
+                if alpha_counted >= ainterval.min() and alpha_counted <= ainterval.max():
+                    print("NOTE: FPU %d alpha angle is uncertain, %s, but motor step angle %s is valid." % (fpuid,str(ainterval),alpha_counted))
+                    alpha_deg = float(alpha_counted)
+                else:
+                    strg = "WARNING: FPU %d alpha angle is uncertain, % " % (fpuid,str(ainterval))
+                    strg += "and motor step angle %s is invalid! " % alpha_counted
+                    strg += "Using average value."
+                    print(strg)
+                    alpha_deg = (ainterval.min() + ainterval.max())/2.0 # Or return NaN?
+            try:
+                # The tracked angles are OK as long as the beta angle is not uncertain
+                beta_deg = float(binterval.as_scalar())
+            except AssertionError:
+                # If the beta range is uncertain, use the counted angle if consistent
+                if beta_counted >= binterval.min() and beta_counted <= binterval.max():
+                    print("NOTE: FPU %d beta angle is uncertain, %s, but motor step angle %s is valid." % (fpuid,str(binterval),beta_counted))
+                    beta_deg = float(beta_counted)
+                else:
+                    strg = "WARNING: FPU %d beta angle is uncertain, % " % (fpuid,str(binterval))
+                    strg += "and motor step angle %s is invalid! " % beta_counted
+                    strg += "Using average value."
+                    print(strg)
+                    beta_deg = (binterval.min() + binterval.max())/2.0 # Or return NaN?
         if convert_to_radians:
             arm_angles.append( [fpuid, alpha_deg * DEGREE_TO_RADIAN, beta_deg * DEGREE_TO_RADIAN] )
         else:
@@ -294,6 +301,68 @@ def plot_status( gd, gs, config_file, canmap_fname):
     else:
         print("No geometry functions available.")
 
+def move_to_datum( gd, gs, soft_protection=True, check_protection=None,
+                    allow_uninitialized=True, use_step_counts=True ):
+    # Package up the two commands needed to move to datum
+    gd.configDatum( gs, soft_protection=soft_protection,
+                    check_protection=check_protection,
+                    allow_uninitialized=allow_uninitialized,
+                    use_step_counts=use_step_counts )
+    gd.executeMotion( gs )
+    
+def move_to_zero( gd, gs, soft_protection=True, check_protection=None,
+                   allow_uninitialized=False ):
+    # Package up the two commands needed to move to the zero point
+    gd.configZero( gs, soft_protection=soft_protection,
+                   check_protection=check_protection,
+                   allow_uninitialized=allow_uninitialized )
+    gd.executeMotion( gs )
+
+def move_path( gd, gs, path_file, canmap_file, fpuset=None,
+               soft_protection=True, check_protection=None,
+               allow_uninitialized=False, reverse=False ):
+    # Package up the three commands needed to move along a path
+    p = wflib.load_paths( path_file, canmap_fname, reverse=reverse)
+    gd.configPaths( p, gs, fpuset=fpuset, soft_protection=soft_protection,
+                    check_protection=check_protection,
+                    allow_uninitialized=allow_uninitialized, reverse=reverse )
+    gd.executeMotion( gs )
+
+def move_to_target( gd, gs, config_file, canmap_fname, target, fpuset=None, bf=64, verbose=False):
+    # Move fibre positioners to the given named target.
+    # Returns True if completely successful. 
+    arm_angles = get_arm_angles( gd, gs, fpuset=fpuset,
+                                 convert_to_radians=True)
+    (target_status, safe_paths) = wflib.generate_safe_paths( config_file,
+                                            canmap_fname,
+                                            arm_angles, 
+                                            target=target,
+                                            brute_force_elements=bf )
+    if safe_paths is not None:
+        # Convert the paths into grid driver format.
+        new_paths = wflib.convert_paths( safe_paths,
+                                         canmap_fname=canmap_fname)
+
+        # Load the new paths into the grid driver and execute them
+        if target == "SPACE":
+            print("Moving positioners apart...")
+        elif bf < 130:
+            print("Moving safely to %s..." % target)
+        else:
+            print("Moving directly to %s..." % target)
+
+        gd.configPaths(new_paths, gs, allow_uninitialized=True)
+        gd.executeMotion(gs)
+        if target_status[1] == target_status[0]:
+            # All FPUs have successfully reached their target
+            return True
+        else:
+            # At least one FPU has deadlocked. More iterations needed.
+            return False
+    else:
+        print("ERROR: Could not generate safe paths.")
+        return False
+
 def make_safe( gd, gs, config_file, canmap_fname, fpuset=None,
                targets=["SPACE","DEFAULT","DEFAULT","SAFE","DEFAULT"], bf=[64,64,256,128,256], verbose=False):
     # The target parameter must be a string or a list
@@ -310,36 +379,20 @@ def make_safe( gd, gs, config_file, canmap_fname, fpuset=None,
         for target, b in zip( targets, bf ):
             print("Pass %d for target %s (bf=%d). Analyzing geometry..." % \
                 (ii, target, b))
-            arm_angles = get_arm_angles( gd, gs, fpuset=fpuset,
-                                         convert_to_radians=True)
-            safe_paths = wflib.generate_safe_paths( config_file,
-                                                    canmap_fname,
-                                                    arm_angles, 
-                                                    target=target,
-                                                    brute_force_elements=b )
-            if safe_paths is not None:
-                # Convert the paths into grid driver format.
-                new_paths = wflib.convert_paths( safe_paths,
-                                                 canmap_fname=canmap_fname)
-
-                # Load the new paths into the grid driver and execute them
-                if target == "SPACE":
-                    print("Moving positioners apart...")
-                elif b < 128:
-                    print("Moving safely to %s..." % target)
-                else:
-                    print("Moving directly to %s..." % target)
-
-                gd.configPaths(new_paths, gs, allow_uninitialized=True)
-                gd.executeMotion(gs)
-            else:
-                print("ERROR: Could not generate safe paths.")
+            result = move_to_target( gd, gs, config_file, canmap_fname, target,
+                                     fpuset=None, bf=b, verbose=verbose )
             ii += 1
-        
+            if result:
+                # Stop iterating when all FPUs have reached their target.
+                break
+        if result:
+            print("All FPUs safely recovered. They can now be moved to datum.")
+        else:
+            print("WARNING: Some FPUs could not be recovered. " + \
+                  "Repeat the procedure or move the remaining ones manually.")
     else:
         # Paths cannot be generated without wflib
         print("ERROR: wflib functions not available. Paths cannot be generated.")
-        return None
 
 def recover_faults( gd, gs, config_file, canmap_fname, fpuset=None,
                     use_firmware_directions=False, max_steps=6,
@@ -474,8 +527,8 @@ if __name__ == '__main__':
 
     print("""If none of the FPUs are in an error state, you can issue now:
 
-    gd.configDatum(grid_state)     # Only needed when FPU positions are not close to (-180,0)
-    gd.executeMotion(grid_state)   # Only needed when FPU positions are not close to (-180,0)
+    gd.configDatum(grid_state)     # Only needed when FPU positions are not close to (-180,-6.5)
+    gd.executeMotion(grid_state)   # Only needed when FPU positions are not close to (-180,-6.5)
     gd.findDatum(grid_state)
 
     to move FPUs to datum and initialise the grid. show_help() for more help. Ctrl/D to exit.""")
