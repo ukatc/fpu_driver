@@ -151,6 +151,32 @@ def initialize_FPU(args):
     return gd, grid_state
 
 
+def check_firmware_vs_database( gd, gs, fpuset=None ):
+    """
+
+    Check that the last known positions stored in the database (tracked angles)
+    are consistent with the step counts reported by the firmware (counted_list).
+
+    Returns True if consistent.
+
+    """
+    consistent = True
+    tracked_list = gd.trackedAngles(gs, fpuset=fpuset, retrieve=True, display=False)
+    counted_list = gd.countedAngles(gs, fpuset=fpuset, show_uninitialized=True)
+
+    for (tracked, counted) in zip(tracked_list, counted_list):
+        # Check the alpha angle is within the expected range
+        if not (tracked[0].min() <= counted[0] <= tracked[0].max()):
+            #print("Alpha angle out of range: %f < %f < %f" % \
+            #   (tracked[0].min(), counted[0], tracked[0].max()))
+            consistent = False
+        # Check the beta angle is within the expected range
+        if not (tracked[1].min() <= counted[1] <= tracked[1].max()):
+            #print("Beta angle out of range: %f < %f < %f" % \
+            #   (tracked[1].min(), counted[1], tracked[1].max()))
+            consistent = False
+    return consistent
+
 def move_to( fpu, alpha_deg, beta_deg, calibrated=True ):
     strg = """
 	*** NOTE: Calibrated movements can only be made from the verification software.
@@ -522,6 +548,17 @@ if __name__ == '__main__':
 
     print("Tracked positions:")
     gd.trackedAngles( grid_state )
+
+    if not check_firmware_vs_database( gd, gs ):
+        strg = """
+*** WARNING: Last known positions recalled from the database are inconsistent with the
+    step counts reported by the firmware. There might have been a power cycle since you
+    last used this software.
+    - If you know the FPUs are in a safe state, find the datum, as described below.
+    - If you do not know the state of the FPUs, use the metrology cameras to update the
+      database and start again.
+"""
+        print(strg)
 
     clockwise_pars = dict([(k, SEARCH_CLOCKWISE) for k in range(args.N)])
     acw_pars = dict([(k, SEARCH_ANTI_CLOCKWISE) for k in range(args.N)])
