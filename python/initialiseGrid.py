@@ -364,7 +364,8 @@ def move_to_target( gd, gs, config_file, canmap_fname, target, fpuset=None, bf=6
         return False
 
 def make_safe( gd, gs, config_file, canmap_fname, fpuset=None,
-               targets=["SPACE","DEFAULT","DEFAULT","SAFE","DEFAULT"], bf=[64,64,256,128,256], verbose=False):
+               targets=["SPACE","DEFAULT","DEFAULT","SAFE","DEFAULT"],
+               bf=[64,64,256,128,256], verbose=False):
     # The target parameter must be a string or a list
     if isinstance( targets, str):
         targets = [targets]

@@ -158,10 +158,11 @@ def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
             analyse_dnf(default_targets, positioner_grid, safe_start=False,
                         generate_paths=True, goto=goto,
                         brute_force_elements=brute_force_elements,
-                        repulsion_factor=repulsion_factor )
+                        repulsion_factor=repulsion_factor,
+                        collision_check=True )
     target_status = target_efficiency( actual_target_list )
 
-    if verbose:
+    if verbose and positioner_paths is not None:
         print(paths_to_string( positioner_paths ))
 
     if plot:
