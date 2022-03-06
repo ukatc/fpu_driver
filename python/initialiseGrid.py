@@ -527,7 +527,7 @@ def check_status( gs ):
 
 if __name__ == '__main__':
     # Begin with default configuration file and canmap file names
-    config_file = "/home/jnix/FPU6TestsJan2022/mpmcfgINSfps_6_ORIENT.cfg"
+    config_file = "/home/jnix/FPU6TestsMar2022/mpmcfgINSfps_6_ORIENT.cfg"
     canmap_fname = "canmap6.cfg"
 
     print("Module version is:", FpuGridDriver.__version__, ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
