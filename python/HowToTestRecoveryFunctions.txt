@@ -6,31 +6,34 @@ $ python -i initialiseGrid.py -N 6 --mockup
 
 # Move to the starting position and execute difficult path number 03.
 >>> move_to_zero( gd, gs )
-	>>> gd.configZero(gs)
-	>>> gd.executeMotion(gs)
+    >>> gd.configZero(gs)
+    >>> gd.executeMotion(gs)
 
 >>> move_path( gd, gs, "/home/jnix/FPU6TestsMar2022/fpu6_difficult_03_PATHS.paths", canmap_fname )
-	>>> p = wflib.load_paths( "/home/jnix/FPU6TestsMar2022/fpu6_difficult_03_PATHS.paths", canmap_fname)
-	>>> gd.configPaths(p, gs)
-	>>> gd.executeMotion(gs)
+    >>> p = wflib.load_paths( "/home/jnix/FPU6TestsMar2022/fpu6_difficult_03_PATHS.paths", canmap_fname)
+    >>> gd.configPaths(p, gs)
+    >>> gd.executeMotion(gs)
 # Simulate a collision near the end of the path. (The trick here is waiting long enough before sending the SIGUSR1 signal.
 
 # Plot the fibre positioner configuration. NOTE: A new command! See attached plot.
 >>> plot_status(gd, gs, config_file, canmap_fname)
 
 # Recover from the collision
->>> recover_faults(gd, gs, config_file, canmap_fname)
+>>> recover_faults(gd, gs, config_file, canmap_fname, max_steps=6, max_attempts=2, distance=0.5 )
+    >>> arm_angles = get_arm_angles( gd, gs, fpuset=[], convert_to_radians=True )
+    >>> directions = wflib.recovery_directions( config_file, canmap_fname, arm_angles, max_steps=6, verbose=False, plot=False )
+    >>> gd.recoverFaults( gs, directions, fpuset=[], verbose=False )
 
 # Move to safety
 >>> make_safe( gd, gs, config_file, canmap_fname)
 
 # Move to a specific named target ("SPACE", "DEFAULT", "SAFE", "LOW")
->>> move_to_target( gd, gs, config_file, canmap_fname, "SAFE" )
-	>>> arm_angles = get_arm_angles( gd, gs, convert_to_radians=True )
-	>>> (target_status, safe_paths) = wflib.generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE", verbose=False, plot=False )
-	>>> new_paths = wflib.convert_paths( safe_paths, canmap_fname=canmap_fname)
-	>>> gd.configPaths(new_paths, gs, allow_uninitialized=True)
-	>>> gd.executeMotion(gs)
+    >>> move_to_target( gd, gs, config_file, canmap_fname, "SAFE" )
+        >>> arm_angles = get_arm_angles( gd, gs, convert_to_radians=True )
+        >>> (target_status, safe_paths) = wflib.generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE", verbose=False, plot=False )
+        >>> new_paths = wflib.convert_paths( safe_paths, canmap_fname=canmap_fname)
+        >>> gd.configPaths(new_paths, gs, allow_uninitialized=True)
+        >>> gd.executeMotion(gs)
 
 # Find the datum switch after recovery
 >>> move_to_datum( gd, gs )
