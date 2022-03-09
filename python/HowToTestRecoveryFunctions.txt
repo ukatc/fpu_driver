@@ -1,5 +1,5 @@
 $ python -i initialiseGrid.py -N 6 --mockup
->>> config_file = "/home/jnix/FPU6TestsMar2022/mpmcfgINSfps_6_ORIENT.cfg"
+>>> config_file = "/home/jnix/FPU6TestsMar2022/mpmcfgINSfps_6_ORIENT142.cfg"
 >>> canmap_fname = "canmap6.cfg"
 
 >>> gd.findDatum(gs)
@@ -16,7 +16,7 @@ $ python -i initialiseGrid.py -N 6 --mockup
 # Simulate a collision near the end of the path. (The trick here is waiting long enough before sending the SIGUSR1 signal.
 
 # Plot the fibre positioner configuration. NOTE: A new command! See attached plot.
->>> plot_status(gd, gs, config_file, canmap_fname)
+>>> plot_status(gd, gs, config_file, canmap_fname, "Plot title")
 
 # Recover from the collision
 >>> recover_faults(gd, gs, config_file, canmap_fname, max_steps=6, max_attempts=2, distance=0.5 )

@@ -41,7 +41,7 @@ def direction_to_value( direction_name ):
     return direction_value
 
 
-def plot_geometry( config_file, canmap_fname, arm_angles ):
+def plot_geometry( config_file, canmap_fname, arm_angles, title="" ):
     """
     
     Display the geometry of the grid layout defined in the configuration
@@ -75,6 +75,8 @@ def plot_geometry( config_file, canmap_fname, arm_angles ):
     
     # Plot the current situation.
     strg = "Fibre positioner grid: %s" % config_file
+    if title:
+        strg += "\n%s" % title
     try:
         positioner_grid.plot(description=strg, targetlist=[])
     except:

@@ -319,11 +319,11 @@ def save_state_to_file( gd, gs, status_file, config_file, canmap_file="canmap.cf
     wflib.save_angles_to_file( arm_angles, status_file, config_file,
                                canmap_file )
 
-def plot_status( gd, gs, config_file, canmap_fname):
+def plot_status( gd, gs, config_file, canmap_fname, title=""):
     # Plot the current grid status
     if wflib is not None:
         arm_angles = get_arm_angles( gd, gs, convert_to_radians=True)
-        wflib.plot_geometry( config_file, canmap_fname, arm_angles )
+        wflib.plot_geometry( config_file, canmap_fname, arm_angles, title=title )
     else:
         print("No geometry functions available.")
 
@@ -527,7 +527,8 @@ def check_status( gs ):
 
 if __name__ == '__main__':
     # Begin with default configuration file and canmap file names
-    config_file = "/home/jnix/FPU6TestsMar2022/mpmcfgINSfps_6_ORIENT.cfg"
+    # NOTE: These definitions are just a time saver. These files are not guaranteed to exist.
+    config_file = "/home/jnix/FPU6TestsMar2022/mpmcfgINSfps_6_ORIENT142.cfg"
     canmap_fname = "canmap6.cfg"
 
     print("Module version is:", FpuGridDriver.__version__, ", CAN PROTOCOL version:", FpuGridDriver.CAN_PROTOCOL_VERSION)
