@@ -128,6 +128,8 @@ def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
     # Generate a set of default targets
     if target == "LOW":
         default_targets = pg.generate_low_targets( positioner_grid )
+    elif target == "RSAFE":
+        default_targets = pg.generate_random_safe_targets( positioner_grid )        
     else:
         default_targets = pg.generate_default_targets( positioner_grid )
 
@@ -151,7 +153,7 @@ def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
         repulsion_factor = 10.0
         
     else:
-        # Move to DEFAULT or LOW. Alpha and beta targets both active.
+        # Move to DEFAULT, RSAFE or LOW. Alpha and beta targets both active.
         goto = [params.GOTO_TARGET, params.GOTO_TARGET]
         repulsion_factor = 4.0
 

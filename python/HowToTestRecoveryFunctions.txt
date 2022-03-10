@@ -27,7 +27,7 @@ $ python -i initialiseGrid.py -N 6 --mockup
 # Move to safety
 >>> make_safe( gd, gs, config_file, canmap_fname)
 
-# Move to a specific named target ("SPACE", "DEFAULT", "SAFE", "LOW")
+# Move to a specific named target ("SPACE", "DEFAULT", "SAFE", "RSAFE", "LOW")
     >>> move_to_target( gd, gs, config_file, canmap_fname, "SAFE" )
         >>> arm_angles = get_arm_angles( gd, gs, convert_to_radians=True )
         >>> (target_status, safe_paths) = wflib.generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE", verbose=False, plot=False )
