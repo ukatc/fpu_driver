@@ -51,7 +51,7 @@ The following commands will display the state of the FPU grid
 The following command can be used to recover from a fault or collision
 
 >>> recover_faults( gd, gs, config_file, canmap_fname, fpuset=[]
-                    use_firmware_directions=False, max_steps=6, distance=1.0,
+                    use_firmware_directions=False, max_steps=5, distance=0.5,
                     verbose=False)
                     
 The following command can be used to dump the current FPU locations to a target
@@ -354,6 +354,11 @@ def move_path( gd, gs, path_file, canmap_file, fpuset=None,
                     allow_uninitialized=allow_uninitialized, reverse=reverse )
     gd.executeMotion( gs )
 
+def reverse( gd, gs ):
+    # Package up the two commands needed to reverse a path
+    gd.reverseMotion( gs )
+    gd.executeMotion( gs )
+
 def move_to_target( gd, gs, config_file, canmap_fname, target, fpuset=None, bf=64, verbose=False):
     # Move fibre positioners to the given named target.
     # Returns True if completely successful. 
@@ -422,7 +427,7 @@ def make_safe( gd, gs, config_file, canmap_fname, fpuset=None,
         print("ERROR: wflib functions not available. Paths cannot be generated.")
 
 def recover_faults( gd, gs, config_file, canmap_fname, fpuset=None,
-                    use_firmware_directions=False, max_steps=6,
+                    use_firmware_directions=False, max_steps=5,
                     max_attempts=2, distance=0.5, verbose=False):
     # Execute a series of fault recovery procedures to try to bring the grid into a safe state
     import time
@@ -474,7 +479,7 @@ def recover_faults( gd, gs, config_file, canmap_fname, fpuset=None,
     # If the faults have been recovered, move the FPUs a little further apart
     time.sleep(1)
     nfaults = gd.countFaults( gs, fpuset=fpuset )
-    if nfaults == 0 and directions is not None:
+    if (nfaults == 0) and (distance > 0.0) and (directions is not None):
         print("All faults recovered. Moving the FPUs %.3f (deg) apart" % distance)
         gd.configMoveDir( gs, directions, distance=distance,
                           allow_uninitialized=True, use_step_counts=True)
