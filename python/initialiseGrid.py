@@ -359,7 +359,7 @@ def reverse( gd, gs ):
     gd.reverseMotion( gs )
     gd.executeMotion( gs )
 
-def move_to_target( gd, gs, config_file, canmap_fname, target, fpuset=None, bf=64, verbose=False):
+def move_to_target( gd, gs, config_file, canmap_fname, target, fpuset=None, tt=64, verbose=False):
     # Move fibre positioners to the given named target.
     # Returns True if completely successful. 
     arm_angles = get_arm_angles( gd, gs, fpuset=fpuset,
@@ -368,7 +368,7 @@ def move_to_target( gd, gs, config_file, canmap_fname, target, fpuset=None, bf=6
                                             canmap_fname,
                                             arm_angles, 
                                             target=target,
-                                            brute_force_elements=bf )
+                                            tiptoe_elements=tt )
     if safe_paths is not None:
         # Convert the paths into grid driver format.
         new_paths = wflib.convert_paths( safe_paths,
@@ -377,7 +377,7 @@ def move_to_target( gd, gs, config_file, canmap_fname, target, fpuset=None, bf=6
         # Load the new paths into the grid driver and execute them
         if target == "SPACE":
             print("Moving positioners apart...")
-        elif bf < 130:
+        elif tt < 130:
             print("Moving safely to %s..." % target)
         else:
             print("Moving directly to %s..." % target)
@@ -396,23 +396,23 @@ def move_to_target( gd, gs, config_file, canmap_fname, target, fpuset=None, bf=6
 
 def make_safe( gd, gs, config_file, canmap_fname, fpuset=None,
                targets=["SPACE","DEFAULT","DEFAULT","SAFE","DEFAULT"],
-               bf=[64,64,256,128,256], verbose=False):
+               tt=[64,64,256,128,256], verbose=False):
     # The target parameter must be a string or a list
     if isinstance( targets, str):
         targets = [targets]
     if len(targets[0]) < 1:
         targets=["DEFAULT"]
-    if isinstance( bf, int):
-        bf = [bf] * len(targets)
+    if isinstance( tt, int):
+        tt = [tt] * len(targets)
  
     # Move the fibre positioners to a safe location after a fault
     if (config_file is not None) and (wflib is not None):
         ii = 1
-        for target, b in zip( targets, bf ):
-            print("Pass %d for target %s (bf=%d). Analyzing geometry..." % \
-                (ii, target, b))
+        for target, tipt in zip( targets, tt ):
+            print("Pass %d for target %s (tt=%d). Analyzing geometry..." % \
+                (ii, target, tipt))
             result = move_to_target( gd, gs, config_file, canmap_fname, target,
-                                     fpuset=None, bf=b, verbose=verbose )
+                                     fpuset=None, tt=tipt, verbose=verbose )
             ii += 1
             if result:
                 # Stop iterating when all FPUs have reached their target.

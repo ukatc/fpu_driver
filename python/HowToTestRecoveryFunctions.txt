@@ -21,7 +21,7 @@ $ python -i initialiseGrid.py -N 6 --mockup
 # Recover from the collision
 >>> recover_faults(gd, gs, config_file, canmap_fname, max_steps=5, max_attempts=2, distance=0.5 )
     >>> arm_angles = get_arm_angles( gd, gs, fpuset=[], convert_to_radians=True )
-    >>> directions = wflib.recovery_directions( config_file, canmap_fname, arm_angles, max_steps=6, verbose=False, plot=False )
+    >>> directions = wflib.recovery_directions( config_file, canmap_fname, arm_angles, max_steps=5, verbose=False, plot=False )
     >>> gd.recoverFaults( gs, directions, fpuset=[], verbose=False )
 
 # Move to safety

@@ -87,15 +87,15 @@ def plot_geometry( config_file, canmap_fname, arm_angles, title="" ):
 
 
 def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
-                         brute_force_elements=None, verbose=False, plot=False ):
+                         tiptoe_elements=None, verbose=False, plot=False ):
     """
     
     Generate a path that will move the fibre positioners to safe
     locations.
     
     """
-    if brute_force_elements is None:
-        brute_force_elements = params.BRUTE_FORCE_ELEMENTS_DEFAULT
+    if tiptoe_elements is None:
+        tiptoe_elements = params.TIPTOE_ELEMENTS_DEFAULT
 
     # Extract a dictionary from the canmap file by removing the
     # the comments and parsing it as a Python statement.
@@ -157,11 +157,11 @@ def generate_safe_paths( config_file, canmap_fname, arm_angles, target="SAFE",
         goto = [params.GOTO_TARGET, params.GOTO_TARGET]
         repulsion_factor = 4.0
 
-    # Use the DNF or BRUTEFORCE algorithm to plot a path to safety
+    # Use the DNF or TIPTOE algorithm to plot a path to safety
     (actual_target_list, positioner_paths) = \
             analyse_dnf(default_targets, positioner_grid, safe_start=False,
                         generate_paths=True, goto=goto,
-                        brute_force_elements=brute_force_elements,
+                        tiptoe_elements=tiptoe_elements,
                         repulsion_factor=repulsion_factor,
                         collision_check=True )
     target_status = target_efficiency( actual_target_list )
