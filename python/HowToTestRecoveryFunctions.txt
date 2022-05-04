@@ -9,6 +9,10 @@ $ python -i initialiseGrid.py -N 6 --mockup
     >>> gd.configZero(gs)
     >>> gd.executeMotion(gs)
 
+# Move to the Kaiju starting position and execute a Kaiju path
+>>> move_to_low( gd, gs )
+>>> move_path( gd, gs, "/home/jnix/KAIJU_SCROOGE_Apr2022/ops_output_PATHS_1.paths", canmap_fname )
+
 >>> move_path( gd, gs, "/home/jnix/FPU6TestsMar2022/fpu6_difficult_03_PATHS.paths", canmap_fname )
     >>> p = wflib.load_paths( "/home/jnix/FPU6TestsMar2022/fpu6_difficult_03_PATHS.paths", canmap_fname)
     >>> gd.configPaths(p, gs)

@@ -344,6 +344,22 @@ def move_to_zero( gd, gs, soft_protection=True, check_protection=None,
                    allow_uninitialized=allow_uninitialized )
     gd.executeMotion( gs )
 
+def move_to_low( gd, gs, soft_protection=True, check_protection=None,
+                   allow_uninitialized=False, use_step_counts=True ):
+    # Package up the commands needed to move to the Kaiju start point
+    nfpu = len(gs.FPU)
+    gd.configDatum( gs, soft_protection=soft_protection,
+                    check_protection=check_protection,
+                    allow_uninitialized=allow_uninitialized,
+                    use_step_counts=use_step_counts )
+    gd.executeMotion( gs )
+    gd.findDatum( gs )
+    w = gen_wf( [0]*nfpu, [-6.5]*nfpu )
+    gd.configMotion( w, gs, soft_protection=soft_protection,
+                   check_protection=check_protection,
+                   allow_uninitialized=allow_uninitialized )
+    gd.executeMotion( gs )
+
 def move_path( gd, gs, path_file, canmap_file, fpuset=None,
                soft_protection=True, check_protection=None,
                allow_uninitialized=False, reverse=False ):

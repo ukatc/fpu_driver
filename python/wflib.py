@@ -267,25 +267,36 @@ def convert_paths(paths, canmap_fname="canmap.cfg", reverse=False):
     idmap = literal_eval("".join(filter(lambda x: not is_comment(x),
                                         open(canmap_fname).readlines())))
 
-    if len(idmap) < len(paths):
-       strg = "ID mapping file %s is not long enough to define all the mappings needed." % canmap_fname
-       strg += "\n\tThere are %d mappings in the configuration but %d paths." % (len(idmap), len(paths))
-       raise ValueError(strg)
+    # The lists can now be of different lengths.
+    #if len(idmap) < len(paths):
+    #   strg = "ID mapping file %s is not long enough to define all the mappings needed." % canmap_fname
+    #   strg += "\n\tThere are %d mappings in the configuration but %d paths." % (len(idmap), len(paths))
+    #   raise ValueError(strg)
 
-# The code in the return statement is a compressed version of the following.
-#    path_dict = {}
-#    for cellid, alpha_path, beta_path in paths:
-#        fpu_id = idmap[str(cellid)]
-#        path_dict[fpu_id] = (alpha_path, beta_path)
-#    return path_dict
+    # Convert each path into a form that can be passed to configPath.
+    # Ignore paths for FPUs which are not included in the canmap file.
+    path_dict = {}
+    nskipped = 0
+    for cellid, alpha_path, beta_path in paths:
+        # Ignore paths which are not mentioned in the canmap
+        if str(cellid) in idmap:
+            fpu_id = idmap[str(cellid)]
+            path_dict[fpu_id] = (alpha_path, beta_path)
+        else:
+            #print("WARNING: Cell ID %s not found in cell map file" % str(cellid))
+            nskipped += 1
+    if nskipped > 0:
+        print("WARNING: Paths contains %d IDs not found in the cell map file. These are ignored." % nskipped)
+    return path_dict
 
-    try:
-        return { idmap[str(cellid)] : (alpha_path, beta_path)
-                 for cellid, alpha_path, beta_path in paths }
-    except KeyError as e:
-        strg = "Canmap file \'%s\' does not include all FPUs. No mapping for cell-id %s" % \
-            (canmap_fname, str(e))
-        raise KeyError(strg)
+# OLD PYTHON CODE
+#    try:
+#        return { idmap[str(cellid)] : (alpha_path, beta_path)
+#                 for cellid, alpha_path, beta_path in paths }
+#    except KeyError as e:
+#        strg = "Canmap file \'%s\' does not include all FPUs. No mapping for cell-id %s" % \
+#            (canmap_fname, str(e))
+#        raise KeyError(strg)
 
 
 def load_paths(filename, canmap_fname="canmap.cfg", reverse=False):
